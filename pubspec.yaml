@@ -34,7 +34,7 @@ melos:
   # once at the workspace root, matching the exact flags used in .github/workflows/build-verification.yml.
   scripts:
     analyze:
-      description: Analyze the whole workspace with fatal infos/warnings.
+      description: Analyze the whole workspace, matching CI (fatal warnings only).
       run: dart analyze --fatal-warnings .
 
     format-check:
