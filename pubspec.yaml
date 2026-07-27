@@ -42,12 +42,26 @@ melos:
       run: dart format --output=none --set-exit-if-changed .
 
     test:
-      description: Run every package that has a test/ directory.
+      description: >-
+        Run dart test for every non-Flutter package that has a test/
+        directory. The mobile app is excluded here because it depends on
+        package:flutter and must run under `flutter test` instead — see
+        the test-mobile script below.
       exec:
         command: dart test
         concurrency: 1
       packageFilters:
         dirExists: test
+        ignore:
+          - "mobile"
+
+    test-mobile:
+      description: >-
+        Run Flutter widget/unit tests for the mobile app. Uses `flutter
+        test` (not `dart test`) because the package depends on
+        package:flutter and dart:ui bindings that only the Flutter test
+        runner provides.
+      run: cd apps/mobile && flutter test
 
     import-lint:
       description: >-
@@ -60,4 +74,5 @@ melos:
         melos run format-check &&
         melos run analyze &&
         melos run import-lint &&
-        melos run test
+        melos run test &&
+        melos run test-mobile
