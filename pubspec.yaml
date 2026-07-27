@@ -31,11 +31,11 @@ dev_dependencies:
 melos:
   # `melos analyze` was removed in Melos 7 because `dart analyze` now runs over
   # the entire pub workspace. We keep an explicit `analyze` script that runs
-  # once at the workspace root for parity with CI.
+  # once at the workspace root, matching the exact flags used in .github/workflows/build-verification.yml.
   scripts:
     analyze:
       description: Analyze the whole workspace with fatal infos/warnings.
-      run: dart analyze --fatal-infos --fatal-warnings .
+      run: dart analyze --fatal-warnings .
 
     format-check:
       description: Verify formatting across the workspace.
