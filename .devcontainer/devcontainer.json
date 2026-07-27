@@ -2,7 +2,10 @@
   "name": "Nukhba Flutter Dev",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
   },
   "onCreateCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter && echo 'export PATH=\"$PATH:$HOME/flutter/bin\"' >> $HOME/.bashrc",
   "postCreateCommand": "export PATH=\"$PATH:$HOME/flutter/bin\" && flutter --version && flutter config --no-analytics",
