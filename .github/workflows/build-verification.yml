@@ -1,0 +1,211 @@
+name: Build Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace:
+    name: Analyze + Test (workspace)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read pinned Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Generate code (build_runner, mobile)
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Verify formatting (workspace)
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze (workspace, fatal warnings)
+        run: dart analyze --fatal-warnings .
+
+      - name: Import-lint (Clean Architecture boundaries)
+        run: dart run tooling/import_lint/bin/import_lint.dart
+
+      - name: Test — packages/shared
+        working-directory: packages/shared
+        run: dart test
+
+      - name: Test — packages/domain
+        working-directory: packages/domain
+        run: dart test
+
+      - name: Test — packages/contracts
+        working-directory: packages/contracts
+        run: dart test
+
+      - name: Test — packages/application
+        working-directory: packages/application
+        run: dart test
+
+      - name: Test — packages/infrastructure
+        working-directory: packages/infrastructure
+        run: dart test
+
+      - name: Test — tooling/import_lint
+        working-directory: tooling/import_lint
+        run: dart test
+
+      - name: Test — apps/server
+        working-directory: apps/server
+        run: dart test
+
+      - name: Test — apps/mobile (flutter)
+        working-directory: apps/mobile
+        run: flutter test --coverage
+
+      - name: Upload mobile coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: apps/mobile/coverage/lcov.info
+          retention-days: 14
+
+  build_android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: workspace
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Read pinned Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Ensure platform folders exist
+        working-directory: apps/mobile
+        run: flutter create --platforms=android,web . --project-name nukhba
+
+      - name: Generate code (build_runner)
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build APK
+        working-directory: apps/mobile
+        run: flutter build apk --release --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nukhba-android-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/*.apk
+          retention-days: 14
+
+  build_web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: workspace
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read pinned Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Ensure platform folders exist
+        working-directory: apps/mobile
+        run: flutter create --platforms=android,web . --project-name nukhba
+
+      - name: Generate code (build_runner)
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build web
+        working-directory: apps/mobile
+        run: flutter build web --release --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nukhba-web
+          path: apps/mobile/build/web
+          retention-days: 14
+
+  build_ios:
+    name: Build iOS (no signing)
+    runs-on: macos-latest
+    needs: workspace
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read pinned Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Ensure platform folders exist
+        working-directory: apps/mobile
+        run: flutter create --platforms=ios . --project-name nukhba
+
+      - name: Generate code (build_runner)
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS (no codesign)
+        working-directory: apps/mobile
+        run: flutter build ios --release --no-codesign --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
