@@ -31,9 +31,7 @@ final class HallOfFame {
   /// projection must carry each user at most once). An empty [projections]
   /// yields an empty board (a legitimate result before anyone has ever been
   /// credited).
-  static Result<HallOfFame> rank({
-    required List<HallOfFameEntry> projections,
-  }) {
+  static Result<HallOfFame> rank({required List<HallOfFameEntry> projections}) {
     final seen = <String>{};
     for (final entry in projections) {
       if (!seen.add(entry.userId.value)) {
@@ -66,7 +64,9 @@ final class HallOfFame {
       ranked.add((placed as Ok<HallOfFameEntry>).value);
     }
 
-    return Result.ok(HallOfFame._(entries: List<HallOfFameEntry>.unmodifiable(ranked)));
+    return Result.ok(
+      HallOfFame._(entries: List<HallOfFameEntry>.unmodifiable(ranked)),
+    );
   }
 
   static int _compare(HallOfFameEntry a, HallOfFameEntry b) {

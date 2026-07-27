@@ -1,4 +1,5 @@
 library;
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,14 +14,19 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<NotificationListDto> inbox = ref.watch(myNotificationsProvider);
+    final AsyncValue<NotificationListDto> inbox = ref.watch(
+      myNotificationsProvider,
+    );
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications', key: Key('notifications.title'))),
+      appBar: AppBar(
+        title: const Text('Notifications', key: Key('notifications.title')),
+      ),
       body: AsyncListView<NotificationDto>(
         value: inbox.whenData((dto) => dto.notifications),
         emptyMessage: 'You have no notifications yet.',
         onRetry: () => ref.invalidate(myNotificationsProvider),
-        itemBuilder: (context, notification) => _NotificationRow(notification: notification),
+        itemBuilder: (context, notification) =>
+            _NotificationRow(notification: notification),
       ),
     );
   }
@@ -48,16 +54,28 @@ class _NotificationRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
       key: Key('notifications.item.${notification.id}'),
-      leading: Icon(_iconFor(notification.kind), color: notification.read ? AppColors.textSecondary : AppColors.primary),
-      title: Text(_labelFor(notification.kind), key: Key('notifications.label.${notification.id}')),
-      subtitle: Text(notification.createdAt, key: Key('notifications.createdAt.${notification.id}'), style: const TextStyle(color: AppColors.textSecondary)),
+      leading: Icon(
+        _iconFor(notification.kind),
+        color: notification.read ? AppColors.textSecondary : AppColors.primary,
+      ),
+      title: Text(
+        _labelFor(notification.kind),
+        key: Key('notifications.label.${notification.id}'),
+      ),
+      subtitle: Text(
+        notification.createdAt,
+        key: Key('notifications.createdAt.${notification.id}'),
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
       trailing: notification.read
           ? null
           : IconButton(
               key: Key('notifications.markRead.${notification.id}'),
               icon: const Icon(Icons.mark_email_read_outlined),
               tooltip: 'Mark as read',
-              onPressed: () => ref.read(notificationControllerProvider.notifier).markRead(notification.id),
+              onPressed: () => ref
+                  .read(notificationControllerProvider.notifier)
+                  .markRead(notification.id),
             ),
     );
   }

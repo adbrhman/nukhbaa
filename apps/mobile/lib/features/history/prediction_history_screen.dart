@@ -1,4 +1,5 @@
 library;
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,14 +20,19 @@ class PredictionHistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<PredictionDto>> history = ref.watch(myPredictionsProvider);
+    final AsyncValue<List<PredictionDto>> history = ref.watch(
+      myPredictionsProvider,
+    );
     return Scaffold(
-      appBar: AppBar(title: const Text('My Predictions', key: Key('history.title'))),
+      appBar: AppBar(
+        title: const Text('My Predictions', key: Key('history.title')),
+      ),
       body: AsyncListView<PredictionDto>(
         value: history,
         emptyMessage: 'You have not submitted any predictions yet.',
         onRetry: () => ref.invalidate(myPredictionsProvider),
-        itemBuilder: (context, prediction) => _PredictionCard(prediction: prediction),
+        itemBuilder: (context, prediction) =>
+            _PredictionCard(prediction: prediction),
       ),
     );
   }
@@ -46,7 +52,14 @@ class _PredictionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(prediction.submittedAt, key: Key('history.submittedAt.${prediction.id}'), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(
+              prediction.submittedAt,
+              key: Key('history.submittedAt.${prediction.id}'),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
             const SizedBox(height: 8),
             for (final score in prediction.fixtureScores)
               Padding(

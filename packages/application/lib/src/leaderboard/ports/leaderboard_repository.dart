@@ -45,7 +45,5 @@ abstract interface class LeaderboardRepository {
   /// unbounded scan. The list order is unspecified (the use-case ranks it via
   /// [HallOfFame.rank]); an empty list means nobody has ever been credited yet
   /// (a legitimate empty board, not an error).
-  Future<Result<List<HallOfFameEntry>>> allTimeStandings({
-    required int limit,
-  });
+  Future<Result<List<HallOfFameEntry>>> allTimeStandings({required int limit});
 }

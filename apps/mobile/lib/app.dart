@@ -1,7 +1,9 @@
 library;
+
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/session_gate.dart';
+
 class NukhbaApp extends StatelessWidget {
   const NukhbaApp({super.key});
   @override

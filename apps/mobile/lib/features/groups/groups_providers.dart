@@ -73,7 +73,10 @@ class CreateGroupController extends _$CreateGroupController {
     final result = await _api.createGroup(name);
     state = switch (result) {
       Ok<GroupDto>(:final value) => AsyncValue.data(value),
-      Err<GroupDto>(:final error) => AsyncValue.error(error, StackTrace.current),
+      Err<GroupDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
     };
   }
 }
@@ -93,7 +96,10 @@ class JoinGroupController extends _$JoinGroupController {
     final result = await _api.joinByInvite(inviteCode);
     state = switch (result) {
       Ok<GroupMembershipDto>(:final value) => AsyncValue.data(value),
-      Err<GroupMembershipDto>(:final error) => AsyncValue.error(error, StackTrace.current),
+      Err<GroupMembershipDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
     };
   }
 }

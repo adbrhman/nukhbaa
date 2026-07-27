@@ -232,13 +232,8 @@ final class HallOfFameEntryDto {
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(
-    rank,
-    userId,
-    totalPoints,
-    seasonsPlayed,
-    schemaVersion,
-  );
+  int get hashCode =>
+      Object.hash(rank, userId, totalPoints, seasonsPlayed, schemaVersion);
 }
 
 /// The wire shape of the platform-wide Hall of Fame (read projection of the

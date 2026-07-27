@@ -926,7 +926,9 @@ final class CompositionRoot {
         leaderboardRepository: leaderboardRepository,
         competitionRepository: competitionRepository,
       ),
-      getHallOfFame: GetHallOfFame(leaderboardRepository: leaderboardRepository),
+      getHallOfFame: GetHallOfFame(
+        leaderboardRepository: leaderboardRepository,
+      ),
       createGroup: CreateGroup(
         repository: groupRepository,
         idGenerator: idGenerator,
@@ -1161,8 +1163,7 @@ final class _UnwiredPredictionRepository implements PredictionRepository {
       _unwired();
 
   @override
-  Future<Result<List<PredictionView>>> listByUser(UserId userId) =>
-      _unwired();
+  Future<Result<List<PredictionView>>> listByUser(UserId userId) => _unwired();
 
   @override
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId) =>
@@ -1270,9 +1271,8 @@ final class _UnwiredLeaderboardRepository implements LeaderboardRepository {
   @override
   Future<Result<List<HallOfFameEntry>>> allTimeStandings({
     required int limit,
-  }) => throw StateError(
-    'The leaderboard use-case was not wired into this root',
-  );
+  }) =>
+      throw StateError('The leaderboard use-case was not wired into this root');
 }
 
 /// Backs every "absent" group use-case: any method throws so a test that

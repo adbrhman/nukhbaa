@@ -80,8 +80,9 @@ LIMIT @limit
     );
     return switch (result) {
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
-      Ok<List<Map<String, dynamic>>>(:final value) =>
-        _mapHallOfFameEntries(value),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapHallOfFameEntries(
+        value,
+      ),
     };
   }
 
@@ -187,11 +188,7 @@ LIMIT @limit
     }
     if (seasonsPlayed == null) {
       return Result.err(
-        _corrupt(
-          'hall_of_fame_standings',
-          'seasons_played',
-          'not an integer',
-        ),
+        _corrupt('hall_of_fame_standings', 'seasons_played', 'not an integer'),
       );
     }
 

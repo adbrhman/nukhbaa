@@ -725,9 +725,7 @@ final class InMemoryGroupRepository implements GroupRepository {
   }
 
   @override
-  Future<Result<List<MyGroupSummary>>> listGroupsForUser(
-    UserId userId,
-  ) async {
+  Future<Result<List<MyGroupSummary>>> listGroupsForUser(UserId userId) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
     final own =
