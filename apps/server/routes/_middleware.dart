@@ -17,10 +17,7 @@ import 'package:server/composition/composition_root.dart';
 List<String> _allowedOrigins() {
   final raw = Platform.environment['NUKHBA_CORS_ALLOWED_ORIGINS'];
   if (raw == null || raw.trim().isEmpty) {
-    return const [
-      'https://adbrhmanalmaghrbi-sudo.github.io',
-      'http://localhost:*',
-    ];
+    return const ['https://adbrhman.github.io', 'http://localhost:*'];
   }
   return raw
       .split(',')
