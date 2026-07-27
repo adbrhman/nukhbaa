@@ -58,6 +58,8 @@ HallOfFameEntryDto hallOfFameEntryToDto(HallOfFameEntry entry) {
 /// board (nobody has ever been credited yet), never an error.
 Map<String, Object?> hallOfFameToJson(HallOfFame hallOfFame) {
   return HallOfFameDto(
-    entries: [for (final entry in hallOfFame.entries) hallOfFameEntryToDto(entry)],
+    entries: [
+      for (final entry in hallOfFame.entries) hallOfFameEntryToDto(entry),
+    ],
   ).toJson();
 }

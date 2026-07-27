@@ -61,7 +61,10 @@ class UserSanctionController extends _$UserSanctionController {
   void _applyAndRefresh(Result<UserSanctionResultDto> result) {
     state = switch (result) {
       Ok<UserSanctionResultDto>(:final value) => AsyncValue.data(value),
-      Err<UserSanctionResultDto>(:final error) => AsyncValue.error(error, StackTrace.current),
+      Err<UserSanctionResultDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
     };
     if (state is AsyncData<UserSanctionResultDto>) {
       ref.invalidate(auditLogProvider);
@@ -85,10 +88,16 @@ class AdminLedgerLookupController extends _$AdminLedgerLookupController {
   /// mandatory audit entry.
   Future<void> lookup(String participantId, {String? reason}) async {
     state = const AsyncValue.loading();
-    final result = await _api.viewParticipantLedger(participantId, reason: reason);
+    final result = await _api.viewParticipantLedger(
+      participantId,
+      reason: reason,
+    );
     state = switch (result) {
       Ok<ParticipantEntriesDto>(:final value) => AsyncValue.data(value),
-      Err<ParticipantEntriesDto>(:final error) => AsyncValue.error(error, StackTrace.current),
+      Err<ParticipantEntriesDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
     };
   }
 }

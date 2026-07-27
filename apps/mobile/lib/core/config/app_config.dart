@@ -28,7 +28,28 @@ final class AppConfig {
       'NUKHBA_API_BASE_URL',
       defaultValue: 'http://localhost:8080',
     );
-    return AppConfig(apiBaseUrl: Uri.parse(raw));
+
+    // String.fromEnvironment treats an EMPTY --dart-define as a *present*
+    // value, so `defaultValue` never kicks in when CI passes an undefined
+    // repository variable (`vars.NUKHBA_API_BASE_URL` -> ''). Guard explicitly:
+    // an empty or relative value would silently produce Uri.parse('') and make
+    // every api_client call resolve against nothing.
+    if (raw.trim().isEmpty) {
+      throw StateError(
+        'NUKHBA_API_BASE_URL is empty. Pass it at build time, e.g. '
+        '--dart-define=NUKHBA_API_BASE_URL=https://api.nukhba.example',
+      );
+    }
+
+    final parsed = Uri.tryParse(raw.trim());
+    if (parsed == null || !parsed.isAbsolute || !parsed.hasAuthority) {
+      throw StateError(
+        'NUKHBA_API_BASE_URL must be an absolute URL with a host '
+        '(got: "$raw").',
+      );
+    }
+
+    return AppConfig(apiBaseUrl: parsed);
   }
 
   /// The base URI of the `apps/server` HTTP API (scheme + host + optional path

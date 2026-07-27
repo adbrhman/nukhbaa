@@ -51,9 +51,7 @@ final class FakeLeaderboardRepository implements LeaderboardRepository {
   }) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
-    return Result.ok(
-      List<HallOfFameEntry>.unmodifiable(_allTime.take(limit)),
-    );
+    return Result.ok(List<HallOfFameEntry>.unmodifiable(_allTime.take(limit)));
   }
 }
 

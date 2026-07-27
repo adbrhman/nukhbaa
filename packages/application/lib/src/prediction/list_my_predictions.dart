@@ -21,9 +21,8 @@ import 'package:shared/shared.dart';
 /// Never throws; returns a typed [Result].
 final class ListMyPredictions {
   /// Creates the use-case over its collaborator.
-  const ListMyPredictions({
-    required PredictionRepository predictionRepository,
-  }) : _predictions = predictionRepository;
+  const ListMyPredictions({required PredictionRepository predictionRepository})
+    : _predictions = predictionRepository;
 
   final PredictionRepository _predictions;
 

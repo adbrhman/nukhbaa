@@ -27,59 +27,56 @@ void main() {
       );
 
   group('GET /me/groups', () {
-    test(
-      'returns the caller\'s groups, most-recently-joined first',
-      () async {
-        final groups = InMemoryGroupRepository()
-          ..seedGroup(storedGroup())
-          ..seedMembership(
-            storedMembership(
-              id: kOwnerMembershipId,
-              userId: kOwnerUserId,
-              role: GroupRole.owner,
-              joinedAt: DateTime.utc(2026, 7, 1),
-            ),
-          )
-          ..seedGroup(
-            storedGroup(
-              id: '66666666-1111-1111-1111-111111111111',
-              ownerId: kMemberUserId,
-              inviteCode: kRotatedInviteCode,
-            ),
-          )
-          ..seedMembership(
-            storedMembership(
-              id: '66666666-2222-2222-2222-222222222222',
-              groupId: '66666666-1111-1111-1111-111111111111',
-              userId: kOwnerUserId,
-              role: GroupRole.member,
-              joinedAt: DateTime.utc(2026, 7, 5),
-            ),
-          );
-
-        final response = await route.onRequest(
-          wireContext(
-            root: rootFor(groups),
-            principal: ownerPrincipal(),
-            method: HttpMethod.get,
+    test('returns the caller\'s groups, most-recently-joined first', () async {
+      final groups = InMemoryGroupRepository()
+        ..seedGroup(storedGroup())
+        ..seedMembership(
+          storedMembership(
+            id: kOwnerMembershipId,
+            userId: kOwnerUserId,
+            role: GroupRole.owner,
+            joinedAt: DateTime.utc(2026, 7, 1),
+          ),
+        )
+        ..seedGroup(
+          storedGroup(
+            id: '66666666-1111-1111-1111-111111111111',
+            ownerId: kMemberUserId,
+            inviteCode: kRotatedInviteCode,
+          ),
+        )
+        ..seedMembership(
+          storedMembership(
+            id: '66666666-2222-2222-2222-222222222222',
+            groupId: '66666666-1111-1111-1111-111111111111',
+            userId: kOwnerUserId,
+            role: GroupRole.member,
+            joinedAt: DateTime.utc(2026, 7, 5),
           ),
         );
 
-        expect(response.statusCode, HttpStatus.ok);
-        final body = await decodeBody(response);
-        final rows = (body['groups']! as List).cast<Map<Object?, Object?>>();
-        expect(rows.length, 2);
-        // Second group joined 07-05 (most recent) comes first.
-        expect(
-          (rows[0]['group']! as Map)['id'],
-          '66666666-1111-1111-1111-111111111111',
-        );
-        expect(rows[0]['role'], 'member');
-        expect((rows[1]['group']! as Map)['id'], kGroupId);
-        expect(rows[1]['role'], 'owner');
-        expect((rows[1]['group']! as Map)['member_count'], 1);
-      },
-    );
+      final response = await route.onRequest(
+        wireContext(
+          root: rootFor(groups),
+          principal: ownerPrincipal(),
+          method: HttpMethod.get,
+        ),
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      final rows = (body['groups']! as List).cast<Map<Object?, Object?>>();
+      expect(rows.length, 2);
+      // Second group joined 07-05 (most recent) comes first.
+      expect(
+        (rows[0]['group']! as Map)['id'],
+        '66666666-1111-1111-1111-111111111111',
+      );
+      expect(rows[0]['role'], 'member');
+      expect((rows[1]['group']! as Map)['id'], kGroupId);
+      expect(rows[1]['role'], 'owner');
+      expect((rows[1]['group']! as Map)['member_count'], 1);
+    });
 
     test('a user in no group gets 200 with an empty list', () async {
       final groups = InMemoryGroupRepository();

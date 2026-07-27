@@ -1,4 +1,5 @@
 library;
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,15 +15,20 @@ class LedgerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<BalanceDto> balance = ref.watch(participantBalanceProvider(participantId));
-    final AsyncValue<ParticipantEntriesDto> entries = ref.watch(participantEntriesProvider(participantId));
+    final AsyncValue<BalanceDto> balance = ref.watch(
+      participantBalanceProvider(participantId),
+    );
+    final AsyncValue<ParticipantEntriesDto> entries = ref.watch(
+      participantEntriesProvider(participantId),
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('My Points', key: Key('ledger.title'))),
       body: Column(
         children: <Widget>[
           AsyncObjectView<BalanceDto>(
             value: balance,
-            onRetry: () => ref.invalidate(participantBalanceProvider(participantId)),
+            onRetry: () =>
+                ref.invalidate(participantBalanceProvider(participantId)),
             builder: (context, dto) => _BalanceHeader(balance: dto),
           ),
           const Divider(height: 1),
@@ -30,7 +36,8 @@ class LedgerScreen extends ConsumerWidget {
             child: AsyncListView<PointEntryDto>(
               value: entries.whenData((e) => e.entries),
               emptyMessage: 'No points movements yet.',
-              onRetry: () => ref.invalidate(participantEntriesProvider(participantId)),
+              onRetry: () =>
+                  ref.invalidate(participantEntriesProvider(participantId)),
               itemBuilder: (context, entry) => _EntryRow(entry: entry),
             ),
           ),
@@ -52,9 +59,21 @@ class _BalanceHeader extends StatelessWidget {
       color: AppColors.surfaceElevated,
       child: Column(
         children: <Widget>[
-          Text('${balance.balance}', key: const Key('ledger.balance'), style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.primary)),
+          Text(
+            '${balance.balance}',
+            key: const Key('ledger.balance'),
+            style: const TextStyle(
+              fontSize: 40,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('${balance.entryCount} movements counted', key: const Key('ledger.entryCount'), style: const TextStyle(color: AppColors.textSecondary)),
+          Text(
+            '${balance.entryCount} movements counted',
+            key: const Key('ledger.entryCount'),
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
         ],
       ),
     );
@@ -70,13 +89,25 @@ class _EntryRow extends StatelessWidget {
     final bool negative = entry.amount < 0;
     return ListTile(
       key: Key('ledger.entry.${entry.id}'),
-      leading: Icon(entry.kind == 'correction' ? Icons.build_outlined : Icons.emoji_events_outlined, color: AppColors.textSecondary),
+      leading: Icon(
+        entry.kind == 'correction'
+            ? Icons.build_outlined
+            : Icons.emoji_events_outlined,
+        color: AppColors.textSecondary,
+      ),
       title: Text(entry.kind, key: Key('ledger.entry.kind.${entry.id}')),
-      subtitle: Text(entry.occurredAt, key: Key('ledger.entry.occurredAt.${entry.id}'), style: const TextStyle(color: AppColors.textSecondary)),
+      subtitle: Text(
+        entry.occurredAt,
+        key: Key('ledger.entry.occurredAt.${entry.id}'),
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
       trailing: Text(
         '${negative ? '' : '+'}${entry.amount}',
         key: Key('ledger.entry.amount.${entry.id}'),
-        style: TextStyle(fontWeight: FontWeight.bold, color: negative ? Colors.redAccent : AppColors.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: negative ? Colors.redAccent : AppColors.primary,
+        ),
       ),
     );
   }

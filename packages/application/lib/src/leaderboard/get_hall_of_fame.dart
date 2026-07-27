@@ -49,9 +49,7 @@ final class GetHallOfFame {
 
     final clamped = _clamp(limit);
 
-    final standingsResult = await _leaderboard.allTimeStandings(
-      limit: clamped,
-    );
+    final standingsResult = await _leaderboard.allTimeStandings(limit: clamped);
     if (standingsResult is Err<List<HallOfFameEntry>>) {
       return Result.err(standingsResult.error);
     }

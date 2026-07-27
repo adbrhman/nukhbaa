@@ -1,4 +1,5 @@
 library;
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +32,11 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ),
         body: const TabBarView(
-          children: <Widget>[_AuditLogTab(), _UserSanctionTab(), _LedgerLookupTab()],
+          children: <Widget>[
+            _AuditLogTab(),
+            _UserSanctionTab(),
+            _LedgerLookupTab(),
+          ],
         ),
       ),
     );
@@ -55,7 +60,11 @@ class _AuditLogTab extends ConsumerWidget {
           '${entry.targetRef}${entry.reason != null ? ' — ${entry.reason}' : ''}',
           key: Key('admin.audit.detail.${entry.id}'),
         ),
-        trailing: Text(entry.occurredAt, key: Key('admin.audit.occurredAt.${entry.id}'), style: const TextStyle(color: AppColors.textSecondary)),
+        trailing: Text(
+          entry.occurredAt,
+          key: Key('admin.audit.occurredAt.${entry.id}'),
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
       ),
     );
   }
@@ -81,7 +90,9 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<UserSanctionResultDto>? state = ref.watch(userSanctionControllerProvider);
+    final AsyncValue<UserSanctionResultDto>? state = ref.watch(
+      userSanctionControllerProvider,
+    );
     final bool inFlight = state is AsyncLoading<UserSanctionResultDto>;
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -91,26 +102,39 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
           TextField(
             key: const Key('admin.users.userIdField'),
             controller: _userIdController,
-            decoration: const InputDecoration(labelText: 'User ID', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'User ID',
+              border: OutlineInputBorder(),
+            ),
             enabled: !inFlight,
           ),
           const SizedBox(height: 12),
           TextField(
             key: const Key('admin.users.reasonField'),
             controller: _reasonController,
-            decoration: const InputDecoration(labelText: 'Reason (mandatory)', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Reason (mandatory)',
+              border: OutlineInputBorder(),
+            ),
             enabled: !inFlight,
           ),
           const SizedBox(height: 16),
           if (state is AsyncError<UserSanctionResultDto>)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(ErrorPresenter.message(state.error as AppError), key: const Key('admin.users.error'), style: const TextStyle(color: Colors.redAccent)),
+              child: Text(
+                ErrorPresenter.message(state.error as AppError),
+                key: const Key('admin.users.error'),
+                style: const TextStyle(color: Colors.redAccent),
+              ),
             ),
           if (state is AsyncData<UserSanctionResultDto>)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text('${state.value.userId} is now ${state.value.status}', key: const Key('admin.users.result')),
+              child: Text(
+                '${state.value.userId} is now ${state.value.status}',
+                key: const Key('admin.users.result'),
+              ),
             ),
           Row(
             children: <Widget>[
@@ -157,7 +181,8 @@ class _LedgerLookupTab extends ConsumerStatefulWidget {
 }
 
 class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
-  final TextEditingController _participantIdController = TextEditingController();
+  final TextEditingController _participantIdController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -167,7 +192,9 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<ParticipantEntriesDto>? state = ref.watch(adminLedgerLookupControllerProvider);
+    final AsyncValue<ParticipantEntriesDto>? state = ref.watch(
+      adminLedgerLookupControllerProvider,
+    );
     final bool inFlight = state is AsyncLoading<ParticipantEntriesDto>;
     return Column(
       children: <Widget>[
@@ -179,7 +206,10 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                 child: TextField(
                   key: const Key('admin.ledger.participantIdField'),
                   controller: _participantIdController,
-                  decoration: const InputDecoration(labelText: 'Participant ID', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Participant ID',
+                    border: OutlineInputBorder(),
+                  ),
                   enabled: !inFlight,
                 ),
               ),
@@ -191,18 +221,28 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                     : () {
                         final id = _participantIdController.text.trim();
                         if (id.isEmpty) return;
-                        ref.read(adminLedgerLookupControllerProvider.notifier).lookup(id);
+                        ref
+                            .read(adminLedgerLookupControllerProvider.notifier)
+                            .lookup(id);
                       },
                 child: const Text('Look up'),
               ),
             ],
           ),
         ),
-        if (state is AsyncLoading<ParticipantEntriesDto>) const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+        if (state is AsyncLoading<ParticipantEntriesDto>)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator(),
+          ),
         if (state is AsyncError<ParticipantEntriesDto>)
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(ErrorPresenter.message(state.error as AppError), key: const Key('admin.ledger.error'), style: const TextStyle(color: Colors.redAccent)),
+            child: Text(
+              ErrorPresenter.message(state.error as AppError),
+              key: const Key('admin.ledger.error'),
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
         if (state is AsyncData<ParticipantEntriesDto>)
           Expanded(
@@ -214,9 +254,18 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                 final entry = state.value.entries[index];
                 return ListTile(
                   key: Key('admin.ledger.item.${entry.id}'),
-                  title: Text(entry.kind, key: Key('admin.ledger.kind.${entry.id}')),
-                  subtitle: Text(entry.occurredAt, key: Key('admin.ledger.occurredAt.${entry.id}')),
-                  trailing: Text('${entry.amount}', key: Key('admin.ledger.amount.${entry.id}')),
+                  title: Text(
+                    entry.kind,
+                    key: Key('admin.ledger.kind.${entry.id}'),
+                  ),
+                  subtitle: Text(
+                    entry.occurredAt,
+                    key: Key('admin.ledger.occurredAt.${entry.id}'),
+                  ),
+                  trailing: Text(
+                    '${entry.amount}',
+                    key: Key('admin.ledger.amount.${entry.id}'),
+                  ),
                 );
               },
             ),

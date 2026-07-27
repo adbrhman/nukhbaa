@@ -226,9 +226,7 @@ ORDER BY gm.joined_at DESC, g.id ASC
 ''';
 
   @override
-  Future<Result<List<MyGroupSummary>>> listGroupsForUser(
-    UserId userId,
-  ) async {
+  Future<Result<List<MyGroupSummary>>> listGroupsForUser(UserId userId) async {
     final result = await _connection.query(
       _listGroupsForUserSql,
       parameters: {'user_id': userId.value},
@@ -359,9 +357,7 @@ WHERE s.season_id = @season_id
       final idResult = GroupId.tryParse(row['id']?.toString());
       final ownerIdResult = UserId.tryParse(row['owner_id']?.toString());
       final name = row['name'];
-      final inviteResult = InviteCode.tryParse(
-        row['invite_code']?.toString(),
-      );
+      final inviteResult = InviteCode.tryParse(row['invite_code']?.toString());
       final createdAt = _readUtcTimestamp(row['created_at']);
       final roleResult = GroupRole.tryParse(row['my_role']?.toString());
       final myJoinedAt = _readUtcTimestamp(row['my_joined_at']);
@@ -384,17 +380,11 @@ WHERE s.season_id = @season_id
         );
       }
       if (createdAt == null) {
-        return Result.err(
-          _corrupt('groups', 'created_at', 'not a timestamp'),
-        );
+        return Result.err(_corrupt('groups', 'created_at', 'not a timestamp'));
       }
       if (roleResult is Err<GroupRole>) {
         return Result.err(
-          _corrupt(
-            'group_memberships',
-            'role',
-            roleResult.error.message,
-          ),
+          _corrupt('group_memberships', 'role', roleResult.error.message),
         );
       }
       if (myJoinedAt == null) {
