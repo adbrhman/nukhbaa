@@ -3,30 +3,26 @@ import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:shared/shared.dart';
 
-/// Postgres-backed [UserDirectory] over the canonical `identity.users` table
-/// (Database ADR, Section 3; migration `0001_identity.sql`).
-///
-/// "Ensure" semantics are implemented as a single idempotent upsert
-/// (`INSERT ... ON CONFLICT`): first sight of a verified principal creates the
-/// canonical row seeded with the token role and `active` status; subsequent
-/// calls reconcile the provider-sourced email while leaving the platform-owned
-/// `role` and `status` untouched (those are administered by the platform, not
-/// re-derived from a token). The upsert `RETURNING`s the current row so the
-/// authoritative stored values — not the token's — are what the caller sees.
+/// Postgres-backed [UserDirectory] over the canonical `identity.users` table.
 final class PostgresUserDirectory implements UserDirectory {
-  /// Creates the directory over an open [PostgresConnection].
   const PostgresUserDirectory(this._connection);
 
   final PostgresConnection _connection;
 
   static const String _upsertSql = '''
-INSERT INTO identity.users (id, email, role, status)
-VALUES (@id, @email, @role, 'active')
-ON CONFLICT (id) DO UPDATE
-  SET email = COALESCE(EXCLUDED.email, identity.users.email),
-      updated_at = now()
-RETURNING id, email, role::text, status::text
-''';
+    INSERT INTO identity.users (id, email, role, status)
+    VALUES (@id, @email, 'user', 'active')
+    ON CONFLICT (id) DO UPDATE
+      SET email = EXCLUDED.email,
+          updated_at = now()
+    RETURNING id, email, role::text, status::text
+  ''';
+
+  static const String _findByIdSql = '''
+    SELECT id, email, role::text, status::text
+    FROM identity.users
+    WHERE id = @id
+  ''';
 
   @override
   Future<Result<User>> ensureUser(AuthenticatedUser principal) async {
@@ -35,9 +31,9 @@ RETURNING id, email, role::text, status::text
       parameters: {
         'id': principal.userId.value,
         'email': principal.email,
-        // Seed role from the verified principal on first insert only; on
-        // conflict the stored role is preserved (not in the UPDATE SET clause).
-        'role': principal.role.name,
+        // NOTE: role is deliberately NOT a parameter. A new row is always
+        // seeded as 'user'; admin and service are granted only by a platform
+        // operation on the row itself (Security ADR §2).
       },
     );
 
@@ -47,8 +43,24 @@ RETURNING id, email, role::text, status::text
     };
   }
 
-  /// Maps the single upsert-returned row to a domain [User], guarding against a
-  /// (should-be-impossible) empty result or malformed stored data.
+  @override
+  Future<Result<User?>> findUser(UserId id) async {
+    final queryResult = await _connection.query(
+      _findByIdSql,
+      parameters: {'id': id.value},
+    );
+
+    return switch (queryResult) {
+      Ok<List<Map<String, dynamic>>>(:final value) => value.isEmpty
+          ? const Result.ok(null)
+          : switch (_mapSingleRow(value)) {
+              Ok<User>(:final value) => Result.ok(value),
+              Err<User>(:final error) => Result.err(error),
+            },
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+    };
+  }
+
   Result<User> _mapSingleRow(List<Map<String, dynamic>> rows) {
     if (rows.isEmpty) {
       return const Result.err(
@@ -84,22 +96,14 @@ RETURNING id, email, role::text, status::text
     );
   }
 
-  static UserStatus? _statusFrom(String? raw) {
-    switch (raw) {
-      case 'active':
-        return UserStatus.active;
-      case 'suspended':
-        return UserStatus.suspended;
-      default:
-        return null;
-    }
-  }
+  static UserStatus? _statusFrom(String? raw) => switch (raw) {
+        'active' => UserStatus.active,
+        'suspended' => UserStatus.suspended,
+        _ => null,
+      };
 
-  /// A stored row that fails to map indicates data corruption or a schema drift
-  /// — an infrastructure fault, surfaced as transient rather than blamed on the
-  /// caller.
   static AppError _corrupt(String field, String detail) => AppError.transient(
-    'identity.row_corrupt',
-    'Stored user has invalid $field: $detail',
-  );
+        'identity.row_corrupt',
+        'Stored user has invalid $field: $detail',
+      );
 }

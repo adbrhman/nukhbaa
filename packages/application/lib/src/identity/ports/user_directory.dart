@@ -1,32 +1,27 @@
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
-/// Port for resolving the platform's canonical [User] record for a verified
-/// principal (Application ADR, Section 9). Backed in Infrastructure by
-/// `PostgresUserDirectory`.
+import 'package:application/application.dart';
+
+/// Port: the platform's canonical user store.
 ///
-/// The identity provider (Supabase Auth) owns credentials; the *platform* owns
-/// the canonical user row (role, status, and any future domain-owned identity
-/// state). This port is the seam between the two: given a principal the token
-/// already established, it returns the platform's own record, creating it on
-/// first sight ("ensure") so a freshly-signed-up user has a canonical row
-/// before any domain phase references them.
-///
-/// Contract for implementations:
-/// * MUST be idempotent: repeated calls for the same principal converge on one
-///   row (Application ADR, Section 2: commands are idempotent/safely
-///   retryable).
-/// * MUST map infrastructure failures to [ErrorKind.transient]; it MUST NOT
-///   invent authorization/validation errors — the principal is already
-///   verified upstream.
-/// * MUST NOT throw; every outcome is a typed [Result].
+/// Implementations are owned by the infrastructure layer.
 abstract interface class UserDirectory {
-  /// Resolves the canonical [User] for [principal], creating the row on first
-  /// sight and reconciling provider-sourced fields (email) on subsequent calls.
+  /// Upserts the canonical [User] row for [principal].
   ///
-  /// The stored [PlatformRole] and [UserStatus] are the platform's own record
-  /// and are authoritative over token claims once the row exists; a newly
-  /// created row is seeded with the principal's token role and
-  /// [UserStatus.active].
+  /// First sight creates the row seeded with role `user` and status `active`.
+  /// Subsequent calls reconcile the provider-sourced email while leaving the
+  /// platform-owned `role` and `status` untouched.
   Future<Result<User>> ensureUser(AuthenticatedUser principal);
+
+  /// Reads the canonical [User] for [id] WITHOUT creating it.
+  ///
+  /// Returns `Ok(null)` when no platform row exists yet.
+  ///
+  /// This is the per-request reconciliation read on the authentication path:
+  /// the stored role/status are authoritative over the token's claims, so
+  /// every guarded request must consult them. Deliberately a pure READ —
+  /// unlike [ensureUser], this runs on every single request, and an upsert
+  /// there would put a write on the hottest path in the system.
+  Future<Result<User?>> findUser(UserId id);
 }

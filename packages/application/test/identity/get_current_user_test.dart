@@ -18,6 +18,10 @@ final class _FakeUserDirectory implements UserDirectory {
     lastPrincipal = principal;
     return _response;
   }
+
+  @override
+  Future<Result<User?>> findUser(UserId id) async =>
+      throw StateError('findUser not wired in this test fake');
 }
 
 AuthenticatedUser _principal() => AuthenticatedUser(
