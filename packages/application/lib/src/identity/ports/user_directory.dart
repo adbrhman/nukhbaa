@@ -1,7 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
-import 'package:application/application.dart';
 
 /// Port: the platform's canonical user store.
 ///
