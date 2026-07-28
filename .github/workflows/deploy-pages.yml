@@ -1,7 +1,12 @@
 name: Deploy Web to GitHub Pages
 
 on:
-  push:
+  # Deploy ONLY after Build Verification has actually passed on main.
+  # Previously this ran in parallel with the gate, so a red test suite still
+  # published to the live site as long as flutter build web compiled.
+  workflow_run:
+    workflows: ["Build Verification"]
+    types: [completed]
     branches: [main]
   workflow_dispatch: {}
 
@@ -16,12 +21,17 @@ concurrency:
 
 jobs:
   build_and_deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Pages
         id: pages

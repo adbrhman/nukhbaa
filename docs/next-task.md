@@ -48,8 +48,6 @@ session: CORS allowed-origin mismatch in
 
 ## Status: No outstanding tasks — verification completed 2026-07-27, see section above.
 
-**Last Completed Step:** Step 3 (build_runner, verified present).
-
 ---
 
 ## Status Update (2026-07-21)
@@ -73,12 +71,14 @@ All previously tracked source-level fixes are applied.
 
 ---
 
-## Exact Next Command
-
-**Environment requirement:** Capable machine with ≥ 8 GB RAM  
-(NOT the old 985 MiB sandbox. GitHub Codespaces or local machine.)
+## الأمر الوحيد المعتمد للتحقق المحلي
 
 ```bash
-dart pub get
-dart run build_runner build --delete-conflicting-outputs
-dart analyze --fatal-infos --fatal-warnings .
+flutter pub get
+(cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)
+dart run melos run verify
+```
+
+`melos run verify` مطابق تمامًا لـ `.github/workflows/build-verification.yml`.
+لا تستخدم `--fatal-infos` محليًا: CI لا يستخدمه، و111 مشكلة info مقبولة حاليًا
+ومسجّلة كبند backlog منفصل.

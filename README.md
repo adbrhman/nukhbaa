@@ -23,10 +23,14 @@ Flutter مثبّت على النسخة الواردة في `.fvmrc` (3.44.0). ا
 
     flutter pub get
     (cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)
-    dart analyze --fatal-warnings .
-    dart format --output=none --set-exit-if-changed .
-    dart run tooling/import_lint/bin/import_lint.dart
-    dart pub global run melos run test
+    dart run melos run verify
+
+`melos run verify` هو الأمر الصحيح ويطابق تمامًا خطوات
+`.github/workflows/build-verification.yml` (format-check ثم analyze ثم
+import-lint ثم test ثم test-mobile). لا تستخدم `dart pub global run melos
+run test` — هذا الأمر ناقص ويفترض تثبيتًا عامًا لـ melos غير لازم أصلًا،
+لأن `melos` مُعرَّف كـ `dev_dependency` في `pubspec.yaml` الجذر ويُشغَّل عبر
+`dart run melos ...`.
 
 ## الإعداد
 
@@ -41,4 +45,8 @@ Settings > Secrets and variables > Actions > Variables.
 
 ## حالة المشروع
 
-المصدر الوحيد المعتمد: `docs/progress.md`. أي نسخة أخرى قديمة.
+- `docs/next-task.md` — المهمة التالية والحالة الحالية.
+- `docs/project-context.md` — السياق المعماري الكامل.
+- حالة البناء الفعلية هي دائمًا آخر run في تبويب Actions، لا أي ملف توثيق.
+
+الواجهة المنشورة: https://adbrhman.github.io/nukhbaa/
