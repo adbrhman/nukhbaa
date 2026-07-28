@@ -23,7 +23,7 @@ final class PostgresUserDirectory implements UserDirectory {
 INSERT INTO identity.users (id, email, role, status)
 VALUES (@id, @email, @role, 'active')
 ON CONFLICT (id) DO UPDATE
-  SET email = EXCLUDED.email,
+  SET email = COALESCE(EXCLUDED.email, identity.users.email),
       updated_at = now()
 RETURNING id, email, role::text, status::text
 ''';
