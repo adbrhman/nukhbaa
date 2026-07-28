@@ -51,6 +51,9 @@ class SessionController extends _$SessionController {
 
   @override
   Future<SessionState> build() async {
+    ref.listen<int>(sessionExpiryProvider, (_, _) {
+      state = const AsyncData(SessionUnauthenticated());
+    });
     return _restore();
   }
 
@@ -85,9 +88,20 @@ class SessionController extends _$SessionController {
     }
 
     state = const AsyncData(SessionAuthenticating());
-    // Persist first so the transport's TokenProvider attaches it to the /me
-    // probe; a rejected token is cleared again below.
-    await _store.write(trimmed);
+    try {
+      await _store.write(trimmed);
+    } on Object catch (cause) {
+      state = AsyncData(
+        SessionFailed(
+          AppError.transient(
+            'auth.token_store_unavailable',
+            'Could not securely save your session on this device.',
+            cause,
+          ),
+        ),
+      );
+      return;
+    }
     final resolved = await _validateHeldToken(clearOnAuthFailure: true);
     state = AsyncData(resolved);
   }
@@ -95,7 +109,11 @@ class SessionController extends _$SessionController {
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {
-    await _store.clear();
+    try {
+      await _store.clear();
+    } on Object {
+      // A failed erase must not strand the user in a signed-in UI.
+    }
     state = const AsyncData(SessionUnauthenticated());
   }
 

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:application/application.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
@@ -11,27 +10,24 @@ import 'package:shared/shared.dart';
 /// guards, and provides the established [AuthenticatedUser] principal to
 /// downstream handlers (Security ADR, Section 2; Application ADR, Section 12).
 ///
-/// It is applied *per protected route subtree*, never globally — public routes
-/// such as `/health` must not require a token (Roadmap ADR: `/health` stays
-/// public). A route (or route group) opts in by adding this middleware in its
-/// own `_middleware.dart`.
+/// Verification AND platform reconciliation both happen inside
+/// [AuthenticateRequest] (`root.authenticateRequest`): the token proves who
+/// the caller is; the platform's own `identity.users` row — read there via
+/// `UserDirectory.findUser` — says what authority they hold and whether they
+/// may act at all. The principal handed to downstream handlers is the
+/// reconciled result, never token claims alone.
 ///
-/// Flow for every guarded request:
-/// 1. Read the raw `Authorization` header (may be absent).
-/// 2. Delegate parsing + cryptographic verification to the
-///    [AuthenticateRequest] use-case resolved from the composition root — the
-///    edge owns *no* auth logic itself, only transport concerns.
-/// 3. On success, provide the [AuthenticatedUser] to the request context so the
-///    protected handler can `context.read<AuthenticatedUser>()` without
-///    re-verifying.
-/// 4. On failure, short-circuit with the uniform error envelope; the status is
-///    derived from the domain [AppError.kind] (401 for authorization failures,
-///    503 if verification material was transiently unreachable) — the handler
-///    is never reached.
+/// A suspended account is refused inside [AuthenticateRequest] itself, on
+/// every guarded request (fail-closed), rather than retaining access until
+/// token expiry. A stored `admin`/`service` role becomes reachable because it
+/// is read from the directory row, not re-derived from the token.
 ///
-/// The principal is provided as a resolved value (not a future): verification
-/// has already completed by the time the handler runs, so downstream reads are
-/// synchronous and cannot observe an unauthenticated request.
+/// This middleware does NOT perform a second reconciliation pass. An earlier
+/// version additionally called `GetCurrentUser` (which owns `ensureUser`, an
+/// upsert) here, putting a write on the hottest path in the system and
+/// producing a second, inconsistent suspension error code
+/// (`auth.user_suspended` vs. `auth.account_suspended`). `ensureUser` /
+/// `GetCurrentUser` are owned exclusively by the `GET /me` boundary.
 Middleware bearerAuth() {
   return (handler) {
     return (context) async {
@@ -41,15 +37,13 @@ Middleware bearerAuth() {
       // canonical lowercase `'authorization'` key.
       final header = context.request.headers[HttpHeaders.authorizationHeader];
 
-      final result = await root.authenticateRequest(header);
+      final verifyResult = await root.authenticateRequest(header);
+      if (verifyResult case Err<AuthenticatedUser>(:final error)) {
+        return errorResponse(error);
+      }
+      final principal = (verifyResult as Ok<AuthenticatedUser>).value;
 
-      return switch (result) {
-        Ok<AuthenticatedUser>(:final value) => await handler(
-          context.provide<AuthenticatedUser>(() => value),
-        ),
-        // Terminal (401) or transient (503) — errorResponse maps the kind.
-        Err<AuthenticatedUser>(:final error) => errorResponse(error),
-      };
+      return handler(context.provide<AuthenticatedUser>(() => principal));
     };
   };
 }
