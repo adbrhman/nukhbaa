@@ -19,12 +19,18 @@ List<String> _allowedOrigins() {
       : const ['https://adbrhman.github.io', 'http://localhost:*'];
 }
 
+bool _matchesPortWildcard(String origin, String prefix) {
+  if (!origin.startsWith(prefix)) return false;
+  final rest = origin.substring(prefix.length);
+  return rest.isNotEmpty && int.tryParse(rest) != null;
+}
+
 bool _originAllowed(String? origin, List<String> allowed) {
   if (origin == null) return false;
   for (final pattern in allowed) {
     if (pattern.endsWith(':*')) {
       final prefix = pattern.substring(0, pattern.length - 1);
-      if (origin.startsWith(prefix)) return true;
+      if (_matchesPortWildcard(origin, prefix)) return true;
     } else if (pattern == origin) {
       return true;
     }
