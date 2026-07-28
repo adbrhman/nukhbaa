@@ -1,22 +1,47 @@
-/// Application entry point.
-///
-/// Wraps the [NukhbaApp] shell in a Riverpod `ProviderScope` — the single
-/// container that owns every provider (config, transport, token store, the
-/// session controller). Production uses the providers exactly as declared in
-/// `core/providers.dart` (a `SecureTokenStore`, the environment-derived
-/// `AppConfig`); tests build their own `ProviderScope` with overrides.
-///
-/// No bootstrapping I/O happens here: the boot-time token restore is performed
-/// lazily by `SessionController.build()` the first time the `SessionGate`
-/// watches it, so `main` stays synchronous and side-effect-free beyond running
-/// the app.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/config/app_config.dart';
+import 'core/providers.dart';
 
 void main() {
-  runApp(const ProviderScope(child: NukhbaApp()));
+  final AppConfig config;
+  try {
+    config = AppConfig.fromEnvironment();
+  } on StateError catch (e) {
+    runApp(_ConfigErrorApp(message: e.message));
+    return;
+  }
+  runApp(
+    ProviderScope(
+      overrides: [appConfigProvider.overrideWithValue(config)],
+      child: const NukhbaApp(),
+    ),
+  );
+}
+
+class _ConfigErrorApp extends StatelessWidget {
+  const _ConfigErrorApp({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Configuration error\n\n$message',
+            key: const Key('app.configError'),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    ),
+  );
 }

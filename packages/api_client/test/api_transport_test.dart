@@ -35,6 +35,29 @@ void main() {
       );
     });
 
+    test('preserves a mount prefix that has no trailing slash', () async {
+      const dto = CompetitionDto(
+        id: 'c',
+        name: 'N',
+        format: 'football_scoreline',
+        visibility: 'public',
+      );
+      final ctx = buildTransport(
+        (_) async => okJson(dto.toJson()),
+        baseUri: Uri.parse('https://host.example/api'),
+      );
+
+      await ctx.transport.getObject<CompetitionDto>(
+        '/competitions/c',
+        parse: CompetitionDto.fromJson,
+      );
+
+      expect(
+        ctx.captured.single.url.toString(),
+        'https://host.example/api/competitions/c',
+      );
+    });
+
     test('merges query parameters into the resolved URI', () async {
       final ctx = buildTransport((_) async => okJson(<Object>[]));
 

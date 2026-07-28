@@ -50,20 +50,29 @@ final class ApiTransport {
   /// wiring this transport over a `MockClient` passes `requestTimeout: null`
   /// explicitly; production wiring (`apps/mobile/lib/core/providers.dart`)
   /// leaves the 15s default in place.
+  ///
+  /// [onUnauthorized], if provided, is invoked whenever the server responds
+  /// with `401` — the auth layer uses this hook to react to a revoked or
+  /// expired session (e.g. force a sign-out) without this transport knowing
+  /// anything about session/auth state itself.
   ApiTransport({
     required Uri baseUri,
     required http.Client httpClient,
     required TokenProvider tokenProvider,
     Duration? requestTimeout = const Duration(seconds: 15),
+    Future<void> Function()? onUnauthorized,
   }) : _baseUri = baseUri,
        _httpClient = httpClient,
        _tokenProvider = tokenProvider,
-       _requestTimeout = requestTimeout;
+       _requestTimeout = requestTimeout,
+       _onUnauthorized = onUnauthorized;
 
   final Uri _baseUri;
   final http.Client _httpClient;
   final TokenProvider _tokenProvider;
   final Duration? _requestTimeout;
+
+  final Future<void> Function()? _onUnauthorized;
 
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
@@ -155,6 +164,9 @@ final class ApiTransport {
     if (status >= 200 && status < 300) {
       return decode(response.body);
     }
+    if (status == 401) {
+      await _onUnauthorized?.call();
+    }
     return Result.err(decodeError(status, response.body));
   }
 
@@ -162,7 +174,10 @@ final class ApiTransport {
     // Preserve any base path prefix (e.g. a reverse-proxy mount) by joining
     // rather than replacing. `path` is always server-relative (no leading
     // scheme) and starts with '/'.
-    final merged = _baseUri.resolve(
+    final base = _baseUri.path.endsWith('/')
+        ? _baseUri
+        : _baseUri.replace(path: '${_baseUri.path}/');
+    final merged = base.resolve(
       path.startsWith('/') ? path.substring(1) : path,
     );
     if (query == null || query.isEmpty) return merged;
