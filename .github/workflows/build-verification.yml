@@ -105,7 +105,8 @@ jobs:
       - name: Build web
         working-directory: apps/mobile
         run: |
-          echo "{\"NUKHBA_API_BASE_URL\":\"$API_BASE_URL\"}" > /tmp/dart_defines.json
+          CLEAN_API_BASE_URL=$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')
+          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\"}" > /tmp/dart_defines.json
           flutter build web --dart-define-from-file=/tmp/dart_defines.json --release
 
       - uses: actions/upload-artifact@v4
@@ -154,7 +155,8 @@ jobs:
       - name: Build APK
         working-directory: apps/mobile
         run: |
-          echo "{\"NUKHBA_API_BASE_URL\":\"$API_BASE_URL\"}" > /tmp/dart_defines.json
+          CLEAN_API_BASE_URL=$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')
+          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\"}" > /tmp/dart_defines.json
           flutter build apk --dart-define-from-file=/tmp/dart_defines.json --release
 
       - uses: actions/upload-artifact@v4
