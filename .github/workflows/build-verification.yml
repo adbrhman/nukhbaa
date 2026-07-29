@@ -104,7 +104,7 @@ jobs:
 
       - name: Build web
         working-directory: apps/mobile
-        run: flutter build web --release --dart-define="NUKHBA_API_BASE_URL=${API_BASE_URL}"
+        run: flutter build web --dart-define=NUKHBA_API_BASE_URL="$API_BASE_URL" --release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -151,7 +151,7 @@ jobs:
 
       - name: Build APK
         working-directory: apps/mobile
-        run: flutter build apk --release --dart-define="NUKHBA_API_BASE_URL=${API_BASE_URL}"
+        run: flutter build apk --dart-define=NUKHBA_API_BASE_URL="$API_BASE_URL" --release
 
       - uses: actions/upload-artifact@v4
         with:
