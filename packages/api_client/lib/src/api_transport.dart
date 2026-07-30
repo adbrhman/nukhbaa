@@ -137,9 +137,9 @@ final class ApiTransport {
         _ => throw ArgumentError.value(method, 'method', 'unsupported'),
       };
       final timeout = _requestTimeout;
-      response = timeout == null ? await pending : await pending.timeout(
-        timeout,
-      );
+      response = timeout == null
+          ? await pending
+          : await pending.timeout(timeout);
     } on TimeoutException catch (cause) {
       // The request's `.timeout(_requestTimeout)` elapsed with no response —
       // distinguished from other transport failures so the UI can tell the
