@@ -128,30 +128,26 @@ void main() {
   });
 
   group('request timeout', () {
-    test(
-      'a request that never responds resolves as a retryable timeout error '
-      'within the configured bound, instead of hanging forever',
-      () async {
-        final ctx = buildTransport(
-          // Simulates a silent hang: the server accepts the connection but
-          // never replies (e.g. a stalled proxy/tunnel) — the handler's
-          // Future never completes.
-          (_) => Completer<http.Response>().future,
-          requestTimeout: const Duration(milliseconds: 50),
-        );
+    test('a request that never responds resolves as a retryable timeout error '
+        'within the configured bound, instead of hanging forever', () async {
+      final ctx = buildTransport(
+        // Simulates a silent hang: the server accepts the connection but
+        // never replies (e.g. a stalled proxy/tunnel) — the handler's
+        // Future never completes.
+        (_) => Completer<http.Response>().future,
+        requestTimeout: const Duration(milliseconds: 50),
+      );
 
-        final result = await ctx.transport.getObject<CompetitionDto>(
-          '/competitions/c',
-          parse: CompetitionDto.fromJson,
-        );
+      final result = await ctx.transport.getObject<CompetitionDto>(
+        '/competitions/c',
+        parse: CompetitionDto.fromJson,
+      );
 
-        expect(result, isA<Err<CompetitionDto>>());
-        final err = (result as Err<CompetitionDto>).error;
-        expect(err.code, apiErrorTimeout);
-        expect(err.kind, ErrorKind.transient);
-        expect(err.isRetryable, isTrue);
-      },
-      timeout: const Timeout(Duration(seconds: 5)),
-    );
+      expect(result, isA<Err<CompetitionDto>>());
+      final err = (result as Err<CompetitionDto>).error;
+      expect(err.code, apiErrorTimeout);
+      expect(err.kind, ErrorKind.transient);
+      expect(err.isRetryable, isTrue);
+    }, timeout: const Timeout(Duration(seconds: 5)));
   });
 }
