@@ -144,6 +144,9 @@ jobs:
       - name: Ensure platform folders exist
         working-directory: apps/mobile
         run: flutter create --platforms=android . --project-name mobile
+      - name: Ensure INTERNET permission
+        working-directory: apps/mobile
+        run: sed -i "/<manifest /a\\    <uses-permission android:name=\"android.permission.INTERNET\" />" android/app/src/main/AndroidManifest.xml
 
       - name: Restore committed web assets
         run: git checkout -- apps/mobile/web
