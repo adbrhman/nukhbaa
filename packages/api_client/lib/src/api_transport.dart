@@ -32,21 +32,29 @@ final class ApiTransport {
   /// Creates a transport rooted at [baseUri], using [httpClient] for I/O and
   /// [tokenProvider] to obtain the (optional) bearer token per request.
   ///
-  /// [requestTimeout] bounds every individual HTTP call (default 15s). Without
-  /// it, `package:http`'s default `Client` has NO built-in timeout: a request
-  /// that never receives a response (silent proxy/tunnel stall, dropped
-  /// packets, a server that accepts the connection but never replies) hangs
-  /// the awaiting `Future` forever, which — one layer up — leaves an
-  /// `AsyncNotifier` stuck in its "in flight" state indefinitely (e.g. sign-in
-  /// spinning forever with no error). A timeout here converts that silent hang
-  /// into a `TimeoutException`, caught below and reported as the same
-  /// transient, retryable [networkError] as any other transport failure — the
-  /// "never throws" contract holds.
+  /// [requestTimeout] bounds every individual HTTP call (default 15s; pass
+  /// `null` to disable). Without it, `package:http`'s default `Client` has NO
+  /// built-in timeout: a request that never receives a response (silent
+  /// proxy/tunnel stall, dropped packets, a server that accepts the
+  /// connection but never replies) hangs the awaiting `Future` forever, which
+  /// — one layer up — leaves an `AsyncNotifier` stuck in its "in flight"
+  /// state indefinitely (e.g. sign-in spinning forever with no error). A
+  /// timeout here converts that silent hang into a `TimeoutException`, caught
+  /// below and reported as the same transient, retryable [networkError] as
+  /// any other transport failure — the "never throws" contract holds.
+  ///
+  /// `null` is for tests only: `Future.timeout()` schedules a real `Timer`
+  /// even for a long duration, and a widget test that intentionally leaves a
+  /// request unresolved (to assert a loading state) would otherwise fail
+  /// Flutter's "no pending timers" teardown invariant. Every test harness
+  /// wiring this transport over a `MockClient` passes `requestTimeout: null`
+  /// explicitly; production wiring (`apps/mobile/lib/core/providers.dart`)
+  /// leaves the 15s default in place.
   ApiTransport({
     required Uri baseUri,
     required http.Client httpClient,
     required TokenProvider tokenProvider,
-    Duration requestTimeout = const Duration(seconds: 15),
+    Duration? requestTimeout = const Duration(seconds: 15),
   }) : _baseUri = baseUri,
        _httpClient = httpClient,
        _tokenProvider = tokenProvider,
@@ -55,7 +63,7 @@ final class ApiTransport {
   final Uri _baseUri;
   final http.Client _httpClient;
   final TokenProvider _tokenProvider;
-  final Duration _requestTimeout;
+  final Duration? _requestTimeout;
 
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
@@ -119,7 +127,7 @@ final class ApiTransport {
     final http.Response response;
     try {
       final headers = await _headers(hasBody: requestBody != null);
-      response = await switch (method) {
+      final pending = switch (method) {
         'GET' => _httpClient.get(uri, headers: headers),
         'POST' => _httpClient.post(
           uri,
@@ -127,7 +135,11 @@ final class ApiTransport {
           body: jsonEncode(requestBody),
         ),
         _ => throw ArgumentError.value(method, 'method', 'unsupported'),
-      }.timeout(_requestTimeout);
+      };
+      final timeout = _requestTimeout;
+      response = timeout == null ? await pending : await pending.timeout(
+        timeout,
+      );
     } on TimeoutException catch (cause) {
       // The request's `.timeout(_requestTimeout)` elapsed with no response —
       // distinguished from other transport failures so the UI can tell the

@@ -74,6 +74,10 @@ LeaderboardsHarness buildLeaderboardsHarness(
         baseUri: Uri.parse('https://api.test.example/'),
         httpClient: client,
         tokenProvider: ref.watch(tokenStoreProvider).read,
+        // No real HTTP ever happens here (MockClient) — disable the timeout
+        // so a test that intentionally never resolves its handler (to assert
+        // a loading state) doesn't leave a real Timer pending at teardown.
+        requestTimeout: null,
       ),
     ),
     // The real LeaderboardsApi over the faked transport (the leaderboard
