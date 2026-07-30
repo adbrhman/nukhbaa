@@ -28,6 +28,7 @@ final class CapturedRequest {
   Future<http.Response> Function(http.Request request) handler, {
   String? token = 'test-token',
   Uri? baseUri,
+  Duration? requestTimeout,
 }) {
   final captured = <CapturedRequest>[];
   final client = MockClient((request) async {
@@ -38,6 +39,7 @@ final class CapturedRequest {
     baseUri: baseUri ?? Uri.parse('https://api.test.example/'),
     httpClient: client,
     tokenProvider: () async => token,
+    requestTimeout: requestTimeout ?? const Duration(seconds: 15),
   );
   return (transport: transport, captured: captured);
 }

@@ -42,8 +42,15 @@ const String apiErrorUnexpectedStatus = 'api_client.unexpected_status';
 const String apiErrorMalformedResponse = 'api_client.malformed_response';
 
 /// The stable error code emitted when the request could not reach the server
-/// at all (DNS/socket/timeout) — a transient, retryable transport failure.
+/// at all (DNS/socket) — a transient, retryable transport failure.
 const String apiErrorNetworkUnreachable = 'api_client.network_unreachable';
+
+/// The stable error code emitted when the request exceeded
+/// [ApiTransport]'s configured timeout without receiving a response — a
+/// transient, retryable transport failure distinct from
+/// [apiErrorNetworkUnreachable] so the UI can tell the user the server simply
+/// didn't answer in time (vs. never being reachable at all).
+const String apiErrorTimeout = 'api_client.timeout';
 
 /// Maps an HTTP [statusCode] to the [ErrorKind] the server derived it from
 /// (the inverse of `error_envelope.dart`'s `_statusFor`).
@@ -110,6 +117,16 @@ AppError networkError(Object cause) => AppError(
   kind: ErrorKind.transient,
   code: apiErrorNetworkUnreachable,
   message: 'Could not reach the server. Please check your connection.',
+  cause: cause,
+);
+
+/// A transient transport failure specifically caused by
+/// [ApiTransport]'s request timeout elapsing before any response arrived —
+/// always retryable ([ErrorKind.transient]).
+AppError timeoutError(Object cause) => AppError(
+  kind: ErrorKind.transient,
+  code: apiErrorTimeout,
+  message: 'The server took too long to respond. Please try again.',
   cause: cause,
 );
 

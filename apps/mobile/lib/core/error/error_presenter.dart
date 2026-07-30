@@ -36,6 +36,8 @@ abstract final class ErrorPresenter {
         return 'This competition could not be found.';
       case 'competition.round_not_found':
         return 'This round could not be found.';
+      case 'api_client.timeout':
+        return 'The server took too long to respond. Please try again.';
     }
 
     return switch (error.kind) {

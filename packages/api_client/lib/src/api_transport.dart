@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:api_client/src/api_error.dart';
@@ -30,17 +31,31 @@ typedef TokenProvider = Future<String?> Function();
 final class ApiTransport {
   /// Creates a transport rooted at [baseUri], using [httpClient] for I/O and
   /// [tokenProvider] to obtain the (optional) bearer token per request.
+  ///
+  /// [requestTimeout] bounds every individual HTTP call (default 15s). Without
+  /// it, `package:http`'s default `Client` has NO built-in timeout: a request
+  /// that never receives a response (silent proxy/tunnel stall, dropped
+  /// packets, a server that accepts the connection but never replies) hangs
+  /// the awaiting `Future` forever, which — one layer up — leaves an
+  /// `AsyncNotifier` stuck in its "in flight" state indefinitely (e.g. sign-in
+  /// spinning forever with no error). A timeout here converts that silent hang
+  /// into a `TimeoutException`, caught below and reported as the same
+  /// transient, retryable [networkError] as any other transport failure — the
+  /// "never throws" contract holds.
   ApiTransport({
     required Uri baseUri,
     required http.Client httpClient,
     required TokenProvider tokenProvider,
+    Duration requestTimeout = const Duration(seconds: 15),
   }) : _baseUri = baseUri,
        _httpClient = httpClient,
-       _tokenProvider = tokenProvider;
+       _tokenProvider = tokenProvider,
+       _requestTimeout = requestTimeout;
 
   final Uri _baseUri;
   final http.Client _httpClient;
   final TokenProvider _tokenProvider;
+  final Duration _requestTimeout;
 
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
@@ -104,18 +119,23 @@ final class ApiTransport {
     final http.Response response;
     try {
       final headers = await _headers(hasBody: requestBody != null);
-      response = switch (method) {
-        'GET' => await _httpClient.get(uri, headers: headers),
-        'POST' => await _httpClient.post(
+      response = await switch (method) {
+        'GET' => _httpClient.get(uri, headers: headers),
+        'POST' => _httpClient.post(
           uri,
           headers: headers,
           body: jsonEncode(requestBody),
         ),
         _ => throw ArgumentError.value(method, 'method', 'unsupported'),
-      };
+      }.timeout(_requestTimeout);
+    } on TimeoutException catch (cause) {
+      // The request's `.timeout(_requestTimeout)` elapsed with no response —
+      // distinguished from other transport failures so the UI can tell the
+      // user the server didn't answer in time (vs. being unreachable).
+      return Result.err(timeoutError(cause));
     } on Object catch (cause) {
-      // DNS failure, socket reset, timeout, closed client, etc. — never reached
-      // the server (or never got a response): a transient, retryable failure.
+      // DNS failure, socket reset, closed client, etc. — never reached the
+      // server (or never got a response): a transient, retryable failure.
       return Result.err(networkError(cause));
     }
 
