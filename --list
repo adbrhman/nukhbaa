@@ -1,0 +1,702 @@
+[33mcommit ee8db21dc463b447deefe75ff6f2ba29a88691c7[m[33m ([m[1;31morigin/fix/ci-cd-glibc-cors-docs[m[33m)[m
+Author: adbrhman <adbrhmanm@gmail.com>
+Date:   Tue Jul 28 00:45:16 2026 +0000
+
+    fix(ci): melos-driven tests, matching glibc runtime, deploy gate, docs cleanup
+
+[1mdiff --git a/.env.example b/.env.example[m
+[1mindex 0710aa1..1211d0b 100644[m
+[1m--- a/.env.example[m
+[1m+++ b/.env.example[m
+[36m@@ -25,4 +25,13 @@[m [mNUKHBA_SUPABASE_JWT_SECRET=[m
+ [m
+ # Server[m
+ NUKHBA_ENV=development[m
+[31m-NUKHBA_PORT=8080[m
+[32m+[m[32m# NOTE: the port is read by dart_frog from the standard PORT variable[m
+[32m+[m[32m# (Cloud Run sets it automatically). NUKHBA_PORT is NOT read by anything.[m
+[32m+[m[32mPORT=8080[m
+[32m+[m
+[32m+[m[32m# CORS allow-list (comma-separated, scheme://host only — NO path, because the[m
+[32m+[m[32m# browser's Origin header never includes one). Read by[m
+[32m+[m[32m# apps/server/routes/_middleware.dart; when unset it falls back to the[m
+[32m+[m[32m# hardcoded GitHub Pages origin + localhost. ALWAYS set it explicitly on the[m
+[32m+[m[32m# hosting platform so a repo/username change cannot silently break the client.[m
+[32m+[m[32mNUKHBA_CORS_ALLOWED_ORIGINS=https://adbrhman.github.io[m
+[1mdiff --git a/.github/workflows/build-verification.yml b/.github/workflows/build-verification.yml[m
+[1mindex 9a8e4a9..4b61551 100644[m
+[1m--- a/.github/workflows/build-verification.yml[m
+[1m+++ b/.github/workflows/build-verification.yml[m
+[36m@@ -51,18 +51,15 @@[m [mjobs:[m
+       - name: Import-lint (Clean Architecture boundaries)[m
+         run: dart run tooling/import_lint/bin/import_lint.dart[m
+ [m
+[31m-      - name: Test — Dart packages[m
+[31m-        run: |[m
+[31m-          set -e[m
+[31m-          for p in packages/shared packages/domain packages/contracts \[m
+[31m-                   packages/application packages/infrastructure \[m
+[31m-                   tooling/import_lint apps/server; do[m
+[31m-            echo "::group::dart test $p"[m
+[31m-            (cd "$p" && dart test)[m
+[31m-            echo "::endgroup::"[m
+[31m-          done[m
+[31m-[m
+[31m-      - name: Test — apps/mobile (flutter)[m
+[32m+[m[32m      # Single source of truth: the Melos scripts in the root pubspec.yaml.[m
+[32m+[m[32m      # The previous hand-maintained package list silently EXCLUDED[m
+[32m+[m[32m      # packages/api_client (5 test files, the entire HTTP transport layer),[m
+[32m+[m[32m      # so "CI green" did not mean "melos run test green". Any future package[m
+[32m+[m[32m      # is now picked up automatically via packageFilters: dirExists: test.[m
+[32m+[m[32m      - name: Test — all Dart packages (melos)[m
+[32m+[m[32m        run: dart run melos run test[m
+[32m+[m
+[32m+[m[32m      - name: Test — apps/mobile (flutter, with coverage)[m
+         working-directory: apps/mobile[m
+         run: flutter test --coverage[m
+ [m
+[36m@@ -161,3 +158,42 @@[m [mjobs:[m
+           name: nukhba-android-apk[m
+           path: apps/mobile/build/app/outputs/flutter-apk/*.apk[m
+           retention-days: 14[m
+[32m+[m
+[32m+[m[32m  build_server_image:[m
+[32m+[m[32m    name: Build server Docker image[m
+[32m+[m[32m    runs-on: ubuntu-latest[m
+[32m+[m[32m    needs: workspace[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v4[m
+[32m+[m
+[32m+[m[32m      - uses: docker/setup-buildx-action@v3[m
+[32m+[m
+[32m+[m[32m      # Build only. Not pushed anywhere yet: the point is to keep the[m
+[32m+[m[32m      # Dockerfile from rotting, and to catch the pub-workspace detachment[m
+[32m+[m[32m      # (resolution: workspace inside build/) at PR time instead of at[m
+[32m+[m[32m      # first deploy.[m
+[32m+[m[32m      - name: Build image[m
+[32m+[m[32m        uses: docker/build-push-action@v6[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          context: .[m
+[32m+[m[32m          push: false[m
+[32m+[m[32m          load: true[m
+[32m+[m[32m          tags: nukhba-server:ci[m
+[32m+[m[32m          cache-from: type=gha[m
+[32m+[m[32m          cache-to: type=gha,mode=max[m
+[32m+[m
+[32m+[m[32m      # Proves the compiled exe actually links against the runtime image's[m
+[32m+[m[32m      # glibc — the exact defect the debian->ubuntu base change fixes. The[m
+[32m+[m[32m      # server exits non-zero without DB config, which is expected and fine;[m
+[32m+[m[32m      # we only assert it is NOT a loader/glibc failure.[m
+[32m+[m[32m      - name: Smoke-check the binary loads[m
+[32m+[m[32m        run: |[m
+[32m+[m[32m          set -o pipefail[m
+[32m+[m[32m          out="$(docker run --rm --entrypoint /bin/sh nukhba-server:ci \[m
+[32m+[m[32m                 -c 'ldd /app/server' 2>&1)" || true[m
+[32m+[m[32m          echo "$out"[m
+[32m+[m[32m          if echo "$out" | grep -qi 'not found'; then[m
+[32m+[m[32m            echo "::error::Missing shared library in runtime image (glibc mismatch)."[m
+[32m+[m[32m            exit 1[m
+[32m+[m[32m          fi[m
+[1mdiff --git a/.github/workflows/deploy-pages.yml b/.github/workflows/deploy-pages.yml[m
+[1mindex a6c062c..a1e061c 100644[m
+[1m--- a/.github/workflows/deploy-pages.yml[m
+[1m+++ b/.github/workflows/deploy-pages.yml[m
+[36m@@ -1,7 +1,12 @@[m
+ name: Deploy Web to GitHub Pages[m
+ [m
+ on:[m
+[31m-  push:[m
+[32m+[m[32m  # Deploy ONLY after Build Verification has actually passed on main.[m
+[32m+[m[32m  # Previously this ran in parallel with the gate, so a red test suite still[m
+[32m+[m[32m  # published to the live site as long as flutter build web compiled.[m
+[32m+[m[32m  workflow_run:[m
+[32m+[m[32m    workflows: ["Build Verification"][m
+[32m+[m[32m    types: [completed][m
+     branches: [main][m
+   workflow_dispatch: {}[m
+ [m
+[36m@@ -16,12 +21,17 @@[m [mconcurrency:[m
+ [m
+ jobs:[m
+   build_and_deploy:[m
+[32m+[m[32m    if: >-[m
+[32m+[m[32m      github.event_name == 'workflow_dispatch' ||[m
+[32m+[m[32m      github.event.workflow_run.conclusion == 'success'[m
+     runs-on: ubuntu-latest[m
+     environment:[m
+       name: github-pages[m
+       url: ${{ steps.deployment.outputs.page_url }}[m
+     steps:[m
+       - uses: actions/checkout@v4[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          ref: ${{ github.event.workflow_run.head_sha || github.ref }}[m
+ [m
+       - name: Setup Pages[m
+         id: pages[m
+[1mdiff --git a/Dockerfile b/Dockerfile[m
+[1mindex d2db527..1adb950 100644[m
+[1m--- a/Dockerfile[m
+[1m+++ b/Dockerfile[m
+[36m@@ -4,6 +4,7 @@[m [mFROM ghcr.io/cirruslabs/flutter:3.44.0 AS build[m
+ WORKDIR /app[m
+ COPY . .[m
+ [m
+[32m+[m[32m# Resolve the whole pub workspace once from the root.[m
+ RUN flutter pub get[m
+ [m
+ RUN dart pub global activate dart_frog_cli[m
+[36m@@ -12,6 +13,10 @@[m [mENV PATH="$PATH:/root/.pub-cache/bin"[m
+ WORKDIR /app/apps/server[m
+ RUN mkdir -p public && dart_frog build[m
+ [m
+[32m+[m[32m# dart_frog build copies apps/server/pubspec.yaml verbatim into build/, so it[m
+[32m+[m[32m# still carries resolution: workspace while sitting OUTSIDE the workspace[m
+[32m+[m[32m# root, and its path deps no longer resolve. Detach it and pin the internal[m
+[32m+[m[32m# packages to absolute paths before resolving.[m
+ WORKDIR /app/apps/server/build[m
+ RUN sed -i '/^resolution:[[:space:]]*workspace[[:space:]]*$/d' pubspec.yaml && \[m
+     printf '%s\n' \[m
+[36m@@ -30,13 +35,24 @@[m [mRUN sed -i '/^resolution:[[:space:]]*workspace[[:space:]]*$/d' pubspec.yaml && \[m
+     dart pub get && \[m
+     dart compile exe bin/server.dart -o server[m
+ [m
+[31m-FROM debian:bookworm-slim[m
+[32m+[m[32m# RUNTIME BASE MUST MATCH THE BUILD BASE'S glibc.[m
+[32m+[m[32m# ghcr.io/cirruslabs/flutter:3.44.0 -> cirruslabs/android-sdk:36[m
+[32m+[m[32m# -> cirruslabs/android-sdk:tools -> ubuntu:24.04  (glibc 2.39).[m
+[32m+[m[32m# The previous runtime was debian:bookworm-slim (glibc 2.36): the image built[m
+[32m+[m[32m# fine but dart compile exe output dies at startup with[m
+[32m+[m[32m# "version `GLIBC_2.38' not found". Dart does not support cross-glibc runs.[m
+[32m+[m[32mFROM ubuntu:24.04[m
+ RUN apt-get update && \[m
+     apt-get install -y --no-install-recommends ca-certificates && \[m
+     rm -rf /var/lib/apt/lists/*[m
+[32m+[m
+[32m+[m[32m# Do not run the API as root.[m
+[32m+[m[32mRUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin nukhba[m
+ WORKDIR /app[m
+[31m-COPY --from=build /app/apps/server/build/server ./server[m
+[31m-COPY --from=build /app/apps/server/build/public ./public[m
+[32m+[m[32mCOPY --from=build --chown=nukhba:nukhba /app/apps/server/build/server ./server[m
+[32m+[m[32mCOPY --from=build --chown=nukhba:nukhba /app/apps/server/build/public ./public[m
+[32m+[m[32mUSER nukhba[m
+[32m+[m
+ ENV PORT=8080[m
+ EXPOSE 8080[m
+ CMD ["/app/server"][m
+[1mdiff --git a/README.md b/README.md[m
+[1mindex d04ab39..a2cd8c0 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -23,10 +23,14 @@[m [mFlutter مثبّت على النسخة الواردة في `.fvmrc` (3.44.0). ا[m
+ [m
+     flutter pub get[m
+     (cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)[m
+[31m-    dart analyze --fatal-warnings .[m
+[31m-    dart format --output=none --set-exit-if-changed .[m
+[31m-    dart run tooling/import_lint/bin/import_lint.dart[m
+[31m-    dart pub global run melos run test[m
+[32m+[m[32m    dart run melos run verify[m
+[32m+[m
+[32m+[m[32m`melos run verify` هو الأمر الصحيح ويطابق تمامًا خطوات[m
+[32m+[m[32m`.github/workflows/build-verification.yml` (format-check ثم analyze ثم[m
+[32m+[m[32mimport-lint ثم test ثم test-mobile). لا تستخدم `dart pub global run melos[m
+[32m+[m[32mrun test` — هذا الأمر ناقص ويفترض تثبيتًا عامًا لـ melos غير لازم أصلًا،[m
+[32m+[m[32mلأن `melos` مُعرَّف كـ `dev_dependency` في `pubspec.yaml` الجذر ويُشغَّل عبر[m
+[32m+[m[32m`dart run melos ...`.[m
+ [m
+ ## الإعداد[m
+ [m
+[36m@@ -41,4 +45,8 @@[m [mSettings > Secrets and variables > Actions > Variables.[m
+ [m
+ ## حالة المشروع[m
+ [m
+[31m-المصدر الوحيد المعتمد: `docs/progress.md`. أي نسخة أخرى قديمة.[m
+[32m+[m[32m- `docs/next-task.md` — المهمة التالية والحالة الحالية.[m
+[32m+[m[32m- `docs/project-context.md` — السياق المعماري الكامل.[m
+[32m+[m[32m- حالة البناء الفعلية هي دائمًا آخر run في تبويب Actions، لا أي ملف توثيق.[m
+[32m+[m
+[32m+[m[32mالواجهة المنشورة: https://adbrhman.github.io/nukhbaa/[m
+[1mdiff --git a/apply_fixes.py b/apply_fixes.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..79a7ffb[m
+[1m--- /dev/null[m
+[1m+++ b/apply_fixes.py[m
+[36m@@ -0,0 +1,441 @@[m
+[32m+[m[32m#!/usr/bin/env python3[m
+[32m+[m[32m"""[m
+[32m+[m[32mapply_fixes.py — applies the 8 reviewed CI/CD/Docker fixes to the ACTUAL[m
+[32m+[m[32mcurrent state of the repo, safely.[m
+[32m+[m
+[32m+[m[32mRun this from the repo root, on a fresh branch, AFTER `git pull` on main:[m
+[32m+[m
+[32m+[m[32m    git checkout main && git pull[m
+[32m+[m[32m    git checkout -b fix/ci-cd-glibc-cors-docs[m
+[32m+[m[32m    python3 apply_fixes.py[m
+[32m+[m
+[32m+[m[32mFor every fix this script:[m
+[32m+[m[32m  - SKIPS with a note if the fix is already present (idempotent — safe to[m
+[32m+[m[32m    re-run).[m
+[32m+[m[32m  - APPLIES it if the expected "before" text is found exactly once.[m
+[32m+[m[32m  - WARNS (does NOT touch the file) if neither the "before" nor "after"[m
+[32m+[m[32m    text matches — this means the file has drifted since the last review[m
+[32m+[m[32m    (e.g. a newer commit touched it) and needs a manual look instead of a[m
+[32m+[m[32m    blind overwrite.[m
+[32m+[m
+[32m+[m[32mNothing is committed or pushed by this script. Review `git diff` yourself,[m
+[32m+[m[32mthen commit and push.[m
+[32m+[m[32m"""[m
+[32m+[m[32mimport pathlib[m
+[32m+[m[32mimport sys[m
+[32m+[m
+[32m+[m[32mROOT = pathlib.Path(__file__).resolve().parent[m
+[32m+[m[32mREPORT = [][m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef patch(relpath: str, label: str, old: str, new: str):[m
+[32m+[m[32m    path = ROOT / relpath[m
+[32m+[m[32m    if not path.exists():[m
+[32m+[m[32m        REPORT.append(("MISSING", relpath, label, f"file not found: {relpath}"))[m
+[32m+[m[32m        return[m
+[32m+[m[32m    text = path.read_text(encoding="utf-8")[m
+[32m+[m
+[32m+[m[32m    if new in text:[m
+[32m+[m[32m        REPORT.append(("SKIP", relpath, label, "already applied"))[m
+[32m+[m[32m        return[m
+[32m+[m
+[32m+[m[32m    count = text.count(old)[m
+[32m+[m[32m    if count == 1:[m
+[32m+[m[32m        path.write_text(text.replace(old, new, 1), encoding="utf-8")[m
+[32m+[m[32m        REPORT.append(("OK", relpath, label, "applied"))[m
+[32m+[m[32m    elif count == 0:[m
+[32m+[m[32m        REPORT.append(("WARN", relpath, label,[m
+[32m+[m[32m                        "expected 'before' text not found — file has drifted, review manually"))[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        REPORT.append(("WARN", relpath, label,[m
+[32m+[m[32m                        f"'before' text matched {count} times (expected 1) — review manually"))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef full_replace_if_signature(relpath: str, label: str, old_signature: str, new_content: str):[m
+[32m+[m[32m    """For files meant to be replaced wholesale (Dockerfile), but only if the[m
+[32m+[m[32m    known-broken signature is still present — otherwise warn instead of[m
+[32m+[m[32m    clobbering unrelated changes."""[m
+[32m+[m[32m    path = ROOT / relpath[m
+[32m+[m[32m    if not path.exists():[m
+[32m+[m[32m        REPORT.append(("MISSING", relpath, label, f"file not found: {relpath}"))[m
+[32m+[m[32m        return[m
+[32m+[m[32m    text = path.read_text(encoding="utf-8")[m
+[32m+[m[32m    if new_content.strip() in text.strip():[m
+[32m+[m[32m        REPORT.append(("SKIP", relpath, label, "already applied"))[m
+[32m+[m[32m        return[m
+[32m+[m[32m    if old_signature in text:[m
+[32m+[m[32m        path.write_text(new_content, encoding="utf-8")[m
+[32m+[m[32m        REPORT.append(("OK", relpath, label, "applied (full replace)"))[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        REPORT.append(("WARN", relpath, label,[m
+[32m+[m[32m                        "known broken signature not found — file has drifted, review manually before replacing"))[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 1 — CI: run all Dart package tests via Melos (was hand-maintained list[m
+[32m+[m[32m# that silently excluded packages/api_client)[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".github/workflows/build-verification.yml",[m
+[32m+[m[32m    "Fix 1: melos run test replaces hand-maintained package loop",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '      - name: Test — Dart packages\n'[m
+[32m+[m[32m        '        run: |\n'[m
+[32m+[m[32m        '          set -e\n'[m
+[32m+[m[32m        '          for p in packages/shared packages/domain packages/contracts \\\n'[m
+[32m+[m[32m        '                   packages/application packages/infrastructure \\\n'[m
+[32m+[m[32m        '                   tooling/import_lint apps/server; do\n'[m
+[32m+[m[32m        '            echo "::group::dart test $p"\n'[m
+[32m+[m[32m        '            (cd "$p" && dart test)\n'[m
+[32m+[m[32m        '            echo "::endgroup::"\n'[m
+[32m+[m[32m        '          done\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '      - name: Test — apps/mobile (flutter)\n'[m
+[32m+[m[32m        '        working-directory: apps/mobile\n'[m
+[32m+[m[32m        '        run: flutter test --coverage\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '      # Single source of truth: the Melos scripts in the root pubspec.yaml.\n'[m
+[32m+[m[32m        '      # The previous hand-maintained package list silently EXCLUDED\n'[m
+[32m+[m[32m        '      # packages/api_client (5 test files, the entire HTTP transport layer),\n'[m
+[32m+[m[32m        '      # so "CI green" did not mean "melos run test green". Any future package\n'[m
+[32m+[m[32m        '      # is now picked up automatically via packageFilters: dirExists: test.\n'[m
+[32m+[m[32m        '      - name: Test — all Dart packages (melos)\n'[m
+[32m+[m[32m        '        run: dart run melos run test\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '      - name: Test — apps/mobile (flutter, with coverage)\n'[m
+[32m+[m[32m        '        working-directory: apps/mobile\n'[m
+[32m+[m[32m        '        run: flutter test --coverage\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 3 — CI: build the server Docker image (was never built anywhere)[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".github/workflows/build-verification.yml",[m
+[32m+[m[32m    "Fix 3: add build_server_image job",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '      - uses: actions/upload-artifact@v4\n'[m
+[32m+[m[32m        '        with:\n'[m
+[32m+[m[32m        '          name: nukhba-android-apk\n'[m
+[32m+[m[32m        '          path: apps/mobile/build/app/outputs/flutter-apk/*.apk\n'[m
+[32m+[m[32m        '          retention-days: 14\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '      - uses: actions/upload-artifact@v4\n'[m
+[32m+[m[32m        '        with:\n'[m
+[32m+[m[32m        '          name: nukhba-android-apk\n'[m
+[32m+[m[32m        '          path: apps/mobile/build/app/outputs/flutter-apk/*.apk\n'[m
+[32m+[m[32m        '          retention-days: 14\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '  build_server_image:\n'[m
+[32m+[m[32m        '    name: Build server Docker image\n'[m
+[32m+[m[32m        '    runs-on: ubuntu-latest\n'[m
+[32m+[m[32m        '    needs: workspace\n'[m
+[32m+[m[32m        '    timeout-minutes: 30\n'[m
+[32m+[m[32m        '    steps:\n'[m
+[32m+[m[32m        '      - uses: actions/checkout@v4\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '      - uses: docker/setup-buildx-action@v3\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '      # Build only. Not pushed anywhere yet: the point is to keep the\n'[m
+[32m+[m[32m        '      # Dockerfile from rotting, and to catch the pub-workspace detachment\n'[m
+[32m+[m[32m        '      # (resolution: workspace inside build/) at PR time instead of at\n'[m
+[32m+[m[32m        '      # first deploy.\n'[m
+[32m+[m[32m        '      - name: Build image\n'[m
+[32m+[m[32m        '        uses: docker/build-push-action@v6\n'[m
+[32m+[m[32m        '        with:\n'[m
+[32m+[m[32m        '          context: .\n'[m
+[32m+[m[32m        '          push: false\n'[m
+[32m+[m[32m        '          load: true\n'[m
+[32m+[m[32m        '          tags: nukhba-server:ci\n'[m
+[32m+[m[32m        '          cache-from: type=gha\n'[m
+[32m+[m[32m        '          cache-to: type=gha,mode=max\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '      # Proves the compiled exe actually links against the runtime image\'s\n'[m
+[32m+[m[32m        '      # glibc — the exact defect the debian->ubuntu base change fixes. The\n'[m
+[32m+[m[32m        '      # server exits non-zero without DB config, which is expected and fine;\n'[m
+[32m+[m[32m        '      # we only assert it is NOT a loader/glibc failure.\n'[m
+[32m+[m[32m        '      - name: Smoke-check the binary loads\n'[m
+[32m+[m[32m        '        run: |\n'[m
+[32m+[m[32m        '          set -o pipefail\n'[m
+[32m+[m[32m        '          out="$(docker run --rm --entrypoint /bin/sh nukhba-server:ci \\\n'[m
+[32m+[m[32m        '                 -c \'ldd /app/server\' 2>&1)" || true\n'[m
+[32m+[m[32m        '          echo "$out"\n'[m
+[32m+[m[32m        '          if echo "$out" | grep -qi \'not found\'; then\n'[m
+[32m+[m[32m        '            echo "::error::Missing shared library in runtime image (glibc mismatch)."\n'[m
+[32m+[m[32m        '            exit 1\n'[m
+[32m+[m[32m        '          fi\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 2 — Dockerfile: matching glibc runtime base + non-root user[m
+[32m+[m[32m# (full replace, but only if the known-broken debian:bookworm-slim runtime[m
+[32m+[m[32m# signature is still present)[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mDOCKERFILE_NEW = '''# syntax=docker/dockerfile:1[m
+[32m+[m[32mFROM ghcr.io/cirruslabs/flutter:3.44.0 AS build[m
+[32m+[m
+[32m+[m[32mWORKDIR /app[m
+[32m+[m[32mCOPY . .[m
+[32m+[m
+[32m+[m[32m# Resolve the whole pub workspace once from the root.[m
+[32m+[m[32mRUN flutter pub get[m
+[32m+[m
+[32m+[m[32mRUN dart pub global activate dart_frog_cli[m
+[32m+[m[32mENV PATH="$PATH:/root/.pub-cache/bin"[m
+[32m+[m
+[32m+[m[32mWORKDIR /app/apps/server[m
+[32m+[m[32mRUN mkdir -p public && dart_frog build[m
+[32m+[m
+[32m+[m[32m# dart_frog build copies apps/server/pubspec.yaml verbatim into build/, so it[m
+[32m+[m[32m# still carries resolution: workspace while sitting OUTSIDE the workspace[m
+[32m+[m[32m# root, and its path deps no longer resolve. Detach it and pin the internal[m
+[32m+[m[32m# packages to absolute paths before resolving.[m
+[32m+[m[32mWORKDIR /app/apps/server/build[m
+[32m+[m[32mRUN sed -i '/^resolution:[[:space:]]*workspace[[:space:]]*$/d' pubspec.yaml && \\[m
+[32m+[m[32m    printf '%s\\n' \\[m
+[32m+[m[32m      'dependency_overrides:' \\[m
+[32m+[m[32m      '  shared:' \\[m
+[32m+[m[32m      '    path: /app/packages/shared' \\[m
+[32m+[m[32m      '  domain:' \\[m
+[32m+[m[32m      '    path: /app/packages/domain' \\[m
+[32m+[m[32m      '  contracts:' \\[m
+[32m+[m[32m      '    path: /app/packages/contracts' \\[m
+[32m+[m[32m      '  application:' \\[m
+[32m+[m[32m      '    path: /app/packages/application' \\[m
+[32m+[m[32m      '  infrastructure:' \\[m
+[32m+[m[32m      '    path: /app/packages/infrastructure' \\[m
+[32m+[m[32m      > pubspec_overrides.yaml && \\[m
+[32m+[m[32m    dart pub get && \\[m
+[32m+[m[32m    dart compile exe bin/server.dart -o server[m
+[32m+[m
+[32m+[m[32m# RUNTIME BASE MUST MATCH THE BUILD BASE'S glibc.[m
+[32m+[m[32m# ghcr.io/cirruslabs/flutter:3.44.0 -> cirruslabs/android-sdk:36[m
+[32m+[m[32m# -> cirruslabs/android-sdk:tools -> ubuntu:24.04  (glibc 2.39).[m
+[32m+[m[32m# The previous runtime was debian:bookworm-slim (glibc 2.36): the image built[m
+[32m+[m[32m# fine but dart compile exe output dies at startup with[m
+[32m+[m[32m# "version `GLIBC_2.38' not found". Dart does not support cross-glibc runs.[m
+[32m+[m[32mFROM ubuntu:24.04[m
+[32m+[m[32mRUN apt-get update && \\[m
+[32m+[m[32m    apt-get install -y --no-install-recommends ca-certificates && \\[m
+[32m+[m[32m    rm -rf /var/lib/apt/lists/*[m
+[32m+[m
+[32m+[m[32m# Do not run the API as root.[m
+[32m+[m[32mRUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin nukhba[m
+[32m+[m[32mWORKDIR /app[m
+[32m+[m[32mCOPY --from=build --chown=nukhba:nukhba /app/apps/server/build/server ./server[m
+[32m+[m[32mCOPY --from=build --chown=nukhba:nukhba /app/apps/server/build/public ./public[m
+[32m+[m[32mUSER nukhba[m
+[32m+[m
+[32m+[m[32mENV PORT=8080[m
+[32m+[m[32mEXPOSE 8080[m
+[32m+[m[32mCMD ["/app/server"][m
+[32m+[m[32m'''[m
+[32m+[m[32mfull_replace_if_signature([m
+[32m+[m[32m    "Dockerfile",[m
+[32m+[m[32m    "Fix 2: matching glibc runtime base + non-root user",[m
+[32m+[m[32m    old_signature="FROM debian:bookworm-slim",[m
+[32m+[m[32m    new_content=DOCKERFILE_NEW,[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 4 — .env.example: add NUKHBA_CORS_ALLOWED_ORIGINS, fix PORT[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".env.example",[m
+[32m+[m[32m    "Fix 4: add NUKHBA_CORS_ALLOWED_ORIGINS, correct PORT var",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '# Server\n'[m
+[32m+[m[32m        'NUKHBA_ENV=development\n'[m
+[32m+[m[32m        'NUKHBA_PORT=8080\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '# Server\n'[m
+[32m+[m[32m        'NUKHBA_ENV=development\n'[m
+[32m+[m[32m        '# NOTE: the port is read by dart_frog from the standard PORT variable\n'[m
+[32m+[m[32m        '# (Cloud Run sets it automatically). NUKHBA_PORT is NOT read by anything.\n'[m
+[32m+[m[32m        'PORT=8080\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        "# CORS allow-list (comma-separated, scheme://host only — NO path, because the\n"[m
+[32m+[m[32m        "# browser's Origin header never includes one). Read by\n"[m
+[32m+[m[32m        '# apps/server/routes/_middleware.dart; when unset it falls back to the\n'[m
+[32m+[m[32m        '# hardcoded GitHub Pages origin + localhost. ALWAYS set it explicitly on the\n'[m
+[32m+[m[32m        '# hosting platform so a repo/username change cannot silently break the client.\n'[m
+[32m+[m[32m        'NUKHBA_CORS_ALLOWED_ORIGINS=https://adbrhman.github.io\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 5 — README.md: correct local-gate command + dangling docs/progress.md[m
+[32m+[m[32m# reference[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    "README.md",[m
+[32m+[m[32m    "Fix 5a: correct local verification command in README",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '## البوابة المحلية (نفس CI)\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '    flutter pub get\n'[m
+[32m+[m[32m        '    (cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)\n'[m
+[32m+[m[32m        '    dart analyze --fatal-warnings .\n'[m
+[32m+[m[32m        '    dart format --output=none --set-exit-if-changed .\n'[m
+[32m+[m[32m        '    dart run tooling/import_lint/bin/import_lint.dart\n'[m
+[32m+[m[32m        '    dart pub global run melos run test\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '## البوابة المحلية (نفس CI)\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '    flutter pub get\n'[m
+[32m+[m[32m        '    (cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)\n'[m
+[32m+[m[32m        '    dart run melos run verify\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '`melos run verify` هو الأمر الصحيح ويطابق تمامًا خطوات\n'[m
+[32m+[m[32m        '`.github/workflows/build-verification.yml` (format-check ثم analyze ثم\n'[m
+[32m+[m[32m        'import-lint ثم test ثم test-mobile). لا تستخدم `dart pub global run melos\n'[m
+[32m+[m[32m        'run test` — هذا الأمر ناقص ويفترض تثبيتًا عامًا لـ melos غير لازم أصلًا،\n'[m
+[32m+[m[32m        'لأن `melos` مُعرَّف كـ `dev_dependency` في `pubspec.yaml` الجذر ويُشغَّل عبر\n'[m
+[32m+[m[32m        '`dart run melos ...`.\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    "README.md",[m
+[32m+[m[32m    "Fix 5b: replace dangling docs/progress.md reference",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '## حالة المشروع\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        'المصدر الوحيد المعتمد: `docs/progress.md`. أي نسخة أخرى قديمة.\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '## حالة المشروع\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '- `docs/next-task.md` — المهمة التالية والحالة الحالية.\n'[m
+[32m+[m[32m        '- `docs/project-context.md` — السياق المعماري الكامل.\n'[m
+[32m+[m[32m        '- حالة البناء الفعلية هي دائمًا آخر run في تبويب Actions، لا أي ملف توثيق.\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        'الواجهة المنشورة: https://adbrhman.github.io/nukhbaa/\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 6 — deploy-pages.yml: gate deploy on Build Verification success[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".github/workflows/deploy-pages.yml",[m
+[32m+[m[32m    "Fix 6a: trigger on workflow_run instead of push",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        'on:\n'[m
+[32m+[m[32m        '  push:\n'[m
+[32m+[m[32m        '    branches: [main]\n'[m
+[32m+[m[32m        '  workflow_dispatch: {}\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        'on:\n'[m
+[32m+[m[32m        '  # Deploy ONLY after Build Verification has actually passed on main.\n'[m
+[32m+[m[32m        '  # Previously this ran in parallel with the gate, so a red test suite still\n'[m
+[32m+[m[32m        '  # published to the live site as long as flutter build web compiled.\n'[m
+[32m+[m[32m        '  workflow_run:\n'[m
+[32m+[m[32m        '    workflows: ["Build Verification"]\n'[m
+[32m+[m[32m        '    types: [completed]\n'[m
+[32m+[m[32m        '    branches: [main]\n'[m
+[32m+[m[32m        '  workflow_dispatch: {}\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".github/workflows/deploy-pages.yml",[m
+[32m+[m[32m    "Fix 6b: guard job on successful conclusion",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        'jobs:\n'[m
+[32m+[m[32m        '  build_and_deploy:\n'[m
+[32m+[m[32m        '    runs-on: ubuntu-latest\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        'jobs:\n'[m
+[32m+[m[32m        '  build_and_deploy:\n'[m
+[32m+[m[32m        "    if: >-\n"[m
+[32m+[m[32m        "      github.event_name == 'workflow_dispatch' ||\n"[m
+[32m+[m[32m        "      github.event.workflow_run.conclusion == 'success'\n"[m
+[32m+[m[32m        '    runs-on: ubuntu-latest\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    ".github/workflows/deploy-pages.yml",[m
+[32m+[m[32m    "Fix 6c: checkout the exact commit that passed CI",[m
+[32m+[m[32m    old='      - uses: actions/checkout@v4\n',[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '      - uses: actions/checkout@v4\n'[m
+[32m+[m[32m        '        with:\n'[m
+[32m+[m[32m        "          ref: ${{ github.event.workflow_run.head_sha || github.ref }}\n"[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Fix 7 — docs/next-task.md: remove contradicting "Exact Next Command"[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    "docs/next-task.md",[m
+[32m+[m[32m    "Fix 7a: remove contradicting Last Completed Step line",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '## Status: No outstanding tasks — verification completed 2026-07-27, see section above.\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '**Last Completed Step:** Step 3 (build_runner, verified present).\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '---\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '## Status: No outstanding tasks — verification completed 2026-07-27, see section above.\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '---\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m[32mpatch([m
+[32m+[m[32m    "docs/next-task.md",[m
+[32m+[m[32m    "Fix 7b: remove dangerous Exact Next Command section",[m
+[32m+[m[32m    old=([m
+[32m+[m[32m        '## Exact Next Command\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '**Environment requirement:** Capable machine with ≥ 8 GB RAM  \n'[m
+[32m+[m[32m        '(NOT the old 985 MiB sandbox. GitHub Codespaces or local machine.)\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '```bash\n'[m
+[32m+[m[32m        'dart pub get\n'[m
+[32m+[m[32m        'dart run build_runner build --delete-conflicting-outputs\n'[m
+[32m+[m[32m        'dart analyze --fatal-infos --fatal-warnings .\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    new=([m
+[32m+[m[32m        '## الأمر الوحيد المعتمد للتحقق المحلي\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '```bash\n'[m
+[32m+[m[32m        'flutter pub get\n'[m
+[32m+[m[32m        '(cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)\n'[m
+[32m+[m[32m        'dart run melos run verify\n'[m
+[32m+[m[32m        '```\n'[m
+[32m+[m[32m        '\n'[m
+[32m+[m[32m        '`melos run verify` مطابق تمامًا لـ `.github/workflows/build-verification.yml`.\n'[m
+[32m+[m[32m        'لا تستخدم `--fatal-infos` محليًا: CI لا يستخدمه، و111 مشكلة info مقبولة حاليًا\n'[m
+[32m+[m[32m        'ومسجّلة كبند backlog منفصل.\n'[m
+[32m+[m[32m    ),[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32m# Report[m
+[32m+[m[32m# ---------------------------------------------------------------------------[m
+[32m+[m[32mprint("=" * 78)[m
+[32m+[m[32mfor status, relpath, label, note in REPORT:[m
+[32m+[m[32m    print(f"[{status:7}] {relpath:45} {label}\n           -> {note}")[m
+[32m+[m[32mprint("=" * 78)[m
+[32m+[m
+[32m+[m[32mn_ok = sum(1 for r in REPORT if r[0] == "OK")[m
+[32m+[m[32mn_skip = sum(1 for r in REPORT if r[0] == "SKIP")[m
+[32m+[m[32mn_warn = sum(1 for r in REPORT if r[0] == "WARN")[m
+[32m+[m[32mn_missing = sum(1 for r in REPORT if r[0] == "MISSING")[m
+[32m+[m[32mprint(f"Applied: {n_ok}  Skipped(already applied): {n_skip}  "[m
+[32m+[m[32m      f"Needs manual review: {n_warn}  Missing files: {n_missing}")[m
+[32m+[m[32mprint()[m
+[32m+[m[32mprint("Note: Fix 8 (PWA icons) is intentionally NOT handled by this script —")[m
+[32m+[m[32mprint("run generate_icons.py separately (requires `pip install pillow`).")[m
+[32m+[m
+[32m+[m[32mif n_warn or n_missing:[m
+[32m+[m[32m    sys.exit(1)[m
+[1mdiff --git a/docs/next-task.md b/docs/next-task.md[m
+[1mindex 4776e41..a387f6d 100644[m
+[1m--- a/docs/next-task.md[m
+[1m+++ b/docs/next-task.md[m
+[36m@@ -48,8 +48,6 @@[m [msession: CORS allowed-origin mismatch in[m
+ [m
+ ## Status: No outstanding tasks — verification completed 2026-07-27, see section above.[m
+ [m
+[31m-**Last Completed Step:** Step 3 (build_runner, verified present).[m
+[31m-[m
+ ---[m
+ [m
+ ## Status Update (2026-07-21)[m
+[36m@@ -73,12 +71,14 @@[m [mAll previously tracked source-level fixes are applied.[m
+ [m
+ ---[m
+ [m
+[31m-## Exact Next Command[m
+[31m-[m
+[31m-**Environment requirement:** Capable machine with ≥ 8 GB RAM  [m
+[31m-(NOT the old 985 MiB sandbox. GitHub Codespaces or local machine.)[m
+[32m+[m[32m## الأمر الوحيد المعتمد للتحقق المحلي[m
+ [m
+ ```bash[m
+[31m-dart pub get[m
+[31m-dart run build_runner build --delete-conflicting-outputs[m
+[31m-dart analyze --fatal-infos --fatal-warnings .[m
+[32m+[m[32mflutter pub get[m
+[32m+[m[32m(cd apps/mobile && dart run build_runner build --delete-conflicting-outputs)[m
+[32m+[m[32mdart run melos run verify[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m`melos run verify` مطابق تمامًا لـ `.github/workflows/build-verification.yml`.[m
+[32m+[m[32mلا تستخدم `--fatal-infos` محليًا: CI لا يستخدمه، و111 مشكلة info مقبولة حاليًا[m
+[32m+[m[32mومسجّلة كبند backlog منفصل.[m

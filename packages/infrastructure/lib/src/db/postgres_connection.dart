@@ -70,8 +70,43 @@ class PostgresConnection implements DbExecutor {
         ),
       );
       // Eagerly verify connectivity so startup fails fast on misconfig.
-      await pool.execute('SELECT 1');
-      return Result.ok(PostgresConnection._(pool));
+      //
+      // `postgres` opens the TCP connection lazily on first `execute`, not in
+      // `Pool.withEndpoints`. If the network path to the pooler is a
+      // blackhole (packets silently dropped rather than rejected) this probe
+      // has no built-in bound and never returns -- and because
+      // `CompositionRoot.instance()` caches a single shared bootstrap
+      // `Future`, every request that reads it (auth included) would then
+      // hang forever with no log and no error. We therefore bound the probe
+      // with an explicit timeout and a few short retries to absorb a slow
+      // pooler cold-start, so startup either succeeds quickly or fails
+      // LOUDLY.
+      const probeTimeout = Duration(seconds: 10);
+      const maxAttempts = 3;
+      Object? lastError;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          await pool.execute('SELECT 1').timeout(probeTimeout);
+          return Result.ok(PostgresConnection._(pool));
+        } on Object catch (e) {
+          lastError = e;
+          if (attempt < maxAttempts) {
+            await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
+          }
+        }
+      }
+      // Every attempt timed out or failed: close the pool and fail loudly so
+      // the platform restarts the container instead of serving a dead
+      // process that will hang on every request.
+      await pool.close().catchError((_) {});
+      return Result.err(
+        AppError.transient(
+          'db.open_failed',
+          'Failed to open Postgres connection pool after $maxAttempts '
+              'attempts (timeout ${probeTimeout.inSeconds}s each)',
+          lastError,
+        ),
+      );
     } on Object catch (e) {
       return Result.err(
         AppError.transient(
