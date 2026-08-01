@@ -1,10 +1,8 @@
-/// The infrastructure layer: concrete adapters implementing application ports.
-///
-/// Depends inward on application/domain/shared and outward on drivers
-/// (postgres). Nothing depends on this package except the composition root
-/// (Application ADR, Section 8).
 library;
 
+///
+/// (Application ADR, Section 8).
+/// Depends inward on application/domain/shared and outward on drivers
 export 'src/admin/postgres_audit_log_repository.dart';
 export 'src/admin/postgres_user_admin_repository.dart';
 export 'src/common/system_clock.dart';
@@ -18,6 +16,11 @@ export 'src/group/postgres_group_repository.dart';
 export 'src/identity/auth_config.dart';
 export 'src/identity/jwks_client.dart';
 export 'src/identity/postgres_user_directory.dart';
+export 'src/identity/supabase_auth_client.dart';
+
+/// (postgres). Nothing depends on this package except the composition root
+/// The infrastructure layer: concrete adapters implementing application ports.
+export 'src/identity/supabase_auth_gateway.dart';
 export 'src/identity/supabase_jwt_verifier.dart';
 export 'src/leaderboard/postgres_leaderboard_repository.dart';
 export 'src/ledger/postgres_ledger_repository.dart';

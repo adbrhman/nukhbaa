@@ -6,11 +6,11 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
-// ignore: always_use_package_imports
-import '../../routes/rounds/[id]/predictions/index.dart' as index;
 // ignore: always_use_package_imports
 import '../../routes/rounds/[id]/predictions/all.dart' as all;
+// ignore: always_use_package_imports
+import '../../routes/rounds/[id]/predictions/index.dart' as index;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Prediction surface, exercising the *real* wiring
 /// (`context.read<Future<CompositionRoot>>()` → `root.<useCase>()`) over the

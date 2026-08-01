@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:api_client/api_client.dart';
-import 'package:api_client/src/prediction_api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
@@ -35,7 +34,7 @@ void main() {
           ],
         );
 
-        expect(result, Result<PredictionDto>.ok(storedPrediction));
+        expect(result, const Result<PredictionDto>.ok(storedPrediction));
 
         final req = ctx.captured.single;
         expect(req.method, 'POST');
@@ -114,7 +113,7 @@ void main() {
 
       final result = await PredictionApi(ctx.transport).getMyPrediction('r-1');
 
-      expect(result, Result<PredictionDto>.ok(storedPrediction));
+      expect(result, const Result<PredictionDto>.ok(storedPrediction));
       expect(ctx.captured.single.method, 'GET');
       expect(ctx.captured.single.url.path, '/rounds/r-1/predictions');
     });
@@ -142,7 +141,7 @@ void main() {
         ctx.transport,
       ).listRoundPredictions('r-1');
 
-      expect(result, Result<List<PredictionDto>>.ok(const [storedPrediction]));
+      expect(result, const Result<List<PredictionDto>>.ok([storedPrediction]));
       expect(ctx.captured.single.url.path, '/rounds/r-1/predictions/all');
     });
 

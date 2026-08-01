@@ -30,8 +30,8 @@ class _MockRequestContext extends Mock implements RequestContext {}
 
 class _MockRequest extends Mock implements Request {}
 
-AuthenticatedUser _principal() => AuthenticatedUser(
-  userId: const UserId(_uuid),
+AuthenticatedUser _principal() => const AuthenticatedUser(
+  userId: UserId(_uuid),
   role: PlatformRole.user,
   email: 'a@example.com',
 );
@@ -71,8 +71,8 @@ Future<Map<String, Object?>> _decodeBody(Response response) async {
 void main() {
   group('GET /me route', () {
     test('returns 200 with the canonical user projection', () async {
-      final canonical = User(
-        id: const UserId(_uuid),
+      final canonical = const User(
+        id: UserId(_uuid),
         email: 'a@example.com',
         // Platform-owned role/status are what the response must reflect,
         // even though the token principal was a plain `user`.
@@ -109,9 +109,9 @@ void main() {
 
     test('rejects non-GET methods with 405 without reading the root', () async {
       final context = _wire(
-        directoryResponse: Result.ok(
+        directoryResponse: const Result.ok(
           User(
-            id: const UserId(_uuid),
+            id: UserId(_uuid),
             email: null,
             role: PlatformRole.user,
             status: UserStatus.active,

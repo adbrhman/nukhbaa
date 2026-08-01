@@ -71,16 +71,16 @@ final class RenameGroup {
     }
     final membership = (membershipResult as Ok<GroupMembership?>).value;
     if (membership == null) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'group.not_a_member',
           'Only a member of the group may perform this action',
         ),
       );
     }
     if (!membership.isOwner) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'group.not_owner',
           'Only the group owner may perform this action',
         ),
@@ -95,8 +95,8 @@ final class RenameGroup {
     if (group == null) {
       // The membership existed but the group did not — a storage inconsistency.
       // Treat as not-a-member so no existence signal leaks.
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'group.not_a_member',
           'Only a member of the group may perform this action',
         ),

@@ -71,7 +71,7 @@ void main() {
     AuthConfig configWith({String? secret}) {
       final result = AuthConfig.fromEnv({
         'NUKHBA_SUPABASE_PROJECT_REF': 'abcdefghijklmnop',
-        if (secret != null) 'NUKHBA_SUPABASE_JWT_SECRET': secret,
+        'NUKHBA_SUPABASE_JWT_SECRET': ?secret,
       });
       return (result as Ok<AuthConfig>).value;
     }

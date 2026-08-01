@@ -19,7 +19,7 @@ AuthConfig _config({String? secret = _secret, String aud = 'authenticated'}) {
   final result = AuthConfig.fromEnv({
     'NUKHBA_SUPABASE_PROJECT_REF': _ref,
     'NUKHBA_SUPABASE_JWT_AUD': aud,
-    if (secret != null) 'NUKHBA_SUPABASE_JWT_SECRET': secret,
+    'NUKHBA_SUPABASE_JWT_SECRET': ?secret,
   });
   return (result as Ok<AuthConfig>).value;
 }
@@ -44,11 +44,7 @@ String _signHs256({
   String secret = _secret,
 }) {
   final jwt = JWT(
-    {
-      'sub': subject,
-      if (role != null) 'role': role,
-      if (email != null) 'email': email,
-    },
+    {'sub': subject, 'role': ?role, 'email': ?email},
     issuer: issuer,
     audience: Audience.one(audience),
     subject: subject,

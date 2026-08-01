@@ -22,7 +22,7 @@ group_fakes.InMemoryGroupRepository _groups() =>
     );
 
 ActivityEvent _joined(String userId, DateTime at) => ActivityEvent.memberJoined(
-  groupId: GroupId(_groupId),
+  groupId: const GroupId(_groupId),
   userId: UserId(userId),
   occurredAt: at,
 );
@@ -34,8 +34,8 @@ void main() {
         ..seed(_groupId, [
           _joined(_member, DateTime.utc(2026, 7, 1)),
           ActivityEvent.roundScored(
-            groupId: GroupId(_groupId),
-            roundId: RoundId(_roundId),
+            groupId: const GroupId(_groupId),
+            roundId: const RoundId(_roundId),
             occurredAt: DateTime.utc(2026, 7, 5),
           ),
           _joined(_other, DateTime.utc(2026, 7, 3)),

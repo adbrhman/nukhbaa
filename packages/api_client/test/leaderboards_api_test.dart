@@ -1,5 +1,4 @@
 import 'package:api_client/api_client.dart';
-import 'package:api_client/src/leaderboards_api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
@@ -37,7 +36,7 @@ void main() {
           ctx.transport,
         ).seasonLeaderboard('s-1');
 
-        expect(result, Result<SeasonLeaderboardDto>.ok(dto));
+        expect(result, const Result<SeasonLeaderboardDto>.ok(dto));
         final req = ctx.captured.single;
         expect(req.method, 'GET');
         expect(req.url.path, '/seasons/s-1/leaderboard');

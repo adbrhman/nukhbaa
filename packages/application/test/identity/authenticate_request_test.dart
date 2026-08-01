@@ -23,8 +23,8 @@ final class _FakeTokenVerifier implements TokenVerifier {
   }
 }
 
-AuthenticatedUser _principal() => AuthenticatedUser(
-  userId: const UserId(_uuid),
+AuthenticatedUser _principal() => const AuthenticatedUser(
+  userId: UserId(_uuid),
   role: PlatformRole.user,
   email: 'a@example.com',
 );

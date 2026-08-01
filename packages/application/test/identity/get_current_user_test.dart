@@ -20,8 +20,8 @@ final class _FakeUserDirectory implements UserDirectory {
   }
 }
 
-AuthenticatedUser _principal() => AuthenticatedUser(
-  userId: const UserId(_uuid),
+AuthenticatedUser _principal() => const AuthenticatedUser(
+  userId: UserId(_uuid),
   role: PlatformRole.user,
   email: 'a@example.com',
 );
@@ -29,8 +29,8 @@ AuthenticatedUser _principal() => AuthenticatedUser(
 void main() {
   group('GetCurrentUser', () {
     test('resolves the canonical user via the directory', () async {
-      final canonical = User(
-        id: const UserId(_uuid),
+      final canonical = const User(
+        id: UserId(_uuid),
         email: 'a@example.com',
         role: PlatformRole.admin, // platform-owned, may differ from token role
         status: UserStatus.active,

@@ -289,7 +289,7 @@ void main() {
   group('update (amend: guard + replace children)', () {
     test('replaces children after a matched parent update', () async {
       final conn = _script([
-        Result.ok([
+        const Result.ok([
           {'id': _predictionId}, // RETURNING id — the guard matched
         ]),
         const Result.ok([]), // delete old children

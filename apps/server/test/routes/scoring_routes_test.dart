@@ -6,13 +6,13 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // ignore: always_use_package_imports
 import '../../routes/fixtures/[id]/result/index.dart' as result_route;
 // ignore: always_use_package_imports
 import '../../routes/rounds/[id]/score/index.dart' as score_route;
 // ignore: always_use_package_imports
 import '../../routes/rounds/[id]/scores/index.dart' as scores_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Scoring surface — the three routes
 /// `PUT /fixtures/{id}/result`, `POST /rounds/{id}/score`, and

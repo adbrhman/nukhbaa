@@ -5,11 +5,11 @@ import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a
 // relative import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
 import '../../routes/me/groups/index.dart' as route;
+import 'competition_route_harness.dart';
 
 /// Route test for `GET /me/groups` — exercised through the *real* wiring
 /// (`context.read<Future<CompositionRoot>>()` → `root.listMyGroups()`) over

@@ -42,8 +42,8 @@ void main() {
         // Owner membership written atomically.
         expect(h.repo.membershipCount(_groupId), 1);
         final ms = await h.repo.findMembership(
-          GroupId(_groupId),
-          UserId(_owner),
+          const GroupId(_groupId),
+          const UserId(_owner),
         );
         final membership = (ms as Ok<GroupMembership?>).value!;
         expect(membership.isOwner, isTrue);

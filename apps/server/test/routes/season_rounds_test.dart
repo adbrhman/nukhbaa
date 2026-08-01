@@ -6,9 +6,9 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // ignore: always_use_package_imports
 import '../../routes/seasons/[id]/rounds/index.dart' as route;
+import 'competition_route_harness.dart';
 
 void main() {
   group('POST /seasons/{id}/rounds', () {

@@ -27,18 +27,18 @@ class _MockRequestContext extends Mock implements RequestContext {}
 class _MockRequest extends Mock implements Request {}
 
 AuthenticatedUser _principal() =>
-    AuthenticatedUser(userId: const UserId(_uuid), role: PlatformRole.user);
+    const AuthenticatedUser(userId: UserId(_uuid), role: PlatformRole.user);
 
 void main() {
   setUpAll(() {
     // mocktail needs a fallback for the `provide` closure argument type.
-    registerFallbackValue(() => _principal());
+    registerFallbackValue(_principal);
   });
 
   /// Builds a context whose composition root authenticates via [verifierResult]
   /// and whose request carries [authorizationHeader]. The provided principal is
   /// captured so a passing request can be asserted to forward it downstream.
-  ({_MockRequestContext context, List<AuthenticatedUser> provided}) _wire({
+  ({_MockRequestContext context, List<AuthenticatedUser> provided}) wire({
     required Result<AuthenticatedUser> verifierResult,
     String? authorizationHeader,
   }) {
@@ -51,10 +51,9 @@ void main() {
     );
 
     final request = _MockRequest();
-    when(() => request.headers).thenReturn({
-      if (authorizationHeader != null)
-        HttpHeaders.authorizationHeader: authorizationHeader,
-    });
+    when(
+      () => request.headers,
+    ).thenReturn({HttpHeaders.authorizationHeader: ?authorizationHeader});
 
     final provided = <AuthenticatedUser>[];
     final downstreamContext = _MockRequestContext();
@@ -73,7 +72,7 @@ void main() {
   }
 
   /// A terminal handler that records it ran and returns 200.
-  ({Handler handler, List<bool> ran}) _okHandler() {
+  ({Handler handler, List<bool> ran}) okHandler() {
     final ran = <bool>[];
     Response handler(RequestContext _) {
       ran.add(true);
@@ -85,11 +84,11 @@ void main() {
 
   group('bearerAuth middleware', () {
     test('passes a valid token through and provides the principal', () async {
-      final wired = _wire(
+      final wired = wire(
         verifierResult: Result.ok(_principal()),
         authorizationHeader: 'Bearer good-token',
       );
-      final downstream = _okHandler();
+      final downstream = okHandler();
       final guarded = bearerAuth()(downstream.handler);
 
       final response = await guarded(wired.context);
@@ -100,8 +99,8 @@ void main() {
     });
 
     test('rejects a missing Authorization header with 401', () async {
-      final wired = _wire(verifierResult: Result.ok(_principal()));
-      final downstream = _okHandler();
+      final wired = wire(verifierResult: Result.ok(_principal()));
+      final downstream = okHandler();
       final guarded = bearerAuth()(downstream.handler);
 
       final response = await guarded(wired.context);
@@ -112,13 +111,13 @@ void main() {
     });
 
     test('rejects an invalid token with 401', () async {
-      final wired = _wire(
+      final wired = wire(
         verifierResult: const Result.err(
           AppError.authorization('auth.token_invalid', 'bad'),
         ),
         authorizationHeader: 'Bearer bad-token',
       );
-      final downstream = _okHandler();
+      final downstream = okHandler();
       final guarded = bearerAuth()(downstream.handler);
 
       final response = await guarded(wired.context);
@@ -128,13 +127,13 @@ void main() {
     });
 
     test('maps a transient verification failure to 503, not 401', () async {
-      final wired = _wire(
+      final wired = wire(
         verifierResult: const Result.err(
           AppError.transient('auth.jwks_fetch_failed', 'unreachable'),
         ),
         authorizationHeader: 'Bearer any',
       );
-      final downstream = _okHandler();
+      final downstream = okHandler();
       final guarded = bearerAuth()(downstream.handler);
 
       final response = await guarded(wired.context);

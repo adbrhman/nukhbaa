@@ -7,7 +7,7 @@ import 'package:shared/shared.dart';
 /// the script is exhausted it repeats the last id (tests that don't care about
 /// id order just need *some* valid UUID).
 final class FakeIdGenerator implements IdGenerator {
-  FakeIdGenerator(this._ids) : assert(_ids.length > 0, 'need at least one id');
+  FakeIdGenerator(this._ids) : assert(_ids.isNotEmpty, 'need at least one id');
 
   final List<String> _ids;
   int _index = 0;

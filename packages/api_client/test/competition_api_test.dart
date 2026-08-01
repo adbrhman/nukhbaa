@@ -1,5 +1,4 @@
 import 'package:api_client/api_client.dart';
-import 'package:api_client/src/competition_api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
@@ -25,7 +24,7 @@ void main() {
 
       final result = await CompetitionApi(ctx.transport).listCompetitions();
 
-      expect(result, Result<List<CompetitionDto>>.ok(const [a, b]));
+      expect(result, const Result<List<CompetitionDto>>.ok([a, b]));
       expect(ctx.captured.single.url.path, '/competitions');
       expect(ctx.captured.single.method, 'GET');
     });
@@ -75,7 +74,7 @@ void main() {
 
       final result = await CompetitionApi(ctx.transport).getCompetition('c-9');
 
-      expect(result, Result<CompetitionDto>.ok(dto));
+      expect(result, const Result<CompetitionDto>.ok(dto));
       expect(ctx.captured.single.url.path, '/competitions/c-9');
     });
 
@@ -117,7 +116,7 @@ void main() {
         ctx.transport,
       ).listCompetitionSeasons('c-1');
 
-      expect(result, Result<List<SeasonDto>>.ok(const [a, b]));
+      expect(result, const Result<List<SeasonDto>>.ok([a, b]));
       expect(ctx.captured.single.url.path, '/competitions/c-1/seasons');
       expect(ctx.captured.single.method, 'GET');
     });
@@ -174,7 +173,7 @@ void main() {
         ctx.transport,
       ).listSeasonRounds('s-1');
 
-      expect(result, Result<List<RoundDto>>.ok(const [r1, r2]));
+      expect(result, const Result<List<RoundDto>>.ok([r1, r2]));
       expect(ctx.captured.single.url.path, '/seasons/s-1/rounds');
       expect(ctx.captured.single.method, 'GET');
     });
@@ -216,7 +215,7 @@ void main() {
 
       final result = await CompetitionApi(ctx.transport).getRound('r-1');
 
-      expect(result, Result<RoundDto>.ok(dto));
+      expect(result, const Result<RoundDto>.ok(dto));
       expect(ctx.captured.single.url.path, '/rounds/r-1');
     });
 
@@ -252,7 +251,7 @@ void main() {
 
       final result = await CompetitionApi(ctx.transport).listRoundFixtures('r');
 
-      expect(result, Result<List<RoundFixtureDto>>.ok(const [f0, f1]));
+      expect(result, const Result<List<RoundFixtureDto>>.ok([f0, f1]));
       expect(ctx.captured.single.url.path, '/rounds/r/fixtures');
     });
 

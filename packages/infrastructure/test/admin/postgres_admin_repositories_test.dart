@@ -191,7 +191,7 @@ void main() {
   });
 
   group('PostgresUserAdminRepository.updateUser', () {
-    User _candidate({UserStatus status = UserStatus.suspended}) => User(
+    User candidate({UserStatus status = UserStatus.suspended}) => User(
       id: _uId,
       email: 'human@example.com',
       role: PlatformRole.user,
@@ -204,7 +204,7 @@ void main() {
         final conn = _rows([_userRow(status: 'suspended')]);
         final repo = PostgresUserAdminRepository(conn);
 
-        final result = await repo.updateUser(_candidate());
+        final result = await repo.updateUser(candidate());
 
         final sql = conn.sqls.single;
         expect(sql, contains('UPDATE identity.users'));
@@ -221,7 +221,7 @@ void main() {
       'an empty RETURNING is identity.update_no_row (not a silent no-op)',
       () async {
         final repo = PostgresUserAdminRepository(_rows([]));
-        final result = await repo.updateUser(_candidate());
+        final result = await repo.updateUser(candidate());
         final error = (result as Err<User>).error;
         expect(error.code, 'identity.update_no_row');
         expect(error.kind, ErrorKind.transient);
@@ -231,13 +231,13 @@ void main() {
     test('binds the active token when reinstating', () async {
       final conn = _rows([_userRow(status: 'active')]);
       final repo = PostgresUserAdminRepository(conn);
-      await repo.updateUser(_candidate(status: UserStatus.active));
+      await repo.updateUser(candidate(status: UserStatus.active));
       expect(conn.parameters.single['status'], 'active');
     });
 
     test('passes a transient update failure through', () async {
       final repo = PostgresUserAdminRepository(_fails());
-      final result = await repo.updateUser(_candidate());
+      final result = await repo.updateUser(candidate());
       expect((result as Err<User>).error.kind, ErrorKind.transient);
     });
   });

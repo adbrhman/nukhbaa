@@ -50,8 +50,7 @@ final class FakeFixtureResultRepository implements FixtureResultRepository {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
     return Result.ok(<FixtureResult>[
-      for (final ref in fixtures)
-        if (_byFixture[ref.value] case final r?) r,
+      for (final ref in fixtures) ?_byFixture[ref.value],
     ]);
   }
 }

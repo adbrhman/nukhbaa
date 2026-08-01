@@ -16,12 +16,15 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final TextEditingController _tokenController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  bool _isRegister = false;
   @override
   void dispose() {
-    _tokenController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -29,9 +32,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (current is SessionAuthenticating) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     unawaited(
-      ref
-          .read(sessionControllerProvider.notifier)
-          .signIn(_tokenController.text),
+      _isRegister
+          ? ref
+                .read(sessionControllerProvider.notifier)
+                .register(
+                  email: _emailController.text.trim(),
+                  password: _passwordController.text,
+                )
+          : ref
+                .read(sessionControllerProvider.notifier)
+                .signInWithCredentials(
+                  email: _emailController.text.trim(),
+                  password: _passwordController.text,
+                ),
     );
   }
 
@@ -77,9 +90,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
-                            const Text(
-                              'Sign in',
-                              key: Key('signIn.title'),
+                            Text(
+                              _isRegister ? 'Create account' : 'Sign in',
+                              key: const Key('signIn.title'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 22,
@@ -88,8 +101,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Enter your Nukhba access token to continue.',
+                            Text(
+                              _isRegister
+                                  ? 'Create an account to start playing Nukhba.'
+                                  : 'Sign in with your email and password to continue.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
@@ -105,8 +120,31 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               const SizedBox(height: 16),
                             ],
                             TextFormField(
-                              key: const Key('signIn.tokenField'),
-                              controller: _tokenController,
+                              key: const Key('signIn.emailField'),
+                              controller: _emailController,
+                              enabled: !inFlight,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              keyboardType: TextInputType.emailAddress,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                              ),
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                prefixIcon: Icon(
+                                  Icons.mail_outline,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              validator: (String? value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Please enter your email.'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              key: const Key('signIn.passwordField'),
+                              controller: _passwordController,
                               enabled: !inFlight,
                               obscureText: _obscure,
                               autocorrect: false,
@@ -115,15 +153,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 color: AppColors.textPrimary,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Access token',
+                                labelText: 'Password',
                                 prefixIcon: const Icon(
-                                  Icons.vpn_key_outlined,
+                                  Icons.lock_outline,
                                   color: AppColors.textMuted,
                                 ),
                                 suffixIcon: IconButton(
                                   tooltip: _obscure
-                                      ? 'Show token'
-                                      : 'Hide token',
+                                      ? 'Show password'
+                                      : 'Hide password',
                                   icon: Icon(
                                     _obscure
                                         ? Icons.visibility_off_outlined
@@ -136,7 +174,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
-                                  ? 'Please enter your access token.'
+                                  ? 'Please enter your password.'
                                   : null,
                               onFieldSubmitted: (_) => _submit(session),
                             ),
@@ -155,7 +193,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                         color: AppColors.onPrimary,
                                       ),
                                     )
-                                  : const Text('Sign in'),
+                                  : Text(
+                                      _isRegister
+                                          ? 'Create account'
+                                          : 'Sign in',
+                                    ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              key: const Key('signIn.toggleMode'),
+                              onPressed: inFlight
+                                  ? null
+                                  : () => setState(
+                                      () => _isRegister = !_isRegister,
+                                    ),
+                              child: Text(
+                                _isRegister
+                                    ? 'Already have an account? Sign in'
+                                    : "New here? Create an account",
+                              ),
                             ),
                           ],
                         ),

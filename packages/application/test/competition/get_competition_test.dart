@@ -10,8 +10,8 @@ const _user = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const _comp = '11111111-1111-1111-1111-111111111111';
 const _absent = '99999999-9999-9999-9999-999999999999';
 
-Competition _competition() => Competition.fromStored(
-  id: const CompetitionId(_comp),
+Competition _competition() => const Competition.fromStored(
+  id: CompetitionId(_comp),
   name: 'Al-Nukhba Cup',
   format: FormatType.footballScoreline,
   visibility: CompetitionVisibility.public,

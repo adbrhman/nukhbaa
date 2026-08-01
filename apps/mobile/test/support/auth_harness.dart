@@ -119,6 +119,14 @@ http.Response okMe(AuthenticatedUserDto user) => http.Response(
   headers: const {'content-type': 'application/json'},
 );
 
+/// A `200 OK` `/auth/login` (or `/auth/register`) response carrying an
+/// access token.
+http.Response okLoginResponse(String accessToken) => http.Response(
+  jsonEncode({'schema_version': 1, 'access_token': accessToken}),
+  200,
+  headers: const {'content-type': 'application/json'},
+);
+
 /// A non-2xx response carrying the server's versioned error envelope.
 http.Response errorEnvelope(int status, String code, String message) =>
     http.Response(

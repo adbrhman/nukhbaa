@@ -16,7 +16,7 @@ AuditEntry _seedEntry({
 }) {
   final built = AuditEntry.create(
     id: AuditEntryId(id),
-    actorId: UserId(adminUuid),
+    actorId: const UserId(adminUuid),
     action: action,
     targetRef: targetRef,
     occurredAt: occurredAt,

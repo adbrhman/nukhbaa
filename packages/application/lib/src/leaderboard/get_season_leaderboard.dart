@@ -69,8 +69,8 @@ final class GetSeasonLeaderboard {
     }
     final participant = (participantResult as Ok<Participant?>).value;
     if (participant == null) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'leaderboard.not_a_participant',
           'Only a member of the season may view its leaderboard',
         ),

@@ -106,6 +106,7 @@ class PostgresConnection implements DbExecutor {
   /// API verified against `postgres` 3.5.x (2026-07-09):
   ///   * `Session.execute(Sql.named(String), {Map<String, Object?>? parameters})`
   ///   * `ResultRow.toColumnMap()` -> `Map<String, dynamic>`.
+  @override
   Future<Result<List<Map<String, dynamic>>>> query(
     String sql, {
     Map<String, Object?> parameters = const {},

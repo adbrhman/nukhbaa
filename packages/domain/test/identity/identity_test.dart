@@ -111,13 +111,13 @@ void main() {
     });
 
     test('value equality ignores nothing it carries', () {
-      final a = AuthenticatedUser(
-        userId: const UserId(_uuid),
+      final a = const AuthenticatedUser(
+        userId: UserId(_uuid),
         role: PlatformRole.user,
         email: 'a@example.com',
       );
-      final b = AuthenticatedUser(
-        userId: const UserId(_uuid),
+      final b = const AuthenticatedUser(
+        userId: UserId(_uuid),
         role: PlatformRole.user,
         email: 'a@example.com',
       );

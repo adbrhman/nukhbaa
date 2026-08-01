@@ -64,8 +64,8 @@ final class MarkNotificationRead {
     );
     return switch (marked) {
       Err<bool?>(:final error) => Result.err(error),
-      Ok<bool?>(value: null) => Result.err(
-        const AppError.authorization(
+      Ok<bool?>(value: null) => const Result.err(
+        AppError.authorization(
           'notification.not_found',
           'No such notification is visible to this caller',
         ),

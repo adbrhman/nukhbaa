@@ -6,13 +6,13 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // ignore: always_use_package_imports
 import '../../routes/participants/[id]/balance/index.dart' as balance_route;
 // ignore: always_use_package_imports
 import '../../routes/participants/[id]/entries/index.dart' as entries_route;
 // ignore: always_use_package_imports
 import '../../routes/rounds/[id]/ledger/index.dart' as post_ledger_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Ledger surface — the three routes
 /// `POST /rounds/{id}/ledger` (post a scored round to the append-only ledger),

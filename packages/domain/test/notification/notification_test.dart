@@ -133,7 +133,7 @@ void main() {
         id: id,
         recipientId: recipient,
         kind: NotificationKind.roundScored,
-        subject: NotificationSubject.fromStored(
+        subject: const NotificationSubject.fromStored(
           kind: NotificationKind.roundScored,
           roundId: roundId,
         ),
@@ -149,7 +149,7 @@ void main() {
         id: id,
         recipientId: recipient,
         kind: NotificationKind.roundScored,
-        subject: NotificationSubject.fromStored(
+        subject: const NotificationSubject.fromStored(
           kind: NotificationKind.roundScored,
           roundId: roundId,
         ),

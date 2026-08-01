@@ -75,8 +75,8 @@ final class GetRoundScores {
     }
     final participant = (participantResult as Ok<Participant?>).value;
     if (participant == null) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'scoring.not_a_participant',
           'Only a participant of the season may view its scores',
         ),

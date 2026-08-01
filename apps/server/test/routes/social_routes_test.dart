@@ -6,12 +6,12 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
+// ignore: always_use_package_imports
+import '../../routes/groups/[id]/feed/index.dart' as feed_route;
 // ignore: always_use_package_imports
 import '../../routes/groups/[id]/rounds/[roundId]/reactions/index.dart'
     as reactions_route;
-// ignore: always_use_package_imports
-import '../../routes/groups/[id]/feed/index.dart' as feed_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Social (Tier-3) surface — the reactions route (`PUT` /
 /// `DELETE` / `GET` on `/groups/{id}/rounds/{roundId}/reactions`) and the
@@ -404,13 +404,13 @@ void main() {
       seedMember(setup.groups, kMemberUserId);
       setup.feed.seed(kGroupId, [
         ActivityEvent.memberJoined(
-          groupId: GroupId(kGroupId),
-          userId: UserId(kMemberUserId),
+          groupId: const GroupId(kGroupId),
+          userId: const UserId(kMemberUserId),
           occurredAt: DateTime.utc(2026, 7, 10),
         ),
         ActivityEvent.roundScored(
-          groupId: GroupId(kGroupId),
-          roundId: RoundId(kRoundId),
+          groupId: const GroupId(kGroupId),
+          roundId: const RoundId(kRoundId),
           occurredAt: DateTime.utc(2026, 7, 12),
         ),
       ]);

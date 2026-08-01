@@ -6,21 +6,21 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
-// ignore: always_use_package_imports
-import '../../routes/groups/index.dart' as create_route;
-// ignore: always_use_package_imports
-import '../../routes/groups/join/index.dart' as join_route;
 // ignore: always_use_package_imports
 import '../../routes/groups/[id]/index.dart' as group_route;
-// ignore: always_use_package_imports
-import '../../routes/groups/[id]/members/index.dart' as members_route;
 // ignore: always_use_package_imports
 import '../../routes/groups/[id]/invite/regenerate/index.dart'
     as regenerate_route;
 // ignore: always_use_package_imports
+import '../../routes/groups/[id]/members/index.dart' as members_route;
+// ignore: always_use_package_imports
 import '../../routes/groups/[id]/seasons/[seasonId]/leaderboard/index.dart'
     as group_leaderboard_route;
+// ignore: always_use_package_imports
+import '../../routes/groups/index.dart' as create_route;
+// ignore: always_use_package_imports
+import '../../routes/groups/join/index.dart' as join_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Groups surface — all seven routes, exercised through the
 /// *real* wiring (`context.read<Future<CompositionRoot>>()` →

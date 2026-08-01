@@ -1,5 +1,4 @@
 import 'package:api_client/api_client.dart';
-import 'package:api_client/src/auth_api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
@@ -26,7 +25,7 @@ void main() {
 
         final result = await AuthApi(ctx.transport).me();
 
-        expect(result, Result<MeResponseDto>.ok(expected));
+        expect(result, const Result<MeResponseDto>.ok(expected));
         final req = ctx.captured.single;
         expect(req.method, 'GET');
         expect(req.url.path, '/me');

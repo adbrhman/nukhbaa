@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:api_client/api_client.dart';
 import 'package:api_client/src/api_error.dart';
 import 'package:contracts/contracts.dart';
 import 'package:http/http.dart' as http;

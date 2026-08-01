@@ -37,7 +37,7 @@ export 'src/api_transport.dart' show ApiTransport, TokenProvider;
 export 'src/auth_api.dart' show AuthApi;
 export 'src/competition_api.dart' show CompetitionApi;
 export 'src/groups_api.dart' show GroupsApi;
-export 'src/ledger_api.dart' show LedgerApi;
 export 'src/leaderboards_api.dart' show LeaderboardsApi;
+export 'src/ledger_api.dart' show LedgerApi;
 export 'src/notifications_api.dart' show NotificationsApi;
 export 'src/prediction_api.dart' show PredictionApi;

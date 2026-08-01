@@ -44,25 +44,33 @@ void main() {
   testWidgets(
     'no token -> sign-in form; successful sign-in -> account screen',
     (tester) async {
-      final harness = buildAuthHarness((_) async => okMe(sampleUser));
+      final harness = buildAuthHarness((request) async {
+        if (request.url.path == '/auth/login') {
+          return okLoginResponse('fresh-jwt');
+        }
+        return okMe(sampleUser);
+      });
       addTearDown(harness.dispose);
 
       await tester.pumpWidget(_appUnder(harness));
       await tester.pumpAndSettle();
 
-      // Signed out: the form is shown.
       expect(find.byKey(const Key('signIn.title')), findsOneWidget);
 
       await tester.enterText(
-        find.byKey(const Key('signIn.tokenField')),
-        'fresh-jwt',
+        find.byKey(const Key('signIn.emailField')),
+        'a@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const Key('signIn.passwordField')),
+        'correct-password',
       );
       await tester.tap(find.byKey(const Key('signIn.submit')));
       await tester.pumpAndSettle();
 
-      // Landed on the account screen with the /me principal.
       expect(find.byKey(const Key('account.title')), findsOneWidget);
       expect(find.text('u-1'), findsOneWidget);
+      expect(await harness.store.read(), 'fresh-jwt');
       expect(await harness.store.read(), 'fresh-jwt');
     },
   );
@@ -71,14 +79,26 @@ void main() {
     tester,
   ) async {
     final harness = buildAuthHarness(
-      (_) async => errorEnvelope(401, 'auth.token_invalid', 'Invalid token.'),
+      (_) async => errorEnvelope(
+        401,
+        'auth.invalid_credentials',
+        'Incorrect email or password.',
+      ),
     );
     addTearDown(harness.dispose);
 
     await tester.pumpWidget(_appUnder(harness));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('signIn.tokenField')), 'bogus');
+    await tester.enterText(
+      find.byKey(const Key('signIn.emailField')),
+      'a@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const Key('signIn.passwordField')),
+      'wrong-password',
+    );
+    await tester.tap(find.byKey(const Key('signIn.submit')));
     await tester.tap(find.byKey(const Key('signIn.submit')));
     await tester.pumpAndSettle();
 
@@ -102,16 +122,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.byKey(const Key('signIn.tokenField')),
-      'good-but-offline',
+      find.byKey(const Key('signIn.emailField')),
+      'a@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const Key('signIn.passwordField')),
+      'some-password',
     );
     await tester.tap(find.byKey(const Key('signIn.submit')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('signIn.errorBanner')), findsOneWidget);
     expect(find.textContaining('check your connection'), findsOneWidget);
-    // Transient failure keeps the token for a retry.
-    expect(await harness.store.read(), 'good-but-offline');
   });
 
   testWidgets('sign-out from the account screen returns to the sign-in form', (

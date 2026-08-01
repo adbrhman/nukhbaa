@@ -92,6 +92,48 @@ class SessionController extends _$SessionController {
     state = AsyncData(resolved);
   }
 
+  /// Signs in with [email] + [password] via `POST /auth/login`.
+  Future<void> signInWithCredentials({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncData(SessionAuthenticating());
+    final result = await _authApi.login(email: email, password: password);
+    state = AsyncData(await _onAuthResponse(result));
+  }
+
+  /// Registers a new account with [email] + [password] via
+  /// `POST /auth/register`.
+  Future<void> register({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncData(SessionAuthenticating());
+    final result = await _authApi.register(email: email, password: password);
+    state = AsyncData(await _onAuthResponse(result));
+  }
+
+  /// Maps a login/register [Result] to the resulting [SessionState].
+  Future<SessionState> _onAuthResponse(Result<AuthResponseDto> result) async {
+    switch (result) {
+      case Ok<AuthResponseDto>(:final value):
+        final token = value.accessToken;
+        if (token == null || token.isEmpty) {
+          return const SessionFailed(
+            AppError.validation(
+              'auth.confirmation_required',
+              'Check your email to confirm your account before signing in.',
+            ),
+          );
+        }
+        await _store.write(token);
+        return _validateHeldToken(clearOnAuthFailure: true);
+      case Err<AuthResponseDto>(:final error):
+        await _store.clear();
+        return SessionFailed(error);
+    }
+  }
+
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {

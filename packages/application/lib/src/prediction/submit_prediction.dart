@@ -129,8 +129,8 @@ final class SubmitPrediction {
     }
     final participant = (participantResult as Ok<Participant?>).value;
     if (participant == null) {
-      return Result.err(
-        const AppError.invariant(
+      return const Result.err(
+        AppError.invariant(
           'prediction.not_a_participant',
           'You must join the season before submitting a prediction',
         ),
@@ -147,8 +147,8 @@ final class SubmitPrediction {
       for (final link in roundFixtures) link.fixture.value,
     };
     if (requiredFixtureIds.isEmpty) {
-      return Result.err(
-        const AppError.invariant(
+      return const Result.err(
+        AppError.invariant(
           'prediction.round_has_no_fixtures',
           'The round has no fixtures to predict',
         ),
@@ -193,8 +193,8 @@ final class SubmitPrediction {
     // required set catches both "too few distinct fixtures" and duplicates.
     if (submittedFixtureIds.length != requiredFixtureIds.length ||
         !submittedFixtureIds.containsAll(requiredFixtureIds)) {
-      return Result.err(
-        const AppError.validation(
+      return const Result.err(
+        AppError.validation(
           'prediction.incomplete_forecast',
           'A prediction must cover every fixture in the round exactly once',
         ),

@@ -142,8 +142,8 @@ final class ReactToRound {
     }
     final membership = (membershipResult as Ok<GroupMembership?>).value;
     if (membership == null) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'group.not_a_member',
           'Only a member of the group may react in it',
         ),

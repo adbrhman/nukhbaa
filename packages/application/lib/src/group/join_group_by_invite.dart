@@ -67,8 +67,8 @@ final class JoinGroupByInvite {
     }
     final group = (groupResult as Ok<Group?>).value;
     if (group == null) {
-      return Result.err(
-        const AppError.invariant(
+      return const Result.err(
+        AppError.invariant(
           'group.invite_invalid',
           'The invite code is not valid',
         ),

@@ -1,15 +1,14 @@
 import 'dart:io';
 
 import 'package:application/application.dart';
-import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a relative
 // import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
 import '../../routes/competitions/index.dart' as route;
+import 'competition_route_harness.dart';
 
 void main() {
   group('POST /competitions', () {

@@ -5,13 +5,13 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
+// ignore: always_use_package_imports
+import '../../routes/notifications/[id]/read/index.dart' as read_route;
 // ignore: always_use_package_imports
 import '../../routes/notifications/index.dart' as list_route;
 // ignore: always_use_package_imports
 import '../../routes/notifications/unread_count/index.dart' as count_route;
-// ignore: always_use_package_imports
-import '../../routes/notifications/[id]/read/index.dart' as read_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Notifications (Tier-3) surface — the list route
 /// (`GET /notifications`), the unread-count route

@@ -787,7 +787,7 @@ WHERE season_id = @season_id AND user_id = @user_id
     // A recognized integrity class we could not attribute to a named
     // constraint (e.g. a trigger-raised check_violation, which carries no
     // constraint name): still a business-rule conflict, not a transient fault.
-    return AppError.invariant(
+    return const AppError.invariant(
       'competition.integrity_violation',
       'The write violated a competition integrity rule',
     );

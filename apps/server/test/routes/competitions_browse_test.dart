@@ -1,19 +1,18 @@
 import 'dart:io';
 
 import 'package:application/application.dart';
-import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
+// ignore: always_use_package_imports
+import '../../routes/competitions/[id]/index.dart' as detail_route;
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a relative
 // import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
 import '../../routes/competitions/index.dart' as list_route;
-// ignore: always_use_package_imports
-import '../../routes/competitions/[id]/index.dart' as detail_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Competition *browse* read surface added under BLOCKER
 /// FA-1 (2026-07-13): `GET /competitions` (`_list`) and `GET /competitions/{id}`.

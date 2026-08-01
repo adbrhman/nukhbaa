@@ -44,7 +44,7 @@ void main() {
       );
       expect((result as Ok<Group>).value.name, 'Renamed');
       final stored =
-          (await repo.findGroup(GroupId(_groupId)) as Ok<Group?>).value!;
+          (await repo.findGroup(const GroupId(_groupId)) as Ok<Group?>).value!;
       expect(stored.name, 'Renamed');
     });
 

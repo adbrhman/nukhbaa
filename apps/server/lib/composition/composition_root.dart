@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:http/http.dart' as http;
 import 'package:infrastructure/infrastructure.dart';
 import 'package:meta/meta.dart';
 import 'package:shared/shared.dart';
@@ -19,6 +20,8 @@ final class CompositionRoot {
     required this.checkHealth,
     required this.authenticateRequest,
     required this.getCurrentUser,
+    required this.login,
+    required this.register,
     required this.createCompetition,
     required this.startSeason,
     required this.openRound,
@@ -92,6 +95,8 @@ final class CompositionRoot {
   @visibleForTesting
   CompositionRoot.forTesting({
     CheckHealth? checkHealth,
+    LoginWithPassword? login,
+    RegisterWithPassword? register,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
     CreateCompetition? createCompetition,
@@ -137,6 +142,8 @@ final class CompositionRoot {
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
+       login = login ?? _absentLogin(),
+       register = register ?? _absentRegister(),
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
@@ -197,6 +204,15 @@ final class CompositionRoot {
 
   /// Builds a [CheckHealth] wired to a repository that fails if pinged, so an
   /// unwired health slice surfaces immediately in a test.
+  /// Backs an "absent" [AuthGateway]: throws if a test reaches the auth
+  /// slice it never wired.
+  static LoginWithPassword _absentLogin() =>
+      LoginWithPassword(_UnwiredAuthGateway());
+
+  /// Backs an "absent" [AuthGateway] for registration.
+  static RegisterWithPassword _absentRegister() =>
+      RegisterWithPassword(_UnwiredAuthGateway());
+
   static CheckHealth _absentCheckHealth() =>
       CheckHealth(_UnwiredHealthRepository());
 
@@ -517,6 +533,12 @@ final class CompositionRoot {
   /// The health use-case, ready to be invoked by routes.
   final CheckHealth checkHealth;
 
+  /// Logs in with email/password, exchanging credentials for a session.
+  final LoginWithPassword login;
+
+  /// Registers a new email/password account.
+  final RegisterWithPassword register;
+
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
 
@@ -726,6 +748,14 @@ final class CompositionRoot {
     final verifier = SupabaseJwtVerifier(authConfig, jwksClient);
     final directory = PostgresUserDirectory(connection);
 
+    // Identity slice (continued): email/password auth proxy, backed by
+    // the existing SupabaseAuthClient adapted to the AuthGateway port.
+    final authGateway = SupabaseAuthGateway(
+      SupabaseAuthClient(config: authConfig, httpClient: http.Client()),
+    );
+    final login = LoginWithPassword(authGateway);
+    final register = RegisterWithPassword(authGateway);
+
     // Competition slice: the Postgres-backed repository, the configured
     // ruleset provider (the placeholder-free Scoring seam), and the shared
     // id/clock adapters. Every competition use-case is wired here so nothing
@@ -848,6 +878,8 @@ final class CompositionRoot {
       checkHealth: checkHealth,
       authenticateRequest: AuthenticateRequest(verifier),
       getCurrentUser: GetCurrentUser(directory),
+      login: login,
+      register: register,
       createCompetition: CreateCompetition(
         repository: competitionRepository,
         idGenerator: idGenerator,
@@ -1404,4 +1436,20 @@ final class _UnwiredNotificationRepository implements NotificationRepository {
 
   @override
   Future<Result<int>> unreadCount(UserId recipientId) => _unwired();
+}
+
+/// Backs an "absent" [AuthGateway]: throws if a test reaches the auth
+/// slice it never wired.
+final class _UnwiredAuthGateway implements AuthGateway {
+  @override
+  Future<Result<IssuedSession>> signInWithPassword({
+    required String email,
+    required String password,
+  }) => throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<IssuedSession>> signUpWithPassword({
+    required String email,
+    required String password,
+  }) => throw StateError('An auth use-case was not wired into this root');
 }

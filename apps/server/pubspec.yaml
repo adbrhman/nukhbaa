@@ -20,12 +20,12 @@ dependencies:
   # time). Declared explicitly rather than relying on a transitive pull-in.
   meta: ^1.15.0
 
+  http: any
 dev_dependencies:
   # NOTE: `dart_frog_gen` is intentionally NOT declared here. It is a build-time
   # dependency consumed by `dart_frog_cli` during `dart_frog build`; the CLI
   # resolves it itself. No source file imports it, so pinning it here would only
   # risk a version conflict with the CLI (gen is at 2.x while dart_frog is 1.x).
-  http: ^1.2.0
   mocktail: ^1.0.0
   test: ^1.26.0
   lints: ^6.0.0

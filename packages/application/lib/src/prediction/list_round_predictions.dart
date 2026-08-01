@@ -64,8 +64,8 @@ final class ListRoundPredictions {
 
     // Visibility gate: an open round's predictions stay private.
     if (round.status.isOpen) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'prediction.round_not_locked',
           'Predictions become visible only after the round is locked',
         ),
@@ -82,8 +82,8 @@ final class ListRoundPredictions {
     }
     final participant = (participantResult as Ok<Participant?>).value;
     if (participant == null) {
-      return Result.err(
-        const AppError.authorization(
+      return const Result.err(
+        AppError.authorization(
           'prediction.not_a_participant',
           'Only a participant of the season may view its predictions',
         ),

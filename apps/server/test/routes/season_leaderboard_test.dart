@@ -6,9 +6,9 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // ignore: always_use_package_imports
 import '../../routes/seasons/[id]/leaderboard/index.dart' as leaderboard_route;
+import 'competition_route_harness.dart';
 
 /// Route test for the Leaderboards surface — `GET /seasons/{id}/leaderboard`.
 ///

@@ -107,8 +107,8 @@ final class ScoreRound {
     }
     final roundFixtures = (fixturesResult as Ok<List<RoundFixture>>).value;
     if (roundFixtures.isEmpty) {
-      return Result.err(
-        const AppError.invariant(
+      return const Result.err(
+        AppError.invariant(
           'scoring.round_has_no_fixtures',
           'A round with no fixtures cannot be scored',
         ),
@@ -126,8 +126,8 @@ final class ScoreRound {
     }
     final results = (resultsResult as Ok<List<FixtureResult>>).value;
     if (results.length != fixtureRefs.length) {
-      return Result.err(
-        const AppError.invariant(
+      return const Result.err(
+        AppError.invariant(
           'scoring.results_incomplete',
           'Every fixture in the round must have a recorded result before '
               'the round can be scored',

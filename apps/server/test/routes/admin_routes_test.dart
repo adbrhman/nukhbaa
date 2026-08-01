@@ -6,15 +6,15 @@ import 'package:server/composition/composition_root.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import 'competition_route_harness.dart';
 // ignore: always_use_package_imports
-import '../../routes/admin/users/[id]/suspend/index.dart' as suspend_route;
-// ignore: always_use_package_imports
-import '../../routes/admin/users/[id]/reinstate/index.dart' as reinstate_route;
+import '../../routes/admin/audit/index.dart' as audit_route;
 // ignore: always_use_package_imports
 import '../../routes/admin/participants/[id]/ledger/index.dart' as ledger_route;
 // ignore: always_use_package_imports
-import '../../routes/admin/audit/index.dart' as audit_route;
+import '../../routes/admin/users/[id]/reinstate/index.dart' as reinstate_route;
+// ignore: always_use_package_imports
+import '../../routes/admin/users/[id]/suspend/index.dart' as suspend_route;
+import 'competition_route_harness.dart';
 
 /// Route tests for the Admin Panel surface — the four routes under `/admin`
 /// (`POST /admin/users/{id}/suspend`, `POST /admin/users/{id}/reinstate`,
