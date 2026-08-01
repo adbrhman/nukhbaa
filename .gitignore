@@ -27,3 +27,4 @@ pubspec_overrides.yaml
 .DS_Store
 docker-build.log
 *.log
+--list
