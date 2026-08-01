@@ -30,7 +30,7 @@ Future<Response> onRequest(RequestContext context) async {
     };
   } catch (e, st) {
     // اللوق فقط للتشخيص الداخلي — لا تُسرّب التفاصيل للعميل أبداً.
-    print('health check failed: $e\n$st');
+    stderr.writeln('health check failed: $e\n$st');
     return Response.json(
       statusCode: HttpStatus.internalServerError,
       body: {'error': 'internal_error'},

@@ -63,12 +63,19 @@ jobs:
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Require API base URL
+        run: |
+          if [ -z "${{ vars.NUKHBA_API_BASE_URL }}" ]; then
+            echo "::error::NUKHBA_API_BASE_URL repository variable is not set. Refusing to publish a build pointing at a placeholder API."
+            exit 1
+          fi
+
       - name: Build web
         working-directory: apps/mobile
         run: >-
           flutter build web --release
           --base-href "/${{ github.event.repository.name }}/"
-          --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL || 'https://api.nukhba.example' }}
+          --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
 
       - name: SPA fallback
         run: cp apps/mobile/build/web/index.html apps/mobile/build/web/404.html

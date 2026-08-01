@@ -57,7 +57,19 @@ ApiTransport apiTransport(Ref ref) {
     baseUri: config.apiBaseUrl,
     httpClient: client,
     tokenProvider: store.read,
+    onUnauthorized: () async {
+      await store.clear();
+      ref.read(sessionExpiryProvider.notifier).signal();
+    },
   );
+}
+
+@Riverpod(keepAlive: true)
+class SessionExpiry extends _$SessionExpiry {
+  @override
+  int build() => 0;
+
+  void signal() => state = state + 1;
 }
 
 /// The typed Auth (identity) client over the shared transport.
