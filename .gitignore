@@ -28,3 +28,4 @@ pubspec_overrides.yaml
 docker-build.log
 *.log
 --list
+--list
