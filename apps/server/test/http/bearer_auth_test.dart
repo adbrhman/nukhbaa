@@ -108,7 +108,7 @@ void main() {
         authorizationHeader: 'Bearer good-token',
       );
       final downstream = okHandler();
-  
+
       final response = await bearerAuth()(downstream.handler)(wired.context);
 
       expect(response.statusCode, HttpStatus.ok);
@@ -150,7 +150,7 @@ void main() {
     test('rejects a missing Authorization header with 401', () async {
       final wired = wire(verifierResult: Result.ok(_principal()));
       final downstream = okHandler();
-  
+
       final response = await bearerAuth()(downstream.handler)(wired.context);
 
       expect(response.statusCode, HttpStatus.unauthorized);
@@ -165,7 +165,7 @@ void main() {
         authorizationHeader: 'Bearer bad-token',
       );
       final downstream = okHandler();
-  
+
       final response = await bearerAuth()(downstream.handler)(wired.context);
 
       expect(response.statusCode, HttpStatus.unauthorized);
