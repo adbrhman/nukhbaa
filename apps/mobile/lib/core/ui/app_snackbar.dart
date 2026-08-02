@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
 
@@ -30,7 +31,7 @@ abstract final class AppSnackbar {
         SnackBar(
           content: Row(
             children: [
-              Icon(icon, size: 20, color: accent),
+              Icon(icon, size: AppSizes.iconMd, color: accent),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(

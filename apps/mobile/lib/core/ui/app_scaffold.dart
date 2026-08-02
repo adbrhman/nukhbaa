@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../design/app_sizes.dart';
 import '../design/app_tokens.dart';
 
 /// Root scaffold that centres content on wide screens and applies
@@ -21,8 +22,6 @@ class AppScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool resizeToAvoidBottomInset;
 
-  static const double _maxContentWidth = 600;
-
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
@@ -34,7 +33,7 @@ class AppScaffold extends StatelessWidget {
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+          constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
           child: body,
         ),
       ),

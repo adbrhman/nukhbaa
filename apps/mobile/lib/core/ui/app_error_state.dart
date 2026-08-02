@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
 import 'app_button.dart';
@@ -28,7 +29,11 @@ class AppErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 56, color: tokens.error),
+            Icon(
+              Icons.error_outline_rounded,
+              size: AppSizes.iconStateLg,
+              color: tokens.error,
+            ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               message ?? 'حدث خطأ ما',

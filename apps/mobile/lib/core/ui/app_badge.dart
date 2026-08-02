@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
 
@@ -17,8 +18,6 @@ class AppBadge extends StatelessWidget {
   final String label;
   final AppBadgeTone tone;
   final IconData? icon;
-
-  static const double _pillRadius = 999;
 
   @override
   Widget build(BuildContext context) {
@@ -50,13 +49,13 @@ class AppBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(_pillRadius),
+        borderRadius: BorderRadius.circular(AppSizes.pillRadius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: fg),
+            Icon(icon, size: AppSizes.iconInline, color: fg),
             const SizedBox(width: AppSpacing.xs),
           ],
           Text(label, style: text.labelSmall?.copyWith(color: fg)),

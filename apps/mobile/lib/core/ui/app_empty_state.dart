@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
 import 'app_button.dart';
@@ -33,7 +34,7 @@ class AppEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 56, color: tokens.textMuted),
+              Icon(icon, size: AppSizes.iconStateLg, color: tokens.textMuted),
               const SizedBox(height: AppSpacing.xl),
             ],
             Text(

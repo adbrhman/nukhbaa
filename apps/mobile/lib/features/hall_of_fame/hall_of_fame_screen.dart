@@ -3,7 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'hall_of_fame_providers.dart';
 
@@ -19,7 +19,7 @@ class HallOfFameScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Hall of Fame', key: Key('hallOfFame.title')),
       ),
-      body: AsyncListView<HallOfFameEntryDto>(
+      body: AsyncListView(
         value: board.whenData((dto) => dto.entries),
         emptyMessage: 'Nobody has earned any points yet.',
         onRetry: () => ref.invalidate(hallOfFameProvider),
@@ -35,6 +35,8 @@ class _HallOfFameRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
     return ListTile(
       key: Key('hallOfFame.item.${entry.userId}'),
       leading: CircleAvatar(
@@ -46,19 +48,19 @@ class _HallOfFameRow extends StatelessWidget {
       title: Text(
         entry.userId,
         key: Key('hallOfFame.user.${entry.userId}'),
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: text.bodyLarge?.copyWith(color: tokens.textPrimary),
       ),
       subtitle: Text(
         '${entry.seasonsPlayed} seasons played',
         key: Key('hallOfFame.seasonsPlayed.${entry.userId}'),
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: text.bodySmall?.copyWith(color: tokens.textSecondary),
       ),
       trailing: Text(
         '${entry.totalPoints} pts',
         key: Key('hallOfFame.points.${entry.userId}'),
-        style: const TextStyle(
+        style: text.labelLarge?.copyWith(
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: tokens.primary,
         ),
       ),
     );
