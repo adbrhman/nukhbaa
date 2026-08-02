@@ -82,7 +82,7 @@ final class AuthConfig {
         jwksUri: Uri.parse(
           'https://$ref.supabase.co/auth/v1/.well-known/jwks.json',
         ),
-        gotrueUri: Uri.parse('https://$ref.supabase.co/auth/v1'),
+        gotrueUri: Uri.parse('https://$ref.supabase.co/auth/v1/'),
         legacyHs256Secret: (legacySecret == null || legacySecret.isEmpty)
             ? null
             : legacySecret,
@@ -108,6 +108,12 @@ final class AuthConfig {
 
   /// The project's GoTrue (Supabase Auth) base URI, used for the server-side
   /// email/password login & registration proxy.
+  ///
+  /// MUST retain a trailing slash: [SupabaseAuthClient] builds request URIs
+  /// via `gotrueUri.resolve(path)` (RFC 3986 Section 5.3 relative
+  /// resolution), which silently drops the last path segment ("v1") when the
+  /// base has no trailing slash -- e.g. `resolve('token')` on a slash-less
+  /// base yields `.../auth/token` instead of the correct `.../auth/v1/token`.
   final Uri gotrueUri;
 
   /// The legacy shared HS256 secret, or null on ES256-only projects. Never

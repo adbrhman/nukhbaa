@@ -65,6 +65,22 @@ void main() {
         'config.supabase_ref_malformed',
       );
     });
+
+    test('gotrueUri resolves relative paths under /auth/v1, not past it', () {
+      final result = AuthConfig.fromEnv(const {
+        'NUKHBA_SUPABASE_PROJECT_REF': 'abcdefghijklmnop',
+      });
+      final config = (result as Ok<AuthConfig>).value;
+
+      expect(
+        config.gotrueUri.resolve('token').toString(),
+        'https://abcdefghijklmnop.supabase.co/auth/v1/token',
+      );
+      expect(
+        config.gotrueUri.resolve('signup').toString(),
+        'https://abcdefghijklmnop.supabase.co/auth/v1/signup',
+      );
+    });
   });
 
   group('AuthConfig.allowsAlgorithm (server-owned allow-list)', () {
