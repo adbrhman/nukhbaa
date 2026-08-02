@@ -3,7 +3,8 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'ledger_providers.dart';
 
@@ -53,26 +54,27 @@ class _BalanceHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      color: AppColors.surfaceElevated,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      color: tokens.surfaceElevated,
       child: Column(
         children: <Widget>[
           Text(
             '${balance.balance}',
             key: const Key('ledger.balance'),
-            style: const TextStyle(
-              fontSize: 40,
+            style: text.displaySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: tokens.primary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '${balance.entryCount} movements counted',
             key: const Key('ledger.entryCount'),
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: text.bodyMedium?.copyWith(color: tokens.textSecondary),
           ),
         ],
       ),
@@ -86,6 +88,7 @@ class _EntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     final bool negative = entry.amount < 0;
     return ListTile(
       key: Key('ledger.entry.${entry.id}'),
@@ -93,20 +96,20 @@ class _EntryRow extends StatelessWidget {
         entry.kind == 'correction'
             ? Icons.build_outlined
             : Icons.emoji_events_outlined,
-        color: AppColors.textSecondary,
+        color: tokens.textSecondary,
       ),
       title: Text(entry.kind, key: Key('ledger.entry.kind.${entry.id}')),
       subtitle: Text(
         entry.occurredAt,
         key: Key('ledger.entry.occurredAt.${entry.id}'),
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: TextStyle(color: tokens.textSecondary),
       ),
       trailing: Text(
         '${negative ? '' : '+'}${entry.amount}',
         key: Key('ledger.entry.amount.${entry.id}'),
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: negative ? Colors.redAccent : AppColors.primary,
+          color: negative ? tokens.error : tokens.primary,
         ),
       ),
     );

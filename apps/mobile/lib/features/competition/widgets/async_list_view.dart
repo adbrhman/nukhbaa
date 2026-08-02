@@ -18,6 +18,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/design/app_sizes.dart';
+import '../../../core/design/app_spacing.dart';
 import '../../../core/error/error_presenter.dart';
 
 /// Renders an [AsyncValue] holding a `List<T>` as one of loading / error /
@@ -114,7 +116,7 @@ class _Loading extends StatelessWidget {
   Widget build(BuildContext context) => const Center(
     key: Key('browse.loading'),
     child: Padding(
-      padding: EdgeInsets.all(32),
+      padding: EdgeInsets.all(AppSpacing.xxl),
       child: CircularProgressIndicator(),
     ),
   );
@@ -131,12 +133,16 @@ class _EmptyView extends StatelessWidget {
     return Center(
       key: const Key('browse.empty'),
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.inbox_outlined, size: 48, color: scheme.outline),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.inbox_outlined,
+              size: AppSizes.iconState,
+              color: scheme.outline,
+            ),
+            const SizedBox(height: AppSpacing.md),
             Text(
               message,
               key: const Key('browse.empty.message'),
@@ -173,12 +179,16 @@ class _ErrorView extends StatelessWidget {
     return Center(
       key: const Key('browse.error'),
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.error_outline, size: 48, color: scheme.error),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.error_outline,
+              size: AppSizes.iconState,
+              color: scheme.error,
+            ),
+            const SizedBox(height: AppSpacing.md),
             Text(
               ErrorPresenter.message(appError),
               key: const Key('browse.error.message'),
@@ -186,7 +196,7 @@ class _ErrorView extends StatelessWidget {
               style: TextStyle(color: scheme.onSurface),
             ),
             if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               FilledButton.tonal(
                 key: const Key('browse.error.retry'),
                 onPressed: onRetry,
