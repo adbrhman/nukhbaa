@@ -5,6 +5,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
@@ -68,7 +69,9 @@ class AccountScreen extends ConsumerWidget {
         decoration: BoxDecoration(gradient: tokens.backgroundGradient),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(
+              maxWidth: AppSizes.maxAccountWidth,
+            ),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(

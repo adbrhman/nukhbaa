@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
@@ -82,7 +83,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 vertical: AppSpacing.xxl,
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSizes.maxFormWidth,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -202,8 +205,8 @@ class _Header extends StatelessWidget {
     return Column(
       children: [
         Container(
-          height: 72,
-          width: 72,
+          height: AppSizes.brandMark,
+          width: AppSizes.brandMark,
           decoration: BoxDecoration(
             gradient: tokens.primaryGradient,
             borderRadius: AppRadius.brXl,
@@ -212,7 +215,7 @@ class _Header extends StatelessWidget {
           child: Icon(
             Icons.sports_soccer_rounded,
             color: tokens.onPrimary,
-            size: 38,
+            size: AppSizes.iconXl,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -251,7 +254,11 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline_rounded, color: tokens.error, size: 20),
+          Icon(
+            Icons.error_outline_rounded,
+            color: tokens.error,
+            size: AppSizes.iconMd,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
