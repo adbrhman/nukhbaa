@@ -207,8 +207,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   : () {
                                       ref
                                           .read(
-                                            sessionControllerProvider
-                                                .notifier,
+                                            sessionControllerProvider.notifier,
                                           )
                                           .clearFailure();
                                       setState(
