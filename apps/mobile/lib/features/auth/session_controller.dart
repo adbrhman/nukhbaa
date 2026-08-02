@@ -159,6 +159,20 @@ class SessionController extends _$SessionController {
     state = const AsyncData(SessionUnauthenticated());
   }
 
+  /// Clears a stale [SessionFailed] error without touching the persisted
+  /// token or re-validating anything — used when the sign-in form switches
+  /// between "Sign in" and "Create account" mode, so an error from one mode
+  /// (e.g. "email already registered") does not linger and mislead the user
+  /// after they switch to the other mode. No-op unless the current state is
+  /// [SessionFailed]; deliberately does not touch [SessionAuthenticating] or
+  /// any other state.
+  void clearFailure() {
+    final current = state.value;
+    if (current is SessionFailed) {
+      state = const AsyncData(SessionUnauthenticated());
+    }
+  }
+
   /// Re-attempts validation of the currently-held token (used by the "retry"
   /// affordance after a transient failure, where the token was intentionally
   /// kept). No-op-safe: if no token is held it resolves to unauthenticated.

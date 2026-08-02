@@ -204,9 +204,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               key: const Key('signIn.toggleMode'),
                               onPressed: inFlight
                                   ? null
-                                  : () => setState(
-                                      () => _isRegister = !_isRegister,
-                                    ),
+                                  : () {
+                                      ref
+                                          .read(
+                                            sessionControllerProvider
+                                                .notifier,
+                                          )
+                                          .clearFailure();
+                                      setState(
+                                        () => _isRegister = !_isRegister,
+                                      );
+                                    },
                               child: Text(
                                 _isRegister
                                     ? 'Already have an account? Sign in'

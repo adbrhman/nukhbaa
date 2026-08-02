@@ -173,11 +173,21 @@ final class SupabaseAuthClient {
       return onSuccess(json);
     }
 
-    // Non-2xx from GoTrue: surface its error message as an authorization
-    // failure (bad credentials / already-registered / weak password all map
-    // to a terminal, non-retryable client error the user must act on).
+    // Non-2xx from GoTrue: this is a REJECTION of the submitted credentials
+    // or signup payload (bad password, wrong password, already-registered
+    // email, invalid email, etc.) — a validation-class, terminal outcome the
+    // user must correct. This is deliberately NOT `ErrorKind.authorization`,
+    // which this codebase reserves for "the caller's bearer token is
+    // missing/invalid on a protected route" (see `AuthenticateRequest` /
+    // `TokenVerifier`). Conflating the two collapses every distinct GoTrue
+    // rejection reason into one generic "session expired" message on the
+    // client (`ErrorPresenter` deliberately does not surface `message` for
+    // `authorization`, since that case's cause is never useful/actionable
+    // detail) and reports the wrong HTTP status (401 instead of 400) for
+    // things like "email already registered". `validation` preserves
+    // GoTrue's actual message end-to-end via `ErrorPresenter`.
     final message = _errorMessage(json) ?? 'Authentication failed';
-    return Result.err(AppError.authorization('auth.rejected', message));
+    return Result.err(AppError.validation('auth.rejected', message));
   }
 
   /// Extracts a human-readable error message from a GoTrue error body, trying
