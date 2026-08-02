@@ -12,5 +12,7 @@ abstract final class AppMotion {
   static const Curve emphasized    = Curves.easeInOutCubicEmphasized;
   static const Curve emphasizedIn  = Curves.easeInCubic;
   static const Curve emphasizedOut = Curves.easeOutCubic;
+  static const Duration shimmer  = Duration(milliseconds: 1400);
+
   static const Curve standardCurve = Curves.easeInOut;
 }
