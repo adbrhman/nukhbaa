@@ -4,8 +4,10 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/design/app_sizes.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
-import '../../core/theme/app_colors.dart';
 import 'groups_providers.dart';
 
 /// An invite-code-only form that joins the caller into a private group.
@@ -39,12 +41,13 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       }
     });
     final bool inFlight = state is AsyncLoading<GroupMembershipDto>;
+    final AppTokens tokens = context.tokens;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Join Group', key: Key('joinGroup.title')),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -57,14 +60,14 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
               ),
               enabled: !inFlight,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             if (state is AsyncError<GroupMembershipDto>)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Text(
                   ErrorPresenter.message(state.error as AppError),
                   key: const Key('joinGroup.error'),
-                  style: const TextStyle(color: Colors.redAccent),
+                  style: TextStyle(color: tokens.error),
                 ),
               ),
             FilledButton(
@@ -77,12 +80,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                       ref.read(joinGroupControllerProvider.notifier).join(code);
                     },
               child: inFlight
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                  ? SizedBox(
+                      width: AppSizes.progressSm,
+                      height: AppSizes.progressSm,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.background,
+                        color: tokens.onPrimary,
                       ),
                     )
                   : const Text('Join'),

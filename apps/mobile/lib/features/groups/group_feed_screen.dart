@@ -3,7 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'groups_providers.dart';
 
@@ -61,9 +61,10 @@ class _FeedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('groupFeed.item.${event.groupId}.${event.occurredAt}'),
-      leading: Icon(_iconFor(event.type), color: AppColors.textSecondary),
+      leading: Icon(_iconFor(event.type), color: tokens.textSecondary),
       title: Text(
         _labelFor(event),
         key: Key('groupFeed.label.${event.occurredAt}'),
@@ -71,7 +72,7 @@ class _FeedRow extends StatelessWidget {
       subtitle: Text(
         event.occurredAt,
         key: Key('groupFeed.occurredAt.${event.occurredAt}'),
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: TextStyle(color: tokens.textSecondary),
       ),
     );
   }

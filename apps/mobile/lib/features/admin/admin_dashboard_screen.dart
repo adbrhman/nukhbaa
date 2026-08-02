@@ -4,8 +4,9 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
-import '../../core/theme/app_colors.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'admin_providers.dart';
 
@@ -63,7 +64,7 @@ class _AuditLogTab extends ConsumerWidget {
         trailing: Text(
           entry.occurredAt,
           key: Key('admin.audit.occurredAt.${entry.id}'),
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.tokens.textSecondary),
         ),
       ),
     );
@@ -94,8 +95,9 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
       userSanctionControllerProvider,
     );
     final bool inFlight = state is AsyncLoading<UserSanctionResultDto>;
+    final AppTokens tokens = context.tokens;
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -108,7 +110,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
             ),
             enabled: !inFlight,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           TextField(
             key: const Key('admin.users.reasonField'),
             controller: _reasonController,
@@ -118,19 +120,19 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
             ),
             enabled: !inFlight,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           if (state is AsyncError<UserSanctionResultDto>)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
                 ErrorPresenter.message(state.error as AppError),
                 key: const Key('admin.users.error'),
-                style: const TextStyle(color: Colors.redAccent),
+                style: TextStyle(color: tokens.error),
               ),
             ),
           if (state is AsyncData<UserSanctionResultDto>)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
                 '${state.value.userId} is now ${state.value.status}',
                 key: const Key('admin.users.result'),
@@ -145,7 +147,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
                   child: const Text('Suspend'),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: FilledButton(
                   key: const Key('admin.users.reinstate'),
@@ -196,10 +198,11 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
       adminLedgerLookupControllerProvider,
     );
     final bool inFlight = state is AsyncLoading<ParticipantEntriesDto>;
+    final AppTokens tokens = context.tokens;
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Row(
             children: <Widget>[
               Expanded(
@@ -213,7 +216,7 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                   enabled: !inFlight,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               FilledButton(
                 key: const Key('admin.ledger.lookup'),
                 onPressed: inFlight
@@ -232,16 +235,16 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
         ),
         if (state is AsyncLoading<ParticipantEntriesDto>)
           const Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: CircularProgressIndicator(),
           ),
         if (state is AsyncError<ParticipantEntriesDto>)
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Text(
               ErrorPresenter.message(state.error as AppError),
               key: const Key('admin.ledger.error'),
-              style: const TextStyle(color: Colors.redAccent),
+              style: TextStyle(color: tokens.error),
             ),
           ),
         if (state is AsyncData<ParticipantEntriesDto>)

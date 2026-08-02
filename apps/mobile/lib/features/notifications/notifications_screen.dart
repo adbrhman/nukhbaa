@@ -3,7 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'notifications_providers.dart';
 
@@ -52,11 +52,12 @@ class _NotificationRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('notifications.item.${notification.id}'),
       leading: Icon(
         _iconFor(notification.kind),
-        color: notification.read ? AppColors.textSecondary : AppColors.primary,
+        color: notification.read ? tokens.textSecondary : tokens.primary,
       ),
       title: Text(
         _labelFor(notification.kind),
@@ -65,7 +66,7 @@ class _NotificationRow extends ConsumerWidget {
       subtitle: Text(
         notification.createdAt,
         key: Key('notifications.createdAt.${notification.id}'),
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: TextStyle(color: tokens.textSecondary),
       ),
       trailing: notification.read
           ? null

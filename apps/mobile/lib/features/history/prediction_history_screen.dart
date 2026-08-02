@@ -3,7 +3,8 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'prediction_history_providers.dart';
 
@@ -44,23 +45,24 @@ class _PredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     return Card(
       key: Key('history.item.${prediction.id}'),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               prediction.submittedAt,
               key: Key('history.submittedAt.${prediction.id}'),
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: tokens.textSecondary, fontSize: 12),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             for (final score in prediction.fixtureScores)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),

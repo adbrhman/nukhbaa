@@ -3,7 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'groups_providers.dart';
 
@@ -49,6 +49,7 @@ class _GroupLeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('groupLeaderboard.item.${entry.participantId}'),
       leading: CircleAvatar(
@@ -60,7 +61,7 @@ class _GroupLeaderboardRow extends StatelessWidget {
       title: Text(
         entry.userId,
         key: Key('groupLeaderboard.user.${entry.participantId}'),
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: TextStyle(color: tokens.textPrimary),
       ),
       subtitle: Text(
         '${entry.entryCount} entries counted',
@@ -69,10 +70,7 @@ class _GroupLeaderboardRow extends StatelessWidget {
       trailing: Text(
         '${entry.totalPoints} pts',
         key: Key('groupLeaderboard.points.${entry.participantId}'),
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
       ),
     );
   }

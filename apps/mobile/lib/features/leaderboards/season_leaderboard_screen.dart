@@ -3,7 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'leaderboards_providers.dart';
 
@@ -44,6 +44,7 @@ class _LeaderboardRow extends StatelessWidget {
       count == 1 ? '1 entry' : '$count entries';
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('leaderboard.item.${entry.participantId}'),
       leading: CircleAvatar(
@@ -55,7 +56,7 @@ class _LeaderboardRow extends StatelessWidget {
       title: Text(
         entry.participantId,
         key: Key('leaderboard.participant.${entry.participantId}'),
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: TextStyle(color: tokens.textPrimary),
       ),
       subtitle: Text(
         '${_pluralEntries(entry.entryCount)} counted',
@@ -64,10 +65,7 @@ class _LeaderboardRow extends StatelessWidget {
       trailing: Text(
         '${entry.totalPoints} pts',
         key: Key('leaderboard.points.${entry.participantId}'),
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
       ),
     );
   }
