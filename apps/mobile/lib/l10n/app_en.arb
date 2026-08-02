@@ -1,0 +1,10 @@
+{
+  "@@locale": "en",
+  "appTitle": "Nukhba",
+  "@appTitle": { "description": "Application title" },
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "loading": "Loading…",
+  "error": "Something went wrong",
+  "retry": "Retry"
+}
