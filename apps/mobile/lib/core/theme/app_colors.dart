@@ -2,30 +2,38 @@ library;
 
 import 'package:flutter/material.dart';
 
+/// Dark palette — Slate neutrals + a single calm Emerald accent.
 abstract final class AppColors {
-  static const Color background = Color(0xFF0A1420);
-  static const Color backgroundElevated = Color(0xFF0F1D2E);
-  static const Color surface = Color(0xFF15263B);
-  static const Color surfaceElevated = Color(0xFF1D3350);
-  static const Color surfaceHigh = Color(0xFF264566);
-  static const Color primary = Color(0xFF12D18E);
-  static const Color primaryDark = Color(0xFF0EA372);
-  static const Color primaryLight = Color(0xFF4EEBB4);
-  static const Color gold = Color(0xFFF5B841);
-  static const Color goldDark = Color(0xFFD99A24);
-  static const Color silver = Color(0xFFC7D0DB);
+  static const Color background = Color(0xFF0B0F17);
+  static const Color backgroundElevated = Color(0xFF11161F);
+  static const Color surface = Color(0xFF151B26);
+  static const Color surfaceElevated = Color(0xFF1C2330);
+  static const Color surfaceHigh = Color(0xFF272F3D);
+
+  static const Color primary = Color(0xFF10B981);
+  static const Color primaryDark = Color(0xFF059669);
+  static const Color primaryLight = Color(0xFF34D399);
+
+  static const Color gold = Color(0xFFE0B341);
+  static const Color goldDark = Color(0xFFB88C22);
+  static const Color silver = Color(0xFFC3CBD6);
   static const Color onSilver = Color(0xFF1B2430);
-  static const Color bronze = Color(0xFFCD7F32);
+  static const Color bronze = Color(0xFFCD8A4E);
   static const Color onBronze = Color(0xFF2A1608);
-  static const Color error = Color(0xFFFF5C6C);
-  static const Color errorContainer = Color(0xFF3D1A22);
-  static const Color textPrimary = Color(0xFFF5F8FC);
-  static const Color textSecondary = Color(0xFFA8B7C9);
-  static const Color textMuted = Color(0xFF667790);
-  static const Color onPrimary = Color(0xFF04231A);
-  static const Color onGold = Color(0xFF2E1F02);
+
+  static const Color error = Color(0xFFF87171);
+  static const Color errorContainer = Color(0xFF3A1D22);
+
+  static const Color textPrimary = Color(0xFFF1F5F9);
+  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color textMuted = Color(0xFF64748B);
+
+  static const Color onPrimary = Color(0xFF04140E);
+  static const Color onGold = Color(0xFF2A1E04);
   static const Color onError = Color(0xFF2A0A0E);
-  static const Color border = Color(0x1AFFFFFF);
+
+  static const Color border = Color(0x14FFFFFF);
+
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
