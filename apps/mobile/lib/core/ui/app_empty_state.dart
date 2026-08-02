@@ -15,16 +15,16 @@ class AppEmptyState extends StatelessWidget {
     this.onAction,
   });
 
-  final String    title;
-  final String?   subtitle;
+  final String title;
+  final String? subtitle;
   final IconData? icon;
-  final String?   actionLabel;
+  final String? actionLabel;
   final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final TextTheme  text  = context.text;
+    final TextTheme text = context.text;
 
     return Center(
       child: Padding(
@@ -52,10 +52,10 @@ class AppEmptyState extends StatelessWidget {
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.xl),
               AppButton(
-                label:    actionLabel!,
+                label: actionLabel!,
                 onPressed: onAction,
-                expand:   false,
-                size:     AppButtonSize.medium,
+                expand: false,
+                size: AppButtonSize.medium,
               ),
             ],
           ],

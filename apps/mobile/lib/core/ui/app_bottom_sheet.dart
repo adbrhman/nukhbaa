@@ -15,30 +15,30 @@ abstract final class AppBottomSheet {
     bool isScrollControlled = true,
   }) {
     return showModalBottomSheet<T>(
-      context:            context,
+      context: context,
       isScrollControlled: isScrollControlled,
       constraints: const BoxConstraints(maxWidth: contentMax),
       builder: (context) {
         final AppTokens tokens = context.tokens;
-        final TextTheme  text  = context.text;
+        final TextTheme text = context.text;
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
-              left:   AppSpacing.xxl,
-              right:  AppSpacing.xxl,
-              top:    AppSpacing.sm,
-              bottom: AppSpacing.xxl +
-                  MediaQuery.viewInsetsOf(context).bottom,
+              left: AppSpacing.xxl,
+              right: AppSpacing.xxl,
+              top: AppSpacing.sm,
+              bottom: AppSpacing.xxl + MediaQuery.viewInsetsOf(context).bottom,
             ),
             child: Column(
-              mainAxisSize:       MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (title != null) ...[
                   Text(
                     title,
-                    style: text.headlineSmall
-                        ?.copyWith(color: tokens.textPrimary),
+                    style: text.headlineSmall?.copyWith(
+                      color: tokens.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                 ],

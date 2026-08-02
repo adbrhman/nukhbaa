@@ -13,14 +13,14 @@ class AppErrorState extends StatelessWidget {
     this.retryLabel = 'إعادة المحاولة',
   });
 
-  final String?       message;
+  final String? message;
   final VoidCallback? onRetry;
-  final String        retryLabel;
+  final String retryLabel;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final TextTheme  text  = context.text;
+    final TextTheme text = context.text;
 
     return Center(
       child: Padding(
@@ -28,11 +28,7 @@ class AppErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size:  56,
-              color: tokens.error,
-            ),
+            Icon(Icons.error_outline_rounded, size: 56, color: tokens.error),
             const SizedBox(height: AppSpacing.xl),
             Text(
               message ?? 'حدث خطأ ما',
@@ -42,10 +38,10 @@ class AppErrorState extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.xl),
               AppButton(
-                label:    retryLabel,
+                label: retryLabel,
                 onPressed: onRetry,
-                expand:   false,
-                size:     AppButtonSize.medium,
+                expand: false,
+                size: AppButtonSize.medium,
               ),
             ],
           ],

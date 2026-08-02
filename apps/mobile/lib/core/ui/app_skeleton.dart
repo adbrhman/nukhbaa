@@ -12,22 +12,20 @@ class AppSkeleton extends StatefulWidget {
     required this.height,
     this.borderRadius,
   }) : _circle = false,
-       _size   = null;
+       _size = null;
 
-  const AppSkeleton.circle({
-    super.key,
-    required double size,
-  }) : _circle = true,
-       _size   = size,
-       width   = size,
-       height  = size,
-       borderRadius = null;
+  const AppSkeleton.circle({super.key, required double size})
+    : _circle = true,
+      _size = size,
+      width = size,
+      height = size,
+      borderRadius = null;
 
-  final double?       width;
-  final double        height;
+  final double? width;
+  final double height;
   final BorderRadius? borderRadius;
-  final bool          _circle;
-  final double?       _size;
+  final bool _circle;
+  final double? _size;
 
   @override
   State<AppSkeleton> createState() => _AppSkeletonState();
@@ -36,7 +34,7 @@ class AppSkeleton extends StatefulWidget {
 class _AppSkeletonState extends State<AppSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
-    vsync:    this,
+    vsync: this,
     duration: AppMotion.shimmer,
   )..repeat();
 
@@ -59,13 +57,13 @@ class _AppSkeletonState extends State<AppSkeleton>
       builder: (context, _) {
         final double t = _controller.value;
         return Container(
-          width:  widget.width,
+          width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
             borderRadius: br,
             gradient: LinearGradient(
-              begin:  Alignment(-1 - t * 2, 0),
-              end:    Alignment(1  - t * 2, 0),
+              begin: Alignment(-1 - t * 2, 0),
+              end: Alignment(1 - t * 2, 0),
               colors: [
                 tokens.skeletonBase,
                 tokens.skeletonHighlight,

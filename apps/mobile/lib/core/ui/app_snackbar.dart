@@ -13,12 +13,15 @@ abstract final class AppSnackbar {
     AppSnackTone tone = AppSnackTone.neutral,
   }) {
     final AppTokens tokens = context.tokens;
-    final TextTheme  text  = context.text;
+    final TextTheme text = context.text;
 
     final (Color accent, IconData icon) = switch (tone) {
       AppSnackTone.success => (tokens.primaryLight, Icons.check_circle_outline),
-      AppSnackTone.error   => (tokens.error,        Icons.error_outline_rounded),
-      AppSnackTone.neutral => (tokens.textSecondary, Icons.info_outline_rounded),
+      AppSnackTone.error => (tokens.error, Icons.error_outline_rounded),
+      AppSnackTone.neutral => (
+        tokens.textSecondary,
+        Icons.info_outline_rounded,
+      ),
     };
 
     ScaffoldMessenger.of(context)
@@ -32,8 +35,7 @@ abstract final class AppSnackbar {
               Expanded(
                 child: Text(
                   message,
-                  style: text.bodyMedium
-                      ?.copyWith(color: tokens.textPrimary),
+                  style: text.bodyMedium?.copyWith(color: tokens.textPrimary),
                 ),
               ),
             ],

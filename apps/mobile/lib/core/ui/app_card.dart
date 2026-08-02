@@ -15,10 +15,10 @@ class AppCard extends StatelessWidget {
     this.color,
   });
 
-  final Widget   child;
+  final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? padding;
-  final Color?   color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +26,15 @@ class AppCard extends StatelessWidget {
     final Color bg = color ?? tokens.surface;
 
     return Material(
-      color:        bg,
+      color: bg,
       borderRadius: AppRadius.brXl,
       child: InkWell(
         borderRadius: AppRadius.brXl,
         onTap: onTap,
         child: AnimatedContainer(
-          duration:    AppMotion.fast,
-          curve:       AppMotion.emphasizedOut,
-          padding:     padding ?? const EdgeInsets.all(AppSpacing.lg),
+          duration: AppMotion.fast,
+          curve: AppMotion.emphasizedOut,
+          padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             borderRadius: AppRadius.brXl,
             border: Border.all(color: tokens.border),

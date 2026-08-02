@@ -17,7 +17,7 @@ abstract final class AppDialog {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title:   Text(title),
+          title: Text(title),
           content: Text(message),
           actionsPadding: const EdgeInsets.fromLTRB(
             AppSpacing.xl,
@@ -30,20 +30,20 @@ abstract final class AppDialog {
               children: [
                 Expanded(
                   child: AppButton(
-                    label:     cancelLabel,
-                    variant:   AppButtonVariant.secondary,
-                    size:      AppButtonSize.medium,
+                    label: cancelLabel,
+                    variant: AppButtonVariant.secondary,
+                    size: AppButtonSize.medium,
                     onPressed: () => Navigator.of(context).pop(false),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: AppButton(
-                    label:   confirmLabel,
+                    label: confirmLabel,
                     variant: destructive
                         ? AppButtonVariant.danger
                         : AppButtonVariant.primary,
-                    size:      AppButtonSize.medium,
+                    size: AppButtonSize.medium,
                     onPressed: () => Navigator.of(context).pop(true),
                   ),
                 ),

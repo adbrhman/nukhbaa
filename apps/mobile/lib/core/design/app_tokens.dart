@@ -86,9 +86,23 @@ class AppTokens extends ThemeExtension<AppTokens> {
     backgroundGradient: AppColors.backgroundGradient,
     primaryGradient: AppColors.primaryGradient,
     goldGradient: AppColors.goldGradient,
-    shadowSm: [BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4))],
-    shadowMd: [BoxShadow(color: Color(0x59000000), blurRadius: 24, offset: Offset(0, 10))],
-    shadowLg: [BoxShadow(color: Color(0x66000000), blurRadius: 40, offset: Offset(0, 18))],
+    shadowSm: [
+      BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4)),
+    ],
+    shadowMd: [
+      BoxShadow(
+        color: Color(0x59000000),
+        blurRadius: 24,
+        offset: Offset(0, 10),
+      ),
+    ],
+    shadowLg: [
+      BoxShadow(
+        color: Color(0x66000000),
+        blurRadius: 40,
+        offset: Offset(0, 18),
+      ),
+    ],
     skeletonBase: AppColors.surfaceElevated,
     skeletonHighlight: AppColors.surfaceHigh,
   );
@@ -115,9 +129,23 @@ class AppTokens extends ThemeExtension<AppTokens> {
     backgroundGradient: AppColorsLight.backgroundGradient,
     primaryGradient: AppColorsLight.primaryGradient,
     goldGradient: AppColorsLight.goldGradient,
-    shadowSm: [BoxShadow(color: Color(0x14101A28), blurRadius: 12, offset: Offset(0, 4))],
-    shadowMd: [BoxShadow(color: Color(0x1F101A28), blurRadius: 24, offset: Offset(0, 10))],
-    shadowLg: [BoxShadow(color: Color(0x29101A28), blurRadius: 40, offset: Offset(0, 18))],
+    shadowSm: [
+      BoxShadow(color: Color(0x14101A28), blurRadius: 12, offset: Offset(0, 4)),
+    ],
+    shadowMd: [
+      BoxShadow(
+        color: Color(0x1F101A28),
+        blurRadius: 24,
+        offset: Offset(0, 10),
+      ),
+    ],
+    shadowLg: [
+      BoxShadow(
+        color: Color(0x29101A28),
+        blurRadius: 40,
+        offset: Offset(0, 18),
+      ),
+    ],
     skeletonBase: AppColorsLight.surfaceElevated,
     skeletonHighlight: AppColorsLight.surfaceHigh,
   );
@@ -187,7 +215,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
     return AppTokens(
       brightness: t < 0.5 ? brightness : other.brightness,
       background: Color.lerp(background, other.background, t)!,
-      backgroundElevated: Color.lerp(backgroundElevated, other.backgroundElevated, t)!,
+      backgroundElevated: Color.lerp(
+        backgroundElevated,
+        other.backgroundElevated,
+        t,
+      )!,
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
       surfaceHigh: Color.lerp(surfaceHigh, other.surfaceHigh, t)!,
@@ -203,14 +235,20 @@ class AppTokens extends ThemeExtension<AppTokens> {
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       onPrimary: Color.lerp(onPrimary, other.onPrimary, t)!,
-      backgroundGradient: t < 0.5 ? backgroundGradient : other.backgroundGradient,
+      backgroundGradient: t < 0.5
+          ? backgroundGradient
+          : other.backgroundGradient,
       primaryGradient: t < 0.5 ? primaryGradient : other.primaryGradient,
       goldGradient: t < 0.5 ? goldGradient : other.goldGradient,
       shadowSm: t < 0.5 ? shadowSm : other.shadowSm,
       shadowMd: t < 0.5 ? shadowMd : other.shadowMd,
       shadowLg: t < 0.5 ? shadowLg : other.shadowLg,
       skeletonBase: Color.lerp(skeletonBase, other.skeletonBase, t)!,
-      skeletonHighlight: Color.lerp(skeletonHighlight, other.skeletonHighlight, t)!,
+      skeletonHighlight: Color.lerp(
+        skeletonHighlight,
+        other.skeletonHighlight,
+        t,
+      )!,
     );
   }
 }
@@ -218,7 +256,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
 extension BuildContextTokens on BuildContext {
   AppTokens get tokens =>
       Theme.of(this).extension<AppTokens>() ?? AppTokens.dark;
-  TextTheme get text     => Theme.of(this).textTheme;
+  TextTheme get text => Theme.of(this).textTheme;
   ColorScheme get scheme => Theme.of(this).colorScheme;
   bool get isRtl => Directionality.of(this) == TextDirection.rtl;
 }

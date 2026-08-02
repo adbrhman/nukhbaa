@@ -26,8 +26,8 @@ class SecureThemePreferenceStore implements ThemePreferenceStore {
     final String? raw = await _storage.read(key: _key);
     return switch (raw) {
       'light' => ThemeMode.light,
-      'dark'  => ThemeMode.dark,
-      _       => ThemeMode.system,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
     };
   }
 
@@ -55,8 +55,9 @@ class ThemeController extends Notifier<ThemeMode> {
   }
 
   Future<void> _hydrate() async {
-    final ThemeMode stored =
-        await ref.read(themePreferenceStoreProvider).read();
+    final ThemeMode stored = await ref
+        .read(themePreferenceStoreProvider)
+        .read();
     if (stored != state) state = stored;
   }
 
@@ -66,10 +67,10 @@ class ThemeController extends Notifier<ThemeMode> {
     await ref.read(themePreferenceStoreProvider).write(mode);
   }
 
-  Future<void> toggle() => setMode(
-        state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
-      );
+  Future<void> toggle() =>
+      setMode(state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
 }
 
-final themeControllerProvider =
-    NotifierProvider<ThemeController, ThemeMode>(ThemeController.new);
+final themeControllerProvider = NotifierProvider<ThemeController, ThemeMode>(
+  ThemeController.new,
+);
