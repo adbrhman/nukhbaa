@@ -4,8 +4,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/design/app_radius.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/ui/app_button.dart';
+import '../../core/ui/app_text_field.dart';
 import 'session_controller.dart';
 import 'session_state.dart';
 
@@ -19,8 +23,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _obscure = true;
   bool _isRegister = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -48,6 +52,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     );
   }
 
+  void _toggleMode() {
+    ref.read(sessionControllerProvider.notifier).clearFailure();
+    setState(() => _isRegister = !_isRegister);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<SessionState> asyncSession = ref.watch(
@@ -57,168 +66,116 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final bool inFlight =
         asyncSession.isLoading || session is SessionAuthenticating;
     final AppError? failure = session is SessionFailed ? session.error : null;
+
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
+
     return Scaffold(
+      backgroundColor: tokens.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        decoration: BoxDecoration(gradient: tokens.backgroundGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.xxl,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 460),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
+                  children: [
                     const _Header(),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xxl),
                     Container(
-                      padding: const EdgeInsets.all(22),
+                      padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 30,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
+                        color: tokens.surface,
+                        borderRadius: AppRadius.brXxl,
+                        border: Border.all(color: tokens.border),
+                        boxShadow: tokens.shadowLg,
                       ),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
+                          children: [
                             Text(
                               _isRegister ? 'Create account' : 'Sign in',
                               key: const Key('signIn.title'),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 22,
+                              style: text.headlineSmall?.copyWith(
+                                color: tokens.textPrimary,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               _isRegister
                                   ? 'Create an account to start playing Nukhba.'
                                   : 'Sign in with your email and password to continue.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
+                              style: text.bodyMedium?.copyWith(
+                                color: tokens.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            if (failure != null) ...<Widget>[
+                            const SizedBox(height: AppSpacing.xl),
+                            if (failure != null) ...[
                               _ErrorBanner(
                                 key: const Key('signIn.errorBanner'),
                                 message: ErrorPresenter.message(failure),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: AppSpacing.lg),
                             ],
-                            TextFormField(
-                              key: const Key('signIn.emailField'),
+                            AppTextField(
+                              fieldKey: const Key('signIn.emailField'),
                               controller: _emailController,
                               enabled: !inFlight,
-                              autocorrect: false,
-                              enableSuggestions: false,
+                              label: 'Email',
+                              hint: 'you@example.com',
+                              prefixIcon: Icons.mail_outline,
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                              ),
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                prefixIcon: Icon(
-                                  Icons.mail_outline,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.email],
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
                                   ? 'Please enter your email.'
                                   : null,
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              key: const Key('signIn.passwordField'),
+                            const SizedBox(height: AppSpacing.lg),
+                            AppTextField(
+                              fieldKey: const Key('signIn.passwordField'),
                               controller: _passwordController,
                               enabled: !inFlight,
-                              obscureText: _obscure,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: const Icon(
-                                  Icons.lock_outline,
-                                  color: AppColors.textMuted,
-                                ),
-                                suffixIcon: IconButton(
-                                  tooltip: _obscure
-                                      ? 'Show password'
-                                      : 'Hide password',
-                                  icon: Icon(
-                                    _obscure
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    color: AppColors.textMuted,
-                                  ),
-                                  onPressed: () =>
-                                      setState(() => _obscure = !_obscure),
-                                ),
-                              ),
+                              obscure: true,
+                              label: 'Password',
+                              prefixIcon: Icons.lock_outline,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.password],
+                              onFieldSubmitted: (_) => _submit(session),
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
                                   ? 'Please enter your password.'
                                   : null,
-                              onFieldSubmitted: (_) => _submit(session),
                             ),
-                            const SizedBox(height: 24),
-                            FilledButton(
+                            const SizedBox(height: AppSpacing.xl),
+                            AppButton(
                               key: const Key('signIn.submit'),
+                              label: _isRegister ? 'Create account' : 'Sign in',
+                              loading: inFlight,
                               onPressed: inFlight
                                   ? null
                                   : () => _submit(session),
-                              child: inFlight
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.onPrimary,
-                                      ),
-                                    )
-                                  : Text(
-                                      _isRegister
-                                          ? 'Create account'
-                                          : 'Sign in',
-                                    ),
                             ),
-                            const SizedBox(height: 12),
-                            TextButton(
+                            const SizedBox(height: AppSpacing.sm),
+                            AppButton(
                               key: const Key('signIn.toggleMode'),
-                              onPressed: inFlight
-                                  ? null
-                                  : () {
-                                      ref
-                                          .read(
-                                            sessionControllerProvider.notifier,
-                                          )
-                                          .clearFailure();
-                                      setState(
-                                        () => _isRegister = !_isRegister,
-                                      );
-                                    },
-                              child: Text(
-                                _isRegister
-                                    ? 'Already have an account? Sign in'
-                                    : "New here? Create an account",
-                              ),
+                              label: _isRegister
+                                  ? 'Already have an account? Sign in'
+                                  : "New here? Create an account",
+                              variant: AppButtonVariant.text,
+                              onPressed: inFlight ? null : _toggleMode,
                             ),
                           ],
                         ),
@@ -237,43 +194,39 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
 class _Header extends StatelessWidget {
   const _Header();
+
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
     return Column(
-      children: <Widget>[
+      children: [
         Container(
-          width: 76,
-          height: 76,
+          height: 72,
+          width: 72,
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            gradient: tokens.primaryGradient,
+            borderRadius: AppRadius.brXl,
+            boxShadow: tokens.shadowMd,
           ),
-          child: const Icon(
-            Icons.sports_soccer,
-            color: AppColors.onPrimary,
-            size: 40,
+          child: Icon(
+            Icons.sports_soccer_rounded,
+            color: tokens.onPrimary,
+            size: 38,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        const SizedBox(height: AppSpacing.lg),
+        Text(
           'Nukhba',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+          style: text.headlineMedium?.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
-        const Text(
+        const SizedBox(height: AppSpacing.xs),
+        Text(
           'Football prediction platform',
-          style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+          style: text.bodySmall?.copyWith(color: tokens.textMuted),
         ),
       ],
     );
@@ -281,25 +234,29 @@ class _Header extends StatelessWidget {
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message, super.key});
+  const _ErrorBanner({super.key, required this.message});
   final String message;
+
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.errorContainer,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+        color: tokens.errorContainer,
+        borderRadius: AppRadius.brMd,
+        border: Border.all(color: tokens.error.withValues(alpha: 0.4)),
       ),
       child: Row(
-        children: <Widget>[
-          const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 8),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline_rounded, color: tokens.error, size: 20),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: text.bodySmall?.copyWith(color: tokens.textPrimary),
             ),
           ),
         ],

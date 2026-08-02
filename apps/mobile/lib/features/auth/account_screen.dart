@@ -4,7 +4,10 @@ import 'dart:async';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/design/app_radius.dart';
+import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
+import '../../core/ui/app_button.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../competition/competition_list_screen.dart';
 import '../groups/create_group_screen.dart';
@@ -18,13 +21,18 @@ import 'session_controller.dart';
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({required this.user, super.key});
   final AuthenticatedUserDto user;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<int> unread = ref.watch(unreadCountProvider);
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
+
     return Scaffold(
+      backgroundColor: tokens.background,
       appBar: AppBar(
         title: const Text('Nukhba'),
-        actions: <Widget>[
+        actions: [
           IconButton(
             key: const Key('account.notifications'),
             tooltip: 'Notifications',
@@ -57,111 +65,120 @@ class AccountScreen extends ConsumerWidget {
         ],
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        decoration: BoxDecoration(gradient: tokens.backgroundGradient),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const Text(
+                children: [
+                  Text(
                     'Signed in',
-                    key: Key('account.title'),
-                    style: TextStyle(
-                      fontSize: 24,
+                    key: const Key('account.title'),
+                    style: text.headlineSmall?.copyWith(
+                      color: tokens.textPrimary,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _Field(
                     label: 'User ID',
                     value: user.userId,
                     valueKey: const Key('account.userId'),
+                    tokens: tokens,
+                    text: text,
                   ),
                   _Field(
                     label: 'Role',
                     value: user.role,
                     valueKey: const Key('account.role'),
+                    tokens: tokens,
+                    text: text,
                   ),
                   _Field(
                     label: 'Status',
                     value: user.status,
                     valueKey: const Key('account.status'),
+                    tokens: tokens,
+                    text: text,
                   ),
                   if (user.email != null)
                     _Field(
                       label: 'Email',
                       value: user.email!,
                       valueKey: const Key('account.email'),
+                      tokens: tokens,
+                      text: text,
                     ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
+                  const SizedBox(height: AppSpacing.xl),
+                  AppButton(
                     key: const Key('account.browseCompetitions'),
-                    icon: const Icon(Icons.emoji_events_outlined),
-                    label: const Text('Browse competitions'),
+                    label: 'Browse competitions',
+                    icon: Icons.emoji_events_outlined,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const CompetitionListScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
                     key: const Key('account.hallOfFame'),
-                    icon: const Icon(Icons.workspace_premium_outlined),
-                    label: const Text('Hall of Fame'),
+                    label: 'Hall of Fame',
+                    icon: Icons.workspace_premium_outlined,
+                    variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const HallOfFameScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
                     key: const Key('account.myPredictions'),
-                    icon: const Icon(Icons.history_outlined),
-                    label: const Text('My Predictions'),
+                    label: 'My Predictions',
+                    icon: Icons.history_outlined,
+                    variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const PredictionHistoryScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
                     key: const Key('account.createGroup'),
-                    icon: const Icon(Icons.group_add_outlined),
-                    label: const Text('Create a group'),
+                    label: 'Create a group',
+                    icon: Icons.group_add_outlined,
+                    variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const CreateGroupScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
                     key: const Key('account.joinGroup'),
-                    icon: const Icon(Icons.group_outlined),
-                    label: const Text('Join a group'),
+                    label: 'Join a group',
+                    icon: Icons.group_outlined,
+                    variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const JoinGroupScreen(),
                       ),
                     ),
                   ),
-                  // The true authority gate is server-side inside every AdminApi
-                  // call; this conditional only decides whether the entry point is
-                  // offered to the caller.
-                  if (user.role == 'admin') ...<Widget>[
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
+                  if (user.role == 'admin') ...[
+                    const SizedBox(height: AppSpacing.md),
+                    AppButton(
                       key: const Key('account.adminDashboard'),
-                      icon: const Icon(Icons.admin_panel_settings_outlined),
-                      label: const Text('Admin dashboard'),
+                      label: 'Admin dashboard',
+                      icon: Icons.admin_panel_settings_outlined,
+                      variant: AppButtonVariant.secondary,
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const AdminDashboardScreen(),
@@ -184,38 +201,46 @@ class _Field extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueKey,
+    required this.tokens,
+    required this.text,
   });
+
   final String label;
   final String value;
   final Key valueKey;
+  final AppTokens tokens;
+  final TextTheme text;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
+        children: [
           Text(
             label,
-            style: const TextStyle(
+            style: text.labelSmall?.copyWith(
+              color: tokens.textSecondary,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-              fontSize: 12,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              color: tokens.surfaceElevated,
+              borderRadius: AppRadius.brMd,
+              border: Border.all(color: tokens.border),
             ),
             child: Text(
               value,
               key: valueKey,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: text.bodyMedium?.copyWith(color: tokens.textPrimary),
             ),
           ),
         ],
