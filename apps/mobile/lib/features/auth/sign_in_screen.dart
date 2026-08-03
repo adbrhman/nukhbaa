@@ -11,6 +11,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
 import 'session_controller.dart';
 import 'session_state.dart';
 
@@ -70,6 +71,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: tokens.background,
@@ -105,7 +107,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              _isRegister ? 'Create account' : 'Sign in',
+                              _isRegister ? l10n.createAccount : l10n.signIn,
                               key: const Key('signIn.title'),
                               textAlign: TextAlign.center,
                               style: text.headlineSmall?.copyWith(
@@ -116,8 +118,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             const SizedBox(height: AppSpacing.sm),
                             Text(
                               _isRegister
-                                  ? 'Create an account to start playing Nukhba.'
-                                  : 'Sign in with your email and password to continue.',
+                                  ? l10n.signUpSubtitle
+                                  : l10n.signInSubtitle,
                               textAlign: TextAlign.center,
                               style: text.bodyMedium?.copyWith(
                                 color: tokens.textSecondary,
@@ -135,15 +137,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               fieldKey: const Key('signIn.emailField'),
                               controller: _emailController,
                               enabled: !inFlight,
-                              label: 'Email',
-                              hint: 'you@example.com',
+                              label: l10n.email,
+                              hint: l10n.emailHint,
                               prefixIcon: Icons.mail_outline,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               autofillHints: const [AutofillHints.email],
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
-                                  ? 'Please enter your email.'
+                                  ? l10n.emailRequired
                                   : null,
                             ),
                             const SizedBox(height: AppSpacing.lg),
@@ -152,20 +154,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               controller: _passwordController,
                               enabled: !inFlight,
                               obscure: true,
-                              label: 'Password',
+                              label: l10n.password,
                               prefixIcon: Icons.lock_outline,
                               textInputAction: TextInputAction.done,
                               autofillHints: const [AutofillHints.password],
                               onFieldSubmitted: (_) => _submit(session),
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
-                                  ? 'Please enter your password.'
+                                  ? l10n.passwordRequired
                                   : null,
                             ),
                             const SizedBox(height: AppSpacing.xl),
                             AppButton(
                               key: const Key('signIn.submit'),
-                              label: _isRegister ? 'Create account' : 'Sign in',
+                              label: _isRegister
+                                  ? l10n.createAccount
+                                  : l10n.signIn,
                               loading: inFlight,
                               onPressed: inFlight
                                   ? null
@@ -175,8 +179,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             AppButton(
                               key: const Key('signIn.toggleMode'),
                               label: _isRegister
-                                  ? 'Already have an account? Sign in'
-                                  : "New here? Create an account",
+                                  ? l10n.toggleToSignIn
+                                  : l10n.toggleToRegister,
                               variant: AppButtonVariant.text,
                               onPressed: inFlight ? null : _toggleMode,
                             ),
@@ -202,6 +206,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Container(
@@ -220,7 +225,7 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          'Nukhba',
+          l10n.appTitle,
           style: text.headlineMedium?.copyWith(
             color: tokens.textPrimary,
             fontWeight: FontWeight.bold,
@@ -228,7 +233,7 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          'Football prediction platform',
+          l10n.tagline,
           style: text.bodySmall?.copyWith(color: tokens.textMuted),
         ),
       ],

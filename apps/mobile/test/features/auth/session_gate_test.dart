@@ -14,10 +14,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/auth/session_gate.dart';
 
 import '../../support/auth_harness.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 Widget _appUnder(AuthHarness harness) => ProviderScope(
   overrides: harness.overrides,
-  child: const MaterialApp(home: SessionGate()),
+  child: MaterialApp(
+    home: const SessionGate(),
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+  ),
 );
 
 void main() {

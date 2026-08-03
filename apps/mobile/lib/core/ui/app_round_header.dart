@@ -30,9 +30,7 @@ class AppRoundHeader extends StatelessWidget {
         children: <Widget>[
           Text(
             'Round ${round.sequence}',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(statusLine),

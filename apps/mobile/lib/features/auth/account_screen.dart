@@ -9,6 +9,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
+import '../../l10n/app_localizations.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../competition/competition_list_screen.dart';
 import '../groups/create_group_screen.dart';
@@ -28,15 +29,16 @@ class AccountScreen extends ConsumerWidget {
     final AsyncValue<int> unread = ref.watch(unreadCountProvider);
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
-        title: const Text('Nukhba'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
             key: const Key('account.notifications'),
-            tooltip: 'Notifications',
+            tooltip: l10n.notifications,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const NotificationsScreen(),
@@ -57,7 +59,7 @@ class AccountScreen extends ConsumerWidget {
           ),
           IconButton(
             key: const Key('account.signOut'),
-            tooltip: 'Sign out',
+            tooltip: l10n.signOut,
             icon: const Icon(Icons.logout),
             onPressed: () => unawaited(
               ref.read(sessionControllerProvider.notifier).signOut(),
@@ -79,7 +81,7 @@ class AccountScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Signed in',
+                    l10n.signedIn,
                     key: const Key('account.title'),
                     style: text.headlineSmall?.copyWith(
                       color: tokens.textPrimary,
@@ -88,21 +90,21 @@ class AccountScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _Field(
-                    label: 'User ID',
+                    label: l10n.userId,
                     value: user.userId,
                     valueKey: const Key('account.userId'),
                     tokens: tokens,
                     text: text,
                   ),
                   _Field(
-                    label: 'Role',
+                    label: l10n.role,
                     value: user.role,
                     valueKey: const Key('account.role'),
                     tokens: tokens,
                     text: text,
                   ),
                   _Field(
-                    label: 'Status',
+                    label: l10n.status,
                     value: user.status,
                     valueKey: const Key('account.status'),
                     tokens: tokens,
@@ -110,7 +112,7 @@ class AccountScreen extends ConsumerWidget {
                   ),
                   if (user.email != null)
                     _Field(
-                      label: 'Email',
+                      label: l10n.email,
                       value: user.email!,
                       valueKey: const Key('account.email'),
                       tokens: tokens,
@@ -119,7 +121,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xl),
                   AppButton(
                     key: const Key('account.browseCompetitions'),
-                    label: 'Browse competitions',
+                    label: l10n.browseCompetitions,
                     icon: Icons.emoji_events_outlined,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -130,7 +132,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
                     key: const Key('account.hallOfFame'),
-                    label: 'Hall of Fame',
+                    label: l10n.hallOfFame,
                     icon: Icons.workspace_premium_outlined,
                     variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
@@ -142,7 +144,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
                     key: const Key('account.myPredictions'),
-                    label: 'My Predictions',
+                    label: l10n.myPredictions,
                     icon: Icons.history_outlined,
                     variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
@@ -154,7 +156,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
                     key: const Key('account.createGroup'),
-                    label: 'Create a group',
+                    label: l10n.createGroup,
                     icon: Icons.group_add_outlined,
                     variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
@@ -166,7 +168,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
                     key: const Key('account.joinGroup'),
-                    label: 'Join a group',
+                    label: l10n.joinGroup,
                     icon: Icons.group_outlined,
                     variant: AppButtonVariant.secondary,
                     onPressed: () => Navigator.of(context).push(
@@ -179,7 +181,7 @@ class AccountScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.md),
                     AppButton(
                       key: const Key('account.adminDashboard'),
-                      label: 'Admin dashboard',
+                      label: l10n.adminDashboard,
                       icon: Icons.admin_panel_settings_outlined,
                       variant: AppButtonVariant.secondary,
                       onPressed: () => Navigator.of(context).push(

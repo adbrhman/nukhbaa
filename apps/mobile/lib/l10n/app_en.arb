@@ -1,10 +1,34 @@
 {
   "@@locale": "en",
   "appTitle": "Nukhba",
-  "@appTitle": { "description": "Application title" },
+  "@appTitle": {
+    "description": "Application title"
+  },
   "signIn": "Sign in",
   "signOut": "Sign out",
   "loading": "Loading…",
   "error": "Something went wrong",
-  "retry": "Retry"
+  "retry": "Retry",
+  "createAccount": "Create account",
+  "signInSubtitle": "Sign in with your email and password to continue.",
+  "signUpSubtitle": "Create an account to start playing Nukhba.",
+  "email": "Email",
+  "emailHint": "you@example.com",
+  "emailRequired": "Please enter your email.",
+  "password": "Password",
+  "passwordRequired": "Please enter your password.",
+  "toggleToSignIn": "Already have an account? Sign in",
+  "toggleToRegister": "New here? Create an account",
+  "tagline": "Football prediction platform",
+  "notifications": "Notifications",
+  "signedIn": "Signed in",
+  "userId": "User ID",
+  "role": "Role",
+  "status": "Status",
+  "browseCompetitions": "Browse competitions",
+  "hallOfFame": "Hall of Fame",
+  "myPredictions": "My Predictions",
+  "createGroup": "Create a group",
+  "joinGroup": "Join a group",
+  "adminDashboard": "Admin dashboard"
 }
