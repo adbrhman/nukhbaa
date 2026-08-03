@@ -19,6 +19,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/app_round_header.dart';
 import '../prediction/prediction_screen.dart';
 import 'competition_providers.dart';
 import 'season_rounds_screen.dart' show roundStatusLabel;
@@ -45,7 +46,24 @@ class RoundFixturesScreen extends ConsumerWidget {
           AsyncObjectView<RoundDto>(
             value: round,
             onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
-            builder: (context, r) => _RoundHeader(round: r),
+            builder: (context, r) => AppRoundHeader(
+              key: const Key('fixtures.roundHeader'),
+              round: r,
+              statusLine:
+                  '${roundStatusLabel(r.status)} · Rules v${r.rulesetVersion}',
+              trailing: r.status == 'open'
+                  ? FilledButton.icon(
+                      key: const Key('fixtures.predict'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PredictionScreen(roundId: r.id),
+                        ),
+                      ),
+                      icon: const Icon(Icons.sports_soccer),
+                      label: const Text('Predict this round'),
+                    )
+                  : null,
+            ),
           ),
           const Divider(height: 1),
           Expanded(
@@ -62,55 +80,6 @@ class RoundFixturesScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A compact header describing the round the fixtures belong to.
-class _RoundHeader extends StatelessWidget {
-  const _RoundHeader({required this.round});
-
-  final RoundDto round;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      key: const Key('fixtures.roundHeader'),
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      color: scheme.surfaceContainerHighest,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Round ${round.sequence}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${roundStatusLabel(round.status)} · Rules v${round.rulesetVersion}',
-          ),
-          // Single, additive integration point into the Prediction (submit)
-          // screen. Offered only while the round is open for predictions; a
-          // locked/scored round shows no submit affordance here (the Prediction
-          // screen would itself present a read-only "closed" notice). This is a
-          // pure navigation push — no browse logic changes.
-          if (round.status == 'open') ...<Widget>[
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              key: const Key('fixtures.predict'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => PredictionScreen(roundId: round.id),
-                ),
-              ),
-              icon: const Icon(Icons.sports_soccer),
-              label: const Text('Predict this round'),
-            ),
-          ],
         ],
       ),
     );

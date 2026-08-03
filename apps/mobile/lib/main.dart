@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/design/app_spacing.dart';
 import 'core/providers.dart';
 
 void main() {
@@ -34,7 +35,7 @@ class _ConfigErrorApp extends StatelessWidget {
     home: Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Text(
             'Configuration error\n\n$message',
             key: const Key('app.configError'),
