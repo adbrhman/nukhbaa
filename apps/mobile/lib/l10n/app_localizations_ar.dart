@@ -167,4 +167,87 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get visibilityPrivate => 'خاص';
+
+  @override
+  String get predictionHistoryEmpty => 'لم تقدّم أي توقعات بعد.';
+
+  @override
+  String predictionHistoryScoreLine(
+    String fixtureId,
+    int homeGoals,
+    int awayGoals,
+  ) {
+    return '$fixtureId: $homeGoals - $awayGoals';
+  }
+
+  @override
+  String groupFeedTitle(String groupName) {
+    return 'نشاط $groupName';
+  }
+
+  @override
+  String get groupFeedEmpty => 'لا يوجد نشاط بعد.';
+
+  @override
+  String get activityRoundScored => 'تم احتساب نتيجة الجولة';
+
+  @override
+  String get activityMemberJoined => 'انضم عضو جديد';
+
+  @override
+  String activityRankShift(int oldRank, int newRank) {
+    return 'انتقل من المركز #$oldRank إلى #$newRank';
+  }
+
+  @override
+  String get activityRankShiftUnknown => 'تغيّر الترتيب';
+
+  @override
+  String seasonRoundsTitle(String seasonLabel) {
+    return '$seasonLabel — الجولات';
+  }
+
+  @override
+  String get viewLeaderboardTooltip => 'عرض لوحة الصدارة';
+
+  @override
+  String get seasonRoundsEmpty => 'لا توجد جولات لهذا الموسم بعد.';
+
+  @override
+  String roundItemTitle(int sequence) {
+    return 'الجولة $sequence';
+  }
+
+  @override
+  String roundDeadlineLine(String statusLabel, String deadline) {
+    return '$statusLabel · الموعد النهائي $deadline';
+  }
+
+  @override
+  String get roundStatusOpen => 'مفتوحة للتوقعات';
+
+  @override
+  String get roundStatusLocked => 'مغلقة';
+
+  @override
+  String get roundStatusScored => 'محتسبة';
+
+  @override
+  String get roundFixturesTitle => 'الجولة';
+
+  @override
+  String roundRulesLine(String statusLabel, int rulesetVersion) {
+    return '$statusLabel · القواعد إصدار $rulesetVersion';
+  }
+
+  @override
+  String get predictRoundButton => 'توقع نتائج هذه الجولة';
+
+  @override
+  String get roundFixturesEmpty => 'لا توجد مباريات لهذه الجولة بعد.';
+
+  @override
+  String fixtureItemTitle(String fixtureId) {
+    return 'المباراة $fixtureId';
+  }
 }

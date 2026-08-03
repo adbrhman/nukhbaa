@@ -74,5 +74,120 @@
   "competitions": "Competitions",
   "competitionsEmpty": "There are no competitions to browse yet.",
   "visibilityPublic": "Public",
-  "visibilityPrivate": "Private"
+  "visibilityPrivate": "Private",
+  "predictionHistoryEmpty": "You have not submitted any predictions yet.",
+  "predictionHistoryScoreLine": "{fixtureId}: {homeGoals} - {awayGoals}",
+  "@predictionHistoryScoreLine": {
+    "description": "One fixture's predicted scoreline within a submitted prediction history row.",
+    "placeholders": {
+      "fixtureId": {
+        "type": "String"
+      },
+      "homeGoals": {
+        "type": "int"
+      },
+      "awayGoals": {
+        "type": "int"
+      }
+    }
+  },
+  "groupFeedTitle": "{groupName} Feed",
+  "@groupFeedTitle": {
+    "description": "App bar title for a group's activity feed screen.",
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupFeedEmpty": "No activity yet.",
+  "activityRoundScored": "Round scored",
+  "activityMemberJoined": "New member joined",
+  "activityRankShift": "Moved from #{oldRank} to #{newRank}",
+  "@activityRankShift": {
+    "description": "Describes a member's rank change in the group activity feed.",
+    "placeholders": {
+      "oldRank": {
+        "type": "int"
+      },
+      "newRank": {
+        "type": "int"
+      }
+    }
+  },
+  "activityRankShiftUnknown": "Rank changed",
+  "seasonRoundsTitle": "{seasonLabel} — Rounds",
+  "@seasonRoundsTitle": {
+    "description": "App bar title for the season rounds browse screen.",
+    "placeholders": {
+      "seasonLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "viewLeaderboardTooltip": "View leaderboard",
+  "@viewLeaderboardTooltip": {
+    "description": "Tooltip for the app bar action that navigates to the season leaderboard."
+  },
+  "seasonRoundsEmpty": "This season has no rounds yet.",
+  "@seasonRoundsEmpty": {
+    "description": "Empty state message when a season has no rounds."
+  },
+  "roundItemTitle": "Round {sequence}",
+  "@roundItemTitle": {
+    "description": "Title of a round list item, showing its 1-based sequence number.",
+    "placeholders": {
+      "sequence": {
+        "type": "int"
+      }
+    }
+  },
+  "roundDeadlineLine": "{statusLabel} · Deadline {deadline}",
+  "@roundDeadlineLine": {
+    "description": "Subtitle of a round list item combining its humanised status and formatted prediction deadline.",
+    "placeholders": {
+      "statusLabel": {
+        "type": "String"
+      },
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
+  "roundStatusOpen": "Open for predictions",
+  "@roundStatusOpen": {
+    "description": "Humanised label for a round in the open lifecycle status."
+  },
+  "roundStatusLocked": "Locked",
+  "@roundStatusLocked": {
+    "description": "Humanised label for a round in the locked lifecycle status."
+  },
+  "roundStatusScored": "Scored",
+  "@roundStatusScored": {
+    "description": "Humanised label for a round in the scored lifecycle status."
+  },
+  "roundFixturesTitle": "Round",
+  "roundRulesLine": "{statusLabel} · Rules v{rulesetVersion}",
+  "@roundRulesLine": {
+    "description": "Round header status line combining the humanised status and the ruleset version applied to this round.",
+    "placeholders": {
+      "statusLabel": {
+        "type": "String"
+      },
+      "rulesetVersion": {
+        "type": "int"
+      }
+    }
+  },
+  "predictRoundButton": "Predict this round",
+  "roundFixturesEmpty": "This round has no fixtures yet.",
+  "fixtureItemTitle": "Fixture {fixtureId}",
+  "@fixtureItemTitle": {
+    "description": "Title of a fixture list item, showing its stable fixture id.",
+    "placeholders": {
+      "fixtureId": {
+        "type": "String"
+      }
+    }
+  }
 }

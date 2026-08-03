@@ -25,12 +25,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/prediction/prediction_screen.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/prediction_harness.dart';
 
 Widget _host(PredictionHarness harness, Widget child) => ProviderScope(
   overrides: harness.overrides,
-  child: MaterialApp(home: child),
+  child: MaterialApp(
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: child,
+      ),
 );
 
 /// A handler for an OPEN round with two fixtures and no existing prediction

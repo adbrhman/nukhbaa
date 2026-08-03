@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'prediction_history_providers.dart';
 
@@ -21,16 +22,17 @@ class PredictionHistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<PredictionDto>> history = ref.watch(
       myPredictionsProvider,
     );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Predictions', key: Key('history.title')),
+        title: Text(l10n.myPredictions, key: const Key('history.title')),
       ),
       body: AsyncListView<PredictionDto>(
         value: history,
-        emptyMessage: 'You have not submitted any predictions yet.',
+        emptyMessage: l10n.predictionHistoryEmpty,
         onRetry: () => ref.invalidate(myPredictionsProvider),
         itemBuilder: (context, prediction) =>
             _PredictionCard(prediction: prediction),
@@ -45,6 +47,7 @@ class _PredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     return Card(
       key: Key('history.item.${prediction.id}'),
@@ -69,7 +72,11 @@ class _PredictionCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text(
-                  '${score.fixtureId}: ${score.homeGoals} - ${score.awayGoals}',
+                  l10n.predictionHistoryScoreLine(
+                    score.fixtureId,
+                    score.homeGoals,
+                    score.awayGoals,
+                  ),
                   key: Key('history.score.${prediction.id}.${score.fixtureId}'),
                 ),
               ),

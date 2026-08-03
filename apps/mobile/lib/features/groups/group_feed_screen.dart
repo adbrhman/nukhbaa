@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'groups_providers.dart';
 
@@ -21,16 +22,20 @@ class GroupFeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<GroupActivityFeedDto> feed = ref.watch(
       groupFeedProvider(groupId),
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text('$groupName — Activity', key: const Key('groupFeed.title')),
+        title: Text(
+          l10n.groupFeedTitle(groupName),
+          key: const Key('groupFeed.title'),
+        ),
       ),
       body: AsyncListView<ActivityEventDto>(
         value: feed.whenData((dto) => dto.events),
-        emptyMessage: 'No activity yet in this group.',
+        emptyMessage: l10n.groupFeedEmpty,
         onRetry: () => ref.invalidate(groupFeedProvider(groupId)),
         itemBuilder: (context, event) => _FeedRow(event: event),
       ),
@@ -49,24 +54,26 @@ class _FeedRow extends StatelessWidget {
     _ => Icons.circle_outlined,
   };
 
-  static String _labelFor(ActivityEventDto event) => switch (event.type) {
-    'round_scored' => 'A round was scored',
-    'member_joined' => 'A new member joined',
-    'rank_shift' =>
-      event.oldRank != null && event.newRank != null
-          ? 'Rank moved ${event.oldRank} → ${event.newRank}'
-          : 'A rank changed',
-    _ => event.type,
-  };
+  static String _labelFor(ActivityEventDto event, AppLocalizations l10n) =>
+      switch (event.type) {
+        'round_scored' => l10n.activityRoundScored,
+        'member_joined' => l10n.activityMemberJoined,
+        'rank_shift' =>
+          event.oldRank != null && event.newRank != null
+              ? l10n.activityRankShift(event.oldRank!, event.newRank!)
+              : l10n.activityRankShiftUnknown,
+        _ => event.type,
+      };
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('groupFeed.item.${event.groupId}.${event.occurredAt}'),
       leading: Icon(_iconFor(event.type), color: tokens.textSecondary),
       title: Text(
-        _labelFor(event),
+        _labelFor(event, l10n),
         key: Key('groupFeed.label.${event.occurredAt}'),
       ),
       subtitle: Text(

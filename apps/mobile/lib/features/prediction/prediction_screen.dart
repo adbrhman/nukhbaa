@@ -35,6 +35,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../core/error/error_presenter.dart';
 import '../competition/competition_providers.dart';
 import '../competition/season_rounds_screen.dart' show roundStatusLabel;
@@ -105,6 +106,7 @@ class _RoundHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       key: const Key('prediction.roundHeader'),
       width: double.infinity,
@@ -119,7 +121,7 @@ class _RoundHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${roundStatusLabel(round.status)} · Rules v${round.rulesetVersion}',
+            '${roundStatusLabel(l10n, round.status)} · Rules v${round.rulesetVersion}',
           ),
         ],
       ),
@@ -137,6 +139,7 @@ class _ClosedNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Center(
       key: const Key('prediction.closed'),
       child: Padding(
@@ -147,7 +150,7 @@ class _ClosedNotice extends StatelessWidget {
             Icon(Icons.lock_clock_outlined, size: 48, color: scheme.outline),
             const SizedBox(height: 12),
             Text(
-              'This round is ${roundStatusLabel(round.status).toLowerCase()}. '
+              'This round is ${roundStatusLabel(l10n, round.status).toLowerCase()}. '
               'Predictions are closed.',
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,

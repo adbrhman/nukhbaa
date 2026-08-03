@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ui/app_round_header.dart';
+import '../../l10n/app_localizations.dart';
 import '../prediction/prediction_screen.dart';
 import 'competition_providers.dart';
 import 'season_rounds_screen.dart' show roundStatusLabel;
@@ -35,10 +36,13 @@ class RoundFixturesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     final fixtures = ref.watch(roundFixturesProvider(roundId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Round', key: Key('fixtures.title'))),
+      appBar: AppBar(
+        title: Text(l10n.roundFixturesTitle, key: const Key('fixtures.title')),
+      ),
       body: Column(
         children: <Widget>[
           // The round header. A not-found round surfaces here (the fixtures
@@ -49,8 +53,10 @@ class RoundFixturesScreen extends ConsumerWidget {
             builder: (context, r) => AppRoundHeader(
               key: const Key('fixtures.roundHeader'),
               round: r,
-              statusLine:
-                  '${roundStatusLabel(r.status)} · Rules v${r.rulesetVersion}',
+              statusLine: l10n.roundRulesLine(
+                roundStatusLabel(l10n, r.status),
+                r.rulesetVersion,
+              ),
               trailing: r.status == 'open'
                   ? FilledButton.icon(
                       key: const Key('fixtures.predict'),
@@ -60,7 +66,7 @@ class RoundFixturesScreen extends ConsumerWidget {
                         ),
                       ),
                       icon: const Icon(Icons.sports_soccer),
-                      label: const Text('Predict this round'),
+                      label: Text(l10n.predictRoundButton),
                     )
                   : null,
             ),
@@ -69,14 +75,14 @@ class RoundFixturesScreen extends ConsumerWidget {
           Expanded(
             child: AsyncListView<RoundFixtureDto>(
               value: fixtures,
-              emptyMessage: 'This round has no fixtures yet.',
+              emptyMessage: l10n.roundFixturesEmpty,
               onRetry: () => ref.invalidate(roundFixturesProvider(roundId)),
               itemBuilder: (context, fixture) => ListTile(
                 key: Key('fixtures.item.${fixture.fixtureId}'),
                 leading: CircleAvatar(
                   child: Text('${fixture.displayOrder + 1}'),
                 ),
-                title: Text('Fixture ${fixture.fixtureId}'),
+                title: Text(l10n.fixtureItemTitle(fixture.fixtureId)),
               ),
             ),
           ),

@@ -158,4 +158,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get visibilityPrivate => 'Private';
+
+  @override
+  String get predictionHistoryEmpty =>
+      'You have not submitted any predictions yet.';
+
+  @override
+  String predictionHistoryScoreLine(
+    String fixtureId,
+    int homeGoals,
+    int awayGoals,
+  ) {
+    return '$fixtureId: $homeGoals - $awayGoals';
+  }
+
+  @override
+  String groupFeedTitle(String groupName) {
+    return '$groupName Feed';
+  }
+
+  @override
+  String get groupFeedEmpty => 'No activity yet.';
+
+  @override
+  String get activityRoundScored => 'Round scored';
+
+  @override
+  String get activityMemberJoined => 'New member joined';
+
+  @override
+  String activityRankShift(int oldRank, int newRank) {
+    return 'Moved from #$oldRank to #$newRank';
+  }
+
+  @override
+  String get activityRankShiftUnknown => 'Rank changed';
+
+  @override
+  String seasonRoundsTitle(String seasonLabel) {
+    return '$seasonLabel — Rounds';
+  }
+
+  @override
+  String get viewLeaderboardTooltip => 'View leaderboard';
+
+  @override
+  String get seasonRoundsEmpty => 'This season has no rounds yet.';
+
+  @override
+  String roundItemTitle(int sequence) {
+    return 'Round $sequence';
+  }
+
+  @override
+  String roundDeadlineLine(String statusLabel, String deadline) {
+    return '$statusLabel · Deadline $deadline';
+  }
+
+  @override
+  String get roundStatusOpen => 'Open for predictions';
+
+  @override
+  String get roundStatusLocked => 'Locked';
+
+  @override
+  String get roundStatusScored => 'Scored';
+
+  @override
+  String get roundFixturesTitle => 'Round';
+
+  @override
+  String roundRulesLine(String statusLabel, int rulesetVersion) {
+    return '$statusLabel · Rules v$rulesetVersion';
+  }
+
+  @override
+  String get predictRoundButton => 'Predict this round';
+
+  @override
+  String get roundFixturesEmpty => 'This round has no fixtures yet.';
+
+  @override
+  String fixtureItemTitle(String fixtureId) {
+    return 'Fixture $fixtureId';
+  }
 }

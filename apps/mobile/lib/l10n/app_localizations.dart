@@ -337,6 +337,136 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get visibilityPrivate;
+
+  /// No description provided for @predictionHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not submitted any predictions yet.'**
+  String get predictionHistoryEmpty;
+
+  /// One fixture's predicted scoreline within a submitted prediction history row.
+  ///
+  /// In en, this message translates to:
+  /// **'{fixtureId}: {homeGoals} - {awayGoals}'**
+  String predictionHistoryScoreLine(
+    String fixtureId,
+    int homeGoals,
+    int awayGoals,
+  );
+
+  /// App bar title for a group's activity feed screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{groupName} Feed'**
+  String groupFeedTitle(String groupName);
+
+  /// No description provided for @groupFeedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet.'**
+  String get groupFeedEmpty;
+
+  /// No description provided for @activityRoundScored.
+  ///
+  /// In en, this message translates to:
+  /// **'Round scored'**
+  String get activityRoundScored;
+
+  /// No description provided for @activityMemberJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'New member joined'**
+  String get activityMemberJoined;
+
+  /// Describes a member's rank change in the group activity feed.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved from #{oldRank} to #{newRank}'**
+  String activityRankShift(int oldRank, int newRank);
+
+  /// No description provided for @activityRankShiftUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank changed'**
+  String get activityRankShiftUnknown;
+
+  /// App bar title for the season rounds browse screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{seasonLabel} — Rounds'**
+  String seasonRoundsTitle(String seasonLabel);
+
+  /// Tooltip for the app bar action that navigates to the season leaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'View leaderboard'**
+  String get viewLeaderboardTooltip;
+
+  /// Empty state message when a season has no rounds.
+  ///
+  /// In en, this message translates to:
+  /// **'This season has no rounds yet.'**
+  String get seasonRoundsEmpty;
+
+  /// Title of a round list item, showing its 1-based sequence number.
+  ///
+  /// In en, this message translates to:
+  /// **'Round {sequence}'**
+  String roundItemTitle(int sequence);
+
+  /// Subtitle of a round list item combining its humanised status and formatted prediction deadline.
+  ///
+  /// In en, this message translates to:
+  /// **'{statusLabel} · Deadline {deadline}'**
+  String roundDeadlineLine(String statusLabel, String deadline);
+
+  /// Humanised label for a round in the open lifecycle status.
+  ///
+  /// In en, this message translates to:
+  /// **'Open for predictions'**
+  String get roundStatusOpen;
+
+  /// Humanised label for a round in the locked lifecycle status.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get roundStatusLocked;
+
+  /// Humanised label for a round in the scored lifecycle status.
+  ///
+  /// In en, this message translates to:
+  /// **'Scored'**
+  String get roundStatusScored;
+
+  /// No description provided for @roundFixturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round'**
+  String get roundFixturesTitle;
+
+  /// Round header status line combining the humanised status and the ruleset version applied to this round.
+  ///
+  /// In en, this message translates to:
+  /// **'{statusLabel} · Rules v{rulesetVersion}'**
+  String roundRulesLine(String statusLabel, int rulesetVersion);
+
+  /// No description provided for @predictRoundButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict this round'**
+  String get predictRoundButton;
+
+  /// No description provided for @roundFixturesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This round has no fixtures yet.'**
+  String get roundFixturesEmpty;
+
+  /// Title of a fixture list item, showing its stable fixture id.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture {fixtureId}'**
+  String fixtureItemTitle(String fixtureId);
 }
 
 class _AppLocalizationsDelegate

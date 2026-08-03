@@ -1,5 +1,5 @@
 /// Browse level 3 — a season's rounds (`GET /seasons/{id}/rounds`).
-///
+/// ///
 /// Watches `seasonRoundsProvider(seasonId)` and renders it via [AsyncListView].
 /// A season with no rounds (or one that does not exist) is a *legitimate* empty
 /// list. Each round shows its 1-based sequence, lifecycle status, and prediction
@@ -17,6 +17,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
 import 'competition_providers.dart';
 import 'round_fixtures_screen.dart';
@@ -39,14 +40,18 @@ class SeasonRoundsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final rounds = ref.watch(seasonRoundsProvider(seasonId));
     return Scaffold(
       appBar: AppBar(
-        title: Text('$seasonLabel — Rounds', key: const Key('rounds.title')),
+        title: Text(
+          l10n.seasonRoundsTitle(seasonLabel),
+          key: const Key('rounds.title'),
+        ),
         actions: <Widget>[
           IconButton(
             key: const Key('rounds.viewLeaderboard'),
-            tooltip: 'View leaderboard',
+            tooltip: l10n.viewLeaderboardTooltip,
             icon: const Icon(Icons.leaderboard_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -61,15 +66,17 @@ class SeasonRoundsScreen extends ConsumerWidget {
       ),
       body: AsyncListView<RoundDto>(
         value: rounds,
-        emptyMessage: 'This season has no rounds yet.',
+        emptyMessage: l10n.seasonRoundsEmpty,
         onRetry: () => ref.invalidate(seasonRoundsProvider(seasonId)),
         itemBuilder: (context, round) => ListTile(
           key: Key('rounds.item.${round.id}'),
           leading: CircleAvatar(child: Text('${round.sequence}')),
-          title: Text('Round ${round.sequence}'),
+          title: Text(l10n.roundItemTitle(round.sequence)),
           subtitle: Text(
-            '${roundStatusLabel(round.status)} · '
-            'Deadline ${_formatDeadline(round.predictionDeadline)}',
+            l10n.roundDeadlineLine(
+              roundStatusLabel(l10n, round.status),
+              _formatDeadline(round.predictionDeadline),
+            ),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
@@ -84,10 +91,10 @@ class SeasonRoundsScreen extends ConsumerWidget {
 }
 
 /// Humanises a round lifecycle status token.
-String roundStatusLabel(String token) => switch (token) {
-  'open' => 'Open for predictions',
-  'locked' => 'Locked',
-  'scored' => 'Scored',
+String roundStatusLabel(AppLocalizations l10n, String token) => switch (token) {
+  'open' => l10n.roundStatusOpen,
+  'locked' => l10n.roundStatusLocked,
+  'scored' => l10n.roundStatusScored,
   _ => token,
 };
 
