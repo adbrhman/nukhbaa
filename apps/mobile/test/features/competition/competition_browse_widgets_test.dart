@@ -15,12 +15,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/competition/competition_list_screen.dart';
 import 'package:mobile/features/competition/round_fixtures_screen.dart';
 
+import 'package:mobile/l10n/app_localizations.dart';
+
 import '../../support/competition_harness.dart';
 
 Widget _host(CompetitionHarness harness, Widget child) => ProviderScope(
   overrides: harness.overrides,
   retry: (retryCount, error) => null,
-  child: MaterialApp(home: child),
+  child: MaterialApp(
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: child,
+  ),
 );
 
 void main() {

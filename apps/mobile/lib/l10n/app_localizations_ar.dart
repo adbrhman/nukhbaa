@@ -110,4 +110,7 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get competitionSeasonsEmpty => 'لا توجد مواسم لهذه البطولة بعد.';
 }

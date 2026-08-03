@@ -107,4 +107,7 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get competitionSeasonsEmpty => 'This competition has no seasons yet.';
 }

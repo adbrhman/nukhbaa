@@ -277,6 +277,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No seasons played} =1{1 season played} other{{count} seasons played}}'**
   String hallOfFameSeasonsPlayed(int count);
+
+  /// No description provided for @competitionSeasonsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This competition has no seasons yet.'**
+  String get competitionSeasonsEmpty;
 }
 
 class _AppLocalizationsDelegate

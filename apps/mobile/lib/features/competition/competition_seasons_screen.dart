@@ -12,6 +12,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import 'competition_providers.dart';
 import 'season_rounds_screen.dart';
 import 'widgets/async_list_view.dart';
@@ -34,6 +35,7 @@ class CompetitionSeasonsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final seasons = ref.watch(competitionSeasonsProvider(competitionId));
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +43,7 @@ class CompetitionSeasonsScreen extends ConsumerWidget {
       ),
       body: AsyncListView<SeasonDto>(
         value: seasons,
-        emptyMessage: 'This competition has no seasons yet.',
+        emptyMessage: l10n.competitionSeasonsEmpty,
         onRetry: () =>
             ref.invalidate(competitionSeasonsProvider(competitionId)),
         itemBuilder: (context, season) => ListTile(

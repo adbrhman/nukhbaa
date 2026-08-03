@@ -29,5 +29,6 @@
   "joinGroup": "الانضمام إلى مجموعة",
   "adminDashboard": "لوحة تحكم المشرف",
   "hallOfFameEmpty": "لم يحصل أحد على أي نقاط بعد.",
-  "hallOfFameSeasonsPlayed": "{count, plural, zero{لم يشارك في أي موسم} one{شارك في موسم واحد} two{شارك في موسمين} few{شارك في {count} مواسم} many{شارك في {count} موسمًا} other{شارك في {count} موسم}}"
+  "hallOfFameSeasonsPlayed": "{count, plural, zero{لم يشارك في أي موسم} one{شارك في موسم واحد} two{شارك في موسمين} few{شارك في {count} مواسم} many{شارك في {count} موسمًا} other{شارك في {count} موسم}}",
+  "competitionSeasonsEmpty": "لا توجد مواسم لهذه البطولة بعد."
 }
