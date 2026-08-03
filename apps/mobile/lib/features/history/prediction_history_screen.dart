@@ -60,9 +60,9 @@ class _PredictionCard extends StatelessWidget {
             Text(
               prediction.submittedAt,
               key: Key('history.submittedAt.${prediction.id}'),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: tokens.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
             ),
             const SizedBox(height: AppSpacing.sm),
             for (final score in prediction.fixtureScores)
