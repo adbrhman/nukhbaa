@@ -287,8 +287,8 @@ abstract class AppLocalizations {
   /// Title of the season leaderboard screen.
   ///
   /// In en, this message translates to:
-  /// **'{seasonLabel} — Leaderboard'**
-  String leaderboardTitle(String seasonLabel);
+  /// **'{label} — Leaderboard'**
+  String leaderboardTitle(String label);
 
   /// No description provided for @seasonLeaderboardEmpty.
   ///
@@ -307,6 +307,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}'**
   String pointsAbbreviated(int count);
+
+  /// No description provided for @groupLeaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No members of this group have joined the season yet.'**
+  String get groupLeaderboardEmpty;
 }
 
 class _AppLocalizationsDelegate

@@ -115,8 +115,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get competitionSeasonsEmpty => 'لا توجد مواسم لهذه البطولة بعد.';
 
   @override
-  String leaderboardTitle(String seasonLabel) {
-    return '$seasonLabel — لوحة الصدارة';
+  String leaderboardTitle(String label) {
+    return '$label — لوحة الصدارة';
   }
 
   @override
@@ -151,4 +151,8 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get groupLeaderboardEmpty =>
+      'لم ينضم أي عضو من هذه المجموعة للموسم بعد.';
 }

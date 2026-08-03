@@ -42,11 +42,11 @@
     }
   },
   "competitionSeasonsEmpty": "This competition has no seasons yet.",
-  "leaderboardTitle": "{seasonLabel} — Leaderboard",
+  "leaderboardTitle": "{label} — Leaderboard",
   "@leaderboardTitle": {
     "description": "Title of the season leaderboard screen.",
     "placeholders": {
-      "seasonLabel": {
+      "label": {
         "type": "String"
       }
     }
@@ -69,5 +69,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "groupLeaderboardEmpty": "No members of this group have joined the season yet."
 }

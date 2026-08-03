@@ -31,8 +31,9 @@
   "hallOfFameEmpty": "لم يحصل أحد على أي نقاط بعد.",
   "hallOfFameSeasonsPlayed": "{count, plural, zero{لم يشارك في أي موسم} one{شارك في موسم واحد} two{شارك في موسمين} few{شارك في {count} مواسم} many{شارك في {count} موسمًا} other{شارك في {count} موسم}}",
   "competitionSeasonsEmpty": "لا توجد مواسم لهذه البطولة بعد.",
-  "leaderboardTitle": "{seasonLabel} — لوحة الصدارة",
+  "leaderboardTitle": "{label} — لوحة الصدارة",
   "seasonLeaderboardEmpty": "لم ينضم أحد لهذا الموسم بعد.",
   "leaderboardEntriesCounted": "{count, plural, zero{لا توجد مشاركات محتسبة} one{مشاركة واحدة محتسبة} two{مشاركتان محتسبتان} few{{count} مشاركات محتسبة} many{{count} مشاركة محتسبة} other{{count} مشاركة محتسبة}}",
-  "pointsAbbreviated": "{count, plural, zero{0 نقطة} one{نقطة واحدة} two{نقطتان} few{{count} نقاط} many{{count} نقطة} other{{count} نقطة}}"
+  "pointsAbbreviated": "{count, plural, zero{0 نقطة} one{نقطة واحدة} two{نقطتان} few{{count} نقاط} many{{count} نقطة} other{{count} نقطة}}",
+  "groupLeaderboardEmpty": "لم ينضم أي عضو من هذه المجموعة للموسم بعد."
 }

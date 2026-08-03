@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'groups_providers.dart';
 
@@ -22,19 +23,20 @@ class GroupLeaderboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<GroupLeaderboardDto> standings = ref.watch(
       groupLeaderboardProvider(groupId, seasonId),
     );
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '$groupName — Leaderboard',
+          l10n.leaderboardTitle(groupName),
           key: const Key('groupLeaderboard.title'),
         ),
       ),
       body: AsyncListView<GroupLeaderboardEntryDto>(
         value: standings.whenData((board) => board.entries),
-        emptyMessage: 'No members of this group have joined the season yet.',
+        emptyMessage: l10n.groupLeaderboardEmpty,
         onRetry: () =>
             ref.invalidate(groupLeaderboardProvider(groupId, seasonId)),
         itemBuilder: (context, entry) => _GroupLeaderboardRow(entry: entry),
@@ -49,6 +51,7 @@ class _GroupLeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('groupLeaderboard.item.${entry.participantId}'),
@@ -64,11 +67,11 @@ class _GroupLeaderboardRow extends StatelessWidget {
         style: TextStyle(color: tokens.textPrimary),
       ),
       subtitle: Text(
-        '${entry.entryCount} entries counted',
+        l10n.leaderboardEntriesCounted(entry.entryCount),
         key: Key('groupLeaderboard.entries.${entry.participantId}'),
       ),
       trailing: Text(
-        '${entry.totalPoints} pts',
+        l10n.pointsAbbreviated(entry.totalPoints),
         key: Key('groupLeaderboard.points.${entry.participantId}'),
         style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
       ),

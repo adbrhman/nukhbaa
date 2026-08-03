@@ -112,8 +112,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionSeasonsEmpty => 'This competition has no seasons yet.';
 
   @override
-  String leaderboardTitle(String seasonLabel) {
-    return '$seasonLabel — Leaderboard';
+  String leaderboardTitle(String label) {
+    return '$label — Leaderboard';
   }
 
   @override
@@ -142,4 +142,8 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get groupLeaderboardEmpty =>
+      'No members of this group have joined the season yet.';
 }
