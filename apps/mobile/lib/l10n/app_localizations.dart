@@ -467,6 +467,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fixture {fixtureId}'**
   String fixtureItemTitle(String fixtureId);
+
+  /// App bar title on the prediction submit/amend screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict'**
+  String get predictionTitle;
+
+  /// Shown when a round is not open for predictions; status is the lowercase lifecycle label.
+  ///
+  /// In en, this message translates to:
+  /// **'This round is {status}. Predictions are closed.'**
+  String predictionClosedMessage(String status);
+
+  /// Fallback error message for an untyped/unexpected client error.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get genericErrorMessage;
+
+  /// Retry button label on a form error state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgainButton;
+
+  /// Banner shown when the caller already has a stored prediction for this round.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already submitted a prediction for this round. Editing and submitting again will update it.'**
+  String get predictionAlreadySubmitted;
+
+  /// Success banner after a prediction submit/amend succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Your prediction was saved.'**
+  String get predictionSaved;
+
+  /// Label on the prediction submit button.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit prediction'**
+  String get submitPredictionButton;
+
+  /// No description provided for @adminAuditLogTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit Log'**
+  String get adminAuditLogTab;
+
+  /// No description provided for @adminUsersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get adminUsersTab;
+
+  /// No description provided for @adminLedgerLookupTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Ledger Lookup'**
+  String get adminLedgerLookupTab;
+
+  /// No description provided for @adminAuditLogEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit entries yet.'**
+  String get adminAuditLogEmpty;
+
+  /// No description provided for @adminReasonMandatoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (mandatory)'**
+  String get adminReasonMandatoryLabel;
+
+  /// No description provided for @adminSuspendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspend'**
+  String get adminSuspendButton;
+
+  /// No description provided for @adminReinstateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reinstate'**
+  String get adminReinstateButton;
+
+  /// No description provided for @adminParticipantIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant ID'**
+  String get adminParticipantIdLabel;
+
+  /// No description provided for @adminLookUpButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up'**
+  String get adminLookUpButton;
 }
 
 class _AppLocalizationsDelegate

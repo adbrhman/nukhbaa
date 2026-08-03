@@ -189,5 +189,47 @@
         "type": "String"
       }
     }
-  }
+  },
+  "predictionTitle": "Predict",
+  "@predictionTitle": {
+    "description": "App bar title on the prediction submit/amend screen."
+  },
+  "predictionClosedMessage": "This round is {status}. Predictions are closed.",
+  "@predictionClosedMessage": {
+    "description": "Shown when a round is not open for predictions; status is the lowercase lifecycle label.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "genericErrorMessage": "Something went wrong. Please try again.",
+  "@genericErrorMessage": {
+    "description": "Fallback error message for an untyped/unexpected client error."
+  },
+  "tryAgainButton": "Try again",
+  "@tryAgainButton": {
+    "description": "Retry button label on a form error state."
+  },
+  "predictionAlreadySubmitted": "You have already submitted a prediction for this round. Editing and submitting again will update it.",
+  "@predictionAlreadySubmitted": {
+    "description": "Banner shown when the caller already has a stored prediction for this round."
+  },
+  "predictionSaved": "Your prediction was saved.",
+  "@predictionSaved": {
+    "description": "Success banner after a prediction submit/amend succeeds."
+  },
+  "submitPredictionButton": "Submit prediction",
+  "@submitPredictionButton": {
+    "description": "Label on the prediction submit button."
+  },
+  "adminAuditLogTab": "Audit Log",
+  "adminUsersTab": "Users",
+  "adminLedgerLookupTab": "Ledger Lookup",
+  "adminAuditLogEmpty": "No audit entries yet.",
+  "adminReasonMandatoryLabel": "Reason (mandatory)",
+  "adminSuspendButton": "Suspend",
+  "adminReinstateButton": "Reinstate",
+  "adminParticipantIdLabel": "Participant ID",
+  "adminLookUpButton": "Look up"
 }

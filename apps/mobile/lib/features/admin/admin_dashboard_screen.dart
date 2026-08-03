@@ -7,6 +7,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'admin_providers.dart';
 
@@ -19,16 +20,17 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Admin', key: Key('admin.title')),
-          bottom: const TabBar(
+          title: Text(l10n.adminDashboard, key: const Key('admin.title')),
+          bottom: TabBar(
             tabs: <Widget>[
-              Tab(key: Key('admin.tab.audit'), text: 'Audit Log'),
-              Tab(key: Key('admin.tab.users'), text: 'Users'),
-              Tab(key: Key('admin.tab.ledger'), text: 'Ledger Lookup'),
+              Tab(key: const Key('admin.tab.audit'), text: l10n.adminAuditLogTab),
+              Tab(key: const Key('admin.tab.users'), text: l10n.adminUsersTab),
+              Tab(key: const Key('admin.tab.ledger'), text: l10n.adminLedgerLookupTab),
             ],
           ),
         ),
@@ -49,10 +51,11 @@ class _AuditLogTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<AuditLogDto> log = ref.watch(auditLogProvider);
     return AsyncListView<AuditEntryDto>(
       value: log.whenData((dto) => dto.entries),
-      emptyMessage: 'No audit entries yet.',
+      emptyMessage: l10n.adminAuditLogEmpty,
       onRetry: () => ref.invalidate(auditLogProvider),
       itemBuilder: (context, entry) => ListTile(
         key: Key('admin.audit.item.${entry.id}'),
@@ -91,6 +94,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final AsyncValue<UserSanctionResultDto>? state = ref.watch(
       userSanctionControllerProvider,
     );
@@ -104,20 +108,20 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
           TextField(
             key: const Key('admin.users.userIdField'),
             controller: _userIdController,
-            decoration: const InputDecoration(
-              labelText: 'User ID',
-              border: OutlineInputBorder(),
-            ),
+            decoration: InputDecoration(
+            labelText: l10n.userId,
+            border: const OutlineInputBorder(),
+          ),
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(
             key: const Key('admin.users.reasonField'),
             controller: _reasonController,
-            decoration: const InputDecoration(
-              labelText: 'Reason (mandatory)',
-              border: OutlineInputBorder(),
-            ),
+            decoration: InputDecoration(
+            labelText: l10n.adminReasonMandatoryLabel,
+            border: const OutlineInputBorder(),
+          ),
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -144,7 +148,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
                 child: OutlinedButton(
                   key: const Key('admin.users.suspend'),
                   onPressed: inFlight ? null : () => _act(suspend: true),
-                  child: const Text('Suspend'),
+                  child: Text(l10n.adminSuspendButton),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -152,7 +156,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
                 child: FilledButton(
                   key: const Key('admin.users.reinstate'),
                   onPressed: inFlight ? null : () => _act(suspend: false),
-                  child: const Text('Reinstate'),
+                  child: Text(l10n.adminReinstateButton),
                 ),
               ),
             ],
@@ -194,6 +198,7 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final AsyncValue<ParticipantEntriesDto>? state = ref.watch(
       adminLedgerLookupControllerProvider,
     );
@@ -209,10 +214,10 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                 child: TextField(
                   key: const Key('admin.ledger.participantIdField'),
                   controller: _participantIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'Participant ID',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: InputDecoration(
+            labelText: l10n.adminParticipantIdLabel,
+            border: const OutlineInputBorder(),
+          ),
                   enabled: !inFlight,
                 ),
               ),
@@ -228,7 +233,7 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                             .read(adminLedgerLookupControllerProvider.notifier)
                             .lookup(id);
                       },
-                child: const Text('Look up'),
+                child: Text(l10n.adminLookUpButton),
               ),
             ],
           ),

@@ -60,5 +60,21 @@
   "roundRulesLine": "{statusLabel} · القواعد إصدار {rulesetVersion}",
   "predictRoundButton": "توقع نتائج هذه الجولة",
   "roundFixturesEmpty": "لا توجد مباريات لهذه الجولة بعد.",
-  "fixtureItemTitle": "المباراة {fixtureId}"
+  "fixtureItemTitle": "المباراة {fixtureId}",
+  "predictionTitle": "التوقّع",
+  "predictionClosedMessage": "هذه الجولة {status}. التوقعات مغلقة.",
+  "genericErrorMessage": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
+  "tryAgainButton": "حاول مرة أخرى",
+  "predictionAlreadySubmitted": "لقد أرسلت توقعاً لهذه الجولة مسبقاً. التعديل والإرسال مرة أخرى سيحدّثه.",
+  "predictionSaved": "تم حفظ توقعك.",
+  "submitPredictionButton": "إرسال التوقع",
+  "adminAuditLogTab": "سجل التدقيق",
+  "adminUsersTab": "المستخدمون",
+  "adminLedgerLookupTab": "البحث في السجل المالي",
+  "adminAuditLogEmpty": "لا توجد إدخالات تدقيق بعد.",
+  "adminReasonMandatoryLabel": "السبب (إلزامي)",
+  "adminSuspendButton": "تعليق",
+  "adminReinstateButton": "إعادة تفعيل",
+  "adminParticipantIdLabel": "معرّف المشارك",
+  "adminLookUpButton": "بحث"
 }

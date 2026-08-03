@@ -250,4 +250,55 @@ class AppLocalizationsAr extends AppLocalizations {
   String fixtureItemTitle(String fixtureId) {
     return 'المباراة $fixtureId';
   }
+
+  @override
+  String get predictionTitle => 'التوقّع';
+
+  @override
+  String predictionClosedMessage(String status) {
+    return 'هذه الجولة $status. التوقعات مغلقة.';
+  }
+
+  @override
+  String get genericErrorMessage => 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.';
+
+  @override
+  String get tryAgainButton => 'حاول مرة أخرى';
+
+  @override
+  String get predictionAlreadySubmitted =>
+      'لقد أرسلت توقعاً لهذه الجولة مسبقاً. التعديل والإرسال مرة أخرى سيحدّثه.';
+
+  @override
+  String get predictionSaved => 'تم حفظ توقعك.';
+
+  @override
+  String get submitPredictionButton => 'إرسال التوقع';
+
+  @override
+  String get adminAuditLogTab => 'سجل التدقيق';
+
+  @override
+  String get adminUsersTab => 'المستخدمون';
+
+  @override
+  String get adminLedgerLookupTab => 'البحث في السجل المالي';
+
+  @override
+  String get adminAuditLogEmpty => 'لا توجد إدخالات تدقيق بعد.';
+
+  @override
+  String get adminReasonMandatoryLabel => 'السبب (إلزامي)';
+
+  @override
+  String get adminSuspendButton => 'تعليق';
+
+  @override
+  String get adminReinstateButton => 'إعادة تفعيل';
+
+  @override
+  String get adminParticipantIdLabel => 'معرّف المشارك';
+
+  @override
+  String get adminLookUpButton => 'بحث';
 }

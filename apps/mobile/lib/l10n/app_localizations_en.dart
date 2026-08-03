@@ -242,4 +242,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String fixtureItemTitle(String fixtureId) {
     return 'Fixture $fixtureId';
   }
+
+  @override
+  String get predictionTitle => 'Predict';
+
+  @override
+  String predictionClosedMessage(String status) {
+    return 'This round is $status. Predictions are closed.';
+  }
+
+  @override
+  String get genericErrorMessage => 'Something went wrong. Please try again.';
+
+  @override
+  String get tryAgainButton => 'Try again';
+
+  @override
+  String get predictionAlreadySubmitted =>
+      'You have already submitted a prediction for this round. Editing and submitting again will update it.';
+
+  @override
+  String get predictionSaved => 'Your prediction was saved.';
+
+  @override
+  String get submitPredictionButton => 'Submit prediction';
+
+  @override
+  String get adminAuditLogTab => 'Audit Log';
+
+  @override
+  String get adminUsersTab => 'Users';
+
+  @override
+  String get adminLedgerLookupTab => 'Ledger Lookup';
+
+  @override
+  String get adminAuditLogEmpty => 'No audit entries yet.';
+
+  @override
+  String get adminReasonMandatoryLabel => 'Reason (mandatory)';
+
+  @override
+  String get adminSuspendButton => 'Suspend';
+
+  @override
+  String get adminReinstateButton => 'Reinstate';
+
+  @override
+  String get adminParticipantIdLabel => 'Participant ID';
+
+  @override
+  String get adminLookUpButton => 'Look up';
 }
