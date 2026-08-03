@@ -57,10 +57,11 @@ class PredictionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Predict', key: Key('prediction.title')),
+        title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
       // The round header must resolve first (a not-found round surfaces here);
       // only an OPEN round shows the fixtures + form below it.
@@ -116,7 +117,7 @@ class _RoundHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Round ${round.sequence}',
+            l10n.roundItemTitle(round.sequence),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
@@ -150,8 +151,7 @@ class _ClosedNotice extends StatelessWidget {
             Icon(Icons.lock_clock_outlined, size: 48, color: scheme.outline),
             const SizedBox(height: 12),
             Text(
-              'This round is ${roundStatusLabel(l10n, round.status).toLowerCase()}. '
-              'Predictions are closed.',
+              l10n.predictionClosedMessage(roundStatusLabel(l10n, round.status).toLowerCase()),
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,
               style: TextStyle(color: scheme.onSurfaceVariant),
@@ -178,6 +178,7 @@ class _PredictionForm extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final fixtures = ref.watch(roundFixturesProvider(roundId));
     return fixtures.when(
       skipLoadingOnRefresh: false,
@@ -194,17 +195,17 @@ class _PredictionForm extends ConsumerWidget {
       ),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
-            key: Key('browse.empty'),
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text(
-                'This round has no fixtures to predict yet.',
-                key: Key('browse.empty.message'),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
+          return Center(
+                key: const Key('browse.empty'),
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    l10n.roundFixturesEmpty,
+                    key: const Key('browse.empty.message'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
         }
         return _PredictionEditor(roundId: roundId, fixtures: list);
       },
@@ -229,6 +230,7 @@ class _FormError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final appError = _appError;
     return Center(
@@ -251,7 +253,7 @@ class _FormError extends StatelessWidget {
               FilledButton.tonal(
                 key: const Key('browse.error.retry'),
                 onPressed: onRetry,
-                child: const Text('Try again'),
+                child: Text(l10n.tryAgainButton),
               ),
             ],
           ],
@@ -338,6 +340,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final submission = ref.watch(predictionControllerProvider(widget.roundId));
     final mine = ref.watch(myPredictionProvider(widget.roundId));
     final inFlight = submission is SubmissionInFlight;
@@ -367,8 +370,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
             child: _Banner(
               icon: Icons.check_circle_outline,
               text:
-                  'You have already submitted a prediction for this round. '
-                  'Editing and submitting again will update it.',
+                  l10n.predictionAlreadySubmitted,
             ),
           ),
         // The success confirmation, shown after a 200.
@@ -378,7 +380,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
             padding: const EdgeInsets.only(bottom: 16),
             child: _Banner(
               icon: Icons.done_all,
-              text: 'Your prediction was saved.',
+              text: l10n.predictionSaved,
             ),
           ),
         // A typed failure, presented via ErrorPresenter (never raw codes).
@@ -434,6 +436,7 @@ class _FixtureScoreInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -442,7 +445,7 @@ class _FixtureScoreInput extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Fixture ${fixture.fixtureId}',
+              l10n.fixtureItemTitle(fixture.fixtureId),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -516,6 +519,7 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return FilledButton(
       key: const Key('prediction.submit'),
       onPressed: inFlight ? null : onSubmit,
@@ -526,7 +530,7 @@ class _SubmitButton extends StatelessWidget {
               width: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Text('Submit prediction'),
+          : Text(l10n.submitPredictionButton),
     );
   }
 }
