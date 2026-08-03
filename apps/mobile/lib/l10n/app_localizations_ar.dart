@@ -92,4 +92,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminDashboard => 'لوحة تحكم المشرف';
+
+  @override
+  String get hallOfFameEmpty => 'لم يحصل أحد على أي نقاط بعد.';
+
+  @override
+  String hallOfFameSeasonsPlayed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'شارك في $count موسم',
+      many: 'شارك في $count موسمًا',
+      few: 'شارك في $count مواسم',
+      two: 'شارك في موسمين',
+      one: 'شارك في موسم واحد',
+      zero: 'لم يشارك في أي موسم',
+    );
+    return '$_temp0';
+  }
 }

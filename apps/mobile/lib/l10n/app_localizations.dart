@@ -265,6 +265,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Admin dashboard'**
   String get adminDashboard;
+
+  /// No description provided for @hallOfFameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody has earned any points yet.'**
+  String get hallOfFameEmpty;
+
+  /// Number of seasons a user has played, shown on the Hall of Fame leaderboard row.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No seasons played} =1{1 season played} other{{count} seasons played}}'**
+  String hallOfFameSeasonsPlayed(int count);
 }
 
 class _AppLocalizationsDelegate

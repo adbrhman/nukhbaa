@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'hall_of_fame_providers.dart';
 
@@ -14,14 +15,15 @@ class HallOfFameScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<HallOfFameDto> board = ref.watch(hallOfFameProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hall of Fame', key: Key('hallOfFame.title')),
+        title: Text(l10n.hallOfFame, key: const Key('hallOfFame.title')),
       ),
       body: AsyncListView(
         value: board.whenData((dto) => dto.entries),
-        emptyMessage: 'Nobody has earned any points yet.',
+        emptyMessage: l10n.hallOfFameEmpty,
         onRetry: () => ref.invalidate(hallOfFameProvider),
         itemBuilder: (context, entry) => _HallOfFameRow(entry: entry),
       ),
@@ -35,6 +37,7 @@ class _HallOfFameRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
     return ListTile(
@@ -51,7 +54,7 @@ class _HallOfFameRow extends StatelessWidget {
         style: text.bodyLarge?.copyWith(color: tokens.textPrimary),
       ),
       subtitle: Text(
-        '${entry.seasonsPlayed} seasons played',
+        l10n.hallOfFameSeasonsPlayed(entry.seasonsPlayed),
         key: Key('hallOfFame.seasonsPlayed.${entry.userId}'),
         style: text.bodySmall?.copyWith(color: tokens.textSecondary),
       ),

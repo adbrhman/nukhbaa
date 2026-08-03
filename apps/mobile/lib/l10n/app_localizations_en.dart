@@ -92,4 +92,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminDashboard => 'Admin dashboard';
+
+  @override
+  String get hallOfFameEmpty => 'Nobody has earned any points yet.';
+
+  @override
+  String hallOfFameSeasonsPlayed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seasons played',
+      one: '1 season played',
+      zero: 'No seasons played',
+    );
+    return '$_temp0';
+  }
 }
