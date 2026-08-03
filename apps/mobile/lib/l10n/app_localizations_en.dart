@@ -146,4 +146,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupLeaderboardEmpty =>
       'No members of this group have joined the season yet.';
+
+  @override
+  String get competitions => 'Competitions';
+
+  @override
+  String get competitionsEmpty => 'There are no competitions to browse yet.';
+
+  @override
+  String get visibilityPublic => 'Public';
+
+  @override
+  String get visibilityPrivate => 'Private';
 }

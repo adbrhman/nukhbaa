@@ -155,4 +155,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get groupLeaderboardEmpty =>
       'لم ينضم أي عضو من هذه المجموعة للموسم بعد.';
+
+  @override
+  String get competitions => 'المسابقات';
+
+  @override
+  String get competitionsEmpty => 'لا توجد مسابقات للتصفح حتى الآن.';
+
+  @override
+  String get visibilityPublic => 'عام';
+
+  @override
+  String get visibilityPrivate => 'خاص';
 }

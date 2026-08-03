@@ -12,6 +12,8 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import 'competition_providers.dart';
 import 'competition_seasons_screen.dart';
 import 'widgets/async_list_view.dart';
@@ -23,14 +25,15 @@ class CompetitionListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final competitions = ref.watch(competitionListProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Competitions', key: Key('competitions.title')),
+        title: Text(l10n.competitions, key: const Key('competitions.title')),
       ),
       body: AsyncListView<CompetitionDto>(
         value: competitions,
-        emptyMessage: 'There are no competitions to browse yet.',
+        emptyMessage: l10n.competitionsEmpty,
         onRetry: () => ref.invalidate(competitionListProvider),
         itemBuilder: (context, competition) => ListTile(
           key: Key('competitions.item.${competition.id}'),
@@ -38,7 +41,7 @@ class CompetitionListScreen extends ConsumerWidget {
           title: Text(competition.name),
           subtitle: Text(
             '${_formatLabel(competition.format)} · '
-            '${_visibilityLabel(competition.visibility)}',
+            '${_visibilityLabel(competition.visibility, l10n)}',
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
@@ -66,8 +69,8 @@ String _formatLabel(String token) {
 }
 
 /// Humanises a visibility token.
-String _visibilityLabel(String token) => switch (token) {
-  'public' => 'Public',
-  'private' => 'Private',
+String _visibilityLabel(String token, AppLocalizations l10n) => switch (token) {
+  'public' => l10n.visibilityPublic,
+  'private' => l10n.visibilityPrivate,
   _ => token,
 };

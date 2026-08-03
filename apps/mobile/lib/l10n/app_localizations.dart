@@ -313,6 +313,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No members of this group have joined the season yet.'**
   String get groupLeaderboardEmpty;
+
+  /// No description provided for @competitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Competitions'**
+  String get competitions;
+
+  /// No description provided for @competitionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no competitions to browse yet.'**
+  String get competitionsEmpty;
+
+  /// No description provided for @visibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get visibilityPublic;
+
+  /// No description provided for @visibilityPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get visibilityPrivate;
 }
 
 class _AppLocalizationsDelegate

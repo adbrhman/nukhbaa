@@ -70,5 +70,9 @@
       }
     }
   },
-  "groupLeaderboardEmpty": "No members of this group have joined the season yet."
+  "groupLeaderboardEmpty": "No members of this group have joined the season yet.",
+  "competitions": "Competitions",
+  "competitionsEmpty": "There are no competitions to browse yet.",
+  "visibilityPublic": "Public",
+  "visibilityPrivate": "Private"
 }
