@@ -41,5 +41,33 @@
       }
     }
   },
-  "competitionSeasonsEmpty": "This competition has no seasons yet."
+  "competitionSeasonsEmpty": "This competition has no seasons yet.",
+  "leaderboardTitle": "{seasonLabel} — Leaderboard",
+  "@leaderboardTitle": {
+    "description": "Title of the season leaderboard screen.",
+    "placeholders": {
+      "seasonLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "seasonLeaderboardEmpty": "No one has joined this season yet.",
+  "leaderboardEntriesCounted": "{count, plural, =0{No entries counted} =1{1 entry counted} other{{count} entries counted}}",
+  "@leaderboardEntriesCounted": {
+    "description": "Number of prediction entries counted toward a participant's leaderboard score.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsAbbreviated": "{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}",
+  "@pointsAbbreviated": {
+    "description": "Abbreviated points total, shown on leaderboard rows (e.g. Hall of Fame, season leaderboard).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

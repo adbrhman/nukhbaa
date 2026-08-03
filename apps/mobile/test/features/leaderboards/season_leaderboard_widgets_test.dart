@@ -18,6 +18,8 @@ import 'package:http/http.dart' as http;
 import 'package:mobile/features/competition/season_rounds_screen.dart';
 import 'package:mobile/features/leaderboards/season_leaderboard_screen.dart';
 
+import 'package:mobile/l10n/app_localizations.dart';
+
 import '../../support/leaderboards_harness.dart';
 
 /// A `200 OK` empty JSON array — the rounds browse read the integration screen
@@ -32,7 +34,11 @@ http.Response _okEmptyList() => http.Response(
 Widget _host(LeaderboardsHarness harness, Widget child) => ProviderScope(
   overrides: harness.overrides,
   retry: (retryCount, error) => null,
-  child: MaterialApp(home: child),
+  child: MaterialApp(
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: child,
+  ),
 );
 
 void main() {

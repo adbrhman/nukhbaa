@@ -283,6 +283,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This competition has no seasons yet.'**
   String get competitionSeasonsEmpty;
+
+  /// Title of the season leaderboard screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{seasonLabel} — Leaderboard'**
+  String leaderboardTitle(String seasonLabel);
+
+  /// No description provided for @seasonLeaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No one has joined this season yet.'**
+  String get seasonLeaderboardEmpty;
+
+  /// Number of prediction entries counted toward a participant's leaderboard score.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No entries counted} =1{1 entry counted} other{{count} entries counted}}'**
+  String leaderboardEntriesCounted(int count);
+
+  /// Abbreviated points total, shown on leaderboard rows (e.g. Hall of Fame, season leaderboard).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}'**
+  String pointsAbbreviated(int count);
 }
 
 class _AppLocalizationsDelegate

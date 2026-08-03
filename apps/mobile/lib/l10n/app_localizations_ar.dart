@@ -113,4 +113,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get competitionSeasonsEmpty => 'لا توجد مواسم لهذه البطولة بعد.';
+
+  @override
+  String leaderboardTitle(String seasonLabel) {
+    return '$seasonLabel — لوحة الصدارة';
+  }
+
+  @override
+  String get seasonLeaderboardEmpty => 'لم ينضم أحد لهذا الموسم بعد.';
+
+  @override
+  String leaderboardEntriesCounted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مشاركة محتسبة',
+      many: '$count مشاركة محتسبة',
+      few: '$count مشاركات محتسبة',
+      two: 'مشاركتان محتسبتان',
+      one: 'مشاركة واحدة محتسبة',
+      zero: 'لا توجد مشاركات محتسبة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pointsAbbreviated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نقطة',
+      many: '$count نقطة',
+      few: '$count نقاط',
+      two: 'نقطتان',
+      one: 'نقطة واحدة',
+      zero: '0 نقطة',
+    );
+    return '$_temp0';
+  }
 }

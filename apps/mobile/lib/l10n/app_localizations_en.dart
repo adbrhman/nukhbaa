@@ -110,4 +110,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get competitionSeasonsEmpty => 'This competition has no seasons yet.';
+
+  @override
+  String leaderboardTitle(String seasonLabel) {
+    return '$seasonLabel — Leaderboard';
+  }
+
+  @override
+  String get seasonLeaderboardEmpty => 'No one has joined this season yet.';
+
+  @override
+  String leaderboardEntriesCounted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries counted',
+      one: '1 entry counted',
+      zero: 'No entries counted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pointsAbbreviated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pts',
+      one: '1 pt',
+      zero: '0 pts',
+    );
+    return '$_temp0';
+  }
 }

@@ -59,7 +59,7 @@ class _HallOfFameRow extends StatelessWidget {
         style: text.bodySmall?.copyWith(color: tokens.textSecondary),
       ),
       trailing: Text(
-        '${entry.totalPoints} pts',
+        l10n.pointsAbbreviated(entry.totalPoints),
         key: Key('hallOfFame.points.${entry.userId}'),
         style: text.labelLarge?.copyWith(
           fontWeight: FontWeight.bold,
