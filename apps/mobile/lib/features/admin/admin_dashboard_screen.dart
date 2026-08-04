@@ -28,9 +28,15 @@ class AdminDashboardScreen extends StatelessWidget {
           title: Text(l10n.adminDashboard, key: const Key('admin.title')),
           bottom: TabBar(
             tabs: <Widget>[
-              Tab(key: const Key('admin.tab.audit'), text: l10n.adminAuditLogTab),
+              Tab(
+                key: const Key('admin.tab.audit'),
+                text: l10n.adminAuditLogTab,
+              ),
               Tab(key: const Key('admin.tab.users'), text: l10n.adminUsersTab),
-              Tab(key: const Key('admin.tab.ledger'), text: l10n.adminLedgerLookupTab),
+              Tab(
+                key: const Key('admin.tab.ledger'),
+                text: l10n.adminLedgerLookupTab,
+              ),
             ],
           ),
         ),
@@ -109,9 +115,9 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
             key: const Key('admin.users.userIdField'),
             controller: _userIdController,
             decoration: InputDecoration(
-            labelText: l10n.userId,
-            border: const OutlineInputBorder(),
-          ),
+              labelText: l10n.userId,
+              border: const OutlineInputBorder(),
+            ),
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -119,9 +125,9 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
             key: const Key('admin.users.reasonField'),
             controller: _reasonController,
             decoration: InputDecoration(
-            labelText: l10n.adminReasonMandatoryLabel,
-            border: const OutlineInputBorder(),
-          ),
+              labelText: l10n.adminReasonMandatoryLabel,
+              border: const OutlineInputBorder(),
+            ),
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -215,9 +221,9 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
                   key: const Key('admin.ledger.participantIdField'),
                   controller: _participantIdController,
                   decoration: InputDecoration(
-            labelText: l10n.adminParticipantIdLabel,
-            border: const OutlineInputBorder(),
-          ),
+                    labelText: l10n.adminParticipantIdLabel,
+                    border: const OutlineInputBorder(),
+                  ),
                   enabled: !inFlight,
                 ),
               ),

@@ -151,7 +151,9 @@ class _ClosedNotice extends StatelessWidget {
             Icon(Icons.lock_clock_outlined, size: 48, color: scheme.outline),
             const SizedBox(height: 12),
             Text(
-              l10n.predictionClosedMessage(roundStatusLabel(l10n, round.status).toLowerCase()),
+              l10n.predictionClosedMessage(
+                roundStatusLabel(l10n, round.status).toLowerCase(),
+              ),
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,
               style: TextStyle(color: scheme.onSurfaceVariant),
@@ -196,16 +198,16 @@ class _PredictionForm extends ConsumerWidget {
       data: (list) {
         if (list.isEmpty) {
           return Center(
-                key: const Key('browse.empty'),
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(
-                    l10n.roundFixturesEmpty,
-                    key: const Key('browse.empty.message'),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              );
+            key: const Key('browse.empty'),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(
+                l10n.roundFixturesEmpty,
+                key: const Key('browse.empty.message'),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
         }
         return _PredictionEditor(roundId: roundId, fixtures: list);
       },
@@ -369,8 +371,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
             padding: const EdgeInsets.only(bottom: 16),
             child: _Banner(
               icon: Icons.check_circle_outline,
-              text:
-                  l10n.predictionAlreadySubmitted,
+              text: l10n.predictionAlreadySubmitted,
             ),
           ),
         // The success confirmation, shown after a 200.
@@ -378,10 +379,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
           Padding(
             key: const Key('prediction.success'),
             padding: const EdgeInsets.only(bottom: 16),
-            child: _Banner(
-              icon: Icons.done_all,
-              text: l10n.predictionSaved,
-            ),
+            child: _Banner(icon: Icons.done_all, text: l10n.predictionSaved),
           ),
         // A typed failure, presented via ErrorPresenter (never raw codes).
         if (submission is SubmissionFailed)

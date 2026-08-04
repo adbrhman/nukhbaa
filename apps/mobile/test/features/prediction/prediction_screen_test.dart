@@ -32,10 +32,10 @@ import '../../support/prediction_harness.dart';
 Widget _host(PredictionHarness harness, Widget child) => ProviderScope(
   overrides: harness.overrides,
   child: MaterialApp(
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: child,
-      ),
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: child,
+  ),
 );
 
 /// A handler for an OPEN round with two fixtures and no existing prediction

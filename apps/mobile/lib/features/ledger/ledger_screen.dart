@@ -25,7 +25,9 @@ class LedgerScreen extends ConsumerWidget {
       participantEntriesProvider(participantId),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.ledgerTitle, key: const Key('ledger.title'))),
+      appBar: AppBar(
+        title: Text(l10n.ledgerTitle, key: const Key('ledger.title')),
+      ),
       body: Column(
         children: <Widget>[
           AsyncObjectView<BalanceDto>(
