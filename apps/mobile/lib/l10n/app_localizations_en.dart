@@ -293,4 +293,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminLookUpButton => 'Look up';
+
+  @override
+  String get createGroupTitle => 'Create Group';
+
+  @override
+  String get groupNameLabel => 'Group name';
+
+  @override
+  String get createGroupButton => 'Create';
 }

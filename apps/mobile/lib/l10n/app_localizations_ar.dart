@@ -301,4 +301,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminLookUpButton => 'بحث';
+
+  @override
+  String get createGroupTitle => 'إنشاء مجموعة';
+
+  @override
+  String get groupNameLabel => 'اسم المجموعة';
+
+  @override
+  String get createGroupButton => 'إنشاء';
 }

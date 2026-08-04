@@ -76,5 +76,8 @@
   "adminSuspendButton": "تعليق",
   "adminReinstateButton": "إعادة تفعيل",
   "adminParticipantIdLabel": "معرّف المشارك",
-  "adminLookUpButton": "بحث"
+  "adminLookUpButton": "بحث",
+  "createGroupTitle": "إنشاء مجموعة",
+  "groupNameLabel": "اسم المجموعة",
+  "createGroupButton": "إنشاء"
 }

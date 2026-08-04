@@ -563,6 +563,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Look up'**
   String get adminLookUpButton;
+
+  /// No description provided for @createGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Group'**
+  String get createGroupTitle;
+
+  /// No description provided for @groupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get groupNameLabel;
+
+  /// No description provided for @createGroupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createGroupButton;
 }
 
 class _AppLocalizationsDelegate

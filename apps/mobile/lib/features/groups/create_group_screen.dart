@@ -8,6 +8,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../l10n/app_localizations.dart';
 import 'groups_providers.dart';
 
 /// A name-only form that creates a new private group owned by the caller.
@@ -29,6 +30,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<GroupDto>? state = ref.watch(
       createGroupControllerProvider,
     );
@@ -44,7 +46,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     final AppTokens tokens = context.tokens;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Group', key: Key('createGroup.title')),
+        title: Text(l10n.createGroupTitle, key: const Key('createGroup.title')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -54,9 +56,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             TextField(
               key: const Key('createGroup.nameField'),
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Group name',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.groupNameLabel,
+                border: const OutlineInputBorder(),
               ),
               enabled: !inFlight,
             ),
@@ -90,7 +92,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                         color: tokens.onPrimary,
                       ),
                     )
-                  : const Text('Create'),
+                  : Text(l10n.createGroupButton),
             ),
           ],
         ),
