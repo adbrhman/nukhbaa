@@ -92,5 +92,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "notificationsTitle": "الإشعارات",
+  "notificationsEmpty": "ليس لديك أي إشعارات بعد.",
+  "notificationRoundScored": "تم تسجيل نتيجة جولة توقعتها",
+  "notificationGroupMemberJoined": "انضم شخص إلى مجموعتك",
+  "notificationReactionReceived": "تلقيت تفاعلاً",
+  "notificationsMarkAsRead": "تمييز كمقروء"
 }

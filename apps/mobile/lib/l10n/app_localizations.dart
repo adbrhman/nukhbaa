@@ -617,6 +617,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} movements counted'**
   String ledgerEntryCount(int count);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no notifications yet.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationRoundScored.
+  ///
+  /// In en, this message translates to:
+  /// **'A round you predicted was scored'**
+  String get notificationRoundScored;
+
+  /// No description provided for @notificationGroupMemberJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone joined your group'**
+  String get notificationGroupMemberJoined;
+
+  /// No description provided for @notificationReactionReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'You received a reaction'**
+  String get notificationReactionReceived;
+
+  /// No description provided for @notificationsMarkAsRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get notificationsMarkAsRead;
 }
 
 class _AppLocalizationsDelegate

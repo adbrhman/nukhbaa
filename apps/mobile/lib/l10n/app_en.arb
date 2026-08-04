@@ -248,5 +248,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "You have no notifications yet.",
+  "notificationRoundScored": "A round you predicted was scored",
+  "notificationGroupMemberJoined": "Someone joined your group",
+  "notificationReactionReceived": "You received a reaction",
+  "notificationsMarkAsRead": "Mark as read"
 }

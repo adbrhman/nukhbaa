@@ -330,4 +330,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String ledgerEntryCount(int count) {
     return '$count حركة مسجّلة';
   }
+
+  @override
+  String get notificationsTitle => 'الإشعارات';
+
+  @override
+  String get notificationsEmpty => 'ليس لديك أي إشعارات بعد.';
+
+  @override
+  String get notificationRoundScored => 'تم تسجيل نتيجة جولة توقعتها';
+
+  @override
+  String get notificationGroupMemberJoined => 'انضم شخص إلى مجموعتك';
+
+  @override
+  String get notificationReactionReceived => 'تلقيت تفاعلاً';
+
+  @override
+  String get notificationsMarkAsRead => 'تمييز كمقروء';
 }

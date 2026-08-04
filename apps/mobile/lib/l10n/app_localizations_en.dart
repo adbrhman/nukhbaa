@@ -322,4 +322,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String ledgerEntryCount(int count) {
     return '$count movements counted';
   }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'You have no notifications yet.';
+
+  @override
+  String get notificationRoundScored => 'A round you predicted was scored';
+
+  @override
+  String get notificationGroupMemberJoined => 'Someone joined your group';
+
+  @override
+  String get notificationReactionReceived => 'You received a reaction';
+
+  @override
+  String get notificationsMarkAsRead => 'Mark as read';
 }
