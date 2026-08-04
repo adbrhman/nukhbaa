@@ -82,5 +82,15 @@
   "createGroupButton": "إنشاء",
   "joinGroupTitle": "الانضمام إلى مجموعة",
   "inviteCodeLabel": "رمز الدعوة",
-  "joinGroupButton": "انضمام"
+  "joinGroupButton": "انضمام",
+  "ledgerTitle": "نقاطي",
+  "ledgerEmpty": "لا توجد حركات نقاط بعد.",
+  "ledgerEntryCount": "{count} حركة مسجّلة",
+  "@ledgerEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

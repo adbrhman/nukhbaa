@@ -599,6 +599,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join'**
   String get joinGroupButton;
+
+  /// No description provided for @ledgerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Points'**
+  String get ledgerTitle;
+
+  /// No description provided for @ledgerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No points movements yet.'**
+  String get ledgerEmpty;
+
+  /// Count of point movements shown below the balance on the ledger screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} movements counted'**
+  String ledgerEntryCount(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -311,4 +311,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get joinGroupButton => 'Join';
+
+  @override
+  String get ledgerTitle => 'My Points';
+
+  @override
+  String get ledgerEmpty => 'No points movements yet.';
+
+  @override
+  String ledgerEntryCount(int count) {
+    return '$count movements counted';
+  }
 }

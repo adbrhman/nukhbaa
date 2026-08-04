@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'ledger_providers.dart';
 
@@ -16,6 +17,7 @@ class LedgerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<BalanceDto> balance = ref.watch(
       participantBalanceProvider(participantId),
     );
@@ -23,7 +25,7 @@ class LedgerScreen extends ConsumerWidget {
       participantEntriesProvider(participantId),
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('My Points', key: Key('ledger.title'))),
+      appBar: AppBar(title: Text(l10n.ledgerTitle, key: const Key('ledger.title'))),
       body: Column(
         children: <Widget>[
           AsyncObjectView<BalanceDto>(
@@ -36,7 +38,7 @@ class LedgerScreen extends ConsumerWidget {
           Expanded(
             child: AsyncListView<PointEntryDto>(
               value: entries.whenData((e) => e.entries),
-              emptyMessage: 'No points movements yet.',
+              emptyMessage: l10n.ledgerEmpty,
               onRetry: () =>
                   ref.invalidate(participantEntriesProvider(participantId)),
               itemBuilder: (context, entry) => _EntryRow(entry: entry),
@@ -54,6 +56,7 @@ class _BalanceHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
     return Container(
@@ -72,7 +75,7 @@ class _BalanceHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            '${balance.entryCount} movements counted',
+            l10n.ledgerEntryCount(balance.entryCount),
             key: const Key('ledger.entryCount'),
             style: text.bodyMedium?.copyWith(color: tokens.textSecondary),
           ),

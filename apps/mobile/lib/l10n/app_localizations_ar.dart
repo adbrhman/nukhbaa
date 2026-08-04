@@ -319,4 +319,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get joinGroupButton => 'انضمام';
+
+  @override
+  String get ledgerTitle => 'نقاطي';
+
+  @override
+  String get ledgerEmpty => 'لا توجد حركات نقاط بعد.';
+
+  @override
+  String ledgerEntryCount(int count) {
+    return '$count حركة مسجّلة';
+  }
 }

@@ -237,5 +237,16 @@
   "createGroupButton": "Create",
   "joinGroupTitle": "Join Group",
   "inviteCodeLabel": "Invite code",
-  "joinGroupButton": "Join"
+  "joinGroupButton": "Join",
+  "ledgerTitle": "My Points",
+  "ledgerEmpty": "No points movements yet.",
+  "ledgerEntryCount": "{count} movements counted",
+  "@ledgerEntryCount": {
+    "description": "Count of point movements shown below the balance on the ledger screen.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
