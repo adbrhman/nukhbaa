@@ -302,4 +302,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createGroupButton => 'Create';
+
+  @override
+  String get joinGroupTitle => 'Join Group';
+
+  @override
+  String get inviteCodeLabel => 'Invite code';
+
+  @override
+  String get joinGroupButton => 'Join';
 }

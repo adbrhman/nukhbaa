@@ -79,5 +79,8 @@
   "adminLookUpButton": "بحث",
   "createGroupTitle": "إنشاء مجموعة",
   "groupNameLabel": "اسم المجموعة",
-  "createGroupButton": "إنشاء"
+  "createGroupButton": "إنشاء",
+  "joinGroupTitle": "الانضمام إلى مجموعة",
+  "inviteCodeLabel": "رمز الدعوة",
+  "joinGroupButton": "انضمام"
 }

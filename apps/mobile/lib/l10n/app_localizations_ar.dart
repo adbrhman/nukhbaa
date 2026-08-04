@@ -310,4 +310,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get createGroupButton => 'إنشاء';
+
+  @override
+  String get joinGroupTitle => 'الانضمام إلى مجموعة';
+
+  @override
+  String get inviteCodeLabel => 'رمز الدعوة';
+
+  @override
+  String get joinGroupButton => 'انضمام';
 }

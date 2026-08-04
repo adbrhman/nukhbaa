@@ -234,5 +234,8 @@
   "adminLookUpButton": "Look up",
   "createGroupTitle": "Create Group",
   "groupNameLabel": "Group name",
-  "createGroupButton": "Create"
+  "createGroupButton": "Create",
+  "joinGroupTitle": "Join Group",
+  "inviteCodeLabel": "Invite code",
+  "joinGroupButton": "Join"
 }

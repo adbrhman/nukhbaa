@@ -8,6 +8,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../l10n/app_localizations.dart';
 import 'groups_providers.dart';
 
 /// An invite-code-only form that joins the caller into a private group.
@@ -29,6 +30,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<GroupMembershipDto>? state = ref.watch(
       joinGroupControllerProvider,
     );
@@ -44,7 +46,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     final AppTokens tokens = context.tokens;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Join Group', key: Key('joinGroup.title')),
+        title: Text(l10n.joinGroupTitle, key: const Key('joinGroup.title')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -54,9 +56,9 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
             TextField(
               key: const Key('joinGroup.codeField'),
               controller: _codeController,
-              decoration: const InputDecoration(
-                labelText: 'Invite code',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.inviteCodeLabel,
+                border: const OutlineInputBorder(),
               ),
               enabled: !inFlight,
             ),
@@ -88,7 +90,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                         color: tokens.onPrimary,
                       ),
                     )
-                  : const Text('Join'),
+                  : Text(l10n.joinGroupButton),
             ),
           ],
         ),

@@ -581,6 +581,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create'**
   String get createGroupButton;
+
+  /// No description provided for @joinGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Group'**
+  String get joinGroupTitle;
+
+  /// No description provided for @inviteCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code'**
+  String get inviteCodeLabel;
+
+  /// No description provided for @joinGroupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get joinGroupButton;
 }
 
 class _AppLocalizationsDelegate
