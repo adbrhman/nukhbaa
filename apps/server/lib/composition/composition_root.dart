@@ -39,6 +39,8 @@ final class CompositionRoot {
     required this.listRoundPredictions,
     required this.listMyPredictions,
     required this.recordFixtureResult,
+    required this.registerFixtureSchedule,
+    required this.correctFixtureSchedule,
     required this.scoreRound,
     required this.getRoundScores,
     required this.postRoundToLedger,
@@ -116,6 +118,8 @@ final class CompositionRoot {
     ListRoundPredictions? listRoundPredictions,
     ListMyPredictions? listMyPredictions,
     RecordFixtureResult? recordFixtureResult,
+    RegisterFixtureSchedule? registerFixtureSchedule,
+    CorrectFixtureSchedule? correctFixtureSchedule,
     ScoreRound? scoreRound,
     GetRoundScores? getRoundScores,
     PostRoundToLedger? postRoundToLedger,
@@ -167,6 +171,10 @@ final class CompositionRoot {
        listMyPredictions = listMyPredictions ?? _absentListMyPredictions(),
        recordFixtureResult =
            recordFixtureResult ?? _absentRecordFixtureResult(),
+       registerFixtureSchedule =
+           registerFixtureSchedule ?? _absentRegisterFixtureSchedule(),
+       correctFixtureSchedule =
+           correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
        scoreRound = scoreRound ?? _absentScoreRound(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
        postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
@@ -326,6 +334,18 @@ final class CompositionRoot {
         resultRepository: _unwiredFixtureResultRepository,
         clock: _unwiredClock,
       );
+
+  static final FixtureScheduleRepository _unwiredFixtureScheduleRepository =
+      _UnwiredFixtureScheduleRepository();
+
+  static RegisterFixtureSchedule _absentRegisterFixtureSchedule() =>
+      RegisterFixtureSchedule(
+        repository: _unwiredFixtureScheduleRepository,
+        idGenerator: _unwiredIdGenerator,
+      );
+
+  static CorrectFixtureSchedule _absentCorrectFixtureSchedule() =>
+      CorrectFixtureSchedule(_unwiredFixtureScheduleRepository);
 
   static ScoreRound _absentScoreRound() => ScoreRound(
     competitionRepository: _unwiredCompetitionRepository,
@@ -609,6 +629,10 @@ final class CompositionRoot {
   /// football seam).
   final RecordFixtureResult recordFixtureResult;
 
+  final RegisterFixtureSchedule registerFixtureSchedule;
+
+  final CorrectFixtureSchedule correctFixtureSchedule;
+
   /// Scores every prediction in a locked round (admin-only command; the points
   /// are computed and written server-side — Axioms 2/5).
   final ScoreRound scoreRound;
@@ -781,6 +805,10 @@ final class CompositionRoot {
     final fixtureResultRepository = PostgresFixtureResultRepository(connection);
     final scoreRepository = PostgresScoreRepository(connection);
 
+    final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
+      connection,
+    );
+
     // Ledger slice: its own Postgres-backed adapters over the ledger.* tables
     // (the append-only PointEntry stream). PostRoundToLedger reads the scored
     // round (competition repo, gated on RoundStatus.scored) + its already-
@@ -933,6 +961,11 @@ final class CompositionRoot {
         resultRepository: fixtureResultRepository,
         clock: clock,
       ),
+      registerFixtureSchedule: RegisterFixtureSchedule(
+        repository: fixtureScheduleRepository,
+        idGenerator: idGenerator,
+      ),
+      correctFixtureSchedule: CorrectFixtureSchedule(fixtureScheduleRepository),
       scoreRound: ScoreRound(
         competitionRepository: competitionRepository,
         predictionRepository: predictionRepository,
@@ -1219,6 +1252,25 @@ final class _UnwiredFixtureResultRepository implements FixtureResultRepository {
 
   @override
   Future<Result<List<FixtureResult>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) => _unwired();
+}
+
+final class _UnwiredFixtureScheduleRepository
+    implements FixtureScheduleRepository {
+  static Never _unwired() => throw StateError(
+    'A fixture-identity use-case was not wired into this root',
+  );
+
+  @override
+  Future<Result<void>> upsert(FixtureSchedule schedule) => _unwired();
+
+  @override
+  Future<Result<FixtureSchedule?>> findByFixture(FixtureRef fixture) =>
+      _unwired();
+
+  @override
+  Future<Result<List<FixtureSchedule>>> findByFixtures(
     List<FixtureRef> fixtures,
   ) => _unwired();
 }
