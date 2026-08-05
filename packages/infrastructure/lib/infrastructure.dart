@@ -10,6 +10,7 @@ export 'src/common/uuid_id_generator.dart';
 export 'src/common/uuid_invite_code_generator.dart';
 export 'src/competition/configured_ruleset_provider.dart';
 export 'src/competition/postgres_competition_repository.dart';
+export 'src/competition/postgres_fixture_schedule_repository.dart';
 export 'src/db/postgres_config.dart';
 export 'src/db/postgres_connection.dart';
 export 'src/group/postgres_group_repository.dart';
