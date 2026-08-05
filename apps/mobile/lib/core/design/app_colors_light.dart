@@ -30,6 +30,23 @@ abstract final class AppColorsLight {
   static const Color onGold = Color(0xFFFFFFFF);
   static const Color onError = Color(0xFFFFFFFF);
 
+  /// Semantic status colors. `success`/`warning` deliberately reuse the
+  /// existing primary/gold hues (see design tokens addendum decision log)
+  /// to avoid a second color competing visually with the medal gold.
+  /// `info` is the one genuinely new hue - no blue exists elsewhere in
+  /// this palette to repurpose.
+  static const Color success = primary;
+  static const Color successContainer = Color(0xFFD1FAE5);
+  static const Color onSuccess = onPrimary;
+
+  static const Color warning = gold;
+  static const Color warningContainer = Color(0xFFFDF0D5);
+  static const Color onWarning = onGold;
+
+  static const Color info = Color(0xFF2563EB);
+  static const Color infoContainer = Color(0xFFDBEAFE);
+  static const Color onInfo = Color(0xFFFFFFFF);
+
   static const Color border = Color(0x140F172A);
 
   static const LinearGradient backgroundGradient = LinearGradient(
