@@ -14,6 +14,7 @@ export 'src/competition/competition_id.dart';
 export 'src/competition/competition_season.dart';
 export 'src/competition/competition_visibility.dart';
 export 'src/competition/fixture_ref.dart';
+export 'src/competition/fixture_schedule.dart';
 export 'src/competition/format_type.dart';
 export 'src/competition/participant.dart';
 export 'src/competition/participant_id.dart';
