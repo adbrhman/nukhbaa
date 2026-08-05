@@ -134,6 +134,15 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @showPassword.
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  String get hidePassword;
+
+  /// No description provided for @markNotificationRead.
+  String get markNotificationRead;
+
   /// No description provided for @createAccount.
   ///
   /// In en, this message translates to:

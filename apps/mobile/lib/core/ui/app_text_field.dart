@@ -2,6 +2,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/app_localizations.dart';
 import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
@@ -83,7 +84,9 @@ class _AppTextFieldState extends State<AppTextField> {
                 : null,
             suffixIcon: widget.obscure
                 ? IconButton(
-                    tooltip: _obscured ? 'Show password' : 'Hide password',
+                    tooltip: _obscured
+                        ? AppLocalizations.of(context).showPassword
+                        : AppLocalizations.of(context).hidePassword,
                     icon: Icon(
                       _obscured
                           ? Icons.visibility_outlined

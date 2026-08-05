@@ -27,6 +27,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get retry => 'إعادة المحاولة';
 
   @override
+  String get showPassword => 'إظهار كلمة المرور';
+
+  @override
+  String get hidePassword => 'إخفاء كلمة المرور';
+
+  @override
+  String get markNotificationRead => 'تعليم كمقروءة';
+
+  @override
   String get createAccount => 'إنشاء حساب';
 
   @override

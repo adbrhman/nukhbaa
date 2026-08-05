@@ -27,6 +27,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get markNotificationRead => 'Mark as read';
+
+  @override
   String get createAccount => 'Create account';
 
   @override

@@ -21,6 +21,7 @@ import 'package:shared/shared.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/error/error_presenter.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Renders an [AsyncValue] holding a `List<T>` as one of loading / error /
 /// empty / data.
@@ -200,7 +201,7 @@ class _ErrorView extends StatelessWidget {
               FilledButton.tonal(
                 key: const Key('browse.error.retry'),
                 onPressed: onRetry,
-                child: const Text('Try again'),
+                child: Text(AppLocalizations.of(context).retry),
               ),
             ],
           ],

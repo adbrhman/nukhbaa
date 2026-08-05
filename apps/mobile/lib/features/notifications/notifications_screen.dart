@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'notifications_providers.dart';
 
@@ -19,11 +20,14 @@ class NotificationsScreen extends ConsumerWidget {
     );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications', key: Key('notifications.title')),
+        title: Text(
+          AppLocalizations.of(context).notifications,
+          key: const Key('notifications.title'),
+        ),
       ),
       body: AsyncListView<NotificationDto>(
         value: inbox.whenData((dto) => dto.notifications),
-        emptyMessage: 'You have no notifications yet.',
+        emptyMessage: AppLocalizations.of(context).notificationsEmpty,
         onRetry: () => ref.invalidate(myNotificationsProvider),
         itemBuilder: (context, notification) =>
             _NotificationRow(notification: notification),
@@ -43,12 +47,15 @@ class _NotificationRow extends ConsumerWidget {
     _ => Icons.notifications_outlined,
   };
 
-  static String _labelFor(String kind) => switch (kind) {
-    'round_scored' => 'A round you predicted was scored',
-    'group_member_joined' => 'Someone joined your group',
-    'reaction_received' => 'You received a reaction',
-    _ => kind,
-  };
+  static String _labelFor(BuildContext context, String kind) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return switch (kind) {
+      'round_scored' => l10n.notificationRoundScored,
+      'group_member_joined' => l10n.notificationGroupMemberJoined,
+      'reaction_received' => l10n.notificationReactionReceived,
+      _ => kind,
+    };
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +67,7 @@ class _NotificationRow extends ConsumerWidget {
         color: notification.read ? tokens.textSecondary : tokens.primary,
       ),
       title: Text(
-        _labelFor(notification.kind),
+        _labelFor(context, notification.kind),
         key: Key('notifications.label.${notification.id}'),
       ),
       subtitle: Text(
@@ -73,7 +80,7 @@ class _NotificationRow extends ConsumerWidget {
           : IconButton(
               key: Key('notifications.markRead.${notification.id}'),
               icon: const Icon(Icons.mark_email_read_outlined),
-              tooltip: 'Mark as read',
+              tooltip: AppLocalizations.of(context).markNotificationRead,
               onPressed: () => ref
                   .read(notificationControllerProvider.notifier)
                   .markRead(notification.id),
