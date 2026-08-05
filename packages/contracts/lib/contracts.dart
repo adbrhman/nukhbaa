@@ -10,6 +10,7 @@ export 'src/admin_dto.dart';
 export 'src/auth_dto.dart';
 export 'src/competition_dto.dart';
 export 'src/error_dto.dart';
+export 'src/fixture_schedule_dto.dart';
 export 'src/group_dto.dart';
 export 'src/health_dto.dart';
 export 'src/leaderboard_dto.dart';
