@@ -119,6 +119,23 @@ final class ApiTransport {
     );
   }
 
+  /// Performs `PUT [path]` with a JSON object [body] and decodes a JSON
+  /// **object** response via [parse]. Used for idempotent full-resource
+  /// upserts (e.g. `PUT /fixtures/{id}`) — the same request pipeline and
+  /// error contract as [postObject], differing only in HTTP verb.
+  Future<Result<T>> putObject<T>(
+    String path, {
+    required Map<String, Object?> body,
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T>(
+      method: 'PUT',
+      path: path,
+      requestBody: body,
+      decode: (respBody) => _decodeObject(respBody, parse),
+    );
+  }
+
   /// The shared request pipeline. Builds the request, applies auth headers,
   /// executes it, and dispatches the response. Never throws: a transport
   /// exception becomes a transient [Result.err]; a non-2xx becomes a decoded
@@ -139,6 +156,11 @@ final class ApiTransport {
       final pending = switch (method) {
         'GET' => _httpClient.get(uri, headers: headers),
         'POST' => _httpClient.post(
+          uri,
+          headers: headers,
+          body: jsonEncode(requestBody),
+        ),
+        'PUT' => _httpClient.put(
           uri,
           headers: headers,
           body: jsonEncode(requestBody),
