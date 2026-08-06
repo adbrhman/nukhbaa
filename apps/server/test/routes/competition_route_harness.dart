@@ -396,6 +396,43 @@ final class InMemoryFixtureResultRepository implements FixtureResultRepository {
   }
 }
 
+/// A minimal in-memory [FixtureScheduleRepository] for the fixture-schedule
+/// route tests. Mirrors the storage contract the use-cases branch on:
+/// `upsert` is unconditional — RegisterFixtureSchedule (POST, server-generated
+/// id) and CorrectFixtureSchedule (PUT, path id) both call it identically, so
+/// a "correction" of an as-yet-unknown id legitimately creates the row (Axiom
+/// 3 seam has no existence oracle here). It is NOT a substitute for the
+/// Postgres adapter's own tests (infrastructure package).
+final class InMemoryFixtureScheduleRepository
+    implements FixtureScheduleRepository {
+  final Map<String, FixtureSchedule> _byFixture = {};
+
+  /// Number of distinct fixtures currently stored (an upsert on an existing
+  /// id refreshes in place — never a second row).
+  int get count => _byFixture.length;
+
+  @override
+  Future<Result<void>> upsert(FixtureSchedule schedule) async {
+    _byFixture[schedule.fixture.value] = schedule;
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<FixtureSchedule?>> findByFixture(FixtureRef fixture) async =>
+      Result.ok(_byFixture[fixture.value]);
+
+  @override
+  Future<Result<List<FixtureSchedule>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    final found = <FixtureSchedule>[
+      for (final f in fixtures)
+        if (_byFixture[f.value] != null) _byFixture[f.value]!,
+    ];
+    return Result.ok(found);
+  }
+}
+
 /// A minimal in-memory [ScoreRepository] for the scoring route tests.
 ///
 /// It mirrors the storage contract the use-cases branch on: `saveRoundScores`
