@@ -433,6 +433,73 @@ final class InMemoryFixtureScheduleRepository
   }
 }
 
+/// A minimal in-memory [FixtureScheduleRepository] for the fixture-schedule
+/// route tests (`POST /fixtures`, `PUT /fixtures/{id}`).
+///
+/// It mirrors the storage contract the use-cases branch on: `upsert` is a true
+/// upsert keyed by fixture id — registration and correction are the same
+/// write, the id merely arrives from a different place (generated vs. path) —
+/// matching [InMemoryFixtureResultRepository]'s idempotent-upsert shape above
+/// (Next-Task decision 2026-07-11, option (a), applied to schedule). It is NOT
+/// a substitute for the Postgres adapter's own tests (infrastructure package).
+final class InMemoryFixtureScheduleRepository
+    implements FixtureScheduleRepository {
+  final Map<String, FixtureSchedule> _byFixture = {};
+
+  /// Number of distinct fixtures currently stored (one row per fixture — a
+  /// correction refreshes in place, never a second row).
+  int get count => _byFixture.length;
+
+  @override
+  Future<Result<void>> upsert(FixtureSchedule schedule) async {
+    _byFixture[schedule.fixture.value] = schedule;
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<FixtureSchedule?>> findByFixture(FixtureRef fixture) async =>
+      Result.ok(_byFixture[fixture.value]);
+
+  @override
+  Future<Result<List<FixtureSchedule>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    final found = <FixtureSchedule>[
+      for (final f in fixtures)
+        if (_byFixture[f.value] != null) _byFixture[f.value]!,
+    ];
+    return Result.ok(found);
+  }
+}
+
+final class InMemoryFixtureScheduleRepository
+    implements FixtureScheduleRepository {
+  final Map<String, FixtureSchedule> _byFixture = {};
+
+  int get count => _byFixture.length;
+
+  @override
+  Future<Result<void>> upsert(FixtureSchedule schedule) async {
+    _byFixture[schedule.fixture.value] = schedule;
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<FixtureSchedule?>> findByFixture(FixtureRef fixture) async =>
+      Result.ok(_byFixture[fixture.value]);
+
+  @override
+  Future<Result<List<FixtureSchedule>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    final found = <FixtureSchedule>[
+      for (final f in fixtures)
+        if (_byFixture[f.value] != null) _byFixture[f.value]!,
+    ];
+    return Result.ok(found);
+  }
+}
+
 /// A minimal in-memory [ScoreRepository] for the scoring route tests.
 ///
 /// It mirrors the storage contract the use-cases branch on: `saveRoundScores`
