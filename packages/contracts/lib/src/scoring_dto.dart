@@ -104,8 +104,9 @@ final class FixtureScoreResultDto {
   /// The referenced fixture id (UUID string; opaque Football-Data reference).
   final String fixtureId;
 
-  /// The grade wire token: `exact_scoreline`, `correct_outcome`, or
-  /// `incorrect`. Matches `FixtureScoreGrade.wireValue` in the domain.
+  /// The grade wire token: `exact_scoreline`, `correct_outcome`, `incorrect`,
+  /// or `missed` (the fixture kicked off before the participant predicted
+  /// it). Matches `FixtureScoreGrade.wireValue` in the domain.
   final String grade;
 
   /// The server-computed points awarded for this fixture under the round's

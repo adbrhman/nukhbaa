@@ -27,7 +27,13 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
   /// The current ruleset version shipped with this build. Bumping this (and the
   /// payload) is how the platform evolves default rules; already-frozen rounds
   /// keep their old snapshot version, which is the whole point of freezing.
-  static const int _footballScorelineVersion = 1;
+  ///
+  /// Bumped 1 -> 2 to add `double_multiplier`. Safe to bump without a
+  /// migration for existing frozen rounds: `ScoringRuleset.fromSnapshot`
+  /// defaults a missing `double_multiplier` to 1 (no effect) on any
+  /// already-frozen v1 snapshot, so a historical round keeps reproducing its
+  /// original score exactly (Axiom 5) even though new rounds open under v2.
+  static const int _footballScorelineVersion = 2;
 
   @override
   Future<Result<RulesetSnapshot>> currentSnapshotFor(FormatType format) async {
@@ -46,6 +52,9 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
               // Neither outcome nor scoreline correct.
               'incorrect': 0,
             },
+            // Multiplies whatever points a fixture earns (any grade except
+            // `missed`) when the participant marked it as their round double.
+            'double_multiplier': 2,
           },
         );
     }

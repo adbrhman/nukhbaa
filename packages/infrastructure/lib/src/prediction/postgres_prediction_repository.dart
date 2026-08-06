@@ -63,6 +63,7 @@ SELECT p.id            AS prediction_id,
        s.fixture_id     AS fixture_id,
        s.home_goals     AS home_goals,
        s.away_goals     AS away_goals,
+       s.is_double      AS is_double,
        s.display_order  AS display_order
 FROM prediction.predictions p
 JOIN prediction.prediction_scores s ON s.prediction_id = p.id
@@ -170,6 +171,7 @@ ORDER BY s.display_order ASC
       final fixtureResult = FixtureRef.tryParse(row['fixture_id']?.toString());
       final homeGoals = row['home_goals'];
       final awayGoals = row['away_goals'];
+      final isDouble = row['is_double'];
 
       if (fixtureResult is Err<FixtureRef>) {
         return Result.err(
@@ -190,12 +192,18 @@ ORDER BY s.display_order ASC
           _corrupt('prediction_scores', 'away_goals', 'not an integer'),
         );
       }
+      if (isDouble is! bool) {
+        return Result.err(
+          _corrupt('prediction_scores', 'is_double', 'not a boolean'),
+        );
+      }
 
       scores.add(
         FixtureScorePrediction.fromStored(
           fixture: (fixtureResult as Ok<FixtureRef>).value,
           homeGoals: homeGoals,
           awayGoals: awayGoals,
+          isDouble: isDouble,
         ),
       );
     }
@@ -227,8 +235,10 @@ VALUES (@id, @round_id, @participant_id, @submitted_at)
 
   static const String _insertScoreSql = '''
 INSERT INTO prediction.prediction_scores
-  (prediction_id, fixture_id, home_goals, away_goals, display_order)
-VALUES (@prediction_id, @fixture_id, @home_goals, @away_goals, @display_order)
+  (prediction_id, fixture_id, home_goals, away_goals, is_double, display_order)
+VALUES
+  (@prediction_id, @fixture_id, @home_goals, @away_goals, @is_double,
+   @display_order)
 ''';
 
   @override
@@ -273,6 +283,7 @@ VALUES (@prediction_id, @fixture_id, @home_goals, @away_goals, @display_order)
           'fixture_id': score.fixture.value,
           'home_goals': score.homeGoals,
           'away_goals': score.awayGoals,
+          'is_double': score.isDouble,
           'display_order': order,
         },
       );
@@ -370,6 +381,7 @@ SELECT p.id            AS prediction_id,
        s.fixture_id     AS fixture_id,
        s.home_goals     AS home_goals,
        s.away_goals     AS away_goals,
+       s.is_double      AS is_double,
        s.display_order  AS display_order
 FROM prediction.predictions p
 JOIN prediction.prediction_scores s ON s.prediction_id = p.id
@@ -443,6 +455,7 @@ SELECT p.id            AS prediction_id,
        s.fixture_id     AS fixture_id,
        s.home_goals     AS home_goals,
        s.away_goals     AS away_goals,
+       s.is_double      AS is_double,
        s.display_order  AS display_order
 FROM prediction.predictions p
 JOIN prediction.prediction_scores s ON s.prediction_id = p.id

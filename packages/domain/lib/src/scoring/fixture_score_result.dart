@@ -4,9 +4,11 @@ import 'package:shared/shared.dart';
 /// How well a single fixture prediction matched the actual result — a closed,
 /// ordered classification (Axiom 3: football-specific).
 ///
-/// The three grades are mutually exclusive and ordered by specificity:
-/// exact ⊃ correctOutcome ⊃ incorrect. Scoring maps each grade to a point award
-/// from the frozen ruleset; nothing else can grade a fixture.
+/// The four grades are mutually exclusive and ordered by specificity:
+/// exact ⊃ correctOutcome ⊃ incorrect, with [missed] standing apart from that
+/// chain — it means no prediction was ever made, not that one was wrong.
+/// Scoring maps each grade to a point award from the frozen ruleset (missed is
+/// always zero, unconditionally); nothing else can grade a fixture.
 enum FixtureScoreGrade {
   /// The predicted scoreline exactly matched the actual scoreline (which implies
   /// the outcome matched too).
@@ -17,7 +19,13 @@ enum FixtureScoreGrade {
   correctOutcome,
 
   /// Neither the outcome nor the scoreline matched.
-  incorrect;
+  incorrect,
+
+  /// The fixture kicked off before the participant ever predicted it (a
+  /// per-fixture lock, not a round-wide one), so there is no prediction to
+  /// grade. Always worth zero points — never reward non-participation — and
+  /// never subject to the double multiplier (there is nothing to double).
+  missed;
 
   /// The stable wire/storage token for this grade, decoupled from the Dart
   /// identifier so persisted values can never drift silently.
@@ -25,6 +33,7 @@ enum FixtureScoreGrade {
     FixtureScoreGrade.exactScoreline => 'exact_scoreline',
     FixtureScoreGrade.correctOutcome => 'correct_outcome',
     FixtureScoreGrade.incorrect => 'incorrect',
+    FixtureScoreGrade.missed => 'missed',
   };
 
   /// Parses a [FixtureScoreGrade] from an untrusted [raw] token (e.g. a stored

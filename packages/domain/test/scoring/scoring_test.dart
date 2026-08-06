@@ -187,19 +187,32 @@ void main() {
       );
       final error = (result as Err<RoundScore>).error;
       expect(error.kind, ErrorKind.invariant);
-      expect(error.code, 'scoring.result_count_mismatch');
+      expect(error.code, 'scoring.result_missing_for_fixture');
     });
 
-    test('rejects extra results not covered by the prediction', () {
-      final result = Scoring.scoreRound(
-        prediction: _prediction([_pred(_fixtureA, 1, 0)]),
-        ruleset: _ruleset,
-        results: [_res(_fixtureA, 1, 0), _res(_fixtureB, 2, 2)],
-      );
-      final error = (result as Err<RoundScore>).error;
-      expect(error.kind, ErrorKind.invariant);
-      expect(error.code, 'scoring.result_count_mismatch');
-    });
+    test(
+      'a result not covered by the prediction is graded missed, not rejected '
+      '(the fixture kicked off before the participant ever forecast it)',
+      () {
+        final result = Scoring.scoreRound(
+          prediction: _prediction([_pred(_fixtureA, 1, 0)]),
+          ruleset: _ruleset,
+          results: [_res(_fixtureA, 1, 0), _res(_fixtureB, 2, 2)],
+        );
+        final score = (result as Ok<RoundScore>).value;
+        expect(score.fixtureResults, hasLength(2));
+        expect(score.fixtureResults.first.fixture.value, _fixtureA);
+        expect(
+          score.fixtureResults.first.grade,
+          FixtureScoreGrade.exactScoreline,
+        );
+        final missed = score.fixtureResults.last;
+        expect(missed.fixture.value, _fixtureB);
+        expect(missed.grade, FixtureScoreGrade.missed);
+        expect(missed.points, 0);
+        expect(score.totalPoints, 5);
+      },
+    );
 
     test('rejects a duplicated result for the same fixture', () {
       final result = Scoring.scoreRound(

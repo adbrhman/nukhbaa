@@ -5,13 +5,15 @@
 /// file makes no authorization decision; `AdminApi` surfaces a non-admin
 /// refusal as a typed `AppError` like any other failure.
 ///
-/// **Scope (this pass):** audit trail, user suspend/reinstate, and the
-/// single-participant ledger support-read — the three `AdminApi` surfaces
-/// this codebase currently wraps. Round/fixture/scoring administration
-/// (open/lock a round, link a fixture, record a result, run scoring, post to
-/// the ledger) requires additional `api_client` write methods over the
-/// existing server routes and is intentionally deferred to a follow-up pass,
-/// mirroring how Groups was phased in this project.
+/// **Scope (this pass):** audit trail, user suspend/reinstate, the
+/// single-participant ledger support-read (all three over `AdminApi`), and
+/// fixture-identity register/correct (over `FixtureScheduleApi` —
+/// `POST /fixtures` / `PUT /fixtures/{id}`, the fixture-IDENTITY seam, Axiom
+/// 3). Round/scoring administration (open/lock a round, link a fixture to a
+/// round, record a result, run scoring, post to the ledger) still requires
+/// additional `api_client` write methods over the existing server routes and
+/// remains deferred to a follow-up pass, mirroring how Groups was phased in
+/// this project.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -95,6 +97,67 @@ class AdminLedgerLookupController extends _$AdminLedgerLookupController {
     state = switch (result) {
       Ok<ParticipantEntriesDto>(:final value) => AsyncValue.data(value),
       Err<ParticipantEntriesDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the fixture-identity register/correct commands
+/// (`POST /fixtures` / `PUT /fixtures/{id}`) — the fixture-IDENTITY seam
+/// (Axiom 3; Next-Task decision 2026-07-11, option (a)). Modelled as a
+/// controller, not a `FutureProvider`, for the same reason as
+/// [UserSanctionController]: a one-shot admin command, not a passive view an
+/// admin screen loads on entry. No other provider reads a fixture's schedule
+/// today, so a success here has nothing to invalidate.
+@riverpod
+class FixtureScheduleController extends _$FixtureScheduleController {
+  FixtureScheduleApi get _api => ref.read(fixtureScheduleApiProvider);
+
+  @override
+  AsyncValue<FixtureScheduleDto>? build() => null;
+
+  /// Registers a brand-new fixture's identity. The server generates the
+  /// fixture id; it comes back on [FixtureScheduleDto.fixtureId] for the
+  /// admin to note down (e.g. for a later [correct] call or to link it into
+  /// a round).
+  Future<void> register({
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.registerFixtureSchedule(
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      kickoffAt: kickoffAt,
+    );
+    _apply(result);
+  }
+
+  /// Corrects an already-registered fixture's identity by [fixtureId] (a
+  /// mistyped team name or kickoff time, before the round is linked/locked).
+  Future<void> correct({
+    required String fixtureId,
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.correctFixtureSchedule(
+      fixtureId: fixtureId,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      kickoffAt: kickoffAt,
+    );
+    _apply(result);
+  }
+
+  void _apply(Result<FixtureScheduleDto> result) {
+    state = switch (result) {
+      Ok<FixtureScheduleDto>(:final value) => AsyncValue.data(value),
+      Err<FixtureScheduleDto>(:final error) => AsyncValue.error(
         error,
         StackTrace.current,
       ),

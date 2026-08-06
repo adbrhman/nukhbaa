@@ -302,6 +302,7 @@ final class CompositionRoot {
   static SubmitPrediction _absentSubmitPrediction() => SubmitPrediction(
     predictionRepository: _unwiredPredictionRepository,
     competitionRepository: _unwiredCompetitionRepository,
+    fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
     idGenerator: _unwiredIdGenerator,
     clock: _unwiredClock,
   );
@@ -943,6 +944,7 @@ final class CompositionRoot {
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
         idGenerator: idGenerator,
         clock: clock,
       ),

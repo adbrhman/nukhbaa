@@ -30,6 +30,7 @@ Map<String, Object?> predictionViewToJson(PredictionView view) {
           fixtureId: score.fixture.value,
           homeGoals: score.homeGoals,
           awayGoals: score.awayGoals,
+          isDouble: score.isDouble,
         ),
     ],
   ).toJson();

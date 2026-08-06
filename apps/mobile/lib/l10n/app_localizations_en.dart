@@ -304,6 +304,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminLookUpButton => 'Look up';
 
   @override
+  String get adminFixturesTab => 'Fixture Identity';
+
+  @override
+  String get adminFixtureIdOptionalLabel =>
+      'Fixture ID (correction only — leave empty to register)';
+
+  @override
+  String get adminHomeTeamLabel => 'Home team';
+
+  @override
+  String get adminAwayTeamLabel => 'Away team';
+
+  @override
+  String get adminPickKickoffButton => 'Pick kickoff time';
+
+  @override
+  String get adminRegisterFixtureButton => 'Register fixture';
+
+  @override
+  String get adminCorrectFixtureButton => 'Correct fixture';
+
+  @override
   String get createGroupTitle => 'Create Group';
 
   @override

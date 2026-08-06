@@ -24,6 +24,7 @@ final class ScoringRuleset {
     required this.exactScorelinePoints,
     required this.correctOutcomePoints,
     required this.incorrectPoints,
+    required this.doubleMultiplier,
   });
 
   /// The wire token identifying the football-scoreline format inside a snapshot
@@ -90,12 +91,33 @@ final class ScoringRuleset {
       );
     }
 
+    // `double_multiplier` is read from the top-level payload (a multiplier is
+    // not a per-grade point award, unlike the three keys above). Absent on
+    // older frozen snapshots (pre-double rulesets) — defaults to 1 (no
+    // multiplier effect) so a historical round keeps reproducing its original
+    // score exactly (Axiom 5): those rounds never had a double to begin with.
+    final rawMultiplier = payload['double_multiplier'];
+    var multiplier = 1;
+    if (rawMultiplier != null) {
+      if (rawMultiplier is! int || rawMultiplier < 1) {
+        return Result.err(
+          AppError.validation(
+            'scoring.ruleset_double_multiplier_invalid',
+            'Ruleset "double_multiplier" must be an integer >= 1; got '
+                '$rawMultiplier',
+          ),
+        );
+      }
+      multiplier = rawMultiplier;
+    }
+
     return Result.ok(
       ScoringRuleset._(
         rulesetVersion: snapshot.rulesetVersion,
         exactScorelinePoints: exactPts,
         correctOutcomePoints: outcomePts,
         incorrectPoints: incorrectPts,
+        doubleMultiplier: multiplier,
       ),
     );
   }
@@ -135,13 +157,20 @@ final class ScoringRuleset {
   /// Points awarded when neither the outcome nor the scoreline is correct.
   final int incorrectPoints;
 
+  /// The factor applied to whatever points a fixture earns (at any grade
+  /// except [FixtureScoreGrade.missed]) when the participant marked it as
+  /// their round double. Always >= 1; defaults to 1 (no effect) when the
+  /// frozen snapshot predates the double feature.
+  final int doubleMultiplier;
+
   @override
   bool operator ==(Object other) =>
       other is ScoringRuleset &&
       other.rulesetVersion == rulesetVersion &&
       other.exactScorelinePoints == exactScorelinePoints &&
       other.correctOutcomePoints == correctOutcomePoints &&
-      other.incorrectPoints == incorrectPoints;
+      other.incorrectPoints == incorrectPoints &&
+      other.doubleMultiplier == doubleMultiplier;
 
   @override
   int get hashCode => Object.hash(
@@ -149,10 +178,12 @@ final class ScoringRuleset {
     exactScorelinePoints,
     correctOutcomePoints,
     incorrectPoints,
+    doubleMultiplier,
   );
 
   @override
   String toString() =>
       'ScoringRuleset(v$rulesetVersion, exact: $exactScorelinePoints, '
-      'outcome: $correctOutcomePoints, incorrect: $incorrectPoints)';
+      'outcome: $correctOutcomePoints, incorrect: $incorrectPoints, '
+      'doubleMultiplier: $doubleMultiplier)';
 }

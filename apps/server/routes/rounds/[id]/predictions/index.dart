@@ -148,11 +148,21 @@ Result<List<FixtureScoreInput>> _parseScores(Map<String, Object?> body) {
         ),
       );
     }
+    final rawIsDouble = map['is_double'];
+    if (rawIsDouble != null && rawIsDouble is! bool) {
+      return const Result.err(
+        AppError.validation(
+          'request.field_missing',
+          'Field "is_double", when present, must be a boolean',
+        ),
+      );
+    }
     inputs.add(
       FixtureScoreInput(
         fixtureId: fixtureId,
         homeGoals: homeGoals,
         awayGoals: awayGoals,
+        isDouble: (rawIsDouble as bool?) ?? false,
       ),
     );
   }

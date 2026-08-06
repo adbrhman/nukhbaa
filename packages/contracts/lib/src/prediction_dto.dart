@@ -22,14 +22,17 @@ final class FixtureScoreDto {
     required this.fixtureId,
     required this.homeGoals,
     required this.awayGoals,
+    this.isDouble = false,
   });
 
-  /// Deserializes from a JSON map.
+  /// Deserializes from a JSON map. `is_double` defaults to `false` for
+  /// legacy payloads written before the double feature existed.
   factory FixtureScoreDto.fromJson(Map<String, Object?> json) {
     return FixtureScoreDto(
       fixtureId: json['fixture_id']! as String,
       homeGoals: json['home_goals']! as int,
       awayGoals: json['away_goals']! as int,
+      isDouble: (json['is_double'] as bool?) ?? false,
     );
   }
 
@@ -42,11 +45,15 @@ final class FixtureScoreDto {
   /// The predicted goals for the away side.
   final int awayGoals;
 
+  /// Whether this fixture is the caller's round double.
+  final bool isDouble;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'fixture_id': fixtureId,
     'home_goals': homeGoals,
     'away_goals': awayGoals,
+    'is_double': isDouble,
   };
 
   @override
@@ -54,10 +61,12 @@ final class FixtureScoreDto {
       other is FixtureScoreDto &&
       other.fixtureId == fixtureId &&
       other.homeGoals == homeGoals &&
-      other.awayGoals == awayGoals;
+      other.awayGoals == awayGoals &&
+      other.isDouble == isDouble;
 
   @override
-  int get hashCode => Object.hash(fixtureId, homeGoals, awayGoals);
+  int get hashCode =>
+      Object.hash(fixtureId, homeGoals, awayGoals, isDouble);
 }
 
 /// The request body of `POST /rounds/{id}/predictions` — a `SubmitPrediction`
@@ -88,8 +97,11 @@ final class SubmitPredictionCommandDto {
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 for the `is_double`
+  /// field on [FixtureScoreDto]; `fromJson` still defaults a legacy (v1) or
+  /// absent `schema_version` to 1, and `FixtureScoreDto.fromJson` defaults a
+  /// missing `is_double` to `false`, so older payloads keep decoding.
+  static const int currentSchemaVersion = 2;
 
   /// The predicted scorelines, one per fixture in the round the caller predicts.
   final List<FixtureScoreDto> fixtureScores;
@@ -158,8 +170,10 @@ final class PredictionDto {
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 alongside
+  /// [SubmitPredictionCommandDto.currentSchemaVersion] for the `is_double`
+  /// field on [FixtureScoreDto].
+  static const int currentSchemaVersion = 2;
 
   /// The prediction id (UUID string).
   final String id;

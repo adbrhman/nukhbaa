@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import '../competition/fake_competition_repository.dart';
 import '../competition/fakes.dart';
+import 'fake_fixture_schedule_repository.dart';
 import 'fake_prediction_repository.dart';
 
 const _userId = '11111111-1111-1111-1111-111111111111';
@@ -55,14 +56,17 @@ RoundFixture _link(String fixture, int order) =>
 void main() {
   late FakePredictionRepository predictions;
   late FakeCompetitionRepository competition;
+  late FakeFixtureScheduleRepository fixtureSchedules;
   late SubmitPrediction useCase;
 
   setUp(() {
     predictions = FakePredictionRepository();
     competition = FakeCompetitionRepository();
+    fixtureSchedules = FakeFixtureScheduleRepository();
     useCase = SubmitPrediction(
       predictionRepository: predictions,
       competitionRepository: competition,
+      fixtureScheduleRepository: fixtureSchedules,
       idGenerator: FakeIdGenerator([_predictionId]),
       clock: FixedClock(_now),
     );
@@ -76,7 +80,12 @@ void main() {
   });
 
   List<FixtureScoreInput> completeScores() => const [
-    FixtureScoreInput(fixtureId: _fixtureA, homeGoals: 2, awayGoals: 1),
+    FixtureScoreInput(
+      fixtureId: _fixtureA,
+      homeGoals: 2,
+      awayGoals: 1,
+      isDouble: true,
+    ),
     FixtureScoreInput(fixtureId: _fixtureB, homeGoals: 0, awayGoals: 0),
   ];
 
@@ -118,6 +127,7 @@ void main() {
       useCase = SubmitPrediction(
         predictionRepository: predictions,
         competitionRepository: competition,
+        fixtureScheduleRepository: fixtureSchedules,
         idGenerator: FakeIdGenerator([_predictionId]),
         clock: FixedClock(_later),
       );
@@ -125,7 +135,12 @@ void main() {
         principal: userPrincipal(_userId),
         roundId: _roundId,
         scores: const [
-          FixtureScoreInput(fixtureId: _fixtureA, homeGoals: 3, awayGoals: 3),
+          FixtureScoreInput(
+            fixtureId: _fixtureA,
+            homeGoals: 3,
+            awayGoals: 3,
+            isDouble: true,
+          ),
           FixtureScoreInput(fixtureId: _fixtureB, homeGoals: 1, awayGoals: 2),
         ],
       );
@@ -224,6 +239,7 @@ void main() {
     useCase = SubmitPrediction(
       predictionRepository: predictions,
       competitionRepository: competition,
+      fixtureScheduleRepository: fixtureSchedules,
       idGenerator: FakeIdGenerator([_predictionId]),
       clock: FixedClock(_now),
     );
@@ -307,6 +323,7 @@ void main() {
       useCase = SubmitPrediction(
         predictionRepository: predictions,
         competitionRepository: competition,
+        fixtureScheduleRepository: fixtureSchedules,
         idGenerator: FakeIdGenerator([_predictionId]),
         clock: FixedClock(_later),
       );

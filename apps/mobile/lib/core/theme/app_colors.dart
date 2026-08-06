@@ -24,6 +24,23 @@ abstract final class AppColors {
   static const Color error = Color(0xFFF87171);
   static const Color errorContainer = Color(0xFF3A1D22);
 
+  /// Semantic status colors. `success`/`warning` deliberately reuse the
+  /// existing primary/gold hues (see design tokens addendum decision log)
+  /// to avoid a second color competing visually with the medal gold.
+  /// `info` is the one genuinely new hue — no blue exists elsewhere in
+  /// this palette to repurpose.
+  static const Color success = primary;
+  static const Color successContainer = Color(0xFF102A22);
+  static const Color onSuccess = onPrimary;
+
+  static const Color warning = gold;
+  static const Color warningContainer = Color(0xFF3A2E0E);
+  static const Color onWarning = onGold;
+
+  static const Color info = Color(0xFF60A5FA);
+  static const Color infoContainer = Color(0xFF13233A);
+  static const Color onInfo = Color(0xFF0B1220);
+
   static const Color textPrimary = Color(0xFFF1F5F9);
   static const Color textSecondary = Color(0xFF94A3B8);
   static const Color textMuted = Color(0xFF64748B);

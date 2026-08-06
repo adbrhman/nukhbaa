@@ -73,6 +73,7 @@ void main() {
       submitPrediction: SubmitPrediction(
         predictionRepository: predRepo,
         competitionRepository: compRepo,
+        fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
         idGenerator: ScriptedIdGenerator([kPredictionId]),
         clock: FixedClock(DateTime.utc(2026, 7, 20, 9, 30)),
       ),
@@ -101,7 +102,12 @@ void main() {
           principal: userPrincipal(),
           body: const {
             'fixture_scores': [
-              {'fixture_id': kFixtureId, 'home_goals': 2, 'away_goals': 1},
+              {
+                'fixture_id': kFixtureId,
+                'home_goals': 2,
+                'away_goals': 1,
+                'is_double': true,
+              },
             ],
           },
         );
@@ -142,6 +148,7 @@ void main() {
                   'fixture_id': kFixtureId,
                   'home_goals': home,
                   'away_goals': away,
+                  'is_double': true,
                 },
               ],
             },
@@ -312,7 +319,12 @@ void main() {
             principal: userPrincipal(),
             body: const {
               'fixture_scores': [
-                {'fixture_id': kFixtureId, 'home_goals': 4, 'away_goals': 2},
+                {
+                  'fixture_id': kFixtureId,
+                  'home_goals': 4,
+                  'away_goals': 2,
+                  'is_double': true,
+                },
               ],
             },
           ),
@@ -375,6 +387,7 @@ void main() {
           submitPrediction: SubmitPrediction(
             predictionRepository: predRepo,
             competitionRepository: compRepo,
+            fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
             idGenerator: ScriptedIdGenerator([kPredictionId]),
             clock: FixedClock(DateTime.utc(2026, 7, 20, 9, 30)),
           ),
@@ -385,7 +398,12 @@ void main() {
             principal: userPrincipal(),
             body: const {
               'fixture_scores': [
-                {'fixture_id': kFixtureId, 'home_goals': 2, 'away_goals': 2},
+                {
+                  'fixture_id': kFixtureId,
+                  'home_goals': 2,
+                  'away_goals': 2,
+                  'is_double': true,
+                },
               ],
             },
           ),

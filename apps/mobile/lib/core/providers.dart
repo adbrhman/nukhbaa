@@ -146,3 +146,14 @@ GroupsApi groupsApi(Ref ref) => GroupsApi(ref.watch(apiTransportProvider));
 /// client never decides who may call it.
 @Riverpod(keepAlive: true)
 AdminApi adminApi(Ref ref) => AdminApi(ref.watch(apiTransportProvider));
+
+/// The typed Fixture Schedule (identity) client over the shared transport.
+///
+/// Consumed by the Admin feature to register/correct a fixture's identity —
+/// home team, away team, kickoff time (the fixture-IDENTITY seam, Axiom 3;
+/// Next-Task decision 2026-07-11, option (a)). Admin-only, enforced entirely
+/// server-side inside `RegisterFixtureSchedule`/`CorrectFixtureSchedule`; this
+/// client never decides who may call it.
+@Riverpod(keepAlive: true)
+FixtureScheduleApi fixtureScheduleApi(Ref ref) =>
+    FixtureScheduleApi(ref.watch(apiTransportProvider));

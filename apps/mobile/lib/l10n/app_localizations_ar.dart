@@ -312,6 +312,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminLookUpButton => 'بحث';
 
   @override
+  String get adminFixturesTab => 'هوية المباراة';
+
+  @override
+  String get adminFixtureIdOptionalLabel =>
+      'معرّف المباراة (للتصحيح فقط، اتركه فارغاً للتسجيل)';
+
+  @override
+  String get adminHomeTeamLabel => 'الفريق المضيف';
+
+  @override
+  String get adminAwayTeamLabel => 'الفريق الضيف';
+
+  @override
+  String get adminPickKickoffButton => 'اختر موعد المباراة';
+
+  @override
+  String get adminRegisterFixtureButton => 'تسجيل مباراة جديدة';
+
+  @override
+  String get adminCorrectFixtureButton => 'تصحيح المباراة';
+
+  @override
   String get createGroupTitle => 'إنشاء مجموعة';
 
   @override

@@ -33,6 +33,12 @@ import 'package:shared/shared.dart';
 ///   DB check is the last line).
 /// * At least one fixture score, with **no duplicate fixtures** within the
 ///   forecast.
+/// * **At most one** fixture score may be marked [FixtureScorePrediction.isDouble]
+///   — the round's single "double" pick. This aggregate enforces only the
+///   upper bound (never more than one); whether *exactly* one is required
+///   before a submission is accepted is an application-level completeness
+///   rule (`SubmitPrediction`), because only the use-case can see which
+///   fixtures are still open to predict.
 ///
 /// Pure and immutable; a change produces a new instance via [amend].
 final class Prediction {
@@ -135,12 +141,24 @@ final class Prediction {
       );
     }
     final seen = <String>{};
+    var doubleCount = 0;
     for (final score in scores) {
       if (!seen.add(score.fixture.value)) {
         return const AppError.validation(
           'prediction.duplicate_fixture',
           'A prediction must contain at most one score per fixture',
         );
+      }
+      if (score.isDouble) {
+        doubleCount++;
+        // Checked incrementally (fail on the second, not after the full
+        // scan) so this stays a single pass over `scores`.
+        if (doubleCount > 1) {
+          return const AppError.validation(
+            'prediction.multiple_doubles',
+            'A prediction may mark at most one fixture as the double',
+          );
+        }
       }
     }
     return null;

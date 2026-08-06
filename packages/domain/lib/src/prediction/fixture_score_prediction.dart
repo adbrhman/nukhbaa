@@ -24,6 +24,7 @@ final class FixtureScorePrediction {
     required this.fixture,
     required this.homeGoals,
     required this.awayGoals,
+    required this.isDouble,
   });
 
   /// Rehydrates a prediction outcome from already-trusted stored fields.
@@ -35,6 +36,7 @@ final class FixtureScorePrediction {
     required this.fixture,
     required this.homeGoals,
     required this.awayGoals,
+    this.isDouble = false,
   });
 
   /// Creates a validated fixture score prediction from untrusted inputs.
@@ -48,6 +50,7 @@ final class FixtureScorePrediction {
     required FixtureRef fixture,
     required int homeGoals,
     required int awayGoals,
+    bool isDouble = false,
   }) {
     final homeError = _validateGoals('home', homeGoals);
     if (homeError != null) {
@@ -62,6 +65,7 @@ final class FixtureScorePrediction {
         fixture: fixture,
         homeGoals: homeGoals,
         awayGoals: awayGoals,
+        isDouble: isDouble,
       ),
     );
   }
@@ -97,18 +101,25 @@ final class FixtureScorePrediction {
   /// The predicted number of goals for the away side (non-negative).
   final int awayGoals;
 
+  /// Whether the participant marked this fixture as their round "double" —
+  /// at most one per prediction (enforced by the enclosing [Prediction]),
+  /// worth `ScoringRuleset.doubleMultiplier` times the usual points at
+  /// scoring time, whatever grade it earns.
+  final bool isDouble;
+
   @override
   bool operator ==(Object other) =>
       other is FixtureScorePrediction &&
       other.fixture == fixture &&
       other.homeGoals == homeGoals &&
-      other.awayGoals == awayGoals;
+      other.awayGoals == awayGoals &&
+      other.isDouble == isDouble;
 
   @override
-  int get hashCode => Object.hash(fixture, homeGoals, awayGoals);
+  int get hashCode => Object.hash(fixture, homeGoals, awayGoals, isDouble);
 
   @override
   String toString() =>
       'FixtureScorePrediction(fixture: ${fixture.value}, '
-      '$homeGoals-$awayGoals)';
+      '$homeGoals-$awayGoals${isDouble ? ', DOUBLE' : ''})';
 }

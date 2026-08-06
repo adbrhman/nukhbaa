@@ -51,6 +51,7 @@ void main() {
           'fixture_id': 'f-a',
           'home_goals': 2,
           'away_goals': 1,
+          'is_double': false,
         });
       },
     );

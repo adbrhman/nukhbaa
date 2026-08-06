@@ -135,12 +135,21 @@ abstract class AppLocalizations {
   String get retry;
 
   /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
   String get showPassword;
 
   /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
   String get hidePassword;
 
   /// No description provided for @markNotificationRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
   String get markNotificationRead;
 
   /// No description provided for @createAccount.
@@ -572,6 +581,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Look up'**
   String get adminLookUpButton;
+
+  /// No description provided for @adminFixturesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture Identity'**
+  String get adminFixturesTab;
+
+  /// No description provided for @adminFixtureIdOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture ID (correction only — leave empty to register)'**
+  String get adminFixtureIdOptionalLabel;
+
+  /// No description provided for @adminHomeTeamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Home team'**
+  String get adminHomeTeamLabel;
+
+  /// No description provided for @adminAwayTeamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Away team'**
+  String get adminAwayTeamLabel;
+
+  /// No description provided for @adminPickKickoffButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick kickoff time'**
+  String get adminPickKickoffButton;
+
+  /// No description provided for @adminRegisterFixtureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Register fixture'**
+  String get adminRegisterFixtureButton;
+
+  /// No description provided for @adminCorrectFixtureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct fixture'**
+  String get adminCorrectFixtureButton;
 
   /// No description provided for @createGroupTitle.
   ///
