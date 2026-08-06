@@ -39,7 +39,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (bodyResult is Err<Map<String, Object?>>) {
     return errorResponse(bodyResult.error);
   }
-  final body = (bodyResult as Ok<Map<String, Object>>).value;
+  final body = (bodyResult as Ok<Map<String, Object?>>).value;
 
   final homeResult = requireString(body, 'home_team');
   if (homeResult is Err<String>) {
