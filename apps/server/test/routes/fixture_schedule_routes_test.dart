@@ -7,9 +7,9 @@ import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
 // ignore: always_use_package_imports
-import '../../routes/fixtures/index.dart' as register_route;
-// ignore: always_use_package_imports
 import '../../routes/fixtures/[id]/index.dart' as correct_route;
+// ignore: always_use_package_imports
+import '../../routes/fixtures/index.dart' as register_route;
 import 'competition_route_harness.dart';
 
 /// Route tests for the fixture-IDENTITY seam — `POST /fixtures`

@@ -33,7 +33,7 @@ final class AuthConfig {
   /// throwing when a required value is missing or malformed.
   ///
   /// Required: NUKHBA_SUPABASE_PROJECT_REF (the ref in
-  /// https://<ref>.supabase.co). From it the canonical issuer, JWKS URI and
+  /// https://`<ref>`.supabase.co). From it the canonical issuer, JWKS URI and
   /// GoTrue base URI are derived, so they cannot drift out of sync.
   ///
   /// Optional:
@@ -94,7 +94,7 @@ final class AuthConfig {
   /// A Supabase project ref: lowercase letters/digits, typically 20 chars.
   static final RegExp _projectRef = RegExp(r'^[a-z0-9]{8,40}$');
 
-  /// The Supabase project reference (the ref in <ref>.supabase.co).
+  /// The Supabase project reference (the ref in `<ref>`.supabase.co).
   final String projectRef;
 
   /// The exact iss claim every token must carry.

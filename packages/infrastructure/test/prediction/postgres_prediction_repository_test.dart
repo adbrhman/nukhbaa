@@ -132,6 +132,7 @@ Map<String, dynamic> _scoreRow({
   'fixture_id': fixture,
   'home_goals': home,
   'away_goals': away,
+  'is_double': false,
   'display_order': order,
 };
 

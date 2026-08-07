@@ -301,8 +301,7 @@ final class SubmitPrediction {
       for (final link in roundFixtures)
         if (lockedScoresByFixture[link.fixture.value] case final locked?)
           locked
-        else if (domainScoresByFixture[link.fixture.value] case final open?)
-          open,
+        else ?domainScoresByFixture[link.fixture.value],
     ];
 
     // Rule 5: exactly one double across the full merged forecast. The domain
