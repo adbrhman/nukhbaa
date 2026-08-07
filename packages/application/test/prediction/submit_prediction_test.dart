@@ -368,4 +368,177 @@ void main() {
     expect(error.kind, ErrorKind.validation);
     expect(error.code, 'competition.round_id_malformed');
   });
+
+  test('a fixture that has already kicked off cannot be submitted '
+      '(prediction.fixture_locked, no silent overwrite)', () async {
+    fixtureSchedules.seed(
+      (FixtureSchedule.create(
+                fixture: const FixtureRef(_fixtureA),
+                homeTeam: 'Al Hilal',
+                awayTeam: 'Al Nassr',
+                kickoffAt: DateTime.utc(2026, 8, 1, 11),
+              )
+              as Ok<FixtureSchedule>)
+          .value,
+    );
+
+    final result = await useCase(
+      principal: userPrincipal(_userId),
+      roundId: _roundId,
+      scores: completeScores(),
+    );
+
+    final error = (result as Err<PredictionView>).error;
+    expect(error.kind, ErrorKind.invariant);
+    expect(error.code, 'prediction.fixture_locked');
+    expect(predictions.count, 0);
+  });
+
+  test(
+    'every fixture already kicked off yields prediction.no_open_fixtures',
+    () async {
+      for (final fixture in [_fixtureA, _fixtureB]) {
+        fixtureSchedules.seed(
+          (FixtureSchedule.create(
+                    fixture: FixtureRef(fixture),
+                    homeTeam: 'Home',
+                    awayTeam: 'Away',
+                    kickoffAt: DateTime.utc(2026, 8, 1, 11),
+                  )
+                  as Ok<FixtureSchedule>)
+              .value,
+        );
+      }
+
+      final result = await useCase(
+        principal: userPrincipal(_userId),
+        roundId: _roundId,
+        scores: const [],
+      );
+
+      final error = (result as Err<PredictionView>).error;
+      expect(error.kind, ErrorKind.invariant);
+      expect(error.code, 'prediction.no_open_fixtures');
+    },
+  );
+
+  test('a complete forecast with no double marked is rejected '
+      '(prediction.double_not_selected)', () async {
+    final result = await useCase(
+      principal: userPrincipal(_userId),
+      roundId: _roundId,
+      scores: const [
+        FixtureScoreInput(fixtureId: _fixtureA, homeGoals: 1, awayGoals: 0),
+        FixtureScoreInput(fixtureId: _fixtureB, homeGoals: 0, awayGoals: 0),
+      ],
+    );
+
+    final error = (result as Err<PredictionView>).error;
+    expect(error.kind, ErrorKind.validation);
+    expect(error.code, 'prediction.double_not_selected');
+    expect(predictions.count, 0);
+  });
+
+  test(
+    'resubmitting after a fixture locks carries its prior score over '
+    'unchanged and merges it with the newly-submitted open fixtures',
+    () async {
+      await useCase(
+        principal: userPrincipal(_userId),
+        roundId: _roundId,
+        scores: completeScores(),
+      );
+
+      fixtureSchedules.seed(
+        (FixtureSchedule.create(
+                  fixture: const FixtureRef(_fixtureA),
+                  homeTeam: 'Al Hilal',
+                  awayTeam: 'Al Nassr',
+                  kickoffAt: DateTime.utc(2026, 8, 1, 12, 30),
+                )
+                as Ok<FixtureSchedule>)
+            .value,
+      );
+
+      useCase = SubmitPrediction(
+        predictionRepository: predictions,
+        competitionRepository: competition,
+        fixtureScheduleRepository: fixtureSchedules,
+        idGenerator: FakeIdGenerator([_predictionId]),
+        clock: FixedClock(_later),
+      );
+
+      final result = await useCase(
+        principal: userPrincipal(_userId),
+        roundId: _roundId,
+        scores: const [
+          FixtureScoreInput(fixtureId: _fixtureB, homeGoals: 5, awayGoals: 5),
+        ],
+      );
+
+      final prediction = (result as Ok<PredictionView>).value.prediction;
+      expect(prediction.scores, hasLength(2));
+
+      final fixtureAScore = prediction.scores.firstWhere(
+        (s) => s.fixture.value == _fixtureA,
+      );
+      expect(fixtureAScore.homeGoals, 2);
+      expect(fixtureAScore.awayGoals, 1);
+      expect(fixtureAScore.isDouble, isTrue);
+
+      final fixtureBScore = prediction.scores.firstWhere(
+        (s) => s.fixture.value == _fixtureB,
+      );
+      expect(fixtureBScore.homeGoals, 5);
+      expect(fixtureBScore.awayGoals, 5);
+
+      expect(predictions.count, 1);
+    },
+  );
+
+  test('marking a second fixture as the double while a locked fixture already '
+      'carries one is rejected by the domain aggregate '
+      '(prediction.multiple_doubles)', () async {
+    await useCase(
+      principal: userPrincipal(_userId),
+      roundId: _roundId,
+      scores: completeScores(),
+    );
+
+    fixtureSchedules.seed(
+      (FixtureSchedule.create(
+                fixture: const FixtureRef(_fixtureA),
+                homeTeam: 'Al Hilal',
+                awayTeam: 'Al Nassr',
+                kickoffAt: DateTime.utc(2026, 8, 1, 12, 30),
+              )
+              as Ok<FixtureSchedule>)
+          .value,
+    );
+
+    useCase = SubmitPrediction(
+      predictionRepository: predictions,
+      competitionRepository: competition,
+      fixtureScheduleRepository: fixtureSchedules,
+      idGenerator: FakeIdGenerator([_predictionId]),
+      clock: FixedClock(_later),
+    );
+
+    final result = await useCase(
+      principal: userPrincipal(_userId),
+      roundId: _roundId,
+      scores: const [
+        FixtureScoreInput(
+          fixtureId: _fixtureB,
+          homeGoals: 5,
+          awayGoals: 5,
+          isDouble: true,
+        ),
+      ],
+    );
+
+    final error = (result as Err<PredictionView>).error;
+    expect(error.kind, ErrorKind.validation);
+    expect(error.code, 'prediction.multiple_doubles');
+  });
 }
