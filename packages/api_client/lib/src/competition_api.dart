@@ -20,9 +20,13 @@ import 'package:shared/shared.dart';
 ///     an absent season is a legitimate empty array — no existence oracle)
 ///   * `GET /rounds/{id}`                -> [RoundDto]
 ///     (`routes/rounds/[id]/index.dart`; `404 competition.round_not_found`)
-///   * `GET /rounds/{id}/fixtures`       -> `List<RoundFixtureDto>`
-///     (`routes/rounds/[id]/fixtures/index.dart` GET branch, display order;
-///     an absent round is a legitimate empty array — no existence oracle)
+///   * `GET /rounds/{id}/fixtures`       -> `List<RoundFixtureCardDto>`
+///     (`routes/rounds/[id]/fixtures/index.dart` GET branch, display order,
+///     each card enriched with its schedule identity — team names + kickoff,
+///     all nullable since the round<->fixture link never verifies a schedule
+///     exists, Axiom 3; query intent `BrowseRoundFixtures`, Session decision
+///     2026-08-07 widened this read instead of a new endpoint; an absent round
+///     is a legitimate empty array — no existence oracle)
 ///
 /// All routes are behind `bearerAuth`. Every method is a pure read (no side
 /// effect), returns a typed [Result], and never throws.
@@ -91,15 +95,23 @@ final class CompetitionApi {
     );
   }
 
-  /// `GET /rounds/{id}/fixtures` — the round's fixtures in display order.
+  /// `GET /rounds/{id}/fixtures` — the round's fixtures in display order,
+  /// each enriched with its schedule identity (team names + kickoff) for the
+  /// prediction-form render (query intent `BrowseRoundFixtures`; Session
+  /// decision 2026-08-07 widened this read instead of a new per-fixture
+  /// endpoint — batched, no N+1).
   ///
   /// A round with no linked fixtures — or one that does not exist — is a
   /// legitimate `Ok(<empty list>)` (the server reveals no existence oracle on
-  /// this browse read).
-  Future<Result<List<RoundFixtureDto>>> listRoundFixtures(String roundId) {
-    return _transport.getList<RoundFixtureDto>(
+  /// this browse read). `homeTeam`/`awayTeam`/`kickoffAt` are `null` when the
+  /// linked fixture has no schedule yet (the link never verifies one exists —
+  /// Axiom 3).
+  Future<Result<List<RoundFixtureCardDto>>> browseRoundFixtures(
+    String roundId,
+  ) {
+    return _transport.getList<RoundFixtureCardDto>(
       '/rounds/$roundId/fixtures',
-      parseElement: RoundFixtureDto.fromJson,
+      parseElement: RoundFixtureCardDto.fromJson,
     );
   }
 }

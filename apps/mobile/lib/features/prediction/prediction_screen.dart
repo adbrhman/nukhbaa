@@ -272,7 +272,7 @@ class _PredictionEditor extends ConsumerStatefulWidget {
   const _PredictionEditor({required this.roundId, required this.fixtures});
 
   final String roundId;
-  final List<RoundFixtureDto> fixtures;
+  final List<RoundFixtureCardDto> fixtures;
 
   @override
   ConsumerState<_PredictionEditor> createState() => _PredictionEditorState();
@@ -426,7 +426,7 @@ class _FixtureScoreInput extends StatelessWidget {
     super.key,
   });
 
-  final RoundFixtureDto fixture;
+  final RoundFixtureCardDto fixture;
   final TextEditingController homeController;
   final TextEditingController awayController;
   final bool enabled;

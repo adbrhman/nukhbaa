@@ -73,7 +73,7 @@ class RoundFixturesScreen extends ConsumerWidget {
           ),
           const Divider(height: 1),
           Expanded(
-            child: AsyncListView<RoundFixtureDto>(
+            child: AsyncListView<RoundFixtureCardDto>(
               value: fixtures,
               emptyMessage: l10n.roundFixturesEmpty,
               onRetry: () => ref.invalidate(roundFixturesProvider(roundId)),

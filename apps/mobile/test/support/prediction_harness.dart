@@ -149,17 +149,23 @@ const RoundDto lockedRound = RoundDto(
 );
 
 /// Two fixtures of [openRound], in display order.
-const RoundFixtureDto fixtureA = RoundFixtureDto(
+const RoundFixtureCardDto fixtureA = RoundFixtureCardDto(
   roundId: 'r-1',
   fixtureId: 'f-a',
   displayOrder: 0,
+  homeTeam: 'Al Hilal',
+  awayTeam: 'Al Nassr',
+  kickoffAt: '2026-08-15T18:00:00.000Z',
 );
 
 /// The second fixture of [openRound].
-const RoundFixtureDto fixtureB = RoundFixtureDto(
+const RoundFixtureCardDto fixtureB = RoundFixtureCardDto(
   roundId: 'r-1',
   fixtureId: 'f-b',
   displayOrder: 1,
+  homeTeam: null,
+  awayTeam: null,
+  kickoffAt: null,
 );
 
 /// A stored prediction for [openRound] covering both fixtures.

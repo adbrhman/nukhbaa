@@ -233,25 +233,33 @@ void main() {
     });
   });
 
-  group('CompetitionApi.listRoundFixtures (GET /rounds/{id}/fixtures)', () {
-    test('200 -> Ok(List<RoundFixtureDto>) at the fixtures path', () async {
-      const f0 = RoundFixtureDto(
+  group('CompetitionApi.browseRoundFixtures (GET /rounds/{id}/fixtures)', () {
+    test('200 -> Ok(List<RoundFixtureCardDto>) at the fixtures path', () async {
+      const f0 = RoundFixtureCardDto(
         roundId: 'r',
         fixtureId: 'f-a',
         displayOrder: 0,
+        homeTeam: 'Al Hilal',
+        awayTeam: 'Al Nassr',
+        kickoffAt: '2026-08-15T18:00:00.000Z',
       );
-      const f1 = RoundFixtureDto(
+      const f1 = RoundFixtureCardDto(
         roundId: 'r',
         fixtureId: 'f-b',
         displayOrder: 1,
+        homeTeam: null,
+        awayTeam: null,
+        kickoffAt: null,
       );
       final ctx = buildTransport(
         (_) async => okJson([f0.toJson(), f1.toJson()]),
       );
 
-      final result = await CompetitionApi(ctx.transport).listRoundFixtures('r');
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).browseRoundFixtures('r');
 
-      expect(result, const Result<List<RoundFixtureDto>>.ok([f0, f1]));
+      expect(result, const Result<List<RoundFixtureCardDto>>.ok([f0, f1]));
       expect(ctx.captured.single.url.path, '/rounds/r/fixtures');
     });
 
@@ -260,9 +268,9 @@ void main() {
 
       final result = await CompetitionApi(
         ctx.transport,
-      ).listRoundFixtures('gone');
+      ).browseRoundFixtures('gone');
 
-      expect((result as Ok<List<RoundFixtureDto>>).value, isEmpty);
+      expect((result as Ok<List<RoundFixtureCardDto>>).value, isEmpty);
     });
 
     test('503 -> Err(transient) retryable', () async {
@@ -270,9 +278,14 @@ void main() {
         (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
       );
 
-      final result = await CompetitionApi(ctx.transport).listRoundFixtures('r');
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).browseRoundFixtures('r');
 
-      expect((result as Err<List<RoundFixtureDto>>).error.isRetryable, isTrue);
+      expect(
+        (result as Err<List<RoundFixtureCardDto>>).error.isRetryable,
+        isTrue,
+      );
     });
   });
 }

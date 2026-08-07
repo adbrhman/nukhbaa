@@ -156,8 +156,11 @@ const RoundDto sampleRound = RoundDto(
 );
 
 /// A sample fixture link of [sampleRound].
-const RoundFixtureDto sampleFixture = RoundFixtureDto(
+const RoundFixtureCardDto sampleFixture = RoundFixtureCardDto(
   roundId: 'r-1',
   fixtureId: 'f-1',
   displayOrder: 0,
+  homeTeam: 'Al Hilal',
+  awayTeam: 'Al Nassr',
+  kickoffAt: '2026-08-15T18:00:00.000Z',
 );

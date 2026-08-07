@@ -104,12 +104,14 @@ Future<RoundDto> roundDetail(Ref ref, String roundId) async {
   return _unwrap(await api.getRound(roundId));
 }
 
-/// `GET /rounds/{id}/fixtures` — the round's fixtures (display order).
+/// `GET /rounds/{id}/fixtures` — the round's fixtures (display order), each
+/// enriched with its schedule identity (team names + kickoff; `null` when the
+/// linked fixture has no schedule yet, Axiom 3).
 ///
 /// The final hop. A round with no linked fixtures — or one that does not exist —
 /// resolves to a legitimate empty list (no existence oracle).
 @riverpod
-Future<List<RoundFixtureDto>> roundFixtures(Ref ref, String roundId) async {
+Future<List<RoundFixtureCardDto>> roundFixtures(Ref ref, String roundId) async {
   final api = ref.watch(competitionApiProvider);
-  return _unwrap(await api.listRoundFixtures(roundId));
+  return _unwrap(await api.browseRoundFixtures(roundId));
 }
