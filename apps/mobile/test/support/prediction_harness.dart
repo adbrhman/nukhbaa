@@ -168,6 +168,18 @@ const RoundFixtureCardDto fixtureB = RoundFixtureCardDto(
   kickoffAt: null,
 );
 
+/// A third fixture of [openRound] that has already kicked off (a fixed date
+/// safely in the past): exercises the per-fixture lock — disabled score
+/// inputs, no tappable double star.
+const RoundFixtureCardDto fixtureLocked = RoundFixtureCardDto(
+  roundId: 'r-1',
+  fixtureId: 'f-locked',
+  displayOrder: 2,
+  homeTeam: 'Al Ahly',
+  awayTeam: 'Zamalek',
+  kickoffAt: '2020-01-01T00:00:00.000Z',
+);
+
 /// A stored prediction for [openRound] covering both fixtures.
 const PredictionDto storedPrediction = PredictionDto(
   id: 'p-1',

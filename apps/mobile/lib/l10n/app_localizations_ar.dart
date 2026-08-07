@@ -261,6 +261,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String fixtureVsTitle(String home, String away) {
+    return '$home ضد $away';
+  }
+
+  @override
   String get predictionTitle => 'التوقّع';
 
   @override
@@ -283,6 +288,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get submitPredictionButton => 'إرسال التوقع';
+
+  @override
+  String get predictionDoubleLabel => 'الدبل';
+
+  @override
+  String get predictionFixtureLockedLabel => 'بدأت المباراة';
+
+  @override
+  String get predictionDoubleHint => 'اختر مباراة واحدة كدبل قبل الإرسال.';
+
+  @override
+  String get predictionIncompleteHint =>
+      'أدخل نتيجة كل مباراة مفتوحة قبل الإرسال.';
+
+  @override
+  String get predictionNoOpenFixturesMessage =>
+      'كل مباريات هذه الجولة بدأت بالفعل. لا يوجد ما يمكن توقّعه الآن.';
 
   @override
   String get adminAuditLogTab => 'سجل التدقيق';

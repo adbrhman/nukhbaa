@@ -253,6 +253,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String fixtureVsTitle(String home, String away) {
+    return '$home vs $away';
+  }
+
+  @override
   String get predictionTitle => 'Predict';
 
   @override
@@ -275,6 +280,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get submitPredictionButton => 'Submit prediction';
+
+  @override
+  String get predictionDoubleLabel => 'Double';
+
+  @override
+  String get predictionFixtureLockedLabel => 'Started';
+
+  @override
+  String get predictionDoubleHint =>
+      'Select exactly one open fixture as your double before submitting.';
+
+  @override
+  String get predictionIncompleteHint =>
+      'Enter a score for every open fixture before submitting.';
+
+  @override
+  String get predictionNoOpenFixturesMessage =>
+      'Every fixture in this round has already kicked off. There is nothing left to predict.';
 
   @override
   String get adminAuditLogTab => 'Audit Log';

@@ -284,9 +284,34 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
   final Map<String, TextEditingController> _home = {};
   final Map<String, TextEditingController> _away = {};
 
+  /// The instant used to decide which fixtures have already kicked off,
+  /// captured once when the editor mounts so a fixture never flips from open
+  /// to locked mid-edit while the user is filling the form (Session decision
+  /// 2026-08-07: per-fixture kickoff lock, independent of the round's admin
+  /// lock).
+  final DateTime _now = DateTime.now().toUtc();
+
+  /// The fixture id currently marked as the caller's double among the OPEN
+  /// fixtures, or `null` if none is selected yet.
+  String? _doubleFixtureId;
+
+  /// The fixture id of an ALREADY-LOCKED fixture that carries the double,
+  /// carried over from a prior submission — once a fixture locks, its double
+  /// (if any) can never move to an open fixture (the merged forecast would
+  /// then carry two).
+  String? _lockedDoubleFixtureId;
+
   /// Whether the pre-fill from the stored prediction has already been applied
   /// (so a rebuild does not clobber the user's in-progress edits).
   bool _prefilled = false;
+
+  /// Whether [fixture] has already kicked off as of [_now]. A fixture with no
+  /// registered schedule is treated as NOT locked (mirrors the server rule).
+  bool _isLocked(RoundFixtureCardDto fixture) {
+    final kickoff = fixture.kickoffAt;
+    if (kickoff == null) return false;
+    return !DateTime.parse(kickoff).toUtc().isAfter(_now);
+  }
 
   @override
   void initState() {
@@ -308,22 +333,53 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     super.dispose();
   }
 
-  /// Applies the stored prediction's scorelines to the inputs exactly once.
+  /// Applies the stored prediction's scorelines to the inputs exactly once,
+  /// and restores which fixture (if any) was marked as the double — an
+  /// already-locked double is tracked separately since it can no longer move.
   void _applyPrefill(PredictionDto prediction) {
     if (_prefilled) return;
+    final locked = {
+      for (final fixture in widget.fixtures)
+        if (_isLocked(fixture)) fixture.fixtureId,
+    };
     for (final score in prediction.fixtureScores) {
       _home[score.fixtureId]?.text = '${score.homeGoals}';
       _away[score.fixtureId]?.text = '${score.awayGoals}';
+      if (score.isDouble) {
+        if (locked.contains(score.fixtureId)) {
+          _lockedDoubleFixtureId = score.fixtureId;
+        } else {
+          _doubleFixtureId = score.fixtureId;
+        }
+      }
     }
     _prefilled = true;
   }
 
-  /// Reads the current inputs into the wire command shape, in fixtures' display
-  /// order. Returns `null` if any field is blank or not a non-negative integer
-  /// (the submit button stays disabled until every field is a valid goal count).
+  /// Moves the double to [fixtureId] (single-select — any previous open
+  /// selection is cleared automatically). A no-op while a locked fixture
+  /// already carries the double.
+  void _selectDouble(String fixtureId) {
+    if (_lockedDoubleFixtureId != null) return;
+    setState(() => _doubleFixtureId = fixtureId);
+  }
+
+  /// Reads the current inputs into the wire command shape, in fixtures'
+  /// display order, OPEN fixtures only — a locked fixture's stored score is
+  /// carried over automatically by the server (Session decision 2026-08-07)
+  /// and is never resubmitted. Returns `null` while any open fixture is
+  /// missing a valid non-negative goal count, no open fixture is left to
+  /// predict, or no double is selected and none is already locked in — the
+  /// submit button stays disabled in every one of those cases.
   List<FixtureScoreDto>? _collectScores() {
+    final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
+    if (openFixtures.isEmpty) return null;
+    if (_lockedDoubleFixtureId == null && _doubleFixtureId == null) {
+      return null;
+    }
+
     final scores = <FixtureScoreDto>[];
-    for (final fixture in widget.fixtures) {
+    for (final fixture in openFixtures) {
       final home = int.tryParse(_home[fixture.fixtureId]!.text.trim());
       final away = int.tryParse(_away[fixture.fixtureId]!.text.trim());
       if (home == null || away == null || home < 0 || away < 0) {
@@ -334,6 +390,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
           fixtureId: fixture.fixtureId,
           homeGoals: home,
           awayGoals: away,
+          isDouble: fixture.fixtureId == _doubleFixtureId,
         ),
       );
     }
@@ -354,10 +411,15 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
       }
     });
 
-    // Collect the current inputs once per build: `null` when any field is not
-    // yet a valid goal count (submit stays disabled), otherwise the exact wire
-    // command the controller submits. Computing it once avoids re-parsing the
-    // same fields twice on every rebuild.
+    final openFixtures = widget.fixtures
+        .where((f) => !_isLocked(f))
+        .toList();
+
+    // Collect the current inputs once per build: `null` when the form is not
+    // yet submittable (an open fixture missing a score, no double selected, or
+    // nothing open left to predict), otherwise the exact wire command the
+    // controller submits. Computing it once avoids re-parsing the same fields
+    // twice on every rebuild.
     final List<FixtureScoreDto>? scores = _collectScores();
 
     return ListView(
@@ -392,16 +454,47 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
               isError: true,
             ),
           ),
+        if (openFixtures.isEmpty)
+          Padding(
+            key: const Key('prediction.noOpenFixtures'),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _Banner(
+              icon: Icons.lock_clock_outlined,
+              text: l10n.predictionNoOpenFixturesMessage,
+            ),
+          ),
         for (final fixture in widget.fixtures)
           _FixtureScoreInput(
             key: Key('prediction.fixture.${fixture.fixtureId}'),
             fixture: fixture,
+            locked: _isLocked(fixture),
             homeController: _home[fixture.fixtureId]!,
             awayController: _away[fixture.fixtureId]!,
             enabled: !inFlight,
+            isDouble:
+                fixture.fixtureId == _doubleFixtureId ||
+                fixture.fixtureId == _lockedDoubleFixtureId,
+            doubleSelectable:
+                !_isLocked(fixture) &&
+                _lockedDoubleFixtureId == null &&
+                !inFlight,
+            onDoubleSelected: () => _selectDouble(fixture.fixtureId),
             onChanged: () => setState(() {}),
           ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
+        if (scores == null && openFixtures.isNotEmpty)
+          Padding(
+            key: const Key('prediction.incompleteHint'),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              _lockedDoubleFixtureId == null && _doubleFixtureId == null
+                  ? l10n.predictionDoubleHint
+                  : l10n.predictionIncompleteHint,
+              key: const Key('prediction.incompleteHint.text'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        const SizedBox(height: 16),
         _SubmitButton(
           inFlight: inFlight,
           onSubmit: scores == null
@@ -415,43 +508,84 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
   }
 }
 
-/// One fixture's home/away goal inputs.
+/// One fixture's home/away goal inputs, plus (for an open fixture) the
+/// double-selection star.
 class _FixtureScoreInput extends StatelessWidget {
   const _FixtureScoreInput({
     required this.fixture,
+    required this.locked,
     required this.homeController,
     required this.awayController,
     required this.enabled,
+    required this.isDouble,
+    required this.doubleSelectable,
+    required this.onDoubleSelected,
     required this.onChanged,
     super.key,
   });
 
   final RoundFixtureCardDto fixture;
+
+  /// Whether this fixture has already kicked off — its score inputs render
+  /// disabled and it never gets a tappable double star.
+  final bool locked;
   final TextEditingController homeController;
   final TextEditingController awayController;
   final bool enabled;
+
+  /// Whether this fixture is currently the caller's double (open selection
+  /// or an already-locked one carried over).
+  final bool isDouble;
+
+  /// Whether the double star is tappable for this fixture (open, not locked,
+  /// no submit in flight, and no already-locked fixture holds the double).
+  final bool doubleSelectable;
+  final VoidCallback onDoubleSelected;
   final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final home = fixture.homeTeam;
+    final away = fixture.awayTeam;
+    final title = home != null && away != null
+        ? l10n.fixtureVsTitle(home, away)
+        : l10n.fixtureItemTitle(fixture.fixtureId);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: <Widget>[
-          CircleAvatar(child: Text('${fixture.displayOrder + 1}')),
-          const SizedBox(width: 12),
+          IconButton(
+            key: Key('prediction.double.${fixture.fixtureId}'),
+            icon: Icon(isDouble ? Icons.star : Icons.star_border),
+            tooltip: l10n.predictionDoubleLabel,
+            color: isDouble
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outline,
+            onPressed: doubleSelectable ? onDoubleSelected : null,
+          ),
           Expanded(
-            child: Text(
-              l10n.fixtureItemTitle(fixture.fixtureId),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, overflow: TextOverflow.ellipsis),
+                if (locked)
+                  Text(
+                    l10n.predictionFixtureLockedLabel,
+                    key: Key('prediction.locked.${fixture.fixtureId}'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
           _GoalField(
             key: Key('prediction.home.${fixture.fixtureId}'),
             controller: homeController,
-            enabled: enabled,
+            enabled: enabled && !locked,
             onChanged: onChanged,
           ),
           const Padding(
@@ -461,7 +595,7 @@ class _FixtureScoreInput extends StatelessWidget {
           _GoalField(
             key: Key('prediction.away.${fixture.fixtureId}'),
             controller: awayController,
-            enabled: enabled,
+            enabled: enabled && !locked,
             onChanged: onChanged,
           ),
         ],

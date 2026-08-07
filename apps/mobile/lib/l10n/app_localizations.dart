@@ -486,6 +486,12 @@ abstract class AppLocalizations {
   /// **'Fixture {fixtureId}'**
   String fixtureItemTitle(String fixtureId);
 
+  /// Title of a fixture list item when its schedule identity is known.
+  ///
+  /// In en, this message translates to:
+  /// **'{home} vs {away}'**
+  String fixtureVsTitle(String home, String away);
+
   /// App bar title on the prediction submit/amend screen.
   ///
   /// In en, this message translates to:
@@ -527,6 +533,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submit prediction'**
   String get submitPredictionButton;
+
+  /// Tooltip/semantic label on the per-fixture double-selection star.
+  ///
+  /// In en, this message translates to:
+  /// **'Double'**
+  String get predictionDoubleLabel;
+
+  /// Small label under a fixture that has already kicked off and can no longer be edited.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get predictionFixtureLockedLabel;
+
+  /// Shown when every open fixture has a score but no double is selected yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exactly one open fixture as your double before submitting.'**
+  String get predictionDoubleHint;
+
+  /// Shown while at least one open fixture is missing a valid score.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a score for every open fixture before submitting.'**
+  String get predictionIncompleteHint;
+
+  /// Shown instead of the form when every fixture in the round has already locked.
+  ///
+  /// In en, this message translates to:
+  /// **'Every fixture in this round has already kicked off. There is nothing left to predict.'**
+  String get predictionNoOpenFixturesMessage;
 
   /// No description provided for @adminAuditLogTab.
   ///

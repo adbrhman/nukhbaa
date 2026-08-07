@@ -139,7 +139,8 @@ void main() {
         await tester.pump();
         expect(submitButton().onPressed, isNull);
 
-        // Complete the second fixture -> now enabled.
+        // Complete the second fixture -> still disabled (no double selected
+        // yet — exactly one open fixture must be marked as the double).
         await tester.enterText(
           find.byKey(const Key('prediction.home.f-b')),
           '0',
@@ -149,7 +150,127 @@ void main() {
           '0',
         );
         await tester.pump();
+        expect(submitButton().onPressed, isNull);
+
+        // Mark f-a as the double -> now enabled.
+        await tester.tap(find.byKey(const Key('prediction.double.f-a')));
+        await tester.pump();
         expect(submitButton().onPressed, isNotNull);
+      },
+    );
+  });
+
+  group('PredictionScreen — per-fixture lock + double selection', () {
+    testWidgets(
+      'a fixture that has already kicked off is disabled and shows no '
+      'double star; the double can only move between open fixtures',
+      (tester) async {
+        final harness = buildPredictionHarness((request) async {
+          final path = request.url.path;
+          if (request.method == 'GET' && path == '/rounds/r-1') {
+            return okJsonObject(openRound.toJson());
+          }
+          if (request.method == 'GET' && path == '/rounds/r-1/fixtures') {
+            return okJsonList([fixtureA.toJson(), fixtureLocked.toJson()]);
+          }
+          if (request.method == 'GET' &&
+              path == '/rounds/r-1/predictions') {
+            return errorEnvelope(
+              404,
+              'prediction.not_found',
+              'You have not predicted this round yet.',
+            );
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
+
+        await tester.pumpWidget(
+          _host(harness, const PredictionScreen(roundId: 'r-1')),
+        );
+        await tester.pumpAndSettle();
+
+        // The locked fixture shows its label and disabled inputs.
+        expect(
+          find.byKey(const Key('prediction.locked.f-locked')),
+          findsOneWidget,
+        );
+        final lockedHome = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(const Key('prediction.home.f-locked')),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(lockedHome.enabled, isFalse);
+
+        // The locked fixture's double star is not tappable.
+        final lockedStar = tester.widget<IconButton>(
+          find.byKey(const Key('prediction.double.f-locked')),
+        );
+        expect(lockedStar.onPressed, isNull);
+
+        // Fill the one open fixture and mark it as the double -> enabled.
+        await tester.enterText(
+          find.byKey(const Key('prediction.home.f-a')),
+          '2',
+        );
+        await tester.enterText(
+          find.byKey(const Key('prediction.away.f-a')),
+          '1',
+        );
+        await tester.pump();
+        FilledButton submitButton() => tester.widget<FilledButton>(
+          find.byKey(const Key('prediction.submit')),
+        );
+        expect(submitButton().onPressed, isNull);
+        expect(
+          find.byKey(const Key('prediction.incompleteHint.text')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('prediction.double.f-a')));
+        await tester.pump();
+        expect(submitButton().onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'a round whose fixtures have all already kicked off shows the '
+      '"nothing left to predict" message and no submit affordance is usable',
+      (tester) async {
+        final harness = buildPredictionHarness((request) async {
+          final path = request.url.path;
+          if (request.method == 'GET' && path == '/rounds/r-1') {
+            return okJsonObject(openRound.toJson());
+          }
+          if (request.method == 'GET' && path == '/rounds/r-1/fixtures') {
+            return okJsonList([fixtureLocked.toJson()]);
+          }
+          if (request.method == 'GET' &&
+              path == '/rounds/r-1/predictions') {
+            return errorEnvelope(
+              404,
+              'prediction.not_found',
+              'You have not predicted this round yet.',
+            );
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
+
+        await tester.pumpWidget(
+          _host(harness, const PredictionScreen(roundId: 'r-1')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('prediction.noOpenFixtures')),
+          findsOneWidget,
+        );
+        final button = tester.widget<FilledButton>(
+          find.byKey(const Key('prediction.submit')),
+        );
+        expect(button.onPressed, isNull);
       },
     );
   });
@@ -203,11 +324,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Fill a valid forecast and tap submit.
+      // Fill a valid forecast, mark f-a as the double, and tap submit.
       await tester.enterText(find.byKey(const Key('prediction.home.f-a')), '2');
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('prediction.submit')));
@@ -292,6 +414,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('prediction.submit')));
@@ -330,6 +453,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('prediction.submit')));
