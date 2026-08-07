@@ -21,6 +21,7 @@ export 'src/competition/participant_id.dart';
 export 'src/competition/participant_status.dart';
 export 'src/competition/round.dart';
 export 'src/competition/round_fixture.dart';
+export 'src/competition/round_fixture_card.dart';
 export 'src/competition/round_id.dart';
 export 'src/competition/round_status.dart';
 export 'src/competition/ruleset_snapshot.dart';

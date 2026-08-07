@@ -340,3 +340,92 @@ final class RoundFixtureDto {
   int get hashCode =>
       Object.hash(roundId, fixtureId, displayOrder, schemaVersion);
 }
+
+/// A round-fixture link enriched with its fixture-schedule identity (team
+/// names + kickoff), for the client's prediction-form render (Session
+/// decision 2026-08-07: `GET /rounds/{id}/fixtures` widened instead of a new
+/// endpoint). [homeTeam]/[awayTeam]/[kickoffAt] are nullable — a linked
+/// fixture with no registered schedule yet is legitimate (Axiom 3).
+final class RoundFixtureCardDto {
+  /// Creates a round-fixture card DTO.
+  const RoundFixtureCardDto({
+    required this.roundId,
+    required this.fixtureId,
+    required this.displayOrder,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.kickoffAt,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory RoundFixtureCardDto.fromJson(Map<String, Object?> json) {
+    return RoundFixtureCardDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      roundId: json['round_id']! as String,
+      fixtureId: json['fixture_id']! as String,
+      displayOrder: json['display_order']! as int,
+      homeTeam: json['home_team'] as String?,
+      awayTeam: json['away_team'] as String?,
+      kickoffAt: json['kickoff_at'] as String?,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning round id (UUID string).
+  final String roundId;
+
+  /// The referenced fixture id (UUID string).
+  final String fixtureId;
+
+  /// The 0-based presentation order within the round.
+  final int displayOrder;
+
+  /// The home side's team name, or `null` if not yet scheduled.
+  final String? homeTeam;
+
+  /// The away side's team name, or `null` if not yet scheduled.
+  final String? awayTeam;
+
+  /// The kickoff time as an ISO 8601 UTC timestamp string, or `null` if not
+  /// yet scheduled.
+  final String? kickoffAt;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'round_id': roundId,
+    'fixture_id': fixtureId,
+    'display_order': displayOrder,
+    'home_team': homeTeam,
+    'away_team': awayTeam,
+    'kickoff_at': kickoffAt,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundFixtureCardDto &&
+      other.roundId == roundId &&
+      other.fixtureId == fixtureId &&
+      other.displayOrder == displayOrder &&
+      other.homeTeam == homeTeam &&
+      other.awayTeam == awayTeam &&
+      other.kickoffAt == kickoffAt &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    roundId,
+    fixtureId,
+    displayOrder,
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+    schemaVersion,
+  );
+}

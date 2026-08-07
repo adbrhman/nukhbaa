@@ -16,13 +16,12 @@ abstract final class AppMotion {
 
   static const Curve standardCurve = Curves.easeInOut;
   // ── Named durations for specific interaction types (additive aliases —
-    // prefer these where the interaction matches, otherwise use the
-      // generic scale above). Values follow the design addendum §5.5.
-        static const Duration micro = Duration(milliseconds: 100);
-          static const Duration bottomSheetIn = Duration(milliseconds: 320);
-            static const Duration bottomSheetOut = Duration(milliseconds: 220);
-              static const Duration dialog = Duration(milliseconds: 200);
-                static const Duration snackbarMotion = Duration(milliseconds: 250);
-                  static const Duration tabSwitch = Duration(milliseconds: 150);
+  // prefer these where the interaction matches, otherwise use the
+  // generic scale above). Values follow the design addendum §5.5.
+  static const Duration micro = Duration(milliseconds: 100);
+  static const Duration bottomSheetIn = Duration(milliseconds: 320);
+  static const Duration bottomSheetOut = Duration(milliseconds: 220);
+  static const Duration dialog = Duration(milliseconds: 200);
+  static const Duration snackbarMotion = Duration(milliseconds: 250);
+  static const Duration tabSwitch = Duration(milliseconds: 150);
 }
-

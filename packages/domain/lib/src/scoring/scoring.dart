@@ -90,10 +90,13 @@ abstract final class Scoring {
     // `missed`, never rewarded. Sorted by fixture id: `results` order is not
     // guaranteed by its repository port, so this keeps the breakdown
     // deterministic across runs.
-    final missed = results
-        .where((result) => !coveredFixtureIds.contains(result.fixture.value))
-        .toList()
-      ..sort((a, b) => a.fixture.value.compareTo(b.fixture.value));
+    final missed =
+        results
+            .where(
+              (result) => !coveredFixtureIds.contains(result.fixture.value),
+            )
+            .toList()
+          ..sort((a, b) => a.fixture.value.compareTo(b.fixture.value));
     for (final result in missed) {
       graded.add(
         FixtureScoreResult(

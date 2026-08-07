@@ -65,8 +65,7 @@ final class FixtureScoreDto {
       other.isDouble == isDouble;
 
   @override
-  int get hashCode =>
-      Object.hash(fixtureId, homeGoals, awayGoals, isDouble);
+  int get hashCode => Object.hash(fixtureId, homeGoals, awayGoals, isDouble);
 }
 
 /// The request body of `POST /rounds/{id}/predictions` — a `SubmitPrediction`

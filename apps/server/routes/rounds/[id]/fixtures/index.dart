@@ -11,11 +11,13 @@ import 'package:shared/shared.dart';
 
 /// `/rounds/{id}/fixtures` collection endpoint.
 ///
-/// * `GET` — list the fixtures linked to the round, in matchday order (API ADR
-///   §2: query intent `ListRoundFixtures`; added under BLOCKER FA-1 for the
-///   client's Prediction-submit scope — read-only, no side effect). A round with
-///   no linked fixtures, or one that does not exist, yields a legitimate empty
-///   JSON array (no existence oracle — the use-case never 404s a fixture list).
+/// * `GET` — list the fixtures linked to the round, in matchday order, each
+///   enriched with its schedule identity (team names + kickoff) for the
+///   prediction-form render (query intent `BrowseRoundFixtures`; Session
+///   decision 2026-08-07 widened this read instead of a new endpoint —
+///   read-only, no side effect). A round with no linked fixtures, or one that
+///   does not exist, yields a legitimate empty JSON array (no existence
+///   oracle — the use-case never 404s a fixture list).
 /// * `POST` — link a fixture to the round (command intent `LinkFixtureToRound`;
 ///   Axiom 3: the only place Competition names a fixture). Admin-only (use-case
 ///   layer).
@@ -30,21 +32,23 @@ Future<Response> onRequest(RequestContext context, String id) async {
   };
 }
 
-/// GET /rounds/{id}/fixtures — the read-only fixtures browse (BLOCKER FA-1).
+/// GET /rounds/{id}/fixtures — the fixtures browse, enriched with each
+/// fixture's schedule identity (team names + kickoff) for the prediction-form
+/// render (Session decision 2026-08-07: widened instead of a new endpoint).
 Future<Response> _list(RequestContext context, String id) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
-  final result = await root.listRoundFixtures(
+  final result = await root.browseRoundFixtures(
     principal: principal,
     roundId: id,
   );
 
   return switch (result) {
-    Ok<List<RoundFixture>>(:final value) => Response.json(
-      body: [for (final link in value) roundFixtureToDto(link).toJson()],
+    Ok<List<RoundFixtureCard>>(:final value) => Response.json(
+      body: [for (final card in value) roundFixtureCardToDto(card).toJson()],
     ),
-    Err<List<RoundFixture>>(:final error) => errorResponse(error),
+    Err<List<RoundFixtureCard>>(:final error) => errorResponse(error),
   };
 }
 

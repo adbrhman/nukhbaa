@@ -443,7 +443,6 @@ final class InMemoryFixtureScheduleRepository
 /// (Next-Task decision 2026-07-11, option (a), applied to schedule). It is NOT
 /// a substitute for the Postgres adapter's own tests (infrastructure package).
 
-
 /// A minimal in-memory [ScoreRepository] for the scoring route tests.
 ///
 /// It mirrors the storage contract the use-cases branch on: `saveRoundScores`

@@ -19,7 +19,7 @@ import 'competition_route_harness.dart';
 /// `GET /rounds/{id}/fixtures` (added beside the untouched `POST` command).
 ///
 /// Tested through the real wiring (`context.read<Future<CompositionRoot>>()` →
-/// `root.getRound()` / `root.listRoundFixtures()`) over the in-memory
+/// `root.getRound()` / `root.browseRoundFixtures()`) over the in-memory
 /// [InMemoryCompetitionRepository], mirroring `scoring_routes_test.dart` /
 /// `round_predictions_test.dart` — edge → use-case → domain → port.
 ///
@@ -150,8 +150,11 @@ void main() {
     CompositionRoot rootWith() {
       repo = InMemoryCompetitionRepository();
       return CompositionRoot.forTesting(
-        listRoundFixtures: ListRoundFixtures(repository: repo),
-        // The POST branch is exercised elsewhere; wiring only the read here
+        browseRoundFixtures: BrowseRoundFixtures(
+          competitionRepository: repo,
+          fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
+        ),
+        // The POST branch is exercised elsewhere; wيring only the read here
         // keeps this group focused on the new GET branch.
       );
     }

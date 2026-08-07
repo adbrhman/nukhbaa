@@ -33,7 +33,7 @@ final class CompositionRoot {
     required this.listCompetitions,
     required this.listCompetitionSeasons,
     required this.listSeasonRounds,
-    required this.listRoundFixtures,
+    required this.browseRoundFixtures,
     required this.submitPrediction,
     required this.getMyPrediction,
     required this.listRoundPredictions,
@@ -112,7 +112,7 @@ final class CompositionRoot {
     ListCompetitions? listCompetitions,
     ListCompetitionSeasons? listCompetitionSeasons,
     ListSeasonRounds? listSeasonRounds,
-    ListRoundFixtures? listRoundFixtures,
+    BrowseRoundFixtures? browseRoundFixtures,
     SubmitPrediction? submitPrediction,
     GetMyPrediction? getMyPrediction,
     ListRoundPredictions? listRoundPredictions,
@@ -163,7 +163,8 @@ final class CompositionRoot {
        listCompetitionSeasons =
            listCompetitionSeasons ?? _absentListCompetitionSeasons(),
        listSeasonRounds = listSeasonRounds ?? _absentListSeasonRounds(),
-       listRoundFixtures = listRoundFixtures ?? _absentListRoundFixtures(),
+       browseRoundFixtures =
+           browseRoundFixtures ?? _absentBrowseRoundFixtures(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        getMyPrediction = getMyPrediction ?? _absentGetMyPrediction(),
        listRoundPredictions =
@@ -290,8 +291,11 @@ final class CompositionRoot {
   static ListSeasonRounds _absentListSeasonRounds() =>
       ListSeasonRounds(repository: _unwiredCompetitionRepository);
 
-  static ListRoundFixtures _absentListRoundFixtures() =>
-      ListRoundFixtures(repository: _unwiredCompetitionRepository);
+  static BrowseRoundFixtures _absentBrowseRoundFixtures() =>
+      BrowseRoundFixtures(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+      );
 
   /// A single throwing repository backing every "absent" prediction use-case,
   /// so a test that reaches an unwired prediction slice fails loudly instead of
@@ -606,11 +610,13 @@ final class CompositionRoot {
   /// browse navigation step competition → season → round — BLOCKER FA-1).
   final ListSeasonRounds listSeasonRounds;
 
-  /// Lists a round's fixtures in matchday order (any authenticated user; the
-  /// set a client renders to build the prediction form — BLOCKER FA-1). This is
+  /// Lists a round's fixtures in matchday order, each enriched with its
+  /// schedule identity (team names + kickoff), for the prediction-form
+  /// render (any authenticated user; Session decision 2026-08-07 widened
+  /// the former `ListRoundFixtures` read instead of a new endpoint). This is
   /// the Competition-context browse read, distinct from the Prediction phase's
   /// internal `PredictionRepository.listRoundFixtures`.
-  final ListRoundFixtures listRoundFixtures;
+  final BrowseRoundFixtures browseRoundFixtures;
 
   /// Submits (or idempotently amends) the caller's prediction for a round.
   final SubmitPrediction submitPrediction;
@@ -940,7 +946,10 @@ final class CompositionRoot {
         repository: competitionRepository,
       ),
       listSeasonRounds: ListSeasonRounds(repository: competitionRepository),
-      listRoundFixtures: ListRoundFixtures(repository: competitionRepository),
+      browseRoundFixtures: BrowseRoundFixtures(
+        competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+      ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,

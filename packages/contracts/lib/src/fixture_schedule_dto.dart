@@ -149,6 +149,5 @@ final class FixtureScheduleRequestDto {
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(homeTeam, awayTeam, kickoffAt, schemaVersion);
+  int get hashCode => Object.hash(homeTeam, awayTeam, kickoffAt, schemaVersion);
 }

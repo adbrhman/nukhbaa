@@ -68,3 +68,16 @@ RoundFixtureDto roundFixtureToDto(RoundFixture link) {
     displayOrder: link.displayOrder,
   );
 }
+
+/// Projects a [RoundFixtureCard] onto its wire shape [RoundFixtureCardDto]
+/// (`GET /rounds/{id}/fixtures`, Session decision 2026-08-07).
+RoundFixtureCardDto roundFixtureCardToDto(RoundFixtureCard card) {
+  return RoundFixtureCardDto(
+    roundId: card.roundId.value,
+    fixtureId: card.fixtureId.value,
+    displayOrder: card.displayOrder,
+    homeTeam: card.homeTeam,
+    awayTeam: card.awayTeam,
+    kickoffAt: card.kickoffAt?.toIso8601String(),
+  );
+}

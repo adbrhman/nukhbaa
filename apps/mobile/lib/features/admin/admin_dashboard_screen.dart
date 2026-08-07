@@ -294,7 +294,6 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
   }
 }
 
-
 class _FixtureScheduleTab extends ConsumerStatefulWidget {
   const _FixtureScheduleTab();
 

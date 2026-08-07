@@ -1,0 +1,682 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /workspaces/nukhbaa
+
+# حذف الملفات القديمة المستبدلة
+rm -f packages/application/lib/src/competition/list_round_fixtures.dart
+rm -f packages/application/test/competition/list_round_fixtures_test.dart
+
+# إنشاء packages/domain/lib/src/competition/round_fixture_card.dart
+cat > packages/domain/lib/src/competition/round_fixture_card.dart << 'DARTEOF'
+import 'package:domain/src/competition/fixture_ref.dart';
+import 'package:domain/src/competition/round_id.dart';
+import 'package:shared/shared.dart';
+
+/// A [RoundFixture] link enriched with its fixture-schedule identity (team
+/// names + kickoff), for the client's prediction-form browse read (Session
+/// decision 2026-08-07: `BrowseRoundFixtures` widens the existing
+/// `GET /rounds/{id}/fixtures` read instead of adding a new endpoint).
+///
+/// [homeTeam]/[awayTeam]/[kickoffAt] are nullable: the round-fixture link
+/// (Axiom 3) never verifies a schedule exists for the fixture it names, so a
+/// linked fixture with no registered schedule yet is a legitimate state, not
+/// an error.
+final class RoundFixtureCard {
+  /// Creates a round-fixture card projection.
+  const RoundFixtureCard({
+    required this.roundId,
+    required this.fixtureId,
+    required this.displayOrder,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.kickoffAt,
+  });
+
+  /// The owning round.
+  final RoundId roundId;
+
+  /// The referenced fixture (owned by Football Data; referenced by id only).
+  final FixtureRef fixtureId;
+
+  /// The 0-based presentation order of this fixture within its round.
+  final int displayOrder;
+
+  /// The home side's team name, or `null` if no schedule is registered yet.
+  final String? homeTeam;
+
+  /// The away side's team name, or `null` if no schedule is registered yet.
+  final String? awayTeam;
+
+  /// The kickoff time, or `null` if no schedule is registered yet.
+  final DateTime? kickoffAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundFixtureCard &&
+      other.roundId == roundId &&
+      other.fixtureId == fixtureId &&
+      other.displayOrder == displayOrder &&
+      other.homeTeam == homeTeam &&
+      other.awayTeam == awayTeam &&
+      other.kickoffAt == kickoffAt;
+
+  @override
+  int get hashCode => Object.hash(
+    roundId,
+    fixtureId,
+    displayOrder,
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+  );
+
+  @override
+  String toString() =>
+      'RoundFixtureCard(round: ${roundId.value}, fixture: '
+      '${fixtureId.value}, order: $displayOrder, home: $homeTeam, '
+      'away: $awayTeam, kickoff: $kickoffAt)';
+}
+DARTEOF
+
+# إنشاء packages/application/lib/src/competition/browse_round_fixtures.dart
+cat > packages/application/lib/src/competition/browse_round_fixtures.dart << 'DARTEOF'
+import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Query use-case: a round's fixtures, in matchday order, each enriched with
+/// its fixture-schedule identity (team names + kickoff).
+///
+/// Session decision 2026-08-07: widens the former `ListRoundFixtures` read
+/// instead of adding a new endpoint. Batches the schedule lookup via
+/// [FixtureScheduleRepository.findByFixtures] — one extra query for the whole
+/// round, never one per fixture (no N+1). [RoundFixtureCard.homeTeam]/
+/// [awayTeam]/[kickoffAt] are `null` when a linked fixture has no registered
+/// schedule yet (Axiom 3: the link never verifies one exists).
+///
+/// This is the client-facing Competition-context browse read, gated and
+/// shaped for the prediction-form render — distinct from the Prediction
+/// phase's internal `PredictionRepository.listRoundFixtures`, which stays
+/// frozen and untouched.
+///
+/// The caller must be an authenticated user (`PlatformRole.user`, matching
+/// every other client-facing read). A round with no linked fixtures — or one
+/// that does not exist — yields a legitimate empty list (no existence
+/// oracle), never an error.
+///
+/// Never throws; returns a typed [Result].
+final class BrowseRoundFixtures {
+  /// Creates the use-case over its repositories.
+  const BrowseRoundFixtures({
+    required CompetitionRepository competitionRepository,
+    required FixtureScheduleRepository fixtureScheduleRepository,
+  }) : _competition = competitionRepository,
+       _schedules = fixtureScheduleRepository;
+
+  final CompetitionRepository _competition;
+  final FixtureScheduleRepository _schedules;
+
+  /// Lists round [roundId]'s fixtures, visible to [principal], each enriched
+  /// with its schedule identity when one is registered.
+  Future<Result<List<RoundFixtureCard>>> call({
+    required AuthenticatedUser principal,
+    required String roundId,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final idResult = RoundId.tryParse(roundId);
+    if (idResult is Err<RoundId>) {
+      return Result.err(idResult.error);
+    }
+
+    final linksResult = await _competition.listRoundFixtures(
+      (idResult as Ok<RoundId>).value,
+    );
+    if (linksResult is Err<List<RoundFixture>>) {
+      return Result.err(linksResult.error);
+    }
+    final links = (linksResult as Ok<List<RoundFixture>>).value;
+    if (links.isEmpty) {
+      return const Result.ok([]);
+    }
+
+    final schedulesResult = await _schedules.findByFixtures([
+      for (final link in links) link.fixture,
+    ]);
+    if (schedulesResult is Err<List<FixtureSchedule>>) {
+      return Result.err(schedulesResult.error);
+    }
+    final byFixture = {
+      for (final schedule
+          in (schedulesResult as Ok<List<FixtureSchedule>>).value)
+        schedule.fixture.value: schedule,
+    };
+
+    return Result.ok([
+      for (final link in links)
+        RoundFixtureCard(
+          roundId: link.roundId,
+          fixtureId: link.fixture,
+          displayOrder: link.displayOrder,
+          homeTeam: byFixture[link.fixture.value]?.homeTeam,
+          awayTeam: byFixture[link.fixture.value]?.awayTeam,
+          kickoffAt: byFixture[link.fixture.value]?.kickoffAt,
+        ),
+    ]);
+  }
+}
+DARTEOF
+
+# إنشاء packages/application/test/competition/browse_round_fixtures_test.dart
+cat > packages/application/test/competition/browse_round_fixtures_test.dart << 'DARTEOF'
+import 'package:application/application.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+import 'package:test/test.dart';
+
+import '../prediction/fake_fixture_schedule_repository.dart';
+import 'fake_competition_repository.dart';
+import 'fakes.dart';
+
+const _user = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+const _round = '33333333-3333-3333-3333-333333333333';
+const _otherRound = '44444444-4444-4444-4444-444444444444';
+
+const _fa = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const _fb = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const _fc = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+
+RoundFixture _link({
+  required String roundId,
+  required String fixtureId,
+  required int order,
+}) => RoundFixture.fromStored(
+  roundId: RoundId(roundId),
+  fixture: FixtureRef(fixtureId),
+  displayOrder: order,
+);
+
+void main() {
+  late FakeCompetitionRepository competitionRepo;
+  late FakeFixtureScheduleRepository scheduleRepo;
+  late BrowseRoundFixtures useCase;
+
+  setUp(() {
+    competitionRepo = FakeCompetitionRepository();
+    scheduleRepo = FakeFixtureScheduleRepository();
+    useCase = BrowseRoundFixtures(
+      competitionRepository: competitionRepo,
+      fixtureScheduleRepository: scheduleRepo,
+    );
+  });
+
+  Future<void> seed(RoundFixture link) async {
+    final r = await competitionRepo.saveRoundFixture(link);
+    expect(r.isOk, isTrue);
+  }
+
+  test(
+    'an authenticated user browses a round\'s fixtures in display order',
+    () async {
+      // Saved out of order to prove the read imposes display_order ordering.
+      await seed(_link(roundId: _round, fixtureId: _fb, order: 1));
+      await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+      await seed(_link(roundId: _round, fixtureId: _fc, order: 2));
+
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      final list = (r as Ok<List<RoundFixtureCard>>).value;
+      expect(list.map((x) => x.displayOrder).toList(), [0, 1, 2]);
+      expect(list.map((x) => x.fixtureId.value).toList(), [_fa, _fb, _fc]);
+    },
+  );
+
+  test('a linked fixture with a registered schedule carries its team names '
+      'and kickoff', () async {
+    await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+    final schedule =
+        (FixtureSchedule.create(
+              fixture: FixtureRef(_fa),
+              homeTeam: 'Al Hilal',
+              awayTeam: 'Al Nassr',
+              kickoffAt: DateTime.utc(2026, 8, 20, 18),
+            )
+            as Ok<FixtureSchedule>)
+        .value;
+    scheduleRepo.seed(schedule);
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+    final card = (r as Ok<List<RoundFixtureCard>>).value.single;
+    expect(card.homeTeam, 'Al Hilal');
+    expect(card.awayTeam, 'Al Nassr');
+    expect(card.kickoffAt, DateTime.utc(2026, 8, 20, 18));
+  });
+
+  test(
+    'a linked fixture with no registered schedule yet carries null fields '
+    '(Axiom 3 — the link never verifies a schedule exists)',
+    () async {
+      await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      final card = (r as Ok<List<RoundFixtureCard>>).value.single;
+      expect(card.homeTeam, isNull);
+      expect(card.awayTeam, isNull);
+      expect(card.kickoffAt, isNull);
+    },
+  );
+
+  test('only the requested round\'s fixtures are returned', () async {
+    await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+    await seed(_link(roundId: _otherRound, fixtureId: _fb, order: 0));
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+    final list = (r as Ok<List<RoundFixtureCard>>).value;
+    expect(list.map((x) => x.fixtureId.value).toList(), [_fa]);
+  });
+
+  test(
+    'an absent/empty round is a legitimate empty list, never not-found',
+    () async {
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      expect(r, isA<Ok<List<RoundFixtureCard>>>());
+      expect((r as Ok<List<RoundFixtureCard>>).value, isEmpty);
+    },
+  );
+
+  test('a malformed id is a validation error before any lookup', () async {
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: 'not-a-uuid',
+    );
+
+    expect(
+      (r as Err<List<RoundFixtureCard>>).error.kind,
+      ErrorKind.validation,
+    );
+  });
+
+  test('a transient competition-repository failure is propagated unchanged', () async {
+    competitionRepo.failNextWith(
+      const AppError.transient('db.unavailable', 'connection reset'),
+    );
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+    final err = (r as Err<List<RoundFixtureCard>>).error;
+    expect(err.kind, ErrorKind.transient);
+    expect(err.code, 'db.unavailable');
+  });
+}
+DARTEOF
+
+echo "تم إنشاء/حذف الملفات."#!/usr/bin/env bash
+set -euo pipefail
+cd /workspaces/nukhbaa
+
+# حذف الملفات القديمة المستبدلة
+rm -f packages/application/lib/src/competition/list_round_fixtures.dart
+rm -f packages/application/test/competition/list_round_fixtures_test.dart
+
+# إنشاء packages/domain/lib/src/competition/round_fixture_card.dart
+cat > packages/domain/lib/src/competition/round_fixture_card.dart << 'DARTEOF'
+import 'package:domain/src/competition/fixture_ref.dart';
+import 'package:domain/src/competition/round_id.dart';
+import 'package:shared/shared.dart';
+
+/// A [RoundFixture] link enriched with its fixture-schedule identity (team
+/// names + kickoff), for the client's prediction-form browse read (Session
+/// decision 2026-08-07: `BrowseRoundFixtures` widens the existing
+/// `GET /rounds/{id}/fixtures` read instead of adding a new endpoint).
+///
+/// [homeTeam]/[awayTeam]/[kickoffAt] are nullable: the round-fixture link
+/// (Axiom 3) never verifies a schedule exists for the fixture it names, so a
+/// linked fixture with no registered schedule yet is a legitimate state, not
+/// an error.
+final class RoundFixtureCard {
+  /// Creates a round-fixture card projection.
+  const RoundFixtureCard({
+    required this.roundId,
+    required this.fixtureId,
+    required this.displayOrder,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.kickoffAt,
+  });
+
+  /// The owning round.
+  final RoundId roundId;
+
+  /// The referenced fixture (owned by Football Data; referenced by id only).
+  final FixtureRef fixtureId;
+
+  /// The 0-based presentation order of this fixture within its round.
+  final int displayOrder;
+
+  /// The home side's team name, or `null` if no schedule is registered yet.
+  final String? homeTeam;
+
+  /// The away side's team name, or `null` if no schedule is registered yet.
+  final String? awayTeam;
+
+  /// The kickoff time, or `null` if no schedule is registered yet.
+  final DateTime? kickoffAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundFixtureCard &&
+      other.roundId == roundId &&
+      other.fixtureId == fixtureId &&
+      other.displayOrder == displayOrder &&
+      other.homeTeam == homeTeam &&
+      other.awayTeam == awayTeam &&
+      other.kickoffAt == kickoffAt;
+
+  @override
+  int get hashCode => Object.hash(
+    roundId,
+    fixtureId,
+    displayOrder,
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+  );
+
+  @override
+  String toString() =>
+      'RoundFixtureCard(round: ${roundId.value}, fixture: '
+      '${fixtureId.value}, order: $displayOrder, home: $homeTeam, '
+      'away: $awayTeam, kickoff: $kickoffAt)';
+}
+DARTEOF
+
+# إنشاء packages/application/lib/src/competition/browse_round_fixtures.dart
+cat > packages/application/lib/src/competition/browse_round_fixtures.dart << 'DARTEOF'
+import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Query use-case: a round's fixtures, in matchday order, each enriched with
+/// its fixture-schedule identity (team names + kickoff).
+///
+/// Session decision 2026-08-07: widens the former `ListRoundFixtures` read
+/// instead of adding a new endpoint. Batches the schedule lookup via
+/// [FixtureScheduleRepository.findByFixtures] — one extra query for the whole
+/// round, never one per fixture (no N+1). [RoundFixtureCard.homeTeam]/
+/// [awayTeam]/[kickoffAt] are `null` when a linked fixture has no registered
+/// schedule yet (Axiom 3: the link never verifies one exists).
+///
+/// This is the client-facing Competition-context browse read, gated and
+/// shaped for the prediction-form render — distinct from the Prediction
+/// phase's internal `PredictionRepository.listRoundFixtures`, which stays
+/// frozen and untouched.
+///
+/// The caller must be an authenticated user (`PlatformRole.user`, matching
+/// every other client-facing read). A round with no linked fixtures — or one
+/// that does not exist — yields a legitimate empty list (no existence
+/// oracle), never an error.
+///
+/// Never throws; returns a typed [Result].
+final class BrowseRoundFixtures {
+  /// Creates the use-case over its repositories.
+  const BrowseRoundFixtures({
+    required CompetitionRepository competitionRepository,
+    required FixtureScheduleRepository fixtureScheduleRepository,
+  }) : _competition = competitionRepository,
+       _schedules = fixtureScheduleRepository;
+
+  final CompetitionRepository _competition;
+  final FixtureScheduleRepository _schedules;
+
+  /// Lists round [roundId]'s fixtures, visible to [principal], each enriched
+  /// with its schedule identity when one is registered.
+  Future<Result<List<RoundFixtureCard>>> call({
+    required AuthenticatedUser principal,
+    required String roundId,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final idResult = RoundId.tryParse(roundId);
+    if (idResult is Err<RoundId>) {
+      return Result.err(idResult.error);
+    }
+
+    final linksResult = await _competition.listRoundFixtures(
+      (idResult as Ok<RoundId>).value,
+    );
+    if (linksResult is Err<List<RoundFixture>>) {
+      return Result.err(linksResult.error);
+    }
+    final links = (linksResult as Ok<List<RoundFixture>>).value;
+    if (links.isEmpty) {
+      return const Result.ok([]);
+    }
+
+    final schedulesResult = await _schedules.findByFixtures([
+      for (final link in links) link.fixture,
+    ]);
+    if (schedulesResult is Err<List<FixtureSchedule>>) {
+      return Result.err(schedulesResult.error);
+    }
+    final byFixture = {
+      for (final schedule
+          in (schedulesResult as Ok<List<FixtureSchedule>>).value)
+        schedule.fixture.value: schedule,
+    };
+
+    return Result.ok([
+      for (final link in links)
+        RoundFixtureCard(
+          roundId: link.roundId,
+          fixtureId: link.fixture,
+          displayOrder: link.displayOrder,
+          homeTeam: byFixture[link.fixture.value]?.homeTeam,
+          awayTeam: byFixture[link.fixture.value]?.awayTeam,
+          kickoffAt: byFixture[link.fixture.value]?.kickoffAt,
+        ),
+    ]);
+  }
+}
+DARTEOF
+
+# إنشاء packages/application/test/competition/browse_round_fixtures_test.dart
+cat > packages/application/test/competition/browse_round_fixtures_test.dart << 'DARTEOF'
+import 'package:application/application.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+import 'package:test/test.dart';
+
+import '../prediction/fake_fixture_schedule_repository.dart';
+import 'fake_competition_repository.dart';
+import 'fakes.dart';
+
+const _user = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+const _round = '33333333-3333-3333-3333-333333333333';
+const _otherRound = '44444444-4444-4444-4444-444444444444';
+
+const _fa = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const _fb = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const _fc = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+
+RoundFixture _link({
+  required String roundId,
+  required String fixtureId,
+  required int order,
+}) => RoundFixture.fromStored(
+  roundId: RoundId(roundId),
+  fixture: FixtureRef(fixtureId),
+  displayOrder: order,
+);
+
+void main() {
+  late FakeCompetitionRepository competitionRepo;
+  late FakeFixtureScheduleRepository scheduleRepo;
+  late BrowseRoundFixtures useCase;
+
+  setUp(() {
+    competitionRepo = FakeCompetitionRepository();
+    scheduleRepo = FakeFixtureScheduleRepository();
+    useCase = BrowseRoundFixtures(
+      competitionRepository: competitionRepo,
+      fixtureScheduleRepository: scheduleRepo,
+    );
+  });
+
+  Future<void> seed(RoundFixture link) async {
+    final r = await competitionRepo.saveRoundFixture(link);
+    expect(r.isOk, isTrue);
+  }
+
+  test(
+    'an authenticated user browses a round\'s fixtures in display order',
+    () async {
+      // Saved out of order to prove the read imposes display_order ordering.
+      await seed(_link(roundId: _round, fixtureId: _fb, order: 1));
+      await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+      await seed(_link(roundId: _round, fixtureId: _fc, order: 2));
+
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      final list = (r as Ok<List<RoundFixtureCard>>).value;
+      expect(list.map((x) => x.displayOrder).toList(), [0, 1, 2]);
+      expect(list.map((x) => x.fixtureId.value).toList(), [_fa, _fb, _fc]);
+    },
+  );
+
+  test('a linked fixture with a registered schedule carries its team names '
+      'and kickoff', () async {
+    await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+    final schedule =
+        (FixtureSchedule.create(
+              fixture: FixtureRef(_fa),
+              homeTeam: 'Al Hilal',
+              awayTeam: 'Al Nassr',
+              kickoffAt: DateTime.utc(2026, 8, 20, 18),
+            )
+            as Ok<FixtureSchedule>)
+        .value;
+    scheduleRepo.seed(schedule);
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+    final card = (r as Ok<List<RoundFixtureCard>>).value.single;
+    expect(card.homeTeam, 'Al Hilal');
+    expect(card.awayTeam, 'Al Nassr');
+    expect(card.kickoffAt, DateTime.utc(2026, 8, 20, 18));
+  });
+
+  test(
+    'a linked fixture with no registered schedule yet carries null fields '
+    '(Axiom 3 — the link never verifies a schedule exists)',
+    () async {
+      await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      final card = (r as Ok<List<RoundFixtureCard>>).value.single;
+      expect(card.homeTeam, isNull);
+      expect(card.awayTeam, isNull);
+      expect(card.kickoffAt, isNull);
+    },
+  );
+
+  test('only the requested round\'s fixtures are returned', () async {
+    await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
+    await seed(_link(roundId: _otherRound, fixtureId: _fb, order: 0));
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+    final list = (r as Ok<List<RoundFixtureCard>>).value;
+    expect(list.map((x) => x.fixtureId.value).toList(), [_fa]);
+  });
+
+  test(
+    'an absent/empty round is a legitimate empty list, never not-found',
+    () async {
+      final r = await useCase.call(
+        principal: userPrincipal(_user),
+        roundId: _round,
+      );
+
+      expect(r, isA<Ok<List<RoundFixtureCard>>>());
+      expect((r as Ok<List<RoundFixtureCard>>).value, isEmpty);
+    },
+  );
+
+  test('a malformed id is a validation error before any lookup', () async {
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: 'not-a-uuid',
+    );
+
+    expect(
+      (r as Err<List<RoundFixtureCard>>).error.kind,
+      ErrorKind.validation,
+    );
+  });
+
+  test('a transient competition-repository failure is propagated unchanged', () async {
+    competitionRepo.failNextWith(
+      const AppError.transient('db.unavailable', 'connection reset'),
+    );
+
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      roundId: _round,
+    );
+
+     final err = (r as Err<List<RoundFixtureCard>>).error;
+    expect(err.kind, ErrorKind.transient);
+    expect(err.code, 'db.unavailable');
+  });
+}
+DARTEOF
+
+echo "done"
+
+
+

@@ -129,7 +129,10 @@ void main() {
       final response = await post(
         setup.root,
         adminPrincipal(),
-        body: {'away_team': 'Al Nassr', 'kickoff_at': kickoff.toIso8601String()},
+        body: {
+          'away_team': 'Al Nassr',
+          'kickoff_at': kickoff.toIso8601String(),
+        },
       );
 
       expect(response.statusCode, HttpStatus.badRequest);
@@ -142,7 +145,10 @@ void main() {
       final response = await post(
         setup.root,
         adminPrincipal(),
-        body: {'home_team': 'Al Hilal', 'kickoff_at': kickoff.toIso8601String()},
+        body: {
+          'home_team': 'Al Hilal',
+          'kickoff_at': kickoff.toIso8601String(),
+        },
       );
 
       expect(response.statusCode, HttpStatus.badRequest);
@@ -189,53 +195,47 @@ void main() {
       },
     );
 
-    test(
-      'identical home/away team names are rejected 400 '
-      'competition.fixture_schedule_same_team (domain validation)',
-      () async {
-        final setup = rootFor();
-        final response = await post(
-          setup.root,
-          adminPrincipal(),
-          body: {
-            'home_team': 'Al Hilal',
-            'away_team': 'al hilal', // case-insensitive match, per domain rule
-            'kickoff_at': kickoff.toIso8601String(),
-          },
-        );
+    test('identical home/away team names are rejected 400 '
+        'competition.fixture_schedule_same_team (domain validation)', () async {
+      final setup = rootFor();
+      final response = await post(
+        setup.root,
+        adminPrincipal(),
+        body: {
+          'home_team': 'Al Hilal',
+          'away_team': 'al hilal', // case-insensitive match, per domain rule
+          'kickoff_at': kickoff.toIso8601String(),
+        },
+      );
 
-        expect(response.statusCode, HttpStatus.badRequest);
-        expect(
-          (await decodeBody(response))['code'],
-          'competition.fixture_schedule_same_team',
-        );
-        expect(setup.schedules.count, 0);
-      },
-    );
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect(
+        (await decodeBody(response))['code'],
+        'competition.fixture_schedule_same_team',
+      );
+      expect(setup.schedules.count, 0);
+    });
 
-    test(
-      'a team name over 120 characters is rejected 400 '
-      'competition.fixture_schedule_team_len',
-      () async {
-        final setup = rootFor();
-        final response = await post(
-          setup.root,
-          adminPrincipal(),
-          body: {
-            'home_team': 'A' * 121,
-            'away_team': 'Al Nassr',
-            'kickoff_at': kickoff.toIso8601String(),
-          },
-        );
+    test('a team name over 120 characters is rejected 400 '
+        'competition.fixture_schedule_team_len', () async {
+      final setup = rootFor();
+      final response = await post(
+        setup.root,
+        adminPrincipal(),
+        body: {
+          'home_team': 'A' * 121,
+          'away_team': 'Al Nassr',
+          'kickoff_at': kickoff.toIso8601String(),
+        },
+      );
 
-        expect(response.statusCode, HttpStatus.badRequest);
-        expect(
-          (await decodeBody(response))['code'],
-          'competition.fixture_schedule_team_len',
-        );
-        expect(setup.schedules.count, 0);
-      },
-    );
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect(
+        (await decodeBody(response))['code'],
+        'competition.fixture_schedule_team_len',
+      );
+      expect(setup.schedules.count, 0);
+    });
 
     test('a non-POST method is 405', () async {
       final setup = rootFor();
@@ -284,44 +284,40 @@ void main() {
       id,
     );
 
-    test(
-      'an admin corrects an already-registered fixture and gets 200 with '
-      'the updated identity, one stored row (upsert in place)',
-      () async {
-        final setup = rootFor();
-        await setup.schedules.upsert(
-          (FixtureSchedule.create(
-                    fixture:
-                        (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>)
-                            .value,
-                    homeTeam: 'Al Hilal (mistyped)',
-                    awayTeam: 'Al Nassr',
-                    kickoffAt: kickoff,
-                  )
-                  as Ok<FixtureSchedule>)
-              .value,
-        );
+    test('an admin corrects an already-registered fixture and gets 200 with '
+        'the updated identity, one stored row (upsert in place)', () async {
+      final setup = rootFor();
+      await setup.schedules.upsert(
+        (FixtureSchedule.create(
+                  fixture:
+                      (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+                  homeTeam: 'Al Hilal (mistyped)',
+                  awayTeam: 'Al Nassr',
+                  kickoffAt: kickoff,
+                )
+                as Ok<FixtureSchedule>)
+            .value,
+      );
 
-        final corrected = kickoff.add(const Duration(hours: 1));
-        final response = await put(
-          setup.root,
-          adminPrincipal(),
-          kFixtureId,
-          body: {
-            'home_team': 'Al Hilal',
-            'away_team': 'Al Nassr',
-            'kickoff_at': corrected.toIso8601String(),
-          },
-        );
+      final corrected = kickoff.add(const Duration(hours: 1));
+      final response = await put(
+        setup.root,
+        adminPrincipal(),
+        kFixtureId,
+        body: {
+          'home_team': 'Al Hilal',
+          'away_team': 'Al Nassr',
+          'kickoff_at': corrected.toIso8601String(),
+        },
+      );
 
-        expect(response.statusCode, HttpStatus.ok);
-        final body = await decodeBody(response);
-        expect(body['fixture_id'], kFixtureId);
-        expect(body['home_team'], 'Al Hilal');
-        expect(body['kickoff_at'], corrected.toIso8601String());
-        expect(setup.schedules.count, 1);
-      },
-    );
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      expect(body['fixture_id'], kFixtureId);
+      expect(body['home_team'], 'Al Hilal');
+      expect(body['kickoff_at'], corrected.toIso8601String());
+      expect(setup.schedules.count, 1);
+    });
 
     test(
       'correcting an unregistered id upserts it — the same idempotent-upsert '
@@ -357,7 +353,10 @@ void main() {
         setup.root,
         adminPrincipal(),
         kFixtureId,
-        body: {'away_team': 'Al Nassr', 'kickoff_at': kickoff.toIso8601String()},
+        body: {
+          'away_team': 'Al Nassr',
+          'kickoff_at': kickoff.toIso8601String(),
+        },
       );
 
       expect(response.statusCode, HttpStatus.badRequest);
@@ -365,30 +364,27 @@ void main() {
       expect(setup.schedules.count, 0);
     });
 
-    test(
-      'identical home/away team names are rejected 400 '
-      'competition.fixture_schedule_same_team (domain validation)',
-      () async {
-        final setup = rootFor();
-        final response = await put(
-          setup.root,
-          adminPrincipal(),
-          kFixtureId,
-          body: {
-            'home_team': 'Al Hilal',
-            'away_team': 'Al Hilal',
-            'kickoff_at': kickoff.toIso8601String(),
-          },
-        );
+    test('identical home/away team names are rejected 400 '
+        'competition.fixture_schedule_same_team (domain validation)', () async {
+      final setup = rootFor();
+      final response = await put(
+        setup.root,
+        adminPrincipal(),
+        kFixtureId,
+        body: {
+          'home_team': 'Al Hilal',
+          'away_team': 'Al Hilal',
+          'kickoff_at': kickoff.toIso8601String(),
+        },
+      );
 
-        expect(response.statusCode, HttpStatus.badRequest);
-        expect(
-          (await decodeBody(response))['code'],
-          'competition.fixture_schedule_same_team',
-        );
-        expect(setup.schedules.count, 0);
-      },
-    );
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect(
+        (await decodeBody(response))['code'],
+        'competition.fixture_schedule_same_team',
+      );
+      expect(setup.schedules.count, 0);
+    });
 
     test('a non-PUT method is 405', () async {
       final setup = rootFor();

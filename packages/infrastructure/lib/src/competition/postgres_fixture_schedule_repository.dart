@@ -137,7 +137,11 @@ WHERE fixture_id = ANY(@fixture_ids)
 
     if (fixtureResult is Err<FixtureRef>) {
       return Result.err(
-        _corrupt('fixture_schedules', 'fixture_id', fixtureResult.error.message),
+        _corrupt(
+          'fixture_schedules',
+          'fixture_id',
+          fixtureResult.error.message,
+        ),
       );
     }
     if (homeTeam is! String) {
