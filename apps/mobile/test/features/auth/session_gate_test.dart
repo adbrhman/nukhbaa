@@ -25,8 +25,26 @@ Widget _appUnder(AuthHarness harness) => ProviderScope(
   ),
 );
 
+/// The default `flutter_test` surface is 800×600 logical px — too short for
+/// the auth form (header + card + two labeled fields + two buttons), which
+/// pushes `signIn.submit` below the render tree bounds and makes `tap()`
+/// silently miss it. Every test that taps a widget inside [SignInScreen] or
+/// [AccountScreen] must run against a realistic phone-sized surface instead.
+void _authTest(
+  String description,
+  Future<void> Function(WidgetTester tester) body,
+) {
+  testWidgets(description, (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await body(tester);
+  });
+}
+
 void main() {
-  testWidgets('restored valid session lands on the account screen', (
+  _authTest('restored valid session lands on the account screen', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -46,7 +64,7 @@ void main() {
     expect(find.text('u-1'), findsOneWidget);
   });
 
-  testWidgets(
+  _authTest(
     'no token -> sign-in form; successful sign-in -> account screen',
     (tester) async {
       final harness = buildAuthHarness((request) async {
@@ -80,7 +98,7 @@ void main() {
     },
   );
 
-  testWidgets('bad credentials keep the form and show the error banner', (
+  _authTest('bad credentials keep the form and show the error banner', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -115,7 +133,7 @@ void main() {
     expect(await harness.store.read(), isNull);
   });
 
-  testWidgets('lost connection shows the transient (connection) message', (
+  _authTest('lost connection shows the transient (connection) message', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -141,7 +159,7 @@ void main() {
     expect(find.textContaining('check your connection'), findsOneWidget);
   });
 
-  testWidgets('sign-out from the account screen returns to the sign-in form', (
+  _authTest('sign-out from the account screen returns to the sign-in form', (
     tester,
   ) async {
     final harness = buildAuthHarness(
