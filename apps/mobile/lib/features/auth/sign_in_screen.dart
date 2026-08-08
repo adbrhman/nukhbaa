@@ -7,6 +7,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
+import '../../core/design/app_motion.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
@@ -24,6 +25,8 @@ class SignInScreen extends ConsumerStatefulWidget {
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isRegister = false;
 
@@ -31,6 +34,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -54,9 +58,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     );
   }
 
-  void _toggleMode() {
+  void _setMode(bool toRegister) {
+    if (_isRegister == toRegister) return;
     ref.read(sessionControllerProvider.notifier).clearFailure();
-    setState(() => _isRegister = !_isRegister);
+    _confirmPasswordController.clear();
+    setState(() => _isRegister = toRegister);
   }
 
   @override
@@ -106,6 +112,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            _AuthModeTabs(
+                              isRegister: _isRegister,
+                              enabled: !inFlight,
+                              onChanged: _setMode,
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
                             Text(
                               _isRegister ? l10n.createAccount : l10n.signIn,
                               key: const Key('signIn.title'),
@@ -126,6 +138,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xl),
+                            if (_isRegister) ...[
+                              const _RulesBox(),
+                              const SizedBox(height: AppSpacing.xl),
+                            ],
                             if (failure != null) ...[
                               _ErrorBanner(
                                 key: const Key('signIn.errorBanner'),
@@ -156,14 +172,49 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               obscure: true,
                               label: l10n.password,
                               prefixIcon: Icons.lock_outline,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.password],
-                              onFieldSubmitted: (_) => _submit(session),
+                              textInputAction: _isRegister
+                                  ? TextInputAction.next
+                                  : TextInputAction.done,
+                              autofillHints: [
+                                _isRegister
+                                    ? AutofillHints.newPassword
+                                    : AutofillHints.password,
+                              ],
+                              onFieldSubmitted: _isRegister
+                                  ? null
+                                  : (_) => _submit(session),
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
                                   ? l10n.passwordRequired
                                   : null,
                             ),
+                            if (_isRegister) ...[
+                              const SizedBox(height: AppSpacing.lg),
+                              AppTextField(
+                                fieldKey: const Key(
+                                  'signIn.confirmPasswordField',
+                                ),
+                                controller: _confirmPasswordController,
+                                enabled: !inFlight,
+                                obscure: true,
+                                label: l10n.confirmPassword,
+                                prefixIcon: Icons.lock_outline,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [
+                                  AutofillHints.newPassword,
+                                ],
+                                onFieldSubmitted: (_) => _submit(session),
+                                validator: (String? value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return l10n.confirmPasswordRequired;
+                                  }
+                                  if (value != _passwordController.text) {
+                                    return l10n.passwordMismatch;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
                             const SizedBox(height: AppSpacing.xl),
                             AppButton(
                               key: const Key('signIn.submit'),
@@ -174,15 +225,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               onPressed: inFlight
                                   ? null
                                   : () => _submit(session),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            AppButton(
-                              key: const Key('signIn.toggleMode'),
-                              label: _isRegister
-                                  ? l10n.toggleToSignIn
-                                  : l10n.toggleToRegister,
-                              variant: AppButtonVariant.text,
-                              onPressed: inFlight ? null : _toggleMode,
                             ),
                           ],
                         ),
@@ -195,6 +237,207 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Segmented دخول/تسجيل switcher replacing the old link-style toggle button.
+/// Ported from the legacy `.auth-tabs` markup; colors come entirely from
+/// [AppTokens] so the new app's palette is unaffected.
+class _AuthModeTabs extends StatelessWidget {
+  const _AuthModeTabs({
+    required this.isRegister,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool isRegister;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      height: AppSizes.controlMd,
+      padding: const EdgeInsets.all(AppSpacing.xs / 2),
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: AppRadius.brMd,
+        border: Border.all(color: tokens.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _AuthModeTab(
+              fieldKey: const Key('signIn.tabLogin'),
+              label: AppLocalizations.of(context).authTabSignIn,
+              selected: !isRegister,
+              enabled: enabled,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          Expanded(
+            child: _AuthModeTab(
+              fieldKey: const Key('signIn.tabRegister'),
+              label: AppLocalizations.of(context).authTabRegister,
+              selected: isRegister,
+              enabled: enabled,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthModeTab extends StatelessWidget {
+  const _AuthModeTab({
+    required this.fieldKey,
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final Key fieldKey;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
+    return Material(
+      key: fieldKey,
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.brSm,
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: AppMotion.tabSwitch,
+          curve: AppMotion.standardCurve,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? tokens.primary : Colors.transparent,
+            borderRadius: AppRadius.brSm,
+          ),
+          child: Text(
+            label,
+            style: text.labelLarge?.copyWith(
+              color: selected ? tokens.onPrimary : tokens.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "كيف تلعب؟" explainer shown on the register tab — ported from the legacy
+/// `.rules-box` markup with the platform's current scoring copy.
+class _RulesBox extends StatelessWidget {
+  const _RulesBox();
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: AppRadius.brLg,
+        border: Border.all(color: tokens.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.checklist_rtl_rounded,
+                size: AppSizes.iconMd,
+                color: tokens.textPrimary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                l10n.rulesTitle,
+                style: text.titleSmall?.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.rulesTagline,
+            style: text.bodySmall?.copyWith(color: tokens.textMuted),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _RuleItem(
+            icon: Icons.sports_soccer_rounded,
+            iconColor: tokens.textSecondary,
+            label: l10n.rulesPredictMajorLeagues,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _RuleItem(
+            icon: Icons.check_circle_rounded,
+            iconColor: tokens.primary,
+            label: l10n.rulesCorrectPrediction,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _RuleItem(
+            icon: Icons.cancel_rounded,
+            iconColor: tokens.textMuted,
+            label: l10n.rulesWrongPrediction,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _RuleItem(
+            icon: Icons.star_rounded,
+            iconColor: tokens.gold,
+            label: l10n.rulesDoubleMatch,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleItem extends StatelessWidget {
+  const _RuleItem({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextTheme text = context.text;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: AppSizes.iconSm, color: iconColor),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            label,
+            style: text.bodySmall?.copyWith(color: tokens.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 }

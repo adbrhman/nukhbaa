@@ -70,6 +70,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tagline => 'Football prediction platform';
 
   @override
+  String get authTabSignIn => 'Sign in';
+
+  @override
+  String get authTabRegister => 'Register';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get confirmPasswordRequired => 'Please confirm your password.';
+
+  @override
+  String get passwordMismatch => 'Passwords do not match.';
+
+  @override
+  String get rulesTitle => 'How to play?';
+
+  @override
+  String get rulesTagline => 'Predict, compete, top the table, be Nukhba.';
+
+  @override
+  String get rulesPredictMajorLeagues =>
+      'Predict matches from the major leagues';
+
+  @override
+  String get rulesCorrectPrediction => 'Correct prediction: 3 points';
+
+  @override
+  String get rulesWrongPrediction => 'Wrong prediction: 0 points';
+
+  @override
+  String get rulesDoubleMatch => 'Match picked as double: 6 points';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

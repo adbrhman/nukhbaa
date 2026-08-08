@@ -70,6 +70,39 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tagline => 'منصة توقعات كرة القدم';
 
   @override
+  String get authTabSignIn => 'دخول';
+
+  @override
+  String get authTabRegister => 'تسجيل';
+
+  @override
+  String get confirmPassword => 'تأكيد كلمة المرور';
+
+  @override
+  String get confirmPasswordRequired => 'الرجاء تأكيد كلمة المرور.';
+
+  @override
+  String get passwordMismatch => 'كلمتا المرور غير متطابقتين.';
+
+  @override
+  String get rulesTitle => 'كيف تلعب؟';
+
+  @override
+  String get rulesTagline => 'توقع، نافس، تصدّر، كن من النخبة';
+
+  @override
+  String get rulesPredictMajorLeagues => 'توقع مباريات الدوريات الكبرى';
+
+  @override
+  String get rulesCorrectPrediction => 'التوقع الصحيح: 3 نقاط';
+
+  @override
+  String get rulesWrongPrediction => 'التوقع الخاطئ: 0 نقطة';
+
+  @override
+  String get rulesDoubleMatch => 'المباراة المختارة كدبل: 6 نقاط';
+
+  @override
   String get notifications => 'الإشعارات';
 
   @override

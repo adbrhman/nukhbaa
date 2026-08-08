@@ -218,6 +218,72 @@ abstract class AppLocalizations {
   /// **'Football prediction platform'**
   String get tagline;
 
+  /// No description provided for @authTabSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authTabSignIn;
+
+  /// No description provided for @authTabRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get authTabRegister;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @confirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password.'**
+  String get confirmPasswordRequired;
+
+  /// No description provided for @passwordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get passwordMismatch;
+
+  /// No description provided for @rulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to play?'**
+  String get rulesTitle;
+
+  /// No description provided for @rulesTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict, compete, top the table, be Nukhba.'**
+  String get rulesTagline;
+
+  /// No description provided for @rulesPredictMajorLeagues.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict matches from the major leagues'**
+  String get rulesPredictMajorLeagues;
+
+  /// No description provided for @rulesCorrectPrediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct prediction: 3 points'**
+  String get rulesCorrectPrediction;
+
+  /// No description provided for @rulesWrongPrediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong prediction: 0 points'**
+  String get rulesWrongPrediction;
+
+  /// No description provided for @rulesDoubleMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Match picked as double: 6 points'**
+  String get rulesDoubleMatch;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
