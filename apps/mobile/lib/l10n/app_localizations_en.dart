@@ -383,6 +383,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminCorrectFixtureButton => 'Correct fixture';
 
   @override
+  String get adminRoundsTab => 'Rounds';
+
+  @override
+  String get adminOpenRoundSectionTitle => 'Open a new round';
+
+  @override
+  String get adminSeasonIdLabel => 'Season ID';
+
+  @override
+  String get adminSequenceLabel => 'Round sequence';
+
+  @override
+  String get adminPickDeadlineButton => 'Pick prediction deadline';
+
+  @override
+  String get adminOpenRoundButton => 'Open round';
+
+  @override
+  String get adminLinkFixtureSectionTitle => 'Link a fixture to a round';
+
+  @override
+  String get adminRoundIdLabel => 'Round ID';
+
+  @override
+  String get adminFixtureIdLabel => 'Fixture ID';
+
+  @override
+  String get adminDisplayOrderLabel => 'Display order';
+
+  @override
+  String get adminLinkFixtureButton => 'Link fixture to round';
+
+  @override
+  String get adminScoringTab => 'Results & Scoring';
+
+  @override
+  String get adminRecordResultSectionTitle => 'Record fixture result';
+
+  @override
+  String get adminHomeGoalsLabel => 'Home goals';
+
+  @override
+  String get adminAwayGoalsLabel => 'Away goals';
+
+  @override
+  String get adminRecordResultButton => 'Record result';
+
+  @override
+  String get adminScoreRoundSectionTitle => 'Score round';
+
+  @override
+  String get adminScoreRoundButton => 'Score round';
+
+  @override
+  String get adminRoundScoresSectionTitle => 'Round participant scores';
+
+  @override
+  String get adminViewScoresButton => 'View scores';
+
+  @override
+  String get adminTotalPointsLabel => 'Total points';
+
+  @override
   String get createGroupTitle => 'Create Group';
 
   @override

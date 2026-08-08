@@ -3,18 +3,19 @@
 /// Mirrors `prediction_harness.dart`: it builds a `ProviderScope` whose
 /// networking is served entirely by a `package:http/testing.dart` [MockClient]
 /// (no live socket), wiring the shared `apiTransportProvider` over that client
-/// so the real `adminApiProvider` and `fixtureScheduleApiProvider` (the
-/// screen's four controllers/reads) exercise the genuine `api_client`
-/// end-to-end — only the socket is faked. The token store is a seedable
-/// in-memory fake so the transport still attaches a bearer token exactly as
-/// production does.
+/// so the real `adminApiProvider`, `fixtureScheduleApiProvider`, and
+/// `competitionApiProvider` (the screen's five controllers/reads) exercise the
+/// genuine `api_client` end-to-end — only the socket is faked. The token store
+/// is a seedable in-memory fake so the transport still attaches a bearer token
+/// exactly as production does.
 ///
 /// A test supplies a [handler] that returns a canned response per request (or
 /// throws to simulate a transport failure). Because the Admin dashboard issues
 /// several distinct reads/writes (`GET /admin/audit`,
 /// `POST /admin/users/{id}/suspend`, `POST /admin/users/{id}/reinstate`,
 /// `GET /admin/participants/{id}/ledger`, `POST /fixtures`,
-/// `PUT /fixtures/{id}`), the handler is expected to branch on
+/// `PUT /fixtures/{id}`, `POST /seasons/{id}/rounds`,
+/// `POST /rounds/{id}/fixtures`), the handler is expected to branch on
 /// `request.method` + `request.url.path`. Response builders
 /// ([okJsonObject]/[errorEnvelope]) and DTO fixtures are provided.
 library;
@@ -91,6 +92,9 @@ AdminHarness buildAdminHarness(
     ),
     fixtureScheduleApiProvider.overrideWith(
       (ref) => FixtureScheduleApi(ref.watch(apiTransportProvider)),
+    ),
+    competitionApiProvider.overrideWith(
+      (ref) => CompetitionApi(ref.watch(apiTransportProvider)),
     ),
   ];
 
@@ -180,4 +184,49 @@ const FixtureScheduleDto registeredFixture = FixtureScheduleDto(
   homeTeam: 'Al Hilal',
   awayTeam: 'Al Nassr',
   kickoffAt: '2026-08-20T18:00:00.000Z',
+);
+
+/// A freshly opened round (`POST /seasons/{id}/rounds` response).
+const RoundDto openedRound = RoundDto(
+  id: 'round-new',
+  seasonId: 'season-1',
+  sequence: 3,
+  predictionDeadline: '2026-08-25T18:00:00.000Z',
+  status: 'open',
+  rulesetVersion: 1,
+);
+
+/// A freshly linked round-fixture (`POST /rounds/{id}/fixtures` response).
+const RoundFixtureDto linkedRoundFixture = RoundFixtureDto(
+  roundId: 'round-new',
+  fixtureId: 'f-new',
+  displayOrder: 0,
+);
+
+/// A freshly recorded fixture result (`PUT /fixtures/{id}/result` response).
+const FixtureResultDto recordedFixtureResult = FixtureResultDto(
+  fixtureId: 'f-new',
+  homeGoals: 2,
+  awayGoals: 1,
+);
+
+/// A scored round with one participant (`POST /rounds/{id}/score` and
+/// `GET /rounds/{id}/scores` share this exact shape).
+const RoundScoresDto oneRoundScore = RoundScoresDto(
+  roundId: 'round-new',
+  scores: <RoundScoreDto>[
+    RoundScoreDto(
+      roundId: 'round-new',
+      participantId: 'part-1',
+      rulesetVersion: 1,
+      totalPoints: 9,
+      fixtureResults: <FixtureScoreResultDto>[
+        FixtureScoreResultDto(
+          fixtureId: 'f-new',
+          grade: 'exact_scoreline',
+          points: 9,
+        ),
+      ],
+    ),
+  ],
 );

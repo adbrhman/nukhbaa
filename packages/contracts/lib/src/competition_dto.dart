@@ -429,3 +429,104 @@ final class RoundFixtureCardDto {
     schemaVersion,
   );
 }
+
+/// The request body of `POST /seasons/{id}/rounds` (command intent
+/// `OpenRound`, admin-only). The season id travels in the path, never here.
+final class OpenRoundRequestDto {
+  /// Creates an open-round request body.
+  const OpenRoundRequestDto({
+    required this.sequence,
+    required this.predictionDeadline,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map. A missing field surfaces as an explicit
+  /// `null` so the use-case reports the validation failure rather than
+  /// throwing at parse time.
+  factory OpenRoundRequestDto.fromJson(Map<String, Object?> json) {
+    return OpenRoundRequestDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      sequence: json['sequence'] as int?,
+      predictionDeadline: json['prediction_deadline'] as String?,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The 1-based ordinal of the round within its season.
+  final int? sequence;
+
+  /// The prediction deadline as an ISO 8601 timestamp string.
+  final String? predictionDeadline;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'sequence': sequence,
+    'prediction_deadline': predictionDeadline,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is OpenRoundRequestDto &&
+      other.sequence == sequence &&
+      other.predictionDeadline == predictionDeadline &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(sequence, predictionDeadline, schemaVersion);
+}
+
+/// The request body of `POST /rounds/{id}/fixtures` (command intent
+/// `LinkFixtureToRound`, admin-only). The round id travels in the path.
+final class LinkFixtureToRoundRequestDto {
+  /// Creates a link-fixture-to-round request body.
+  const LinkFixtureToRoundRequestDto({
+    required this.fixtureId,
+    required this.displayOrder,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory LinkFixtureToRoundRequestDto.fromJson(Map<String, Object?> json) {
+    return LinkFixtureToRoundRequestDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      fixtureId: json['fixture_id'] as String?,
+      displayOrder: json['display_order'] as int?,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The fixture id to link (UUID string).
+  final String? fixtureId;
+
+  /// The 0-based presentation order within the round.
+  final int? displayOrder;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'fixture_id': fixtureId,
+    'display_order': displayOrder,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is LinkFixtureToRoundRequestDto &&
+      other.fixtureId == fixtureId &&
+      other.displayOrder == displayOrder &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(fixtureId, displayOrder, schemaVersion);
+}

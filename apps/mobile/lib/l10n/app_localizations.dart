@@ -726,6 +726,132 @@ abstract class AppLocalizations {
   /// **'Correct fixture'**
   String get adminCorrectFixtureButton;
 
+  /// No description provided for @adminRoundsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounds'**
+  String get adminRoundsTab;
+
+  /// No description provided for @adminOpenRoundSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a new round'**
+  String get adminOpenRoundSectionTitle;
+
+  /// No description provided for @adminSeasonIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Season ID'**
+  String get adminSeasonIdLabel;
+
+  /// No description provided for @adminSequenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Round sequence'**
+  String get adminSequenceLabel;
+
+  /// No description provided for @adminPickDeadlineButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick prediction deadline'**
+  String get adminPickDeadlineButton;
+
+  /// No description provided for @adminOpenRoundButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open round'**
+  String get adminOpenRoundButton;
+
+  /// No description provided for @adminLinkFixtureSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a fixture to a round'**
+  String get adminLinkFixtureSectionTitle;
+
+  /// No description provided for @adminRoundIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Round ID'**
+  String get adminRoundIdLabel;
+
+  /// No description provided for @adminFixtureIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture ID'**
+  String get adminFixtureIdLabel;
+
+  /// No description provided for @adminDisplayOrderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display order'**
+  String get adminDisplayOrderLabel;
+
+  /// No description provided for @adminLinkFixtureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Link fixture to round'**
+  String get adminLinkFixtureButton;
+
+  /// No description provided for @adminScoringTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Results & Scoring'**
+  String get adminScoringTab;
+
+  /// No description provided for @adminRecordResultSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record fixture result'**
+  String get adminRecordResultSectionTitle;
+
+  /// No description provided for @adminHomeGoalsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Home goals'**
+  String get adminHomeGoalsLabel;
+
+  /// No description provided for @adminAwayGoalsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Away goals'**
+  String get adminAwayGoalsLabel;
+
+  /// No description provided for @adminRecordResultButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record result'**
+  String get adminRecordResultButton;
+
+  /// No description provided for @adminScoreRoundSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Score round'**
+  String get adminScoreRoundSectionTitle;
+
+  /// No description provided for @adminScoreRoundButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Score round'**
+  String get adminScoreRoundButton;
+
+  /// No description provided for @adminRoundScoresSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round participant scores'**
+  String get adminRoundScoresSectionTitle;
+
+  /// No description provided for @adminViewScoresButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View scores'**
+  String get adminViewScoresButton;
+
+  /// No description provided for @adminTotalPointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total points'**
+  String get adminTotalPointsLabel;
+
   /// No description provided for @createGroupTitle.
   ///
   /// In en, this message translates to:

@@ -76,11 +76,14 @@ class SessionExpiry extends _$SessionExpiry {
 @Riverpod(keepAlive: true)
 AuthApi authApi(Ref ref) => AuthApi(ref.watch(apiTransportProvider));
 
-/// The typed Competition (browse) client over the shared transport.
+/// The typed Competition (browse + round administration) client over the
+/// shared transport.
 ///
 /// Consumed read-only by the Competition browse feature (competition -> season
-/// -> round -> fixtures). Like [authApi], it holds no state and performs no HTTP
-/// of its own — it delegates every read to the shared [ApiTransport].
+/// -> round -> fixtures) and by the Admin round-administration controllers
+/// (open a round, link a fixture into it — server-enforced admin-only). Like
+/// [authApi], it holds no state and performs no HTTP of its own — it
+/// delegates every call to the shared [ApiTransport].
 @Riverpod(keepAlive: true)
 CompetitionApi competitionApi(Ref ref) =>
     CompetitionApi(ref.watch(apiTransportProvider));

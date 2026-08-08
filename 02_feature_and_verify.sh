@@ -1,3 +1,241 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+# 1) admin_providers.dart — RoundOpenController / RoundFixtureLinkController
+cat > apps/mobile/lib/features/admin/admin_providers.dart << 'NUKHBAA_EOF'
+/// The Admin Panel **view** state (audit log) plus the sanction commands
+/// (suspend/reinstate) and the narrow cross-user ledger support-read.
+///
+/// Admin-only, enforced entirely server-side (Security ADR §2.2/§2.3) — this
+/// file makes no authorization decision; `AdminApi` surfaces a non-admin
+/// refusal as a typed `AppError` like any other failure.
+///
+/// **Scope (this pass):** audit trail, user suspend/reinstate, the
+/// single-participant ledger support-read (all three over `AdminApi`),
+/// fixture-identity register/correct (over `FixtureScheduleApi` —
+/// `POST /fixtures` / `PUT /fixtures/{id}`, the fixture-IDENTITY seam, Axiom
+/// 3), and round administration — open a round + link a fixture into it (over
+/// `CompetitionApi` — `POST /seasons/{id}/rounds` / `POST /rounds/{id}/fixtures`).
+/// Lock/score/ledger-post administration is a separate follow-up slice,
+/// mirroring how Groups was phased in this project.
+library;
+
+import 'package:api_client/api_client.dart';
+import 'package:contracts/contracts.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared/shared.dart';
+
+import '../../core/providers.dart';
+
+part 'admin_providers.g.dart';
+
+T _unwrap<T>(Result<T> result) => switch (result) {
+  Ok<T>(:final value) => value,
+  Err<T>(:final error) => throw error,
+};
+
+/// `GET /admin/audit` — the append-only audit trail, newest first.
+@riverpod
+Future<AuditLogDto> auditLog(Ref ref) async {
+  final api = ref.watch(adminApiProvider);
+  return _unwrap(await api.listAuditLog());
+}
+
+/// Owns the suspend/reinstate sanction commands. On success it invalidates
+/// [auditLogProvider] so the trail reflects the new entry.
+@riverpod
+class UserSanctionController extends _$UserSanctionController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<UserSanctionResultDto>? build() => null;
+
+  /// Suspends [userId] with the mandatory [reason].
+  Future<void> suspend(String userId, String reason) async {
+    state = const AsyncValue.loading();
+    final result = await _api.suspendUser(userId, reason);
+    _applyAndRefresh(result);
+  }
+
+  /// Reinstates [userId] with the mandatory [reason].
+  Future<void> reinstate(String userId, String reason) async {
+    state = const AsyncValue.loading();
+    final result = await _api.reinstateUser(userId, reason);
+    _applyAndRefresh(result);
+  }
+
+  void _applyAndRefresh(Result<UserSanctionResultDto> result) {
+    state = switch (result) {
+      Ok<UserSanctionResultDto>(:final value) => AsyncValue.data(value),
+      Err<UserSanctionResultDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+    if (state is AsyncData<UserSanctionResultDto>) {
+      ref.invalidate(auditLogProvider);
+    }
+  }
+}
+
+/// Owns the narrow cross-user ledger support-read
+/// (`GET /admin/participants/{id}/ledger`). Modelled as a controller (rather
+/// than a `FutureProvider`) because the read is itself an audited *action*
+/// (Admin Panel decision OPEN-A #3) an admin explicitly triggers, not a
+/// passive view an admin screen loads on entry.
+@riverpod
+class AdminLedgerLookupController extends _$AdminLedgerLookupController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<ParticipantEntriesDto>? build() => null;
+
+  /// Looks up [participantId]'s ledger, optionally recording [reason] on the
+  /// mandatory audit entry.
+  Future<void> lookup(String participantId, {String? reason}) async {
+    state = const AsyncValue.loading();
+    final result = await _api.viewParticipantLedger(
+      participantId,
+      reason: reason,
+    );
+    state = switch (result) {
+      Ok<ParticipantEntriesDto>(:final value) => AsyncValue.data(value),
+      Err<ParticipantEntriesDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the fixture-identity register/correct commands
+/// (`POST /fixtures` / `PUT /fixtures/{id}`) — the fixture-IDENTITY seam
+/// (Axiom 3; Next-Task decision 2026-07-11, option (a)). Modelled as a
+/// controller, not a `FutureProvider`, for the same reason as
+/// [UserSanctionController]: a one-shot admin command, not a passive view an
+/// admin screen loads on entry. No other provider reads a fixture's schedule
+/// today, so a success here has nothing to invalidate.
+@riverpod
+class FixtureScheduleController extends _$FixtureScheduleController {
+  FixtureScheduleApi get _api => ref.read(fixtureScheduleApiProvider);
+
+  @override
+  AsyncValue<FixtureScheduleDto>? build() => null;
+
+  /// Registers a brand-new fixture's identity. The server generates the
+  /// fixture id; it comes back on [FixtureScheduleDto.fixtureId] for the
+  /// admin to note down (e.g. for a later [correct] call or to link it into
+  /// a round).
+  Future<void> register({
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.registerFixtureSchedule(
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      kickoffAt: kickoffAt,
+    );
+    _apply(result);
+  }
+
+  /// Corrects an already-registered fixture's identity by [fixtureId] (a
+  /// mistyped team name or kickoff time, before the round is linked/locked).
+  Future<void> correct({
+    required String fixtureId,
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.correctFixtureSchedule(
+      fixtureId: fixtureId,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      kickoffAt: kickoffAt,
+    );
+    _apply(result);
+  }
+
+  void _apply(Result<FixtureScheduleDto> result) {
+    state = switch (result) {
+      Ok<FixtureScheduleDto>(:final value) => AsyncValue.data(value),
+      Err<FixtureScheduleDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the open-round command (`POST /seasons/{id}/rounds`, command intent
+/// `OpenRound`) over `CompetitionApi`. Modelled as a controller, not a
+/// `FutureProvider`, for the same reason as [UserSanctionController]: a
+/// one-shot admin command, not a passive view an admin screen loads on entry.
+@riverpod
+class RoundOpenController extends _$RoundOpenController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundDto>? build() => null;
+
+  /// Opens round [sequence] in season [seasonId] with [predictionDeadline]
+  /// (an ISO 8601 timestamp string; the server normalizes it to UTC).
+  Future<void> open({
+    required String seasonId,
+    required int sequence,
+    required String predictionDeadline,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.openRound(
+      seasonId: seasonId,
+      sequence: sequence,
+      predictionDeadline: predictionDeadline,
+    );
+    state = switch (result) {
+      Ok<RoundDto>(:final value) => AsyncValue.data(value),
+      Err<RoundDto>(:final error) => AsyncValue.error(error, StackTrace.current),
+    };
+  }
+}
+
+/// Owns the link-fixture-to-round command (`POST /rounds/{id}/fixtures`,
+/// command intent `LinkFixtureToRound`; Axiom 3) over `CompetitionApi`.
+/// Modelled as a controller for the same reason as [RoundOpenController].
+@riverpod
+class RoundFixtureLinkController extends _$RoundFixtureLinkController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundFixtureDto>? build() => null;
+
+  /// Links [fixtureId] into [roundId] at [displayOrder] (0-based).
+  Future<void> link({
+    required String roundId,
+    required String fixtureId,
+    required int displayOrder,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.linkFixtureToRound(
+      roundId: roundId,
+      fixtureId: fixtureId,
+      displayOrder: displayOrder,
+    );
+    state = switch (result) {
+      Ok<RoundFixtureDto>(:final value) => AsyncValue.data(value),
+      Err<RoundFixtureDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+NUKHBAA_EOF
+
+# 2) admin_dashboard_screen.dart — Rounds tab
+cat > apps/mobile/lib/features/admin/admin_dashboard_screen.dart << 'NUKHBAA_EOF'
 library;
 
 import 'package:contracts/contracts.dart';
@@ -22,7 +260,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return DefaultTabController(
-      length: 6,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.adminDashboard, key: const Key('admin.title')),
@@ -46,10 +284,6 @@ class AdminDashboardScreen extends StatelessWidget {
                 key: const Key('admin.tab.rounds'),
                 text: l10n.adminRoundsTab,
               ),
-              Tab(
-                key: const Key('admin.tab.scoring'),
-                text: l10n.adminScoringTab,
-              ),
             ],
           ),
         ),
@@ -60,7 +294,6 @@ class AdminDashboardScreen extends StatelessWidget {
             _LedgerLookupTab(),
             _FixtureScheduleTab(),
             _RoundAdministrationTab(),
-            _ResultsScoringTab(),
           ],
         ),
       ),
@@ -514,7 +747,8 @@ class _RoundAdministrationTabState
 
   final TextEditingController _roundIdController = TextEditingController();
   final TextEditingController _fixtureIdController = TextEditingController();
-  final TextEditingController _displayOrderController = TextEditingController();
+  final TextEditingController _displayOrderController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -544,10 +778,7 @@ class _RoundAdministrationTabState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            l10n.adminOpenRoundSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(l10n.adminOpenRoundSectionTitle, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
           TextField(
             key: const Key('admin.rounds.seasonIdField'),
@@ -604,10 +835,7 @@ class _RoundAdministrationTabState
             child: Text(l10n.adminOpenRoundButton),
           ),
           const Divider(height: AppSpacing.x3l),
-          Text(
-            l10n.adminLinkFixtureSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(l10n.adminLinkFixtureSectionTitle, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
           TextField(
             key: const Key('admin.rounds.roundIdField'),
@@ -716,11 +944,7 @@ class _RoundAdministrationTabState
     if (roundId.isEmpty || fixtureId.isEmpty || displayOrder == null) return;
     ref
         .read(roundFixtureLinkControllerProvider.notifier)
-        .link(
-          roundId: roundId,
-          fixtureId: fixtureId,
-          displayOrder: displayOrder,
-        );
+        .link(roundId: roundId, fixtureId: fixtureId, displayOrder: displayOrder);
   }
 
   String _formatInstant(DateTime local) {
@@ -729,220 +953,223 @@ class _RoundAdministrationTabState
         '${two(local.hour)}:${two(local.minute)}';
   }
 }
+NUKHBAA_EOF
 
-/// Results/scoring administration: record a fixture's actual final score,
-/// then score a round (server computes points from the frozen ruleset), and
-/// look up an already-scored round's participant results. Three independent
-/// commands/reads over `CompetitionApi` (`RecordFixtureResultController` /
-/// `ScoreRoundController` / `RoundScoresLookupController`), each with its own
-/// in-flight/result/error state — mirrors [_RoundAdministrationTab]'s
-/// multi-command layout.
-class _ResultsScoringTab extends ConsumerStatefulWidget {
-  const _ResultsScoringTab();
+# 3) test harness — competitionApiProvider override + fixtures
+cat > apps/mobile/test/support/admin_harness.dart << 'NUKHBAA_EOF'
+/// Test harness for the Admin Panel slice.
+///
+/// Mirrors `prediction_harness.dart`: it builds a `ProviderScope` whose
+/// networking is served entirely by a `package:http/testing.dart` [MockClient]
+/// (no live socket), wiring the shared `apiTransportProvider` over that client
+/// so the real `adminApiProvider`, `fixtureScheduleApiProvider`, and
+/// `competitionApiProvider` (the screen's five controllers/reads) exercise the
+/// genuine `api_client` end-to-end — only the socket is faked. The token store
+/// is a seedable in-memory fake so the transport still attaches a bearer token
+/// exactly as production does.
+///
+/// A test supplies a [handler] that returns a canned response per request (or
+/// throws to simulate a transport failure). Because the Admin dashboard issues
+/// several distinct reads/writes (`GET /admin/audit`,
+/// `POST /admin/users/{id}/suspend`, `POST /admin/users/{id}/reinstate`,
+/// `GET /admin/participants/{id}/ledger`, `POST /fixtures`,
+/// `PUT /fixtures/{id}`, `POST /seasons/{id}/rounds`,
+/// `POST /rounds/{id}/fixtures`), the handler is expected to branch on
+/// `request.method` + `request.url.path`. Response builders
+/// ([okJsonObject]/[errorEnvelope]) and DTO fixtures are provided.
+library;
 
-  @override
-  ConsumerState<_ResultsScoringTab> createState() => _ResultsScoringTabState();
+import 'dart:convert';
+
+import 'package:api_client/api_client.dart';
+import 'package:contracts/contracts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:mobile/core/auth/token_store.dart';
+import 'package:mobile/core/providers.dart';
+
+/// One captured outbound request (for asserting method + path + body).
+final class CapturedRequest {
+  /// Wraps a captured [http.Request].
+  CapturedRequest(this.request);
+
+  /// The raw captured request.
+  final http.Request request;
 }
 
-class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
-  final TextEditingController _fixtureIdController = TextEditingController();
-  final TextEditingController _homeGoalsController = TextEditingController();
-  final TextEditingController _awayGoalsController = TextEditingController();
+/// The pieces a test needs to drive and inspect the Admin slice.
+final class AdminHarness {
+  /// Creates a harness over its [container] and [captured] list.
+  AdminHarness({required this.container, required this.captured});
 
-  final TextEditingController _roundIdController = TextEditingController();
+  /// The Riverpod container backing the overridden providers.
+  final ProviderContainer container;
 
-  @override
-  void dispose() {
-    _fixtureIdController.dispose();
-    _homeGoalsController.dispose();
-    _awayGoalsController.dispose();
-    _roundIdController.dispose();
-    super.dispose();
-  }
+  /// Every request the [MockClient] saw, in order.
+  final List<CapturedRequest> captured;
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
-    final AsyncValue<FixtureResultDto>? resultState = ref.watch(
-      recordFixtureResultControllerProvider,
-    );
-    final AsyncValue<RoundScoresDto>? scoreState = ref.watch(
-      scoreRoundControllerProvider,
-    );
-    final AsyncValue<RoundScoresDto>? lookupState = ref.watch(
-      roundScoresLookupControllerProvider,
-    );
-    final bool resultInFlight = resultState is AsyncLoading<FixtureResultDto>;
-    final bool scoreInFlight = scoreState is AsyncLoading<RoundScoresDto>;
-    final bool lookupInFlight = lookupState is AsyncLoading<RoundScoresDto>;
+  /// `ProviderScope` overrides for widget tests.
+  List<Override> get overrides => _overrides;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.adminRecordResultSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.fixtureIdField'),
-            controller: _fixtureIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminFixtureIdLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !resultInFlight,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.homeGoalsField'),
-            controller: _homeGoalsController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminHomeGoalsLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !resultInFlight,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.awayGoalsField'),
-            controller: _awayGoalsController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminAwayGoalsLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !resultInFlight,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (resultState is AsyncError<FixtureResultDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                ErrorPresenter.message(resultState.error as AppError),
-                key: const Key('admin.scoring.result.error'),
-                style: TextStyle(color: tokens.error),
-              ),
-            ),
-          if (resultState is AsyncData<FixtureResultDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                '${resultState.value.fixtureId}: '
-                '${resultState.value.homeGoals}-${resultState.value.awayGoals}',
-                key: const Key('admin.scoring.result.result'),
-              ),
-            ),
-          FilledButton(
-            key: const Key('admin.scoring.recordResult'),
-            onPressed: resultInFlight ? null : _recordResult,
-            child: Text(l10n.adminRecordResultButton),
-          ),
-          const Divider(height: AppSpacing.x3l),
-          Text(
-            l10n.adminScoreRoundSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.roundIdField'),
-            controller: _roundIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminRoundIdLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !scoreInFlight && !lookupInFlight,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (scoreState is AsyncError<RoundScoresDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                ErrorPresenter.message(scoreState.error as AppError),
-                key: const Key('admin.scoring.score.error'),
-                style: TextStyle(color: tokens.error),
-              ),
-            ),
-          FilledButton(
-            key: const Key('admin.scoring.scoreRound'),
-            onPressed: scoreInFlight ? null : _scoreRound,
-            child: Text(l10n.adminScoreRoundButton),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            l10n.adminRoundScoresSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (lookupState is AsyncError<RoundScoresDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                ErrorPresenter.message(lookupState.error as AppError),
-                key: const Key('admin.scoring.lookup.error'),
-                style: TextStyle(color: tokens.error),
-              ),
-            ),
-          OutlinedButton(
-            key: const Key('admin.scoring.lookupScores'),
-            onPressed: lookupInFlight ? null : _lookupScores,
-            child: Text(l10n.adminViewScoresButton),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (lookupState is AsyncData<RoundScoresDto>)
-            for (final s in lookupState.value.scores)
-              ListTile(
-                key: Key(
-                  'admin.scoring.lookup.score.${lookupState.value.roundId}.${s.participantId}',
-                ),
-                title: Text(s.participantId),
-                trailing: Text(
-                  '${l10n.adminTotalPointsLabel}: ${s.totalPoints}',
-                ),
-              )
-          else if (scoreState is AsyncData<RoundScoresDto>)
-            for (final s in scoreState.value.scores)
-              ListTile(
-                key: Key(
-                  'admin.scoring.score.score.${scoreState.value.roundId}.${s.participantId}',
-                ),
-                title: Text(s.participantId),
-                trailing: Text(
-                  '${l10n.adminTotalPointsLabel}: ${s.totalPoints}',
-                ),
-              ),
-        ],
+  late final List<Override> _overrides;
+
+  /// Disposes the container (call in `addTearDown`).
+  void dispose() => container.dispose();
+}
+
+/// Builds an [AdminHarness]. The [handler] decides each canned response (or
+/// throws to simulate a transport failure).
+AdminHarness buildAdminHarness(
+  Future<http.Response> Function(http.Request request) handler,
+) {
+  final captured = <CapturedRequest>[];
+  final client = MockClient((request) async {
+    captured.add(CapturedRequest(request));
+    return handler(request);
+  });
+
+  final overrides = <Override>[
+    // A fixed token store so the transport attaches a bearer token like prod.
+    tokenStoreProvider.overrideWithValue(InMemoryTokenStore('admin-jwt')),
+    apiTransportProvider.overrideWith(
+      (ref) => ApiTransport(
+        baseUri: Uri.parse('https://api.test.example/'),
+        httpClient: client,
+        tokenProvider: ref.watch(tokenStoreProvider).read,
+        // No real HTTP ever happens here (MockClient) — disable the timeout
+        // so a test that intentionally never resolves its handler (to assert
+        // a loading state) doesn't leave a real Timer pending at teardown.
+        requestTimeout: null,
       ),
-    );
-  }
+    ),
+    // The real Admin + FixtureSchedule clients over the faked transport (the
+    // providers/controllers/screen under test are NOT overridden).
+    adminApiProvider.overrideWith(
+      (ref) => AdminApi(ref.watch(apiTransportProvider)),
+    ),
+    fixtureScheduleApiProvider.overrideWith(
+      (ref) => FixtureScheduleApi(ref.watch(apiTransportProvider)),
+    ),
+    competitionApiProvider.overrideWith(
+      (ref) => CompetitionApi(ref.watch(apiTransportProvider)),
+    ),
+  ];
 
-  void _recordResult() {
-    final fixtureId = _fixtureIdController.text.trim();
-    final homeGoals = int.tryParse(_homeGoalsController.text.trim());
-    final awayGoals = int.tryParse(_awayGoalsController.text.trim());
-    if (fixtureId.isEmpty || homeGoals == null || awayGoals == null) return;
-    ref
-        .read(recordFixtureResultControllerProvider.notifier)
-        .record(
-          fixtureId: fixtureId,
-          homeGoals: homeGoals,
-          awayGoals: awayGoals,
-        );
-  }
-
-  void _scoreRound() {
-    final roundId = _roundIdController.text.trim();
-    if (roundId.isEmpty) return;
-    ref.read(scoreRoundControllerProvider.notifier).score(roundId);
-  }
-
-  void _lookupScores() {
-    final roundId = _roundIdController.text.trim();
-    if (roundId.isEmpty) return;
-    ref.read(roundScoresLookupControllerProvider.notifier).lookup(roundId);
-  }
+  final container = ProviderContainer(
+    overrides: overrides,
+    retry: (retryCount, error) => null,
+  );
+  final harness = AdminHarness(container: container, captured: captured);
+  harness._overrides = overrides;
+  return harness;
 }
+
+/// A `200 OK` JSON-object response (a single-item read or a command result).
+http.Response okJsonObject(Map<String, Object?> object) => http.Response(
+  jsonEncode(object),
+  200,
+  headers: const {'content-type': 'application/json'},
+);
+
+/// A non-2xx response carrying the server's versioned error envelope.
+http.Response errorEnvelope(int status, String code, String message) =>
+    http.Response(
+      jsonEncode({'schema_version': 1, 'code': code, 'message': message}),
+      status,
+      headers: const {'content-type': 'application/json'},
+    );
+
+// ---------------------------------------------------------------------------
+// DTO fixtures (the exact wire shapes the admin routes return).
+// ---------------------------------------------------------------------------
+
+/// An empty audit trail (legitimate empty — `GET /admin/audit`).
+const AuditLogDto emptyAuditLog = AuditLogDto(entries: <AuditEntryDto>[]);
+
+/// Two audit entries, newest-first.
+const AuditLogDto twoAuditEntries = AuditLogDto(
+  entries: <AuditEntryDto>[
+    AuditEntryDto(
+      id: 'audit-2',
+      actorId: 'admin-1',
+      action: 'user_suspended',
+      targetRef: 'user-9',
+      reason: 'ابتزاز داخل الدردشة',
+      occurredAt: '2026-08-07T12:00:00.000Z',
+    ),
+    AuditEntryDto(
+      id: 'audit-1',
+      actorId: 'admin-1',
+      action: 'fixture_registered',
+      targetRef: 'fixture-1',
+      occurredAt: '2026-08-06T09:00:00.000Z',
+    ),
+  ],
+);
+
+/// The result of suspending `user-9`.
+const UserSanctionResultDto suspendedResult = UserSanctionResultDto(
+  userId: 'user-9',
+  status: 'suspended',
+);
+
+/// The result of reinstating `user-9`.
+const UserSanctionResultDto reinstatedResult = UserSanctionResultDto(
+  userId: 'user-9',
+  status: 'active',
+);
+
+/// A single participant's ledger with one entry.
+const ParticipantEntriesDto oneLedgerEntry = ParticipantEntriesDto(
+  participantId: 'part-1',
+  entries: <PointEntryDto>[
+    PointEntryDto(
+      id: 'entry-1',
+      participantId: 'part-1',
+      roundId: 'r-1',
+      kind: 'round_score',
+      amount: 9,
+      sourceRef: 'round-r-1',
+      occurredAt: '2026-08-01T10:00:00.000Z',
+    ),
+  ],
+);
+
+/// A freshly registered fixture (`POST /fixtures` response).
+const FixtureScheduleDto registeredFixture = FixtureScheduleDto(
+  fixtureId: 'f-new',
+  homeTeam: 'Al Hilal',
+  awayTeam: 'Al Nassr',
+  kickoffAt: '2026-08-20T18:00:00.000Z',
+);
+
+/// A freshly opened round (`POST /seasons/{id}/rounds` response).
+const RoundDto openedRound = RoundDto(
+  id: 'round-new',
+  seasonId: 'season-1',
+  sequence: 3,
+  predictionDeadline: '2026-08-25T18:00:00.000Z',
+  status: 'open',
+  rulesetVersion: 1,
+);
+
+/// A freshly linked round-fixture (`POST /rounds/{id}/fixtures` response).
+const RoundFixtureDto linkedRoundFixture = RoundFixtureDto(
+  roundId: 'round-new',
+  fixtureId: 'f-new',
+  displayOrder: 0,
+);
+NUKHBAA_EOF
+
+echo "Part 2 (admin providers + screen + test harness) written."
+
+# Regenerate + verify
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter gen-l10n
+dart format .
+melos run import-lint || true
+flutter analyze
+flutter test

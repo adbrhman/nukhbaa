@@ -28,8 +28,12 @@ import 'package:shared/shared.dart';
 ///     2026-08-07 widened this read instead of a new endpoint; an absent round
 ///     is a legitimate empty array — no existence oracle)
 ///
-/// All routes are behind `bearerAuth`. Every method is a pure read (no side
-/// effect), returns a typed [Result], and never throws.
+/// All routes are behind `bearerAuth`. The browse reads above are pure (no
+/// side effect); [openRound], [linkFixtureToRound], [recordFixtureResult],
+/// [scoreRound] below are admin-only commands (authorization enforced
+/// server-side inside the use-case, never by this client). [getRoundScores]
+/// is a participant-gated read. Every method returns a typed [Result] and
+/// never throws.
 final class CompetitionApi {
   /// Creates the Competition client over the shared [ApiTransport].
   const CompetitionApi(this._transport);
@@ -112,6 +116,85 @@ final class CompetitionApi {
     return _transport.getList<RoundFixtureCardDto>(
       '/rounds/$roundId/fixtures',
       parseElement: RoundFixtureCardDto.fromJson,
+    );
+  }
+
+  /// `POST /seasons/{id}/rounds` — opens a new round in the season, freezing
+  /// the ruleset (command intent `OpenRound`). Admin-only, enforced inside the
+  /// server use-case. [predictionDeadline] must be an ISO 8601 timestamp
+  /// string; the server normalizes it to UTC.
+  Future<Result<RoundDto>> openRound({
+    required String seasonId,
+    required int sequence,
+    required String predictionDeadline,
+  }) {
+    return _transport.postObject<RoundDto>(
+      '/seasons/$seasonId/rounds',
+      body: OpenRoundRequestDto(
+        sequence: sequence,
+        predictionDeadline: predictionDeadline,
+      ).toJson(),
+      parse: RoundDto.fromJson,
+    );
+  }
+
+  /// `POST /rounds/{id}/fixtures` — links an already-registered fixture into
+  /// the round at [displayOrder] (command intent `LinkFixtureToRound`; Axiom
+  /// 3: the only place Competition names a fixture). Admin-only, enforced
+  /// inside the server use-case.
+  Future<Result<RoundFixtureDto>> linkFixtureToRound({
+    required String roundId,
+    required String fixtureId,
+    required int displayOrder,
+  }) {
+    return _transport.postObject<RoundFixtureDto>(
+      '/rounds/$roundId/fixtures',
+      body: LinkFixtureToRoundRequestDto(
+        fixtureId: fixtureId,
+        displayOrder: displayOrder,
+      ).toJson(),
+      parse: RoundFixtureDto.fromJson,
+    );
+  }
+
+  /// `PUT /fixtures/{id}/result` — records (or idempotently corrects) the
+  /// fixture's actual final score (command intent `RecordFixtureResult`;
+  /// Axiom 3: a result carries no competition/round reference). Admin-only,
+  /// enforced inside the server use-case.
+  Future<Result<FixtureResultDto>> recordFixtureResult({
+    required String fixtureId,
+    required int homeGoals,
+    required int awayGoals,
+  }) {
+    return _transport.putObject<FixtureResultDto>(
+      '/fixtures/$fixtureId/result',
+      body: {'home_goals': homeGoals, 'away_goals': awayGoals},
+      parse: FixtureResultDto.fromJson,
+    );
+  }
+
+  /// `POST /rounds/{id}/score` — scores every prediction in the round
+  /// (command intent `ScoreRound`). No request body — points are computed
+  /// server-side from the round's frozen ruleset; the client never posts
+  /// points (Axioms 2/5). Admin-only, enforced inside the server use-case.
+  /// Idempotent: re-scoring an already-`scored` round recomputes the same
+  /// deterministic result.
+  Future<Result<RoundScoresDto>> scoreRound(String roundId) {
+    return _transport.postObject<RoundScoresDto>(
+      '/rounds/$roundId/score',
+      body: const {},
+      parse: RoundScoresDto.fromJson,
+    );
+  }
+
+  /// `GET /rounds/{id}/scores` — reads every participant's computed score for
+  /// a **scored** round (query intent `GetRoundScores`). A not-yet-scored
+  /// round is refused `409 scoring.round_not_scored`; a non-participant is
+  /// refused `401 scoring.not_a_participant` (server-enforced).
+  Future<Result<RoundScoresDto>> getRoundScores(String roundId) {
+    return _transport.getObject<RoundScoresDto>(
+      '/rounds/$roundId/scores',
+      parse: RoundScoresDto.fromJson,
     );
   }
 }

@@ -389,6 +389,69 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminCorrectFixtureButton => 'تصحيح المباراة';
 
   @override
+  String get adminRoundsTab => 'الجولات';
+
+  @override
+  String get adminOpenRoundSectionTitle => 'فتح جولة جديدة';
+
+  @override
+  String get adminSeasonIdLabel => 'معرّف الموسم';
+
+  @override
+  String get adminSequenceLabel => 'رقم الجولة';
+
+  @override
+  String get adminPickDeadlineButton => 'اختر موعد إغلاق التوقعات';
+
+  @override
+  String get adminOpenRoundButton => 'فتح الجولة';
+
+  @override
+  String get adminLinkFixtureSectionTitle => 'ربط مباراة بجولة';
+
+  @override
+  String get adminRoundIdLabel => 'معرّف الجولة';
+
+  @override
+  String get adminFixtureIdLabel => 'معرّف المباراة';
+
+  @override
+  String get adminDisplayOrderLabel => 'ترتيب العرض';
+
+  @override
+  String get adminLinkFixtureButton => 'ربط المباراة بالجولة';
+
+  @override
+  String get adminScoringTab => 'النتائج والاحتساب';
+
+  @override
+  String get adminRecordResultSectionTitle => 'تسجيل نتيجة مباراة';
+
+  @override
+  String get adminHomeGoalsLabel => 'أهداف المضيف';
+
+  @override
+  String get adminAwayGoalsLabel => 'أهداف الضيف';
+
+  @override
+  String get adminRecordResultButton => 'تسجيل النتيجة';
+
+  @override
+  String get adminScoreRoundSectionTitle => 'احتساب نقاط الجولة';
+
+  @override
+  String get adminScoreRoundButton => 'احتساب الجولة';
+
+  @override
+  String get adminRoundScoresSectionTitle => 'نتائج المشاركين بالجولة';
+
+  @override
+  String get adminViewScoresButton => 'عرض النتائج';
+
+  @override
+  String get adminTotalPointsLabel => 'مجموع النقاط';
+
+  @override
   String get createGroupTitle => 'إنشاء مجموعة';
 
   @override

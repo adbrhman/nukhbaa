@@ -6,14 +6,16 @@
 /// refusal as a typed `AppError` like any other failure.
 ///
 /// **Scope (this pass):** audit trail, user suspend/reinstate, the
-/// single-participant ledger support-read (all three over `AdminApi`), and
+/// single-participant ledger support-read (all three over `AdminApi`),
 /// fixture-identity register/correct (over `FixtureScheduleApi` —
 /// `POST /fixtures` / `PUT /fixtures/{id}`, the fixture-IDENTITY seam, Axiom
-/// 3). Round/scoring administration (open/lock a round, link a fixture to a
-/// round, record a result, run scoring, post to the ledger) still requires
-/// additional `api_client` write methods over the existing server routes and
-/// remains deferred to a follow-up pass, mirroring how Groups was phased in
-/// this project.
+/// 3), round administration — open a round + link a fixture into it, and
+/// results/scoring administration — record a fixture's actual result, score
+/// a round, and look up a scored round's results (all over `CompetitionApi`
+/// — `POST /seasons/{id}/rounds` / `POST /rounds/{id}/fixtures` /
+/// `PUT /fixtures/{id}/result` / `POST /rounds/{id}/score` /
+/// `GET /rounds/{id}/scores`). Ledger-post administration is a separate
+/// follow-up slice, mirroring how Groups was phased in this project.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -158,6 +160,155 @@ class FixtureScheduleController extends _$FixtureScheduleController {
     state = switch (result) {
       Ok<FixtureScheduleDto>(:final value) => AsyncValue.data(value),
       Err<FixtureScheduleDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the open-round command (`POST /seasons/{id}/rounds`, command intent
+/// `OpenRound`) over `CompetitionApi`. Modelled as a controller, not a
+/// `FutureProvider`, for the same reason as [UserSanctionController]: a
+/// one-shot admin command, not a passive view an admin screen loads on entry.
+@riverpod
+class RoundOpenController extends _$RoundOpenController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundDto>? build() => null;
+
+  /// Opens round [sequence] in season [seasonId] with [predictionDeadline]
+  /// (an ISO 8601 timestamp string; the server normalizes it to UTC).
+  Future<void> open({
+    required String seasonId,
+    required int sequence,
+    required String predictionDeadline,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.openRound(
+      seasonId: seasonId,
+      sequence: sequence,
+      predictionDeadline: predictionDeadline,
+    );
+    state = switch (result) {
+      Ok<RoundDto>(:final value) => AsyncValue.data(value),
+      Err<RoundDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the link-fixture-to-round command (`POST /rounds/{id}/fixtures`,
+/// command intent `LinkFixtureToRound`; Axiom 3) over `CompetitionApi`.
+/// Modelled as a controller for the same reason as [RoundOpenController].
+@riverpod
+class RoundFixtureLinkController extends _$RoundFixtureLinkController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundFixtureDto>? build() => null;
+
+  /// Links [fixtureId] into [roundId] at [displayOrder] (0-based).
+  Future<void> link({
+    required String roundId,
+    required String fixtureId,
+    required int displayOrder,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.linkFixtureToRound(
+      roundId: roundId,
+      fixtureId: fixtureId,
+      displayOrder: displayOrder,
+    );
+    state = switch (result) {
+      Ok<RoundFixtureDto>(:final value) => AsyncValue.data(value),
+      Err<RoundFixtureDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the record-fixture-result command (`PUT /fixtures/{id}/result`,
+/// command intent `RecordFixtureResult`; Axiom 3) over `CompetitionApi`.
+/// Modelled as a controller for the same reason as [RoundOpenController].
+@riverpod
+class RecordFixtureResultController extends _$RecordFixtureResultController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<FixtureResultDto>? build() => null;
+
+  /// Records fixture [fixtureId]'s actual final score.
+  Future<void> record({
+    required String fixtureId,
+    required int homeGoals,
+    required int awayGoals,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.recordFixtureResult(
+      fixtureId: fixtureId,
+      homeGoals: homeGoals,
+      awayGoals: awayGoals,
+    );
+    state = switch (result) {
+      Ok<FixtureResultDto>(:final value) => AsyncValue.data(value),
+      Err<FixtureResultDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the score-round command (`POST /rounds/{id}/score`, command intent
+/// `ScoreRound`) over `CompetitionApi`. Modelled as a controller for the same
+/// reason as [RoundOpenController]. No request body — points are computed
+/// server-side (Axioms 2/5).
+@riverpod
+class ScoreRoundController extends _$ScoreRoundController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundScoresDto>? build() => null;
+
+  /// Scores every prediction in [roundId].
+  Future<void> score(String roundId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.scoreRound(roundId);
+    state = switch (result) {
+      Ok<RoundScoresDto>(:final value) => AsyncValue.data(value),
+      Err<RoundScoresDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the round-scores lookup (`GET /rounds/{id}/scores`, query intent
+/// `GetRoundScores`) over `CompetitionApi`. Modelled as a controller (rather
+/// than a `FutureProvider`) for the same reason as
+/// [AdminLedgerLookupController]: an admin explicitly triggers this read, it
+/// is not a passive view a screen loads on entry.
+@riverpod
+class RoundScoresLookupController extends _$RoundScoresLookupController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundScoresDto>? build() => null;
+
+  /// Looks up [roundId]'s computed scores.
+  Future<void> lookup(String roundId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.getRoundScores(roundId);
+    state = switch (result) {
+      Ok<RoundScoresDto>(:final value) => AsyncValue.data(value),
+      Err<RoundScoresDto>(:final error) => AsyncValue.error(
         error,
         StackTrace.current,
       ),
