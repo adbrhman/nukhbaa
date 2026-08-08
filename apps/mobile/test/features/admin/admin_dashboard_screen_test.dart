@@ -281,7 +281,10 @@ void main() {
       await tester.tap(find.byKey(const Key('admin.ledger.lookup')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('admin.ledger.item.entry-1')), findsOneWidget);
+      expect(
+        find.byKey(const Key('admin.ledger.item.entry-1')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const Key('admin.ledger.kind.entry-1')),
         findsOneWidget,
@@ -297,8 +300,12 @@ void main() {
         }
         if (request.method == 'GET' &&
             request.url.path == '/admin/participants/part-x/ledger') {
-          return errorEnvelope(404, 'participant.not_found', 'no such '
-              'participant');
+          return errorEnvelope(
+            404,
+            'participant.not_found',
+            'no such '
+                'participant',
+          );
         }
         return errorEnvelope(404, 'not_found', 'unexpected request');
       });

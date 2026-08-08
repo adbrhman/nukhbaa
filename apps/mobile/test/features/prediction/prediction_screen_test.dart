@@ -173,8 +173,7 @@ void main() {
           if (request.method == 'GET' && path == '/rounds/r-1/fixtures') {
             return okJsonList([fixtureA.toJson(), fixtureLocked.toJson()]);
           }
-          if (request.method == 'GET' &&
-              path == '/rounds/r-1/predictions') {
+          if (request.method == 'GET' && path == '/rounds/r-1/predictions') {
             return errorEnvelope(
               404,
               'prediction.not_found',
@@ -246,8 +245,7 @@ void main() {
           if (request.method == 'GET' && path == '/rounds/r-1/fixtures') {
             return okJsonList([fixtureLocked.toJson()]);
           }
-          if (request.method == 'GET' &&
-              path == '/rounds/r-1/predictions') {
+          if (request.method == 'GET' && path == '/rounds/r-1/predictions') {
             return errorEnvelope(
               404,
               'prediction.not_found',

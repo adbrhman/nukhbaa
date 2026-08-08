@@ -411,9 +411,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
       }
     });
 
-    final openFixtures = widget.fixtures
-        .where((f) => !_isLocked(f))
-        .toList();
+    final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
 
     // Collect the current inputs once per build: `null` when the form is not
     // yet submittable (an open fixture missing a score, no double selected, or

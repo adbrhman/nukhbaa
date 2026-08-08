@@ -64,39 +64,38 @@ void main() {
     expect(find.text('u-1'), findsOneWidget);
   });
 
-  _authTest(
-    'no token -> sign-in form; successful sign-in -> account screen',
-    (tester) async {
-      final harness = buildAuthHarness((request) async {
-        if (request.url.path == '/auth/login') {
-          return okLoginResponse('fresh-jwt');
-        }
-        return okMe(sampleUser);
-      });
-      addTearDown(harness.dispose);
+  _authTest('no token -> sign-in form; successful sign-in -> account screen', (
+    tester,
+  ) async {
+    final harness = buildAuthHarness((request) async {
+      if (request.url.path == '/auth/login') {
+        return okLoginResponse('fresh-jwt');
+      }
+      return okMe(sampleUser);
+    });
+    addTearDown(harness.dispose);
 
-      await tester.pumpWidget(_appUnder(harness));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_appUnder(harness));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('signIn.title')), findsOneWidget);
+    expect(find.byKey(const Key('signIn.title')), findsOneWidget);
 
-      await tester.enterText(
-        find.byKey(const Key('signIn.emailField')),
-        'a@example.com',
-      );
-      await tester.enterText(
-        find.byKey(const Key('signIn.passwordField')),
-        'correct-password',
-      );
-      await tester.tap(find.byKey(const Key('signIn.submit')));
-      await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('signIn.emailField')),
+      'a@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const Key('signIn.passwordField')),
+      'correct-password',
+    );
+    await tester.tap(find.byKey(const Key('signIn.submit')));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('account.title')), findsOneWidget);
-      expect(find.text('u-1'), findsOneWidget);
-      expect(await harness.store.read(), 'fresh-jwt');
-      expect(await harness.store.read(), 'fresh-jwt');
-    },
-  );
+    expect(find.byKey(const Key('account.title')), findsOneWidget);
+    expect(find.text('u-1'), findsOneWidget);
+    expect(await harness.store.read(), 'fresh-jwt');
+    expect(await harness.store.read(), 'fresh-jwt');
+  });
 
   _authTest('bad credentials keep the form and show the error banner', (
     tester,
