@@ -67,6 +67,7 @@ final class CompositionRoot {
     required this.listUsers,
     required this.listAuditLog,
     required this.viewParticipantLedger,
+    required this.adminListRoundPredictions,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -147,6 +148,7 @@ final class CompositionRoot {
     ListUsers? listUsers,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
+    AdminListRoundPredictions? adminListRoundPredictions,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
@@ -211,6 +213,8 @@ final class CompositionRoot {
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
        viewParticipantLedger =
            viewParticipantLedger ?? _absentViewParticipantLedger(),
+       adminListRoundPredictions =
+           adminListRoundPredictions ?? _absentAdminListRoundPredictions(),
        _connection = null,
        _jwksClient = null;
 
@@ -553,6 +557,13 @@ final class CompositionRoot {
         auditRecorder: _absentAuditRecorder(),
       );
 
+  static AdminListRoundPredictions _absentAdminListRoundPredictions() =>
+      AdminListRoundPredictions(
+        competitionRepository: _unwiredCompetitionRepository,
+        predictionRepository: _unwiredPredictionRepository,
+        auditRecorder: _absentAuditRecorder(),
+      );
+
   /// The Postgres connection owned by a production root. Null for roots built
   /// via [CompositionRoot.forTesting], which own no infrastructure.
   final PostgresConnection? _connection;
@@ -763,6 +774,11 @@ final class CompositionRoot {
   /// participant's ledger by explicit id, the read itself audited (admin-only;
   /// never a bulk/export view — decision OPEN-A #3).
   final ViewParticipantLedger viewParticipantLedger;
+
+  /// The admin round-report bulk read: every participant's raw prediction for
+  /// one scored round, itself audited (admin-only — mirrors
+  /// [viewParticipantLedger]'s no-silent-exemption rule).
+  final AdminListRoundPredictions adminListRoundPredictions;
 
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
@@ -1077,6 +1093,11 @@ final class CompositionRoot {
       viewParticipantLedger: ViewParticipantLedger(
         participantReader: participantReader, // already built (Ledger slice)
         ledgerRepository: ledgerRepository, // already built (Ledger slice)
+        auditRecorder: auditRecorder,
+      ),
+      adminListRoundPredictions: AdminListRoundPredictions(
+        competitionRepository: competitionRepository, // already built
+        predictionRepository: predictionRepository, // already built
         auditRecorder: auditRecorder,
       ),
     );
