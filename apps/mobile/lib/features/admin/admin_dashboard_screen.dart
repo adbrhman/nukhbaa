@@ -172,8 +172,7 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
                   key: Key('admin.users.result.${user.id}'),
                   title: Text(user.email ?? user.id),
                   subtitle: Text(user.status),
-                  onTap: () =>
-                      setState(() => _userIdController.text = user.id),
+                  onTap: () => setState(() => _userIdController.text = user.id),
                 ),
               ),
             ),

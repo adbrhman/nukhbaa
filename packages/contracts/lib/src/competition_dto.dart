@@ -478,8 +478,7 @@ final class OpenRoundRequestDto {
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(sequence, predictionDeadline, schemaVersion);
+  int get hashCode => Object.hash(sequence, predictionDeadline, schemaVersion);
 }
 
 /// The request body of `POST /rounds/{id}/fixtures` (command intent

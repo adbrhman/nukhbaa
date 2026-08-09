@@ -1308,9 +1308,7 @@ final class InMemoryUserAdminRepository implements UserAdminRepository {
                 ),
               )
               .toList();
-    final capped = matched.length > limit
-        ? matched.sublist(0, limit)
-        : matched;
+    final capped = matched.length > limit ? matched.sublist(0, limit) : matched;
     return Result.ok(List<User>.unmodifiable(capped));
   }
 }

@@ -144,10 +144,8 @@ LIMIT @limit
 
   // Escapes ILIKE metacharacters so a search term is matched literally
   // (Postgres' default LIKE/ILIKE escape char is backslash).
-  static String _escapeLike(String raw) => raw
-      .replaceAll(r'\', r'\\')
-      .replaceAll('%', r'\%')
-      .replaceAll('_', r'\_');
+  static String _escapeLike(String raw) =>
+      raw.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
 
   // --------------------------------------------------------------------------
   // Row mapping (mirrors PostgresUserDirectory._mapSingleRow)

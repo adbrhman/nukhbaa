@@ -236,10 +236,7 @@ final class UserListDto {
   @override
   int get hashCode => Object.hash(Object.hashAll(users), schemaVersion);
 
-  static bool _userListEquals(
-    List<UserSummaryDto> a,
-    List<UserSummaryDto> b,
-  ) {
+  static bool _userListEquals(List<UserSummaryDto> a, List<UserSummaryDto> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i] != b[i]) return false;

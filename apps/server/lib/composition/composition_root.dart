@@ -1344,10 +1344,8 @@ final class _UnwiredUserAdminRepository implements UserAdminRepository {
   Future<Result<User>> updateUser(User user) => _unwired();
 
   @override
-  Future<Result<List<User>>> listUsers({
-    String? search,
-    required int limit,
-  }) => _unwired();
+  Future<Result<List<User>>> listUsers({String? search, required int limit}) =>
+      _unwired();
 }
 
 /// Backs the "absent" audit trail behind every unwired admin use-case: any
