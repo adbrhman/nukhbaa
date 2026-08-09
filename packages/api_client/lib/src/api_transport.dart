@@ -136,28 +136,11 @@ final class ApiTransport {
     );
   }
 
-  /// Retry budget for idempotent (`GET`) requests only: up to this many
-  /// *extra* attempts beyond the first, spaced by [_retryDelays]. `POST`/`PUT`
-  /// are never retried here — an automatic retry of a non-idempotent call
-  /// risks a duplicate submission, which is strictly worse than surfacing
-  /// the error and letting the caller (a human, via the retry button) decide.
-  static const _retryDelays = [
-    Duration(milliseconds: 500),
-    Duration(seconds: 2),
-  ];
-
   /// The shared request pipeline. Builds the request, applies auth headers,
   /// executes it, and dispatches the response. Never throws: a transport
   /// exception becomes a transient [Result.err]; a non-2xx becomes a decoded
   /// [Result.err]; a 2xx with an undecodable body becomes a malformed-response
   /// [Result.err].
-  ///
-  /// `GET` requests get up to [_retryDelays.length] automatic retries (with
-  /// backoff) when the failure is a timeout or a network exception — the
-  /// symptom of a free-tier host cold-starting mid-request, not a real
-  /// outage. Any other failure (a decoded non-2xx, a malformed body) is
-  /// returned immediately without retrying, since retrying it would not
-  /// change the outcome.
   Future<Result<T>> _send<T>({
     required String method,
     required String path,
@@ -166,64 +149,47 @@ final class ApiTransport {
     required Result<T> Function(String body) decode,
   }) async {
     final uri = _resolve(path, query);
-    final attempts = method == 'GET' ? _retryDelays.length + 1 : 1;
 
-    for (var attempt = 0; attempt < attempts; attempt++) {
-      final http.Response response;
-      try {
-        final headers = await _headers(hasBody: requestBody != null);
-        final pending = switch (method) {
-          'GET' => _httpClient.get(uri, headers: headers),
-          'POST' => _httpClient.post(
-            uri,
-            headers: headers,
-            body: jsonEncode(requestBody),
-          ),
-          'PUT' => _httpClient.put(
-            uri,
-            headers: headers,
-            body: jsonEncode(requestBody),
-          ),
-          _ => throw ArgumentError.value(method, 'method', 'unsupported'),
-        };
-        final timeout = _requestTimeout;
-        response = timeout == null
-            ? await pending
-            : await pending.timeout(timeout);
-      } on TimeoutException catch (cause) {
-        // The request's `.timeout(_requestTimeout)` elapsed with no
-        // response — distinguished from other transport failures so the UI
-        // can tell the user the server didn't answer in time (vs. being
-        // unreachable). Retryable for `GET` (see [_retryDelays]).
-        if (attempt < attempts - 1) {
-          await Future<void>.delayed(_retryDelays[attempt]);
-          continue;
-        }
-        return Result.err(timeoutError(cause));
-      } on Object catch (cause) {
-        // DNS failure, socket reset, closed client, etc. — never reached
-        // the server (or never got a response): a transient, retryable
-        // failure. Retryable for `GET` (see [_retryDelays]).
-        if (attempt < attempts - 1) {
-          await Future<void>.delayed(_retryDelays[attempt]);
-          continue;
-        }
-        return Result.err(networkError(cause));
-      }
-
-      final status = response.statusCode;
-      if (status >= 200 && status < 300) {
-        return decode(response.body);
-      }
-      if (status == 401) {
-        await _onUnauthorized?.call();
-      }
-      // A decoded (non-2xx) response is a real answer from the server, not
-      // a cold-start symptom — return it as-is rather than retrying.
-      return Result.err(decodeError(status, response.body));
+    final http.Response response;
+    try {
+      final headers = await _headers(hasBody: requestBody != null);
+      final pending = switch (method) {
+        'GET' => _httpClient.get(uri, headers: headers),
+        'POST' => _httpClient.post(
+          uri,
+          headers: headers,
+          body: jsonEncode(requestBody),
+        ),
+        'PUT' => _httpClient.put(
+          uri,
+          headers: headers,
+          body: jsonEncode(requestBody),
+        ),
+        _ => throw ArgumentError.value(method, 'method', 'unsupported'),
+      };
+      final timeout = _requestTimeout;
+      response = timeout == null
+          ? await pending
+          : await pending.timeout(timeout);
+    } on TimeoutException catch (cause) {
+      // The request's `.timeout(_requestTimeout)` elapsed with no response —
+      // distinguished from other transport failures so the UI can tell the
+      // user the server didn't answer in time (vs. being unreachable).
+      return Result.err(timeoutError(cause));
+    } on Object catch (cause) {
+      // DNS failure, socket reset, closed client, etc. — never reached the
+      // server (or never got a response): a transient, retryable failure.
+      return Result.err(networkError(cause));
     }
-    // Unreachable: the loop always returns on its last iteration.
-    throw StateError('unreachable');
+
+    final status = response.statusCode;
+    if (status >= 200 && status < 300) {
+      return decode(response.body);
+    }
+    if (status == 401) {
+      await _onUnauthorized?.call();
+    }
+    return Result.err(decodeError(status, response.body));
   }
 
   Uri _resolve(String path, Map<String, String>? query) {
