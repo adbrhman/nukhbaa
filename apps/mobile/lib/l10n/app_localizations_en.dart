@@ -457,6 +457,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminTotalPointsLabel => 'Total points';
 
   @override
+  String get adminRoundReportSectionTitle => 'Round report';
+
+  @override
+  String get adminViewRoundReportButton => 'View round report';
+
+  @override
+  String get adminRoundReportRankLabel => 'Rank';
+
+  @override
+  String get adminRoundReportShareButton => 'Copy to share';
+
+  @override
+  String get adminRoundReportCopiedMessage => 'Copied — share it on WhatsApp';
+
+  @override
+  String get adminRoundReportEmpty => 'No participants in this round';
+
+  @override
   String get createGroupTitle => 'Create Group';
 
   @override

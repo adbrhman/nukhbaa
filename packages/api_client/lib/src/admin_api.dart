@@ -98,4 +98,20 @@ final class AdminApi {
       parse: ParticipantEntriesDto.fromJson,
     );
   }
+
+  /// `GET /admin/rounds/{roundId}/predictions` — the round-report bulk read:
+  /// every participant's raw predicted scorelines for a **scored** round.
+  /// [reason] is an optional justification recorded on the (mandatory) audit
+  /// entry for this read; the read itself is always audited server-side
+  /// regardless of whether one is supplied.
+  Future<Result<List<PredictionDto>>> adminListRoundPredictions(
+    String roundId, {
+    String? reason,
+  }) {
+    return _transport.getList<PredictionDto>(
+      '/admin/rounds/$roundId/predictions',
+      query: reason == null ? null : {'reason': reason},
+      parseElement: PredictionDto.fromJson,
+    );
+  }
 }

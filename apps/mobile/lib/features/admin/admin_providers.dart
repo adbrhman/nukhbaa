@@ -24,6 +24,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
+import 'round_report.dart';
 
 part 'admin_providers.g.dart';
 
@@ -338,5 +339,53 @@ class RoundScoresLookupController extends _$RoundScoresLookupController {
         StackTrace.current,
       ),
     };
+  }
+}
+
+/// Owns the round-report bulk read: fetches `GET /rounds/{id}/scores`
+/// (`CompetitionApi`) and `GET /admin/rounds/{id}/predictions` (`AdminApi`,
+/// itself audited) concurrently for a **scored** round, then merges them via
+/// [buildRoundReport] into a ranked, per-fixture breakdown. Modelled as a
+/// controller (rather than a `FutureProvider`) for the same reason as
+/// [RoundScoresLookupController]: an admin explicitly triggers the report, it
+/// is not a passive view a screen loads on entry — and the raw-predictions
+/// half is itself an audited cross-user read that must not fire silently.
+@riverpod
+class RoundReportController extends _$RoundReportController {
+  CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
+  AdminApi get _adminApi => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<List<RoundReportRow>>? build() => null;
+
+  /// Loads the report for the scored round [roundId]. [reason] is an
+  /// optional justification recorded on the raw-predictions audit entry.
+  ///
+  /// Both calls run concurrently; either failing surfaces its error and skips
+  /// the merge (a round-report is all-or-nothing — a half-merged report with
+  /// missing raw scores or missing grades would mislead the admin).
+  Future<void> load(String roundId, {String? reason}) async {
+    state = const AsyncValue.loading();
+    final results = await (
+      _competitionApi.getRoundScores(roundId),
+      _adminApi.adminListRoundPredictions(roundId, reason: reason),
+    ).wait;
+    final scoresResult = results.$1;
+    final predictionsResult = results.$2;
+
+    if (scoresResult is Err<RoundScoresDto>) {
+      state = AsyncValue.error(scoresResult.error, StackTrace.current);
+      return;
+    }
+    if (predictionsResult is Err<List<PredictionDto>>) {
+      state = AsyncValue.error(predictionsResult.error, StackTrace.current);
+      return;
+    }
+
+    final scores = (scoresResult as Ok<RoundScoresDto>).value;
+    final predictions = (predictionsResult as Ok<List<PredictionDto>>).value;
+    state = AsyncValue.data(
+      buildRoundReport(scores: scores, rawPredictions: predictions),
+    );
   }
 }

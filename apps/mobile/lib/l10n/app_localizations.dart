@@ -870,6 +870,42 @@ abstract class AppLocalizations {
   /// **'Total points'**
   String get adminTotalPointsLabel;
 
+  /// No description provided for @adminRoundReportSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round report'**
+  String get adminRoundReportSectionTitle;
+
+  /// No description provided for @adminViewRoundReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View round report'**
+  String get adminViewRoundReportButton;
+
+  /// No description provided for @adminRoundReportRankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get adminRoundReportRankLabel;
+
+  /// No description provided for @adminRoundReportShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to share'**
+  String get adminRoundReportShareButton;
+
+  /// No description provided for @adminRoundReportCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied — share it on WhatsApp'**
+  String get adminRoundReportCopiedMessage;
+
+  /// No description provided for @adminRoundReportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No participants in this round'**
+  String get adminRoundReportEmpty;
+
   /// No description provided for @createGroupTitle.
   ///
   /// In en, this message translates to:

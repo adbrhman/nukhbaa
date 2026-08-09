@@ -463,6 +463,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminTotalPointsLabel => 'مجموع النقاط';
 
   @override
+  String get adminRoundReportSectionTitle => 'تقرير الجولة';
+
+  @override
+  String get adminViewRoundReportButton => 'عرض تقرير الجولة';
+
+  @override
+  String get adminRoundReportRankLabel => 'الترتيب';
+
+  @override
+  String get adminRoundReportShareButton => 'نسخ للمشاركة';
+
+  @override
+  String get adminRoundReportCopiedMessage => 'تم النسخ، شاركه عبر واتساب';
+
+  @override
+  String get adminRoundReportEmpty => 'لا يوجد مشاركون بهذه الجولة';
+
+  @override
   String get createGroupTitle => 'إنشاء مجموعة';
 
   @override

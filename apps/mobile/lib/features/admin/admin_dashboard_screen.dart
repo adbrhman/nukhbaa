@@ -2,6 +2,7 @@ library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
@@ -10,6 +11,7 @@ import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'admin_providers.dart';
+import 'round_report.dart';
 
 /// The admin dashboard. Gated by the caller's platform role — a route pushing
 /// this screen must first check `AuthenticatedUserDto.role == 'admin'`
@@ -968,6 +970,8 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
                   '${l10n.adminTotalPointsLabel}: ${s.totalPoints}',
                 ),
               ),
+          const Divider(height: AppSpacing.x3l),
+          _RoundReportSection(roundIdController: _roundIdController),
         ],
       ),
     );
@@ -997,5 +1001,183 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
     final roundId = _roundIdController.text.trim();
     if (roundId.isEmpty) return;
     ref.read(roundScoresLookupControllerProvider.notifier).lookup(roundId);
+  }
+}
+
+/// The round-report section inside [_ResultsScoringTab]: merges
+/// `GET /rounds/{id}/scores` with the admin-only
+/// `GET /admin/rounds/{id}/predictions` (via [RoundReportController]) into a
+/// ranked, per-fixture table (rank, participant, total points, and every
+/// fixture's grade + predicted scoreline), plus a copy-to-share summary.
+///
+/// Reuses the same round-id field as the score lookup above it — the report
+/// is scoped to the same round an admin just scored.
+class _RoundReportSection extends ConsumerWidget {
+  const _RoundReportSection({required this.roundIdController});
+
+  final TextEditingController roundIdController;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final AsyncValue<List<RoundReportRow>>? reportState = ref.watch(
+      roundReportControllerProvider,
+    );
+    final bool inFlight =
+        reportState is AsyncLoading<List<RoundReportRow>>;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.adminRoundReportSectionTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (reportState is AsyncError<List<RoundReportRow>>)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Text(
+              ErrorPresenter.message(reportState.error as AppError),
+              key: const Key('admin.scoring.report.error'),
+              style: TextStyle(color: tokens.error),
+            ),
+          ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: OutlinedButton(
+                key: const Key('admin.scoring.viewReport'),
+                onPressed: inFlight ? null : () => _load(ref),
+                child: Text(l10n.adminViewRoundReportButton),
+              ),
+            ),
+            if (reportState is AsyncData<List<RoundReportRow>> &&
+                reportState.value.isNotEmpty) ...<Widget>[
+              const SizedBox(width: AppSpacing.md),
+              OutlinedButton(
+                key: const Key('admin.scoring.report.share'),
+                onPressed: () => _share(context, reportState.value),
+                child: Text(l10n.adminRoundReportShareButton),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (reportState is AsyncData<List<RoundReportRow>>)
+          if (reportState.value.isEmpty)
+            Text(l10n.adminRoundReportEmpty)
+          else
+            for (final row in reportState.value)
+              _RoundReportRowCard(row: row, tokens: tokens, l10n: l10n),
+      ],
+    );
+  }
+
+  void _load(WidgetRef ref) {
+    final roundId = roundIdController.text.trim();
+    if (roundId.isEmpty) return;
+    ref.read(roundReportControllerProvider.notifier).load(roundId);
+  }
+
+  void _share(BuildContext context, List<RoundReportRow> rows) {
+    final l10n = AppLocalizations.of(context);
+    final buffer = StringBuffer();
+    for (final row in rows) {
+      buffer.writeln(
+        '${row.rank}. ${row.participantId} — ${row.totalPoints}',
+      );
+    }
+    Clipboard.setData(ClipboardData(text: buffer.toString().trimRight()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.adminRoundReportCopiedMessage)),
+    );
+  }
+}
+
+class _RoundReportRowCard extends StatelessWidget {
+  const _RoundReportRowCard({
+    required this.row,
+    required this.tokens,
+    required this.l10n,
+  });
+
+  final RoundReportRow row;
+  final AppTokens tokens;
+  final AppLocalizations l10n;
+
+  Color? _rankColor() => switch (row.rank) {
+    1 => tokens.gold,
+    2 => tokens.silver,
+    3 => tokens.bronze,
+    _ => null,
+  };
+
+  static String _gradeIcon(String grade) => switch (grade) {
+    'exact_scoreline' => '✅',
+    'correct_outcome' => '🟡',
+    'incorrect' => '❌',
+    'missed' => '⏳',
+    _ => '?',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: Key('admin.scoring.report.row.${row.participantId}'),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: _rankColor() ?? tokens.surfaceHigh,
+                  child: Text(
+                    '${row.rank}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    row.participantId,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${l10n.adminTotalPointsLabel}: ${row.totalPoints}',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: <Widget>[
+                for (final cell in row.cells)
+                  Chip(
+                    key: Key(
+                      'admin.scoring.report.cell.${row.participantId}.${cell.fixtureId}',
+                    ),
+                    label: Text(
+                      cell.hasRawScore
+                          ? '${_gradeIcon(cell.grade)} '
+                                '${cell.homeGoals}-${cell.awayGoals} '
+                                '(${cell.points})${cell.isDouble ? ' x2' : ''}'
+                          : '${_gradeIcon(cell.grade)} (${cell.points})',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
