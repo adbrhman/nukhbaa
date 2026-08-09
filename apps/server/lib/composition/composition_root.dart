@@ -802,6 +802,21 @@ final class CompositionRoot {
     // Identity slice: JWKS-backed ES256 verifier (+ HS256 legacy fallback) and
     // the Postgres-backed canonical user directory.
     final jwksClient = JwksClient(authConfig.jwksUri);
+    const jwksWarmupAttempts = 3;
+    Result<void>? jwksWarmResult;
+    for (var attempt = 1; attempt <= jwksWarmupAttempts; attempt++) {
+      jwksWarmResult = await jwksClient.warmUp();
+      if (jwksWarmResult is Ok<void>) break;
+      if (attempt < jwksWarmupAttempts) {
+        await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
+      }
+    }
+    if (jwksWarmResult is Err<void>) {
+      throw StateError(
+        'Cannot start: failed to warm JWKS cache after '
+        '$jwksWarmupAttempts attempts: ${jwksWarmResult.error}',
+      );
+    }
     final verifier = SupabaseJwtVerifier(authConfig, jwksClient);
     final directory = PostgresUserDirectory(connection);
 

@@ -65,6 +65,17 @@ final class JwksClient {
   DateTime? _fetchedAt;
   DateTime? _lastRefreshAttempt;
 
+  /// Eagerly populates the key cache at server startup (composition root
+  /// bootstrap), so the very first authenticated request — and every request
+  /// within [ttl] afterwards — resolves a `kid` from the in-memory cache with
+  /// **no** network call on the request's hot path. Mirrors the same
+  /// fail-fast-at-startup discipline `PostgresConnection.open` already
+  /// applies to the database: a flaky egress path to the JWKS endpoint is
+  /// discovered loudly at boot (with bounded retries) rather than silently
+  /// stalling whichever user's request happens to trigger the first-ever
+  /// (or first post-expiry) fetch.
+  Future<Result<void>> warmUp() => _refresh();
+
   /// Resolves the JWK matching [kid], fetching or refreshing as needed.
   ///
   /// Resolution order:
