@@ -105,6 +105,51 @@ RETURNING id, email, role::text, status::text
   }
 
   // --------------------------------------------------------------------------
+  // listUsers — browse by optional email-contains search
+  // --------------------------------------------------------------------------
+
+  static const String _listSql = '''
+SELECT id, email, role::text, status::text
+FROM identity.users
+WHERE (@search::text IS NULL OR email ILIKE @search)
+ORDER BY email ASC
+LIMIT @limit
+''';
+
+  @override
+  Future<Result<List<User>>> listUsers({
+    String? search,
+    required int limit,
+  }) async {
+    final pattern = search == null ? null : '%${_escapeLike(search)}%';
+    final result = await _connection.query(
+      _listSql,
+      parameters: {'search': pattern, 'limit': limit},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapMany(value),
+    };
+  }
+
+  Result<List<User>> _mapMany(List<Map<String, dynamic>> rows) {
+    final users = <User>[];
+    for (final row in rows) {
+      final mapped = _mapOne(row);
+      if (mapped is Err<User>) return Result.err(mapped.error);
+      users.add((mapped as Ok<User>).value);
+    }
+    return Result.ok(List<User>.unmodifiable(users));
+  }
+
+  // Escapes ILIKE metacharacters so a search term is matched literally
+  // (Postgres' default LIKE/ILIKE escape char is backslash).
+  static String _escapeLike(String raw) => raw
+      .replaceAll(r'\', r'\\')
+      .replaceAll('%', r'\%')
+      .replaceAll('_', r'\_');
+
+  // --------------------------------------------------------------------------
   // Row mapping (mirrors PostgresUserDirectory._mapSingleRow)
   // --------------------------------------------------------------------------
 

@@ -127,6 +127,127 @@ final class UserSanctionResultDto {
   int get hashCode => Object.hash(userId, status, schemaVersion);
 }
 
+/// One row of `GET /admin/users` — a minimal user summary for the admin
+/// find-a-user flow. Carries only what the sanction UI needs: [id] (to fill
+/// the target-user field), [email] (nullable — provider-sourced, may be
+/// absent), and [status]. No role field: the browse surface has no authority
+/// over role.
+final class UserSummaryDto {
+  /// Creates a user-summary DTO.
+  const UserSummaryDto({
+    required this.id,
+    required this.status,
+    this.email,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory UserSummaryDto.fromJson(Map<String, Object?> json) {
+    return UserSummaryDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      id: json['id']! as String,
+      email: json['email'] as String?,
+      status: json['status']! as String,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The user's id (UUID string).
+  final String id;
+
+  /// The user's email, when known. Omitted from JSON when `null`.
+  final String? email;
+
+  /// The user's lifecycle status (`active` / `suspended`).
+  final String status;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'id': id,
+    if (email != null) 'email': email,
+    'status': status,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is UserSummaryDto &&
+      other.id == id &&
+      other.email == email &&
+      other.status == status &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(id, email, status, schemaVersion);
+}
+
+/// The wire shape of `GET /admin/users` — a bounded, server-ordered browse
+/// result. An empty [users] list is a legitimate empty match, never an error.
+final class UserListDto {
+  /// Creates a user-list DTO.
+  const UserListDto({
+    required this.users,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory UserListDto.fromJson(Map<String, Object?> json) {
+    final raw = json['users']! as List<Object?>;
+    return UserListDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      users: raw
+          .map(
+            (e) => UserSummaryDto.fromJson(
+              (e! as Map<Object?, Object?>).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The matching users, server-ordered.
+  final List<UserSummaryDto> users;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'users': [for (final u in users) u.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is UserListDto &&
+      _userListEquals(other.users, users) &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(users), schemaVersion);
+
+  static bool _userListEquals(
+    List<UserSummaryDto> a,
+    List<UserSummaryDto> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}
+
 /// The wire shape of one immutable admin audit record (read projection of the
 /// domain `AuditEntry`) — an element of `GET /admin/audit`.
 ///

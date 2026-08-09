@@ -106,12 +106,20 @@ class _UserSanctionTab extends ConsumerStatefulWidget {
 class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
   final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
     _userIdController.dispose();
     _reasonController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _search() {
+    ref
+        .read(usersLookupControllerProvider.notifier)
+        .search(_searchController.text.trim());
   }
 
   @override
@@ -120,13 +128,56 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
     final AsyncValue<UserSanctionResultDto>? state = ref.watch(
       userSanctionControllerProvider,
     );
+    final AsyncValue<UserListDto>? search = ref.watch(
+      usersLookupControllerProvider,
+    );
     final bool inFlight = state is AsyncLoading<UserSanctionResultDto>;
+    final bool searching = search is AsyncLoading<UserListDto>;
     final AppTokens tokens = context.tokens;
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  key: const Key('admin.users.searchField'),
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    labelText: l10n.adminUsersSearchLabel,
+                    border: const OutlineInputBorder(),
+                  ),
+                  enabled: !searching,
+                  onSubmitted: (_) => _search(),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              FilledButton(
+                key: const Key('admin.users.searchButton'),
+                onPressed: searching ? null : _search,
+                child: Text(l10n.adminLookUpButton),
+              ),
+            ],
+          ),
+          if (search != null)
+            SizedBox(
+              height: 200,
+              child: AsyncListView<UserSummaryDto>(
+                value: search.whenData((dto) => dto.users),
+                emptyMessage: l10n.adminUsersEmptyResults,
+                onRetry: _search,
+                itemBuilder: (context, user) => ListTile(
+                  key: Key('admin.users.result.${user.id}'),
+                  title: Text(user.email ?? user.id),
+                  subtitle: Text(user.status),
+                  onTap: () =>
+                      setState(() => _userIdController.text = user.id),
+                ),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.lg),
           TextField(
             key: const Key('admin.users.userIdField'),
             controller: _userIdController,
@@ -160,7 +211,10 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
-                '${state.value.userId} is now ${state.value.status}',
+                l10n.adminSanctionResultMessage(
+                  state.value.userId,
+                  state.value.status,
+                ),
                 key: const Key('admin.users.result'),
               ),
             ),

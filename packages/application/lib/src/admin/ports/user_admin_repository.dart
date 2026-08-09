@@ -31,4 +31,9 @@ abstract interface class UserAdminRepository {
   /// the only field the admin surface mutates; the adapter updates that column
   /// only. A driver failure maps to [ErrorKind.transient].
   Future<Result<User>> updateUser(User user);
+
+  /// Browses users by an optional case-insensitive email-contains [search],
+  /// capped at [limit], ordered by email. The admin surface's find-a-user
+  /// read.
+  Future<Result<List<User>>> listUsers({String? search, required int limit});
 }

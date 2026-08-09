@@ -1289,6 +1289,30 @@ final class InMemoryUserAdminRepository implements UserAdminRepository {
     users[user.id.value] = user;
     return Result.ok(user);
   }
+
+  @override
+  Future<Result<List<User>>> listUsers({
+    String? search,
+    required int limit,
+  }) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final all = users.values.toList()
+      ..sort((a, b) => (a.email ?? '').compareTo(b.email ?? ''));
+    final matched = search == null
+        ? all
+        : all
+              .where(
+                (u) => (u.email ?? '').toLowerCase().contains(
+                  search.toLowerCase(),
+                ),
+              )
+              .toList();
+    final capped = matched.length > limit
+        ? matched.sublist(0, limit)
+        : matched;
+    return Result.ok(List<User>.unmodifiable(capped));
+  }
 }
 
 /// A minimal in-memory [AuditLogRepository] for the Admin route tests: the

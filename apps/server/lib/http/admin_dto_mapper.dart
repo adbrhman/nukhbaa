@@ -26,6 +26,19 @@ Map<String, Object?> userSanctionResultJson(User user) {
   ).toJson();
 }
 
+/// Projects one [User] onto the wire [UserSummaryDto] — a row of
+/// `GET /admin/users`.
+UserSummaryDto userSummaryToDto(User user) => UserSummaryDto(
+  id: user.id.value,
+  email: user.email,
+  status: user.status.name,
+);
+
+/// Shapes the response of `GET /admin/users`. An empty list is a legitimate
+/// empty match, never an error.
+Map<String, Object?> userListJson(List<User> users) =>
+    UserListDto(users: [for (final u in users) userSummaryToDto(u)]).toJson();
+
 /// Projects one immutable [AuditEntry] onto the wire [AuditEntryDto].
 ///
 /// The `reason` is carried through as-is (`null` for an action that carried

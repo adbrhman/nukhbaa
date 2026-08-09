@@ -64,6 +64,7 @@ final class CompositionRoot {
     required this.markNotificationRead,
     required this.suspendUser,
     required this.reinstateUser,
+    required this.listUsers,
     required this.listAuditLog,
     required this.viewParticipantLedger,
   }) : _connection = connection,
@@ -143,6 +144,7 @@ final class CompositionRoot {
     MarkNotificationRead? markNotificationRead,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
+    ListUsers? listUsers,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
@@ -205,6 +207,7 @@ final class CompositionRoot {
            markNotificationRead ?? _absentMarkNotificationRead(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
        reinstateUser = reinstateUser ?? _absentReinstateUser(),
+       listUsers = listUsers ?? _absentListUsers(),
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
        viewParticipantLedger =
            viewParticipantLedger ?? _absentViewParticipantLedger(),
@@ -537,6 +540,9 @@ final class CompositionRoot {
     auditRecorder: _absentAuditRecorder(),
   );
 
+  static ListUsers _absentListUsers() =>
+      ListUsers(users: _unwiredUserAdminRepository);
+
   static ListAuditLog _absentListAuditLog() =>
       ListAuditLog(auditLog: _unwiredAuditLogRepository);
 
@@ -744,6 +750,10 @@ final class CompositionRoot {
   /// Reinstates a suspended user — the mirror of [suspendUser] (admin-only,
   /// mandatory reason, audited — decision OPEN-A #1).
   final ReinstateUser reinstateUser;
+
+  /// Browses platform users by an optional email-contains search — the admin
+  /// find-a-user flow feeding [suspendUser]/[reinstateUser] (admin-only).
+  final ListUsers listUsers;
 
   /// Reads the append-only admin audit trail, newest-first (admin-only — the
   /// trail is itself a privileged surface; decision OPEN-B).
@@ -1062,6 +1072,7 @@ final class CompositionRoot {
         users: userAdminRepository,
         auditRecorder: auditRecorder,
       ),
+      listUsers: ListUsers(users: userAdminRepository),
       listAuditLog: ListAuditLog(auditLog: auditLogRepository),
       viewParticipantLedger: ViewParticipantLedger(
         participantReader: participantReader, // already built (Ledger slice)
@@ -1331,6 +1342,12 @@ final class _UnwiredUserAdminRepository implements UserAdminRepository {
 
   @override
   Future<Result<User>> updateUser(User user) => _unwired();
+
+  @override
+  Future<Result<List<User>>> listUsers({
+    String? search,
+    required int limit,
+  }) => _unwired();
 }
 
 /// Backs the "absent" audit trail behind every unwired admin use-case: any

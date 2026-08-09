@@ -6,6 +6,7 @@ library;
 
 export 'src/admin/audit_recorder.dart';
 export 'src/admin/list_audit_log.dart';
+export 'src/admin/list_users.dart';
 export 'src/admin/ports/audit_log_repository.dart';
 export 'src/admin/ports/user_admin_repository.dart';
 export 'src/admin/suspend_user.dart';

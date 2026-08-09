@@ -276,6 +276,16 @@
   "adminReasonMandatoryLabel": "Reason (mandatory)",
   "adminSuspendButton": "Suspend",
   "adminReinstateButton": "Reinstate",
+  "adminUsersSearchLabel": "Search by email",
+  "adminUsersEmptyResults": "No matching users.",
+  "adminSanctionResultMessage": "{userId} is now {status}",
+  "@adminSanctionResultMessage": {
+    "description": "Result line after a suspend/reinstate action.",
+    "placeholders": {
+      "userId": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
   "adminParticipantIdLabel": "Participant ID",
   "adminLookUpButton": "Look up",
   "adminFixturesTab": "Fixture Identity",

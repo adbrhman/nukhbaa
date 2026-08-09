@@ -41,6 +41,20 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/users` — browse users by an optional email-contains
+  /// [search]; [limit] is an optional page cap, clamped server-side.
+  Future<Result<UserListDto>> listUsers({String? search, int? limit}) {
+    final query = <String, String>{
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (limit != null) 'limit': '$limit',
+    };
+    return _transport.getObject<UserListDto>(
+      '/admin/users',
+      query: query.isEmpty ? null : query,
+      parse: UserListDto.fromJson,
+    );
+  }
+
   /// `POST /admin/users/{userId}/suspend` — suspends a user, with a
   /// mandatory [reason] recorded on the audit trail. Idempotent: re-suspending
   /// an already-suspended user converges and echoes `suspended`.

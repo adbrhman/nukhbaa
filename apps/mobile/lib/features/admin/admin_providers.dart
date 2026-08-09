@@ -76,6 +76,31 @@ class UserSanctionController extends _$UserSanctionController {
   }
 }
 
+/// Owns the users browse/search read (`GET /admin/users`), used to find a
+/// target user id for the sanction fields. Modelled as a controller (rather
+/// than a `FutureProvider`) since a search is an explicit admin action, not a
+/// passive view a screen loads on entry.
+@riverpod
+class UsersLookupController extends _$UsersLookupController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<UserListDto>? build() => null;
+
+  /// Searches users by an optional email-contains [search].
+  Future<void> search(String search) async {
+    state = const AsyncValue.loading();
+    final result = await _api.listUsers(search: search);
+    state = switch (result) {
+      Ok<UserListDto>(:final value) => AsyncValue.data(value),
+      Err<UserListDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
 /// Owns the narrow cross-user ledger support-read
 /// (`GET /admin/participants/{id}/ledger`). Modelled as a controller (rather
 /// than a `FutureProvider`) because the read is itself an audited *action*
