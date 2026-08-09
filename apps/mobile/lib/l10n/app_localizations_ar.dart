@@ -361,6 +361,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminReinstateButton => 'إعادة تفعيل';
 
   @override
+  String get adminUsersSearchLabel => 'ابحث بالبريد الإلكتروني';
+
+  @override
+  String get adminUsersEmptyResults => 'لا يوجد مستخدمون مطابقون.';
+
+  @override
+  String adminSanctionResultMessage(String userId, String status) {
+    return 'المستخدم $userId أصبح الآن $status';
+  }
+
+  @override
   String get adminParticipantIdLabel => 'معرّف المشارك';
 
   @override

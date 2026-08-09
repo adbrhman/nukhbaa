@@ -672,6 +672,24 @@ abstract class AppLocalizations {
   /// **'Reinstate'**
   String get adminReinstateButton;
 
+  /// No description provided for @adminUsersSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by email'**
+  String get adminUsersSearchLabel;
+
+  /// No description provided for @adminUsersEmptyResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching users.'**
+  String get adminUsersEmptyResults;
+
+  /// Result line after a suspend/reinstate action.
+  ///
+  /// In en, this message translates to:
+  /// **'{userId} is now {status}'**
+  String adminSanctionResultMessage(String userId, String status);
+
   /// No description provided for @adminParticipantIdLabel.
   ///
   /// In en, this message translates to:

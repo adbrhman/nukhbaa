@@ -405,11 +405,23 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     final inFlight = submission is SubmissionInFlight;
 
     // Pre-fill from the stored prediction (once) when it resolves non-null.
-    mine.whenData((prediction) {
-      if (prediction != null) {
-        _applyPrefill(prediction);
-      }
-    });
+    // Scheduled via `addPostFrameCallback` rather than mutating the
+    // controllers inline here: by the time `myPrediction` resolves (an
+    // async fetch), this row's `TextField`s are already mounted from a
+    // prior frame, so writing `.text` directly during build would notify
+    // their listeners — and call `setState`/`markNeedsBuild` on
+    // already-built elements — while the framework's build phase is still
+    // locked, throwing "setState() or markNeedsBuild() called during
+    // build" and hanging the screen every time an already-predicted round
+    // is opened. Deferring to the post-frame callback runs it once the
+    // build phase is unlocked, so the same mutation is safe there.
+    final storedPrediction = mine.value;
+    if (storedPrediction != null && !_prefilled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _applyPrefill(storedPrediction));
+      });
+    }
 
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
 

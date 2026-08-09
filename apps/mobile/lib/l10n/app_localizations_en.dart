@@ -355,6 +355,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminReinstateButton => 'Reinstate';
 
   @override
+  String get adminUsersSearchLabel => 'Search by email';
+
+  @override
+  String get adminUsersEmptyResults => 'No matching users.';
+
+  @override
+  String adminSanctionResultMessage(String userId, String status) {
+    return '$userId is now $status';
+  }
+
+  @override
   String get adminParticipantIdLabel => 'Participant ID';
 
   @override

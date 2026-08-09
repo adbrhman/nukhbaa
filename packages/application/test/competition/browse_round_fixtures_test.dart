@@ -68,7 +68,7 @@ void main() {
     await seed(_link(roundId: _round, fixtureId: _fa, order: 0));
     final schedule =
         (FixtureSchedule.create(
-                  fixture: FixtureRef(_fa),
+                  fixture: const FixtureRef(_fa),
                   homeTeam: 'Al Hilal',
                   awayTeam: 'Al Nassr',
                   kickoffAt: DateTime.utc(2026, 8, 20, 18),
