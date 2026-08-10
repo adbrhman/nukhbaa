@@ -375,6 +375,46 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
 
   List<FixtureScoreDto>? _collectScores() {
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
+    if (openFixtures.isEmpty) return null;
+    if (_lockedDoubleFixtureId == null && _doubleFixtureId == null) {
+      return null;
+    }
+
+    final scores = <FixtureScoreDto>[];
+    for (final fixture in openFixtures) {
+      final home = int.tryParse(_home[fixture.fixtureId]!.text.trim());
+      final away = int.tryParse(_away[fixture.fixtureId]!.text.trim());
+      if (home == null || away == null || home < 0 || away < 0) {
+        return null;
+      }
+      scores.add(
+        FixtureScoreDto(
+          fixtureId: fixture.fixtureId,
+          homeGoals: home,
+          awayGoals: away,
+          isDouble: fixture.fixtureId == _doubleFixtureId,
+        ),
+      );
+    }
+    return scores;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final submission = ref.watch(predictionControllerProvider(widget.roundId));
+    final mine = ref.watch(myPredictionProvider(widget.roundId));
+    final inFlight = submission is SubmissionInFlight;
+
+    final storedPrediction = mine.value;
+    if (storedPrediction != null && !_prefilled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _applyPrefill(storedPrediction));
+      });
+    }
+
+    final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     final List<FixtureScoreDto>? scores = _collectScores();
     final bool noDoubleChosen =
         _lockedDoubleFixtureId == null && _doubleFixtureId == null;
