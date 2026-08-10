@@ -75,7 +75,7 @@ final class AdminListRoundPredictions {
         AppError.invariant(
           'admin.round_not_scored',
           'The round report is available only after the round is scored '
-              '(round is \${round.status.wireValue})',
+              '(round is ${round.status.wireValue})',
         ),
       );
     }

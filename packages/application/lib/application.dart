@@ -4,13 +4,13 @@
 /// implements them (that is Infrastructure's job) — Application ADR, Section 5.
 library;
 
+export 'src/admin/admin_list_round_predictions.dart';
+export 'src/admin/admin_list_round_predictions.dart';
 export 'src/admin/audit_recorder.dart';
 export 'src/admin/list_audit_log.dart';
 export 'src/admin/list_users.dart';
 export 'src/admin/ports/audit_log_repository.dart';
 export 'src/admin/ports/user_admin_repository.dart';
-export 'src/admin/suspend_user.dart';
-export 'src/admin/admin_list_round_predictions.dart';
 export 'src/admin/view_participant_ledger.dart';
 export 'src/common/clock.dart';
 export 'src/common/id_generator.dart';

@@ -749,14 +749,14 @@ class _PredictCenter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             _GoalStepper(
-              key: Key('prediction.home.${fixtureId}'),
+              key: Key('prediction.home.$fixtureId'),
               controller: homeController,
               enabled: enabled,
               onChanged: onChanged,
             ),
             const SizedBox(width: 4),
             _GoalStepper(
-              key: Key('prediction.away.${fixtureId}'),
+              key: Key('prediction.away.$fixtureId'),
               controller: awayController,
               enabled: enabled,
               onChanged: onChanged,
@@ -765,7 +765,7 @@ class _PredictCenter extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _DoubleButton(
-          key: Key('prediction.double.${fixtureId}'),
+          key: Key('prediction.double.$fixtureId'),
           active: isDouble,
           enabled: doubleSelectable,
           label: doubleLabel,
