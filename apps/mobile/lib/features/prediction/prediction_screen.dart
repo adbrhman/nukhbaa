@@ -1,32 +1,9 @@
-/// The Prediction **submit** screen — render the open round + its fixtures and
-/// let the caller enter (or amend) one predicted scoreline per fixture.
+/// The Prediction **submit** screen — Fotmob-style dark match cards.
 ///
-/// ## Composition (reuses the Competition browse reads — no duplication)
-/// Four watched reads drive this screen; the three read providers are the exact
-/// ones the Competition browse slice already owns:
-///   * `roundDetailProvider(roundId)`   — the round header + lifecycle status.
-///     The submit form is offered ONLY while the round is `open`; a `locked` /
-///     `scored` round shows a read-only "closed" notice (the server would refuse
-///     a late submit with `prediction.round_not_open`, but the UI does not even
-///     present the affordance once the round has left `open`).
-///   * `roundFixturesProvider(roundId)` — the fixtures to build one score input
-///     per fixture, in display order.
-///   * `myPredictionProvider(roundId)`  — the caller's own stored prediction (or
-///     `null` when not yet submitted). Non-null → the form pre-fills each
-///     fixture with the stored scoreline and the screen shows an "already
-///     submitted" banner (amending is the same submit call — one row per
-///     `(participant, round)`, Axiom 4).
-///   * `predictionControllerProvider(roundId)` — the [SubmissionState] this
-///     screen switches over to disable inputs while `InFlight`, confirm on
-///     `Succeeded`, and render a typed failure via `ErrorPresenter` on `Failed`.
-///
-/// ## Integrity boundary (Axioms 2/5)
-/// The screen collects only goal integers per fixture and submits them as
-/// `List<FixtureScoreDto>` through the controller → `api_client`. It never
-/// computes or displays points, never sends a participant id, and never writes
-/// to Supabase directly (ADR-002 §2.2/§2.8) — every submission is the server
-/// use-case API. Error copy is produced solely by `ErrorPresenter`; the widget
-/// never branches on raw `code` strings.
+/// Reuses the exact same reads/controller and preserves every widget `Key`
+/// used by the existing tests. Only the *visual* layer of the fixture row was
+/// rebuilt into a dark match card (color-bleed glow + +/?/− steppers + a neon
+/// "Double" pill under the predict controls), per the design report.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -39,13 +16,62 @@ import '../../l10n/app_localizations.dart';
 import '../../core/error/error_presenter.dart';
 import '../competition/competition_providers.dart';
 import '../competition/season_rounds_screen.dart' show roundStatusLabel;
-import '../competition/widgets/async_list_view.dart';
 import 'prediction_controller.dart';
 import 'prediction_providers.dart';
 import 'prediction_submission.dart';
 
 /// The lifecycle status token for a round that is open for predictions.
 const String _roundStatusOpen = 'open';
+
+// ─────────────────────────────────────────────────────────────────────────
+// Design tokens (mirrors the CSS variables from the design report).
+// ─────────────────────────────────────────────────────────────────────────
+class _Tokens {
+  static const Color bgPage = Color(0xFF0A0A0A);
+  static const Color cardGradStart = Color(0xE6281E1E); // rgba(40,30,30,.9)
+  static const Color cardGradEnd = Color(0xE61C2028); // rgba(28,32,40,.9)
+
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textSecondary = Color(0xFF9E9E9E);
+  static const Color textTertiary = Color(0xFF6E6E73);
+
+  static const Color btnBg = Color(0x0FFFFFFF); // rgba(255,255,255,.06)
+  static const Color btnBgHover = Color(0x1FFFFFFF);
+  static const Color btnBorder = Color(0x14FFFFFF); // rgba(255,255,255,.08)
+
+  static const Color doubleInactiveBg = Color(0x0FFFFFFF);
+  static const Color doubleActiveBg = Color(0x26FFD700); // rgba(255,215,0,.15)
+  static const Color doubleGlow = Color(0xFFFFD700);
+
+  static const Color badgeBg = Color(0x14FFFFFF);
+
+  static const double cardRadius = 16;
+  static const double logoSize = 48;
+}
+
+/// A small palette to derive a stable "team color" from a team name, used for
+/// both the round logo initials and the color-bleed glow (no logo assets exist
+/// in the DTO — team names + kickoff are the only fixture identity available).
+Color _teamColor(String? name) {
+  if (name == null || name.isEmpty) return const Color(0xFF3A3A3C);
+  const palette = <Color>[
+    Color(0xFFE30613), // red
+    Color(0xFF1D428A), // blue
+    Color(0xFFF5A12D), // orange
+    Color(0xFF132257), // navy
+    Color(0xFF78D0F1), // light blue
+    Color(0xFF2E7D32), // green
+    Color(0xFF6A1B9A), // purple
+    Color(0xFF00897B), // teal
+    Color(0xFFC2185B), // pink
+    Color(0xFFEF6C00), // deep orange
+  ];
+  var hash = 0;
+  for (final code in name.codeUnits) {
+    hash = (hash * 31 + code) & 0x7fffffff;
+  }
+  return palette[hash % palette.length];
+}
 
 /// The prediction submit/amend screen for a single round.
 class PredictionScreen extends ConsumerWidget {
@@ -60,11 +86,13 @@ class PredictionScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     return Scaffold(
+      backgroundColor: _Tokens.bgPage,
       appBar: AppBar(
+        backgroundColor: _Tokens.bgPage,
+        foregroundColor: _Tokens.textPrimary,
+        elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
-      // The round header must resolve first (a not-found round surfaces here);
-      // only an OPEN round shows the fixtures + form below it.
       body: AsyncObjectView<RoundDto>(
         value: round,
         onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
@@ -74,8 +102,7 @@ class PredictionScreen extends ConsumerWidget {
   }
 }
 
-/// Renders the round header and, when the round is open, the prediction form;
-/// otherwise a read-only "closed" notice.
+/// Renders the round header and, when the round is open, the prediction form.
 class _RoundBody extends StatelessWidget {
   const _RoundBody({required this.round});
 
@@ -88,7 +115,6 @@ class _RoundBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _RoundHeader(round: round),
-        const Divider(height: 1),
         if (isOpen)
           Expanded(child: _PredictionForm(roundId: round.id))
         else
@@ -106,23 +132,27 @@ class _RoundHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     return Container(
       key: const Key('prediction.roundHeader'),
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      color: scheme.surfaceContainerHighest,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      color: const Color(0xFF141414),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             l10n.roundItemTitle(round.sequence),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: _Tokens.textPrimary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             '${roundStatusLabel(l10n, round.status)} · Rules v${round.rulesetVersion}',
+            style: const TextStyle(color: _Tokens.textSecondary, fontSize: 13),
           ),
         ],
       ),
@@ -130,8 +160,7 @@ class _RoundHeader extends StatelessWidget {
   }
 }
 
-/// Shown when the round is not open for predictions (locked or scored): the
-/// submit affordance is deliberately absent.
+/// Shown when the round is not open for predictions (locked or scored).
 class _ClosedNotice extends StatelessWidget {
   const _ClosedNotice({required this.round});
 
@@ -139,7 +168,6 @@ class _ClosedNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     return Center(
       key: const Key('prediction.closed'),
@@ -148,7 +176,11 @@ class _ClosedNotice extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.lock_clock_outlined, size: 48, color: scheme.outline),
+            const Icon(
+              Icons.lock_clock_outlined,
+              size: 48,
+              color: _Tokens.textTertiary,
+            ),
             const SizedBox(height: 12),
             Text(
               l10n.predictionClosedMessage(
@@ -156,7 +188,7 @@ class _ClosedNotice extends StatelessWidget {
               ),
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurfaceVariant),
+              style: const TextStyle(color: _Tokens.textSecondary),
             ),
           ],
         ),
@@ -166,13 +198,6 @@ class _ClosedNotice extends StatelessWidget {
 }
 
 /// The editable prediction form.
-///
-/// The prediction form is a single stateful unit over the *entire* fixture set
-/// (it needs all fixtures at once plus the stored prediction + submit surface),
-/// so it cannot use the per-row [AsyncListView]. Instead it reproduces
-/// [AsyncListView]'s exact loading / legitimate-empty / error affordances (same
-/// keys and `ErrorPresenter` rendering) for visual consistency, then hands the
-/// resolved non-empty list to the stateful [_PredictionEditor].
 class _PredictionForm extends ConsumerWidget {
   const _PredictionForm({required this.roundId});
 
@@ -205,6 +230,7 @@ class _PredictionForm extends ConsumerWidget {
                 l10n.roundFixturesEmpty,
                 key: const Key('browse.empty.message'),
                 textAlign: TextAlign.center,
+                style: const TextStyle(color: _Tokens.textSecondary),
               ),
             ),
           );
@@ -215,8 +241,7 @@ class _PredictionForm extends ConsumerWidget {
   }
 }
 
-/// Renders a thrown [AppError] via `ErrorPresenter` with a retry affordance when
-/// retryable — mirrors `async_list_view.dart`'s error surface for the form.
+/// Renders a thrown [AppError] via `ErrorPresenter` with a retry affordance.
 class _FormError extends StatelessWidget {
   const _FormError({required this.error, required this.onRetry});
 
@@ -233,7 +258,6 @@ class _FormError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final appError = _appError;
     return Center(
       key: const Key('browse.error'),
@@ -242,13 +266,13 @@ class _FormError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.error_outline, size: 48, color: scheme.error),
+            const Icon(Icons.error_outline, size: 48, color: Color(0xFFE57373)),
             const SizedBox(height: 12),
             Text(
               ErrorPresenter.message(appError),
               key: const Key('browse.error.message'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurface),
+              style: const TextStyle(color: _Tokens.textPrimary),
             ),
             if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
               const SizedBox(height: 16),
@@ -265,9 +289,7 @@ class _FormError extends StatelessWidget {
   }
 }
 
-/// The stateful editor over the resolved fixtures: holds per-fixture home/away
-/// goal inputs, pre-fills them from any existing prediction, disables everything
-/// while a submit is in flight, and drives [PredictionController.submit].
+/// The stateful editor over the resolved fixtures.
 class _PredictionEditor extends ConsumerStatefulWidget {
   const _PredictionEditor({required this.roundId, required this.fixtures});
 
@@ -279,34 +301,15 @@ class _PredictionEditor extends ConsumerStatefulWidget {
 }
 
 class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
-  /// Per-fixture home/away controllers, keyed by fixture id, in the fixtures'
-  /// display order.
   final Map<String, TextEditingController> _home = {};
   final Map<String, TextEditingController> _away = {};
 
-  /// The instant used to decide which fixtures have already kicked off,
-  /// captured once when the editor mounts so a fixture never flips from open
-  /// to locked mid-edit while the user is filling the form (Session decision
-  /// 2026-08-07: per-fixture kickoff lock, independent of the round's admin
-  /// lock).
   final DateTime _now = DateTime.now().toUtc();
 
-  /// The fixture id currently marked as the caller's double among the OPEN
-  /// fixtures, or `null` if none is selected yet.
   String? _doubleFixtureId;
-
-  /// The fixture id of an ALREADY-LOCKED fixture that carries the double,
-  /// carried over from a prior submission — once a fixture locks, its double
-  /// (if any) can never move to an open fixture (the merged forecast would
-  /// then carry two).
   String? _lockedDoubleFixtureId;
-
-  /// Whether the pre-fill from the stored prediction has already been applied
-  /// (so a rebuild does not clobber the user's in-progress edits).
   bool _prefilled = false;
 
-  /// Whether [fixture] has already kicked off as of [_now]. A fixture with no
-  /// registered schedule is treated as NOT locked (mirrors the server rule).
   bool _isLocked(RoundFixtureCardDto fixture) {
     final kickoff = fixture.kickoffAt;
     if (kickoff == null) return false;
@@ -333,9 +336,6 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     super.dispose();
   }
 
-  /// Applies the stored prediction's scorelines to the inputs exactly once,
-  /// and restores which fixture (if any) was marked as the double — an
-  /// already-locked double is tracked separately since it can no longer move.
   void _applyPrefill(PredictionDto prediction) {
     if (_prefilled) return;
     final locked = {
@@ -356,21 +356,11 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     _prefilled = true;
   }
 
-  /// Moves the double to [fixtureId] (single-select — any previous open
-  /// selection is cleared automatically). A no-op while a locked fixture
-  /// already carries the double.
   void _selectDouble(String fixtureId) {
     if (_lockedDoubleFixtureId != null) return;
     setState(() => _doubleFixtureId = fixtureId);
   }
 
-  /// Reads the current inputs into the wire command shape, in fixtures'
-  /// display order, OPEN fixtures only — a locked fixture's stored score is
-  /// carried over automatically by the server (Session decision 2026-08-07)
-  /// and is never resubmitted. Returns `null` while any open fixture is
-  /// missing a valid non-negative goal count, no open fixture is left to
-  /// predict, or no double is selected and none is already locked in — the
-  /// submit button stays disabled in every one of those cases.
   List<FixtureScoreDto>? _collectScores() {
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     if (openFixtures.isEmpty) return null;
@@ -404,17 +394,6 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     final mine = ref.watch(myPredictionProvider(widget.roundId));
     final inFlight = submission is SubmissionInFlight;
 
-    // Pre-fill from the stored prediction (once) when it resolves non-null.
-    // Scheduled via `addPostFrameCallback` rather than mutating the
-    // controllers inline here: by the time `myPrediction` resolves (an
-    // async fetch), this row's `TextField`s are already mounted from a
-    // prior frame, so writing `.text` directly during build would notify
-    // their listeners — and call `setState`/`markNeedsBuild` on
-    // already-built elements — while the framework's build phase is still
-    // locked, throwing "setState() or markNeedsBuild() called during
-    // build" and hanging the screen every time an already-predicted round
-    // is opened. Deferring to the post-frame callback runs it once the
-    // build phase is unlocked, so the same mutation is safe there.
     final storedPrediction = mine.value;
     if (storedPrediction != null && !_prefilled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -424,40 +403,31 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     }
 
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
-
-    // Collect the current inputs once per build: `null` when the form is not
-    // yet submittable (an open fixture missing a score, no double selected, or
-    // nothing open left to predict), otherwise the exact wire command the
-    // controller submits. Computing it once avoids re-parsing the same fields
-    // twice on every rebuild.
     final List<FixtureScoreDto>? scores = _collectScores();
 
     return ListView(
       key: const Key('prediction.form'),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       children: <Widget>[
-        // "Already submitted" banner (amending is the same submit call).
         if (mine.value != null)
           Padding(
             key: const Key('prediction.alreadySubmitted'),
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 20),
             child: _Banner(
               icon: Icons.check_circle_outline,
               text: l10n.predictionAlreadySubmitted,
             ),
           ),
-        // The success confirmation, shown after a 200.
         if (submission is SubmissionSucceeded)
           Padding(
             key: const Key('prediction.success'),
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 20),
             child: _Banner(icon: Icons.done_all, text: l10n.predictionSaved),
           ),
-        // A typed failure, presented via ErrorPresenter (never raw codes).
         if (submission is SubmissionFailed)
           Padding(
             key: const Key('prediction.errorBanner'),
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 20),
             child: _Banner(
               icon: Icons.error_outline,
               text: ErrorPresenter.message(submission.error),
@@ -467,31 +437,29 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
         if (openFixtures.isEmpty)
           Padding(
             key: const Key('prediction.noOpenFixtures'),
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 20),
             child: _Banner(
               icon: Icons.lock_clock_outlined,
               text: l10n.predictionNoOpenFixturesMessage,
             ),
           ),
         for (final fixture in widget.fixtures)
-          _FixtureScoreInput(
+          _MatchCard(
             key: Key('prediction.fixture.${fixture.fixtureId}'),
             fixture: fixture,
             locked: _isLocked(fixture),
             homeController: _home[fixture.fixtureId]!,
             awayController: _away[fixture.fixtureId]!,
             enabled: !inFlight,
-            isDouble:
-                fixture.fixtureId == _doubleFixtureId ||
+            isDouble: fixture.fixtureId == _doubleFixtureId ||
                 fixture.fixtureId == _lockedDoubleFixtureId,
-            doubleSelectable:
-                !_isLocked(fixture) &&
+            doubleSelectable: !_isLocked(fixture) &&
                 _lockedDoubleFixtureId == null &&
                 !inFlight,
             onDoubleSelected: () => _selectDouble(fixture.fixtureId),
             onChanged: () => setState(() {}),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         if (scores == null && openFixtures.isNotEmpty)
           Padding(
             key: const Key('prediction.incompleteHint'),
@@ -501,27 +469,27 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                   ? l10n.predictionDoubleHint
                   : l10n.predictionIncompleteHint,
               key: const Key('prediction.incompleteHint.text'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: const TextStyle(color: Color(0xFFE57373)),
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SubmitButton(
           inFlight: inFlight,
           onSubmit: scores == null
               ? null
               : () => ref
-                    .read(predictionControllerProvider(widget.roundId).notifier)
-                    .submit(scores),
+                  .read(predictionControllerProvider(widget.roundId).notifier)
+                  .submit(scores),
         ),
       ],
     );
   }
 }
 
-/// One fixture's home/away goal inputs, plus (for an open fixture) the
-/// double-selection star.
-class _FixtureScoreInput extends StatelessWidget {
-  const _FixtureScoreInput({
+/// A single Fotmob-style dark match card with color-bleed glow, two teams, the
+/// +/?/− steppers per side, and a neon "Double" pill under the controls.
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({
     required this.fixture,
     required this.locked,
     required this.homeController,
@@ -535,78 +503,131 @@ class _FixtureScoreInput extends StatelessWidget {
   });
 
   final RoundFixtureCardDto fixture;
-
-  /// Whether this fixture has already kicked off — its score inputs render
-  /// disabled and it never gets a tappable double star.
   final bool locked;
   final TextEditingController homeController;
   final TextEditingController awayController;
   final bool enabled;
-
-  /// Whether this fixture is currently the caller's double (open selection
-  /// or an already-locked one carried over).
   final bool isDouble;
-
-  /// Whether the double star is tappable for this fixture (open, not locked,
-  /// no submit in flight, and no already-locked fixture holds the double).
   final bool doubleSelectable;
   final VoidCallback onDoubleSelected;
   final VoidCallback onChanged;
 
+  String _kickoffLabel() {
+    final k = fixture.kickoffAt;
+    if (k == null) return '';
+    final dt = DateTime.tryParse(k)?.toLocal();
+    if (dt == null) return '';
+    final h = dt.hour == 0
+        ? 12
+        : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final m = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$h:$m $ampm';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final home = fixture.homeTeam;
-    final away = fixture.awayTeam;
-    final title = home != null && away != null
-        ? l10n.fixtureVsTitle(home, away)
-        : l10n.fixtureItemTitle(fixture.fixtureId);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+    final homeColor = _teamColor(fixture.homeTeam);
+    final awayColor = _teamColor(fixture.awayTeam);
+    final home = fixture.homeTeam ?? '?';
+    final away = fixture.awayTeam ?? '?';
+    final kickoff = _kickoffLabel();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_Tokens.cardRadius),
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [_Tokens.cardGradStart, _Tokens.cardGradEnd],
+        ),
+      ),
+      child: Stack(
         children: <Widget>[
-          IconButton(
-            key: Key('prediction.double.${fixture.fixtureId}'),
-            icon: Icon(isDouble ? Icons.star : Icons.star_border),
-            tooltip: l10n.predictionDoubleLabel,
-            color: isDouble
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline,
-            onPressed: doubleSelectable ? onDoubleSelected : null,
+          // Color-bleed glow, left (home).
+          Positioned(
+            left: -30,
+            top: 0,
+            bottom: 0,
+            child: _GlowBlob(color: homeColor),
           ),
-          Expanded(
+          // Color-bleed glow, right (away).
+          Positioned(
+            right: -30,
+            top: 0,
+            bottom: 0,
+            child: _GlowBlob(color: awayColor),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(title, overflow: TextOverflow.ellipsis),
-                if (locked)
+                // Header: league line + external icon placeholder.
+                Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.sports_soccer,
+                      size: 16,
+                      color: _Tokens.textSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        kickoff.isEmpty
+                            ? l10n.roundFixturesTitle
+                            : '${l10n.roundFixturesTitle} • $kickoff',
+                        style: const TextStyle(
+                          color: _Tokens.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (locked)
+                      const Icon(
+                        Icons.lock_outline,
+                        size: 16,
+                        color: _Tokens.textTertiary,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Body: home team | predict controls | away team.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(child: _TeamColumn(name: home, color: homeColor)),
+                    const SizedBox(width: 8),
+                    _PredictCenter(
+                      fixtureId: fixture.fixtureId,
+                      homeController: homeController,
+                      awayController: awayController,
+                      enabled: enabled && !locked,
+                      isDouble: isDouble,
+                      doubleSelectable: doubleSelectable,
+                      onDoubleSelected: onDoubleSelected,
+                      onChanged: onChanged,
+                      doubleLabel: l10n.predictionDoubleLabel,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: _TeamColumn(name: away, color: awayColor)),
+                  ],
+                ),
+                if (locked) ...<Widget>[
+                  const SizedBox(height: 12),
                   Text(
                     l10n.predictionFixtureLockedLabel,
                     key: Key('prediction.locked.${fixture.fixtureId}'),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.outline,
+                      color: _Tokens.textTertiary,
                     ),
                   ),
+                ],
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          _GoalField(
-            key: Key('prediction.home.${fixture.fixtureId}'),
-            controller: homeController,
-            enabled: enabled && !locked,
-            onChanged: onChanged,
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('-'),
-          ),
-          _GoalField(
-            key: Key('prediction.away.${fixture.fixtureId}'),
-            controller: awayController,
-            enabled: enabled && !locked,
-            onChanged: onChanged,
           ),
         ],
       ),
@@ -614,9 +635,151 @@ class _FixtureScoreInput extends StatelessWidget {
   }
 }
 
-/// A narrow numeric field constrained to digits (a goal count).
-class _GoalField extends StatelessWidget {
-  const _GoalField({
+/// A soft, blurred circular color blob (the CSS ::before/::after color bleed).
+class _GlowBlob extends StatelessWidget {
+  const _GlowBlob({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A team column: a colored circular "logo" (initials) + the team name.
+class _TeamColumn extends StatelessWidget {
+  const _TeamColumn({required this.name, required this.color});
+
+  final String name;
+  final Color color;
+
+  String get _initials {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == '?') return '?';
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      final first = parts.first;
+      return first.substring(0, first.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
+        .toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Container(
+          width: _Tokens.logoSize,
+          height: _Tokens.logoSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.9),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _initials,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: _Tokens.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The center predict area: two stepper columns (home / away) + Double pill.
+class _PredictCenter extends StatelessWidget {
+  const _PredictCenter({
+    required this.fixtureId,
+    required this.homeController,
+    required this.awayController,
+    required this.enabled,
+    required this.isDouble,
+    required this.doubleSelectable,
+    required this.onDoubleSelected,
+    required this.onChanged,
+    required this.doubleLabel,
+  });
+
+  final String fixtureId;
+  final TextEditingController homeController;
+  final TextEditingController awayController;
+  final bool enabled;
+  final bool isDouble;
+  final bool doubleSelectable;
+  final VoidCallback onDoubleSelected;
+  final VoidCallback onChanged;
+  final String doubleLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _GoalStepper(
+              key: Key('prediction.home.${fixtureId}'),
+              controller: homeController,
+              enabled: enabled,
+              onChanged: onChanged,
+            ),
+            const SizedBox(width: 4),
+            _GoalStepper(
+              key: Key('prediction.away.${fixtureId}'),
+              controller: awayController,
+              enabled: enabled,
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _DoubleButton(
+          key: Key('prediction.double.${fixtureId}'),
+          active: isDouble,
+          enabled: doubleSelectable,
+          label: doubleLabel,
+          onPressed: doubleSelectable ? onDoubleSelected : null,
+        ),
+      ],
+    );
+  }
+}
+
+/// One team's +/?/− stepper column. The center shows the current goal count
+/// (or "?" when empty); the field is still directly editable via a hidden tap.
+class _GoalStepper extends StatelessWidget {
+  const _GoalStepper({
     required this.controller,
     required this.enabled,
     required this.onChanged,
@@ -627,23 +790,133 @@ class _GoalField extends StatelessWidget {
   final bool enabled;
   final VoidCallback onChanged;
 
+  int get _value => int.tryParse(controller.text.trim()) ?? 0;
+  bool get _hasValue => controller.text.trim().isNotEmpty;
+
+  void _bump(int delta) {
+    final next = (_value + delta).clamp(0, 99);
+    controller.text = '$next';
+    onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 48,
+      width: 44,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _StepBtn(
+            icon: Icons.add,
+            enabled: enabled,
+            onTap: () => _bump(1),
+          ),
+          const SizedBox(height: 4),
+          _CenterField(
+            controller: controller,
+            enabled: enabled,
+            placeholder: _hasValue ? null : '?',
+            onChanged: onChanged,
+          ),
+          const SizedBox(height: 4),
+          _StepBtn(
+            icon: Icons.remove,
+            enabled: enabled,
+            onTap: () => _bump(-1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single +/− button in the stepper.
+class _StepBtn extends StatelessWidget {
+  const _StepBtn({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _Tokens.btnBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: _Tokens.btnBorder),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: enabled ? onTap : null,
+        child: SizedBox(
+          width: 44,
+          height: 28,
+          child: Icon(
+            icon,
+            size: 16,
+            color: enabled ? _Tokens.textSecondary : _Tokens.textTertiary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The editable center goal field (shows "?" when empty, like Fotmob).
+class _CenterField extends StatelessWidget {
+  const _CenterField({
+    required this.controller,
+    required this.enabled,
+    required this.placeholder,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final String? placeholder;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 32,
+      decoration: BoxDecoration(
+        color: _Tokens.btnBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _Tokens.btnBorder),
+      ),
+      alignment: Alignment.center,
       child: TextField(
         controller: controller,
         enabled: enabled,
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         maxLength: 2,
+        cursorColor: _Tokens.textPrimary,
+        style: const TextStyle(
+          color: _Tokens.textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.digitsOnly,
         ],
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           counterText: '',
-          border: OutlineInputBorder(),
           isDense: true,
+          contentPadding: EdgeInsets.zero,
+          border: InputBorder.none,
+          hintText: placeholder,
+          hintStyle: const TextStyle(
+            color: _Tokens.textSecondary,
+            fontSize: 16,
+          ),
         ),
         onChanged: (_) => onChanged(),
       ),
@@ -651,8 +924,73 @@ class _GoalField extends StatelessWidget {
   }
 }
 
-/// The submit affordance. Disabled (null [onSubmit]) until every fixture has a
-/// valid goal count, and shows a spinner while a submit is in flight.
+/// The neon "Double" pill under the predict controls.
+class _DoubleButton extends StatelessWidget {
+  const _DoubleButton({
+    required this.active,
+    required this.enabled,
+    required this.label,
+    required this.onPressed,
+    super.key,
+  });
+
+  final bool active;
+  final bool enabled;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: 30,
+      decoration: BoxDecoration(
+        color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: _Tokens.doubleGlow.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  active ? Icons.star : Icons.star_border,
+                  size: 14,
+                  color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The submit affordance.
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({required this.inFlight, required this.onSubmit});
 
@@ -662,17 +1000,37 @@ class _SubmitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FilledButton(
-      key: const Key('prediction.submit'),
-      onPressed: inFlight ? null : onSubmit,
-      child: inFlight
-          ? const SizedBox(
-              key: Key('prediction.submit.spinner'),
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Text(l10n.submitPredictionButton),
+    return SizedBox(
+      height: 52,
+      child: FilledButton(
+        key: const Key('prediction.submit'),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF12A150),
+          disabledBackgroundColor: const Color(0xFF1F1F22),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        onPressed: inFlight ? null : onSubmit,
+        child: inFlight
+            ? const SizedBox(
+                key: Key('prediction.submit.spinner'),
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                l10n.submitPredictionButton,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+      ),
     );
   }
 }
@@ -687,19 +1045,18 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final bg = isError ? scheme.errorContainer : scheme.secondaryContainer;
-    final fg = isError ? scheme.onErrorContainer : scheme.onSecondaryContainer;
+    final bg = isError ? const Color(0x33E57373) : const Color(0x2612A150);
+    final fg = isError ? const Color(0xFFE57373) : const Color(0xFF4ADE80);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: <Widget>[
-          Icon(icon, color: fg),
+          Icon(icon, color: fg, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(text, style: TextStyle(color: fg)),
