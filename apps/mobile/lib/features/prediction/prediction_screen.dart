@@ -414,10 +414,12 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: ListView(
+          child: SingleChildScrollView(
             key: const Key('prediction.form'),
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            children: <Widget>[
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
               if (mine.value != null)
                 Padding(
                   key: const Key('prediction.alreadySubmitted'),
@@ -486,7 +488,8 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                     style: const TextStyle(color: Color(0xFFE57373)),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
         SafeArea(
