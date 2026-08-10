@@ -36,14 +36,12 @@ class _Tokens {
   static const Color textTertiary = Color(0xFF6E6E73);
 
   static const Color btnBg = Color(0x0FFFFFFF); // rgba(255,255,255,.06)
-  static const Color btnBgHover = Color(0x1FFFFFFF);
   static const Color btnBorder = Color(0x14FFFFFF); // rgba(255,255,255,.08)
 
   static const Color doubleInactiveBg = Color(0x0FFFFFFF);
   static const Color doubleActiveBg = Color(0x26FFD700); // rgba(255,215,0,.15)
   static const Color doubleGlow = Color(0xFFFFD700);
 
-  static const Color badgeBg = Color(0x14FFFFFF);
 
   static const double cardRadius = 16;
   static const double logoSize = 48;
@@ -93,11 +91,20 @@ class PredictionScreen extends ConsumerWidget {
         elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
-      body: AsyncObjectView<RoundDto>(
-        value: round,
-        onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
-        builder: (context, r) => _RoundBody(round: r),
-      ),
+            body: round.when(
+              skipLoadingOnRefresh: false,
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (error, _) => _FormError(
+                error: error,
+                onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
+              ),
+              data: (r) => _RoundBody(round: r),
+            ),
     );
   }
 }
