@@ -791,7 +791,7 @@ class _PredictCenter extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _DoubleButton(
-          key: Key('prediction.double.$fixtureId'),
+          buttonKey: Key('prediction.double.$fixtureId'),
           active: isDouble,
           enabled: doubleSelectable,
           label: doubleLabel,
@@ -947,19 +947,24 @@ class _CenterField extends StatelessWidget {
 }
 
 /// The neon "Double" pill under the predict controls.
+///
+/// Its tappable core is an [IconButton] carrying [buttonKey] so
+/// `tester.widget<IconButton>(find.byKey(...))` in existing tests keeps
+/// working; the pill chrome (glow + label) wraps it visually.
 class _DoubleButton extends StatelessWidget {
   const _DoubleButton({
     required this.active,
     required this.enabled,
     required this.label,
     required this.onPressed,
-    super.key,
+    required this.buttonKey,
   });
 
   final bool active;
   final bool enabled;
   final String label;
   final VoidCallback? onPressed;
+  final Key buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -979,33 +984,30 @@ class _DoubleButton extends StatelessWidget {
               ]
             : null,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onPressed,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  active ? Icons.star : Icons.star_border,
-                  size: 14,
-                  color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-                  ),
-                ),
-              ],
+      child: IconButton(
+        key: buttonKey,
+        onPressed: onPressed,
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
+        icon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              active ? Icons.star : Icons.star_border,
+              size: 14,
+              color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
             ),
-          ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );
