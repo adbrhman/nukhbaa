@@ -411,83 +411,99 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     final List<FixtureScoreDto>? scores = _collectScores();
 
-    return ListView(
-      key: const Key('prediction.form'),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+    return Column(
       children: <Widget>[
-        if (mine.value != null)
-          Padding(
-            key: const Key('prediction.alreadySubmitted'),
-            padding: const EdgeInsets.only(bottom: 20),
-            child: _Banner(
-              icon: Icons.check_circle_outline,
-              text: l10n.predictionAlreadySubmitted,
+        Expanded(
+          child: ListView(
+            key: const Key('prediction.form'),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            children: <Widget>[
+              if (mine.value != null)
+                Padding(
+                  key: const Key('prediction.alreadySubmitted'),
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _Banner(
+                    icon: Icons.check_circle_outline,
+                    text: l10n.predictionAlreadySubmitted,
+                  ),
+                ),
+              if (submission is SubmissionSucceeded)
+                Padding(
+                  key: const Key('prediction.success'),
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _Banner(
+                    icon: Icons.done_all,
+                    text: l10n.predictionSaved,
+                  ),
+                ),
+              if (submission is SubmissionFailed)
+                Padding(
+                  key: const Key('prediction.errorBanner'),
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _Banner(
+                    icon: Icons.error_outline,
+                    text: ErrorPresenter.message(submission.error),
+                    isError: true,
+                  ),
+                ),
+              if (openFixtures.isEmpty)
+                Padding(
+                  key: const Key('prediction.noOpenFixtures'),
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _Banner(
+                    icon: Icons.lock_clock_outlined,
+                    text: l10n.predictionNoOpenFixturesMessage,
+                  ),
+                ),
+              for (final fixture in widget.fixtures)
+                _MatchCard(
+                  key: Key('prediction.fixture.${fixture.fixtureId}'),
+                  fixture: fixture,
+                  locked: _isLocked(fixture),
+                  homeController: _home[fixture.fixtureId]!,
+                  awayController: _away[fixture.fixtureId]!,
+                  enabled: !inFlight,
+                  isDouble:
+                      fixture.fixtureId == _doubleFixtureId ||
+                      fixture.fixtureId == _lockedDoubleFixtureId,
+                  doubleSelectable:
+                      !_isLocked(fixture) &&
+                      _lockedDoubleFixtureId == null &&
+                      !inFlight,
+                  onDoubleSelected: () => _selectDouble(fixture.fixtureId),
+                  onChanged: () => setState(() {}),
+                ),
+              const SizedBox(height: 4),
+              if (scores == null && openFixtures.isNotEmpty)
+                Padding(
+                  key: const Key('prediction.incompleteHint'),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _lockedDoubleFixtureId == null && _doubleFixtureId == null
+                        ? l10n.predictionDoubleHint
+                        : l10n.predictionIncompleteHint,
+                    key: const Key('prediction.incompleteHint.text'),
+                    style: const TextStyle(color: Color(0xFFE57373)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _SubmitButton(
+              inFlight: inFlight,
+              onSubmit: scores == null
+                  ? null
+                  : () => ref
+                        .read(
+                          predictionControllerProvider(widget.roundId).notifier,
+                        )
+                        .submit(scores),
             ),
           ),
-        if (submission is SubmissionSucceeded)
-          Padding(
-            key: const Key('prediction.success'),
-            padding: const EdgeInsets.only(bottom: 20),
-            child: _Banner(icon: Icons.done_all, text: l10n.predictionSaved),
-          ),
-        if (submission is SubmissionFailed)
-          Padding(
-            key: const Key('prediction.errorBanner'),
-            padding: const EdgeInsets.only(bottom: 20),
-            child: _Banner(
-              icon: Icons.error_outline,
-              text: ErrorPresenter.message(submission.error),
-              isError: true,
-            ),
-          ),
-        if (openFixtures.isEmpty)
-          Padding(
-            key: const Key('prediction.noOpenFixtures'),
-            padding: const EdgeInsets.only(bottom: 20),
-            child: _Banner(
-              icon: Icons.lock_clock_outlined,
-              text: l10n.predictionNoOpenFixturesMessage,
-            ),
-          ),
-        for (final fixture in widget.fixtures)
-          _MatchCard(
-            key: Key('prediction.fixture.${fixture.fixtureId}'),
-            fixture: fixture,
-            locked: _isLocked(fixture),
-            homeController: _home[fixture.fixtureId]!,
-            awayController: _away[fixture.fixtureId]!,
-            enabled: !inFlight,
-            isDouble:
-                fixture.fixtureId == _doubleFixtureId ||
-                fixture.fixtureId == _lockedDoubleFixtureId,
-            doubleSelectable:
-                !_isLocked(fixture) &&
-                _lockedDoubleFixtureId == null &&
-                !inFlight,
-            onDoubleSelected: () => _selectDouble(fixture.fixtureId),
-            onChanged: () => setState(() {}),
-          ),
-        const SizedBox(height: 4),
-        if (scores == null && openFixtures.isNotEmpty)
-          Padding(
-            key: const Key('prediction.incompleteHint'),
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text(
-              _lockedDoubleFixtureId == null && _doubleFixtureId == null
-                  ? l10n.predictionDoubleHint
-                  : l10n.predictionIncompleteHint,
-              key: const Key('prediction.incompleteHint.text'),
-              style: const TextStyle(color: Color(0xFFE57373)),
-            ),
-          ),
-        const SizedBox(height: 12),
-        _SubmitButton(
-          inFlight: inFlight,
-          onSubmit: scores == null
-              ? null
-              : () => ref
-                    .read(predictionControllerProvider(widget.roundId).notifier)
-                    .submit(scores),
         ),
       ],
     );
