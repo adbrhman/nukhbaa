@@ -976,47 +976,51 @@ class _DoubleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      height: 30,
-      decoration: BoxDecoration(
-        color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: _Tokens.doubleGlow.withValues(alpha: 0.4),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: IconButton(
-        key: buttonKey,
-        onPressed: onPressed,
-        visualDensity: VisualDensity.compact,
+    return GestureDetector(
+      key: buttonKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
-        style: ButtonStyle(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        icon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              active ? Icons.star : Icons.star_border,
-              size: 14,
-              color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+        decoration: BoxDecoration(
+          color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: _Tokens.doubleGlow.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: IconButton(
+          onPressed: onPressed,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
+          icon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                active ? Icons.star : Icons.star_border,
+                size: 14,
                 color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
