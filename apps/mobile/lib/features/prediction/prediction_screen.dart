@@ -42,7 +42,6 @@ class _Tokens {
   static const Color doubleActiveBg = Color(0x26FFD700); // rgba(255,215,0,.15)
   static const Color doubleGlow = Color(0xFFFFD700);
 
-
   static const double cardRadius = 16;
   static const double logoSize = 48;
 }
@@ -91,20 +90,20 @@ class PredictionScreen extends ConsumerWidget {
         elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
-            body: round.when(
-              skipLoadingOnRefresh: false,
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (error, _) => _FormError(
-                error: error,
-                onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
-              ),
-              data: (r) => _RoundBody(round: r),
-            ),
+      body: round.when(
+        skipLoadingOnRefresh: false,
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        error: (error, _) => _FormError(
+          error: error,
+          onRetry: () => ref.invalidate(roundDetailProvider(roundId)),
+        ),
+        data: (r) => _RoundBody(round: r),
+      ),
     );
   }
 }
@@ -458,9 +457,11 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
             homeController: _home[fixture.fixtureId]!,
             awayController: _away[fixture.fixtureId]!,
             enabled: !inFlight,
-            isDouble: fixture.fixtureId == _doubleFixtureId ||
+            isDouble:
+                fixture.fixtureId == _doubleFixtureId ||
                 fixture.fixtureId == _lockedDoubleFixtureId,
-            doubleSelectable: !_isLocked(fixture) &&
+            doubleSelectable:
+                !_isLocked(fixture) &&
                 _lockedDoubleFixtureId == null &&
                 !inFlight,
             onDoubleSelected: () => _selectDouble(fixture.fixtureId),
@@ -485,8 +486,8 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
           onSubmit: scores == null
               ? null
               : () => ref
-                  .read(predictionControllerProvider(widget.roundId).notifier)
-                  .submit(scores),
+                    .read(predictionControllerProvider(widget.roundId).notifier)
+                    .submit(scores),
         ),
       ],
     );
@@ -524,9 +525,7 @@ class _MatchCard extends StatelessWidget {
     if (k == null) return '';
     final dt = DateTime.tryParse(k)?.toLocal();
     if (dt == null) return '';
-    final h = dt.hour == 0
-        ? 12
-        : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final h = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
     final m = dt.minute.toString().padLeft(2, '0');
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $ampm';
@@ -605,7 +604,9 @@ class _MatchCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(child: _TeamColumn(name: home, color: homeColor)),
+                    Expanded(
+                      child: _TeamColumn(name: home, color: homeColor),
+                    ),
                     const SizedBox(width: 8),
                     _PredictCenter(
                       fixtureId: fixture.fixtureId,
@@ -619,7 +620,9 @@ class _MatchCard extends StatelessWidget {
                       doubleLabel: l10n.predictionDoubleLabel,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: _TeamColumn(name: away, color: awayColor)),
+                    Expanded(
+                      child: _TeamColumn(name: away, color: awayColor),
+                    ),
                   ],
                 ),
                 if (locked) ...<Widget>[
@@ -813,11 +816,7 @@ class _GoalStepper extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          _StepBtn(
-            icon: Icons.add,
-            enabled: enabled,
-            onTap: () => _bump(1),
-          ),
+          _StepBtn(icon: Icons.add, enabled: enabled, onTap: () => _bump(1)),
           const SizedBox(height: 4),
           _CenterField(
             controller: controller,
