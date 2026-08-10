@@ -94,7 +94,9 @@ void main() {
       expect(find.byKey(const Key('prediction.home.f-b')), findsOneWidget);
       expect(find.byKey(const Key('prediction.away.f-b')), findsOneWidget);
       debugPrint('=== WIDGET TYPES ===');
-      for (final w in tester.allWidgets) { debugPrint(w.runtimeType.toString()); }
+      for (final w in tester.allWidgets) {
+        debugPrint(w.runtimeType.toString());
+      }
       expect(find.byKey(const Key('prediction.submit')), findsOneWidget);
       // A fresh, unsubmitted round shows neither the already-submitted banner
       // nor an error.
