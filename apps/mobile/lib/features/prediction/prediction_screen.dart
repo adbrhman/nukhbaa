@@ -375,46 +375,6 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
 
   List<FixtureScoreDto>? _collectScores() {
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
-    if (openFixtures.isEmpty) return null;
-    if (_lockedDoubleFixtureId == null && _doubleFixtureId == null) {
-      return null;
-    }
-
-    final scores = <FixtureScoreDto>[];
-    for (final fixture in openFixtures) {
-      final home = int.tryParse(_home[fixture.fixtureId]!.text.trim());
-      final away = int.tryParse(_away[fixture.fixtureId]!.text.trim());
-      if (home == null || away == null || home < 0 || away < 0) {
-        return null;
-      }
-      scores.add(
-        FixtureScoreDto(
-          fixtureId: fixture.fixtureId,
-          homeGoals: home,
-          awayGoals: away,
-          isDouble: fixture.fixtureId == _doubleFixtureId,
-        ),
-      );
-    }
-    return scores;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final submission = ref.watch(predictionControllerProvider(widget.roundId));
-    final mine = ref.watch(myPredictionProvider(widget.roundId));
-    final inFlight = submission is SubmissionInFlight;
-
-    final storedPrediction = mine.value;
-    if (storedPrediction != null && !_prefilled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        setState(() => _applyPrefill(storedPrediction));
-      });
-    }
-
-    final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     final List<FixtureScoreDto>? scores = _collectScores();
     final bool noDoubleChosen =
         _lockedDoubleFixtureId == null && _doubleFixtureId == null;
@@ -422,12 +382,10 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: SingleChildScrollView(
+          child: ListView(
             key: const Key('prediction.form'),
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
+            children: <Widget>[
               if (mine.value != null)
                 Padding(
                   key: const Key('prediction.alreadySubmitted'),
@@ -483,36 +441,35 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                   onDoubleSelected: () => _selectDouble(fixture.fixtureId),
                   onChanged: () => setState(() {}),
                 ),
-              const SizedBox(height: 4),
-              if (scores == null && openFixtures.isNotEmpty)
-                Padding(
-                  key: const Key('prediction.incompleteHint'),
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    _lockedDoubleFixtureId == null && _doubleFixtureId == null
-                        ? l10n.predictionDoubleHint
-                        : l10n.predictionIncompleteHint,
-                    key: const Key('prediction.incompleteHint.text'),
-                    style: const TextStyle(color: Color(0xFFE57373)),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: _SubmitButton(
-              inFlight: inFlight,
-              onSubmit: scores == null
-                  ? null
-                  : () => ref
-                        .read(
-                          predictionControllerProvider(widget.roundId).notifier,
-                        )
-                        .submit(scores),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (scores == null && openFixtures.isNotEmpty)
+                  Padding(
+                    key: const Key('prediction.incompleteHint'),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      noDoubleChosen
+                          ? l10n.predictionDoubleHint
+                          : l10n.predictionIncompleteHint,
+                      key: const Key('prediction.incompleteHint.text'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFFE57373)),
+                    ),
+                  ),
+                _SubmitButton(
+                  inFlight: inFlight,
+                  onSubmit: scores == null ? null : () => _submit(scores),
+                ),
+              ],
             ),
           ),
         ),
