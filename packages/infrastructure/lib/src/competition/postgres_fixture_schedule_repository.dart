@@ -83,7 +83,7 @@ WHERE fixture_id = @fixture_id
   static const String _selectByFixturesSql = '''
 SELECT fixture_id, home_team, away_team, kickoff_at
 FROM competition.fixture_schedules
-WHERE fixture_id = ANY(@fixture_ids)
+WHERE fixture_id = ANY(@fixture_ids::uuid[])
 ''';
 
   @override

@@ -278,7 +278,7 @@ void main() {
           value.length,
           2,
         ); // the gap is detected by count, never zero-filled
-        expect(conn.sqls.single, contains('= ANY(@fixture_ids)'));
+        expect(conn.sqls.single, contains('= ANY(@fixture_ids::uuid[])'));
         expect(conn.parameters.single, {
           'fixture_ids': [_fixtureA, _fixtureB, _fixtureC],
         });

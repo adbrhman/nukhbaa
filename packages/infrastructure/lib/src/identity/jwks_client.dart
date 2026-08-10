@@ -143,9 +143,7 @@ final class JwksClient {
     _lastRefreshAttempt = _now();
     final http.Response response;
     try {
-      response = await _http
-          .get(jwksUri)
-          .timeout(const Duration(seconds: 10));
+      response = await _http.get(jwksUri).timeout(const Duration(seconds: 10));
     } on Object catch (e) {
       return Result.err(
         AppError.transient('auth.jwks_fetch_failed', 'JWKS fetch failed', e),
