@@ -26,6 +26,7 @@ void main() {
         'round_opened',
         'round_locked',
         'fixture_linked_to_round',
+        'round_predictions_viewed',
       });
     });
   });

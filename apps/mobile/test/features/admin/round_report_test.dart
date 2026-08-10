@@ -14,16 +14,14 @@ RoundScoreDto _score(
   fixtureResults: results,
 );
 
-PredictionDto _prediction(
-  String participantId,
-  List<FixtureScoreDto> scores,
-) => PredictionDto(
-  id: 'pred-$participantId',
-  participantId: participantId,
-  roundId: 'round-1',
-  submittedAt: '2026-08-01T12:00:00Z',
-  fixtureScores: scores,
-);
+PredictionDto _prediction(String participantId, List<FixtureScoreDto> scores) =>
+    PredictionDto(
+      id: 'pred-$participantId',
+      participantId: participantId,
+      roundId: 'round-1',
+      submittedAt: '2026-08-01T12:00:00Z',
+      fixtureScores: scores,
+    );
 
 void main() {
   test('ranks participants by total points descending', () {
@@ -79,11 +77,7 @@ void main() {
         roundId: 'round-1',
         scores: [
           _score('p1', 0, const [
-            FixtureScoreResultDto(
-              fixtureId: 'f1',
-              grade: 'missed',
-              points: 0,
-            ),
+            FixtureScoreResultDto(fixtureId: 'f1', grade: 'missed', points: 0),
           ]),
         ],
       );

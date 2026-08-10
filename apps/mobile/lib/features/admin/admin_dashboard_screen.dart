@@ -1024,8 +1024,7 @@ class _RoundReportSection extends ConsumerWidget {
     final AsyncValue<List<RoundReportRow>>? reportState = ref.watch(
       roundReportControllerProvider,
     );
-    final bool inFlight =
-        reportState is AsyncLoading<List<RoundReportRow>>;
+    final bool inFlight = reportState is AsyncLoading<List<RoundReportRow>>;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1085,14 +1084,12 @@ class _RoundReportSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final buffer = StringBuffer();
     for (final row in rows) {
-      buffer.writeln(
-        '${row.rank}. ${row.participantId} — ${row.totalPoints}',
-      );
+      buffer.writeln('${row.rank}. ${row.participantId} — ${row.totalPoints}');
     }
     Clipboard.setData(ClipboardData(text: buffer.toString().trimRight()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.adminRoundReportCopiedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.adminRoundReportCopiedMessage)));
   }
 }
 

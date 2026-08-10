@@ -68,20 +68,17 @@ void main() {
     );
   });
 
-  test(
-    'refuses a non-admin caller before any read or audit',
-    () async {
-      competition.seedRound(_round(status: RoundStatus.scored));
-      final result = await useCase(
-        principal: principal(userId: adminUuid, role: PlatformRole.user),
-        roundId: _roundId,
-      );
-      final error = (result as Err<List<PredictionView>>).error;
-      expect(error.kind, ErrorKind.authorization);
-      expect(error.code, 'auth.insufficient_role');
-      expect(auditLog.rows, isEmpty);
-    },
-  );
+  test('refuses a non-admin caller before any read or audit', () async {
+    competition.seedRound(_round(status: RoundStatus.scored));
+    final result = await useCase(
+      principal: principal(userId: adminUuid, role: PlatformRole.user),
+      roundId: _roundId,
+    );
+    final error = (result as Err<List<PredictionView>>).error;
+    expect(error.kind, ErrorKind.authorization);
+    expect(error.code, 'auth.insufficient_role');
+    expect(auditLog.rows, isEmpty);
+  });
 
   test('rejects a round that is not yet scored', () async {
     competition.seedRound(_round(status: RoundStatus.locked));
@@ -95,31 +92,28 @@ void main() {
     expect(auditLog.rows, isEmpty);
   });
 
-  test(
-    'returns every participant\'s raw prediction for a scored round, '
-    'auditing the read',
-    () async {
-      competition.seedRound(_round(status: RoundStatus.scored));
-      predictions.seedPrediction(
-        _prediction(_predictionId, _otherParticipantId),
-        _submittedAt,
-      );
+  test('returns every participant\'s raw prediction for a scored round, '
+      'auditing the read', () async {
+    competition.seedRound(_round(status: RoundStatus.scored));
+    predictions.seedPrediction(
+      _prediction(_predictionId, _otherParticipantId),
+      _submittedAt,
+    );
 
-      final result = await useCase(
-        principal: principal(userId: adminUuid),
-        roundId: _roundId,
-      );
+    final result = await useCase(
+      principal: principal(userId: adminUuid),
+      roundId: _roundId,
+    );
 
-      final list = (result as Ok<List<PredictionView>>).value;
-      expect(list, hasLength(1));
-      expect(list.single.prediction.scores.single.homeGoals, 2);
-      expect(list.single.prediction.scores.single.awayGoals, 1);
+    final list = (result as Ok<List<PredictionView>>).value;
+    expect(list, hasLength(1));
+    expect(list.single.prediction.scores.single.homeGoals, 2);
+    expect(list.single.prediction.scores.single.awayGoals, 1);
 
-      expect(auditLog.rows, hasLength(1));
-      expect(auditLog.rows.single.action, AuditAction.roundPredictionsViewed);
-      expect(auditLog.rows.single.targetRef, _roundId);
-    },
-  );
+    expect(auditLog.rows, hasLength(1));
+    expect(auditLog.rows.single.action, AuditAction.roundPredictionsViewed);
+    expect(auditLog.rows.single.targetRef, _roundId);
+  });
 
   test('a missing round is an invariant precondition failure', () async {
     final result = await useCase(
