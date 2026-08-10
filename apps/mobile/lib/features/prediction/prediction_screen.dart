@@ -367,6 +367,12 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     setState(() => _doubleFixtureId = fixtureId);
   }
 
+  void _submit(List<FixtureScoreDto> scores) {
+    ref
+        .read(predictionControllerProvider(widget.roundId).notifier)
+        .submit(scores);
+  }
+
   List<FixtureScoreDto>? _collectScores() {
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     if (openFixtures.isEmpty) return null;
@@ -410,6 +416,8 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
 
     final openFixtures = widget.fixtures.where((f) => !_isLocked(f)).toList();
     final List<FixtureScoreDto>? scores = _collectScores();
+    final bool noDoubleChosen =
+        _lockedDoubleFixtureId == null && _doubleFixtureId == null;
 
     return Column(
       children: <Widget>[
