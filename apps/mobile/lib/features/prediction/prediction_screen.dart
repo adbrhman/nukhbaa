@@ -998,6 +998,7 @@ class _DoubleButton extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
+        style: ButtonStyle(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
         icon: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
