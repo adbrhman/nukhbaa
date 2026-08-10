@@ -43,7 +43,7 @@ class _Tokens {
   static const Color doubleGlow = Color(0xFFFFD700);
 
   static const double cardRadius = 16;
-  static const double logoSize = 48;
+  static const double logoSize = 32;
 }
 
 /// A small palette to derive a stable "team color" from a team name, used for
@@ -592,7 +592,7 @@ class _MatchCard extends StatelessWidget {
             child: _GlowBlob(color: awayColor),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(10),
             child: Column(
               children: <Widget>[
                 // Header: league line + external icon placeholder.
