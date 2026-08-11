@@ -203,10 +203,10 @@ void main() {
         expect(lockedHome.enabled, isFalse);
 
         // The locked fixture's double star is not tappable.
-        final lockedStar = tester.widget<GestureDetector>(
+        final lockedStar = tester.widget<IconButton>(
           find.byKey(const Key('prediction.double.f-locked')),
         );
-        expect(lockedStar.onTap, isNull);
+        expect(lockedStar.onPressed, isNull);
 
         // Fill the one open fixture and mark it as the double -> enabled.
         await tester.enterText(

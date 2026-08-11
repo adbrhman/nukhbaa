@@ -43,7 +43,7 @@ class _Tokens {
   static const Color doubleGlow = Color(0xFFFFD700);
 
   static const double cardRadius = 16;
-  static const double logoSize = 32;
+  static const double logoSize = 48;
 }
 
 /// A small palette to derive a stable "team color" from a team name, used for
@@ -422,10 +422,12 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: ListView(
+          child: SingleChildScrollView(
+            child: Column(
             key: const Key('prediction.form'),
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              const SizedBox(height: 20),
               if (mine.value != null)
                 Padding(
                   key: const Key('prediction.alreadySubmitted'),
@@ -482,6 +484,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                   onChanged: () => setState(() {}),
                 ),
             ],
+          ),
           ),
         ),
         SafeArea(
@@ -592,7 +595,7 @@ class _MatchCard extends StatelessWidget {
             child: _GlowBlob(color: awayColor),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: <Widget>[
                 // Header: league line + external icon placeholder.
@@ -976,51 +979,46 @@ class _DoubleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      key: buttonKey,
-      behavior: HitTestBehavior.opaque,
-      onTap: onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        height: 30,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: 30,
+      decoration: BoxDecoration(
+        color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: _Tokens.doubleGlow.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: IconButton(
+        key: buttonKey,
+        onPressed: onPressed,
+        visualDensity: VisualDensity.compact,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: _Tokens.doubleGlow.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
-        ),
-        child: IconButton(
-          onPressed: onPressed,
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
-          icon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                active ? Icons.star : Icons.star_border,
-                size: 14,
+        constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
+        icon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              active ? Icons.star : Icons.star_border,
+              size: 14,
+              color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
               ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
