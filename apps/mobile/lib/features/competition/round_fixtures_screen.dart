@@ -24,6 +24,7 @@ import '../../l10n/app_localizations.dart';
 import '../prediction/prediction_screen.dart';
 import 'competition_providers.dart';
 import 'season_rounds_screen.dart' show roundStatusLabel;
+import 'team_registry.dart';
 import 'widgets/async_list_view.dart';
 
 /// The fixture-list screen for a single round.
@@ -77,13 +78,28 @@ class RoundFixturesScreen extends ConsumerWidget {
               value: fixtures,
               emptyMessage: l10n.roundFixturesEmpty,
               onRetry: () => ref.invalidate(roundFixturesProvider(roundId)),
-              itemBuilder: (context, fixture) => ListTile(
-                key: Key('fixtures.item.${fixture.fixtureId}'),
-                leading: CircleAvatar(
-                  child: Text('${fixture.displayOrder + 1}'),
-                ),
-                title: Text(l10n.fixtureItemTitle(fixture.fixtureId)),
-              ),
+              itemBuilder: (context, fixture) {
+                // Prefer "Home vs Away" once the server resolves both team
+                // names; a fixture with no team identity yet (Axiom 3 — no
+                // competition ref, no registered match) falls back to the
+                // stable fixture id rather than disappearing from the list.
+                final bool hasNames =
+                    (fixture.homeTeam?.isNotEmpty ?? false) &&
+                    (fixture.awayTeam?.isNotEmpty ?? false);
+                final String title = hasNames
+                    ? l10n.fixtureVsTitle(
+                        teamDisplayName(fixture.homeTeam),
+                        teamDisplayName(fixture.awayTeam),
+                      )
+                    : l10n.fixtureItemTitle(fixture.fixtureId);
+                return ListTile(
+                  key: Key('fixtures.item.${fixture.fixtureId}'),
+                  leading: CircleAvatar(
+                    child: Text('${fixture.displayOrder + 1}'),
+                  ),
+                  title: Text(title),
+                );
+              },
             ),
           ),
         ],

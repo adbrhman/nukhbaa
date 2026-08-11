@@ -6,6 +6,14 @@
 /// the browse read reveals no existence oracle) is a *legitimate* empty list,
 /// shown as an empty affordance rather than an error. Selecting a season pushes
 /// the round list ([SeasonRoundsScreen]).
+///
+/// A competition with **exactly one** season is a common case today (a single
+/// "2026/27" season per competition) and forcing the user through an
+/// intermediate list of one is pure friction. In that case this screen
+/// auto-advances straight into [SeasonRoundsScreen] via [Navigator.pushReplacement]
+/// — replacing itself in the stack so "back" from the rounds screen returns to
+/// the competition list, not to a seasons screen the user never meaningfully
+/// saw. Multiple seasons still render as a normal, tappable list.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -18,7 +26,7 @@ import 'season_rounds_screen.dart';
 import 'widgets/async_list_view.dart';
 
 /// The season-list screen for a single competition.
-class CompetitionSeasonsScreen extends ConsumerWidget {
+class CompetitionSeasonsScreen extends ConsumerStatefulWidget {
   /// Creates the seasons screen for [competitionId].
   const CompetitionSeasonsScreen({
     required this.competitionId,
@@ -34,18 +42,52 @@ class CompetitionSeasonsScreen extends ConsumerWidget {
   final String competitionName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CompetitionSeasonsScreen> createState() =>
+      _CompetitionSeasonsScreenState();
+}
+
+class _CompetitionSeasonsScreenState
+    extends ConsumerState<CompetitionSeasonsScreen> {
+  // Guards against scheduling the auto-advance more than once across
+  // rebuilds (e.g. a provider re-emitting the same single-season list on
+  // refresh) — pushReplacement must fire exactly once per screen instance.
+  bool _autoAdvanced = false;
+
+  void _maybeAutoAdvance(List<SeasonDto> seasons) {
+    if (_autoAdvanced || seasons.length != 1) return;
+    _autoAdvanced = true;
+    final SeasonDto season = seasons.single;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => SeasonRoundsScreen(
+            seasonId: season.id,
+            seasonLabel: season.label,
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final seasons = ref.watch(competitionSeasonsProvider(competitionId));
+    final seasons = ref.watch(
+      competitionSeasonsProvider(widget.competitionId),
+    );
+    seasons.whenData(_maybeAutoAdvance);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(competitionName, key: const Key('seasons.title')),
+        title: Text(widget.competitionName, key: const Key('seasons.title')),
       ),
       body: AsyncListView<SeasonDto>(
         value: seasons,
         emptyMessage: l10n.competitionSeasonsEmpty,
-        onRetry: () =>
-            ref.invalidate(competitionSeasonsProvider(competitionId)),
+        onRetry: () => ref.invalidate(
+          competitionSeasonsProvider(widget.competitionId),
+        ),
         itemBuilder: (context, season) => ListTile(
           key: Key('seasons.item.${season.id}'),
           leading: const Icon(Icons.calendar_month_outlined),
