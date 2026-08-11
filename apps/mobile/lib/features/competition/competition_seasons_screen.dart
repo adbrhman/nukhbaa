@@ -63,8 +63,7 @@ class _CompetitionSeasonsScreenState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final seasons =
-        ref.watch(competitionSeasonsProvider(widget.competitionId));
+    final seasons = ref.watch(competitionSeasonsProvider(widget.competitionId));
     seasons.whenData(_maybeAutoAdvance);
     return Scaffold(
       appBar: AppBar(
