@@ -153,6 +153,7 @@ void main() {
         expect(submitButton().onPressed, isNull);
 
         // Mark f-a as the double -> now enabled.
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('prediction.double.f-a')));
         await tester.pump();
         expect(submitButton().onPressed, isNotNull);
@@ -327,6 +328,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
@@ -412,6 +414,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
@@ -451,6 +454,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('prediction.away.f-a')), '1');
       await tester.enterText(find.byKey(const Key('prediction.home.f-b')), '0');
       await tester.enterText(find.byKey(const Key('prediction.away.f-b')), '0');
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('prediction.double.f-a')));
       await tester.pump();
 
