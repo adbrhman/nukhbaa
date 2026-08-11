@@ -424,67 +424,67 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
         Expanded(
           child: SingleChildScrollView(
             child: Column(
-            key: const Key('prediction.form'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const SizedBox(height: 20),
-              if (mine.value != null)
-                Padding(
-                  key: const Key('prediction.alreadySubmitted'),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _Banner(
-                    icon: Icons.check_circle_outline,
-                    text: l10n.predictionAlreadySubmitted,
+              key: const Key('prediction.form'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const SizedBox(height: 20),
+                if (mine.value != null)
+                  Padding(
+                    key: const Key('prediction.alreadySubmitted'),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _Banner(
+                      icon: Icons.check_circle_outline,
+                      text: l10n.predictionAlreadySubmitted,
+                    ),
                   ),
-                ),
-              if (submission is SubmissionSucceeded)
-                Padding(
-                  key: const Key('prediction.success'),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _Banner(
-                    icon: Icons.done_all,
-                    text: l10n.predictionSaved,
+                if (submission is SubmissionSucceeded)
+                  Padding(
+                    key: const Key('prediction.success'),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _Banner(
+                      icon: Icons.done_all,
+                      text: l10n.predictionSaved,
+                    ),
                   ),
-                ),
-              if (submission is SubmissionFailed)
-                Padding(
-                  key: const Key('prediction.errorBanner'),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _Banner(
-                    icon: Icons.error_outline,
-                    text: ErrorPresenter.message(submission.error),
-                    isError: true,
+                if (submission is SubmissionFailed)
+                  Padding(
+                    key: const Key('prediction.errorBanner'),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _Banner(
+                      icon: Icons.error_outline,
+                      text: ErrorPresenter.message(submission.error),
+                      isError: true,
+                    ),
                   ),
-                ),
-              if (openFixtures.isEmpty)
-                Padding(
-                  key: const Key('prediction.noOpenFixtures'),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _Banner(
-                    icon: Icons.lock_clock_outlined,
-                    text: l10n.predictionNoOpenFixturesMessage,
+                if (openFixtures.isEmpty)
+                  Padding(
+                    key: const Key('prediction.noOpenFixtures'),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _Banner(
+                      icon: Icons.lock_clock_outlined,
+                      text: l10n.predictionNoOpenFixturesMessage,
+                    ),
                   ),
-                ),
-              for (final fixture in widget.fixtures)
-                _MatchCard(
-                  key: Key('prediction.fixture.${fixture.fixtureId}'),
-                  fixture: fixture,
-                  locked: _isLocked(fixture),
-                  homeController: _home[fixture.fixtureId]!,
-                  awayController: _away[fixture.fixtureId]!,
-                  enabled: !inFlight,
-                  isDouble:
-                      fixture.fixtureId == _doubleFixtureId ||
-                      fixture.fixtureId == _lockedDoubleFixtureId,
-                  doubleSelectable:
-                      !_isLocked(fixture) &&
-                      _lockedDoubleFixtureId == null &&
-                      !inFlight,
-                  onDoubleSelected: () => _selectDouble(fixture.fixtureId),
-                  onChanged: () => setState(() {}),
-                ),
-            ],
-          ),
+                for (final fixture in widget.fixtures)
+                  _MatchCard(
+                    key: Key('prediction.fixture.${fixture.fixtureId}'),
+                    fixture: fixture,
+                    locked: _isLocked(fixture),
+                    homeController: _home[fixture.fixtureId]!,
+                    awayController: _away[fixture.fixtureId]!,
+                    enabled: !inFlight,
+                    isDouble:
+                        fixture.fixtureId == _doubleFixtureId ||
+                        fixture.fixtureId == _lockedDoubleFixtureId,
+                    doubleSelectable:
+                        !_isLocked(fixture) &&
+                        _lockedDoubleFixtureId == null &&
+                        !inFlight,
+                    onDoubleSelected: () => _selectDouble(fixture.fixtureId),
+                    onChanged: () => setState(() {}),
+                  ),
+              ],
+            ),
           ),
         ),
         SafeArea(
