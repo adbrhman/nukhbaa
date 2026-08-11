@@ -428,6 +428,19 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 const SizedBox(height: 20),
+                if (scores == null && openFixtures.isNotEmpty)
+                  Padding(
+                    key: const Key('prediction.incompleteHint'),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      noDoubleChosen
+                          ? l10n.predictionDoubleHint
+                          : l10n.predictionIncompleteHint,
+                      key: const Key('prediction.incompleteHint.text'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFFE57373)),
+                    ),
+                  ),
                 if (mine.value != null)
                   Padding(
                     key: const Key('prediction.alreadySubmitted'),
@@ -495,19 +508,6 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (scores == null && openFixtures.isNotEmpty)
-                  Padding(
-                    key: const Key('prediction.incompleteHint'),
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      noDoubleChosen
-                          ? l10n.predictionDoubleHint
-                          : l10n.predictionIncompleteHint,
-                      key: const Key('prediction.incompleteHint.text'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFFE57373)),
-                    ),
-                  ),
                 _SubmitButton(
                   inFlight: inFlight,
                   onSubmit: scores == null ? null : () => _submit(scores),
