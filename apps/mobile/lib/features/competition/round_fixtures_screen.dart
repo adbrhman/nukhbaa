@@ -82,7 +82,11 @@ class RoundFixturesScreen extends ConsumerWidget {
                 leading: CircleAvatar(
                   child: Text('${fixture.displayOrder + 1}'),
                 ),
-                title: Text(l10n.fixtureItemTitle(fixture.fixtureId)),
+                title: Text(
+                  (fixture.homeTeam != null && fixture.awayTeam != null)
+                      ? '${fixture.homeTeam} × ${fixture.awayTeam}'
+                      : l10n.fixtureItemTitle(fixture.fixtureId),
+                ),
               ),
             ),
           ),
