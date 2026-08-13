@@ -5,10 +5,6 @@
 /// [AsyncListView]. A competition with no seasons (or one that does not exist —
 /// the browse read reveals no existence oracle) is a *legitimate* empty list,
 /// shown as an empty affordance rather than an error. Selecting a season pushes
-<<<<<<< HEAD
-/// the round list ([SeasonRoundsScreen]). A single season skips this screen
-/// automatically and advances straight to its rounds.
-=======
 /// the round list ([SeasonRoundsScreen]).
 ///
 /// A competition with **exactly one** season is a common case today (a single
@@ -18,7 +14,6 @@
 /// — replacing itself in the stack so "back" from the rounds screen returns to
 /// the competition list, not to a seasons screen the user never meaningfully
 /// saw. Multiple seasons still render as a normal, tappable list.
->>>>>>> fa68770 (fix: team names/crests display, tap-through glow, single-season skip)
 library;
 
 import 'package:contracts/contracts.dart';
@@ -53,14 +48,6 @@ class CompetitionSeasonsScreen extends ConsumerStatefulWidget {
 
 class _CompetitionSeasonsScreenState
     extends ConsumerState<CompetitionSeasonsScreen> {
-<<<<<<< HEAD
-  bool _autoAdvanced = false;
-
-  void _maybeAutoAdvance(List<SeasonDto> data) {
-    if (_autoAdvanced || data.length != 1) return;
-    _autoAdvanced = true;
-    final SeasonDto season = data.first;
-=======
   // Guards against scheduling the auto-advance more than once across
   // rebuilds (e.g. a provider re-emitting the same single-season list on
   // refresh) — pushReplacement must fire exactly once per screen instance.
@@ -70,7 +57,6 @@ class _CompetitionSeasonsScreenState
     if (_autoAdvanced || seasons.length != 1) return;
     _autoAdvanced = true;
     final SeasonDto season = seasons.single;
->>>>>>> fa68770 (fix: team names/crests display, tap-through glow, single-season skip)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -87,16 +73,9 @@ class _CompetitionSeasonsScreenState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-<<<<<<< HEAD
     final seasons = ref.watch(competitionSeasonsProvider(widget.competitionId));
     seasons.whenData(_maybeAutoAdvance);
-=======
-    final seasons = ref.watch(
-      competitionSeasonsProvider(widget.competitionId),
-    );
-    seasons.whenData(_maybeAutoAdvance);
 
->>>>>>> fa68770 (fix: team names/crests display, tap-through glow, single-season skip)
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.competitionName, key: const Key('seasons.title')),
@@ -104,14 +83,8 @@ class _CompetitionSeasonsScreenState
       body: AsyncListView<SeasonDto>(
         value: seasons,
         emptyMessage: l10n.competitionSeasonsEmpty,
-<<<<<<< HEAD
         onRetry: () =>
             ref.invalidate(competitionSeasonsProvider(widget.competitionId)),
-=======
-        onRetry: () => ref.invalidate(
-          competitionSeasonsProvider(widget.competitionId),
-        ),
->>>>>>> fa68770 (fix: team names/crests display, tap-through glow, single-season skip)
         itemBuilder: (context, season) => ListTile(
           key: Key('seasons.item.${season.id}'),
           leading: const Icon(Icons.calendar_month_outlined),
