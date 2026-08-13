@@ -73,9 +73,7 @@ class _CompetitionSeasonsScreenState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final seasons = ref.watch(
-      competitionSeasonsProvider(widget.competitionId),
-    );
+    final seasons = ref.watch(competitionSeasonsProvider(widget.competitionId));
     seasons.whenData(_maybeAutoAdvance);
 
     return Scaffold(
@@ -85,9 +83,8 @@ class _CompetitionSeasonsScreenState
       body: AsyncListView<SeasonDto>(
         value: seasons,
         emptyMessage: l10n.competitionSeasonsEmpty,
-        onRetry: () => ref.invalidate(
-          competitionSeasonsProvider(widget.competitionId),
-        ),
+        onRetry: () =>
+            ref.invalidate(competitionSeasonsProvider(widget.competitionId)),
         itemBuilder: (context, season) => ListTile(
           key: Key('seasons.item.${season.id}'),
           leading: const Icon(Icons.calendar_month_outlined),

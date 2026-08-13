@@ -25,6 +25,7 @@ import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
 import 'round_report.dart';
+import '../competition/competition_providers.dart';
 
 part 'admin_providers.g.dart';
 
@@ -224,6 +225,12 @@ class RoundOpenController extends _$RoundOpenController {
         StackTrace.current,
       ),
     };
+    if (state is AsyncData<RoundDto>) {
+      final RoundDto opened = (state as AsyncData<RoundDto>).value;
+      ref.invalidate(seasonRoundsProvider(seasonId));
+      ref.invalidate(roundDetailProvider(opened.id));
+      ref.invalidate(roundFixturesProvider(opened.id));
+    }
   }
 }
 
@@ -256,6 +263,10 @@ class RoundFixtureLinkController extends _$RoundFixtureLinkController {
         StackTrace.current,
       ),
     };
+    if (state is AsyncData<RoundFixtureDto>) {
+      ref.invalidate(roundFixturesProvider(roundId));
+      ref.invalidate(roundDetailProvider(roundId));
+    }
   }
 }
 

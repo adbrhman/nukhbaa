@@ -48,7 +48,8 @@ class TeamBrand {
   final int espnId;
 
   /// The team's crest, served as a transparent PNG by ESPN's CDN.
-  String get logoUrl => 'https://a.espncdn.com/i/teamlogos/soccer/500/$espnId.png';
+  String get logoUrl =>
+      'https://a.espncdn.com/i/teamlogos/soccer/500/$espnId.png';
 
   @override
   bool operator ==(Object other) =>
@@ -63,54 +64,245 @@ class TeamBrand {
   int get hashCode => Object.hash(ar, c1, c2, espnId);
 }
 
-Color _hex(String value) => Color(int.parse('FF${value.substring(1)}', radix: 16));
+Color _hex(String value) =>
+    Color(int.parse('FF${value.substring(1)}', radix: 16));
 
 /// English Premier League teams (2025/26 season roster), keyed by the exact
 /// English name expected in `home_team` / `away_team`.
 final Map<String, TeamBrand> kEplTeams = <String, TeamBrand>{
-  'Arsenal': TeamBrand(ar: 'أرسنال', c1: _hex('#EF0107'), c2: _hex('#063672'), espnId: 359),
-  'Aston Villa': TeamBrand(ar: 'أستون فيلا', c1: _hex('#670E36'), c2: _hex('#9EC4E7'), espnId: 362),
-  'Ipswich Town': TeamBrand(ar: 'إبسويتش تاون', c1: _hex('#0044A9'), c2: _hex('#FFFFFF'), espnId: 373),
-  'Everton': TeamBrand(ar: 'إيفرتون', c1: _hex('#003399'), c2: _hex('#FFFFFF'), espnId: 368),
-  'Brighton': TeamBrand(ar: 'برايتون', c1: _hex('#0057B8'), c2: _hex('#FFFFFF'), espnId: 331),
-  'Brentford': TeamBrand(ar: 'برينتفورد', c1: _hex('#E30613'), c2: _hex('#FFD700'), espnId: 337),
-  'Bournemouth': TeamBrand(ar: 'بورنموث', c1: _hex('#DA291C'), c2: _hex('#000000'), espnId: 349),
-  'Chelsea': TeamBrand(ar: 'تشيلسي', c1: _hex('#034694'), c2: _hex('#FFFFFF'), espnId: 363),
-  'Tottenham Hotspur': TeamBrand(ar: 'توتنهام', c1: _hex('#132257'), c2: _hex('#FFFFFF'), espnId: 367),
-  'Sunderland': TeamBrand(ar: 'سندرلاند', c1: _hex('#EB172B'), c2: _hex('#000000'), espnId: 3916),
-  'Fulham': TeamBrand(ar: 'فولهام', c1: _hex('#CC0000'), c2: _hex('#000000'), espnId: 370),
-  'Crystal Palace': TeamBrand(ar: 'كريستال بالاس', c1: _hex('#1B458F'), c2: _hex('#C4122E'), espnId: 384),
-  'Coventry City': TeamBrand(ar: 'كوفنتري سيتي', c1: _hex('#059DD9'), c2: _hex('#FFFFFF'), espnId: 388),
-  'Leeds United': TeamBrand(ar: 'ليدز يونايتد', c1: _hex('#FFCD00'), c2: _hex('#1D428A'), espnId: 357),
-  'Liverpool': TeamBrand(ar: 'ليفربول', c1: _hex('#C8102E'), c2: _hex('#00B2A9'), espnId: 364),
-  'Manchester City': TeamBrand(ar: 'مانشستر سيتي', c1: _hex('#6CABDD'), c2: _hex('#1C2C5B'), espnId: 382),
-  'Manchester United': TeamBrand(ar: 'مانشستر يونايتد', c1: _hex('#DA291C'), c2: _hex('#FBE122'), espnId: 360),
-  'Nottingham Forest': TeamBrand(ar: 'نوتينغهام فورست', c1: _hex('#E53233'), c2: _hex('#FFFFFF'), espnId: 393),
-  'Newcastle United': TeamBrand(ar: 'نيوكاسل', c1: _hex('#241F20'), c2: _hex('#FFFFFF'), espnId: 361),
-  'Hull City': TeamBrand(ar: 'هال سيتي', c1: _hex('#F18A01'), c2: _hex('#000000'), espnId: 306),
+  'Arsenal': TeamBrand(
+    ar: 'أرسنال',
+    c1: _hex('#EF0107'),
+    c2: _hex('#063672'),
+    espnId: 359,
+  ),
+  'Aston Villa': TeamBrand(
+    ar: 'أستون فيلا',
+    c1: _hex('#670E36'),
+    c2: _hex('#9EC4E7'),
+    espnId: 362,
+  ),
+  'Ipswich Town': TeamBrand(
+    ar: 'إبسويتش تاون',
+    c1: _hex('#0044A9'),
+    c2: _hex('#FFFFFF'),
+    espnId: 373,
+  ),
+  'Everton': TeamBrand(
+    ar: 'إيفرتون',
+    c1: _hex('#003399'),
+    c2: _hex('#FFFFFF'),
+    espnId: 368,
+  ),
+  'Brighton': TeamBrand(
+    ar: 'برايتون',
+    c1: _hex('#0057B8'),
+    c2: _hex('#FFFFFF'),
+    espnId: 331,
+  ),
+  'Brentford': TeamBrand(
+    ar: 'برينتفورد',
+    c1: _hex('#E30613'),
+    c2: _hex('#FFD700'),
+    espnId: 337,
+  ),
+  'Bournemouth': TeamBrand(
+    ar: 'بورنموث',
+    c1: _hex('#DA291C'),
+    c2: _hex('#000000'),
+    espnId: 349,
+  ),
+  'Chelsea': TeamBrand(
+    ar: 'تشيلسي',
+    c1: _hex('#034694'),
+    c2: _hex('#FFFFFF'),
+    espnId: 363,
+  ),
+  'Tottenham Hotspur': TeamBrand(
+    ar: 'توتنهام',
+    c1: _hex('#132257'),
+    c2: _hex('#FFFFFF'),
+    espnId: 367,
+  ),
+  'Sunderland': TeamBrand(
+    ar: 'سندرلاند',
+    c1: _hex('#EB172B'),
+    c2: _hex('#000000'),
+    espnId: 3916,
+  ),
+  'Fulham': TeamBrand(
+    ar: 'فولهام',
+    c1: _hex('#CC0000'),
+    c2: _hex('#000000'),
+    espnId: 370,
+  ),
+  'Crystal Palace': TeamBrand(
+    ar: 'كريستال بالاس',
+    c1: _hex('#1B458F'),
+    c2: _hex('#C4122E'),
+    espnId: 384,
+  ),
+  'Coventry City': TeamBrand(
+    ar: 'كوفنتري سيتي',
+    c1: _hex('#059DD9'),
+    c2: _hex('#FFFFFF'),
+    espnId: 388,
+  ),
+  'Leeds United': TeamBrand(
+    ar: 'ليدز يونايتد',
+    c1: _hex('#FFCD00'),
+    c2: _hex('#1D428A'),
+    espnId: 357,
+  ),
+  'Liverpool': TeamBrand(
+    ar: 'ليفربول',
+    c1: _hex('#C8102E'),
+    c2: _hex('#00B2A9'),
+    espnId: 364,
+  ),
+  'Manchester City': TeamBrand(
+    ar: 'مانشستر سيتي',
+    c1: _hex('#6CABDD'),
+    c2: _hex('#1C2C5B'),
+    espnId: 382,
+  ),
+  'Manchester United': TeamBrand(
+    ar: 'مانشستر يونايتد',
+    c1: _hex('#DA291C'),
+    c2: _hex('#FBE122'),
+    espnId: 360,
+  ),
+  'Nottingham Forest': TeamBrand(
+    ar: 'نوتينغهام فورست',
+    c1: _hex('#E53233'),
+    c2: _hex('#FFFFFF'),
+    espnId: 393,
+  ),
+  'Newcastle United': TeamBrand(
+    ar: 'نيوكاسل',
+    c1: _hex('#241F20'),
+    c2: _hex('#FFFFFF'),
+    espnId: 361,
+  ),
+  'Hull City': TeamBrand(
+    ar: 'هال سيتي',
+    c1: _hex('#F18A01'),
+    c2: _hex('#000000'),
+    espnId: 306,
+  ),
 };
 
 /// Saudi Roshn League teams, keyed by the exact English name expected in
 /// `home_team` / `away_team`.
 final Map<String, TeamBrand> kSaudiTeams = <String, TeamBrand>{
-  'Al Nassr': TeamBrand(ar: 'النصر', c1: _hex('#F7D000'), c2: _hex('#013B7D'), espnId: 3872),
-  'Al Hilal': TeamBrand(ar: 'الهلال', c1: _hex('#005DA8'), c2: _hex('#FFFFFF'), espnId: 3870),
-  'Al Ahli': TeamBrand(ar: 'الأهلي', c1: _hex('#006633'), c2: _hex('#FFFFFF'), espnId: 3873),
-  'Al Qadsiah': TeamBrand(ar: 'القادسية', c1: _hex('#FF0000'), c2: _hex('#FFFFFF'), espnId: 3882),
-  'Al Ittihad': TeamBrand(ar: 'الاتحاد', c1: _hex('#F7D000'), c2: _hex('#000000'), espnId: 3868),
-  'Al Taawoun': TeamBrand(ar: 'التعاون', c1: _hex('#F7D000'), c2: _hex('#000000'), espnId: 3887),
-  'Al Ettifaq': TeamBrand(ar: 'الاتفاق', c1: _hex('#FFD700'), c2: _hex('#000000'), espnId: 3878),
-  'NEOM': TeamBrand(ar: 'نيوم', c1: _hex('#00A550'), c2: _hex('#FFFFFF'), espnId: 19784),
-  'Al Hazem': TeamBrand(ar: 'الحزم', c1: _hex('#00529B'), c2: _hex('#FFFFFF'), espnId: 3879),
-  'Al Fayha': TeamBrand(ar: 'الفيحاء', c1: _hex('#FF6600'), c2: _hex('#FFFFFF'), espnId: 3888),
-  'Al Fateh': TeamBrand(ar: 'الفتح', c1: _hex('#006633'), c2: _hex('#FFCC00'), espnId: 3877),
-  'Al Khaleej': TeamBrand(ar: 'الخليج', c1: _hex('#006633'), c2: _hex('#FFFFFF'), espnId: 3889),
-  'Al Shabab': TeamBrand(ar: 'الشباب', c1: _hex('#000000'), c2: _hex('#FFFFFF'), espnId: 3871),
-  'Al Kholood': TeamBrand(ar: 'الخلود', c1: _hex('#000000'), c2: _hex('#FFFFFF'), espnId: 3891),
-  'Al Riyadh': TeamBrand(ar: 'الرياض', c1: _hex('#CC0000'), c2: _hex('#FFFFFF'), espnId: 3886),
-  'Abha': TeamBrand(ar: 'أبها', c1: _hex('#FF0000'), c2: _hex('#FFFFFF'), espnId: 3890),
-  'Al Faisaly': TeamBrand(ar: 'الفيصلي', c1: _hex('#FF6600'), c2: _hex('#000000'), espnId: 3884),
-  'Al Diriyah': TeamBrand(ar: 'الدرعية', c1: _hex('#006400'), c2: _hex('#FFD700'), espnId: 38500),
+  'Al Nassr': TeamBrand(
+    ar: 'النصر',
+    c1: _hex('#F7D000'),
+    c2: _hex('#013B7D'),
+    espnId: 3872,
+  ),
+  'Al Hilal': TeamBrand(
+    ar: 'الهلال',
+    c1: _hex('#005DA8'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3870,
+  ),
+  'Al Ahli': TeamBrand(
+    ar: 'الأهلي',
+    c1: _hex('#006633'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3873,
+  ),
+  'Al Qadsiah': TeamBrand(
+    ar: 'القادسية',
+    c1: _hex('#FF0000'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3882,
+  ),
+  'Al Ittihad': TeamBrand(
+    ar: 'الاتحاد',
+    c1: _hex('#F7D000'),
+    c2: _hex('#000000'),
+    espnId: 3868,
+  ),
+  'Al Taawoun': TeamBrand(
+    ar: 'التعاون',
+    c1: _hex('#F7D000'),
+    c2: _hex('#000000'),
+    espnId: 3887,
+  ),
+  'Al Ettifaq': TeamBrand(
+    ar: 'الاتفاق',
+    c1: _hex('#FFD700'),
+    c2: _hex('#000000'),
+    espnId: 3878,
+  ),
+  'NEOM': TeamBrand(
+    ar: 'نيوم',
+    c1: _hex('#00A550'),
+    c2: _hex('#FFFFFF'),
+    espnId: 19784,
+  ),
+  'Al Hazem': TeamBrand(
+    ar: 'الحزم',
+    c1: _hex('#00529B'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3879,
+  ),
+  'Al Fayha': TeamBrand(
+    ar: 'الفيحاء',
+    c1: _hex('#FF6600'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3888,
+  ),
+  'Al Fateh': TeamBrand(
+    ar: 'الفتح',
+    c1: _hex('#006633'),
+    c2: _hex('#FFCC00'),
+    espnId: 3877,
+  ),
+  'Al Khaleej': TeamBrand(
+    ar: 'الخليج',
+    c1: _hex('#006633'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3889,
+  ),
+  'Al Shabab': TeamBrand(
+    ar: 'الشباب',
+    c1: _hex('#000000'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3871,
+  ),
+  'Al Kholood': TeamBrand(
+    ar: 'الخلود',
+    c1: _hex('#000000'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3891,
+  ),
+  'Al Riyadh': TeamBrand(
+    ar: 'الرياض',
+    c1: _hex('#CC0000'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3886,
+  ),
+  'Abha': TeamBrand(
+    ar: 'أبها',
+    c1: _hex('#FF0000'),
+    c2: _hex('#FFFFFF'),
+    espnId: 3890,
+  ),
+  'Al Faisaly': TeamBrand(
+    ar: 'الفيصلي',
+    c1: _hex('#FF6600'),
+    c2: _hex('#000000'),
+    espnId: 3884,
+  ),
+  'Al Diriyah': TeamBrand(
+    ar: 'الدرعية',
+    c1: _hex('#006400'),
+    c2: _hex('#FFD700'),
+    espnId: 38500,
+  ),
 };
 
 /// The merged registry over all known leagues, for lookup by English name.

@@ -1,4 +1,3 @@
-/// Widget tests for the Competition browse screens, wired through the real
 /// screens + providers over `buildCompetitionHarness` (a `MockClient`
 /// transport). They assert the four user-visible browse states — loading,
 /// legitimate-empty, error (with a retry affordance on a transient failure),
@@ -8,6 +7,7 @@
 library;
 
 import 'dart:async';
+import 'package:contracts/contracts.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +97,14 @@ void main() {
           return okJsonList([sampleCompetition.toJson()]);
         }
         if (path == '/competitions/c-1/seasons') {
-          return okJsonList([sampleSeason.toJson()]);
+          return okJsonList([
+            sampleSeason.toJson(),
+            const SeasonDto(
+              id: 's-2',
+              competitionId: 'c-1',
+              label: '2025/26',
+            ).toJson(),
+          ]);
         }
         return okJsonList(<Object>[]);
       });
