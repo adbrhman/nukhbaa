@@ -1,3 +1,4 @@
+/// Widget tests for the Competition browse screens, wired through the real
 /// screens + providers over `buildCompetitionHarness` (a `MockClient`
 /// transport). They assert the four user-visible browse states — loading,
 /// legitimate-empty, error (with a retry affordance on a transient failure),
@@ -7,8 +8,8 @@
 library;
 
 import 'dart:async';
-import 'package:contracts/contracts.dart';
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,41 +88,82 @@ void main() {
       expect(find.byKey(const Key('competitions.item.c-1')), findsOneWidget);
     });
 
-    testWidgets('data -> a row per competition and drill-down to seasons', (
-      tester,
-    ) async {
-      // Route each browse hop by path so navigation can be followed.
-      final harness = buildCompetitionHarness((request) async {
-        final path = request.url.path;
-        if (path == '/competitions') {
-          return okJsonList([sampleCompetition.toJson()]);
-        }
-        if (path == '/competitions/c-1/seasons') {
-          return okJsonList([
-            sampleSeason.toJson(),
-            const SeasonDto(
-              id: 's-2',
-              competitionId: 'c-1',
-              label: '2025/26',
-            ).toJson(),
-          ]);
-        }
-        return okJsonList(<Object>[]);
-      });
-      addTearDown(harness.dispose);
+    testWidgets(
+      'data -> a single season auto-advances straight to its rounds',
+      (tester) async {
+        // A competition with exactly one season is the common case today
+        // (see CompetitionSeasonsScreen doc comment): the seasons screen
+        // must not force the user through an intermediate list of one — it
+        // auto-advances into SeasonRoundsScreen via pushReplacement.
+        final harness = buildCompetitionHarness((request) async {
+          final path = request.url.path;
+          if (path == '/competitions') {
+            return okJsonList([sampleCompetition.toJson()]);
+          }
+          if (path == '/competitions/c-1/seasons') {
+            return okJsonList([sampleSeason.toJson()]);
+          }
+          if (path == '/seasons/s-1/rounds') {
+            return okJsonList(<Object>[]);
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
 
-      await tester.pumpWidget(_host(harness, const CompetitionListScreen()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(_host(harness, const CompetitionListScreen()));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Premier League'), findsOneWidget);
+        expect(find.text('Premier League'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('competitions.item.c-1')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('competitions.item.c-1')));
+        await tester.pumpAndSettle();
 
-      // Now on the seasons screen for that competition.
-      expect(find.byKey(const Key('seasons.title')), findsOneWidget);
-      expect(find.text('2026/27'), findsOneWidget);
-    });
+        // The seasons screen (one season) auto-advances: it never settles
+        // as the visible screen, and the rounds screen for that season is
+        // shown instead, replacing it in the navigation stack.
+        expect(find.byKey(const Key('seasons.title')), findsNothing);
+        expect(find.byKey(const Key('rounds.title')), findsOneWidget);
+        expect(find.text('2026/27 — Rounds'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'data -> multiple seasons render as a list and drill down normally',
+      (tester) async {
+        const secondSeason = SeasonDto(
+          id: 's-2',
+          competitionId: 'c-1',
+          label: '2025/26',
+        );
+        final harness = buildCompetitionHarness((request) async {
+          final path = request.url.path;
+          if (path == '/competitions') {
+            return okJsonList([sampleCompetition.toJson()]);
+          }
+          if (path == '/competitions/c-1/seasons') {
+            return okJsonList([sampleSeason.toJson(), secondSeason.toJson()]);
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
+
+        await tester.pumpWidget(_host(harness, const CompetitionListScreen()));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('competitions.item.c-1')));
+        await tester.pumpAndSettle();
+
+        // Two seasons -> the seasons screen renders normally and stays put.
+        expect(find.byKey(const Key('seasons.title')), findsOneWidget);
+        expect(find.byKey(const Key('seasons.item.s-1')), findsOneWidget);
+        expect(find.byKey(const Key('seasons.item.s-2')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('seasons.item.s-1')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('rounds.title')), findsOneWidget);
+      },
+    );
   });
 
   group('RoundFixturesScreen', () {
