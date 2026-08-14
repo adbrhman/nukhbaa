@@ -11,6 +11,9 @@
 -- auth token claims (Identity ADR: platform-owned once the row exists).
 --
 -- Forward-only, expand-only. Every statement is guarded — safe to re-run.
+-- NOTE: the VIEW is dropped + recreated (not CREATE OR REPLACE) because
+-- Postgres forbids renaming/reordering columns of an existing view via
+-- REPLACE — this adds a new display_name column ahead of total_points.
 
 alter table identity.users
   add column if not exists display_name text;
@@ -51,9 +54,12 @@ set display_name = coalesce(nullif(split_part(email, '@', 1), ''), 'Player')
 where display_name is null or btrim(display_name) = '';
 
 -- ---------------------------------------------------------------------------
--- Project display_name through the Hall of Fame VIEW.
+-- Project display_name through the Hall of Fame VIEW. Dropped + recreated
+-- (see note above) rather than CREATE OR REPLACE.
 -- ---------------------------------------------------------------------------
-create or replace view leaderboard.hall_of_fame_standings as
+drop view if exists leaderboard.hall_of_fame_standings;
+
+create view leaderboard.hall_of_fame_standings as
   select
     p.user_id                            as user_id,
     max(u.display_name)                  as display_name,
