@@ -9,6 +9,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'admin_providers.dart';
 import 'round_report.dart';
@@ -372,13 +373,35 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
   final TextEditingController _fixtureIdController = TextEditingController();
   final TextEditingController _homeTeamController = TextEditingController();
   final TextEditingController _awayTeamController = TextEditingController();
+  final FocusNode _homeTeamFocusNode = FocusNode();
+  final FocusNode _awayTeamFocusNode = FocusNode();
   DateTime? _kickoffLocal;
+
+  /// The recognized team names an admin can pick from — every English wire
+  /// name known to [team_registry.dart], across both catalogued leagues.
+  /// Purely a UI convenience: [_register]/[_correct] still send whatever
+  /// text is in the controller, so a name outside this list is never
+  /// blocked — it just won't show a crest/Arabic name downstream until the
+  /// registry is extended (see team_registry.dart's doc comment).
+  static final List<String> _teamOptions = <String>[
+    ...kEplTeams.keys,
+    ...kSaudiTeams.keys,
+  ]..sort();
+
+  Iterable<String> _filterTeams(String query) {
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) return _teamOptions;
+    final String needle = trimmed.toLowerCase();
+    return _teamOptions.where((String t) => t.toLowerCase().contains(needle));
+  }
 
   @override
   void dispose() {
     _fixtureIdController.dispose();
     _homeTeamController.dispose();
     _awayTeamController.dispose();
+    _homeTeamFocusNode.dispose();
+    _awayTeamFocusNode.dispose();
     super.dispose();
   }
 
@@ -407,24 +430,22 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.fixtures.homeTeamField'),
+          _TeamPickerField(
+            fieldKey: const Key('admin.fixtures.homeTeamField'),
             controller: _homeTeamController,
-            decoration: InputDecoration(
-              labelText: l10n.adminHomeTeamLabel,
-              border: const OutlineInputBorder(),
-            ),
+            focusNode: _homeTeamFocusNode,
+            label: l10n.adminHomeTeamLabel,
             enabled: !inFlight,
+            optionsBuilder: _filterTeams,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.fixtures.awayTeamField'),
+          _TeamPickerField(
+            fieldKey: const Key('admin.fixtures.awayTeamField'),
             controller: _awayTeamController,
-            decoration: InputDecoration(
-              labelText: l10n.adminAwayTeamLabel,
-              border: const OutlineInputBorder(),
-            ),
+            focusNode: _awayTeamFocusNode,
+            label: l10n.adminAwayTeamLabel,
             enabled: !inFlight,
+            optionsBuilder: _filterTeams,
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton(
@@ -545,6 +566,87 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
+  }
+}
+
+/// A free-text field with a filtered dropdown of known team names — picking
+/// a suggestion fills the field, but any text (including a name not yet in
+/// the registry) is still accepted, since team identity travels as free
+/// text on the wire and this list is a convenience, never a gate.
+class _TeamPickerField extends StatelessWidget {
+  const _TeamPickerField({
+    required this.fieldKey,
+    required this.controller,
+    required this.focusNode,
+    required this.label,
+    required this.enabled,
+    required this.optionsBuilder,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String label;
+  final bool enabled;
+  final Iterable<String> Function(String query) optionsBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return RawAutocomplete<String>(
+          textEditingController: controller,
+          focusNode: focusNode,
+          optionsBuilder: (TextEditingValue value) =>
+              optionsBuilder(value.text),
+          onSelected: (String selection) => controller.text = selection,
+          fieldViewBuilder: (context, fieldController, fieldFocusNode, _) {
+            return TextField(
+              key: fieldKey,
+              controller: fieldController,
+              focusNode: fieldFocusNode,
+              decoration: InputDecoration(
+                labelText: label,
+                border: const OutlineInputBorder(),
+              ),
+              enabled: enabled,
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            final List<String> optionList = options.toList();
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth,
+                    maxHeight: 240,
+                  ),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: optionList.length,
+                    itemBuilder: (context, index) {
+                      final String option = optionList[index];
+                      final TeamBrand? brand =
+                          kEplTeams[option] ?? kSaudiTeams[option];
+                      return ListTile(
+                        dense: true,
+                        title: Text(option),
+                        subtitle: brand == null ? null : Text(brand.ar),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
