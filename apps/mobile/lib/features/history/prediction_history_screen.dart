@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../competition/competition_providers.dart';
+import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'prediction_history_providers.dart';
 
@@ -41,14 +43,32 @@ class PredictionHistoryScreen extends ConsumerWidget {
   }
 }
 
-class _PredictionCard extends StatelessWidget {
+/// A single historical forecast. Resolves its fixtures' team identity via
+/// `roundFixturesProvider(prediction.roundId)` — the same read
+/// `RoundFixturesScreen` uses — so a score line renders as "Home 2 - 1 Away"
+/// (with crests) instead of the opaque fixture id. A fixture that cannot be
+/// resolved (the round read is still loading, failed, or the fixture is no
+/// longer linked) falls back to the raw id — the card never hides a score
+/// line just because its team identity is unavailable.
+class _PredictionCard extends ConsumerWidget {
   const _PredictionCard({required this.prediction});
   final PredictionDto prediction;
 
   @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
+    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
+      roundFixturesProvider(prediction.roundId),
+    );
+    // Best-effort lookup map: while [fixtures] is loading or failed, every
+    // score line simply falls back to its raw fixture id (see
+    // [_ScoreLine.build]) rather than blocking or erroring the whole card.
+    final Map<String, RoundFixtureCardDto> byFixtureId =
+        <String, RoundFixtureCardDto>{
+          for (final RoundFixtureCardDto fixture in fixtures.value ?? const [])
+            fixture.fixtureId: fixture,
+        };
+
     return Card(
       key: Key('history.item.${prediction.id}'),
       margin: const EdgeInsets.symmetric(
@@ -68,19 +88,143 @@ class _PredictionCard extends StatelessWidget {
               ).textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
             ),
             const SizedBox(height: AppSpacing.sm),
-            for (final score in prediction.fixtureScores)
+            for (final FixtureScoreDto score in prediction.fixtureScores)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  l10n.predictionHistoryScoreLine(
-                    score.fixtureId,
-                    score.homeGoals,
-                    score.awayGoals,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: _ScoreLine(
+                  key: Key(
+                    'history.score.${prediction.id}.${score.fixtureId}',
                   ),
-                  key: Key('history.score.${prediction.id}.${score.fixtureId}'),
+                  score: score,
+                  fixture: byFixtureId[score.fixtureId],
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One fixture's scoreline: "[crest] Home  2 - 1  Away [crest]". Falls back to
+/// the raw fixture id (no crests) when [fixture] is `null` — the resolved read
+/// hasn't returned this fixture yet, or it is no longer linked to the round.
+class _ScoreLine extends StatelessWidget {
+  const _ScoreLine({required this.score, required this.fixture, super.key});
+
+  final FixtureScoreDto score;
+  final RoundFixtureCardDto? fixture;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final RoundFixtureCardDto? f = fixture;
+    final bool hasNames =
+        (f?.homeTeam?.isNotEmpty ?? false) &&
+        (f?.awayTeam?.isNotEmpty ?? false);
+
+    if (!hasNames) {
+      return Text(
+        l10n.predictionHistoryScoreLine(
+          score.fixtureId,
+          score.homeGoals,
+          score.awayGoals,
+        ),
+      );
+    }
+
+    return Row(
+      children: <Widget>[
+        Expanded(child: _TeamMini(name: f!.homeTeam, alignEnd: false)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          child: _ScorePill(home: score.homeGoals, away: score.awayGoals),
+        ),
+        Expanded(child: _TeamMini(name: f.awayTeam, alignEnd: true)),
+      ],
+    );
+  }
+}
+
+/// A compact crest + display name for one side of a score line.
+class _TeamMini extends StatelessWidget {
+  const _TeamMini({required this.name, required this.alignEnd});
+
+  final String? name;
+  final bool alignEnd;
+
+  static const double _crestSize = 22;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TeamBrand? brand = lookupTeam(name);
+    final String display = teamDisplayName(name);
+    final Widget crest = ClipOval(
+      child: brand == null
+          ? Container(
+              width: _crestSize,
+              height: _crestSize,
+              color: tokens.surfaceHigh,
+            )
+          : Image.network(
+              brand.logoUrl,
+              width: _crestSize,
+              height: _crestSize,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: _crestSize,
+                height: _crestSize,
+                color: brand.c1,
+              ),
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : Container(
+                      width: _crestSize,
+                      height: _crestSize,
+                      color: tokens.surfaceHigh,
+                    ),
+            ),
+    );
+    final Text label = Text(
+      display,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+      style: TextStyle(color: tokens.textPrimary, fontSize: 13),
+    );
+
+    final List<Widget> children = alignEnd
+        ? <Widget>[Expanded(child: label), const SizedBox(width: 6), crest]
+        : <Widget>[crest, const SizedBox(width: 6), Expanded(child: label)];
+
+    return Row(children: children);
+  }
+}
+
+/// The centered "2 - 1" pill between the two [_TeamMini]s.
+class _ScorePill extends StatelessWidget {
+  const _ScorePill({required this.home, required this.away});
+
+  final int home;
+  final int away;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: tokens.border),
+      ),
+      child: Text(
+        '$home - $away',
+        style: TextStyle(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
         ),
       ),
     );
