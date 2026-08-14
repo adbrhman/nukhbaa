@@ -16,6 +16,7 @@ import '../../l10n/app_localizations.dart';
 import '../../core/error/error_presenter.dart';
 import '../competition/competition_providers.dart';
 import '../competition/season_rounds_screen.dart' show roundStatusLabel;
+import '../competition/team_registry.dart';
 import 'prediction_controller.dart';
 import 'prediction_providers.dart';
 import 'prediction_submission.dart';
@@ -561,8 +562,12 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final homeColor = _teamColor(fixture.homeTeam);
-    final awayColor = _teamColor(fixture.awayTeam);
+    // Prefer the known brand's primary color; fall back to a stable
+    // name-derived color when the team isn't in the local registry yet.
+    final homeBrand = lookupTeam(fixture.homeTeam);
+    final awayBrand = lookupTeam(fixture.awayTeam);
+    final homeColor = homeBrand?.c1 ?? _teamColor(fixture.homeTeam);
+    final awayColor = awayBrand?.c1 ?? _teamColor(fixture.awayTeam);
     final home = fixture.homeTeam ?? '?';
     final away = fixture.awayTeam ?? '?';
     final kickoff = _kickoffLabel();
@@ -580,19 +585,20 @@ class _MatchCard extends StatelessWidget {
       ),
       child: Stack(
         children: <Widget>[
-          // Color-bleed glow, left (home).
+          // Color-bleed glow, left (home). Purely decorative — must never
+          // intercept touches meant for the score fields stacked above it.
           Positioned(
             left: -30,
             top: 0,
             bottom: 0,
-            child: _GlowBlob(color: homeColor),
+            child: IgnorePointer(child: _GlowBlob(color: homeColor)),
           ),
-          // Color-bleed glow, right (away).
+          // Color-bleed glow, right (away). Same rationale as above.
           Positioned(
             right: -30,
             top: 0,
             bottom: 0,
-            child: _GlowBlob(color: awayColor),
+            child: IgnorePointer(child: _GlowBlob(color: awayColor)),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -695,16 +701,29 @@ class _GlowBlob extends StatelessWidget {
   }
 }
 
-/// A team column: a colored circular "logo" (initials) + the team name.
+/// A team column: a real crest (when the team is recognized) or a colored
+/// circular initials badge, plus the display name — Arabic when the team is
+/// recognized, otherwise the raw server value, otherwise "؟".
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({required this.name, required this.color});
 
+  /// The English team name from the DTO (`'?'` when the server sent `null`).
   final String name;
+
+  /// The fallback badge color, used only when no brand is recognized.
   final Color color;
+
+  TeamBrand? get _brand => name == '?' ? null : lookupTeam(name);
+
+  String get _displayName {
+    final brand = _brand;
+    if (brand != null) return brand.ar;
+    return name == '?' ? '؟' : name;
+  }
 
   String get _initials {
     final trimmed = name.trim();
-    if (trimmed.isEmpty || trimmed == '?') return '?';
+    if (trimmed.isEmpty || trimmed == '?') return '؟';
     final parts = trimmed.split(RegExp(r'\s+'));
     if (parts.length == 1) {
       final first = parts.first;
@@ -714,31 +733,49 @@ class _TeamColumn extends StatelessWidget {
         .toUpperCase();
   }
 
+  Widget _initialsBadge() => Text(
+    _initials,
+    style: const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
+    final brand = _brand;
     return Column(
       children: <Widget>[
         Container(
           width: _Tokens.logoSize,
           height: _Tokens.logoSize,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.9),
+            color: (brand?.c1 ?? color).withValues(alpha: 0.9),
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           alignment: Alignment.center,
-          child: Text(
-            _initials,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
+          child: brand == null
+              ? _initialsBadge()
+              : Image.network(
+                  brand.logoUrl,
+                  width: _Tokens.logoSize,
+                  height: _Tokens.logoSize,
+                  fit: BoxFit.contain,
+                  // A recognized team whose crest fails to load (offline,
+                  // CDN hiccup) still gets a clean badge — never a broken
+                  // image icon.
+                  errorBuilder: (context, error, stackTrace) =>
+                      _initialsBadge(),
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : _initialsBadge(),
+                ),
         ),
         const SizedBox(height: 8),
         Text(
-          name,
+          _displayName,
           maxLines: 2,
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
@@ -839,7 +876,9 @@ class _GoalStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44,
+      // Matches the widened _CenterField (52) so the stepper column doesn't
+      // clip it.
+      width: 52,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -916,15 +955,11 @@ class _CenterField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 32,
-      decoration: BoxDecoration(
-        color: _Tokens.btnBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _Tokens.btnBorder),
-      ),
-      alignment: Alignment.center,
+    return SizedBox(
+      // Wider than the original 44x32 hit target — the field was too
+      // narrow to register taps reliably on real devices.
+      width: 52,
+      height: 40,
       child: TextField(
         controller: controller,
         enabled: enabled,
@@ -932,6 +967,8 @@ class _CenterField extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLength: 2,
         cursorColor: _Tokens.textPrimary,
+        // Dismiss the keyboard on an outside tap instead of trapping focus.
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         style: const TextStyle(
           color: _Tokens.textPrimary,
           fontSize: 16,
@@ -943,12 +980,25 @@ class _CenterField extends StatelessWidget {
         decoration: InputDecoration(
           counterText: '',
           isDense: true,
+          filled: true,
+          fillColor: _Tokens.btnBg,
           contentPadding: EdgeInsets.zero,
-          border: InputBorder.none,
           hintText: placeholder,
           hintStyle: const TextStyle(
             color: _Tokens.textSecondary,
             fontSize: 16,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: _Tokens.btnBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white70),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: _Tokens.btnBorder),
           ),
         ),
         onChanged: (_) => onChanged(),
