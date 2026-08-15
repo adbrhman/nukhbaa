@@ -441,11 +441,7 @@ class GoalStepper extends StatelessWidget {
             onChanged: onChanged,
           ),
           const SizedBox(height: 4),
-          StepBtn(
-            icon: Icons.remove,
-            enabled: enabled,
-            onTap: () => _bump(-1),
-          ),
+          StepBtn(icon: Icons.remove, enabled: enabled, onTap: () => _bump(-1)),
         ],
       ),
     );

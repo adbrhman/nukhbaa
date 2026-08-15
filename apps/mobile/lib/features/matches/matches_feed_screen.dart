@@ -374,7 +374,9 @@ class _InlineBanner extends StatelessWidget {
         children: <Widget>[
           Icon(icon, color: fg, size: 20),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: TextStyle(color: fg))),
+          Expanded(
+            child: Text(text, style: TextStyle(color: fg)),
+          ),
         ],
       ),
     );

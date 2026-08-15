@@ -25,21 +25,19 @@ void main() {
   final seasonId = (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value;
 
   RulesetSnapshot snapshot() =>
-      (RulesetSnapshot.create(
-                payload: const {'points': 1},
-                rulesetVersion: 1,
-              )
+      (RulesetSnapshot.create(payload: const {'points': 1}, rulesetVersion: 1)
               as Ok<RulesetSnapshot>)
           .value;
 
-  Round roundIn(String id, int sequence, RoundStatus status) => Round.fromStored(
-    id: (RoundId.tryParse(id) as Ok<RoundId>).value,
-    seasonId: seasonId,
-    sequence: sequence,
-    predictionDeadline: DateTime.utc(2026, 8, sequence, 12),
-    status: status,
-    ruleset: snapshot(),
-  );
+  Round roundIn(String id, int sequence, RoundStatus status) =>
+      Round.fromStored(
+        id: (RoundId.tryParse(id) as Ok<RoundId>).value,
+        seasonId: seasonId,
+        sequence: sequence,
+        predictionDeadline: DateTime.utc(2026, 8, sequence, 12),
+        status: status,
+        ruleset: snapshot(),
+      );
 
   group('POST /rounds/{id}/lock', () {
     late InMemoryCompetitionRepository repo;
@@ -55,71 +53,71 @@ void main() {
       );
     }
 
-    test(
-      'locks an open round and returns 200 with status locked, '
-      'is_predictable false (a locked round is never predictable)',
-      () async {
-        final root = rootWith();
-        repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.open);
-
-        final context = wireContext(root: root, principal: adminPrincipal());
-
-        final response = await route.onRequest(context, kRoundId);
-
-        expect(response.statusCode, HttpStatus.ok);
-        final body = await decodeBody(response);
-        expect(body['status'], 'locked');
-        expect(body['is_predictable'], isFalse);
-      },
-    );
-
-    test(
-      'locking round 1 flips round 2 predictable on its NEXT read — this is '
-      'the exact unblock the sequential-round gate depends on',
-      () async {
-        final root = rootWith();
-        repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.open);
-        repo.rounds[kRoundId2] = roundIn(kRoundId2, 2, RoundStatus.open);
-
-        // Sanity: before locking, round 2 is genuinely blocked.
-        final before = await ListSeasonRounds(
-          repository: repo,
-        ).call(principal: adminPrincipal(), seasonId: kSeasonId);
-        final beforeRounds = (before as Ok<List<Round>>).value;
-        final round2Before = beforeRounds.firstWhere(
-          (r) => r.id.value == kRoundId2,
-        );
-        expect(isRoundPredictable(round2Before, beforeRounds), isFalse);
-
-        final context = wireContext(root: root, principal: adminPrincipal());
-        final response = await route.onRequest(context, kRoundId);
-        expect(response.statusCode, HttpStatus.ok);
-
-        final after = await ListSeasonRounds(
-          repository: repo,
-        ).call(principal: adminPrincipal(), seasonId: kSeasonId);
-        final afterRounds = (after as Ok<List<Round>>).value;
-        final round2After = afterRounds.firstWhere(
-          (r) => r.id.value == kRoundId2,
-        );
-        expect(isRoundPredictable(round2After, afterRounds), isTrue);
-      },
-    );
-
-    test('locking an already-locked round is a 409 transition conflict', () async {
+    test('locks an open round and returns 200 with status locked, '
+        'is_predictable false (a locked round is never predictable)', () async {
       final root = rootWith();
-      repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.locked);
+      repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.open);
+
+      final context = wireContext(root: root, principal: adminPrincipal());
+
+      final response = await route.onRequest(context, kRoundId);
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      expect(body['status'], 'locked');
+      expect(body['is_predictable'], isFalse);
+    });
+
+    test('locking round 1 flips round 2 predictable on its NEXT read — this is '
+        'the exact unblock the sequential-round gate depends on', () async {
+      final root = rootWith();
+      repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.open);
+      repo.rounds[kRoundId2] = roundIn(kRoundId2, 2, RoundStatus.open);
+
+      // Sanity: before locking, round 2 is genuinely blocked.
+      final before = await ListSeasonRounds(
+        repository: repo,
+      ).call(principal: adminPrincipal(), seasonId: kSeasonId);
+      final beforeRounds = (before as Ok<List<Round>>).value;
+      final round2Before = beforeRounds.firstWhere(
+        (r) => r.id.value == kRoundId2,
+      );
+      expect(isRoundPredictable(round2Before, beforeRounds), isFalse);
 
       final context = wireContext(root: root, principal: adminPrincipal());
       final response = await route.onRequest(context, kRoundId);
+      expect(response.statusCode, HttpStatus.ok);
 
-      expect(response.statusCode, HttpStatus.conflict);
-      final body = await decodeBody(response);
-      expect(body['code'], 'competition.round_transition_conflict');
+      final after = await ListSeasonRounds(
+        repository: repo,
+      ).call(principal: adminPrincipal(), seasonId: kSeasonId);
+      final afterRounds = (after as Ok<List<Round>>).value;
+      final round2After = afterRounds.firstWhere(
+        (r) => r.id.value == kRoundId2,
+      );
+      expect(isRoundPredictable(round2After, afterRounds), isTrue);
     });
 
+    test(
+      'locking an already-locked round is a 409 transition conflict',
+      () async {
+        final root = rootWith();
+        repo.rounds[kRoundId] = roundIn(kRoundId, 1, RoundStatus.locked);
+
+        final context = wireContext(root: root, principal: adminPrincipal());
+        final response = await route.onRequest(context, kRoundId);
+
+        expect(response.statusCode, HttpStatus.conflict);
+        final body = await decodeBody(response);
+        expect(body['code'], 'competition.round_transition_conflict');
+      },
+    );
+
     test('an unknown round id surfaces as 409 round_not_found', () async {
-      final context = wireContext(root: rootWith(), principal: adminPrincipal());
+      final context = wireContext(
+        root: rootWith(),
+        principal: adminPrincipal(),
+      );
 
       final response = await route.onRequest(
         context,

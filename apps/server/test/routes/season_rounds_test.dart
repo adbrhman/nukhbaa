@@ -76,10 +76,8 @@ void main() {
       () async {
         final repo0 = InMemoryCompetitionRepository();
         final compId =
-            (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
-                .value;
-        final seasonId =
-            (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value;
+            (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value;
+        final seasonId = (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value;
         repo0.competitions[kCompetitionId] = Competition.fromStored(
           id: compId,
           name: 'Comp',

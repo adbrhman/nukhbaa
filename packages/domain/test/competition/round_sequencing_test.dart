@@ -33,8 +33,7 @@ Round _round({
   if (status == RoundStatus.locked) {
     return (opened.transitionTo(RoundStatus.locked) as Ok<Round>).value;
   }
-  final locked =
-      (opened.transitionTo(RoundStatus.locked) as Ok<Round>).value;
+  final locked = (opened.transitionTo(RoundStatus.locked) as Ok<Round>).value;
   return (locked.transitionTo(RoundStatus.scored) as Ok<Round>).value;
 }
 
@@ -78,19 +77,21 @@ void main() {
       expect(isRoundPredictable(round2, [round1, round2]), isTrue);
     });
 
-    test('round 3 stays blocked if EITHER round 1 or round 2 is still open',
-        () {
-      final round1 = _round(
-        id: _round1Id,
-        sequence: 1,
-        status: RoundStatus.locked,
-      );
-      final round2 = _round(id: _round2Id, sequence: 2); // still open
-      final round3 = _round(id: _round3Id, sequence: 3);
-      final seasonRounds = [round1, round2, round3];
+    test(
+      'round 3 stays blocked if EITHER round 1 or round 2 is still open',
+      () {
+        final round1 = _round(
+          id: _round1Id,
+          sequence: 1,
+          status: RoundStatus.locked,
+        );
+        final round2 = _round(id: _round2Id, sequence: 2); // still open
+        final round3 = _round(id: _round3Id, sequence: 3);
+        final seasonRounds = [round1, round2, round3];
 
-      expect(isRoundPredictable(round3, seasonRounds), isFalse);
-    });
+        expect(isRoundPredictable(round3, seasonRounds), isFalse);
+      },
+    );
 
     test('a round that is itself locked or scored is never predictable, '
         'regardless of its siblings', () {
