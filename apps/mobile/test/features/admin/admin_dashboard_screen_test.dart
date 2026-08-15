@@ -28,8 +28,12 @@ import '../../support/admin_harness.dart';
 Widget _host(AdminHarness harness, Widget child) => UncontrolledProviderScope(
   container: harness.container,
   child: MaterialApp(
+    // نثبّت الإنجليزية هنا فقط لأن منتقيات التاريخ/الوقت في Material
+    // تعرض تسمية التأكيد "OK" بالإنجليزية؛ لا يمسّ هذا سلوك التطبيق
+    // الفعلي (العربية تبقى الافتراضية هناك)، فقط عزل هذا الاختبار.
     supportedLocales: AppLocalizations.supportedLocales,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
+    locale: const Locale('en'),
     home: child,
   ),
 );
@@ -326,12 +330,27 @@ void main() {
     });
   });
 
-  group('AdminDashboardScreen — fixture schedule', () {
-    testWidgets('register and correct are mutually exclusive, gated purely '
-        'on whether a fixture id was typed', (tester) async {
+  group('AdminDashboardScreen — add match (single flow)', () {
+    testWidgets('add-match is gated until a round, both teams, and a kickoff '
+        'are chosen; picking each dropdown drives the next read', (
+      tester,
+    ) async {
       final harness = buildAdminHarness((request) async {
-        if (request.method == 'GET' && request.url.path == '/admin/audit') {
+        final path = request.url.path;
+        if (request.method == 'GET' && path == '/admin/audit') {
           return okJsonObject(emptyAuditLog.toJson());
+        }
+        if (request.method == 'GET' && path == '/competitions') {
+          return okJsonArray([oneCompetition.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/competitions/comp-1/seasons') {
+          return okJsonArray([oneSeason.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/seasons/season-1/rounds') {
+          return okJsonArray([openedRound.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/rounds/round-new/fixtures') {
+          return okJsonArray(const <Map<String, Object?>>[]);
         }
         return errorEnvelope(404, 'not_found', 'unexpected request');
       });
@@ -341,43 +360,40 @@ void main() {
       await tester.pumpAndSettle();
       await _goToTab(tester, 'admin.tab.fixtures');
 
-      FilledButton registerButton() => tester.widget<FilledButton>(
-        find.byKey(const Key('admin.fixtures.register')),
-      );
-      OutlinedButton correctButton() => tester.widget<OutlinedButton>(
-        find.byKey(const Key('admin.fixtures.correct')),
+      FilledButton addButton() => tester.widget<FilledButton>(
+        find.byKey(const Key('admin.fixtures.addMatch')),
       );
 
-      // No fixture id typed -> register is offered, correct is not.
-      expect(registerButton().onPressed, isNotNull);
-      expect(correctButton().onPressed, isNull);
+      // لا شيء مختار بعد -> الزر معطّل.
+      expect(addButton().onPressed, isNull);
 
-      await tester.enterText(
-        find.byKey(const Key('admin.fixtures.fixtureIdField')),
-        'f-1',
+      // اختر المسابقة.
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.competitionField')),
       );
-      await tester.pump();
-
-      // A fixture id was typed -> correct is offered, register is not.
-      expect(registerButton().onPressed, isNull);
-      expect(correctButton().onPressed, isNotNull);
-    });
-
-    testWidgets('registering without picking a kickoff sends no request', (
-      tester,
-    ) async {
-      final harness = buildAdminHarness((request) async {
-        if (request.method == 'GET' && request.url.path == '/admin/audit') {
-          return okJsonObject(emptyAuditLog.toJson());
-        }
-        return errorEnvelope(400, 'unexpected', 'should not be called');
-      });
-      addTearDown(harness.dispose);
-
-      await tester.pumpWidget(_host(harness, const AdminDashboardScreen()));
       await tester.pumpAndSettle();
-      await _goToTab(tester, 'admin.tab.fixtures');
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.competitionField.comp-1')).last,
+      );
+      await tester.pumpAndSettle();
 
+      // اختر الموسم.
+      await tester.tap(find.byKey(const Key('admin.fixtures.seasonField')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.seasonField.season-1')).last,
+      );
+      await tester.pumpAndSettle();
+
+      // اختر الجولة.
+      await tester.tap(find.byKey(const Key('admin.fixtures.roundField')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.roundField.round-new')).last,
+      );
+      await tester.pumpAndSettle();
+
+      // الفريقان.
       await tester.enterText(
         find.byKey(const Key('admin.fixtures.homeTeamField')),
         'Al Hilal',
@@ -386,12 +402,110 @@ void main() {
         find.byKey(const Key('admin.fixtures.awayTeamField')),
         'Al Nassr',
       );
-      await tester.tap(find.byKey(const Key('admin.fixtures.register')));
+      await tester.pump();
+      FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
+      // ما زال بلا موعد -> معطّل.
+      expect(addButton().onPressed, isNull);
+    });
+
+    testWidgets('a full add-match registers the fixture then links it, and '
+        'shows the success line', (tester) async {
+      final harness = buildAdminHarness((request) async {
+        final path = request.url.path;
+        if (request.method == 'GET' && path == '/admin/audit') {
+          return okJsonObject(emptyAuditLog.toJson());
+        }
+        if (request.method == 'GET' && path == '/competitions') {
+          return okJsonArray([oneCompetition.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/competitions/comp-1/seasons') {
+          return okJsonArray([oneSeason.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/seasons/season-1/rounds') {
+          return okJsonArray([openedRound.toJson()]);
+        }
+        if (request.method == 'GET' && path == '/rounds/round-new/fixtures') {
+          return okJsonArray(const <Map<String, Object?>>[]);
+        }
+        if (request.method == 'POST' && path == '/fixtures') {
+          return okJsonObject(registeredFixture.toJson());
+        }
+        if (request.method == 'POST' && path == '/rounds/round-new/fixtures') {
+          return okJsonObject(linkedRoundFixture.toJson());
+        }
+        return errorEnvelope(404, 'not_found', 'unexpected request');
+      });
+      addTearDown(harness.dispose);
+
+      await tester.pumpWidget(_host(harness, const AdminDashboardScreen()));
+      await tester.pumpAndSettle();
+      await _goToTab(tester, 'admin.tab.fixtures');
+
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.competitionField')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.competitionField.comp-1')).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('admin.fixtures.seasonField')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.seasonField.season-1')).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('admin.fixtures.roundField')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('admin.fixtures.roundField.round-new')).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('admin.fixtures.homeTeamField')),
+        'Al Hilal',
+      );
+      await tester.enterText(
+        find.byKey(const Key('admin.fixtures.awayTeamField')),
+        'Al Nassr',
+      );
+      await tester.pump();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+
+      // اختر الموعد عبر منتقيي التاريخ والوقت.
+      await tester.ensureVisible(
+        find.byKey(const Key('admin.fixtures.kickoffPicker')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('admin.fixtures.kickoffPicker')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK')); // تأكيد التاريخ
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK')); // تأكيد الوقت
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('admin.fixtures.addMatch')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('admin.fixtures.result')), findsOneWidget);
+      expect(find.byKey(const Key('admin.fixtures.error')), findsNothing);
       expect(
-        harness.captured.any((c) => c.request.url.path == '/fixtures'),
-        isFalse,
+        harness.captured.any(
+          (c) =>
+              c.request.method == 'POST' && c.request.url.path == '/fixtures',
+        ),
+        isTrue,
+      );
+      expect(
+        harness.captured.any(
+          (c) =>
+              c.request.method == 'POST' &&
+              c.request.url.path == '/rounds/round-new/fixtures',
+        ),
+        isTrue,
       );
     });
   });
