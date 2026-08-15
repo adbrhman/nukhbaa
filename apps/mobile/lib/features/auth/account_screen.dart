@@ -2,6 +2,7 @@ library;
 
 import 'dart:async';
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_radius.dart';
@@ -89,35 +90,41 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _Field(
-                    label: l10n.userId,
-                    value: user.userId,
-                    valueKey: const Key('account.userId'),
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  _Field(
-                    label: l10n.role,
-                    value: user.role,
-                    valueKey: const Key('account.role'),
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  _Field(
-                    label: l10n.status,
-                    value: user.status,
-                    valueKey: const Key('account.status'),
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  if (user.email != null)
+                  // Raw identity fields (id/role/status/email) are debug-only
+                  // diagnostics, never production UI (next-task.md #1) - kept
+                  // behind kDebugMode instead of deleted so the team can still
+                  // inspect the signed-in principal while developing/testing.
+                  if (kDebugMode) ...[
                     _Field(
-                      label: l10n.email,
-                      value: user.email!,
-                      valueKey: const Key('account.email'),
+                      label: l10n.userId,
+                      value: user.userId,
+                      valueKey: const Key('account.userId'),
                       tokens: tokens,
                       text: text,
                     ),
+                    _Field(
+                      label: l10n.role,
+                      value: user.role,
+                      valueKey: const Key('account.role'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    _Field(
+                      label: l10n.status,
+                      value: user.status,
+                      valueKey: const Key('account.status'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    if (user.email != null)
+                      _Field(
+                        label: l10n.email,
+                        value: user.email!,
+                        valueKey: const Key('account.email'),
+                        tokens: tokens,
+                        text: text,
+                      ),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   AppButton(
                     key: const Key('account.matches'),
