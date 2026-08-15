@@ -334,6 +334,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Every fixture in this round has already kicked off. There is nothing left to predict.';
 
   @override
+  String get matchesTitle => 'Matches';
+
+  @override
+  String get matchesEmpty => 'No open matches right now.';
+
+  @override
   String get adminAuditLogTab => 'Audit Log';
 
   @override
@@ -377,6 +383,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminFixtureIdOptionalLabel =>
       'Fixture ID (correction only — leave empty to register)';
+
+  @override
+  String get adminSelectCompetitionLabel => 'Select league (competitions)';
 
   @override
   String get adminHomeTeamLabel => 'Home team';

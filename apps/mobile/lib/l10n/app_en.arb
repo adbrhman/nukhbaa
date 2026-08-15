@@ -266,6 +266,8 @@
     "description": "Shown while at least one open fixture is missing a valid score."
   },
   "predictionNoOpenFixturesMessage": "Every fixture in this round has already kicked off. There is nothing left to predict.",
+  "matchesTitle": "Matches",
+  "matchesEmpty": "No open matches right now.",
   "@predictionNoOpenFixturesMessage": {
     "description": "Shown instead of the form when every fixture in the round has already locked."
   },
@@ -290,6 +292,7 @@
   "adminLookUpButton": "Look up",
   "adminFixturesTab": "Fixture Identity",
   "adminFixtureIdOptionalLabel": "Fixture ID (correction only — leave empty to register)",
+  "adminSelectCompetitionLabel": "Select league (competitions)",
   "adminHomeTeamLabel": "Home team",
   "adminAwayTeamLabel": "Away team",
   "adminPickKickoffButton": "Pick kickoff time",

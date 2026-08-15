@@ -630,6 +630,18 @@ abstract class AppLocalizations {
   /// **'Every fixture in this round has already kicked off. There is nothing left to predict.'**
   String get predictionNoOpenFixturesMessage;
 
+  /// No description provided for @matchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get matchesTitle;
+
+  /// No description provided for @matchesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open matches right now.'**
+  String get matchesEmpty;
+
   /// No description provided for @adminAuditLogTab.
   ///
   /// In en, this message translates to:
@@ -713,6 +725,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fixture ID (correction only — leave empty to register)'**
   String get adminFixtureIdOptionalLabel;
+
+  /// No description provided for @adminSelectCompetitionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select league (competitions)'**
+  String get adminSelectCompetitionLabel;
 
   /// No description provided for @adminHomeTeamLabel.
   ///

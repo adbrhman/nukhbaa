@@ -340,6 +340,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'كل مباريات هذه الجولة بدأت بالفعل. لا يوجد ما يمكن توقّعه الآن.';
 
   @override
+  String get matchesTitle => 'المباريات';
+
+  @override
+  String get matchesEmpty => 'لا توجد مباريات مفتوحة حالياً.';
+
+  @override
   String get adminAuditLogTab => 'سجل التدقيق';
 
   @override
@@ -383,6 +389,9 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adminFixtureIdOptionalLabel =>
       'معرّف المباراة (للتصحيح فقط، اتركه فارغاً للتسجيل)';
+
+  @override
+  String get adminSelectCompetitionLabel => 'اختار الدوري (المسابقات)';
 
   @override
   String get adminHomeTeamLabel => 'الفريق المضيف';

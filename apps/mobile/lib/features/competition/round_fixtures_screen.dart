@@ -23,7 +23,7 @@ import '../../core/ui/app_round_header.dart';
 import '../../l10n/app_localizations.dart';
 import '../prediction/prediction_screen.dart';
 import 'competition_providers.dart';
-import 'season_rounds_screen.dart' show roundStatusLabel;
+import 'round_status_label.dart';
 import 'team_registry.dart';
 import 'widgets/async_list_view.dart';
 

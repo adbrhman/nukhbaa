@@ -21,6 +21,7 @@ import '../../l10n/app_localizations.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
 import 'competition_providers.dart';
 import 'round_fixtures_screen.dart';
+import 'round_status_label.dart';
 import 'widgets/async_list_view.dart';
 
 /// The round-list screen for a single season.
@@ -89,14 +90,6 @@ class SeasonRoundsScreen extends ConsumerWidget {
     );
   }
 }
-
-/// Humanises a round lifecycle status token.
-String roundStatusLabel(AppLocalizations l10n, String token) => switch (token) {
-  'open' => l10n.roundStatusOpen,
-  'locked' => l10n.roundStatusLocked,
-  'scored' => l10n.roundStatusScored,
-  _ => token,
-};
 
 /// Renders the ISO-8601 UTC deadline compactly (date + minute, UTC), falling
 /// back to the raw value if it cannot be parsed — a display concern only, never

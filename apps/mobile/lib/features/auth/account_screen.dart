@@ -11,11 +11,11 @@ import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_dashboard_screen.dart';
-import '../competition/competition_list_screen.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/join_group_screen.dart';
 import '../hall_of_fame/hall_of_fame_screen.dart';
 import '../history/prediction_history_screen.dart';
+import '../matches/matches_feed_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'session_controller.dart';
@@ -120,12 +120,12 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   const SizedBox(height: AppSpacing.xl),
                   AppButton(
-                    key: const Key('account.browseCompetitions'),
-                    label: l10n.browseCompetitions,
-                    icon: Icons.emoji_events_outlined,
+                    key: const Key('account.matches'),
+                    label: l10n.matchesTitle,
+                    icon: Icons.sports_soccer,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const CompetitionListScreen(),
+                        builder: (_) => const MatchesFeedScreen(),
                       ),
                     ),
                   ),

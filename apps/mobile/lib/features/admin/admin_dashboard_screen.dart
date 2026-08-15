@@ -9,6 +9,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../competition/competition_providers.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'admin_providers.dart';
@@ -376,6 +377,8 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
   final FocusNode _homeTeamFocusNode = FocusNode();
   final FocusNode _awayTeamFocusNode = FocusNode();
   DateTime? _kickoffLocal;
+  String? _selectedCompetitionId;
+  String? _selectedCompetitionName;
 
   /// The recognized team names an admin can pick from — every English wire
   /// name known to [team_registry.dart], across both catalogued leagues.
@@ -388,11 +391,26 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
     ...kSaudiTeams.keys,
   ]..sort();
 
+  /// The team names offered once a competition is selected — scoped to that
+  /// competition's registry when one exists (English Premier League / Saudi
+  /// Roshn League), otherwise the full merged list. Matches on the
+  /// competition's Arabic display name since [CompetitionDto] carries no
+  /// league code; a competition with no matching registry (e.g. UEFA
+  /// competitions) still accepts any free-text team name — this list is a
+  /// suggestion only (see [_TeamPickerField]'s doc comment).
+  List<String> get _scopedTeamOptions {
+    final String name = _selectedCompetitionName ?? '';
+    if (name.contains('إنجليز')) return kEplTeams.keys.toList()..sort();
+    if (name.contains('سعود')) return kSaudiTeams.keys.toList()..sort();
+    return _teamOptions;
+  }
+
   Iterable<String> _filterTeams(String query) {
+    final List<String> options = _scopedTeamOptions;
     final String trimmed = query.trim();
-    if (trimmed.isEmpty) return _teamOptions;
+    if (trimmed.isEmpty) return options;
     final String needle = trimmed.toLowerCase();
-    return _teamOptions.where((String t) => t.toLowerCase().contains(needle));
+    return options.where((String t) => t.toLowerCase().contains(needle));
   }
 
   @override
@@ -428,6 +446,19 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             ),
             enabled: !inFlight,
             onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _CompetitionPickerField(
+            fieldKey: const Key('admin.fixtures.competitionField'),
+            label: l10n.adminSelectCompetitionLabel,
+            enabled: !inFlight,
+            selectedId: _selectedCompetitionId,
+            onSelected: (CompetitionDto competition) => setState(() {
+              _selectedCompetitionId = competition.id;
+              _selectedCompetitionName = competition.name;
+              _homeTeamController.clear();
+              _awayTeamController.clear();
+            }),
           ),
           const SizedBox(height: AppSpacing.md),
           _TeamPickerField(
@@ -566,6 +597,82 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
+  }
+}
+
+/// The competition dropdown at the top of [_FixtureScheduleTab]: reads the
+/// public catalogue (`GET /competitions`, via `competitionListProvider`) and
+/// lets the admin pick one before entering team names. Purely a client-side
+/// convenience — a fixture aggregate carries no competition reference
+/// (Axiom 3), so the selection only scopes which team names
+/// [_TeamPickerField] suggests; it is never sent to `register`/`correct`.
+class _CompetitionPickerField extends ConsumerWidget {
+  const _CompetitionPickerField({
+    required this.fieldKey,
+    required this.label,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final Key fieldKey;
+  final String label;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<CompetitionDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<CompetitionDto>> competitions = ref.watch(
+      competitionListProvider,
+    );
+    return competitions.when(
+      loading: () => DropdownButtonFormField<String>(
+        key: fieldKey,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        items: const <DropdownMenuItem<String>>[],
+        onChanged: null,
+      ),
+      error: (Object error, StackTrace stackTrace) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<CompetitionDto> list) {
+        final String? value = list.any((c) => c.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: fieldKey,
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final CompetitionDto competition in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.competitionField.${competition.id}'),
+                value: competition.id,
+                child: Text(competition.name),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  final CompetitionDto? competition = list
+                      .cast<CompetitionDto?>()
+                      .firstWhere((c) => c?.id == id, orElse: () => null);
+                  if (competition != null) onSelected(competition);
+                },
+        );
+      },
+    );
   }
 }
 
