@@ -400,3 +400,81 @@ class RoundReportController extends _$RoundReportController {
     );
   }
 }
+
+/// نتيجة دمج تسجيل المباراة وربطها بالجولة — نجاح فقط إذا نجحت العمليتان معاً.
+class AddMatchResult {
+  const AddMatchResult({
+    required this.fixture,
+    required this.link,
+    required this.roundSequence,
+  });
+
+  final FixtureScheduleDto fixture;
+  final RoundFixtureDto link;
+  final int roundSequence;
+}
+
+/// يدمج `registerFixtureSchedule` ثم `linkFixtureToRound` في أمر واحد ذرّي من
+/// منظور المستخدم: لا يُعلن النجاح إلا بعد نجاح العمليتين معاً. إذا نجح التسجيل
+/// وفشل الربط، تظهر رسالة خطأ الربط ولا تُعتبر العملية ناجحة.
+///
+/// يبقى تسلسل الأمرين لأن العقود تفصل `POST /fixtures` عن
+/// `POST /rounds/{id}/fixtures` (Axiom 3) — لا يوجد endpoint واحد يفعل الاثنين،
+/// فنؤمّن الذرّية على الواجهة دون أي تعديل على الخادم.
+@riverpod
+class AddMatchController extends _$AddMatchController {
+  FixtureScheduleApi get _fixtureApi => ref.read(fixtureScheduleApiProvider);
+  CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<AddMatchResult>? build() => null;
+
+  /// يسجّل مباراة جديدة ثم يربطها بـ [roundId] عند [displayOrder].
+  /// [roundSequence] يُستخدم فقط لرسالة النجاح الودّية.
+  Future<void> submit({
+    required String roundId,
+    required int roundSequence,
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+    required int displayOrder,
+  }) async {
+    state = const AsyncValue.loading();
+
+    // (1) تسجيل هوية المباراة — الخادم يولّد fixtureId.
+    final registerResult = await _fixtureApi.registerFixtureSchedule(
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      kickoffAt: kickoffAt,
+    );
+    if (registerResult is Err<FixtureScheduleDto>) {
+      state = AsyncValue.error(registerResult.error, StackTrace.current);
+      return;
+    }
+    final fixture = (registerResult as Ok<FixtureScheduleDto>).value;
+
+    // (2) ربط المباراة بالجولة — لا نعلن النجاح إلا بعد نجاح هذه الخطوة.
+    final linkResult = await _competitionApi.linkFixtureToRound(
+      roundId: roundId,
+      fixtureId: fixture.fixtureId,
+      displayOrder: displayOrder,
+    );
+    if (linkResult is Err<RoundFixtureDto>) {
+      state = AsyncValue.error(linkResult.error, StackTrace.current);
+      return;
+    }
+    final link = (linkResult as Ok<RoundFixtureDto>).value;
+
+    state = AsyncValue.data(
+      AddMatchResult(
+        fixture: fixture,
+        link: link,
+        roundSequence: roundSequence,
+      ),
+    );
+
+    // حدّث قوائم مباريات الجولة حتى يُحسب displayOrder التالي تلقائياً.
+    ref.invalidate(roundFixturesProvider(roundId));
+    ref.invalidate(roundDetailProvider(roundId));
+  }
+}

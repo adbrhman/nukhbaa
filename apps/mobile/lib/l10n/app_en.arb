@@ -285,8 +285,12 @@
   "@adminSanctionResultMessage": {
     "description": "Result line after a suspend/reinstate action.",
     "placeholders": {
-      "userId": {"type": "String"},
-      "status": {"type": "String"}
+      "userId": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
     }
   },
   "adminParticipantIdLabel": "Participant ID",
@@ -348,5 +352,39 @@
   "notificationRoundScored": "A round you predicted was scored",
   "notificationGroupMemberJoined": "Someone joined your group",
   "notificationReactionReceived": "You received a reaction",
-  "notificationsMarkAsRead": "Mark as read"
+  "notificationsMarkAsRead": "Mark as read",
+  "adminAddMatchSectionTitle": "Register a match and add it to a round",
+  "adminSelectSeasonLabel": "Select season",
+  "adminSelectRoundLabel": "Select round",
+  "adminNoSeasonsHint": "This competition has no seasons.",
+  "adminNoRoundsHint": "This season has no rounds. Open a round first in the Rounds tab.",
+  "adminRoundOptionLabel": "Round {sequence} — {status}",
+  "@adminRoundOptionLabel": {
+    "placeholders": {
+      "sequence": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAddMatchButton": "Register match and add to round",
+  "adminAddMatchSuccess": "Added {home} vs {away} to round {sequence}.",
+  "@adminAddMatchSuccess": {
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      },
+      "sequence": {
+        "type": "int"
+      }
+    }
+  },
+  "adminSelectRoundFirst": "Select a round first.",
+  "adminManageRoundsSectionTitle": "Manage rounds",
+  "adminExistingRoundsEmpty": "This season has no rounds yet."
 }

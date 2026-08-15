@@ -533,4 +533,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsMarkAsRead => 'Mark as read';
+
+  @override
+  String get adminAddMatchSectionTitle =>
+      'Register a match and add it to a round';
+
+  @override
+  String get adminSelectSeasonLabel => 'Select season';
+
+  @override
+  String get adminSelectRoundLabel => 'Select round';
+
+  @override
+  String get adminNoSeasonsHint => 'This competition has no seasons.';
+
+  @override
+  String get adminNoRoundsHint =>
+      'This season has no rounds. Open a round first in the Rounds tab.';
+
+  @override
+  String adminRoundOptionLabel(int sequence, String status) {
+    return 'Round $sequence — $status';
+  }
+
+  @override
+  String get adminAddMatchButton => 'Register match and add to round';
+
+  @override
+  String adminAddMatchSuccess(String home, String away, int sequence) {
+    return 'Added $home vs $away to round $sequence.';
+  }
+
+  @override
+  String get adminSelectRoundFirst => 'Select a round first.';
+
+  @override
+  String get adminManageRoundsSectionTitle => 'Manage rounds';
+
+  @override
+  String get adminExistingRoundsEmpty => 'This season has no rounds yet.';
 }

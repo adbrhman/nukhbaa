@@ -230,3 +230,25 @@ const RoundScoresDto oneRoundScore = RoundScoresDto(
     ),
   ],
 );
+
+/// A 200 OK JSON-array response (a list read).
+http.Response okJsonArray(List<Map<String, Object?>> items) => http.Response(
+  jsonEncode(items),
+  200,
+  headers: const {'content-type': 'application/json'},
+);
+
+/// One competition for the add-match flow dropdowns.
+const CompetitionDto oneCompetition = CompetitionDto(
+  id: 'comp-1',
+  name: 'الدوري السعودي',
+  format: 'football_scoreline',
+  visibility: 'public',
+);
+
+/// One season under [oneCompetition].
+const SeasonDto oneSeason = SeasonDto(
+  id: 'season-1',
+  competitionId: 'comp-1',
+  label: '2026/27',
+);

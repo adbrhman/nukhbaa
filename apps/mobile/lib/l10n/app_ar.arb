@@ -158,5 +158,16 @@
   "notificationRoundScored": "تم تسجيل نتيجة جولة توقعتها",
   "notificationGroupMemberJoined": "انضم شخص إلى مجموعتك",
   "notificationReactionReceived": "تلقيت تفاعلاً",
-  "notificationsMarkAsRead": "تمييز كمقروء"
+  "notificationsMarkAsRead": "تمييز كمقروء",
+  "adminAddMatchSectionTitle": "تسجيل مباراة وإضافتها لجولة",
+  "adminSelectSeasonLabel": "اختر الموسم",
+  "adminSelectRoundLabel": "اختر الجولة",
+  "adminNoSeasonsHint": "لا توجد مواسم لهذه المسابقة.",
+  "adminNoRoundsHint": "لا توجد جولات لهذا الموسم. افتح جولة أولاً من تبويب الجولات.",
+  "adminRoundOptionLabel": "الجولة {sequence} — {status}",
+  "adminAddMatchButton": "تسجيل المباراة وإضافتها للجولة",
+  "adminAddMatchSuccess": "تمت إضافة {home} ضد {away} إلى الجولة {sequence}.",
+  "adminSelectRoundFirst": "اختر الجولة أولاً.",
+  "adminManageRoundsSectionTitle": "إدارة الجولات",
+  "adminExistingRoundsEmpty": "لا توجد جولات لهذا الموسم بعد."
 }

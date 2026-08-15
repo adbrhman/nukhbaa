@@ -1019,6 +1019,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark as read'**
   String get notificationsMarkAsRead;
+
+  /// No description provided for @adminAddMatchSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a match and add it to a round'**
+  String get adminAddMatchSectionTitle;
+
+  /// No description provided for @adminSelectSeasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select season'**
+  String get adminSelectSeasonLabel;
+
+  /// No description provided for @adminSelectRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select round'**
+  String get adminSelectRoundLabel;
+
+  /// No description provided for @adminNoSeasonsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This competition has no seasons.'**
+  String get adminNoSeasonsHint;
+
+  /// No description provided for @adminNoRoundsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This season has no rounds. Open a round first in the Rounds tab.'**
+  String get adminNoRoundsHint;
+
+  /// No description provided for @adminRoundOptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Round {sequence} — {status}'**
+  String adminRoundOptionLabel(int sequence, String status);
+
+  /// No description provided for @adminAddMatchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Register match and add to round'**
+  String get adminAddMatchButton;
+
+  /// No description provided for @adminAddMatchSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {home} vs {away} to round {sequence}.'**
+  String adminAddMatchSuccess(String home, String away, int sequence);
+
+  /// No description provided for @adminSelectRoundFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a round first.'**
+  String get adminSelectRoundFirst;
+
+  /// No description provided for @adminManageRoundsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage rounds'**
+  String get adminManageRoundsSectionTitle;
+
+  /// No description provided for @adminExistingRoundsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This season has no rounds yet.'**
+  String get adminExistingRoundsEmpty;
 }
 
 class _AppLocalizationsDelegate

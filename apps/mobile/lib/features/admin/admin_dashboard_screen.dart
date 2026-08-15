@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
@@ -371,35 +372,25 @@ class _FixtureScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
-  final TextEditingController _fixtureIdController = TextEditingController();
   final TextEditingController _homeTeamController = TextEditingController();
   final TextEditingController _awayTeamController = TextEditingController();
   final FocusNode _homeTeamFocusNode = FocusNode();
   final FocusNode _awayTeamFocusNode = FocusNode();
   DateTime? _kickoffLocal;
-  String? _selectedCompetitionId;
-  String? _selectedCompetitionName;
 
-  /// The recognized team names an admin can pick from — every English wire
-  /// name known to [team_registry.dart], across both catalogued leagues.
-  /// Purely a UI convenience: [_register]/[_correct] still send whatever
-  /// text is in the controller, so a name outside this list is never
-  /// blocked — it just won't show a crest/Arabic name downstream until the
-  /// registry is extended (see team_registry.dart's doc comment).
+  String? _competitionId;
+  String? _competitionName;
+  String? _seasonId;
+  String? _roundId;
+  int? _roundSequence;
+
   static final List<String> _teamOptions = <String>[
     ...kEplTeams.keys,
     ...kSaudiTeams.keys,
   ]..sort();
 
-  /// The team names offered once a competition is selected — scoped to that
-  /// competition's registry when one exists (English Premier League / Saudi
-  /// Roshn League), otherwise the full merged list. Matches on the
-  /// competition's Arabic display name since [CompetitionDto] carries no
-  /// league code; a competition with no matching registry (e.g. UEFA
-  /// competitions) still accepts any free-text team name — this list is a
-  /// suggestion only (see [_TeamPickerField]'s doc comment).
   List<String> get _scopedTeamOptions {
-    final String name = _selectedCompetitionName ?? '';
+    final String name = _competitionName ?? '';
     if (name.contains('إنجليز')) return kEplTeams.keys.toList()..sort();
     if (name.contains('سعود')) return kSaudiTeams.keys.toList()..sort();
     return _teamOptions;
@@ -415,7 +406,6 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
 
   @override
   void dispose() {
-    _fixtureIdController.dispose();
     _homeTeamController.dispose();
     _awayTeamController.dispose();
     _homeTeamFocusNode.dispose();
@@ -426,41 +416,87 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final AsyncValue<FixtureScheduleDto>? state = ref.watch(
-      fixtureScheduleControllerProvider,
+    final AsyncValue<AddMatchResult>? state = ref.watch(
+      addMatchControllerProvider,
     );
-    final bool inFlight = state is AsyncLoading<FixtureScheduleDto>;
+    final bool inFlight = state is AsyncLoading<AddMatchResult>;
     final AppTokens tokens = context.tokens;
-    final bool hasFixtureId = _fixtureIdController.text.trim().isNotEmpty;
+
+    // displayOrder التالي = عدد المباريات المرتبطة حالياً بالجولة المختارة.
+    int nextDisplayOrder = 0;
+    if (_roundId != null) {
+      final AsyncValue<List<RoundFixtureCardDto>> fixturesState = ref.watch(
+        roundFixturesProvider(_roundId!),
+      );
+      if (fixturesState is AsyncData<List<RoundFixtureCardDto>>) {
+        nextDisplayOrder = fixturesState.value.length;
+      }
+    }
+
+    final bool canSubmit =
+        !inFlight &&
+        _roundId != null &&
+        _homeTeamController.text.trim().isNotEmpty &&
+        _awayTeamController.text.trim().isNotEmpty &&
+        _kickoffLocal != null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          TextField(
-            key: const Key('admin.fixtures.fixtureIdField'),
-            controller: _fixtureIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminFixtureIdOptionalLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !inFlight,
-            onChanged: (_) => setState(() {}),
+          Text(
+            l10n.adminAddMatchSectionTitle,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // 1) المسابقة
           _CompetitionPickerField(
             fieldKey: const Key('admin.fixtures.competitionField'),
             label: l10n.adminSelectCompetitionLabel,
             enabled: !inFlight,
-            selectedId: _selectedCompetitionId,
+            selectedId: _competitionId,
             onSelected: (CompetitionDto competition) => setState(() {
-              _selectedCompetitionId = competition.id;
-              _selectedCompetitionName = competition.name;
+              _competitionId = competition.id;
+              _competitionName = competition.name;
+              _seasonId = null;
+              _roundId = null;
+              _roundSequence = null;
               _homeTeamController.clear();
               _awayTeamController.clear();
             }),
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // 2) الموسم (بعد اختيار المسابقة)
+          if (_competitionId != null)
+            _SeasonPickerField(
+              competitionId: _competitionId!,
+              enabled: !inFlight,
+              selectedId: _seasonId,
+              onSelected: (String seasonId) => setState(() {
+                _seasonId = seasonId;
+                _roundId = null;
+                _roundSequence = null;
+              }),
+            ),
+          if (_competitionId != null) const SizedBox(height: AppSpacing.md),
+
+          // 3) الجولة (بعد اختيار الموسم)
+          if (_seasonId != null)
+            _RoundPickerField(
+              seasonId: _seasonId!,
+              enabled: !inFlight,
+              selectedId: _roundId,
+              onSelected: (RoundDto round) => setState(() {
+                _roundId = round.id;
+                _roundSequence = round.sequence;
+              }),
+            ),
+          if (_seasonId != null) const SizedBox(height: AppSpacing.md),
+
+          // 4) الفريق المضيف
           _TeamPickerField(
             fieldKey: const Key('admin.fixtures.homeTeamField'),
             controller: _homeTeamController,
@@ -468,8 +504,11 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             label: l10n.adminHomeTeamLabel,
             enabled: !inFlight,
             optionsBuilder: _filterTeams,
+            onChanged: () => setState(() {}),
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // 5) الفريق الضيف
           _TeamPickerField(
             fieldKey: const Key('admin.fixtures.awayTeamField'),
             controller: _awayTeamController,
@@ -477,8 +516,11 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             label: l10n.adminAwayTeamLabel,
             enabled: !inFlight,
             optionsBuilder: _filterTeams,
+            onChanged: () => setState(() {}),
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // 6) الموعد
           OutlinedButton(
             key: const Key('admin.fixtures.kickoffPicker'),
             onPressed: inFlight ? null : _pickKickoff,
@@ -489,7 +531,8 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          if (state is AsyncError<FixtureScheduleDto>)
+
+          if (state is AsyncError<AddMatchResult>)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
@@ -498,33 +541,24 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
                 style: TextStyle(color: tokens.error),
               ),
             ),
-          if (state is AsyncData<FixtureScheduleDto>)
+          if (state is AsyncData<AddMatchResult>)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
-                '${state.value.fixtureId}: ${state.value.homeTeam} vs '
-                '${state.value.awayTeam}',
+                l10n.adminAddMatchSuccess(
+                  state.value.fixture.homeTeam,
+                  state.value.fixture.awayTeam,
+                  state.value.roundSequence,
+                ),
                 key: const Key('admin.fixtures.result'),
               ),
             ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: FilledButton(
-                  key: const Key('admin.fixtures.register'),
-                  onPressed: inFlight || hasFixtureId ? null : _register,
-                  child: Text(l10n.adminRegisterFixtureButton),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: OutlinedButton(
-                  key: const Key('admin.fixtures.correct'),
-                  onPressed: inFlight || !hasFixtureId ? null : _correct,
-                  child: Text(l10n.adminCorrectFixtureButton),
-                ),
-              ),
-            ],
+
+          // 7) زر واحد
+          FilledButton(
+            key: const Key('admin.fixtures.addMatch'),
+            onPressed: canSubmit ? () => _addMatch(nextDisplayOrder) : null,
+            child: Text(l10n.adminAddMatchButton),
           ),
         ],
       ),
@@ -558,38 +592,28 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
     });
   }
 
-  void _register() {
+  void _addMatch(int displayOrder) {
+    final roundId = _roundId;
+    final sequence = _roundSequence;
     final homeTeam = _homeTeamController.text.trim();
     final awayTeam = _awayTeamController.text.trim();
     final kickoff = _kickoffLocal;
-    if (homeTeam.isEmpty || awayTeam.isEmpty || kickoff == null) return;
-    ref
-        .read(fixtureScheduleControllerProvider.notifier)
-        .register(
-          homeTeam: homeTeam,
-          awayTeam: awayTeam,
-          kickoffAt: kickoff.toUtc().toIso8601String(),
-        );
-  }
-
-  void _correct() {
-    final fixtureId = _fixtureIdController.text.trim();
-    final homeTeam = _homeTeamController.text.trim();
-    final awayTeam = _awayTeamController.text.trim();
-    final kickoff = _kickoffLocal;
-    if (fixtureId.isEmpty ||
+    if (roundId == null ||
+        sequence == null ||
         homeTeam.isEmpty ||
         awayTeam.isEmpty ||
         kickoff == null) {
       return;
     }
     ref
-        .read(fixtureScheduleControllerProvider.notifier)
-        .correct(
-          fixtureId: fixtureId,
+        .read(addMatchControllerProvider.notifier)
+        .submit(
+          roundId: roundId,
+          roundSequence: sequence,
           homeTeam: homeTeam,
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),
+          displayOrder: displayOrder,
         );
   }
 
@@ -600,12 +624,11 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
   }
 }
 
-/// The competition dropdown at the top of [_FixtureScheduleTab]: reads the
-/// public catalogue (`GET /competitions`, via `competitionListProvider`) and
-/// lets the admin pick one before entering team names. Purely a client-side
-/// convenience — a fixture aggregate carries no competition reference
-/// (Axiom 3), so the selection only scopes which team names
-/// [_TeamPickerField] suggests; it is never sent to `register`/`correct`.
+/// The competition dropdown: reads the public catalogue
+/// (`GET /competitions`, via `competitionListProvider`) and lets the admin
+/// pick one. Purely a client-side convenience — a fixture aggregate carries
+/// no competition reference (Axiom 3), so the selection only scopes which
+/// team names [_TeamPickerField] suggests and which seasons/rounds load.
 class _CompetitionPickerField extends ConsumerWidget {
   const _CompetitionPickerField({
     required this.fieldKey,
@@ -676,6 +699,147 @@ class _CompetitionPickerField extends ConsumerWidget {
   }
 }
 
+/// قائمة الموسم المنسدلة (المسابقة ← الموسم). تعرض label الموسم وتُخرج id فقط.
+class _SeasonPickerField extends ConsumerWidget {
+  const _SeasonPickerField({
+    required this.competitionId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String competitionId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<SeasonDto>> seasons = ref.watch(
+      competitionSeasonsProvider(competitionId),
+    );
+    return seasons.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectSeasonLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<SeasonDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectSeasonLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoSeasonsHint),
+          );
+        }
+        final String? value = list.any((s) => s.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.fixtures.seasonField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectSeasonLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final SeasonDto season in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.seasonField.${season.id}'),
+                value: season.id,
+                child: Text(season.label),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id != null) onSelected(id);
+                },
+        );
+      },
+    );
+  }
+}
+
+/// قائمة الجولة المنسدلة (الموسم ← الجولة). تعرض "الجولة N — الحالة الخام"
+/// وتُخرج RoundDto كاملاً (نحتاج id و sequence).
+class _RoundPickerField extends ConsumerWidget {
+  const _RoundPickerField({
+    required this.seasonId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String seasonId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<RoundDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundDto>> rounds = ref.watch(
+      seasonRoundsProvider(seasonId),
+    );
+    return rounds.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectRoundLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectRoundLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoRoundsHint),
+          );
+        }
+        final String? value = list.any((r) => r.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.fixtures.roundField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectRoundLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final RoundDto round in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.roundField.${round.id}'),
+                value: round.id,
+                child: Text(
+                  l10n.adminRoundOptionLabel(round.sequence, round.status),
+                ),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  final RoundDto round = list.firstWhere((r) => r.id == id);
+                  onSelected(round);
+                },
+        );
+      },
+    );
+  }
+}
+
 /// A free-text field with a filtered dropdown of known team names — picking
 /// a suggestion fills the field, but any text (including a name not yet in
 /// the registry) is still accepted, since team identity travels as free
@@ -688,6 +852,7 @@ class _TeamPickerField extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.optionsBuilder,
+    this.onChanged,
   });
 
   final Key fieldKey;
@@ -696,6 +861,7 @@ class _TeamPickerField extends StatelessWidget {
   final String label;
   final bool enabled;
   final Iterable<String> Function(String query) optionsBuilder;
+  final VoidCallback? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -706,7 +872,10 @@ class _TeamPickerField extends StatelessWidget {
           focusNode: focusNode,
           optionsBuilder: (TextEditingValue value) =>
               optionsBuilder(value.text),
-          onSelected: (String selection) => controller.text = selection,
+          onSelected: (String selection) {
+            controller.text = selection;
+            onChanged?.call();
+          },
           fieldViewBuilder: (context, fieldController, fieldFocusNode, _) {
             return TextField(
               key: fieldKey,
@@ -717,6 +886,7 @@ class _TeamPickerField extends StatelessWidget {
                 border: const OutlineInputBorder(),
               ),
               enabled: enabled,
+              onChanged: (_) => onChanged?.call(),
             );
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -757,11 +927,9 @@ class _TeamPickerField extends StatelessWidget {
   }
 }
 
-/// Round administration: open a round in a season (freezing the ruleset),
-/// then link an already-registered fixture into it. Two independent
-/// commands over `CompetitionApi` (`RoundOpenController` /
-/// `RoundFixtureLinkController`), each with its own in-flight/result/error
-/// state — mirrors [_FixtureScheduleTab]'s two-command layout.
+/// Round administration: open/manage rounds only. Fixture entry now lives
+/// entirely in [_FixtureScheduleTab] (single sequential flow). Competition
+/// and season are chosen from dropdowns — no UUID typing.
 class _RoundAdministrationTab extends ConsumerStatefulWidget {
   const _RoundAdministrationTab();
 
@@ -772,21 +940,15 @@ class _RoundAdministrationTab extends ConsumerStatefulWidget {
 
 class _RoundAdministrationTabState
     extends ConsumerState<_RoundAdministrationTab> {
-  final TextEditingController _seasonIdController = TextEditingController();
   final TextEditingController _sequenceController = TextEditingController();
   DateTime? _deadlineLocal;
 
-  final TextEditingController _roundIdController = TextEditingController();
-  final TextEditingController _fixtureIdController = TextEditingController();
-  final TextEditingController _displayOrderController = TextEditingController();
+  String? _competitionId;
+  String? _seasonId;
 
   @override
   void dispose() {
-    _seasonIdController.dispose();
     _sequenceController.dispose();
-    _roundIdController.dispose();
-    _fixtureIdController.dispose();
-    _displayOrderController.dispose();
     super.dispose();
   }
 
@@ -797,11 +959,7 @@ class _RoundAdministrationTabState
     final AsyncValue<RoundDto>? openState = ref.watch(
       roundOpenControllerProvider,
     );
-    final AsyncValue<RoundFixtureDto>? linkState = ref.watch(
-      roundFixtureLinkControllerProvider,
-    );
     final bool openInFlight = openState is AsyncLoading<RoundDto>;
-    final bool linkInFlight = linkState is AsyncLoading<RoundFixtureDto>;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -813,16 +971,33 @@ class _RoundAdministrationTabState
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.rounds.seasonIdField'),
-            controller: _seasonIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminSeasonIdLabel,
-              border: const OutlineInputBorder(),
-            ),
+
+          // المسابقة
+          _CompetitionPickerField(
+            fieldKey: const Key('admin.rounds.competitionField'),
+            label: l10n.adminSelectCompetitionLabel,
             enabled: !openInFlight,
+            selectedId: _competitionId,
+            onSelected: (CompetitionDto competition) => setState(() {
+              _competitionId = competition.id;
+              _seasonId = null;
+            }),
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // الموسم
+          if (_competitionId != null)
+            _SeasonPickerField(
+              competitionId: _competitionId!,
+              enabled: !openInFlight,
+              selectedId: _seasonId,
+              onSelected: (String seasonId) => setState(() {
+                _seasonId = seasonId;
+                _suggestNextSequence();
+              }),
+            ),
+          if (_competitionId != null) const SizedBox(height: AppSpacing.md),
+
           TextField(
             key: const Key('admin.rounds.sequenceField'),
             controller: _sequenceController,
@@ -857,79 +1032,46 @@ class _RoundAdministrationTabState
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
-                '${openState.value.id} (#${openState.value.sequence}, '
-                '${openState.value.status})',
+                l10n.adminRoundOptionLabel(
+                  openState.value.sequence,
+                  openState.value.status,
+                ),
                 key: const Key('admin.rounds.open.result'),
               ),
             ),
           FilledButton(
             key: const Key('admin.rounds.open'),
-            onPressed: openInFlight ? null : _openRound,
+            onPressed: openInFlight || _seasonId == null ? null : _openRound,
             child: Text(l10n.adminOpenRoundButton),
           ),
+
           const Divider(height: AppSpacing.x3l),
+
+          // إدارة/عرض الجولات الموجودة (لا يوجد إدخال UUID)
           Text(
-            l10n.adminLinkFixtureSectionTitle,
+            l10n.adminManageRoundsSectionTitle,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.rounds.roundIdField'),
-            controller: _roundIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminRoundIdLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !linkInFlight,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.rounds.fixtureIdField'),
-            controller: _fixtureIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminFixtureIdLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !linkInFlight,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.rounds.displayOrderField'),
-            controller: _displayOrderController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminDisplayOrderLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !linkInFlight,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (linkState is AsyncError<RoundFixtureDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                ErrorPresenter.message(linkState.error as AppError),
-                key: const Key('admin.rounds.link.error'),
-                style: TextStyle(color: tokens.error),
-              ),
-            ),
-          if (linkState is AsyncData<RoundFixtureDto>)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                '${linkState.value.fixtureId} -> ${linkState.value.roundId} '
-                '(#${linkState.value.displayOrder})',
-                key: const Key('admin.rounds.link.result'),
-              ),
-            ),
-          FilledButton(
-            key: const Key('admin.rounds.link'),
-            onPressed: linkInFlight ? null : _linkFixture,
-            child: Text(l10n.adminLinkFixtureButton),
-          ),
+          if (_seasonId != null) _ExistingRoundsList(seasonId: _seasonId!),
         ],
       ),
     );
+  }
+
+  /// يقترح رقم الجولة التالي = أكبر sequence موجود + 1 (أو 1 إن لا جولات).
+  void _suggestNextSequence() {
+    final seasonId = _seasonId;
+    if (seasonId == null) return;
+    final AsyncValue<List<RoundDto>> roundsState = ref.read(
+      seasonRoundsProvider(seasonId),
+    );
+    if (roundsState is! AsyncData<List<RoundDto>>) return;
+    final List<RoundDto> rounds = roundsState.value;
+    final int next = rounds.isEmpty
+        ? 1
+        : (rounds.map((r) => r.sequence).reduce((a, b) => a > b ? a : b) + 1);
+    _sequenceController.text = '$next';
   }
 
   Future<void> _pickDeadline() async {
@@ -960,30 +1102,16 @@ class _RoundAdministrationTabState
   }
 
   void _openRound() {
-    final seasonId = _seasonIdController.text.trim();
+    final seasonId = _seasonId;
     final sequence = int.tryParse(_sequenceController.text.trim());
     final deadline = _deadlineLocal;
-    if (seasonId.isEmpty || sequence == null || deadline == null) return;
+    if (seasonId == null || sequence == null || deadline == null) return;
     ref
         .read(roundOpenControllerProvider.notifier)
         .open(
           seasonId: seasonId,
           sequence: sequence,
           predictionDeadline: deadline.toUtc().toIso8601String(),
-        );
-  }
-
-  void _linkFixture() {
-    final roundId = _roundIdController.text.trim();
-    final fixtureId = _fixtureIdController.text.trim();
-    final displayOrder = int.tryParse(_displayOrderController.text.trim());
-    if (roundId.isEmpty || fixtureId.isEmpty || displayOrder == null) return;
-    ref
-        .read(roundFixtureLinkControllerProvider.notifier)
-        .link(
-          roundId: roundId,
-          fixtureId: fixtureId,
-          displayOrder: displayOrder,
         );
   }
 
@@ -994,13 +1122,47 @@ class _RoundAdministrationTabState
   }
 }
 
+/// عرض قائمة الجولات الموجودة للموسم المختار (قراءة فقط، بلا UUID).
+class _ExistingRoundsList extends ConsumerWidget {
+  const _ExistingRoundsList({required this.seasonId});
+
+  final String seasonId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundDto>> rounds = ref.watch(
+      seasonRoundsProvider(seasonId),
+    );
+    return rounds.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (Object error, StackTrace _) =>
+          Text(ErrorPresenter.message(error as AppError)),
+      data: (List<RoundDto> list) {
+        if (list.isEmpty) return Text(l10n.adminExistingRoundsEmpty);
+        return Column(
+          children: <Widget>[
+            for (final RoundDto round in list)
+              ListTile(
+                key: Key('admin.rounds.existing.${round.id}'),
+                title: Text(
+                  l10n.adminRoundOptionLabel(round.sequence, round.status),
+                ),
+                subtitle: Text(round.predictionDeadline),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /// Results/scoring administration: record a fixture's actual final score,
 /// then score a round (server computes points from the frozen ruleset), and
-/// look up an already-scored round's participant results. Three independent
-/// commands/reads over `CompetitionApi` (`RecordFixtureResultController` /
-/// `ScoreRoundController` / `RoundScoresLookupController`), each with its own
-/// in-flight/result/error state — mirrors [_RoundAdministrationTab]'s
-/// multi-command layout.
+/// look up an already-scored round's participant results.
 class _ResultsScoringTab extends ConsumerStatefulWidget {
   const _ResultsScoringTab();
 
@@ -1216,11 +1378,7 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
 /// The round-report section inside [_ResultsScoringTab]: merges
 /// `GET /rounds/{id}/scores` with the admin-only
 /// `GET /admin/rounds/{id}/predictions` (via [RoundReportController]) into a
-/// ranked, per-fixture table (rank, participant, total points, and every
-/// fixture's grade + predicted scoreline), plus a copy-to-share summary.
-///
-/// Reuses the same round-id field as the score lookup above it — the report
-/// is scoped to the same round an admin just scored.
+/// ranked, per-fixture table, plus a copy-to-share summary.
 class _RoundReportSection extends ConsumerWidget {
   const _RoundReportSection({required this.roundIdController});
 
