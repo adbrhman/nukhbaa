@@ -300,6 +300,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get predictionNotYetPredictableMessage =>
+      'You can predict this round once the earlier round is locked';
+
+  @override
   String get genericErrorMessage => 'Something went wrong. Please try again.';
 
   @override

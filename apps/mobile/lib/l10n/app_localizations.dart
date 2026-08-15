@@ -570,6 +570,12 @@ abstract class AppLocalizations {
   /// **'This round is {status}. Predictions are closed.'**
   String predictionClosedMessage(String status);
 
+  /// No description provided for @predictionNotYetPredictableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can predict this round once the earlier round is locked'**
+  String get predictionNotYetPredictableMessage;
+
   /// Fallback error message for an untyped/unexpected client error.
   ///
   /// In en, this message translates to:

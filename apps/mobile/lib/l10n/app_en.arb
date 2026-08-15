@@ -221,6 +221,7 @@
     "description": "App bar title on the prediction submit/amend screen."
   },
   "predictionClosedMessage": "This round is {status}. Predictions are closed.",
+  "predictionNotYetPredictableMessage": "You can predict this round once the earlier round is locked",
   "@predictionClosedMessage": {
     "description": "Shown when a round is not open for predictions; status is the lowercase lifecycle label.",
     "placeholders": {

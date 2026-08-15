@@ -69,7 +69,7 @@ class _RoundBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOpen = round.status == _roundStatusOpen;
+    final isOpen = round.status == _roundStatusOpen && round.isPredictable;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -145,9 +145,11 @@ class _ClosedNotice extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              l10n.predictionClosedMessage(
-                roundStatusLabel(l10n, round.status).toLowerCase(),
-              ),
+              round.status == _roundStatusOpen
+                  ? l10n.predictionNotYetPredictableMessage
+                  : l10n.predictionClosedMessage(
+                      roundStatusLabel(l10n, round.status).toLowerCase(),
+                    ),
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: MatchCardTokens.textSecondary),
