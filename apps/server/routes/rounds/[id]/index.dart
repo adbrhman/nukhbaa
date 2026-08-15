@@ -30,7 +30,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   final result = await root.getRound(principal: principal, roundId: id);
   if (result is Err<Round>) {
-    final error = (result as Err<Round>).error;
+    final error = result.error;
     // A missing round is genuinely "resource not found". The repository surfaces
     // it as an `invariant` (`competition.round_not_found`), which the closed
     // `ErrorKind` set would otherwise map to 409; a browse read wants a true 404.
