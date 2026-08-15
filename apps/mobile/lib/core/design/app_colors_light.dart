@@ -10,12 +10,12 @@ abstract final class AppColorsLight {
   static const Color surfaceElevated = Color(0xFFF1F5F9);
   static const Color surfaceHigh = Color(0xFFE2E8F0);
 
-  static const Color primary = Color(0xFF059669);
-  static const Color primaryDark = Color(0xFF047857);
-  static const Color primaryLight = Color(0xFF10B981);
+  static const Color primary = Color(0xFF00794C);
+  static const Color primaryDark = Color(0xFF00613D);
+  static const Color primaryLight = Color(0xFF00A868);
 
-  static const Color gold = Color(0xFFB88512);
-  static const Color goldDark = Color(0xFF926A0E);
+  static const Color gold = Color(0xFFB77F17);
+  static const Color goldDark = Color(0xFF8A6212);
   static const Color silver = Color(0xFF64748B);
   static const Color bronze = Color(0xFF9B5E1E);
 

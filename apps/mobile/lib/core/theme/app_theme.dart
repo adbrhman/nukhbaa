@@ -102,7 +102,7 @@ abstract final class AppTheme {
           foregroundColor: scheme.onPrimary,
           minimumSize: const Size.fromHeight(52),
           textStyle: textTheme.labelLarge,
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -111,7 +111,7 @@ abstract final class AppTheme {
           minimumSize: const Size.fromHeight(52),
           textStyle: textTheme.labelLarge,
           side: BorderSide(color: tokens.border),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -130,23 +130,23 @@ abstract final class AppTheme {
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brButton,
           borderSide: BorderSide(color: tokens.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brButton,
           borderSide: BorderSide(color: tokens.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brButton,
           borderSide: BorderSide(color: scheme.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brButton,
           borderSide: BorderSide(color: scheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brButton,
           borderSide: BorderSide(color: scheme.error, width: 1.6),
         ),
       ),
@@ -155,7 +155,7 @@ abstract final class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.brXl,
+          borderRadius: AppRadius.brCard,
           side: BorderSide(color: tokens.border),
         ),
       ),
@@ -184,7 +184,7 @@ abstract final class AppTheme {
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: tokens.textPrimary,
         ),
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       dividerTheme: DividerThemeData(color: divider, thickness: 1, space: 1),
