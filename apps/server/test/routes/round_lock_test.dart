@@ -109,7 +109,7 @@ void main() {
 
         expect(response.statusCode, HttpStatus.conflict);
         final body = await decodeBody(response);
-        expect(body['code'], 'competition.round_transition_conflict');
+        expect(body['code'], 'competition.round_illegal_transition');
       },
     );
 
