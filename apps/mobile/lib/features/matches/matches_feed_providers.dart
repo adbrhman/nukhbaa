@@ -84,32 +84,43 @@ Future<List<MatchFeedItem>> matchesFeed(Ref ref) async {
     await api.listCompetitions(),
   );
 
-  final List<MatchFeedItem> items = <MatchFeedItem>[];
-  for (final CompetitionDto competition in competitions) {
-    final List<SeasonDto> seasons = _unwrap(
-      await api.listCompetitionSeasons(competition.id),
-    );
-    for (final SeasonDto season in seasons) {
-      final List<RoundDto> rounds = _unwrap(
-        await api.listSeasonRounds(season.id),
-      );
-      for (final RoundDto round in rounds) {
-        if (round.status != openRoundStatus) continue;
-        final List<RoundFixtureCardDto> fixtures = _unwrap(
-          await api.browseRoundFixtures(round.id),
-        );
-        for (final RoundFixtureCardDto fixture in fixtures) {
-          items.add(
-            MatchFeedItem(
-              competitionName: competition.name,
-              roundId: round.id,
-              rulesetVersion: round.rulesetVersion,
-              fixture: fixture,
-            ),
-          );
-        }
-      }
-    }
-  }
-  return items;
+  // Fan out each level in parallel (Future.wait) instead of a serial
+  // await-in-loop waterfall; order is preserved via index alignment, so
+  // the resulting flattening matches the original nested-loop ordering.
+  final List<List<SeasonDto>> seasonsByCompetition = await Future.wait(
+    competitions.map((c) => api.listCompetitionSeasons(c.id).then(_unwrap)),
+  );
+
+  final List<(CompetitionDto, SeasonDto)> compSeasonPairs =
+      <(CompetitionDto, SeasonDto)>[
+        for (var i = 0; i < competitions.length; i++)
+          for (final SeasonDto season in seasonsByCompetition[i])
+            (competitions[i], season),
+      ];
+
+  final List<List<RoundDto>> roundsByPair = await Future.wait(
+    compSeasonPairs.map((p) => api.listSeasonRounds(p.$2.id).then(_unwrap)),
+  );
+
+  final List<(CompetitionDto, RoundDto)> openRounds =
+      <(CompetitionDto, RoundDto)>[
+        for (var i = 0; i < compSeasonPairs.length; i++)
+          for (final RoundDto round in roundsByPair[i])
+            if (round.status == openRoundStatus) (compSeasonPairs[i].$1, round),
+      ];
+
+  final List<List<RoundFixtureCardDto>> fixturesByRound = await Future.wait(
+    openRounds.map((p) => api.browseRoundFixtures(p.$2.id).then(_unwrap)),
+  );
+
+  return <MatchFeedItem>[
+    for (var i = 0; i < openRounds.length; i++)
+      for (final RoundFixtureCardDto fixture in fixturesByRound[i])
+        MatchFeedItem(
+          competitionName: openRounds[i].$1.name,
+          roundId: openRounds[i].$2.id,
+          rulesetVersion: openRounds[i].$2.rulesetVersion,
+          fixture: fixture,
+        ),
+  ];
 }
