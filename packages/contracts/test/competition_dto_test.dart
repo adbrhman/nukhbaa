@@ -60,12 +60,28 @@ void main() {
         predictionDeadline: '2026-08-01T12:00:00.000Z',
         status: 'open',
         rulesetVersion: 1,
+        isPredictable: true,
       );
       final json = dto.toJson();
       // Only the version crosses the wire — never the opaque snapshot payload.
       expect(json.containsKey('ruleset_snapshot'), isFalse);
       expect(json['ruleset_version'], 1);
+      expect(json['is_predictable'], isTrue);
       expect(RoundDto.fromJson(json), dto);
+    });
+
+    test('defaults isPredictable to false (fail-closed) when absent — '
+        'legacy payloads written before the sequential-round gate', () {
+      final decoded = RoundDto.fromJson(const {
+        'id': '33333333-3333-3333-3333-333333333333',
+        'season_id': '22222222-2222-2222-2222-222222222222',
+        'sequence': 1,
+        'prediction_deadline': '2026-08-01T12:00:00.000Z',
+        'status': 'open',
+        'ruleset_version': 1,
+      });
+      expect(decoded.isPredictable, isFalse);
+      expect(decoded.schemaVersion, 1);
     });
   });
 

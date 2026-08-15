@@ -181,13 +181,19 @@ void main() {
       expect(items[0]['sequence'], 1);
       expect(items[1]['sequence'], 2);
       // Shape is the versioned RoundDto.
-      expect(items[0]['schema_version'], 1);
+      expect(items[0]['schema_version'], 2);
       expect(items[0]['id'], '99999999-9999-9999-9999-999999999999');
       expect(items[0]['season_id'], kSeasonId);
       expect(items[0]['status'], 'open');
       expect(items[0]['ruleset_version'], 1);
       // Integrity boundary: the opaque frozen ruleset payload is never exposed.
       expect(items[0].containsKey('ruleset'), isFalse);
+      // The sequential-round gate: round 1 (no earlier sibling) is
+      // predictable as soon as it's open; round 2 is blocked until round 1
+      // leaves `open` — this is the exact bug this fix closes (previously
+      // every round in a season opened up front was predictable at once).
+      expect(items[0]['is_predictable'], isTrue);
+      expect(items[1]['is_predictable'], isFalse);
     });
 
     test('a season with no rounds is a legitimate 200 empty array (no '

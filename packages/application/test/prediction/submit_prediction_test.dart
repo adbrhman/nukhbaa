@@ -179,6 +179,91 @@ void main() {
     expect(predictions.count, 0);
   });
 
+  test(
+    'submission is rejected when an EARLIER round in the same season is '
+    'still open — the sequential-round gate (a season opens all its rounds '
+    'up front, so round_not_open alone cannot catch this)',
+    () async {
+      // _round() defaults to sequence 1 (already seeded in setUp as _roundId).
+      // Re-seed it at sequence 2, and add an earlier, still-open sequence-1
+      // round under a different id.
+      final earlierRoundId = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+      competition.seedRound(
+        (Round.open(
+                  id: const RoundId(_roundId),
+                  seasonId: const SeasonId(_seasonId),
+                  sequence: 2,
+                  predictionDeadline: DateTime.utc(2026, 8, 2),
+                  ruleset: testSnapshot(),
+                )
+                as Ok<Round>)
+            .value,
+      );
+      competition.seedRound(
+        (Round.open(
+                  id: RoundId(earlierRoundId),
+                  seasonId: const SeasonId(_seasonId),
+                  sequence: 1,
+                  predictionDeadline: DateTime.utc(2026, 8, 1),
+                  ruleset: testSnapshot(),
+                )
+                as Ok<Round>)
+            .value,
+      );
+
+      final result = await useCase(
+        principal: userPrincipal(_userId),
+        roundId: _roundId,
+        scores: completeScores(),
+      );
+
+      final error = (result as Err<PredictionView>).error;
+      expect(error.kind, ErrorKind.invariant);
+      expect(error.code, 'prediction.round_out_of_sequence');
+      expect(predictions.count, 0);
+    },
+  );
+
+  test(
+    'submission succeeds once the earlier round has locked',
+    () async {
+      final earlierRoundId = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+      competition.seedRound(
+        (Round.open(
+                  id: const RoundId(_roundId),
+                  seasonId: const SeasonId(_seasonId),
+                  sequence: 2,
+                  predictionDeadline: DateTime.utc(2026, 8, 2),
+                  ruleset: testSnapshot(),
+                )
+                as Ok<Round>)
+            .value,
+      );
+      final earlierOpen =
+          (Round.open(
+                    id: RoundId(earlierRoundId),
+                    seasonId: const SeasonId(_seasonId),
+                    sequence: 1,
+                    predictionDeadline: DateTime.utc(2026, 8, 1),
+                    ruleset: testSnapshot(),
+                  )
+                  as Ok<Round>)
+              .value;
+      competition.seedRound(
+        (earlierOpen.transitionTo(RoundStatus.locked) as Ok<Round>).value,
+      );
+
+      final result = await useCase(
+        principal: userPrincipal(_userId),
+        roundId: _roundId,
+        scores: completeScores(),
+      );
+
+      expect(result, isA<Ok<PredictionView>>());
+      expect(predictions.count, 1);
+    },
+  );
+
   test('a fixture not linked to the round is rejected', () async {
     final result = await useCase(
       principal: userPrincipal(_userId),

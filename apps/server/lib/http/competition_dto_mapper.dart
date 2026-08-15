@@ -49,7 +49,16 @@ SeasonDto seasonToDto(CompetitionSeason season) {
 
 /// Projects a [Round] onto its wire shape [RoundDto], exposing only the ruleset
 /// *version* (never the opaque frozen snapshot).
-RoundDto roundToDto(Round round) {
+///
+/// [seasonRounds] must be every round in [round]'s season (any order) — it is
+/// required, not optional, so a call site can never forget it and silently
+/// under-report [RoundDto.isPredictable] as `false` for a round that is
+/// genuinely predictable. Every route that builds a [RoundDto] fetches the
+/// season's rounds via `ListSeasonRounds`/`CompetitionRepository.listSeasonRounds`
+/// before calling this (see `GET/POST /seasons/{id}/rounds`, `GET /rounds/{id}`,
+/// `POST /rounds/{id}/lock`), so the flag is always computed the same way,
+/// everywhere a round crosses the wire.
+RoundDto roundToDto(Round round, {required List<Round> seasonRounds}) {
   return RoundDto(
     id: round.id.value,
     seasonId: round.seasonId.value,
@@ -57,6 +66,7 @@ RoundDto roundToDto(Round round) {
     predictionDeadline: round.predictionDeadline.toIso8601String(),
     status: round.status.wireValue,
     rulesetVersion: round.ruleset.rulesetVersion,
+    isPredictable: isRoundPredictable(round, seasonRounds),
   );
 }
 

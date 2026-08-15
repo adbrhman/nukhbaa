@@ -301,6 +301,36 @@ void main() {
       expect(find.byKey(const Key('prediction.form')), findsNothing);
       expect(find.byKey(const Key('prediction.submit')), findsNothing);
     });
+
+    testWidgets(
+      'a round that is still open but blocked by the sequential-round gate '
+      'shows the closed notice with the "not yet predictable" copy — not '
+      'the generic locked/scored message',
+      (tester) async {
+        final harness = buildPredictionHarness((request) async {
+          if (request.method == 'GET' && request.url.path == '/rounds/r-1') {
+            return okJsonObject(openButNotYetPredictableRound.toJson());
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
+
+        await tester.pumpWidget(
+          _host(harness, const PredictionScreen(roundId: 'r-1')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('prediction.closed')), findsOneWidget);
+        expect(find.byKey(const Key('prediction.form')), findsNothing);
+        expect(find.byKey(const Key('prediction.submit')), findsNothing);
+        expect(
+          find.text(
+            'You can predict this round once the earlier round is locked',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('PredictionScreen — in-flight submit', () {

@@ -54,6 +54,15 @@ final class FixtureScoreInput {
 ///    the migration's check constraint the backstop (Axiom 6). This is the
 ///    round's ADMIN-controlled gate (`LockRound`); it is independent of the
 ///    PER-FIXTURE kickoff lock below.
+/// 1a. **Rounds are predicted in sequence** (product decision, 2026-08-14): a
+///    season's rounds are opened individually and ahead of time (so fixtures
+///    can be linked and the ruleset frozen before kickoff), which otherwise
+///    leaves every round in the season simultaneously `open`. [isRoundPredictable]
+///    additionally requires every EARLIER round (lower [Round.sequence]) in the
+///    same season to have left [RoundStatus.open] — rejected
+///    `prediction.round_out_of_sequence` when it hasn't. Checked separately from
+///    (and after) the plain open-check above so the two failures stay
+///    distinguishable to the caller.
 /// 2. **Every predicted fixture belongs to the round** (product decision,
 ///    2026-07-10): a score whose `FixtureRef` isn't among the round's
 ///    `RoundFixture` links is rejected `prediction.fixture_not_in_round`.
@@ -146,6 +155,27 @@ final class SubmitPrediction {
           'prediction.round_not_open',
           'Predictions can only be submitted while the round is open '
               '(round is ${round.status.wireValue})',
+        ),
+      );
+    }
+
+    // Rule 1a: rounds are predicted in sequence — a round is not predictable
+    // while any earlier round in the same season is still open, even though
+    // this round's own status is `open` (every round in a season is opened
+    // ahead of time, so `isOpen` alone is not enough — see [isRoundPredictable]).
+    final seasonRoundsResult = await _competition.listSeasonRounds(
+      round.seasonId,
+    );
+    if (seasonRoundsResult is Err<List<Round>>) {
+      return Result.err(seasonRoundsResult.error);
+    }
+    final seasonRounds = (seasonRoundsResult as Ok<List<Round>>).value;
+    if (!isRoundPredictable(round, seasonRounds)) {
+      return Result.err(
+        AppError.invariant(
+          'prediction.round_out_of_sequence',
+          'This round cannot be predicted yet — finish predicting the '
+              'earlier rounds in this season first',
         ),
       );
     }

@@ -8,68 +8,20 @@ library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../core/error/error_presenter.dart';
 import '../competition/competition_providers.dart';
-import '../competition/season_rounds_screen.dart' show roundStatusLabel;
-import '../competition/team_registry.dart';
+import '../competition/round_status_label.dart';
+import 'match_card.dart';
 import 'prediction_controller.dart';
 import 'prediction_providers.dart';
 import 'prediction_submission.dart';
 
 /// The lifecycle status token for a round that is open for predictions.
 const String _roundStatusOpen = 'open';
-
-// ─────────────────────────────────────────────────────────────────────────
-// Design tokens (mirrors the CSS variables from the design report).
-// ─────────────────────────────────────────────────────────────────────────
-class _Tokens {
-  static const Color bgPage = Color(0xFF0A0A0A);
-  static const Color cardGradStart = Color(0xE6281E1E); // rgba(40,30,30,.9)
-  static const Color cardGradEnd = Color(0xE61C2028); // rgba(28,32,40,.9)
-
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9E9E9E);
-  static const Color textTertiary = Color(0xFF6E6E73);
-
-  static const Color btnBg = Color(0x0FFFFFFF); // rgba(255,255,255,.06)
-  static const Color btnBorder = Color(0x14FFFFFF); // rgba(255,255,255,.08)
-
-  static const Color doubleInactiveBg = Color(0x0FFFFFFF);
-  static const Color doubleActiveBg = Color(0x26FFD700); // rgba(255,215,0,.15)
-  static const Color doubleGlow = Color(0xFFFFD700);
-
-  static const double cardRadius = 16;
-  static const double logoSize = 48;
-}
-
-/// A small palette to derive a stable "team color" from a team name, used for
-/// both the round logo initials and the color-bleed glow (no logo assets exist
-/// in the DTO — team names + kickoff are the only fixture identity available).
-Color _teamColor(String? name) {
-  if (name == null || name.isEmpty) return const Color(0xFF3A3A3C);
-  const palette = <Color>[
-    Color(0xFFE30613), // red
-    Color(0xFF1D428A), // blue
-    Color(0xFFF5A12D), // orange
-    Color(0xFF132257), // navy
-    Color(0xFF78D0F1), // light blue
-    Color(0xFF2E7D32), // green
-    Color(0xFF6A1B9A), // purple
-    Color(0xFF00897B), // teal
-    Color(0xFFC2185B), // pink
-    Color(0xFFEF6C00), // deep orange
-  ];
-  var hash = 0;
-  for (final code in name.codeUnits) {
-    hash = (hash * 31 + code) & 0x7fffffff;
-  }
-  return palette[hash % palette.length];
-}
 
 /// The prediction submit/amend screen for a single round.
 class PredictionScreen extends ConsumerWidget {
@@ -84,10 +36,10 @@ class PredictionScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     return Scaffold(
-      backgroundColor: _Tokens.bgPage,
+      backgroundColor: MatchCardTokens.bgPage,
       appBar: AppBar(
-        backgroundColor: _Tokens.bgPage,
-        foregroundColor: _Tokens.textPrimary,
+        backgroundColor: MatchCardTokens.bgPage,
+        foregroundColor: MatchCardTokens.textPrimary,
         elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
@@ -153,13 +105,16 @@ class _RoundHeader extends StatelessWidget {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: _Tokens.textPrimary,
+              color: MatchCardTokens.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '${roundStatusLabel(l10n, round.status)} · Rules v${round.rulesetVersion}',
-            style: const TextStyle(color: _Tokens.textSecondary, fontSize: 13),
+            style: const TextStyle(
+              color: MatchCardTokens.textSecondary,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -186,7 +141,7 @@ class _ClosedNotice extends StatelessWidget {
             const Icon(
               Icons.lock_clock_outlined,
               size: 48,
-              color: _Tokens.textTertiary,
+              color: MatchCardTokens.textTertiary,
             ),
             const SizedBox(height: 12),
             Text(
@@ -195,7 +150,7 @@ class _ClosedNotice extends StatelessWidget {
               ),
               key: const Key('prediction.closed.message'),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _Tokens.textSecondary),
+              style: const TextStyle(color: MatchCardTokens.textSecondary),
             ),
           ],
         ),
@@ -237,7 +192,7 @@ class _PredictionForm extends ConsumerWidget {
                 l10n.roundFixturesEmpty,
                 key: const Key('browse.empty.message'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _Tokens.textSecondary),
+                style: const TextStyle(color: MatchCardTokens.textSecondary),
               ),
             ),
           );
@@ -279,7 +234,7 @@ class _FormError extends StatelessWidget {
               ErrorPresenter.message(appError),
               key: const Key('browse.error.message'),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _Tokens.textPrimary),
+              style: const TextStyle(color: MatchCardTokens.textPrimary),
             ),
             if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
               const SizedBox(height: 16),
@@ -480,8 +435,9 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                     ),
                   ),
                 for (final fixture in widget.fixtures)
-                  _MatchCard(
+                  MatchCard(
                     key: Key('prediction.fixture.${fixture.fixtureId}'),
+                    leagueLabel: l10n.roundFixturesTitle,
                     fixture: fixture,
                     locked: _isLocked(fixture),
                     homeController: _home[fixture.fixtureId]!,
@@ -496,6 +452,8 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                         !inFlight,
                     onDoubleSelected: () => _selectDouble(fixture.fixtureId),
                     onChanged: () => setState(() {}),
+                    doubleLabel: l10n.predictionDoubleLabel,
+                    lockedLabel: l10n.predictionFixtureLockedLabel,
                   ),
               ],
             ),
@@ -518,559 +476,6 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// A single Fotmob-style dark match card with color-bleed glow, two teams, the
-/// +/?/− steppers per side, and a neon "Double" pill under the controls.
-class _MatchCard extends StatelessWidget {
-  const _MatchCard({
-    required this.fixture,
-    required this.locked,
-    required this.homeController,
-    required this.awayController,
-    required this.enabled,
-    required this.isDouble,
-    required this.doubleSelectable,
-    required this.onDoubleSelected,
-    required this.onChanged,
-    super.key,
-  });
-
-  final RoundFixtureCardDto fixture;
-  final bool locked;
-  final TextEditingController homeController;
-  final TextEditingController awayController;
-  final bool enabled;
-  final bool isDouble;
-  final bool doubleSelectable;
-  final VoidCallback onDoubleSelected;
-  final VoidCallback onChanged;
-
-  String _kickoffLabel() {
-    final k = fixture.kickoffAt;
-    if (k == null) return '';
-    final dt = DateTime.tryParse(k)?.toLocal();
-    if (dt == null) return '';
-    final h = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
-    final m = dt.minute.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $ampm';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    // Prefer the known brand's primary color; fall back to a stable
-    // name-derived color when the team isn't in the local registry yet.
-    final homeBrand = lookupTeam(fixture.homeTeam);
-    final awayBrand = lookupTeam(fixture.awayTeam);
-    final homeColor = homeBrand?.c1 ?? _teamColor(fixture.homeTeam);
-    final awayColor = awayBrand?.c1 ?? _teamColor(fixture.awayTeam);
-    final home = fixture.homeTeam ?? '?';
-    final away = fixture.awayTeam ?? '?';
-    final kickoff = _kickoffLabel();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_Tokens.cardRadius),
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [_Tokens.cardGradStart, _Tokens.cardGradEnd],
-        ),
-      ),
-      child: Stack(
-        children: <Widget>[
-          // Color-bleed glow, left (home). Purely decorative — must never
-          // intercept touches meant for the score fields stacked above it.
-          Positioned(
-            left: -30,
-            top: 0,
-            bottom: 0,
-            child: IgnorePointer(child: _GlowBlob(color: homeColor)),
-          ),
-          // Color-bleed glow, right (away). Same rationale as above.
-          Positioned(
-            right: -30,
-            top: 0,
-            bottom: 0,
-            child: IgnorePointer(child: _GlowBlob(color: awayColor)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: <Widget>[
-                // Header: league line + external icon placeholder.
-                Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.sports_soccer,
-                      size: 16,
-                      color: _Tokens.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        kickoff.isEmpty
-                            ? l10n.roundFixturesTitle
-                            : '${l10n.roundFixturesTitle} • $kickoff',
-                        style: const TextStyle(
-                          color: _Tokens.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    if (locked)
-                      const Icon(
-                        Icons.lock_outline,
-                        size: 16,
-                        color: _Tokens.textTertiary,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Body: home team | predict controls | away team.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: _TeamColumn(name: home, color: homeColor),
-                    ),
-                    const SizedBox(width: 8),
-                    _PredictCenter(
-                      fixtureId: fixture.fixtureId,
-                      homeController: homeController,
-                      awayController: awayController,
-                      enabled: enabled && !locked,
-                      isDouble: isDouble,
-                      doubleSelectable: doubleSelectable,
-                      onDoubleSelected: onDoubleSelected,
-                      onChanged: onChanged,
-                      doubleLabel: l10n.predictionDoubleLabel,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TeamColumn(name: away, color: awayColor),
-                    ),
-                  ],
-                ),
-                if (locked) ...<Widget>[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.predictionFixtureLockedLabel,
-                    key: Key('prediction.locked.${fixture.fixtureId}'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: _Tokens.textTertiary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A soft, blurred circular color blob (the CSS ::before/::after color bleed).
-class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0)],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A team column: a real crest (when the team is recognized) or a colored
-/// circular initials badge, plus the display name — Arabic when the team is
-/// recognized, otherwise the raw server value, otherwise "؟".
-class _TeamColumn extends StatelessWidget {
-  const _TeamColumn({required this.name, required this.color});
-
-  /// The English team name from the DTO (`'?'` when the server sent `null`).
-  final String name;
-
-  /// The fallback badge color, used only when no brand is recognized.
-  final Color color;
-
-  TeamBrand? get _brand => name == '?' ? null : lookupTeam(name);
-
-  String get _displayName {
-    final brand = _brand;
-    if (brand != null) return brand.ar;
-    return name == '?' ? '؟' : name;
-  }
-
-  String get _initials {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty || trimmed == '?') return '؟';
-    final parts = trimmed.split(RegExp(r'\s+'));
-    if (parts.length == 1) {
-      final first = parts.first;
-      return first.substring(0, first.length >= 2 ? 2 : 1).toUpperCase();
-    }
-    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
-        .toUpperCase();
-  }
-
-  Widget _initialsBadge() => Text(
-    _initials,
-    style: const TextStyle(
-      color: Colors.white,
-      fontWeight: FontWeight.bold,
-      fontSize: 16,
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final brand = _brand;
-    return Column(
-      children: <Widget>[
-        Container(
-          width: _Tokens.logoSize,
-          height: _Tokens.logoSize,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: (brand?.c1 ?? color).withValues(alpha: 0.9),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          alignment: Alignment.center,
-          child: brand == null
-              ? _initialsBadge()
-              : Image.network(
-                  brand.logoUrl,
-                  width: _Tokens.logoSize,
-                  height: _Tokens.logoSize,
-                  fit: BoxFit.contain,
-                  // A recognized team whose crest fails to load (offline,
-                  // CDN hiccup) still gets a clean badge — never a broken
-                  // image icon.
-                  errorBuilder: (context, error, stackTrace) =>
-                      _initialsBadge(),
-                  loadingBuilder: (context, child, progress) =>
-                      progress == null ? child : _initialsBadge(),
-                ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _displayName,
-          maxLines: 2,
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: _Tokens.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The center predict area: two stepper columns (home / away) + Double pill.
-class _PredictCenter extends StatelessWidget {
-  const _PredictCenter({
-    required this.fixtureId,
-    required this.homeController,
-    required this.awayController,
-    required this.enabled,
-    required this.isDouble,
-    required this.doubleSelectable,
-    required this.onDoubleSelected,
-    required this.onChanged,
-    required this.doubleLabel,
-  });
-
-  final String fixtureId;
-  final TextEditingController homeController;
-  final TextEditingController awayController;
-  final bool enabled;
-  final bool isDouble;
-  final bool doubleSelectable;
-  final VoidCallback onDoubleSelected;
-  final VoidCallback onChanged;
-  final String doubleLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _GoalStepper(
-              key: Key('prediction.home.$fixtureId'),
-              controller: homeController,
-              enabled: enabled,
-              onChanged: onChanged,
-            ),
-            const SizedBox(width: 4),
-            _GoalStepper(
-              key: Key('prediction.away.$fixtureId'),
-              controller: awayController,
-              enabled: enabled,
-              onChanged: onChanged,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _DoubleButton(
-          buttonKey: Key('prediction.double.$fixtureId'),
-          active: isDouble,
-          enabled: doubleSelectable,
-          label: doubleLabel,
-          onPressed: doubleSelectable ? onDoubleSelected : null,
-        ),
-      ],
-    );
-  }
-}
-
-/// One team's +/?/− stepper column. The center shows the current goal count
-/// (or "?" when empty); the field is still directly editable via a hidden tap.
-class _GoalStepper extends StatelessWidget {
-  const _GoalStepper({
-    required this.controller,
-    required this.enabled,
-    required this.onChanged,
-    super.key,
-  });
-
-  final TextEditingController controller;
-  final bool enabled;
-  final VoidCallback onChanged;
-
-  int get _value => int.tryParse(controller.text.trim()) ?? 0;
-  bool get _hasValue => controller.text.trim().isNotEmpty;
-
-  void _bump(int delta) {
-    final next = (_value + delta).clamp(0, 99);
-    controller.text = '$next';
-    onChanged();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      // Matches the widened _CenterField (52) so the stepper column doesn't
-      // clip it.
-      width: 52,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          _StepBtn(icon: Icons.add, enabled: enabled, onTap: () => _bump(1)),
-          const SizedBox(height: 4),
-          _CenterField(
-            controller: controller,
-            enabled: enabled,
-            placeholder: _hasValue ? null : '?',
-            onChanged: onChanged,
-          ),
-          const SizedBox(height: 4),
-          _StepBtn(
-            icon: Icons.remove,
-            enabled: enabled,
-            onTap: () => _bump(-1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A single +/− button in the stepper.
-class _StepBtn extends StatelessWidget {
-  const _StepBtn({
-    required this.icon,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _Tokens.btnBg,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: _Tokens.btnBorder),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: enabled ? onTap : null,
-        child: SizedBox(
-          width: 44,
-          height: 28,
-          child: Icon(
-            icon,
-            size: 16,
-            color: enabled ? _Tokens.textSecondary : _Tokens.textTertiary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The editable center goal field (shows "?" when empty, like Fotmob).
-class _CenterField extends StatelessWidget {
-  const _CenterField({
-    required this.controller,
-    required this.enabled,
-    required this.placeholder,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final bool enabled;
-  final String? placeholder;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      // Wider than the original 44x32 hit target — the field was too
-      // narrow to register taps reliably on real devices.
-      width: 52,
-      height: 40,
-      child: TextField(
-        controller: controller,
-        enabled: enabled,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        maxLength: 2,
-        cursorColor: _Tokens.textPrimary,
-        // Dismiss the keyboard on an outside tap instead of trapping focus.
-        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-        style: const TextStyle(
-          color: _Tokens.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.digitsOnly,
-        ],
-        decoration: InputDecoration(
-          counterText: '',
-          isDense: true,
-          filled: true,
-          fillColor: _Tokens.btnBg,
-          contentPadding: EdgeInsets.zero,
-          hintText: placeholder,
-          hintStyle: const TextStyle(
-            color: _Tokens.textSecondary,
-            fontSize: 16,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: _Tokens.btnBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.white70),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: _Tokens.btnBorder),
-          ),
-        ),
-        onChanged: (_) => onChanged(),
-      ),
-    );
-  }
-}
-
-/// The neon "Double" pill under the predict controls.
-///
-/// Its tappable core is an [IconButton] carrying [buttonKey] so
-/// `tester.widget<IconButton>(find.byKey(...))` in existing tests keeps
-/// working; the pill chrome (glow + label) wraps it visually.
-class _DoubleButton extends StatelessWidget {
-  const _DoubleButton({
-    required this.active,
-    required this.enabled,
-    required this.label,
-    required this.onPressed,
-    required this.buttonKey,
-  });
-
-  final bool active;
-  final bool enabled;
-  final String label;
-  final VoidCallback? onPressed;
-  final Key buttonKey;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      height: 30,
-      decoration: BoxDecoration(
-        color: active ? _Tokens.doubleActiveBg : _Tokens.doubleInactiveBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: _Tokens.doubleGlow.withValues(alpha: 0.4),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: IconButton(
-        key: buttonKey,
-        onPressed: onPressed,
-        visualDensity: VisualDensity.compact,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        constraints: const BoxConstraints(minWidth: 0, minHeight: 30),
-        icon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              active ? Icons.star : Icons.star_border,
-              size: 14,
-              color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: active ? _Tokens.doubleGlow : _Tokens.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

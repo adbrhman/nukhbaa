@@ -128,7 +128,8 @@ http.Response errorEnvelope(int status, String code, String message) =>
 // DTO fixtures (the exact wire shapes the prediction/round routes return).
 // ---------------------------------------------------------------------------
 
-/// An OPEN round (predictions allowed).
+/// An OPEN round (predictions allowed) — no earlier round in the season is
+/// blocking it, so the sequential-round gate reports it predictable.
 const RoundDto openRound = RoundDto(
   id: 'r-1',
   seasonId: 's-1',
@@ -136,6 +137,7 @@ const RoundDto openRound = RoundDto(
   predictionDeadline: '2026-08-15T18:00:00.000Z',
   status: 'open',
   rulesetVersion: 3,
+  isPredictable: true,
 );
 
 /// A LOCKED round (predictions closed).
@@ -145,6 +147,17 @@ const RoundDto lockedRound = RoundDto(
   sequence: 1,
   predictionDeadline: '2026-08-15T18:00:00.000Z',
   status: 'locked',
+  rulesetVersion: 3,
+);
+
+/// An OPEN round that the sequential-round gate is still blocking — an
+/// earlier round in the same season hasn't been locked yet.
+const RoundDto openButNotYetPredictableRound = RoundDto(
+  id: 'r-1',
+  seasonId: 's-1',
+  sequence: 2,
+  predictionDeadline: '2026-08-15T18:00:00.000Z',
+  status: 'open',
   rulesetVersion: 3,
 );
 

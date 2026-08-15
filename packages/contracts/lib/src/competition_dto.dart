@@ -141,10 +141,13 @@ final class RoundDto {
     required this.predictionDeadline,
     required this.status,
     required this.rulesetVersion,
+    this.isPredictable = false,
     this.schemaVersion = currentSchemaVersion,
   });
 
-  /// Deserializes from a JSON map.
+  /// Deserializes from a JSON map. `is_predictable` defaults to `false`
+  /// (fail-closed) for legacy payloads written before the sequential-round
+  /// gate existed.
   factory RoundDto.fromJson(Map<String, Object?> json) {
     return RoundDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
@@ -154,11 +157,16 @@ final class RoundDto {
       predictionDeadline: json['prediction_deadline']! as String,
       status: json['status']! as String,
       rulesetVersion: json['ruleset_version']! as int,
+      isPredictable: (json['is_predictable'] as bool?) ?? false,
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 for the
+  /// `is_predictable` field (the sequential-round gate — product decision,
+  /// 2026-08-14); `fromJson` defaults a legacy (v1) or absent
+  /// `schema_version` to 1, and a missing `is_predictable` to `false`
+  /// (fail-closed), so older payloads keep decoding.
+  static const int currentSchemaVersion = 2;
 
   /// The round id (UUID string).
   final String id;
@@ -178,6 +186,17 @@ final class RoundDto {
   /// The version of the ruleset frozen for this round.
   final int rulesetVersion;
 
+  /// Whether the caller may currently submit a prediction for this round —
+  /// the sequential-round gate (product decision, 2026-08-14): `true` only
+  /// when this round is itself `open` AND every earlier round (lower
+  /// [sequence]) in the same season has already left `open`. This is
+  /// STRICTER than `status == 'open'` alone, since a season's rounds are
+  /// typically all opened ahead of time (see [SubmitPrediction]'s
+  /// `isRoundPredictable`). The client should gate the "predict" affordance
+  /// on this flag, not on [status], to avoid re-deriving a rule the server
+  /// already enforces.
+  final bool isPredictable;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -190,6 +209,7 @@ final class RoundDto {
     'prediction_deadline': predictionDeadline,
     'status': status,
     'ruleset_version': rulesetVersion,
+    'is_predictable': isPredictable,
   };
 
   @override
@@ -201,6 +221,7 @@ final class RoundDto {
       other.predictionDeadline == predictionDeadline &&
       other.status == status &&
       other.rulesetVersion == rulesetVersion &&
+      other.isPredictable == isPredictable &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -211,6 +232,7 @@ final class RoundDto {
     predictionDeadline,
     status,
     rulesetVersion,
+    isPredictable,
     schemaVersion,
   );
 }

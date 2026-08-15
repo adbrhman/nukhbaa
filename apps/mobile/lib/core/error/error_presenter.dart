@@ -36,6 +36,9 @@ abstract final class ErrorPresenter {
         return 'This competition could not be found.';
       case 'competition.round_not_found':
         return 'This round could not be found.';
+      case 'prediction.round_out_of_sequence':
+        return 'This round cannot be predicted yet — finish predicting the '
+            'earlier rounds in this season first.';
       case 'api_client.timeout':
         return 'The server took too long to respond. Please try again.';
     }

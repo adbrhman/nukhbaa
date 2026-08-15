@@ -70,7 +70,12 @@ void main() {
 
     CompositionRoot rootWith() {
       repo = InMemoryCompetitionRepository();
-      return CompositionRoot.forTesting(getRound: GetRound(repository: repo));
+      return CompositionRoot.forTesting(
+        getRound: GetRound(repository: repo),
+        // The route fetches the round's siblings to compute
+        // `RoundDto.isPredictable` (the sequential-round gate).
+        listSeasonRounds: ListSeasonRounds(repository: repo),
+      );
     }
 
     test(
@@ -89,7 +94,7 @@ void main() {
 
         expect(response.statusCode, HttpStatus.ok);
         final body = await decodeBody(response);
-        expect(body['schema_version'], 1);
+        expect(body['schema_version'], 2);
         expect(body['id'], kRoundId);
         expect(body['season_id'], kSeasonId);
         expect(body['sequence'], 1);
@@ -97,6 +102,8 @@ void main() {
         expect(body['ruleset_version'], 1);
         // Integrity boundary: the opaque frozen ruleset payload is never exposed.
         expect(body.containsKey('ruleset'), isFalse);
+        // Sequence 1, no earlier sibling round: predictable while open.
+        expect(body['is_predictable'], isTrue);
       },
     );
 

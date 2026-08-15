@@ -43,8 +43,14 @@ Future<Response> _list(RequestContext context, String id) async {
   );
 
   return switch (result) {
+    // `value` is already every round in the season (sequence-ordered), so it
+    // doubles as the `seasonRounds` sibling context each entry needs for
+    // `isPredictable` — no extra read.
     Ok<List<Round>>(:final value) => Response.json(
-      body: [for (final round in value) roundToDto(round).toJson()],
+      body: [
+        for (final round in value)
+          roundToDto(round, seasonRounds: value).toJson(),
+      ],
     ),
     Err<List<Round>>(:final error) => errorResponse(error),
   };
@@ -83,20 +89,24 @@ Future<Response> _create(RequestContext context, String id) async {
     predictionDeadline: (deadlineResult as Ok<DateTime>).value,
   );
 
-  return switch (result) {
-    Ok<Round>(:final value) => Response.json(
-      statusCode: HttpStatus.created,
-      body: RoundDto(
-        id: value.id.value,
-        seasonId: value.seasonId.value,
-        sequence: value.sequence,
-        predictionDeadline: value.predictionDeadline.toIso8601String(),
-        status: value.status.wireValue,
-        rulesetVersion: value.ruleset.rulesetVersion,
-      ).toJson(),
-    ),
-    Err<Round>(:final error) => errorResponse(error),
-  };
+  if (result is Err<Round>) return errorResponse(result.error);
+  final created = (result as Ok<Round>).value;
+
+  // The freshly-opened round needs its siblings to compute `isPredictable`
+  // (e.g. opening round 2 while round 1 is still open must report `false`).
+  final seasonRoundsResult = await root.listSeasonRounds(
+    principal: principal,
+    seasonId: id,
+  );
+  if (seasonRoundsResult is Err<List<Round>>) {
+    return errorResponse(seasonRoundsResult.error);
+  }
+  final seasonRounds = (seasonRoundsResult as Ok<List<Round>>).value;
+
+  return Response.json(
+    statusCode: HttpStatus.created,
+    body: roundToDto(created, seasonRounds: seasonRounds).toJson(),
+  );
 }
 
 /// Parses the untrusted `prediction_deadline` field into a UTC [DateTime].

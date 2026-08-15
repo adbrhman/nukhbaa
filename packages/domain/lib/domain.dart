@@ -23,6 +23,7 @@ export 'src/competition/round.dart';
 export 'src/competition/round_fixture.dart';
 export 'src/competition/round_fixture_card.dart';
 export 'src/competition/round_id.dart';
+export 'src/competition/round_sequencing.dart';
 export 'src/competition/round_status.dart';
 export 'src/competition/ruleset_snapshot.dart';
 export 'src/competition/season_id.dart';

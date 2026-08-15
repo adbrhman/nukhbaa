@@ -29,24 +29,37 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final principal = context.read<AuthenticatedUser>();
 
   final result = await root.getRound(principal: principal, roundId: id);
-
-  return switch (result) {
-    Ok<Round>(:final value) => Response.json(body: roundToDto(value).toJson()),
+  if (result is Err<Round>) {
+    final error = (result as Err<Round>).error;
     // A missing round is genuinely "resource not found". The repository surfaces
     // it as an `invariant` (`competition.round_not_found`), which the closed
     // `ErrorKind` set would otherwise map to 409; a browse read wants a true 404.
     // So that one code is built directly here, keeping the versioned
     // `ErrorResponseDto` body. Every other error keeps the uniform envelope
     // mapping (e.g. a malformed id → 400).
-    Err<Round>(:final error) =>
-      error.code == 'competition.round_not_found'
-          ? Response.json(
-              statusCode: HttpStatus.notFound,
-              body: ErrorResponseDto(
-                code: error.code,
-                message: error.message,
-              ).toJson(),
-            )
-          : errorResponse(error),
-  };
+    return error.code == 'competition.round_not_found'
+        ? Response.json(
+            statusCode: HttpStatus.notFound,
+            body: ErrorResponseDto(
+              code: error.code,
+              message: error.message,
+            ).toJson(),
+          )
+        : errorResponse(error);
+  }
+  final round = (result as Ok<Round>).value;
+
+  // `isPredictable` needs every round in the season as sibling context.
+  final seasonRoundsResult = await root.listSeasonRounds(
+    principal: principal,
+    seasonId: round.seasonId.value,
+  );
+  if (seasonRoundsResult is Err<List<Round>>) {
+    return errorResponse(seasonRoundsResult.error);
+  }
+  final seasonRounds = (seasonRoundsResult as Ok<List<Round>>).value;
+
+  return Response.json(
+    body: roundToDto(round, seasonRounds: seasonRounds).toJson(),
+  );
 }

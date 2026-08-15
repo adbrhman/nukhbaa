@@ -38,6 +38,9 @@ void main() {
           rulesetProvider: const FixedRulesetProvider(),
           idGenerator: ScriptedIdGenerator([kRoundId]),
         ),
+        // The route fetches the season's rounds after opening one, to compute
+        // `RoundDto.isPredictable` (the sequential-round gate).
+        listSeasonRounds: ListSeasonRounds(repository: repo),
       );
     }
 
@@ -62,7 +65,75 @@ void main() {
       expect(body['ruleset_version'], 1);
       // The DTO deliberately never leaks the opaque ruleset payload.
       expect(body.containsKey('ruleset_snapshot'), isFalse);
+      // Sequence 1, no earlier sibling round: predictable as soon as opened.
+      expect(body['is_predictable'], isTrue);
     });
+
+    test(
+      'opening round 2 while round 1 is still open reports it as NOT yet '
+      'predictable — the sequential-round gate (the bug this fix closes: a '
+      'season used to open all its rounds up front with no ordering)',
+      () async {
+        final repo0 = InMemoryCompetitionRepository();
+        final compId =
+            (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
+                .value;
+        final seasonId =
+            (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value;
+        repo0.competitions[kCompetitionId] = Competition.fromStored(
+          id: compId,
+          name: 'Comp',
+          format: FormatType.footballScoreline,
+          visibility: CompetitionVisibility.public,
+        );
+        repo0.seasons[kSeasonId] = CompetitionSeason.fromStored(
+          id: seasonId,
+          competitionId: compId,
+          label: '2026/27',
+        );
+        // Round 1 already open (predicted separately, still in progress).
+        repo0.rounds[kRoundId2] = Round.fromStored(
+          id: (RoundId.tryParse(kRoundId2) as Ok<RoundId>).value,
+          seasonId: seasonId,
+          sequence: 1,
+          predictionDeadline: DateTime.utc(2026, 8, 1, 12),
+          status: RoundStatus.open,
+          ruleset:
+              (RulesetSnapshot.create(
+                        payload: const {'points': 1},
+                        rulesetVersion: 1,
+                      )
+                      as Ok<RulesetSnapshot>)
+                  .value,
+        );
+        final root = CompositionRoot.forTesting(
+          openRound: OpenRound(
+            repository: repo0,
+            rulesetProvider: const FixedRulesetProvider(),
+            idGenerator: ScriptedIdGenerator([kRoundId]),
+          ),
+          listSeasonRounds: ListSeasonRounds(repository: repo0),
+        );
+
+        final context = wireContext(
+          root: root,
+          principal: adminPrincipal(),
+          body: const {
+            'sequence': 2,
+            'prediction_deadline': '2026-08-08T12:00:00Z',
+          },
+        );
+
+        final response = await route.onRequest(context, kSeasonId);
+
+        expect(response.statusCode, HttpStatus.created);
+        final body = await decodeBody(response);
+        expect(body['sequence'], 2);
+        expect(body['status'], 'open');
+        // Open, but round 1 hasn't locked yet — not predictable.
+        expect(body['is_predictable'], isFalse);
+      },
+    );
 
     test('a malformed deadline is 400 validation', () async {
       final context = wireContext(
