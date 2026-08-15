@@ -29,6 +29,13 @@ import 'package:http/testing.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/providers.dart';
 
+/// A point far enough in the future that it stays "not yet started"
+/// for the lifetime of any single test run — computed at runtime instead
+/// of hardcoded, so it never silently becomes "in the past" as real
+/// calendar time passes.
+String _futureIso() =>
+    DateTime.now().toUtc().add(const Duration(days: 365)).toIso8601String();
+
 /// One captured outbound request (for asserting method + path + body).
 final class CapturedRequest {
   /// Wraps a captured [http.Request].
@@ -130,45 +137,45 @@ http.Response errorEnvelope(int status, String code, String message) =>
 
 /// An OPEN round (predictions allowed) — no earlier round in the season is
 /// blocking it, so the sequential-round gate reports it predictable.
-const RoundDto openRound = RoundDto(
+final RoundDto openRound = RoundDto(
   id: 'r-1',
   seasonId: 's-1',
   sequence: 1,
-  predictionDeadline: '2026-08-15T18:00:00.000Z',
+  predictionDeadline: _futureIso(),
   status: 'open',
   rulesetVersion: 3,
   isPredictable: true,
 );
 
 /// A LOCKED round (predictions closed).
-const RoundDto lockedRound = RoundDto(
+final RoundDto lockedRound = RoundDto(
   id: 'r-1',
   seasonId: 's-1',
   sequence: 1,
-  predictionDeadline: '2026-08-15T18:00:00.000Z',
+  predictionDeadline: _futureIso(),
   status: 'locked',
   rulesetVersion: 3,
 );
 
 /// An OPEN round that the sequential-round gate is still blocking — an
 /// earlier round in the same season hasn't been locked yet.
-const RoundDto openButNotYetPredictableRound = RoundDto(
+final RoundDto openButNotYetPredictableRound = RoundDto(
   id: 'r-1',
   seasonId: 's-1',
   sequence: 2,
-  predictionDeadline: '2026-08-15T18:00:00.000Z',
+  predictionDeadline: _futureIso(),
   status: 'open',
   rulesetVersion: 3,
 );
 
 /// Two fixtures of [openRound], in display order.
-const RoundFixtureCardDto fixtureA = RoundFixtureCardDto(
+final RoundFixtureCardDto fixtureA = RoundFixtureCardDto(
   roundId: 'r-1',
   fixtureId: 'f-a',
   displayOrder: 0,
   homeTeam: 'Al Hilal',
   awayTeam: 'Al Nassr',
-  kickoffAt: '2026-08-15T18:00:00.000Z',
+  kickoffAt: _futureIso(),
 );
 
 /// The second fixture of [openRound].
