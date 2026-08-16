@@ -1050,6 +1050,24 @@ abstract class AppLocalizations {
   /// **'This season has no rounds. Open a round first in the Rounds tab.'**
   String get adminNoRoundsHint;
 
+  /// No description provided for @adminSelectFixtureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select fixture'**
+  String get adminSelectFixtureLabel;
+
+  /// No description provided for @adminNoFixturesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This round has no fixtures.'**
+  String get adminNoFixturesHint;
+
+  /// No description provided for @adminFixtureIncompleteDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture with incomplete data'**
+  String get adminFixtureIncompleteDataLabel;
+
   /// No description provided for @adminRoundOptionLabel.
   ///
   /// In en, this message translates to:

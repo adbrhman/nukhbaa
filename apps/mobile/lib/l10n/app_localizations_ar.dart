@@ -557,6 +557,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا توجد جولات لهذا الموسم. افتح جولة أولاً من تبويب الجولات.';
 
   @override
+  String get adminSelectFixtureLabel => 'اختر المباراة';
+
+  @override
+  String get adminNoFixturesHint => 'لا توجد مباريات في هذه الجولة.';
+
+  @override
+  String get adminFixtureIncompleteDataLabel => 'مباراة غير مكتملة البيانات';
+
+  @override
   String adminRoundOptionLabel(int sequence, String status) {
     return 'الجولة $sequence — $status';
   }

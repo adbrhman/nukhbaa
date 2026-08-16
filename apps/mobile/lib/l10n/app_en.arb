@@ -358,6 +358,9 @@
   "adminSelectRoundLabel": "Select round",
   "adminNoSeasonsHint": "This competition has no seasons.",
   "adminNoRoundsHint": "This season has no rounds. Open a round first in the Rounds tab.",
+  "adminSelectFixtureLabel": "Select fixture",
+  "adminNoFixturesHint": "This round has no fixtures.",
+  "adminFixtureIncompleteDataLabel": "Fixture with incomplete data",
   "adminRoundOptionLabel": "Round {sequence} — {status}",
   "@adminRoundOptionLabel": {
     "placeholders": {

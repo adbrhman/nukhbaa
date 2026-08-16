@@ -840,6 +840,77 @@ class _RoundPickerField extends ConsumerWidget {
   }
 }
 
+class _FixturePickerField extends ConsumerWidget {
+  const _FixturePickerField({
+    required this.roundId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String roundId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
+      roundFixturesProvider(roundId),
+    );
+    return fixtures.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectFixtureLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundFixtureCardDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectFixtureLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoFixturesHint),
+          );
+        }
+        final String? value = list.any((f) => f.fixtureId == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.scoring.fixtureField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectFixtureLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final RoundFixtureCardDto fixture in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.scoring.fixtureField.${fixture.fixtureId}'),
+                value: fixture.fixtureId,
+                child: Text(
+                  (fixture.homeTeam != null && fixture.awayTeam != null)
+                      ? '${fixture.homeTeam} vs ${fixture.awayTeam}'
+                      : l10n.adminFixtureIncompleteDataLabel,
+                ),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id != null) onSelected(id);
+                },
+        );
+      },
+    );
+  }
+}
+
 /// A free-text field with a filtered dropdown of known team names — picking
 /// a suggestion fills the field, but any text (including a name not yet in
 /// the registry) is still accepted, since team identity travels as free
@@ -1171,18 +1242,18 @@ class _ResultsScoringTab extends ConsumerStatefulWidget {
 }
 
 class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
-  final TextEditingController _fixtureIdController = TextEditingController();
   final TextEditingController _homeGoalsController = TextEditingController();
   final TextEditingController _awayGoalsController = TextEditingController();
 
-  final TextEditingController _roundIdController = TextEditingController();
+  String? _competitionId;
+  String? _seasonId;
+  String? _roundId;
+  String? _fixtureId;
 
   @override
   void dispose() {
-    _fixtureIdController.dispose();
     _homeGoalsController.dispose();
     _awayGoalsController.dispose();
-    _roundIdController.dispose();
     super.dispose();
   }
 
@@ -1213,16 +1284,52 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.fixtureIdField'),
-            controller: _fixtureIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminFixtureIdLabel,
-              border: const OutlineInputBorder(),
-            ),
+          _CompetitionPickerField(
+            fieldKey: const Key('admin.scoring.competitionField'),
+            label: l10n.adminSelectCompetitionLabel,
             enabled: !resultInFlight,
+            selectedId: _competitionId,
+            onSelected: (CompetitionDto competition) => setState(() {
+              _competitionId = competition.id;
+              _seasonId = null;
+              _roundId = null;
+              _fixtureId = null;
+            }),
           ),
           const SizedBox(height: AppSpacing.md),
+          if (_competitionId != null)
+            _SeasonPickerField(
+              competitionId: _competitionId!,
+              enabled: !resultInFlight,
+              selectedId: _seasonId,
+              onSelected: (String seasonId) => setState(() {
+                _seasonId = seasonId;
+                _roundId = null;
+                _fixtureId = null;
+              }),
+            ),
+          if (_competitionId != null) const SizedBox(height: AppSpacing.md),
+          if (_seasonId != null)
+            _RoundPickerField(
+              seasonId: _seasonId!,
+              enabled: !resultInFlight,
+              selectedId: _roundId,
+              onSelected: (RoundDto round) => setState(() {
+                _roundId = round.id;
+                _fixtureId = null;
+              }),
+            ),
+          if (_seasonId != null) const SizedBox(height: AppSpacing.md),
+          if (_roundId != null)
+            _FixturePickerField(
+              roundId: _roundId!,
+              enabled: !resultInFlight,
+              selectedId: _fixtureId,
+              onSelected: (String fixtureId) => setState(() {
+                _fixtureId = fixtureId;
+              }),
+            ),
+          if (_roundId != null) const SizedBox(height: AppSpacing.md),
           TextField(
             key: const Key('admin.scoring.homeGoalsField'),
             controller: _homeGoalsController,
@@ -1272,16 +1379,6 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
           Text(
             l10n.adminScoreRoundSectionTitle,
             style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.roundIdField'),
-            controller: _roundIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminRoundIdLabel,
-              border: const OutlineInputBorder(),
-            ),
-            enabled: !scoreInFlight && !lookupInFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
           if (scoreState is AsyncError<RoundScoresDto>)
@@ -1342,17 +1439,17 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
                 ),
               ),
           const Divider(height: AppSpacing.x3l),
-          _RoundReportSection(roundIdController: _roundIdController),
+          _RoundReportSection(roundId: _roundId),
         ],
       ),
     );
   }
 
   void _recordResult() {
-    final fixtureId = _fixtureIdController.text.trim();
+    final fixtureId = _fixtureId;
     final homeGoals = int.tryParse(_homeGoalsController.text.trim());
     final awayGoals = int.tryParse(_awayGoalsController.text.trim());
-    if (fixtureId.isEmpty || homeGoals == null || awayGoals == null) return;
+    if (fixtureId == null || homeGoals == null || awayGoals == null) return;
     ref
         .read(recordFixtureResultControllerProvider.notifier)
         .record(
@@ -1363,14 +1460,14 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
   }
 
   void _scoreRound() {
-    final roundId = _roundIdController.text.trim();
-    if (roundId.isEmpty) return;
+    final roundId = _roundId;
+    if (roundId == null) return;
     ref.read(scoreRoundControllerProvider.notifier).score(roundId);
   }
 
   void _lookupScores() {
-    final roundId = _roundIdController.text.trim();
-    if (roundId.isEmpty) return;
+    final roundId = _roundId;
+    if (roundId == null) return;
     ref.read(roundScoresLookupControllerProvider.notifier).lookup(roundId);
   }
 }
@@ -1380,9 +1477,9 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
 /// `GET /admin/rounds/{id}/predictions` (via [RoundReportController]) into a
 /// ranked, per-fixture table, plus a copy-to-share summary.
 class _RoundReportSection extends ConsumerWidget {
-  const _RoundReportSection({required this.roundIdController});
+  const _RoundReportSection({required this.roundId});
 
-  final TextEditingController roundIdController;
+  final String? roundId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1442,9 +1539,9 @@ class _RoundReportSection extends ConsumerWidget {
   }
 
   void _load(WidgetRef ref) {
-    final roundId = roundIdController.text.trim();
-    if (roundId.isEmpty) return;
-    ref.read(roundReportControllerProvider.notifier).load(roundId);
+    final id = roundId;
+    if (id == null) return;
+    ref.read(roundReportControllerProvider.notifier).load(id);
   }
 
   void _share(BuildContext context, List<RoundReportRow> rows) {

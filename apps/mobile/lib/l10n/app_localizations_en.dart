@@ -552,6 +552,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'This season has no rounds. Open a round first in the Rounds tab.';
 
   @override
+  String get adminSelectFixtureLabel => 'Select fixture';
+
+  @override
+  String get adminNoFixturesHint => 'This round has no fixtures.';
+
+  @override
+  String get adminFixtureIncompleteDataLabel => 'Fixture with incomplete data';
+
+  @override
   String adminRoundOptionLabel(int sequence, String status) {
     return 'Round $sequence — $status';
   }
