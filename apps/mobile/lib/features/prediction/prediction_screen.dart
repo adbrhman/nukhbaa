@@ -7,6 +7,7 @@
 library;
 
 import 'package:contracts/contracts.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
@@ -37,10 +38,10 @@ class PredictionScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     return Scaffold(
-      backgroundColor: MatchCardTokens.bgPage,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: MatchCardTokens.bgPage,
-        foregroundColor: MatchCardTokens.textPrimary,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
