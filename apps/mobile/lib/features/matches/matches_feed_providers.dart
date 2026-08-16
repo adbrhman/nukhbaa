@@ -77,7 +77,7 @@ T _unwrap<T>(Result<T> result) => switch (result) {
 /// legitimate `Ok(<empty>)` — the screen shows an "no open matches"
 /// affordance, never an error, mirroring every other browse read in this
 /// app.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<MatchFeedItem>> matchesFeed(Ref ref) async {
   final CompetitionApi api = ref.watch(competitionApiProvider);
   final List<CompetitionDto> competitions = _unwrap(
