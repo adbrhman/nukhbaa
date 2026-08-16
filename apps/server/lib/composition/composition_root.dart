@@ -46,6 +46,7 @@ final class CompositionRoot {
     required this.postRoundToLedger,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
+    required this.getRoundLeaderboard,
     required this.getHallOfFame,
     required this.createGroup,
     required this.getGroup,
@@ -127,6 +128,7 @@ final class CompositionRoot {
     PostRoundToLedger? postRoundToLedger,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
+    GetRoundLeaderboard? getRoundLeaderboard,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
     GetGroup? getGroup,
@@ -187,6 +189,8 @@ final class CompositionRoot {
            readParticipantLedger ?? _absentReadParticipantLedger(),
        getSeasonLeaderboard =
            getSeasonLeaderboard ?? _absentGetSeasonLeaderboard(),
+       getRoundLeaderboard =
+           getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        createGroup = createGroup ?? _absentCreateGroup(),
        getGroup = getGroup ?? _absentGetGroup(),
@@ -404,6 +408,16 @@ final class CompositionRoot {
       GetSeasonLeaderboard(
         leaderboardRepository: _unwiredLeaderboardRepository,
         competitionRepository: _unwiredCompetitionRepository,
+      );
+
+  /// Backs the "absent" [GetRoundLeaderboard]: throws so a test that reaches
+  /// an unwired round-leaderboard slice fails loudly instead of touching a
+  /// real database. Shares the same throwing collaborators as the "absent"
+  /// [GetRoundScores] (it gates and reads identically).
+  static GetRoundLeaderboard _absentGetRoundLeaderboard() =>
+      GetRoundLeaderboard(
+        competitionRepository: _unwiredCompetitionRepository,
+        scoreRepository: _unwiredScoreRepository,
       );
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
@@ -677,6 +691,11 @@ final class CompositionRoot {
   /// over the append-only ledger; season-membership gated, never a points
   /// write — Axioms 1/5).
   final GetSeasonLeaderboard getSeasonLeaderboard;
+
+  /// Reads a round's ranked standings — its round leaderboard (a read-side
+  /// projection over that round's already-computed scores; gated identically
+  /// to [getRoundScores] — a scored round, season-membership only).
+  final GetRoundLeaderboard getRoundLeaderboard;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -1042,6 +1061,10 @@ final class CompositionRoot {
       getSeasonLeaderboard: GetSeasonLeaderboard(
         leaderboardRepository: leaderboardRepository,
         competitionRepository: competitionRepository,
+      ),
+      getRoundLeaderboard: GetRoundLeaderboard(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
       ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,

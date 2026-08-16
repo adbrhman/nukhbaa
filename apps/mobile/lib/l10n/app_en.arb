@@ -84,6 +84,12 @@
       }
     }
   },
+  "roundLeaderboardTab": "Round points",
+  "seasonLeaderboardTab": "Season points",
+  "selectRoundLabel": "Select round",
+  "roundLeaderboardNoScoredRounds": "This season has no scored rounds yet.",
+  "roundLeaderboardEmpty": "Nobody predicted this round.",
+  "roundKingLabel": "Round king",
   "groupLeaderboardEmpty": "No members of this group have joined the season yet.",
   "competitions": "Competitions",
   "competitionsEmpty": "There are no competitions to browse yet.",

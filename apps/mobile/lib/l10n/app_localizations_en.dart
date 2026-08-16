@@ -187,6 +187,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get roundLeaderboardTab => 'Round points';
+
+  @override
+  String get seasonLeaderboardTab => 'Season points';
+
+  @override
+  String get selectRoundLabel => 'Select round';
+
+  @override
+  String get roundLeaderboardNoScoredRounds =>
+      'This season has no scored rounds yet.';
+
+  @override
+  String get roundLeaderboardEmpty => 'Nobody predicted this round.';
+
+  @override
+  String get roundKingLabel => 'Round king';
+
+  @override
   String get groupLeaderboardEmpty =>
       'No members of this group have joined the season yet.';
 

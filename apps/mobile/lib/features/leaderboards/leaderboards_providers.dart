@@ -61,3 +61,18 @@ Future<SeasonLeaderboardDto> seasonLeaderboard(Ref ref, String seasonId) async {
   final api = ref.watch(leaderboardsApiProvider);
   return _unwrap(await api.seasonLeaderboard(seasonId));
 }
+
+/// `GET /rounds/{id}/leaderboard` — a round's ranked standings.
+///
+/// A round that is scored but drew no predictions resolves to a
+/// [RoundLeaderboardDto] whose `entries` list is empty — a *legitimate*
+/// success shown as an "empty" affordance, never an error. A not-yet-scored
+/// round is rejected `Err(invariant, code: scoring.round_not_scored)`; a
+/// non-member of the round's season is rejected
+/// `Err(authorization, code: scoring.not_a_participant)` — both rethrown here
+/// so the screen renders the tailored message via `ErrorPresenter`.
+@riverpod
+Future<RoundLeaderboardDto> roundLeaderboard(Ref ref, String roundId) async {
+  final api = ref.watch(leaderboardsApiProvider);
+  return _unwrap(await api.roundLeaderboard(roundId));
+}

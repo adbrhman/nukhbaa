@@ -40,6 +40,8 @@ export 'src/identity/user_id.dart';
 export 'src/leaderboard/hall_of_fame.dart';
 export 'src/leaderboard/hall_of_fame_entry.dart';
 export 'src/leaderboard/leaderboard_entry.dart';
+export 'src/leaderboard/round_leaderboard.dart';
+export 'src/leaderboard/round_leaderboard_entry.dart';
 export 'src/leaderboard/season_leaderboard.dart';
 export 'src/ledger/entry_kind.dart';
 export 'src/ledger/ledger_balance.dart';

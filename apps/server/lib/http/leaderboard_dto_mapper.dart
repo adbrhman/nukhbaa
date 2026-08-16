@@ -38,6 +38,35 @@ Map<String, Object?> seasonLeaderboardToJson(SeasonLeaderboard leaderboard) {
   ).toJson();
 }
 
+/// Projects one domain [RoundLeaderboardEntry] onto [RoundLeaderboardEntryDto].
+///
+/// Same integrity boundary as [leaderboardEntryToDto]: every field is echoed
+/// exactly as the domain computed it from the round's already-scored
+/// [RoundScore]s — nothing here is client-writable, and there is no inverse.
+RoundLeaderboardEntryDto roundLeaderboardEntryToDto(
+  RoundLeaderboardEntry entry,
+) {
+  return RoundLeaderboardEntryDto(
+    rank: entry.rank,
+    participantId: entry.participantId.value,
+    totalPoints: entry.totalPoints,
+  );
+}
+
+/// Shapes a ranked [RoundLeaderboard] into the whole-board read response
+/// [RoundLeaderboardDto], preserving the aggregate's ranked entry order. An
+/// empty [RoundLeaderboard.entries] shapes an empty `entries` array — a
+/// legitimate empty board (a scored round nobody predicted), never an error.
+Map<String, Object?> roundLeaderboardToJson(RoundLeaderboard leaderboard) {
+  return RoundLeaderboardDto(
+    roundId: leaderboard.roundId.value,
+    entries: [
+      for (final entry in leaderboard.entries)
+        roundLeaderboardEntryToDto(entry),
+    ],
+  ).toJson();
+}
+
 /// Projects one domain [HallOfFameEntry] onto [HallOfFameEntryDto].
 ///
 /// Same integrity boundary as [leaderboardEntryToDto]: every field is echoed

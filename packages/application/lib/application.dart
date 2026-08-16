@@ -52,6 +52,7 @@ export 'src/identity/ports/token_verifier.dart';
 export 'src/identity/ports/user_directory.dart';
 export 'src/identity/register_with_password.dart';
 export 'src/leaderboard/get_hall_of_fame.dart';
+export 'src/leaderboard/get_round_leaderboard.dart';
 export 'src/leaderboard/get_season_leaderboard.dart';
 export 'src/leaderboard/ports/leaderboard_repository.dart';
 export 'src/ledger/ports/ledger_repository.dart';

@@ -195,6 +195,25 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get roundLeaderboardTab => 'نقاط الجولة';
+
+  @override
+  String get seasonLeaderboardTab => 'نقاط الموسم';
+
+  @override
+  String get selectRoundLabel => 'اختر الجولة';
+
+  @override
+  String get roundLeaderboardNoScoredRounds =>
+      'لا توجد جولات محتسبة بعد في هذا الموسم.';
+
+  @override
+  String get roundLeaderboardEmpty => 'لم يشارك أحد في هذه الجولة.';
+
+  @override
+  String get roundKingLabel => 'ملك الجولة';
+
+  @override
   String get groupLeaderboardEmpty =>
       'لم ينضم أي عضو من هذه المجموعة للموسم بعد.';
 
