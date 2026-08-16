@@ -13,6 +13,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../competition/team_registry.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -31,8 +32,8 @@ class MatchCardTokens {
   static const Color btnBorder = Color(0x14FFFFFF); // rgba(255,255,255,.08)
 
   static const Color doubleInactiveBg = Color(0x0FFFFFFF);
-  static const Color doubleActiveBg = Color(0x26FFD700); // rgba(255,215,0,.15)
-  static const Color doubleGlow = Color(0xFFFFD700);
+  static const Color doubleActiveBg = Color(0x26FFB020); // AppColors.gold @ 15%
+  static const Color doubleGlow = AppColors.gold;
 
   static const double cardRadius = 16;
   static const double logoSize = 48;
