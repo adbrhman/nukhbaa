@@ -625,9 +625,7 @@ ORDER BY c.name ASC, c.id ASC, r.sequence ASC
     };
   }
 
-  Result<OpenRoundFeedEntry> _mapOpenRoundFeedEntry(
-    Map<String, dynamic> row,
-  ) {
+  Result<OpenRoundFeedEntry> _mapOpenRoundFeedEntry(Map<String, dynamic> row) {
     final competitionIdResult = CompetitionId.tryParse(
       row['competition_id']?.toString(),
     );
@@ -637,11 +635,7 @@ ORDER BY c.name ASC, c.id ASC, r.sequence ASC
 
     if (competitionIdResult is Err<CompetitionId>) {
       return Result.err(
-        _corrupt(
-          'rounds',
-          'competition_id',
-          competitionIdResult.error.message,
-        ),
+        _corrupt('rounds', 'competition_id', competitionIdResult.error.message),
       );
     }
     if (roundIdResult is Err<RoundId>) {
@@ -650,9 +644,7 @@ ORDER BY c.name ASC, c.id ASC, r.sequence ASC
       );
     }
     if (competitionName is! String) {
-      return Result.err(
-        _corrupt('rounds', 'competition_name', 'not a string'),
-      );
+      return Result.err(_corrupt('rounds', 'competition_name', 'not a string'));
     }
     if (rulesetVersion is! int) {
       return Result.err(

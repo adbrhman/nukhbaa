@@ -69,13 +69,14 @@ RoundFixture _link({
   required String roundId,
   required String fixtureId,
   required int order,
-}) => (RoundFixture.create(
-          roundId: RoundId(roundId),
-          fixture: FixtureRef(fixtureId),
-          displayOrder: order,
-        )
-        as Ok<RoundFixture>)
-    .value;
+}) =>
+    (RoundFixture.create(
+              roundId: RoundId(roundId),
+              fixture: FixtureRef(fixtureId),
+              displayOrder: order,
+            )
+            as Ok<RoundFixture>)
+        .value;
 
 void main() {
   late FakeCompetitionRepository competitionRepo;
@@ -91,38 +92,37 @@ void main() {
     );
   });
 
-  test('flattens open rounds of public competitions, in competition-name '
-      'then round-sequence order, each round\'s fixtures in display order',
-      () async {
-    competitionRepo
-      ..seedCompetition(_competition(_competitionB, 'Beta League'))
-      ..seedCompetition(_competition(_competitionA, 'Alpha League'))
-      ..seedSeason(_season(_seasonA, _competitionA))
-      ..seedSeason(_season(_seasonB, _competitionB))
-      ..seedRound(_round(_roundA1, _seasonA))
-      ..seedRound(_round(_roundB1, _seasonB));
-    await competitionRepo.saveRoundFixture(
-      _link(roundId: _roundA1, fixtureId: _fixtureY, order: 1),
-    );
-    await competitionRepo.saveRoundFixture(
-      _link(roundId: _roundA1, fixtureId: _fixtureX, order: 0),
-    );
-    await competitionRepo.saveRoundFixture(
-      _link(roundId: _roundB1, fixtureId: _fixtureX, order: 0),
-    );
+  test(
+    'flattens open rounds of public competitions, in competition-name '
+    'then round-sequence order, each round\'s fixtures in display order',
+    () async {
+      competitionRepo
+        ..seedCompetition(_competition(_competitionB, 'Beta League'))
+        ..seedCompetition(_competition(_competitionA, 'Alpha League'))
+        ..seedSeason(_season(_seasonA, _competitionA))
+        ..seedSeason(_season(_seasonB, _competitionB))
+        ..seedRound(_round(_roundA1, _seasonA))
+        ..seedRound(_round(_roundB1, _seasonB));
+      await competitionRepo.saveRoundFixture(
+        _link(roundId: _roundA1, fixtureId: _fixtureY, order: 1),
+      );
+      await competitionRepo.saveRoundFixture(
+        _link(roundId: _roundA1, fixtureId: _fixtureX, order: 0),
+      );
+      await competitionRepo.saveRoundFixture(
+        _link(roundId: _roundB1, fixtureId: _fixtureX, order: 0),
+      );
 
-    final r = await useCase.call(principal: userPrincipal(_user));
+      final r = await useCase.call(principal: userPrincipal(_user));
 
-    final list = (r as Ok<List<MatchFeedEntry>>).value;
-    expect(
-      list.map((e) => (e.competitionName, e.fixture.fixtureId.value)),
-      [
+      final list = (r as Ok<List<MatchFeedEntry>>).value;
+      expect(list.map((e) => (e.competitionName, e.fixture.fixtureId.value)), [
         ('Alpha League', _fixtureX),
         ('Alpha League', _fixtureY),
         ('Beta League', _fixtureX),
-      ],
-    );
-  });
+      ]);
+    },
+  );
 
   test('excludes rounds that are not open', () async {
     competitionRepo
@@ -130,7 +130,12 @@ void main() {
       ..seedSeason(_season(_seasonA, _competitionA))
       ..seedRound(_round(_roundA1, _seasonA))
       ..seedRound(
-        _round(_roundA2Locked, _seasonA, sequence: 2, status: RoundStatus.locked),
+        _round(
+          _roundA2Locked,
+          _seasonA,
+          sequence: 2,
+          status: RoundStatus.locked,
+        ),
       );
     await competitionRepo.saveRoundFixture(
       _link(roundId: _roundA1, fixtureId: _fixtureX, order: 0),

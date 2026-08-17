@@ -530,7 +530,11 @@ void main() {
   group('listFixturesForRounds (batch, mirrors findByFixtures)', () {
     test('binds the round ids as a single array parameter', () async {
       final conn = _rows([
-        {'round_id': _roundId, 'fixture_id': _competitionId, 'display_order': 0},
+        {
+          'round_id': _roundId,
+          'fixture_id': _competitionId,
+          'display_order': 0,
+        },
       ]);
       final repo = PostgresCompetitionRepository(conn);
       final otherRoundId = '99999999-9999-9999-9999-999999999999';
@@ -557,7 +561,11 @@ void main() {
 
     test('maps every row to a RoundFixture', () async {
       final conn = _rows([
-        {'round_id': _roundId, 'fixture_id': _competitionId, 'display_order': 2},
+        {
+          'round_id': _roundId,
+          'fixture_id': _competitionId,
+          'display_order': 2,
+        },
       ]);
       final repo = PostgresCompetitionRepository(conn);
 

@@ -23,10 +23,7 @@ import '../competition_route_harness.dart';
 /// `rounds_browse_test.dart`.
 void main() {
   RulesetSnapshot snapshot() =>
-      (RulesetSnapshot.create(
-                payload: const {'exact': 3},
-                rulesetVersion: 1,
-              )
+      (RulesetSnapshot.create(payload: const {'exact': 3}, rulesetVersion: 1)
               as Ok<RulesetSnapshot>)
           .value;
 
@@ -125,31 +122,28 @@ void main() {
     expect(body, isEmpty);
   });
 
-  test(
-    'an open round with no linked fixtures contributes nothing',
-    () async {
-      final root = rootWith();
-      repo.competitions[kCompetitionId] = competition(
-        kCompetitionId,
-        'Premier League',
-      );
-      repo.seasons[kSeasonId] = season(kSeasonId, kCompetitionId);
-      repo.rounds[kRoundId] = openRound(kRoundId, kSeasonId);
-      // No links seeded.
+  test('an open round with no linked fixtures contributes nothing', () async {
+    final root = rootWith();
+    repo.competitions[kCompetitionId] = competition(
+      kCompetitionId,
+      'Premier League',
+    );
+    repo.seasons[kSeasonId] = season(kSeasonId, kCompetitionId);
+    repo.rounds[kRoundId] = openRound(kRoundId, kSeasonId);
+    // No links seeded.
 
-      final context = wireContext(
-        root: root,
-        principal: userPrincipal(),
-        method: HttpMethod.get,
-      );
+    final context = wireContext(
+      root: root,
+      principal: userPrincipal(),
+      method: HttpMethod.get,
+    );
 
-      final response = await matches_route.onRequest(context);
+    final response = await matches_route.onRequest(context);
 
-      expect(response.statusCode, HttpStatus.ok);
-      final body = await response.json() as List<Object?>;
-      expect(body, isEmpty);
-    },
-  );
+    expect(response.statusCode, HttpStatus.ok);
+    final body = await response.json() as List<Object?>;
+    expect(body, isEmpty);
+  });
 
   test('an unsupported method (POST) is 405', () async {
     final context = wireContext(root: rootWith(), principal: userPrincipal());

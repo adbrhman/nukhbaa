@@ -328,10 +328,7 @@ void main() {
 
       final result = await CompetitionApi(ctx.transport).getMatchesFeed();
 
-      expect(
-        (result as Err<List<MatchFeedItemDto>>).error.isRetryable,
-        isTrue,
-      );
+      expect((result as Err<List<MatchFeedItemDto>>).error.isRetryable, isTrue);
     });
   });
 }

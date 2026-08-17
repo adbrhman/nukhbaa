@@ -97,8 +97,7 @@ final class ListMatchesFeed {
     if (openRoundsResult is Err<List<OpenRoundFeedEntry>>) {
       return Result.err(openRoundsResult.error);
     }
-    final openRounds =
-        (openRoundsResult as Ok<List<OpenRoundFeedEntry>>).value;
+    final openRounds = (openRoundsResult as Ok<List<OpenRoundFeedEntry>>).value;
     if (openRounds.isEmpty) {
       return const Result.ok([]);
     }
@@ -136,7 +135,8 @@ final class ListMatchesFeed {
 
     return Result.ok([
       for (final entry in openRounds)
-        for (final link in linksByRound[entry.roundId.value] ?? const <RoundFixture>[])
+        for (final link
+            in linksByRound[entry.roundId.value] ?? const <RoundFixture>[])
           MatchFeedEntry(
             competitionName: entry.competitionName,
             roundId: entry.roundId,
