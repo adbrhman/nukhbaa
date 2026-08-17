@@ -34,6 +34,7 @@ final class CompositionRoot {
     required this.listCompetitionSeasons,
     required this.listSeasonRounds,
     required this.browseRoundFixtures,
+    required this.listMatchesFeed,
     required this.submitPrediction,
     required this.getMyPrediction,
     required this.listRoundPredictions,
@@ -117,6 +118,7 @@ final class CompositionRoot {
     ListCompetitionSeasons? listCompetitionSeasons,
     ListSeasonRounds? listSeasonRounds,
     BrowseRoundFixtures? browseRoundFixtures,
+    ListMatchesFeed? listMatchesFeed,
     SubmitPrediction? submitPrediction,
     GetMyPrediction? getMyPrediction,
     ListRoundPredictions? listRoundPredictions,
@@ -173,6 +175,7 @@ final class CompositionRoot {
        listSeasonRounds = listSeasonRounds ?? _absentListSeasonRounds(),
        browseRoundFixtures =
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
+       listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        getMyPrediction = getMyPrediction ?? _absentGetMyPrediction(),
        listRoundPredictions =
@@ -310,6 +313,11 @@ final class CompositionRoot {
         competitionRepository: _unwiredCompetitionRepository,
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
       );
+
+  static ListMatchesFeed _absentListMatchesFeed() => ListMatchesFeed(
+    competitionRepository: _unwiredCompetitionRepository,
+    fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+  );
 
   /// A single throwing repository backing every "absent" prediction use-case,
   /// so a test that reaches an unwired prediction slice fails loudly instead of
@@ -660,6 +668,13 @@ final class CompositionRoot {
   /// the Competition-context browse read, distinct from the Prediction phase's
   /// internal `PredictionRepository.listRoundFixtures`.
   final BrowseRoundFixtures browseRoundFixtures;
+
+  /// The unified matches feed: every open round's fixture(s) across every
+  /// public competition, flattened into one ordered list, in three batched
+  /// database reads (server-side aggregate read replacing the client-side
+  /// competition -> season -> round -> fixtures drill-down; any authenticated
+  /// user). Read-only, no side effect.
+  final ListMatchesFeed listMatchesFeed;
 
   /// Submits (or idempotently amends) the caller's prediction for a round.
   final SubmitPrediction submitPrediction;
@@ -1026,6 +1041,10 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
+      listMatchesFeed: ListMatchesFeed(
+        competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+      ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
@@ -1280,6 +1299,14 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   @override
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId) =>
       _unwired();
+
+  @override
+  Future<Result<List<OpenRoundFeedEntry>>> listOpenRoundsFeed() => _unwired();
+
+  @override
+  Future<Result<List<RoundFixture>>> listFixturesForRounds(
+    List<RoundId> roundIds,
+  ) => _unwired();
 }
 
 /// Backs an "absent" [OpenRound]'s ruleset provider.

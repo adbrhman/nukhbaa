@@ -119,6 +119,21 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /feed/matches` — the unified matches feed: every currently-open
+  /// round's fixture(s) across every public competition, flattened into one
+  /// ordered list, in a single request (server-side aggregate read; query
+  /// intent `ListMatchesFeed`, replacing the former client-side
+  /// competition -> season -> round -> fixtures drill-down).
+  ///
+  /// No open rounds anywhere — or none with any linked fixture — is a
+  /// legitimate `Ok(<empty list>)` (no existence oracle).
+  Future<Result<List<MatchFeedItemDto>>> getMatchesFeed() {
+    return _transport.getList<MatchFeedItemDto>(
+      '/feed/matches',
+      parseElement: MatchFeedItemDto.fromJson,
+    );
+  }
+
   /// `POST /seasons/{id}/rounds` — opens a new round in the season, freezing
   /// the ruleset (command intent `OpenRound`). Admin-only, enforced inside the
   /// server use-case. [predictionDeadline] must be an ISO 8601 timestamp
