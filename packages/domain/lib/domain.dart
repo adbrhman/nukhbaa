@@ -57,6 +57,7 @@ export 'src/prediction/prediction.dart';
 export 'src/prediction/prediction_id.dart';
 export 'src/scoring/fixture_result.dart';
 export 'src/scoring/fixture_score_result.dart';
+export 'src/scoring/round_report_entry.dart';
 export 'src/scoring/round_score.dart';
 export 'src/scoring/scoring.dart';
 export 'src/scoring/scoring_ruleset.dart';

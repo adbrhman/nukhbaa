@@ -43,6 +43,7 @@ final class CompositionRoot {
     required this.correctFixtureSchedule,
     required this.scoreRound,
     required this.getRoundScores,
+    required this.getRoundReport,
     required this.postRoundToLedger,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
@@ -125,6 +126,7 @@ final class CompositionRoot {
     CorrectFixtureSchedule? correctFixtureSchedule,
     ScoreRound? scoreRound,
     GetRoundScores? getRoundScores,
+    GetRoundReport? getRoundReport,
     PostRoundToLedger? postRoundToLedger,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
@@ -184,6 +186,7 @@ final class CompositionRoot {
            correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
        scoreRound = scoreRound ?? _absentScoreRound(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
+       getRoundReport = getRoundReport ?? _absentGetRoundReport(),
        postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
        readParticipantLedger =
            readParticipantLedger ?? _absentReadParticipantLedger(),
@@ -371,6 +374,15 @@ final class CompositionRoot {
   );
 
   static GetRoundScores _absentGetRoundScores() => GetRoundScores(
+    competitionRepository: _unwiredCompetitionRepository,
+    scoreRepository: _unwiredScoreRepository,
+  );
+
+  /// Backs the "absent" [GetRoundReport]: throws so a test that reaches an
+  /// unwired report slice fails loudly instead of touching a real database.
+  /// Shares the same throwing collaborators as the "absent" [GetRoundScores]
+  /// (it gates and reads identically).
+  static GetRoundReport _absentGetRoundReport() => GetRoundReport(
     competitionRepository: _unwiredCompetitionRepository,
     scoreRepository: _unwiredScoreRepository,
   );
@@ -677,6 +689,10 @@ final class CompositionRoot {
 
   /// Reads every participant's score for a scored round (visibility-gated).
   final GetRoundScores getRoundScores;
+
+  /// Reads a round's aggregated report (correct/incorrect counts + points)
+  /// — same visibility gate as [getRoundScores] (Task 5).
+  final GetRoundReport getRoundReport;
 
   /// Posts a scored round to the append-only Ledger (admin-only command; the
   /// point amounts are copied server-side from the frozen scores — Axioms 2/5;
@@ -1044,6 +1060,10 @@ final class CompositionRoot {
         scoreRepository: scoreRepository,
       ),
       getRoundScores: GetRoundScores(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
+      ),
+      getRoundReport: GetRoundReport(
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
       ),
