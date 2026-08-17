@@ -288,4 +288,50 @@ void main() {
       );
     });
   });
+
+  group('CompetitionApi.getMatchesFeed (GET /feed/matches)', () {
+    test('200 array -> Ok(List<MatchFeedItemDto>)', () async {
+      const item = MatchFeedItemDto(
+        competitionName: 'Premier League',
+        roundId: 'r-1',
+        rulesetVersion: 3,
+        fixture: RoundFixtureCardDto(
+          roundId: 'r-1',
+          fixtureId: 'f-a',
+          displayOrder: 0,
+          homeTeam: 'Al Hilal',
+          awayTeam: 'Al Nassr',
+          kickoffAt: '2026-08-20T18:00:00.000Z',
+        ),
+      );
+      final ctx = buildTransport((_) async => okJson([item.toJson()]));
+
+      final result = await CompetitionApi(ctx.transport).getMatchesFeed();
+
+      expect(result, const Result<List<MatchFeedItemDto>>.ok([item]));
+      expect(ctx.captured.single.url.path, '/feed/matches');
+      expect(ctx.captured.single.method, 'GET');
+    });
+
+    test('no open rounds anywhere -> Ok(<empty>), not an error', () async {
+      final ctx = buildTransport((_) async => okJson(<Object>[]));
+
+      final result = await CompetitionApi(ctx.transport).getMatchesFeed();
+
+      expect((result as Ok<List<MatchFeedItemDto>>).value, isEmpty);
+    });
+
+    test('503 -> Err(transient) retryable', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+      );
+
+      final result = await CompetitionApi(ctx.transport).getMatchesFeed();
+
+      expect(
+        (result as Err<List<MatchFeedItemDto>>).error.isRetryable,
+        isTrue,
+      );
+    });
+  });
 }
