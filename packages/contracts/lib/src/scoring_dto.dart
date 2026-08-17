@@ -429,8 +429,7 @@ final class RoundReportDto {
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(roundId, Object.hashAll(rows), schemaVersion);
+  int get hashCode => Object.hash(roundId, Object.hashAll(rows), schemaVersion);
 
   static bool _listEquals(
     List<RoundReportRowDto> a,
