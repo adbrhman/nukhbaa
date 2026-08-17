@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/ui/ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_registry.dart';
@@ -84,19 +85,47 @@ class _AuditLogTab extends ConsumerWidget {
       value: log.whenData((dto) => dto.entries),
       emptyMessage: l10n.adminAuditLogEmpty,
       onRetry: () => ref.invalidate(auditLogProvider),
-      itemBuilder: (context, entry) => ListTile(
-        key: Key('admin.audit.item.${entry.id}'),
-        title: Text(entry.action, key: Key('admin.audit.action.${entry.id}')),
-        subtitle: Text(
-          '${entry.targetRef}${entry.reason != null ? ' — ${entry.reason}' : ''}',
-          key: Key('admin.audit.detail.${entry.id}'),
-        ),
-        trailing: Text(
-          entry.occurredAt,
-          key: Key('admin.audit.occurredAt.${entry.id}'),
-          style: TextStyle(color: context.tokens.textSecondary),
-        ),
-      ),
+      itemBuilder: (context, entry) {
+        final AppTokens tokens = context.tokens;
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          child: AppCard(
+            key: Key('admin.audit.item.${entry.id}'),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        entry.action,
+                        key: Key('admin.audit.action.${entry.id}'),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '${entry.targetRef}${entry.reason != null ? ' — ${entry.reason}' : ''}',
+                        key: Key('admin.audit.detail.${entry.id}'),
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  entry.occurredAt,
+                  key: Key('admin.audit.occurredAt.${entry.id}'),
+                  style: TextStyle(color: tokens.textMuted),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -145,24 +174,25 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               Expanded(
-                child: TextField(
-                  key: const Key('admin.users.searchField'),
+                child: AppTextField(
+                  fieldKey: const Key('admin.users.searchField'),
                   controller: _searchController,
-                  decoration: InputDecoration(
-                    labelText: l10n.adminUsersSearchLabel,
-                    border: const OutlineInputBorder(),
-                  ),
+                  label: l10n.adminUsersSearchLabel,
                   enabled: !searching,
-                  onSubmitted: (_) => _search(),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              FilledButton(
-                key: const Key('admin.users.searchButton'),
-                onPressed: searching ? null : _search,
-                child: Text(l10n.adminLookUpButton),
+              SizedBox(
+                width: 120,
+                child: AppButton(
+                  key: const Key('admin.users.searchButton'),
+                  label: l10n.adminLookUpButton,
+                  onPressed: searching ? null : _search,
+                  loading: searching,
+                ),
               ),
             ],
           ),
@@ -173,32 +203,45 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
                 value: search.whenData((dto) => dto.users),
                 emptyMessage: l10n.adminUsersEmptyResults,
                 onRetry: _search,
-                itemBuilder: (context, user) => ListTile(
-                  key: Key('admin.users.result.${user.id}'),
-                  title: Text(user.email ?? user.id),
-                  subtitle: Text(user.status),
-                  onTap: () => setState(() => _userIdController.text = user.id),
+                itemBuilder: (context, user) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: AppCard(
+                    key: Key('admin.users.result.${user.id}'),
+                    onTap: () =>
+                        setState(() => _userIdController.text = user.id),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(user.email ?? user.id),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                user.status,
+                                style: TextStyle(color: tokens.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
-          TextField(
-            key: const Key('admin.users.userIdField'),
+          AppTextField(
+            fieldKey: const Key('admin.users.userIdField'),
             controller: _userIdController,
-            decoration: InputDecoration(
-              labelText: l10n.userId,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.userId,
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.users.reasonField'),
+          AppTextField(
+            fieldKey: const Key('admin.users.reasonField'),
             controller: _reasonController,
-            decoration: InputDecoration(
-              labelText: l10n.adminReasonMandatoryLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminReasonMandatoryLabel,
             enabled: !inFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -225,18 +268,20 @@ class _UserSanctionTabState extends ConsumerState<_UserSanctionTab> {
           Row(
             children: <Widget>[
               Expanded(
-                child: OutlinedButton(
+                child: AppButton(
                   key: const Key('admin.users.suspend'),
+                  label: l10n.adminSuspendButton,
+                  variant: AppButtonVariant.secondary,
                   onPressed: inFlight ? null : () => _act(suspend: true),
-                  child: Text(l10n.adminSuspendButton),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: FilledButton(
+                child: AppButton(
                   key: const Key('admin.users.reinstate'),
+                  label: l10n.adminReinstateButton,
                   onPressed: inFlight ? null : () => _act(suspend: false),
-                  child: Text(l10n.adminReinstateButton),
+                  loading: inFlight,
                 ),
               ),
             ],
@@ -289,31 +334,35 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
         Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               Expanded(
-                child: TextField(
-                  key: const Key('admin.ledger.participantIdField'),
+                child: AppTextField(
+                  fieldKey: const Key('admin.ledger.participantIdField'),
                   controller: _participantIdController,
-                  decoration: InputDecoration(
-                    labelText: l10n.adminParticipantIdLabel,
-                    border: const OutlineInputBorder(),
-                  ),
+                  label: l10n.adminParticipantIdLabel,
                   enabled: !inFlight,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              FilledButton(
-                key: const Key('admin.ledger.lookup'),
-                onPressed: inFlight
-                    ? null
-                    : () {
-                        final id = _participantIdController.text.trim();
-                        if (id.isEmpty) return;
-                        ref
-                            .read(adminLedgerLookupControllerProvider.notifier)
-                            .lookup(id);
-                      },
-                child: Text(l10n.adminLookUpButton),
+              SizedBox(
+                width: 120,
+                child: AppButton(
+                  key: const Key('admin.ledger.lookup'),
+                  label: l10n.adminLookUpButton,
+                  loading: inFlight,
+                  onPressed: inFlight
+                      ? null
+                      : () {
+                          final id = _participantIdController.text.trim();
+                          if (id.isEmpty) return;
+                          ref
+                              .read(
+                                adminLedgerLookupControllerProvider.notifier,
+                              )
+                              .lookup(id);
+                        },
+                ),
               ),
             ],
           ),
@@ -324,39 +373,66 @@ class _LedgerLookupTabState extends ConsumerState<_LedgerLookupTab> {
             child: CircularProgressIndicator(),
           ),
         if (state is AsyncError<ParticipantEntriesDto>)
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text(
-              ErrorPresenter.message(state.error as AppError),
+          Expanded(
+            child: AppErrorState(
               key: const Key('admin.ledger.error'),
-              style: TextStyle(color: tokens.error),
+              message: ErrorPresenter.message(state.error as AppError),
+              onRetry: () {
+                final id = _participantIdController.text.trim();
+                if (id.isEmpty) return;
+                ref
+                    .read(adminLedgerLookupControllerProvider.notifier)
+                    .lookup(id);
+              },
             ),
           ),
         if (state is AsyncData<ParticipantEntriesDto>)
           Expanded(
-            child: ListView.separated(
-              key: const Key('admin.ledger.list'),
-              itemCount: state.value.entries.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final entry = state.value.entries[index];
-                return ListTile(
-                  key: Key('admin.ledger.item.${entry.id}'),
-                  title: Text(
-                    entry.kind,
-                    key: Key('admin.ledger.kind.${entry.id}'),
+            child: state.value.entries.isEmpty
+                ? AppEmptyState(title: l10n.adminUsersEmptyResults)
+                : ListView.separated(
+                    key: const Key('admin.ledger.list'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                    ),
+                    itemCount: state.value.entries.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (context, index) {
+                      final entry = state.value.entries[index];
+                      return AppCard(
+                        key: Key('admin.ledger.item.${entry.id}'),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    entry.kind,
+                                    key: Key('admin.ledger.kind.${entry.id}'),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    entry.occurredAt,
+                                    key: Key(
+                                      'admin.ledger.occurredAt.${entry.id}',
+                                    ),
+                                    style: TextStyle(color: tokens.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '${entry.amount}',
+                              key: Key('admin.ledger.amount.${entry.id}'),
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  subtitle: Text(
-                    entry.occurredAt,
-                    key: Key('admin.ledger.occurredAt.${entry.id}'),
-                  ),
-                  trailing: Text(
-                    '${entry.amount}',
-                    key: Key('admin.ledger.amount.${entry.id}'),
-                  ),
-                );
-              },
-            ),
           ),
       ],
     );
@@ -521,14 +597,14 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
           const SizedBox(height: AppSpacing.md),
 
           // 6) الموعد
-          OutlinedButton(
+          AppButton(
             key: const Key('admin.fixtures.kickoffPicker'),
+            label: _kickoffLocal == null
+                ? l10n.adminPickKickoffButton
+                : _formatKickoff(_kickoffLocal!),
+            variant: AppButtonVariant.secondary,
+            icon: Icons.event_outlined,
             onPressed: inFlight ? null : _pickKickoff,
-            child: Text(
-              _kickoffLocal == null
-                  ? l10n.adminPickKickoffButton
-                  : _formatKickoff(_kickoffLocal!),
-            ),
           ),
           const SizedBox(height: AppSpacing.lg),
 
@@ -555,10 +631,11 @@ class _FixtureScheduleTabState extends ConsumerState<_FixtureScheduleTab> {
             ),
 
           // 7) زر واحد
-          FilledButton(
+          AppButton(
             key: const Key('admin.fixtures.addMatch'),
+            label: l10n.adminAddMatchButton,
+            loading: inFlight,
             onPressed: canSubmit ? () => _addMatch(nextDisplayOrder) : null,
-            child: Text(l10n.adminAddMatchButton),
           ),
         ],
       ),
@@ -998,25 +1075,22 @@ class _RoundAdministrationTabState
             ),
           if (_competitionId != null) const SizedBox(height: AppSpacing.md),
 
-          TextField(
-            key: const Key('admin.rounds.sequenceField'),
+          AppTextField(
+            fieldKey: const Key('admin.rounds.sequenceField'),
             controller: _sequenceController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminSequenceLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminSequenceLabel,
             enabled: !openInFlight,
           ),
           const SizedBox(height: AppSpacing.md),
-          OutlinedButton(
+          AppButton(
             key: const Key('admin.rounds.deadlinePicker'),
+            label: _deadlineLocal == null
+                ? l10n.adminPickDeadlineButton
+                : _formatInstant(_deadlineLocal!),
+            variant: AppButtonVariant.secondary,
+            icon: Icons.event_outlined,
             onPressed: openInFlight ? null : _pickDeadline,
-            child: Text(
-              _deadlineLocal == null
-                  ? l10n.adminPickDeadlineButton
-                  : _formatInstant(_deadlineLocal!),
-            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           if (openState is AsyncError<RoundDto>)
@@ -1039,10 +1113,11 @@ class _RoundAdministrationTabState
                 key: const Key('admin.rounds.open.result'),
               ),
             ),
-          FilledButton(
+          AppButton(
             key: const Key('admin.rounds.open'),
+            label: l10n.adminOpenRoundButton,
+            loading: openInFlight,
             onPressed: openInFlight || _seasonId == null ? null : _openRound,
-            child: Text(l10n.adminOpenRoundButton),
           ),
 
           const Divider(height: AppSpacing.x3l),
@@ -1146,12 +1221,28 @@ class _ExistingRoundsList extends ConsumerWidget {
         return Column(
           children: <Widget>[
             for (final RoundDto round in list)
-              ListTile(
-                key: Key('admin.rounds.existing.${round.id}'),
-                title: Text(
-                  l10n.adminRoundOptionLabel(round.sequence, round.status),
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: AppCard(
+                  key: Key('admin.rounds.existing.${round.id}'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.adminRoundOptionLabel(
+                          round.sequence,
+                          round.status,
+                        ),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        round.predictionDeadline,
+                        style: TextStyle(color: context.tokens.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
-                subtitle: Text(round.predictionDeadline),
               ),
           ],
         );
@@ -1213,35 +1304,26 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.fixtureIdField'),
+          AppTextField(
+            fieldKey: const Key('admin.scoring.fixtureIdField'),
             controller: _fixtureIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminFixtureIdLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminFixtureIdLabel,
             enabled: !resultInFlight,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.homeGoalsField'),
+          AppTextField(
+            fieldKey: const Key('admin.scoring.homeGoalsField'),
             controller: _homeGoalsController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminHomeGoalsLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminHomeGoalsLabel,
             enabled: !resultInFlight,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.awayGoalsField'),
+          AppTextField(
+            fieldKey: const Key('admin.scoring.awayGoalsField'),
             controller: _awayGoalsController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.adminAwayGoalsLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminAwayGoalsLabel,
             enabled: !resultInFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -1263,10 +1345,11 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
                 key: const Key('admin.scoring.result.result'),
               ),
             ),
-          FilledButton(
+          AppButton(
             key: const Key('admin.scoring.recordResult'),
+            label: l10n.adminRecordResultButton,
             onPressed: resultInFlight ? null : _recordResult,
-            child: Text(l10n.adminRecordResultButton),
+            loading: resultInFlight,
           ),
           const Divider(height: AppSpacing.x3l),
           Text(
@@ -1274,13 +1357,10 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('admin.scoring.roundIdField'),
+          AppTextField(
+            fieldKey: const Key('admin.scoring.roundIdField'),
             controller: _roundIdController,
-            decoration: InputDecoration(
-              labelText: l10n.adminRoundIdLabel,
-              border: const OutlineInputBorder(),
-            ),
+            label: l10n.adminRoundIdLabel,
             enabled: !scoreInFlight && !lookupInFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -1293,10 +1373,11 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
                 style: TextStyle(color: tokens.error),
               ),
             ),
-          FilledButton(
+          AppButton(
             key: const Key('admin.scoring.scoreRound'),
+            label: l10n.adminScoreRoundButton,
             onPressed: scoreInFlight ? null : _scoreRound,
-            child: Text(l10n.adminScoreRoundButton),
+            loading: scoreInFlight,
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
@@ -1313,32 +1394,52 @@ class _ResultsScoringTabState extends ConsumerState<_ResultsScoringTab> {
                 style: TextStyle(color: tokens.error),
               ),
             ),
-          OutlinedButton(
+          AppButton(
             key: const Key('admin.scoring.lookupScores'),
+            label: l10n.adminViewScoresButton,
+            variant: AppButtonVariant.secondary,
             onPressed: lookupInFlight ? null : _lookupScores,
-            child: Text(l10n.adminViewScoresButton),
+            loading: lookupInFlight,
           ),
           const SizedBox(height: AppSpacing.md),
           if (lookupState is AsyncData<RoundScoresDto>)
             for (final s in lookupState.value.scores)
-              ListTile(
-                key: Key(
-                  'admin.scoring.lookup.score.${lookupState.value.roundId}.${s.participantId}',
-                ),
-                title: Text(s.participantId),
-                trailing: Text(
-                  '${l10n.adminTotalPointsLabel}: ${s.totalPoints}',
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: AppCard(
+                  key: Key(
+                    'admin.scoring.lookup.score.${lookupState.value.roundId}.${s.participantId}',
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(child: Text(s.participantId)),
+                      Text('${l10n.adminTotalPointsLabel}: ${s.totalPoints}'),
+                    ],
+                  ),
                 ),
               )
           else if (scoreState is AsyncData<RoundScoresDto>)
             for (final s in scoreState.value.scores)
-              ListTile(
-                key: Key(
-                  'admin.scoring.score.score.${scoreState.value.roundId}.${s.participantId}',
-                ),
-                title: Text(s.participantId),
-                trailing: Text(
-                  '${l10n.adminTotalPointsLabel}: ${s.totalPoints}',
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: AppCard(
+                  key: Key(
+                    'admin.scoring.score.score.${scoreState.value.roundId}.${s.participantId}',
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(child: Text(s.participantId)),
+                      Text('${l10n.adminTotalPointsLabel}: ${s.totalPoints}'),
+                    ],
+                  ),
                 ),
               ),
           const Divider(height: AppSpacing.x3l),
@@ -1413,19 +1514,24 @@ class _RoundReportSection extends ConsumerWidget {
         Row(
           children: <Widget>[
             Expanded(
-              child: OutlinedButton(
+              child: AppButton(
                 key: const Key('admin.scoring.viewReport'),
+                label: l10n.adminViewRoundReportButton,
+                variant: AppButtonVariant.secondary,
                 onPressed: inFlight ? null : () => _load(ref),
-                child: Text(l10n.adminViewRoundReportButton),
+                loading: inFlight,
               ),
             ),
             if (reportState is AsyncData<List<RoundReportRow>> &&
                 reportState.value.isNotEmpty) ...<Widget>[
               const SizedBox(width: AppSpacing.md),
-              OutlinedButton(
-                key: const Key('admin.scoring.report.share'),
-                onPressed: () => _share(context, reportState.value),
-                child: Text(l10n.adminRoundReportShareButton),
+              Expanded(
+                child: AppButton(
+                  key: const Key('admin.scoring.report.share'),
+                  label: l10n.adminRoundReportShareButton,
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => _share(context, reportState.value),
+                ),
               ),
             ],
           ],
@@ -1433,7 +1539,7 @@ class _RoundReportSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.md),
         if (reportState is AsyncData<List<RoundReportRow>>)
           if (reportState.value.isEmpty)
-            Text(l10n.adminRoundReportEmpty)
+            AppEmptyState(title: l10n.adminRoundReportEmpty)
           else
             for (final row in reportState.value)
               _RoundReportRowCard(row: row, tokens: tokens, l10n: l10n),
@@ -1488,11 +1594,10 @@ class _RoundReportRowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      key: Key('admin.scoring.report.row.${row.participantId}'),
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AppCard(
+        key: Key('admin.scoring.report.row.${row.participantId}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[

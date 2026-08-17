@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/admin/admin_dashboard_screen.dart';
+import 'package:mobile/core/ui/ui.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/admin_harness.dart';
@@ -360,7 +361,7 @@ void main() {
       await tester.pumpAndSettle();
       await _goToTab(tester, 'admin.tab.fixtures');
 
-      FilledButton addButton() => tester.widget<FilledButton>(
+      AppButton addButton() => tester.widget<AppButton>(
         find.byKey(const Key('admin.fixtures.addMatch')),
       );
 
