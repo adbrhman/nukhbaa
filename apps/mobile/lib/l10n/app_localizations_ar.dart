@@ -494,6 +494,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRoundReportEmpty => 'لا يوجد مشاركون بهذه الجولة';
 
   @override
+  String get adminRoundReportSectionEmpty => 'لا يوجد تقرير لهذه الجولة بعد';
+
+  @override
   String get createGroupTitle => 'إنشاء مجموعة';
 
   @override

@@ -330,6 +330,7 @@
   "adminRoundReportShareButton": "Copy to share",
   "adminRoundReportCopiedMessage": "Copied — share it on WhatsApp",
   "adminRoundReportEmpty": "No participants in this round",
+  "adminRoundReportSectionEmpty": "No report for this round yet",
   "createGroupTitle": "Create Group",
   "groupNameLabel": "Group name",
   "createGroupButton": "Create",

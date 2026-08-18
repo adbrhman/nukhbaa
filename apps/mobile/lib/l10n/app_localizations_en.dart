@@ -488,6 +488,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRoundReportEmpty => 'No participants in this round';
 
   @override
+  String get adminRoundReportSectionEmpty => 'No report for this round yet';
+
+  @override
   String get createGroupTitle => 'Create Group';
 
   @override

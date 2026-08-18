@@ -930,6 +930,12 @@ abstract class AppLocalizations {
   /// **'No participants in this round'**
   String get adminRoundReportEmpty;
 
+  /// No description provided for @adminRoundReportSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No report for this round yet'**
+  String get adminRoundReportSectionEmpty;
+
   /// No description provided for @createGroupTitle.
   ///
   /// In en, this message translates to:

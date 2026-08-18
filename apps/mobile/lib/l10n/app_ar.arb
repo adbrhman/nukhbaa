@@ -137,6 +137,7 @@
   "adminRoundReportShareButton": "نسخ للمشاركة",
   "adminRoundReportCopiedMessage": "تم النسخ، شاركه عبر واتساب",
   "adminRoundReportEmpty": "لا يوجد مشاركون بهذه الجولة",
+  "adminRoundReportSectionEmpty": "لا يوجد تقرير لهذه الجولة بعد",
   "createGroupTitle": "إنشاء مجموعة",
   "groupNameLabel": "اسم المجموعة",
   "createGroupButton": "إنشاء",
