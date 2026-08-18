@@ -87,13 +87,13 @@ class _RoundAdministrationSectionState
                 enabled: !openInFlight,
               ),
               const SizedBox(height: AppSpacing.md),
-              AdminSecondaryButton(
+              AdminDateTimeField(
                 key: const Key('admin.rounds.deadlinePicker'),
-                label: _deadlineLocal == null
-                    ? l10n.adminPickDeadlineButton
-                    : _formatInstant(_deadlineLocal!),
-                icon: Icons.event_outlined,
-                onPressed: openInFlight ? null : _pickDeadline,
+                value: _deadlineLocal,
+                placeholder: l10n.adminPickDeadlineButton,
+                enabled: !openInFlight,
+                onChanged: (DateTime picked) =>
+                    setState(() => _deadlineLocal = picked),
               ),
               const SizedBox(height: AppSpacing.md),
               if (openState is AsyncError<RoundDto>)
@@ -146,33 +146,6 @@ class _RoundAdministrationSectionState
     _sequenceController.text = '$next';
   }
 
-  Future<void> _pickDeadline() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _deadlineLocal ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _deadlineLocal == null
-          ? TimeOfDay.fromDateTime(now)
-          : TimeOfDay.fromDateTime(_deadlineLocal!),
-    );
-    if (time == null) return;
-    setState(() {
-      _deadlineLocal = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
   void _openRound() {
     final seasonId = _seasonId;
     final sequence = int.tryParse(_sequenceController.text.trim());
@@ -185,12 +158,6 @@ class _RoundAdministrationSectionState
           sequence: sequence,
           predictionDeadline: deadline.toUtc().toIso8601String(),
         );
-  }
-
-  String _formatInstant(DateTime local) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
   }
 }
 

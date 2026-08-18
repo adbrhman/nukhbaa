@@ -163,13 +163,13 @@ class _FixtureScheduleSectionState
                 onChanged: () => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.md),
-              AdminSecondaryButton(
+              AdminDateTimeField(
                 key: const Key('admin.fixtures.kickoffPicker'),
-                label: _kickoffLocal == null
-                    ? l10n.adminPickKickoffButton
-                    : _formatKickoff(_kickoffLocal!),
-                icon: Icons.event_outlined,
-                onPressed: inFlight ? null : _pickKickoff,
+                value: _kickoffLocal,
+                placeholder: l10n.adminPickKickoffButton,
+                enabled: !inFlight,
+                onChanged: (DateTime picked) =>
+                    setState(() => _kickoffLocal = picked),
               ),
               const SizedBox(height: AppSpacing.md),
               if (state is AsyncError<AddMatchResult>)
@@ -201,33 +201,6 @@ class _FixtureScheduleSectionState
     );
   }
 
-  Future<void> _pickKickoff() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _kickoffLocal ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _kickoffLocal == null
-          ? TimeOfDay.fromDateTime(now)
-          : TimeOfDay.fromDateTime(_kickoffLocal!),
-    );
-    if (time == null) return;
-    setState(() {
-      _kickoffLocal = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
   void _addMatch(int displayOrder) {
     final roundId = _roundId;
     final sequence = _roundSequence;
@@ -251,12 +224,6 @@ class _FixtureScheduleSectionState
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
         );
-  }
-
-  String _formatKickoff(DateTime local) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
   }
 }
 

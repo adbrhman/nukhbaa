@@ -339,3 +339,59 @@ class AdminListRow extends StatelessWidget {
     );
   }
 }
+
+
+/// زر موحّد لاختيار تاريخ ووقت (يفتح showDatePicker ثم showTimePicker)،
+/// ويعرض القيمة المنسّقة أو نص بديل قبل الاختيار.
+class AdminDateTimeField extends StatelessWidget {
+  const AdminDateTimeField({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    required this.placeholder,
+    this.enabled = true,
+    this.icon = Icons.event_outlined,
+  });
+
+  final DateTime? value;
+  final ValueChanged<DateTime> onChanged;
+  final String placeholder;
+  final bool enabled;
+  final IconData icon;
+
+  static String format(DateTime local) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime? date = await showDatePicker(
+      context: context,
+      initialDate: value ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (date == null || !context.mounted) return;
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: value == null
+          ? TimeOfDay.fromDateTime(now)
+          : TimeOfDay.fromDateTime(value!),
+    );
+    if (time == null) return;
+    onChanged(
+      DateTime(date.year, date.month, date.day, time.hour, time.minute),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AdminSecondaryButton(
+      label: value == null ? placeholder : format(value!),
+      icon: icon,
+      onPressed: enabled ? () => _pick(context) : null,
+    );
+  }
+}
