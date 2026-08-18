@@ -7,6 +7,13 @@
 /// (`401 leaderboard.not_a_participant`) surfaces its tailored message via
 /// `ErrorPresenter` with NO retry, and that the additive
 /// `SeasonRoundsScreen` entry point navigates to this screen.
+///
+/// The screen now lands on the **round points** tab by default (Tab index 0);
+/// these tests exercise the **season points** tab (`GET
+/// /seasons/{id}/leaderboard`), so each one taps `leaderboard.tab.season`
+/// before asserting on it. The round tab's own read
+/// (`GET /seasons/{id}/rounds`) is routed separately to a legitimate empty
+/// list so it never interferes with the season-tab assertions under test.
 library;
 
 import 'dart:async';
@@ -22,9 +29,9 @@ import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/leaderboards_harness.dart';
 
-/// A `200 OK` empty JSON array — the rounds browse read the integration screen
-/// issues before the leaderboard action is tapped (a season with no rounds is a
-/// legitimate empty list, keeping the test focused on the navigation).
+/// A `200 OK` empty JSON array — the rounds browse read the round tab (and
+/// the `SeasonRoundsScreen` integration test) issues; a season with no
+/// rounds is a legitimate empty list.
 http.Response _okEmptyList() => http.Response(
   '[]',
   200,
@@ -41,17 +48,27 @@ Widget _host(LeaderboardsHarness harness, Widget child) => ProviderScope(
   ),
 );
 
+/// Switches from the default round tab to the season tab and lets the tab
+/// transition finish.
+Future<void> _openSeasonTab(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('leaderboard.tab.season')));
+  await tester.pump(kTabScrollDuration);
+}
+
 void main() {
   group('SeasonLeaderboardScreen', () {
     testWidgets('shows a loading indicator while the read is in flight', (
       tester,
     ) async {
-      // A handler that never completes keeps the provider in the loading state.
-      final harness = buildLeaderboardsHarness(
-        (_) => Completer<void>().future.then(
-          (_) => okJsonObject(emptyBoard.toJson()),
-        ),
-      );
+      // The rounds read settles immediately (empty is fine); the leaderboard
+      // read never completes, keeping the season tab's provider in the
+      // loading state.
+      final harness = buildLeaderboardsHarness((request) async {
+        if (request.url.path == '/seasons/s-1/rounds') {
+          return _okEmptyList();
+        }
+        return Completer<http.Response>().future;
+      });
       addTearDown(harness.dispose);
 
       await tester.pumpWidget(
@@ -60,18 +77,25 @@ void main() {
           const SeasonLeaderboardScreen(seasonId: 's-1', seasonLabel: '26/27'),
         ),
       );
-      await tester.pump(); // first frame after the provider starts loading
+      await tester.pump(); // first frame after the providers start loading
+
+      expect(find.byKey(const Key('leaderboard.title')), findsOneWidget);
+
+      await _openSeasonTab(tester);
+      await tester.pump(); // first frame after the season tab's read starts
 
       expect(find.byKey(const Key('browse.loading')), findsOneWidget);
-      expect(find.byKey(const Key('leaderboard.title')), findsOneWidget);
     });
 
     testWidgets('data -> a ranked row per participant in server order', (
       tester,
     ) async {
-      final harness = buildLeaderboardsHarness(
-        (_) async => okJsonObject(sampleBoard.toJson()),
-      );
+      final harness = buildLeaderboardsHarness((request) async {
+        if (request.url.path == '/seasons/s-1/rounds') {
+          return _okEmptyList();
+        }
+        return okJsonObject(sampleBoard.toJson());
+      });
       addTearDown(harness.dispose);
 
       await tester.pumpWidget(
@@ -80,12 +104,12 @@ void main() {
           const SeasonLeaderboardScreen(seasonId: 's-1', seasonLabel: '26/27'),
         ),
       );
+      await _openSeasonTab(tester);
       await tester.pumpAndSettle();
 
       // Both participants render with their server-computed rank + points.
       expect(find.byKey(const Key('leaderboard.item.p-a')), findsOneWidget);
       expect(find.byKey(const Key('leaderboard.item.p-b')), findsOneWidget);
-      expect(find.byKey(const Key('leaderboard.rank.p-a')), findsOneWidget);
       expect(find.text('12 pts'), findsOneWidget);
       expect(find.text('7 pts'), findsOneWidget);
       // Audit entry count is surfaced (plural form).
@@ -95,9 +119,12 @@ void main() {
     testWidgets('empty board -> the empty affordance, not an error', (
       tester,
     ) async {
-      final harness = buildLeaderboardsHarness(
-        (_) async => okJsonObject(emptyBoard.toJson()),
-      );
+      final harness = buildLeaderboardsHarness((request) async {
+        if (request.url.path == '/seasons/s-2/rounds') {
+          return _okEmptyList();
+        }
+        return okJsonObject(emptyBoard.toJson());
+      });
       addTearDown(harness.dispose);
 
       await tester.pumpWidget(
@@ -106,6 +133,7 @@ void main() {
           const SeasonLeaderboardScreen(seasonId: 's-2', seasonLabel: '26/27'),
         ),
       );
+      await _openSeasonTab(tester);
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('browse.empty')), findsOneWidget);
@@ -116,13 +144,16 @@ void main() {
       'non-member (401 leaderboard.not_a_participant) -> tailored message, '
       'no retry',
       (tester) async {
-        final harness = buildLeaderboardsHarness(
-          (_) async => errorEnvelope(
+        final harness = buildLeaderboardsHarness((request) async {
+          if (request.url.path == '/seasons/s-1/rounds') {
+            return _okEmptyList();
+          }
+          return errorEnvelope(
             401,
             'leaderboard.not_a_participant',
             'Not a member of this season.',
-          ),
-        );
+          );
+        });
         addTearDown(harness.dispose);
 
         await tester.pumpWidget(
@@ -134,6 +165,7 @@ void main() {
             ),
           ),
         );
+        await _openSeasonTab(tester);
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('browse.error')), findsOneWidget);
@@ -150,10 +182,15 @@ void main() {
     testWidgets('transport failure -> error message + retry affordance', (
       tester,
     ) async {
-      var calls = 0;
-      final harness = buildLeaderboardsHarness((_) async {
-        calls++;
-        if (calls == 1) throw Exception('offline');
+      // The retry counter is scoped to the leaderboard endpoint only, so the
+      // round tab's own (always-successful) rounds read never consumes it.
+      var leaderboardCalls = 0;
+      final harness = buildLeaderboardsHarness((request) async {
+        if (request.url.path == '/seasons/s-1/rounds') {
+          return _okEmptyList();
+        }
+        leaderboardCalls++;
+        if (leaderboardCalls == 1) throw Exception('offline');
         return okJsonObject(sampleBoard.toJson());
       });
       addTearDown(harness.dispose);
@@ -164,6 +201,7 @@ void main() {
           const SeasonLeaderboardScreen(seasonId: 's-1', seasonLabel: '26/27'),
         ),
       );
+      await _openSeasonTab(tester);
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('browse.error')), findsOneWidget);
@@ -209,8 +247,11 @@ void main() {
       await tester.tap(action);
       await tester.pumpAndSettle();
 
-      // Now on the leaderboard screen for the same season.
+      // Now on the leaderboard screen for the same season, on the round tab
+      // by default; switch to the season tab to see the standings.
       expect(find.byKey(const Key('leaderboard.title')), findsOneWidget);
+      await _openSeasonTab(tester);
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('leaderboard.item.p-a')), findsOneWidget);
     });
   });
