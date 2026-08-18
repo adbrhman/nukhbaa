@@ -19,6 +19,7 @@
 /// (Axiom 5).
 library;
 
+import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:domain/domain.dart';
 
@@ -89,5 +90,18 @@ RoundFixtureCardDto roundFixtureCardToDto(RoundFixtureCard card) {
     homeTeam: card.homeTeam,
     awayTeam: card.awayTeam,
     kickoffAt: card.kickoffAt?.toIso8601String(),
+  );
+}
+
+/// Projects a [MatchFeedEntry] onto its wire shape [MatchFeedItemDto]
+/// (`GET /feed/matches`, the server-side aggregate read). Reuses
+/// [roundFixtureCardToDto]'s nested projection verbatim so a fixture's shape
+/// never drifts between the single-round and aggregate reads.
+MatchFeedItemDto matchFeedEntryToDto(MatchFeedEntry entry) {
+  return MatchFeedItemDto(
+    competitionName: entry.competitionName,
+    roundId: entry.roundId.value,
+    rulesetVersion: entry.rulesetVersion,
+    fixture: roundFixtureCardToDto(entry.fixture),
   );
 }

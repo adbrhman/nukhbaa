@@ -119,6 +119,21 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /feed/matches` — the unified matches feed: every currently-open
+  /// round's fixture(s) across every public competition, flattened into one
+  /// ordered list, in a single request (server-side aggregate read; query
+  /// intent `ListMatchesFeed`, replacing the former client-side
+  /// competition -> season -> round -> fixtures drill-down).
+  ///
+  /// No open rounds anywhere — or none with any linked fixture — is a
+  /// legitimate `Ok(<empty list>)` (no existence oracle).
+  Future<Result<List<MatchFeedItemDto>>> getMatchesFeed() {
+    return _transport.getList<MatchFeedItemDto>(
+      '/feed/matches',
+      parseElement: MatchFeedItemDto.fromJson,
+    );
+  }
+
   /// `POST /seasons/{id}/rounds` — opens a new round in the season, freezing
   /// the ruleset (command intent `OpenRound`). Admin-only, enforced inside the
   /// server use-case. [predictionDeadline] must be an ISO 8601 timestamp
@@ -195,6 +210,18 @@ final class CompetitionApi {
     return _transport.getObject<RoundScoresDto>(
       '/rounds/$roundId/scores',
       parse: RoundScoresDto.fromJson,
+    );
+  }
+
+  /// `GET /rounds/{id}/report` — every participant's correct/incorrect
+  /// fixture-grade counts and total points for a **scored** round (Task 5).
+  /// Same gates as [getRoundScores]: a not-yet-scored round is refused
+  /// `409 scoring.round_not_scored`; a non-participant is refused
+  /// `401 scoring.not_a_participant` (server-enforced).
+  Future<Result<RoundReportDto>> getRoundReport(String roundId) {
+    return _transport.getObject<RoundReportDto>(
+      '/rounds/$roundId/report',
+      parse: RoundReportDto.fromJson,
     );
   }
 }

@@ -164,6 +164,148 @@ final class SeasonLeaderboardDto {
   }
 }
 
+/// The wire shape of one participant's line on a round leaderboard (read
+/// projection of the domain `RoundLeaderboardEntry`) — the ranked counterpart
+/// of `RoundScoreDto` for the same round.
+///
+/// Names the participant by id only and carries the standard-competition
+/// [rank] ("1224") and the [totalPoints] Scoring already computed for that
+/// round (Axiom 5: the SAME points as `RoundScoreDto.totalPoints`, never
+/// recomputed here). Every field is server-produced; none is client-writable.
+/// Versioned.
+final class RoundLeaderboardEntryDto {
+  /// Creates a round-leaderboard-entry DTO.
+  const RoundLeaderboardEntryDto({
+    required this.rank,
+    required this.participantId,
+    required this.totalPoints,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory RoundLeaderboardEntryDto.fromJson(Map<String, Object?> json) {
+    return RoundLeaderboardEntryDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      rank: json['rank']! as int,
+      participantId: json['participant_id']! as String,
+      totalPoints: json['total_points']! as int,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The participant's standard-competition rank (1-based; tied totals share a
+  /// rank, the next distinct total skips by the number tied).
+  final int rank;
+
+  /// The owning participant id (UUID string).
+  final String participantId;
+
+  /// The round's already-computed total for this participant (echoed from
+  /// `RoundScoreDto.totalPoints`).
+  final int totalPoints;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'rank': rank,
+    'participant_id': participantId,
+    'total_points': totalPoints,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundLeaderboardEntryDto &&
+      other.rank == rank &&
+      other.participantId == participantId &&
+      other.totalPoints == totalPoints &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(rank, participantId, totalPoints, schemaVersion);
+}
+
+/// The wire shape of a round's ranked standings (read projection of the domain
+/// `RoundLeaderboard`) — the response of `GET /rounds/{id}/leaderboard`.
+///
+/// Names the round by id and carries the [entries] in the server-defined
+/// display order (points descending, then participant id ascending). An
+/// **empty** [entries] list is a legitimate result: a scored round nobody
+/// predicted. Visibility gating (round scored + season membership) lives in
+/// the use-case, not this shape. Versioned.
+final class RoundLeaderboardDto {
+  /// Creates a round-leaderboard DTO.
+  const RoundLeaderboardDto({
+    required this.roundId,
+    required this.entries,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory RoundLeaderboardDto.fromJson(Map<String, Object?> json) {
+    final raw = json['entries']! as List<Object?>;
+    return RoundLeaderboardDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      roundId: json['round_id']! as String,
+      entries: raw
+          .map(
+            (e) => RoundLeaderboardEntryDto.fromJson(
+              (e! as Map<Object?, Object?>).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The round these standings are for (UUID string).
+  final String roundId;
+
+  /// The ranked entries, in the server-defined display order.
+  final List<RoundLeaderboardEntryDto> entries;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'round_id': roundId,
+    'entries': [for (final e in entries) e.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundLeaderboardDto &&
+      other.roundId == roundId &&
+      _listEquals(other.entries, entries) &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(roundId, Object.hashAll(entries), schemaVersion);
+
+  static bool _listEquals(
+    List<RoundLeaderboardEntryDto> a,
+    List<RoundLeaderboardEntryDto> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}
+
 /// The wire shape of one line on the platform-wide, all-time Hall of Fame
 /// (read projection of the domain `HallOfFameEntry`).
 ///

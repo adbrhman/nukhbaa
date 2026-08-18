@@ -84,6 +84,12 @@
       }
     }
   },
+  "roundLeaderboardTab": "Round points",
+  "seasonLeaderboardTab": "Season points",
+  "selectRoundLabel": "Select round",
+  "roundLeaderboardNoScoredRounds": "This season has no scored rounds yet.",
+  "roundLeaderboardEmpty": "Nobody predicted this round.",
+  "roundKingLabel": "Round king",
   "groupLeaderboardEmpty": "No members of this group have joined the season yet.",
   "competitions": "Competitions",
   "competitionsEmpty": "There are no competitions to browse yet.",
@@ -360,6 +366,9 @@
   "adminSelectRoundLabel": "Select round",
   "adminNoSeasonsHint": "This competition has no seasons.",
   "adminNoRoundsHint": "This season has no rounds. Open a round first in the Rounds tab.",
+  "adminSelectFixtureLabel": "Select fixture",
+  "adminNoFixturesHint": "This round has no fixtures.",
+  "adminFixtureIncompleteDataLabel": "Fixture with incomplete data",
   "adminRoundOptionLabel": "Round {sequence} — {status}",
   "@adminRoundOptionLabel": {
     "placeholders": {

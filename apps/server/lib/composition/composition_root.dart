@@ -34,6 +34,7 @@ final class CompositionRoot {
     required this.listCompetitionSeasons,
     required this.listSeasonRounds,
     required this.browseRoundFixtures,
+    required this.listMatchesFeed,
     required this.submitPrediction,
     required this.getMyPrediction,
     required this.listRoundPredictions,
@@ -43,9 +44,11 @@ final class CompositionRoot {
     required this.correctFixtureSchedule,
     required this.scoreRound,
     required this.getRoundScores,
+    required this.getRoundReport,
     required this.postRoundToLedger,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
+    required this.getRoundLeaderboard,
     required this.getHallOfFame,
     required this.createGroup,
     required this.getGroup,
@@ -115,6 +118,7 @@ final class CompositionRoot {
     ListCompetitionSeasons? listCompetitionSeasons,
     ListSeasonRounds? listSeasonRounds,
     BrowseRoundFixtures? browseRoundFixtures,
+    ListMatchesFeed? listMatchesFeed,
     SubmitPrediction? submitPrediction,
     GetMyPrediction? getMyPrediction,
     ListRoundPredictions? listRoundPredictions,
@@ -124,9 +128,11 @@ final class CompositionRoot {
     CorrectFixtureSchedule? correctFixtureSchedule,
     ScoreRound? scoreRound,
     GetRoundScores? getRoundScores,
+    GetRoundReport? getRoundReport,
     PostRoundToLedger? postRoundToLedger,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
+    GetRoundLeaderboard? getRoundLeaderboard,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
     GetGroup? getGroup,
@@ -169,6 +175,7 @@ final class CompositionRoot {
        listSeasonRounds = listSeasonRounds ?? _absentListSeasonRounds(),
        browseRoundFixtures =
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
+       listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        getMyPrediction = getMyPrediction ?? _absentGetMyPrediction(),
        listRoundPredictions =
@@ -182,11 +189,14 @@ final class CompositionRoot {
            correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
        scoreRound = scoreRound ?? _absentScoreRound(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
+       getRoundReport = getRoundReport ?? _absentGetRoundReport(),
        postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
        readParticipantLedger =
            readParticipantLedger ?? _absentReadParticipantLedger(),
        getSeasonLeaderboard =
            getSeasonLeaderboard ?? _absentGetSeasonLeaderboard(),
+       getRoundLeaderboard =
+           getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        createGroup = createGroup ?? _absentCreateGroup(),
        getGroup = getGroup ?? _absentGetGroup(),
@@ -304,6 +314,11 @@ final class CompositionRoot {
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
       );
 
+  static ListMatchesFeed _absentListMatchesFeed() => ListMatchesFeed(
+    competitionRepository: _unwiredCompetitionRepository,
+    fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+  );
+
   /// A single throwing repository backing every "absent" prediction use-case,
   /// so a test that reaches an unwired prediction slice fails loudly instead of
   /// touching a real database.
@@ -371,6 +386,15 @@ final class CompositionRoot {
     scoreRepository: _unwiredScoreRepository,
   );
 
+  /// Backs the "absent" [GetRoundReport]: throws so a test that reaches an
+  /// unwired report slice fails loudly instead of touching a real database.
+  /// Shares the same throwing collaborators as the "absent" [GetRoundScores]
+  /// (it gates and reads identically).
+  static GetRoundReport _absentGetRoundReport() => GetRoundReport(
+    competitionRepository: _unwiredCompetitionRepository,
+    scoreRepository: _unwiredScoreRepository,
+  );
+
   /// Throwing ledger repositories backing every "absent" ledger use-case, so a
   /// test that reaches an unwired ledger slice fails loudly instead of touching
   /// a real database.
@@ -404,6 +428,16 @@ final class CompositionRoot {
       GetSeasonLeaderboard(
         leaderboardRepository: _unwiredLeaderboardRepository,
         competitionRepository: _unwiredCompetitionRepository,
+      );
+
+  /// Backs the "absent" [GetRoundLeaderboard]: throws so a test that reaches
+  /// an unwired round-leaderboard slice fails loudly instead of touching a
+  /// real database. Shares the same throwing collaborators as the "absent"
+  /// [GetRoundScores] (it gates and reads identically).
+  static GetRoundLeaderboard _absentGetRoundLeaderboard() =>
+      GetRoundLeaderboard(
+        competitionRepository: _unwiredCompetitionRepository,
+        scoreRepository: _unwiredScoreRepository,
       );
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
@@ -635,6 +669,13 @@ final class CompositionRoot {
   /// internal `PredictionRepository.listRoundFixtures`.
   final BrowseRoundFixtures browseRoundFixtures;
 
+  /// The unified matches feed: every open round's fixture(s) across every
+  /// public competition, flattened into one ordered list, in three batched
+  /// database reads (server-side aggregate read replacing the client-side
+  /// competition -> season -> round -> fixtures drill-down; any authenticated
+  /// user). Read-only, no side effect.
+  final ListMatchesFeed listMatchesFeed;
+
   /// Submits (or idempotently amends) the caller's prediction for a round.
   final SubmitPrediction submitPrediction;
 
@@ -664,6 +705,10 @@ final class CompositionRoot {
   /// Reads every participant's score for a scored round (visibility-gated).
   final GetRoundScores getRoundScores;
 
+  /// Reads a round's aggregated report (correct/incorrect counts + points)
+  /// — same visibility gate as [getRoundScores] (Task 5).
+  final GetRoundReport getRoundReport;
+
   /// Posts a scored round to the append-only Ledger (admin-only command; the
   /// point amounts are copied server-side from the frozen scores — Axioms 2/5;
   /// idempotent on the natural dedupe key — Axiom 4).
@@ -677,6 +722,11 @@ final class CompositionRoot {
   /// over the append-only ledger; season-membership gated, never a points
   /// write — Axioms 1/5).
   final GetSeasonLeaderboard getSeasonLeaderboard;
+
+  /// Reads a round's ranked standings — its round leaderboard (a read-side
+  /// projection over that round's already-computed scores; gated identically
+  /// to [getRoundScores] — a scored round, season-membership only).
+  final GetRoundLeaderboard getRoundLeaderboard;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -991,6 +1041,10 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
+      listMatchesFeed: ListMatchesFeed(
+        competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+      ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
@@ -1028,6 +1082,10 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
       ),
+      getRoundReport: GetRoundReport(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
+      ),
       postRoundToLedger: PostRoundToLedger(
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
@@ -1042,6 +1100,10 @@ final class CompositionRoot {
       getSeasonLeaderboard: GetSeasonLeaderboard(
         leaderboardRepository: leaderboardRepository,
         competitionRepository: competitionRepository,
+      ),
+      getRoundLeaderboard: GetRoundLeaderboard(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
       ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
@@ -1237,6 +1299,14 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   @override
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId) =>
       _unwired();
+
+  @override
+  Future<Result<List<OpenRoundFeedEntry>>> listOpenRoundsFeed() => _unwired();
+
+  @override
+  Future<Result<List<RoundFixture>>> listFixturesForRounds(
+    List<RoundId> roundIds,
+  ) => _unwired();
 }
 
 /// Backs an "absent" [OpenRound]'s ruleset provider.

@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 
 /// Dark palette — Slate neutrals + a single calm Emerald accent.
 abstract final class AppColors {
-  static const Color background = Color(0xFF0B0F17);
+  static const Color background = Color(0xFF0B0F14);
   static const Color backgroundElevated = Color(0xFF11161F);
-  static const Color surface = Color(0xFF151B26);
+  static const Color surface = Color(0xFF151B22);
   static const Color surfaceElevated = Color(0xFF1C2330);
   static const Color surfaceHigh = Color(0xFF272F3D);
 
-  static const Color primary = Color(0xFF10B981);
-  static const Color primaryDark = Color(0xFF059669);
-  static const Color primaryLight = Color(0xFF34D399);
+  static const Color primary = Color(0xFF00A868);
+  static const Color primaryDark = Color(0xFF00794C);
+  static const Color primaryLight = Color(0xFF4FD1A0);
 
-  static const Color gold = Color(0xFFE0B341);
-  static const Color goldDark = Color(0xFFB88C22);
+  static const Color gold = Color(0xFFFFB020);
+  static const Color goldDark = Color(0xFFB77F17);
   static const Color silver = Color(0xFFC3CBD6);
   static const Color onSilver = Color(0xFF1B2430);
   static const Color bronze = Color(0xFFCD8A4E);

@@ -300,3 +300,145 @@ final class RoundScoresDto {
     return true;
   }
 }
+
+/// One participant's row in the round-report read (Task 5): aggregated
+/// correct/incorrect fixture-grade counts plus the total points, grouped
+/// server-side over the same scored data as [RoundScoreDto] (an element of
+/// the response of `GET /rounds/{id}/report`).
+final class RoundReportRowDto {
+  /// Creates a round-report row DTO.
+  const RoundReportRowDto({
+    required this.participantId,
+    required this.correctCount,
+    required this.incorrectCount,
+    required this.totalPoints,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory RoundReportRowDto.fromJson(Map<String, Object?> json) {
+    return RoundReportRowDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      participantId: json['participant_id']! as String,
+      correctCount: json['correct_count']! as int,
+      incorrectCount: json['incorrect_count']! as int,
+      totalPoints: json['total_points']! as int,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning participant id (UUID string).
+  final String participantId;
+
+  /// Fixtures graded exact-scoreline or correct-outcome.
+  final int correctCount;
+
+  /// Fixtures graded incorrect.
+  final int incorrectCount;
+
+  /// The same derived total the round score carries.
+  final int totalPoints;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'participant_id': participantId,
+    'correct_count': correctCount,
+    'incorrect_count': incorrectCount,
+    'total_points': totalPoints,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundReportRowDto &&
+      other.participantId == participantId &&
+      other.correctCount == correctCount &&
+      other.incorrectCount == incorrectCount &&
+      other.totalPoints == totalPoints &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    participantId,
+    correctCount,
+    incorrectCount,
+    totalPoints,
+    schemaVersion,
+  );
+}
+
+/// The wire shape of the whole-round report read (the response of
+/// `GET /rounds/{id}/report`): the round id and every participant's
+/// [RoundReportRowDto]. A pure read projection — visibility gating lives in
+/// the use-case, not this shape.
+final class RoundReportDto {
+  /// Creates a round-report DTO.
+  const RoundReportDto({
+    required this.roundId,
+    required this.rows,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory RoundReportDto.fromJson(Map<String, Object?> json) {
+    final rawRows = json['rows']! as List<Object?>;
+    return RoundReportDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      roundId: json['round_id']! as String,
+      rows: rawRows
+          .map(
+            (e) => RoundReportRowDto.fromJson(
+              (e! as Map<Object?, Object?>).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The round this report is for (UUID string).
+  final String roundId;
+
+  /// Every participant's aggregated row for the round.
+  final List<RoundReportRowDto> rows;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'round_id': roundId,
+    'rows': [for (final r in rows) r.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is RoundReportDto &&
+      other.roundId == roundId &&
+      _listEquals(other.rows, rows) &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(roundId, Object.hashAll(rows), schemaVersion);
+
+  static bool _listEquals(
+    List<RoundReportRowDto> a,
+    List<RoundReportRowDto> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}

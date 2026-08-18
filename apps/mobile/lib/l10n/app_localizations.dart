@@ -392,6 +392,42 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}'**
   String pointsAbbreviated(int count);
 
+  /// No description provided for @roundLeaderboardTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Round points'**
+  String get roundLeaderboardTab;
+
+  /// No description provided for @seasonLeaderboardTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Season points'**
+  String get seasonLeaderboardTab;
+
+  /// No description provided for @selectRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select round'**
+  String get selectRoundLabel;
+
+  /// No description provided for @roundLeaderboardNoScoredRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'This season has no scored rounds yet.'**
+  String get roundLeaderboardNoScoredRounds;
+
+  /// No description provided for @roundLeaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody predicted this round.'**
+  String get roundLeaderboardEmpty;
+
+  /// No description provided for @roundKingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Round king'**
+  String get roundKingLabel;
+
   /// No description provided for @groupLeaderboardEmpty.
   ///
   /// In en, this message translates to:
@@ -1061,6 +1097,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This season has no rounds. Open a round first in the Rounds tab.'**
   String get adminNoRoundsHint;
+
+  /// No description provided for @adminSelectFixtureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select fixture'**
+  String get adminSelectFixtureLabel;
+
+  /// No description provided for @adminNoFixturesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This round has no fixtures.'**
+  String get adminNoFixturesHint;
+
+  /// No description provided for @adminFixtureIncompleteDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture with incomplete data'**
+  String get adminFixtureIncompleteDataLabel;
 
   /// No description provided for @adminRoundOptionLabel.
   ///

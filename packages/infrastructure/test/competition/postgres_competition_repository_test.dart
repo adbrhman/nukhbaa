@@ -464,4 +464,127 @@ void main() {
       expect(err.code, 'db.query_failed');
     });
   });
+
+  group('listOpenRoundsFeed', () {
+    test('maps every row to an OpenRoundFeedEntry', () async {
+      final conn = _rows([
+        {
+          'competition_id': _competitionId,
+          'competition_name': 'Premier League',
+          'round_id': _roundId,
+          'ruleset_version': 3,
+        },
+      ]);
+      final repo = PostgresCompetitionRepository(conn);
+
+      final result = await repo.listOpenRoundsFeed();
+
+      final list = (result as Ok<List<OpenRoundFeedEntry>>).value;
+      expect(list, hasLength(1));
+      expect(list.single.competitionId.value, _competitionId);
+      expect(list.single.competitionName, 'Premier League');
+      expect(list.single.roundId.value, _roundId);
+      expect(list.single.rulesetVersion, 3);
+      // No parameters to bind — the query filters entirely on literal
+      // status/visibility predicates.
+      expect(conn.lastParameters, isEmpty);
+    });
+
+    test('no open rounds anywhere is Ok(<empty list>)', () async {
+      final repo = PostgresCompetitionRepository(_rows([]));
+
+      final result = await repo.listOpenRoundsFeed();
+
+      expect((result as Ok<List<OpenRoundFeedEntry>>).value, isEmpty);
+    });
+
+    test('a corrupt competition_name maps to transient row_corrupt', () async {
+      final conn = _rows([
+        {
+          'competition_id': _competitionId,
+          'competition_name': 42, // not a string
+          'round_id': _roundId,
+          'ruleset_version': 1,
+        },
+      ]);
+      final repo = PostgresCompetitionRepository(conn);
+
+      final result = await repo.listOpenRoundsFeed();
+
+      final err = (result as Err<List<OpenRoundFeedEntry>>).error;
+      expect(err.kind, ErrorKind.transient);
+      expect(err.code, 'competition.row_corrupt');
+    });
+
+    test('a transient query error is propagated verbatim', () async {
+      final repo = PostgresCompetitionRepository(_fails());
+
+      final result = await repo.listOpenRoundsFeed();
+
+      final err = (result as Err<List<OpenRoundFeedEntry>>).error;
+      expect(err.kind, ErrorKind.transient);
+      expect(err.code, 'db.query_failed');
+    });
+  });
+
+  group('listFixturesForRounds (batch, mirrors findByFixtures)', () {
+    test('binds the round ids as a single array parameter', () async {
+      final conn = _rows([
+        {
+          'round_id': _roundId,
+          'fixture_id': _competitionId,
+          'display_order': 0,
+        },
+      ]);
+      final repo = PostgresCompetitionRepository(conn);
+      final otherRoundId = '99999999-9999-9999-9999-999999999999';
+
+      final result = await repo.listFixturesForRounds([
+        _rId,
+        RoundId(otherRoundId),
+      ]);
+
+      expect(result, isA<Ok<List<RoundFixture>>>());
+      expect(conn.lastParameters!['round_ids'], [_roundId, otherRoundId]);
+      expect(conn.calls, 1);
+    });
+
+    test('an empty roundIds list short-circuits without a query', () async {
+      final conn = _rows([]);
+      final repo = PostgresCompetitionRepository(conn);
+
+      final result = await repo.listFixturesForRounds(const []);
+
+      expect((result as Ok<List<RoundFixture>>).value, isEmpty);
+      expect(conn.calls, 0);
+    });
+
+    test('maps every row to a RoundFixture', () async {
+      final conn = _rows([
+        {
+          'round_id': _roundId,
+          'fixture_id': _competitionId,
+          'display_order': 2,
+        },
+      ]);
+      final repo = PostgresCompetitionRepository(conn);
+
+      final result = await repo.listFixturesForRounds([_rId]);
+
+      final list = (result as Ok<List<RoundFixture>>).value;
+      expect(list.single.roundId.value, _roundId);
+      expect(list.single.fixture.value, _competitionId);
+      expect(list.single.displayOrder, 2);
+    });
+
+    test('a transient query error is propagated verbatim', () async {
+      final repo = PostgresCompetitionRepository(_fails());
+
+      final result = await repo.listFixturesForRounds([_rId]);
+
+      final err = (result as Err<List<RoundFixture>>).error;
+      expect(err.kind, ErrorKind.transient);
+      expect(err.code, 'db.query_failed');
+    });
+  });
 }

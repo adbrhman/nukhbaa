@@ -1,27 +1,22 @@
 /// The unified **Matches** feed — every currently-open round's fixture(s)
 /// across every competition, flattened into one ordered list.
 ///
-/// ## Why this is a client-side read composition, not a new server endpoint
-/// The gap this closes is purely presentational: the admin can already open
-/// any number of rounds across any competitions (`OpenRound` ->
-/// `RegisterFixtureSchedule` -> `LinkFixtureToRound`, unchanged); what was
-/// missing was showing all of it in one connected screen instead of the
-/// competition -> season -> round -> fixtures drill-down. Composing several
-/// existing reads client-side has direct precedent in this app (see the
-/// Admin's `round_report.dart`, which merges `GET /rounds/{id}/scores` with
-/// `GET /admin/rounds/{id}/predictions`), so this follows the same pattern
-/// rather than adding a server aggregate query. No Supabase/schema change is
-/// involved — every call below is an existing, ratified `CompetitionApi`
-/// read.
+/// ## Server-side aggregate read (2026-08-17)
+/// Consumes `GET /feed/matches` directly — a single request. Previously this
+/// provider composed the feed client-side (`GET /competitions` ->
+/// `.../seasons` -> `.../rounds` -> per-open-round
+/// `GET /rounds/{id}/fixtures`), which degenerated into dozens of HTTP
+/// round-trips — most of them empty — once a season accumulated many
+/// opened-but-unlinked rounds (measured: ~50 requests, >1 minute on a real
+/// mobile network for one screen). The server now performs the same
+/// aggregation in three batched database reads (`ListMatchesFeed`
+/// use-case); this provider only shapes the response into [MatchFeedItem].
 ///
 /// ## Ordering
-/// Competitions are walked in the order `GET /competitions` returns them
-/// (server/admin order), then each competition's seasons (label order) and
-/// rounds (sequence order), then each open round's fixtures (display
-/// order). Because every card renders its own competition name + kickoff
-/// time (see `matches_feed_screen.dart`), this produces the same visual
-/// grouping ("Premier League" block, then "Saudi league" block, ...) the
-/// admin described, with no separate section widget needed.
+/// Server-determined: competition name order, then each competition's open
+/// rounds in sequence order, then each round's fixtures in display order —
+/// unchanged from the prior client-side composition, so the rendered grouping
+/// ("Premier League" block, then "Saudi league" block, ...) is identical.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -32,12 +27,6 @@ import 'package:shared/shared.dart';
 import '../../core/providers.dart';
 
 part 'matches_feed_providers.g.dart';
-
-/// The stable wire status token for an open round — matches
-/// `RoundStatus.open.wireValue` on the server (Database/Application ADRs);
-/// duplicated as a constant here rather than imported since `apps/mobile`
-/// depends on `contracts`, not `domain`.
-const String openRoundStatus = 'open';
 
 /// One card in the unified feed: a single open round's fixture, enriched
 /// with its owning competition's display name (for the card's league
@@ -50,6 +39,14 @@ final class MatchFeedItem {
     required this.rulesetVersion,
     required this.fixture,
   });
+
+  /// Builds a feed item from its wire shape.
+  factory MatchFeedItem.fromDto(MatchFeedItemDto dto) => MatchFeedItem(
+    competitionName: dto.competitionName,
+    roundId: dto.roundId,
+    rulesetVersion: dto.rulesetVersion,
+    fixture: dto.fixture,
+  );
 
   /// The owning competition's display name (e.g. "الدوري الإنجليزي الممتاز").
   final String competitionName;
@@ -71,56 +68,14 @@ T _unwrap<T>(Result<T> result) => switch (result) {
   Err<T>(:final error) => throw error,
 };
 
-/// Walks `GET /competitions` -> `.../seasons` -> `.../rounds` -> every
-/// **open** round's `GET /rounds/{id}/fixtures`, flattened into one ordered
-/// list. An empty result (no competitions, or none with an open round) is a
+/// Fetches `GET /feed/matches` and shapes it into [MatchFeedItem]s. An empty
+/// result (no open rounds anywhere, or none with a linked fixture) is a
 /// legitimate `Ok(<empty>)` — the screen shows an "no open matches"
 /// affordance, never an error, mirroring every other browse read in this
 /// app.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<MatchFeedItem>> matchesFeed(Ref ref) async {
   final CompetitionApi api = ref.watch(competitionApiProvider);
-  final List<CompetitionDto> competitions = _unwrap(
-    await api.listCompetitions(),
-  );
-
-  // Fan out each level in parallel (Future.wait) instead of a serial
-  // await-in-loop waterfall; order is preserved via index alignment, so
-  // the resulting flattening matches the original nested-loop ordering.
-  final List<List<SeasonDto>> seasonsByCompetition = await Future.wait(
-    competitions.map((c) => api.listCompetitionSeasons(c.id).then(_unwrap)),
-  );
-
-  final List<(CompetitionDto, SeasonDto)> compSeasonPairs =
-      <(CompetitionDto, SeasonDto)>[
-        for (var i = 0; i < competitions.length; i++)
-          for (final SeasonDto season in seasonsByCompetition[i])
-            (competitions[i], season),
-      ];
-
-  final List<List<RoundDto>> roundsByPair = await Future.wait(
-    compSeasonPairs.map((p) => api.listSeasonRounds(p.$2.id).then(_unwrap)),
-  );
-
-  final List<(CompetitionDto, RoundDto)> openRounds =
-      <(CompetitionDto, RoundDto)>[
-        for (var i = 0; i < compSeasonPairs.length; i++)
-          for (final RoundDto round in roundsByPair[i])
-            if (round.status == openRoundStatus) (compSeasonPairs[i].$1, round),
-      ];
-
-  final List<List<RoundFixtureCardDto>> fixturesByRound = await Future.wait(
-    openRounds.map((p) => api.browseRoundFixtures(p.$2.id).then(_unwrap)),
-  );
-
-  return <MatchFeedItem>[
-    for (var i = 0; i < openRounds.length; i++)
-      for (final RoundFixtureCardDto fixture in fixturesByRound[i])
-        MatchFeedItem(
-          competitionName: openRounds[i].$1.name,
-          roundId: openRounds[i].$2.id,
-          rulesetVersion: openRounds[i].$2.rulesetVersion,
-          fixture: fixture,
-        ),
-  ];
+  final List<MatchFeedItemDto> feed = _unwrap(await api.getMatchesFeed());
+  return [for (final dto in feed) MatchFeedItem.fromDto(dto)];
 }

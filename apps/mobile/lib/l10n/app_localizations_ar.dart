@@ -195,6 +195,25 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get roundLeaderboardTab => 'نقاط الجولة';
+
+  @override
+  String get seasonLeaderboardTab => 'نقاط الموسم';
+
+  @override
+  String get selectRoundLabel => 'اختر الجولة';
+
+  @override
+  String get roundLeaderboardNoScoredRounds =>
+      'لا توجد جولات محتسبة بعد في هذا الموسم.';
+
+  @override
+  String get roundLeaderboardEmpty => 'لم يشارك أحد في هذه الجولة.';
+
+  @override
+  String get roundKingLabel => 'ملك الجولة';
+
+  @override
   String get groupLeaderboardEmpty =>
       'لم ينضم أي عضو من هذه المجموعة للموسم بعد.';
 
@@ -561,6 +580,15 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adminNoRoundsHint =>
       'لا توجد جولات لهذا الموسم. افتح جولة أولاً من تبويب الجولات.';
+
+  @override
+  String get adminSelectFixtureLabel => 'اختر المباراة';
+
+  @override
+  String get adminNoFixturesHint => 'لا توجد مباريات في هذه الجولة.';
+
+  @override
+  String get adminFixtureIncompleteDataLabel => 'مباراة غير مكتملة البيانات';
 
   @override
   String adminRoundOptionLabel(int sequence, String status) {

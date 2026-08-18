@@ -3,7 +3,7 @@ library;
 import 'package:flutter/material.dart';
 
 abstract final class AppTypography {
-  static const String fontFamily = 'Cairo';
+  static const String fontFamily = 'IBMPlexSansArabic';
 
   static const TextTheme textTheme = TextTheme(
     displayLarge: TextStyle(

@@ -187,6 +187,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get roundLeaderboardTab => 'Round points';
+
+  @override
+  String get seasonLeaderboardTab => 'Season points';
+
+  @override
+  String get selectRoundLabel => 'Select round';
+
+  @override
+  String get roundLeaderboardNoScoredRounds =>
+      'This season has no scored rounds yet.';
+
+  @override
+  String get roundLeaderboardEmpty => 'Nobody predicted this round.';
+
+  @override
+  String get roundKingLabel => 'Round king';
+
+  @override
   String get groupLeaderboardEmpty =>
       'No members of this group have joined the season yet.';
 
@@ -556,6 +575,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminNoRoundsHint =>
       'This season has no rounds. Open a round first in the Rounds tab.';
+
+  @override
+  String get adminSelectFixtureLabel => 'Select fixture';
+
+  @override
+  String get adminNoFixturesHint => 'This round has no fixtures.';
+
+  @override
+  String get adminFixtureIncompleteDataLabel => 'Fixture with incomplete data';
 
   @override
   String adminRoundOptionLabel(int sequence, String status) {

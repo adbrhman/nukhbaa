@@ -7,12 +7,14 @@
 library;
 
 import 'package:contracts/contracts.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/design/app_tokens.dart';
 import '../competition/competition_providers.dart';
 import '../competition/round_status_label.dart';
 import 'match_card.dart';
@@ -36,10 +38,10 @@ class PredictionScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final round = ref.watch(roundDetailProvider(roundId));
     return Scaffold(
-      backgroundColor: MatchCardTokens.bgPage,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: MatchCardTokens.bgPage,
-        foregroundColor: MatchCardTokens.textPrimary,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         title: Text(l10n.predictionTitle, key: const Key('prediction.title')),
       ),
@@ -96,7 +98,7 @@ class _RoundHeader extends StatelessWidget {
       key: const Key('prediction.roundHeader'),
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      color: const Color(0xFF141414),
+      color: context.tokens.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -230,7 +232,7 @@ class _FormError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.error_outline, size: 48, color: Color(0xFFE57373)),
+            Icon(Icons.error_outline, size: 48, color: context.tokens.error),
             const SizedBox(height: 12),
             Text(
               ErrorPresenter.message(appError),
@@ -396,7 +398,7 @@ class _PredictionEditorState extends ConsumerState<_PredictionEditor> {
                           : l10n.predictionIncompleteHint,
                       key: const Key('prediction.incompleteHint.text'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFFE57373)),
+                      style: TextStyle(color: context.tokens.error),
                     ),
                   ),
                 if (mine.value != null)
@@ -497,8 +499,8 @@ class _SubmitButton extends StatelessWidget {
       child: FilledButton(
         key: const Key('prediction.submit'),
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF12A150),
-          disabledBackgroundColor: const Color(0xFF1F1F22),
+          backgroundColor: context.tokens.primary,
+          disabledBackgroundColor: context.tokens.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -538,7 +540,7 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isError ? const Color(0x33E57373) : const Color(0x2612A150);
-    final fg = isError ? const Color(0xFFE57373) : const Color(0xFF4ADE80);
+    final fg = isError ? context.tokens.error : context.tokens.primaryLight;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),

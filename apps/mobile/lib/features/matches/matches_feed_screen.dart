@@ -15,9 +15,11 @@
 library;
 
 import 'package:contracts/contracts.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/design/app_tokens.dart';
 
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
@@ -37,10 +39,10 @@ class MatchesFeedScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final feed = ref.watch(matchesFeedProvider);
     return Scaffold(
-      backgroundColor: MatchCardTokens.bgPage,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: MatchCardTokens.bgPage,
-        foregroundColor: MatchCardTokens.textPrimary,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         title: Text(l10n.matchesTitle, key: const Key('matches.title')),
       ),
@@ -118,7 +120,7 @@ class _FeedError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.error_outline, size: 48, color: Color(0xFFE57373)),
+            Icon(Icons.error_outline, size: 48, color: context.tokens.error),
             const SizedBox(height: 12),
             Text(
               ErrorPresenter.message(appError),
@@ -309,8 +311,8 @@ class _RoundMatchGroupState extends ConsumerState<_RoundMatchGroup> {
             child: FilledButton(
               key: Key('matches.submit.${widget.roundId}'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF12A150),
-                disabledBackgroundColor: const Color(0xFF1F1F22),
+                backgroundColor: context.tokens.primary,
+                disabledBackgroundColor: context.tokens.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -362,7 +364,7 @@ class _InlineBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isError ? const Color(0x33E57373) : const Color(0x2612A150);
-    final fg = isError ? const Color(0xFFE57373) : const Color(0xFF4ADE80);
+    final fg = isError ? context.tokens.error : context.tokens.primaryLight;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),

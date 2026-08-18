@@ -45,3 +45,27 @@ Map<String, Object?> roundScoresToJson(
     scores: [for (final score in scores) roundScoreToDto(score)],
   ).toJson();
 }
+
+/// Projects one [RoundReportEntry] onto its wire shape [RoundReportRowDto]
+/// (Task 5). A pure server-computed read value, same integrity boundary as
+/// [roundScoreToDto].
+RoundReportRowDto roundReportEntryToDto(RoundReportEntry entry) {
+  return RoundReportRowDto(
+    participantId: entry.participantId.value,
+    correctCount: entry.correctCount,
+    incorrectCount: entry.incorrectCount,
+    totalPoints: entry.totalPoints,
+  );
+}
+
+/// Shapes every participant's [RoundReportEntry] for a round into the
+/// whole-round report response [RoundReportDto].
+Map<String, Object?> roundReportToJson(
+  String roundId,
+  List<RoundReportEntry> entries,
+) {
+  return RoundReportDto(
+    roundId: roundId,
+    rows: [for (final e in entries) roundReportEntryToDto(e)],
+  ).toJson();
+}
