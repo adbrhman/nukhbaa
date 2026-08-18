@@ -171,7 +171,7 @@ final class SubmitPrediction {
     }
     final seasonRounds = (seasonRoundsResult as Ok<List<Round>>).value;
     if (!isRoundPredictable(round, seasonRounds)) {
-      return Result.err(
+      return const Result.err(
         AppError.invariant(
           'prediction.round_out_of_sequence',
           'This round cannot be predicted yet — finish predicting the '
