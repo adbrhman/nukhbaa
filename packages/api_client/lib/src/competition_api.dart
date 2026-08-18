@@ -87,6 +87,21 @@ final class CompetitionApi {
     );
   }
 
+  /// `POST /seasons/{id}/participants` — enrols the calling user into the
+  /// season (command intent `JoinCompetition`; API ADR §2). Any authenticated
+  /// user may join (Axiom 1, social-first); the enrolled user is taken from
+  /// the verified token, never sent by the client.
+  ///
+  /// Idempotent: a repeated join returns the existing enrolment (`200`)
+  /// rather than erroring.
+  Future<Result<ParticipantDto>> joinCompetition(String seasonId) {
+    return _transport.postObject<ParticipantDto>(
+      '/seasons/$seasonId/participants',
+      body: const {},
+      parse: ParticipantDto.fromJson,
+    );
+  }
+
   /// `GET /rounds/{id}` — a single round (status + deadline + ruleset version).
   ///
   /// A missing round is `Err(invariant, code: competition.round_not_found)`

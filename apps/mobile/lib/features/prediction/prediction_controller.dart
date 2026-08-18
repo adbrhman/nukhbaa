@@ -26,6 +26,15 @@
 /// — this controller does not re-implement them; it surfaces their typed
 /// failures.
 ///
+/// ## Auto-join on first prediction (Axiom 1, social-first)
+/// A user may predict without an explicit prior "join" step: if the server
+/// refuses the submit with `prediction.not_a_participant`, this controller
+/// transparently calls `CompetitionApi.joinCompetition` for the round's season
+/// (resolved via the already-cached `roundDetailProvider`), then retries the
+/// SAME submit exactly once. The retry uses the identical [fixtureScores] the
+/// user already entered — nothing is lost or re-typed. If the join itself
+/// fails, that error is surfaced instead (it is the more actionable failure).
+///
 /// ## Success invalidates the read
 /// On a `200` the controller moves to [SubmissionSucceeded] carrying the stored
 /// [PredictionDto], and invalidates `myPredictionProvider(roundId)` so any
@@ -36,10 +45,10 @@
 ///
 /// ## Failure keeps the form editable
 /// Any `Err` (a `400` incomplete/malformed forecast → `validation`; a `409`
-/// locked round / not-a-participant → `invariant`/`authorization`; a network/
-/// `503` → `transient`) becomes [SubmissionFailed] carrying the typed
-/// [AppError]. The screen renders it via `ErrorPresenter` and stays editable so
-/// the user can correct and retry; the controller never clears the user's input.
+/// locked round → `invariant`; a network/`503` → `transient`) becomes
+/// [SubmissionFailed] carrying the typed [AppError]. The screen renders it via
+/// `ErrorPresenter` and stays editable so the user can correct and retry; the
+/// controller never clears the user's input.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -48,6 +57,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
+import '../competition/competition_providers.dart';
 import 'prediction_providers.dart';
 import 'prediction_submission.dart';
 
@@ -63,6 +73,11 @@ part 'prediction_controller.g.dart';
 /// as the server's typed error, not re-derived here.
 const String predictionEmptySubmissionCode = 'prediction.empty_submission';
 
+/// The stable server code meaning "the caller has not joined this round's
+/// season yet". Exposed as a constant so the auto-join retry below and any
+/// test reference the exact same token the server produces.
+const String predictionNotAParticipantCode = 'prediction.not_a_participant';
+
 /// Owns and mutates the [SubmissionState] for the round identified by [roundId].
 ///
 /// A `family` notifier (one instance per round): the submit lifecycle of one
@@ -73,6 +88,7 @@ const String predictionEmptySubmissionCode = 'prediction.empty_submission';
 @riverpod
 class PredictionController extends _$PredictionController {
   PredictionApi get _api => ref.read(predictionApiProvider);
+  CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
 
   @override
   SubmissionState build(String roundId) => const SubmissionIdle();
@@ -80,8 +96,8 @@ class PredictionController extends _$PredictionController {
   /// Submits (or idempotently amends) the caller's prediction for [roundId] with
   /// the collected [fixtureScores].
   ///
-  /// Transitions `→ InFlight` for the duration of the single
-  /// `POST /rounds/{id}/predictions` call, then `→ Succeeded(prediction)` on a
+  /// Transitions `→ InFlight` for the duration of the call (including a possible
+  /// auto-join + retry, see class doc), then `→ Succeeded(prediction)` on a
   /// `200` (also invalidating `myPredictionProvider(roundId)` so the read
   /// refreshes) or `→ Failed(error)` on any typed failure. A second call while a
   /// submit is already [SubmissionInFlight] is ignored (the screen also disables
@@ -106,10 +122,32 @@ class PredictionController extends _$PredictionController {
 
     state = const SubmissionInFlight();
 
-    final Result<PredictionDto> result = await _api.submitPrediction(
+    Result<PredictionDto> result = await _api.submitPrediction(
       roundId: roundId,
       fixtureScores: fixtureScores,
     );
+
+    // Auto-join on first prediction (Axiom 1, social-first): the caller has
+    // never joined this round's season. Join, then retry the SAME submit
+    // exactly once with the identical fixtureScores.
+    if (result case Err<PredictionDto>(
+      :final error,
+    ) when error.code == predictionNotAParticipantCode) {
+      final seasonId = await _resolveSeasonId();
+      if (seasonId == null) {
+        state = SubmissionFailed(error);
+        return;
+      }
+      final joinResult = await _competitionApi.joinCompetition(seasonId);
+      if (joinResult is Err<ParticipantDto>) {
+        state = SubmissionFailed(joinResult.error);
+        return;
+      }
+      result = await _api.submitPrediction(
+        roundId: roundId,
+        fixtureScores: fixtureScores,
+      );
+    }
 
     state = switch (result) {
       Ok<PredictionDto>(:final value) => SubmissionSucceeded(value),
@@ -120,6 +158,18 @@ class PredictionController extends _$PredictionController {
     // any "already submitted" surface reflects the new/amended prediction.
     if (state is SubmissionSucceeded) {
       ref.invalidate(myPredictionProvider(roundId));
+    }
+  }
+
+  /// Resolves the season id owning [roundId] via the already-cached
+  /// `roundDetailProvider`, or `null` if the round itself cannot be read (in
+  /// which case the original submit error is surfaced instead).
+  Future<String?> _resolveSeasonId() async {
+    try {
+      final round = await ref.read(roundDetailProvider(roundId).future);
+      return round.seasonId;
+    } on Object {
+      return null;
     }
   }
 
