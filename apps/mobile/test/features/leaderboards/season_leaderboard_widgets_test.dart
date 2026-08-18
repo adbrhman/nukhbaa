@@ -52,7 +52,8 @@ Widget _host(LeaderboardsHarness harness, Widget child) => ProviderScope(
 /// transition finish.
 Future<void> _openSeasonTab(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('leaderboard.tab.season')));
-  await tester.pump(kTabScrollDuration);
+  await tester.pump(); // start the tab-switch animation
+  await tester.pump(kTabScrollDuration); // finish it
 }
 
 void main() {
