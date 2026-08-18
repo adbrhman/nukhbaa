@@ -137,15 +137,13 @@ class _LedgerLookupSectionState extends ConsumerState<LedgerLookupSection> {
                                   ? '+${entry.amount}'
                                   : '${entry.amount}',
                               key: Key('admin.ledger.amount.${entry.id}'),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
+                              style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(
                                     color: entry.amount > 0
                                         ? tokens.primary
                                         : entry.amount < 0
-                                            ? tokens.error
-                                            : tokens.textMuted,
+                                        ? tokens.error
+                                        : tokens.textMuted,
                                     fontWeight: FontWeight.w700,
                                   ),
                             ),
