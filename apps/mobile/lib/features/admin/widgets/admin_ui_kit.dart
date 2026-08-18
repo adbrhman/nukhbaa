@@ -142,7 +142,10 @@ class AdminPrimaryButton extends StatelessWidget {
           ? SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: t.onPrimary),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: t.onPrimary,
+              ),
             )
           : Row(
               mainAxisSize: MainAxisSize.min,
@@ -188,7 +191,10 @@ class AdminSecondaryButton extends StatelessWidget {
           ? SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: t.primary),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: t.primary,
+              ),
             )
           : Row(
               mainAxisSize: MainAxisSize.min,
@@ -224,7 +230,10 @@ class AdminErrorBanner extends StatelessWidget {
           Icon(Icons.error_outline_rounded, color: t.error, size: 18),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(message, style: context.text.bodySmall?.copyWith(color: t.error)),
+            child: Text(
+              message,
+              style: context.text.bodySmall?.copyWith(color: t.error),
+            ),
           ),
         ],
       ),
@@ -251,7 +260,10 @@ class AdminSuccessBanner extends StatelessWidget {
           Icon(Icons.check_circle_outline_rounded, color: t.primary, size: 18),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(message, style: context.text.bodySmall?.copyWith(color: t.textPrimary)),
+            child: Text(
+              message,
+              style: context.text.bodySmall?.copyWith(color: t.textPrimary),
+            ),
           ),
         ],
       ),
@@ -274,7 +286,10 @@ class AdminEmptyState extends StatelessWidget {
         children: [
           Icon(icon, size: 32, color: t.textMuted),
           const SizedBox(height: AppSpacing.sm),
-          Text(title, style: context.text.bodyMedium?.copyWith(color: t.textMuted)),
+          Text(
+            title,
+            style: context.text.bodyMedium?.copyWith(color: t.textMuted),
+          ),
         ],
       ),
     );
@@ -299,7 +314,10 @@ class AdminListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: [
           Icon(leadingIcon, color: leadingColor, size: 20),

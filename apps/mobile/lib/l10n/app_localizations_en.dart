@@ -410,6 +410,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRoundsTab => 'Rounds';
 
   @override
+  String get adminResultsScoringTab => 'Results & Scoring';
+
+  @override
   String get adminOpenRoundSectionTitle => 'Open a new round';
 
   @override

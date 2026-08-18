@@ -774,6 +774,12 @@ abstract class AppLocalizations {
   /// **'Rounds'**
   String get adminRoundsTab;
 
+  /// No description provided for @adminResultsScoringTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Results & Scoring'**
+  String get adminResultsScoringTab;
+
   /// No description provided for @adminOpenRoundSectionTitle.
   ///
   /// In en, this message translates to:

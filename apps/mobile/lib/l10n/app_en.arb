@@ -304,6 +304,7 @@
   "adminRegisterFixtureButton": "Register fixture",
   "adminCorrectFixtureButton": "Correct fixture",
   "adminRoundsTab": "Rounds",
+  "adminResultsScoringTab": "Results & Scoring",
   "adminOpenRoundSectionTitle": "Open a new round",
   "adminSeasonIdLabel": "Season ID",
   "adminSequenceLabel": "Round sequence",

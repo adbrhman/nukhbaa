@@ -416,6 +416,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRoundsTab => 'الجولات';
 
   @override
+  String get adminResultsScoringTab => 'النتائج والاحتساب';
+
+  @override
   String get adminOpenRoundSectionTitle => 'فتح جولة جديدة';
 
   @override

@@ -112,6 +112,7 @@
   "adminRegisterFixtureButton": "تسجيل مباراة جديدة",
   "adminCorrectFixtureButton": "تصحيح المباراة",
   "adminRoundsTab": "الجولات",
+  "adminResultsScoringTab": "النتائج والاحتساب",
   "adminOpenRoundSectionTitle": "فتح جولة جديدة",
   "adminSeasonIdLabel": "معرّف الموسم",
   "adminSequenceLabel": "رقم الجولة",

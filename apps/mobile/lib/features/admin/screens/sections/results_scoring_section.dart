@@ -21,8 +21,7 @@ class ResultsScoringSection extends ConsumerStatefulWidget {
       _ResultsScoringSectionState();
 }
 
-class _ResultsScoringSectionState
-    extends ConsumerState<ResultsScoringSection> {
+class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   final _fixtureId = TextEditingController();
   final _homeGoals = TextEditingController();
   final _awayGoals = TextEditingController();
@@ -117,8 +116,9 @@ class _ResultsScoringSectionState
               const SizedBox(height: AppSpacing.md),
               if (resultState is AsyncError<FixtureResultDto>)
                 AdminErrorBanner(
-                  message:
-                      ErrorPresenter.message(resultState.error as AppError),
+                  message: ErrorPresenter.message(
+                    resultState.error as AppError,
+                  ),
                 ),
               if (resultState is AsyncData<FixtureResultDto>)
                 AdminSuccessBanner(
@@ -153,8 +153,7 @@ class _ResultsScoringSectionState
               const SizedBox(height: AppSpacing.md),
               if (scoreState is AsyncError<RoundScoresDto>)
                 AdminErrorBanner(
-                  message:
-                      ErrorPresenter.message(scoreState.error as AppError),
+                  message: ErrorPresenter.message(scoreState.error as AppError),
                 ),
               if (scoreState is AsyncError<RoundScoresDto>)
                 const SizedBox(height: AppSpacing.sm),
@@ -188,45 +187,49 @@ class _ResultsScoringSectionState
           AdminErrorBanner(
             message: ErrorPresenter.message(lookupState.error as AppError),
           ),
-        Builder(builder: (context) {
-          final scores = lookupState is AsyncData<RoundScoresDto>
-              ? lookupState.value.scores
-              : (scoreState is AsyncData<RoundScoresDto> ? scoreState.value.scores : null);
-          if (scores == null) return const SizedBox.shrink();
-          if (scores.isEmpty) {
+        Builder(
+          builder: (context) {
+            final scores = lookupState is AsyncData<RoundScoresDto>
+                ? lookupState.value.scores
+                : (scoreState is AsyncData<RoundScoresDto>
+                      ? scoreState.value.scores
+                      : null);
+            if (scores == null) return const SizedBox.shrink();
+            if (scores.isEmpty) {
+              return AdminCard(
+                child: AdminEmptyState(
+                  icon: Icons.leaderboard_rounded,
+                  title: 'لا توجد نتائج بعد',
+                ),
+              );
+            }
             return AdminCard(
-              child: AdminEmptyState(
-                icon: Icons.leaderboard_rounded,
-                title: 'لا توجد نتائج بعد',
-              ),
-            );
-          }
-          return AdminCard(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Column(
-              children: [
-                for (var i = 0; i < scores.length; i++)
-                  AdminListRow(
-                    leadingIcon: Icons.emoji_events_rounded,
-                    leadingColor: switch (i) {
-                      0 => t.gold,
-                      1 => t.silver,
-                      2 => t.bronze,
-                      _ => t.primary,
-                    },
-                    title: scores[i].participantId,
-                    trailing: Text(
-                      '${l10n.adminTotalPointsLabel}: ${scores[i].totalPoints}',
-                      style: context.text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: t.primary,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Column(
+                children: [
+                  for (var i = 0; i < scores.length; i++)
+                    AdminListRow(
+                      leadingIcon: Icons.emoji_events_rounded,
+                      leadingColor: switch (i) {
+                        0 => t.gold,
+                        1 => t.silver,
+                        2 => t.bronze,
+                        _ => t.primary,
+                      },
+                      title: scores[i].participantId,
+                      trailing: Text(
+                        '${l10n.adminTotalPointsLabel}: ${scores[i].totalPoints}',
+                        style: context.text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: t.primary,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          },
+        ),
         const SizedBox(height: AppSpacing.xl),
 
         AdminSectionHeader(
@@ -239,8 +242,9 @@ class _ResultsScoringSectionState
             children: [
               if (reportState is AsyncError<List<RoundReportRow>>)
                 AdminErrorBanner(
-                  message:
-                      ErrorPresenter.message(reportState.error as AppError),
+                  message: ErrorPresenter.message(
+                    reportState.error as AppError,
+                  ),
                 ),
               if (reportState is AsyncError<List<RoundReportRow>>)
                 const SizedBox(height: AppSpacing.md),
@@ -256,25 +260,27 @@ class _ResultsScoringSectionState
         const SizedBox(height: AppSpacing.md),
 
         if (reportState is AsyncData<List<RoundReportRow>>)
-          Builder(builder: (context) {
-            final rows = reportState.value;
-            if (rows.isEmpty) {
-              return AdminCard(
-                child: AdminEmptyState(
-                  icon: Icons.table_chart_rounded,
-                  title: l10n.adminRoundReportSectionEmpty,
-                ),
-              );
-            }
-            return Column(
-              children: [
-                for (final row in rows) ...[
-                  _RoundReportRowCard(row: row),
-                  const SizedBox(height: AppSpacing.sm),
+          Builder(
+            builder: (context) {
+              final rows = reportState.value;
+              if (rows.isEmpty) {
+                return AdminCard(
+                  child: AdminEmptyState(
+                    icon: Icons.table_chart_rounded,
+                    title: l10n.adminRoundReportSectionEmpty,
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final row in rows) ...[
+                    _RoundReportRowCard(row: row),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
                 ],
-              ],
-            );
-          }),
+              );
+            },
+          ),
       ],
     );
   }
@@ -372,8 +378,9 @@ class _ReportCellChip extends StatelessWidget {
       _ => (t.textMuted, cell.grade),
     };
 
-    final scoreText =
-        cell.hasRawScore ? '${cell.homeGoals}-${cell.awayGoals}' : '—';
+    final scoreText = cell.hasRawScore
+        ? '${cell.homeGoals}-${cell.awayGoals}'
+        : '—';
 
     return Container(
       padding: const EdgeInsets.symmetric(
