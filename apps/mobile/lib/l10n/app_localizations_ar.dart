@@ -308,7 +308,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get predictionNotYetPredictableMessage =>
-      'You can predict this round once the earlier round is locked';
+      'يمكنك التوقع لهذه الجولة بعد إغلاق الجولة السابقة';
 
   @override
   String get genericErrorMessage => 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.';

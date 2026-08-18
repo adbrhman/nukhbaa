@@ -78,6 +78,7 @@
   "fixtureVsTitle": "{home} ضد {away}",
   "predictionTitle": "التوقّع",
   "predictionClosedMessage": "هذه الجولة {status}. التوقعات مغلقة.",
+  "predictionNotYetPredictableMessage": "يمكنك التوقع لهذه الجولة بعد إغلاق الجولة السابقة",
   "genericErrorMessage": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
   "tryAgainButton": "حاول مرة أخرى",
   "predictionAlreadySubmitted": "لقد أرسلت توقعاً لهذه الجولة مسبقاً. التعديل والإرسال مرة أخرى سيحدّثه.",
