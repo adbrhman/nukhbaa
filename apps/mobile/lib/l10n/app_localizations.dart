@@ -810,6 +810,12 @@ abstract class AppLocalizations {
   /// **'Rounds'**
   String get adminRoundsTab;
 
+  /// No description provided for @adminResultsScoringTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Results & Scoring'**
+  String get adminResultsScoringTab;
+
   /// No description provided for @adminOpenRoundSectionTitle.
   ///
   /// In en, this message translates to:
@@ -965,6 +971,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No participants in this round'**
   String get adminRoundReportEmpty;
+
+  /// No description provided for @adminRoundReportSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No report for this round yet'**
+  String get adminRoundReportSectionEmpty;
 
   /// No description provided for @createGroupTitle.
   ///

@@ -11,7 +11,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
 import '../../l10n/app_localizations.dart';
-import '../admin/admin_dashboard_screen.dart';
+import '../admin/admin_hub_screen.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/join_group_screen.dart';
 import '../hall_of_fame/hall_of_fame_screen.dart';
@@ -193,7 +193,7 @@ class AccountScreen extends ConsumerWidget {
                       variant: AppButtonVariant.secondary,
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const AdminDashboardScreen(),
+                          builder: (_) => const AdminHubScreen(),
                         ),
                       ),
                     ),

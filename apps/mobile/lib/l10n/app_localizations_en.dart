@@ -429,6 +429,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRoundsTab => 'Rounds';
 
   @override
+  String get adminResultsScoringTab => 'Results & Scoring';
+
+  @override
   String get adminOpenRoundSectionTitle => 'Open a new round';
 
   @override
@@ -505,6 +508,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminRoundReportEmpty => 'No participants in this round';
+
+  @override
+  String get adminRoundReportSectionEmpty => 'No report for this round yet';
 
   @override
   String get createGroupTitle => 'Create Group';

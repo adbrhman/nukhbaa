@@ -327,7 +327,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get predictionNotYetPredictableMessage =>
-      'You can predict this round once the earlier round is locked';
+      'يمكنك التوقع لهذه الجولة بعد إغلاق الجولة السابقة';
 
   @override
   String get genericErrorMessage => 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.';
@@ -435,6 +435,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRoundsTab => 'الجولات';
 
   @override
+  String get adminResultsScoringTab => 'النتائج والاحتساب';
+
+  @override
   String get adminOpenRoundSectionTitle => 'فتح جولة جديدة';
 
   @override
@@ -511,6 +514,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminRoundReportEmpty => 'لا يوجد مشاركون بهذه الجولة';
+
+  @override
+  String get adminRoundReportSectionEmpty => 'لا يوجد تقرير لهذه الجولة بعد';
 
   @override
   String get createGroupTitle => 'إنشاء مجموعة';
