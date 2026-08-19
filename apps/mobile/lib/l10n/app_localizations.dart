@@ -924,6 +924,18 @@ abstract class AppLocalizations {
   /// **'Score round'**
   String get adminScoreRoundButton;
 
+  /// No description provided for @adminPostToLedgerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Post to ledger'**
+  String get adminPostToLedgerButton;
+
+  /// No description provided for @adminPostToLedgerSuccessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted, new entries'**
+  String get adminPostToLedgerSuccessLabel;
+
   /// No description provided for @adminRoundScoresSectionTitle.
   ///
   /// In en, this message translates to:

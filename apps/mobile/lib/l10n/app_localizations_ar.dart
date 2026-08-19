@@ -492,6 +492,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminScoreRoundButton => 'احتساب الجولة';
 
   @override
+  String get adminPostToLedgerButton => 'ترحيل النقاط للسجل';
+
+  @override
+  String get adminPostToLedgerSuccessLabel => 'تم الترحيل، عدد القيود الجديدة';
+
+  @override
   String get adminRoundScoresSectionTitle => 'نتائج المشاركين بالجولة';
 
   @override

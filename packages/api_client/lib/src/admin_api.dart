@@ -114,4 +114,20 @@ final class AdminApi {
       parseElement: PredictionDto.fromJson,
     );
   }
+
+  /// `GET /admin/rounds/{roundId}/scores` — بلا شرط مشاركة الموسم.
+  Future<Result<RoundScoresDto>> adminGetRoundScores(String roundId) {
+    return _transport.getObject<RoundScoresDto>(
+      '/admin/rounds/$roundId/scores',
+      parse: RoundScoresDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/rounds/{roundId}/report` — بلا شرط مشاركة الموسم.
+  Future<Result<RoundReportDto>> adminGetRoundReport(String roundId) {
+    return _transport.getObject<RoundReportDto>(
+      '/admin/rounds/$roundId/report',
+      parse: RoundReportDto.fromJson,
+    );
+  }
 }
