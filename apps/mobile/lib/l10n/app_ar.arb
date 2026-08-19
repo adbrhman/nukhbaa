@@ -137,6 +137,8 @@
   "adminRecordResultButton": "تسجيل النتيجة",
   "adminScoreRoundSectionTitle": "احتساب نقاط الجولة",
   "adminScoreRoundButton": "احتساب الجولة",
+  "adminPostToLedgerButton": "ترحيل النقاط للسجل",
+  "adminPostToLedgerSuccessLabel": "تم الترحيل، عدد القيود الجديدة",
   "adminRoundScoresSectionTitle": "نتائج المشاركين بالجولة",
   "adminViewScoresButton": "عرض النتائج",
   "adminTotalPointsLabel": "مجموع النقاط",

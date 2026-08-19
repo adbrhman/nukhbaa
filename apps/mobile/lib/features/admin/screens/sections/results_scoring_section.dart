@@ -54,6 +54,12 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     ref.read(scoreRoundControllerProvider.notifier).score(r);
   }
 
+  void _postToLedger() {
+    final r = _roundId;
+    if (r == null) return;
+    ref.read(postRoundToLedgerControllerProvider.notifier).post(r);
+  }
+
   void _lookup() {
     final r = _roundId;
     if (r == null) return;
@@ -78,6 +84,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     final scoreInFlight = scoreState is AsyncLoading<RoundScoresDto>;
     final lookupInFlight = lookupState is AsyncLoading<RoundScoresDto>;
     final reportInFlight = reportState is AsyncLoading<List<RoundReportRow>>;
+    final ledgerPostState = ref.watch(postRoundToLedgerControllerProvider);
+    final ledgerPostInFlight =
+        ledgerPostState is AsyncLoading<PostRoundToLedgerResponseDto>;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -222,6 +231,31 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (ledgerPostState is AsyncError<PostRoundToLedgerResponseDto>)
+                AdminErrorBanner(
+                  message: ErrorPresenter.message(
+                    ledgerPostState.error as AppError,
+                  ),
+                ),
+              if (ledgerPostState is AsyncData<PostRoundToLedgerResponseDto>)
+                AdminSuccessBanner(
+                  message:
+                      '${l10n.adminPostToLedgerSuccessLabel}: '
+                      '${ledgerPostState.value.appendedEntries.length}',
+                ),
+              if (ledgerPostState is AsyncError<PostRoundToLedgerResponseDto> ||
+                  ledgerPostState is AsyncData<PostRoundToLedgerResponseDto>)
+                const SizedBox(height: AppSpacing.sm),
+              AdminSecondaryButton(
+                key: const Key('admin.results.postToLedger'),
+                label: l10n.adminPostToLedgerButton,
+                icon: Icons.receipt_long_rounded,
+                loading: ledgerPostInFlight,
+                onPressed: (ledgerPostInFlight || _roundId == null)
+                    ? null
+                    : _postToLedger,
               ),
             ],
           ),

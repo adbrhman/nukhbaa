@@ -229,6 +229,26 @@ final class CompetitionApi {
     );
   }
 
+  /// `POST /rounds/{id}/ledger` — posts a **scored** round to the
+  /// append-only Ledger (command intent `PostRoundToLedger`). No request
+  /// body — the amounts are copied server-side from the round's already-
+  /// persisted `RoundScore`s (Axioms 2/5). Admin-only, enforced inside the
+  /// server use-case. A not-yet-scored round is refused
+  /// `409 ledger.round_not_scored`. Idempotent: re-posting an
+  /// already-posted round appends nothing new (`appended_entries` empty).
+  /// This is the Scoring -> Leaderboard seam: the Hall of Fame and season
+  /// standings read exclusively from the ledger, never from round_scores
+  /// directly.
+  Future<Result<PostRoundToLedgerResponseDto>> postRoundToLedger(
+    String roundId,
+  ) {
+    return _transport.postObject<PostRoundToLedgerResponseDto>(
+      '/rounds/$roundId/ledger',
+      body: const {},
+      parse: PostRoundToLedgerResponseDto.fromJson,
+    );
+  }
+
   /// `GET /rounds/{id}/scores` — reads every participant's computed score for
   /// a **scored** round (query intent `GetRoundScores`). A not-yet-scored
   /// round is refused `409 scoring.round_not_scored`; a non-participant is

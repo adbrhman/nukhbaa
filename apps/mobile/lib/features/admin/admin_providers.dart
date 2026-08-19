@@ -393,6 +393,33 @@ class ScoreRoundController extends _$ScoreRoundController {
   }
 }
 
+/// Owns the post-round-to-ledger command (`POST /rounds/{id}/ledger`,
+/// command intent `PostRoundToLedger`) over `CompetitionApi`. Modelled as a
+/// controller for the same reason as [ScoreRoundController]. This is the
+/// required step after [ScoreRoundController] and before a participant's
+/// points appear in the Hall of Fame / season leaderboard: those read
+/// exclusively from the ledger, never from round_scores directly.
+@riverpod
+class PostRoundToLedgerController extends _$PostRoundToLedgerController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<PostRoundToLedgerResponseDto>? build() => null;
+
+  /// Posts round [roundId]'s already-computed scores to the ledger.
+  Future<void> post(String roundId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.postRoundToLedger(roundId);
+    state = switch (result) {
+      Ok<PostRoundToLedgerResponseDto>(:final value) => AsyncValue.data(value),
+      Err<PostRoundToLedgerResponseDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
 /// Owns the round-scores lookup (`GET /rounds/{id}/scores`, query intent
 /// `GetRoundScores`) over `CompetitionApi`. Modelled as a controller (rather
 /// than a `FutureProvider`) for the same reason as

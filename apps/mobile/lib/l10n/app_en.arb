@@ -329,6 +329,8 @@
   "adminRecordResultButton": "Record result",
   "adminScoreRoundSectionTitle": "Score round",
   "adminScoreRoundButton": "Score round",
+  "adminPostToLedgerButton": "Post to ledger",
+  "adminPostToLedgerSuccessLabel": "Posted, new entries",
   "adminRoundScoresSectionTitle": "Round participant scores",
   "adminViewScoresButton": "View scores",
   "adminTotalPointsLabel": "Total points",
