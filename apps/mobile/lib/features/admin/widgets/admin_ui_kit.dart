@@ -212,9 +212,18 @@ class AdminSecondaryButton extends StatelessWidget {
 }
 
 class AdminErrorBanner extends StatelessWidget {
-  const AdminErrorBanner({super.key, required this.message});
+  const AdminErrorBanner({super.key, required this.message, this.debugDetail});
 
   final String message;
+
+  /// TEMP DIAGNOSTIC — remove once the transient-error root cause behind
+  /// "We could not reach the server" is confirmed and fixed at its source.
+  /// Renders [AppError.kind]/[AppError.code] beneath [message] so a real
+  /// network failure (api_client.network_unreachable/timeout) can be told
+  /// apart from a decoded server-side transient (e.g. scoring.*), which
+  /// ErrorPresenter otherwise collapses into the same sentence. Never
+  /// includes the bearer token or any response body.
+  final String? debugDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -230,9 +239,23 @@ class AdminErrorBanner extends StatelessWidget {
           Icon(Icons.error_outline_rounded, color: t.error, size: 18),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(
-              message,
-              style: context.text.bodySmall?.copyWith(color: t.error),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: context.text.bodySmall?.copyWith(color: t.error),
+                ),
+                if (debugDetail != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    debugDetail!,
+                    style: context.text.labelSmall?.copyWith(
+                      color: t.textMuted,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

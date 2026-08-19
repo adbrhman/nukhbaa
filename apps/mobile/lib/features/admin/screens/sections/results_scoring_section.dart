@@ -23,6 +23,9 @@ class ResultsScoringSection extends ConsumerStatefulWidget {
 }
 
 class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
+  // TEMP DIAGNOSTIC — remove alongside AdminErrorBanner.debugDetail above.
+  String _diag(AppError e) => '${e.kind.name} · ${e.code}';
+
   final _homeGoals = TextEditingController();
   final _awayGoals = TextEditingController();
 
@@ -204,6 +207,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (scoreState is AsyncError<RoundScoresDto>)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(scoreState.error as AppError),
+                  debugDetail: _diag(scoreState.error as AppError),
                 ),
               if (scoreState is AsyncError<RoundScoresDto>)
                 const SizedBox(height: AppSpacing.sm),
@@ -265,6 +269,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         if (lookupState is AsyncError<RoundScoresDto>)
           AdminErrorBanner(
             message: ErrorPresenter.message(lookupState.error as AppError),
+            debugDetail: _diag(lookupState.error as AppError),
           ),
         Builder(
           builder: (context) {
@@ -324,6 +329,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   message: ErrorPresenter.message(
                     reportState.error as AppError,
                   ),
+                  debugDetail: _diag(reportState.error as AppError),
                 ),
               if (reportState is AsyncError<List<RoundReportRow>>)
                 const SizedBox(height: AppSpacing.md),
