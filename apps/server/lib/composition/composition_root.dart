@@ -27,6 +27,7 @@ final class CompositionRoot {
     required this.openRound,
     required this.lockRound,
     required this.linkFixtureToRound,
+    required this.removeFixtureFromRound,
     required this.joinCompetition,
     required this.getCompetition,
     required this.getRound,
@@ -111,6 +112,7 @@ final class CompositionRoot {
     OpenRound? openRound,
     LockRound? lockRound,
     LinkFixtureToRound? linkFixtureToRound,
+    RemoveFixtureFromRound? removeFixtureFromRound,
     JoinCompetition? joinCompetition,
     GetCompetition? getCompetition,
     GetRound? getRound,
@@ -166,6 +168,8 @@ final class CompositionRoot {
        openRound = openRound ?? _absentOpenRound(),
        lockRound = lockRound ?? _absentLockRound(),
        linkFixtureToRound = linkFixtureToRound ?? _absentLinkFixtureToRound(),
+       removeFixtureFromRound =
+           removeFixtureFromRound ?? _absentRemoveFixtureFromRound(),
        joinCompetition = joinCompetition ?? _absentJoinCompetition(),
        getCompetition = getCompetition ?? _absentGetCompetition(),
        getRound = getRound ?? _absentGetRound(),
@@ -283,6 +287,12 @@ final class CompositionRoot {
 
   static LinkFixtureToRound _absentLinkFixtureToRound() =>
       LinkFixtureToRound(_unwiredCompetitionRepository);
+
+  static RemoveFixtureFromRound _absentRemoveFixtureFromRound() =>
+      RemoveFixtureFromRound(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixtureResultRepository: _unwiredFixtureResultRepository,
+      );
 
   static JoinCompetition _absentJoinCompetition() => JoinCompetition(
     repository: _unwiredCompetitionRepository,
@@ -635,6 +645,7 @@ final class CompositionRoot {
 
   /// Links a fixture to an open round (admin-only command).
   final LinkFixtureToRound linkFixtureToRound;
+  final RemoveFixtureFromRound removeFixtureFromRound;
 
   /// Enrols the calling user into a season (any authenticated user).
   final JoinCompetition joinCompetition;
@@ -1021,6 +1032,10 @@ final class CompositionRoot {
       ),
       lockRound: LockRound(competitionRepository),
       linkFixtureToRound: LinkFixtureToRound(competitionRepository),
+      removeFixtureFromRound: RemoveFixtureFromRound(
+        competitionRepository: competitionRepository,
+        fixtureResultRepository: fixtureResultRepository,
+      ),
       joinCompetition: JoinCompetition(
         repository: competitionRepository,
         idGenerator: idGenerator,
@@ -1275,6 +1290,12 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
 
   @override
   Future<Result<void>> saveRoundFixture(RoundFixture link) => _unwired();
+
+  @override
+  Future<Result<bool>> deleteRoundFixture({
+    required RoundId roundId,
+    required FixtureRef fixture,
+  }) => _unwired();
 
   @override
   Future<Result<void>> saveParticipant(Participant participant) => _unwired();

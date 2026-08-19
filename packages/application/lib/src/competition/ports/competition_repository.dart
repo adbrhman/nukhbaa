@@ -62,6 +62,19 @@ abstract interface class CompetitionRepository {
   /// `(roundId, fixture)` link surfaces as [ErrorKind.invariant].
   Future<Result<void>> saveRoundFixture(RoundFixture link);
 
+  /// Removes the `(roundId, fixture)` link, idempotently. Returns `Ok(true)`
+  /// when a row was actually deleted, `Ok(false)` when there was nothing to
+  /// remove (a retried delete converges rather than erroring — mirrors
+  /// `ReactionRepository.removeReaction`). Callers (the
+  /// `RemoveFixtureFromRound` use-case) are responsible for the business
+  /// preconditions (round still open, no recorded result) — this port is a
+  /// pure storage delete with no invariant of its own beyond the row's
+  /// presence.
+  Future<Result<bool>> deleteRoundFixture({
+    required RoundId roundId,
+    required FixtureRef fixture,
+  });
+
   /// Persists a new [participant]. The `(seasonId, userId)` pair is unique — a
   /// user joins a season at most once — so a duplicate enrolment surfaces as
   /// [ErrorKind.invariant] `competition.already_joined`.

@@ -181,5 +181,12 @@
   "adminAddMatchSuccess": "تمت إضافة {home} ضد {away} إلى الجولة {sequence}.",
   "adminSelectRoundFirst": "اختر الجولة أولاً.",
   "adminManageRoundsSectionTitle": "إدارة الجولات",
-  "adminExistingRoundsEmpty": "لا توجد جولات لهذا الموسم بعد."
+  "adminExistingRoundsEmpty": "لا توجد جولات لهذا الموسم بعد.",
+  "adminExistingFixturesSectionTitle": "مباريات هذه الجولة",
+  "adminRemoveFixtureTooltip": "حذف هذه المباراة من الجولة",
+  "adminRemoveFixtureConfirmTitle": "حذف المباراة؟",
+  "adminRemoveFixtureConfirmMessage": "حذف {home} ضد {away} من هذه الجولة؟ لا يمكن التراجع عن هذا الإجراء.",
+  "adminRemoveFixtureConfirmButton": "حذف",
+  "adminRemoveFixtureCancelButton": "إلغاء",
+  "adminRemoveFixtureSuccess": "تم حذف المباراة من الجولة."
 }

@@ -320,18 +320,23 @@ final class HallOfFameEntryDto {
   const HallOfFameEntryDto({
     required this.rank,
     required this.userId,
+    required this.displayName,
     required this.totalPoints,
     required this.seasonsPlayed,
     this.schemaVersion = currentSchemaVersion,
   });
 
   /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
-  /// payloads that predate the field.
+  /// payloads that predate the field. [displayName] falls back to [userId]
+  /// for a legacy payload that predates the field, so older cached responses
+  /// still render something rather than a null crash.
   factory HallOfFameEntryDto.fromJson(Map<String, Object?> json) {
+    final userId = json['user_id']! as String;
     return HallOfFameEntryDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       rank: json['rank']! as int,
-      userId: json['user_id']! as String,
+      userId: userId,
+      displayName: (json['display_name'] as String?) ?? userId,
       totalPoints: json['total_points']! as int,
       seasonsPlayed: json['seasons_played']! as int,
     );
@@ -345,6 +350,10 @@ final class HallOfFameEntryDto {
 
   /// The owning user id (UUID string) — constant across seasons.
   final String userId;
+
+  /// The user's platform-owned display name, shown on the board instead of
+  /// the raw [userId].
+  final String displayName;
 
   /// The signed all-time point total.
   final int totalPoints;
@@ -360,6 +369,7 @@ final class HallOfFameEntryDto {
     'schema_version': schemaVersion,
     'rank': rank,
     'user_id': userId,
+    'display_name': displayName,
     'total_points': totalPoints,
     'seasons_played': seasonsPlayed,
   };
@@ -369,13 +379,20 @@ final class HallOfFameEntryDto {
       other is HallOfFameEntryDto &&
       other.rank == rank &&
       other.userId == userId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.seasonsPlayed == seasonsPlayed &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(rank, userId, totalPoints, seasonsPlayed, schemaVersion);
+  int get hashCode => Object.hash(
+    rank,
+    userId,
+    displayName,
+    totalPoints,
+    seasonsPlayed,
+    schemaVersion,
+  );
 }
 
 /// The wire shape of the platform-wide Hall of Fame (read projection of the

@@ -80,9 +80,11 @@ HallOfFameEntry hallOfFameEntry({
   required String userId,
   required int totalPoints,
   int seasonsPlayed = 1,
+  String? displayName,
 }) =>
     (HallOfFameEntry.projected(
               userId: UserId(userId),
+              displayName: displayName ?? userId,
               totalPoints: totalPoints,
               seasonsPlayed: seasonsPlayed,
             )

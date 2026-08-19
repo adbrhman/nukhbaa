@@ -155,6 +155,18 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
   }
 
   @override
+  Future<Result<bool>> deleteRoundFixture({
+    required RoundId roundId,
+    required FixtureRef fixture,
+  }) async {
+    final before = links.length;
+    links.removeWhere(
+      (link) => link.roundId == roundId && link.fixture == fixture,
+    );
+    return Result.ok(links.length != before);
+  }
+
+  @override
   Future<Result<void>> saveParticipant(Participant participant) async {
     participants.add(participant);
     return const Result.ok(null);

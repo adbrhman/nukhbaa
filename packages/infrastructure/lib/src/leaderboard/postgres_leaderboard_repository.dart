@@ -51,7 +51,7 @@ WHERE season_id = @season_id
   // adapter trusts it, mirroring every other capped Tier-read adapter in the
   // codebase). No ORDER BY here either — the domain ranks (`HallOfFame.rank`).
   static const String _selectAllTimeStandingsSql = '''
-SELECT user_id, total_points, seasons_played
+SELECT user_id, display_name, total_points, seasons_played
 FROM leaderboard.hall_of_fame_standings
 LIMIT @limit
 ''';
@@ -169,6 +169,7 @@ LIMIT @limit
 
   Result<HallOfFameEntry> _mapHallOfFameEntry(Map<String, dynamic> row) {
     final userIdResult = UserId.tryParse(row['user_id']?.toString());
+    final displayName = row['display_name']?.toString();
     final totalPoints = _readInt(row['total_points']);
     final seasonsPlayed = _readInt(row['seasons_played']);
 
@@ -179,6 +180,11 @@ LIMIT @limit
           'user_id',
           userIdResult.error.message,
         ),
+      );
+    }
+    if (displayName == null || displayName.isEmpty) {
+      return Result.err(
+        _corrupt('hall_of_fame_standings', 'display_name', 'null or empty'),
       );
     }
     if (totalPoints == null) {
@@ -194,6 +200,7 @@ LIMIT @limit
 
     final projected = HallOfFameEntry.projected(
       userId: (userIdResult as Ok<UserId>).value,
+      displayName: displayName,
       totalPoints: totalPoints,
       seasonsPlayed: seasonsPlayed,
     );

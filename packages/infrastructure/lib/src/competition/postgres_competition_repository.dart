@@ -535,6 +535,36 @@ VALUES (@round_id, @fixture_id, @display_order)
     );
   }
 
+  // --------------------------------------------------------------------------
+  // deleteRoundFixture — idempotent delete of a round↔fixture link (mirrors
+  // ReactionRepository.removeReaction). RETURNING round_id lets the adapter
+  // report whether a row was actually removed (Ok(true)) or there was
+  // nothing to remove (Ok(false)).
+  // --------------------------------------------------------------------------
+
+  static const String _deleteRoundFixtureSql = '''
+DELETE FROM competition.round_fixtures
+WHERE round_id = @round_id AND fixture_id = @fixture_id
+RETURNING round_id
+''';
+
+  @override
+  Future<Result<bool>> deleteRoundFixture({
+    required RoundId roundId,
+    required FixtureRef fixture,
+  }) async {
+    final result = await _connection.query(
+      _deleteRoundFixtureSql,
+      parameters: {'round_id': roundId.value, 'fixture_id': fixture.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isNotEmpty,
+      ),
+    };
+  }
+
   // Browse read (BLOCKER FA-1): the fixtures linked to a round, in matchday
   // (`display_order`) order — the set a client renders to build the prediction
   // form. An absent/empty round is a legitimate empty list (no existence

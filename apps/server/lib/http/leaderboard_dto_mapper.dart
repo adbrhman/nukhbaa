@@ -76,6 +76,7 @@ HallOfFameEntryDto hallOfFameEntryToDto(HallOfFameEntry entry) {
   return HallOfFameEntryDto(
     rank: entry.rank,
     userId: entry.userId.value,
+    displayName: entry.displayName,
     totalPoints: entry.totalPoints,
     seasonsPlayed: entry.seasonsPlayed,
   );

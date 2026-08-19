@@ -49,7 +49,7 @@ class _HallOfFameRow extends StatelessWidget {
         ),
       ),
       title: Text(
-        entry.userId,
+        entry.displayName,
         key: Key('hallOfFame.user.${entry.userId}'),
         style: text.bodyLarge?.copyWith(color: tokens.textPrimary),
       ),

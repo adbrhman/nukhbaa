@@ -228,6 +228,24 @@ final class CompetitionApi {
     );
   }
 
+  /// `DELETE /rounds/{id}/fixtures/{fixtureId}` — removes the fixture from
+  /// the round (command intent `RemoveFixtureFromRound`; the correction
+  /// counterpart of [linkFixtureToRound] for a duplicate/mistaken link).
+  /// Admin-only, enforced inside the server use-case. Refused when the round
+  /// is no longer open, or when the fixture already carries a recorded
+  /// result (`competition.fixture_result_already_recorded`). Idempotent:
+  /// removing an already-absent link still returns `Ok` with `removed:
+  /// false`.
+  Future<Result<bool>> removeFixtureFromRound({
+    required String roundId,
+    required String fixtureId,
+  }) {
+    return _transport.deleteObject<bool>(
+      '/rounds/$roundId/fixtures/$fixtureId',
+      parse: (json) => json['removed']! as bool,
+    );
+  }
+
   /// `GET /rounds/{id}/report` — every participant's correct/incorrect
   /// fixture-grade counts and total points for a **scored** round (Task 5).
   /// Same gates as [getRoundScores]: a not-yet-scored round is refused

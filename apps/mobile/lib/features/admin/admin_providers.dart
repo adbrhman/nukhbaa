@@ -270,6 +270,39 @@ class RoundFixtureLinkController extends _$RoundFixtureLinkController {
   }
 }
 
+/// Owns the remove-fixture-from-round command
+/// (`DELETE /rounds/{id}/fixtures/{fixtureId}`, command intent
+/// `RemoveFixtureFromRound` — the correction counterpart of
+/// [RoundFixtureLinkController] for a duplicate/mistaken link) over
+/// `CompetitionApi`. Modelled as a controller for the same reason as
+/// [RoundOpenController].
+@riverpod
+class RemoveFixtureController extends _$RemoveFixtureController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<bool>? build() => null;
+
+  /// Removes [fixtureId] from [roundId]. Refused (server-side) when the
+  /// round is no longer open or the fixture already carries a recorded
+  /// result (`competition.fixture_result_already_recorded`).
+  Future<void> remove({required String roundId, required String fixtureId}) async {
+    state = const AsyncValue.loading();
+    final result = await _api.removeFixtureFromRound(
+      roundId: roundId,
+      fixtureId: fixtureId,
+    );
+    state = switch (result) {
+      Ok<bool>(:final value) => AsyncValue.data(value),
+      Err<bool>(:final error) => AsyncValue.error(error, StackTrace.current),
+    };
+    if (state is AsyncData<bool>) {
+      ref.invalidate(roundFixturesProvider(roundId));
+      ref.invalidate(roundDetailProvider(roundId));
+    }
+  }
+}
+
 /// Owns the record-fixture-result command (`PUT /fixtures/{id}/result`,
 /// command intent `RecordFixtureResult`; Axiom 3) over `CompetitionApi`.
 /// Modelled as a controller for the same reason as [RoundOpenController].

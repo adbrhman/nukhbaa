@@ -11,6 +11,7 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
 import '../../round_report.dart';
+import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 class ResultsScoringSection extends ConsumerStatefulWidget {
@@ -22,45 +23,46 @@ class ResultsScoringSection extends ConsumerStatefulWidget {
 }
 
 class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
-  final _fixtureId = TextEditingController();
   final _homeGoals = TextEditingController();
   final _awayGoals = TextEditingController();
-  final _roundId = TextEditingController();
+
+  String? _competitionId;
+  String? _seasonId;
+  String? _roundId;
+  String? _fixtureId;
 
   @override
   void dispose() {
-    _fixtureId.dispose();
     _homeGoals.dispose();
     _awayGoals.dispose();
-    _roundId.dispose();
     super.dispose();
   }
 
   void _recordResult() {
-    final f = _fixtureId.text.trim();
+    final f = _fixtureId;
     final h = int.tryParse(_homeGoals.text.trim());
     final a = int.tryParse(_awayGoals.text.trim());
-    if (f.isEmpty || h == null || a == null) return;
+    if (f == null || h == null || a == null) return;
     ref
         .read(recordFixtureResultControllerProvider.notifier)
         .record(fixtureId: f, homeGoals: h, awayGoals: a);
   }
 
   void _scoreRound() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(scoreRoundControllerProvider.notifier).score(r);
   }
 
   void _lookup() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(roundScoresLookupControllerProvider.notifier).lookup(r);
   }
 
   void _loadReport() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(roundReportControllerProvider.notifier).load(r);
   }
 
@@ -82,17 +84,60 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
       children: [
         AdminSectionHeader(
           title: l10n.adminRecordResultSectionTitle,
-          subtitle: 'سجّل النتيجة النهائية لمباراة',
+          subtitle: 'اختر المسابقة والموسم والجولة ثم المباراة وسجّل نتيجتها',
         ),
         AdminCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AdminTextField(
-                controller: _fixtureId,
-                hint: l10n.adminFixtureIdLabel,
-                prefixIcon: Icons.sports_soccer_rounded,
+              CompetitionPickerField(
+                fieldKey: const Key('admin.results.competitionField'),
+                label: l10n.adminSelectCompetitionLabel,
+                enabled: !resultInFlight,
+                selectedId: _competitionId,
+                onSelected: (CompetitionDto competition) => setState(() {
+                  _competitionId = competition.id;
+                  _seasonId = null;
+                  _roundId = null;
+                  _fixtureId = null;
+                }),
               ),
+              if (_competitionId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SeasonPickerField(
+                  competitionId: _competitionId!,
+                  enabled: !resultInFlight,
+                  selectedId: _seasonId,
+                  onSelected: (String seasonId) => setState(() {
+                    _seasonId = seasonId;
+                    _roundId = null;
+                    _fixtureId = null;
+                  }),
+                ),
+              ],
+              if (_seasonId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                RoundPickerField(
+                  seasonId: _seasonId!,
+                  enabled: !resultInFlight,
+                  selectedId: _roundId,
+                  onSelected: (RoundDto round) => setState(() {
+                    _roundId = round.id;
+                    _fixtureId = null;
+                  }),
+                ),
+              ],
+              if (_roundId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                MatchPickerField(
+                  roundId: _roundId!,
+                  enabled: !resultInFlight,
+                  selectedId: _fixtureId,
+                  onSelected: (RoundFixtureCardDto fixture) => setState(() {
+                    _fixtureId = fixture.fixtureId;
+                  }),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
@@ -130,7 +175,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 label: l10n.adminRecordResultButton,
                 icon: Icons.scoreboard_rounded,
                 loading: resultInFlight,
-                onPressed: resultInFlight ? null : _recordResult,
+                onPressed: (resultInFlight || _fixtureId == null)
+                    ? null
+                    : _recordResult,
               ),
             ],
           ),
@@ -139,18 +186,12 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
 
         AdminSectionHeader(
           title: l10n.adminScoreRoundSectionTitle,
-          subtitle: 'احسب نقاط جميع التوقعات في الجولة',
+          subtitle: 'احسب نقاط جميع التوقعات في الجولة المختارة أعلاه',
         ),
         AdminCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AdminTextField(
-                controller: _roundId,
-                hint: l10n.adminRoundIdLabel,
-                prefixIcon: Icons.tag_rounded,
-              ),
-              const SizedBox(height: AppSpacing.md),
               if (scoreState is AsyncError<RoundScoresDto>)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(scoreState.error as AppError),
@@ -164,7 +205,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       label: l10n.adminScoreRoundButton,
                       icon: Icons.calculate_rounded,
                       loading: scoreInFlight,
-                      onPressed: scoreInFlight ? null : _scoreRound,
+                      onPressed: (scoreInFlight || _roundId == null)
+                          ? null
+                          : _scoreRound,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -173,7 +216,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       label: l10n.adminViewScoresButton,
                       icon: Icons.leaderboard_rounded,
                       loading: lookupInFlight,
-                      onPressed: lookupInFlight ? null : _lookup,
+                      onPressed: (lookupInFlight || _roundId == null)
+                          ? null
+                          : _lookup,
                     ),
                   ),
                 ],
@@ -252,7 +297,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 label: l10n.adminViewRoundReportButton,
                 icon: Icons.table_chart_rounded,
                 loading: reportInFlight,
-                onPressed: reportInFlight ? null : _loadReport,
+                onPressed: (reportInFlight || _roundId == null)
+                    ? null
+                    : _loadReport,
               ),
             ],
           ),

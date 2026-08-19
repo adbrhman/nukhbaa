@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
+import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/competition_providers.dart';
@@ -132,7 +133,7 @@ class _FixtureScheduleSectionState
               ],
               if (_seasonId != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                _RoundPickerField(
+                RoundPickerField(
                   seasonId: _seasonId!,
                   enabled: !inFlight,
                   selectedId: _roundId,
@@ -197,6 +198,13 @@ class _FixtureScheduleSectionState
             ],
           ),
         ),
+        if (_roundId != null) ...[
+          const SizedBox(height: AppSpacing.xl),
+          AdminSectionHeader(
+            title: l10n.adminExistingFixturesSectionTitle,
+          ),
+          _RoundFixturesList(roundId: _roundId!),
+        ],
       ],
     );
   }
@@ -224,78 +232,6 @@ class _FixtureScheduleSectionState
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
         );
-  }
-}
-
-/// عرض قائمة الجولات في الموسم المختار (dropdown من قاعدة البيانات، بلا UUID يدوي).
-class _RoundPickerField extends ConsumerWidget {
-  const _RoundPickerField({
-    required this.seasonId,
-    required this.enabled,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final String seasonId;
-  final bool enabled;
-  final String? selectedId;
-  final ValueChanged<RoundDto> onSelected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final AsyncValue<List<RoundDto>> rounds = ref.watch(
-      seasonRoundsProvider(seasonId),
-    );
-    return rounds.when(
-      loading: () => const LinearProgressIndicator(),
-      error: (Object error, StackTrace _) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.adminSelectRoundLabel,
-          border: const OutlineInputBorder(),
-        ),
-        child: Text(ErrorPresenter.message(error as AppError)),
-      ),
-      data: (List<RoundDto> list) {
-        if (list.isEmpty) {
-          return InputDecorator(
-            decoration: InputDecoration(
-              labelText: l10n.adminSelectRoundLabel,
-              border: const OutlineInputBorder(),
-            ),
-            child: Text(l10n.adminNoRoundsHint),
-          );
-        }
-        final String? value = list.any((r) => r.id == selectedId)
-            ? selectedId
-            : null;
-        return DropdownButtonFormField<String>(
-          key: const Key('admin.fixtures.roundField'),
-          initialValue: value,
-          decoration: InputDecoration(
-            labelText: l10n.adminSelectRoundLabel,
-            border: const OutlineInputBorder(),
-          ),
-          items: <DropdownMenuItem<String>>[
-            for (final RoundDto round in list)
-              DropdownMenuItem<String>(
-                key: Key('admin.fixtures.roundField.${round.id}'),
-                value: round.id,
-                child: Text(
-                  l10n.adminRoundOptionLabel(round.sequence, round.status),
-                ),
-              ),
-          ],
-          onChanged: !enabled
-              ? null
-              : (String? id) {
-                  if (id == null) return;
-                  final RoundDto round = list.firstWhere((r) => r.id == id);
-                  onSelected(round);
-                },
-        );
-      },
-    );
   }
 }
 
@@ -380,5 +316,119 @@ class _TeamPickerField extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// قائمة مباريات الجولة المختارة مع زر حذف لكل مباراة (المشكلة 1: تصحيح
+/// مباراة مكرّرة/مُضافة بالخطأ). يعتمد على `roundFixturesProvider` — نفس
+/// مصدر البيانات المستخدم أعلاه لحساب `nextDisplayOrder`.
+class _RoundFixturesList extends ConsumerWidget {
+  const _RoundFixturesList({required this.roundId});
+
+  final String roundId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
+      roundFixturesProvider(roundId),
+    );
+    final removeState = ref.watch(removeFixtureControllerProvider);
+    final bool removing = removeState is AsyncLoading<bool>;
+
+    return fixtures.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: LinearProgressIndicator(),
+      ),
+      error: (Object error, StackTrace _) => AdminCard(
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundFixtureCardDto> list) {
+        if (list.isEmpty) {
+          return AdminCard(
+            child: AdminEmptyState(
+              icon: Icons.sports_soccer_rounded,
+              title: l10n.adminNoFixturesHint,
+            ),
+          );
+        }
+        return AdminCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Column(
+            children: [
+              for (final RoundFixtureCardDto fixture in list)
+                AdminListRow(
+                  key: Key('admin.fixtures.existing.${fixture.fixtureId}'),
+                  leadingIcon: Icons.sports_soccer_rounded,
+                  leadingColor: context.tokens.primary,
+                  title: fixture.homeTeam != null && fixture.awayTeam != null
+                      ? '${fixture.homeTeam} × ${fixture.awayTeam}'
+                      : l10n.adminFixtureIncompleteDataLabel,
+                  trailing: IconButton(
+                    key: Key('admin.fixtures.remove.${fixture.fixtureId}'),
+                    tooltip: l10n.adminRemoveFixtureTooltip,
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: context.tokens.error,
+                    ),
+                    onPressed: removing
+                        ? null
+                        : () => _confirmAndRemove(context, ref, fixture),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmAndRemove(
+    BuildContext context,
+    WidgetRef ref,
+    RoundFixtureCardDto fixture,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final home = fixture.homeTeam ?? l10n.adminFixtureIncompleteDataLabel;
+    final away = fixture.awayTeam ?? l10n.adminFixtureIncompleteDataLabel;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.adminRemoveFixtureConfirmTitle),
+        content: Text(l10n.adminRemoveFixtureConfirmMessage(home, away)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.adminRemoveFixtureCancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.adminRemoveFixtureConfirmButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    await ref
+        .read(removeFixtureControllerProvider.notifier)
+        .remove(roundId: roundId, fixtureId: fixture.fixtureId);
+
+    final state = ref.read(removeFixtureControllerProvider);
+    if (!context.mounted) return;
+    if (state is AsyncData<bool>) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.adminRemoveFixtureSuccess)),
+      );
+    } else if (state is AsyncError<bool>) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(ErrorPresenter.message(state.error as AppError)),
+        ),
+      );
+    }
   }
 }

@@ -136,6 +136,22 @@ final class ApiTransport {
     );
   }
 
+  /// Performs `DELETE [path]` (no request body) and decodes a JSON **object**
+  /// response via [parse]. Used for idempotent resource removals (e.g.
+  /// `DELETE /rounds/{id}/fixtures/{fixtureId}`) — the same request pipeline
+  /// and error contract as [postObject]/[putObject], differing only in HTTP
+  /// verb and having no request body.
+  Future<Result<T>> deleteObject<T>(
+    String path, {
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T>(
+      method: 'DELETE',
+      path: path,
+      decode: (respBody) => _decodeObject(respBody, parse),
+    );
+  }
+
   /// The shared request pipeline. Builds the request, applies auth headers,
   /// executes it, and dispatches the response. Never throws: a transport
   /// exception becomes a transient [Result.err]; a non-2xx becomes a decoded
@@ -165,6 +181,7 @@ final class ApiTransport {
           headers: headers,
           body: jsonEncode(requestBody),
         ),
+        'DELETE' => _httpClient.delete(uri, headers: headers),
         _ => throw ArgumentError.value(method, 'method', 'unsupported'),
       };
       final timeout = _requestTimeout;

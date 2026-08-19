@@ -181,6 +181,23 @@ base class FakeCompetitionRepository implements CompetitionRepository {
   }
 
   @override
+  Future<Result<bool>> deleteRoundFixture({
+    required RoundId roundId,
+    required FixtureRef fixture,
+  }) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final key = '${roundId.value}|${fixture.value}';
+    if (!_roundFixtureKeys.remove(key)) {
+      return const Result.ok(false);
+    }
+    _roundFixtures.removeWhere(
+      (link) => link.roundId == roundId && link.fixture == fixture,
+    );
+    return const Result.ok(true);
+  }
+
+  @override
   Future<Result<void>> saveParticipant(Participant participant) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);

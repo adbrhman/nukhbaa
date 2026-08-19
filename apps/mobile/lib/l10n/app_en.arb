@@ -397,5 +397,22 @@
   },
   "adminSelectRoundFirst": "Select a round first.",
   "adminManageRoundsSectionTitle": "Manage rounds",
-  "adminExistingRoundsEmpty": "This season has no rounds yet."
+  "adminExistingRoundsEmpty": "This season has no rounds yet.",
+  "adminExistingFixturesSectionTitle": "Fixtures in this round",
+  "adminRemoveFixtureTooltip": "Remove this fixture from the round",
+  "adminRemoveFixtureConfirmTitle": "Remove fixture?",
+  "adminRemoveFixtureConfirmMessage": "Remove {home} vs {away} from this round? This cannot be undone.",
+  "@adminRemoveFixtureConfirmMessage": {
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRemoveFixtureConfirmButton": "Remove",
+  "adminRemoveFixtureCancelButton": "Cancel",
+  "adminRemoveFixtureSuccess": "Fixture removed from the round."
 }

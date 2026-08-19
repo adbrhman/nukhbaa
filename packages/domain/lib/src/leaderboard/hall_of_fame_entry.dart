@@ -23,6 +23,7 @@ import 'package:shared/shared.dart';
 final class HallOfFameEntry {
   const HallOfFameEntry._({
     required this.userId,
+    required this.displayName,
     required this.totalPoints,
     required this.seasonsPlayed,
     required this.rank,
@@ -39,6 +40,7 @@ final class HallOfFameEntry {
   /// [LeaderboardEntry.totalPoints] (a correction may net a user negative).
   static Result<HallOfFameEntry> projected({
     required UserId userId,
+    required String displayName,
     required int totalPoints,
     required int seasonsPlayed,
   }) {
@@ -53,6 +55,7 @@ final class HallOfFameEntry {
     return Result.ok(
       HallOfFameEntry._(
         userId: userId,
+        displayName: displayName,
         totalPoints: totalPoints,
         seasonsPlayed: seasonsPlayed,
         rank: _unassignedRank,
@@ -66,6 +69,10 @@ final class HallOfFameEntry {
   /// The user this line belongs to (by id) — constant across seasons, unlike a
   /// per-season [ParticipantId].
   final UserId userId;
+
+  /// The user's platform-owned display name (from `identity.users`), shown on
+  /// the board instead of the raw [userId].
+  final String displayName;
 
   /// The signed SUM of the user's ledger `amount`s across every season they
   /// have participated in.
@@ -94,6 +101,7 @@ final class HallOfFameEntry {
     return Result.ok(
       HallOfFameEntry._(
         userId: userId,
+        displayName: displayName,
         totalPoints: totalPoints,
         seasonsPlayed: seasonsPlayed,
         rank: assignedRank,
@@ -105,15 +113,17 @@ final class HallOfFameEntry {
   bool operator ==(Object other) =>
       other is HallOfFameEntry &&
       other.userId == userId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.seasonsPlayed == seasonsPlayed &&
       other.rank == rank;
 
   @override
-  int get hashCode => Object.hash(userId, totalPoints, seasonsPlayed, rank);
+  int get hashCode =>
+      Object.hash(userId, displayName, totalPoints, seasonsPlayed, rank);
 
   @override
   String toString() =>
-      'HallOfFameEntry(#$rank user: ${userId.value}, total: $totalPoints, '
-      'seasons: $seasonsPlayed)';
+      'HallOfFameEntry(#$rank user: ${userId.value} "$displayName", '
+      'total: $totalPoints, seasons: $seasonsPlayed)';
 }
