@@ -286,7 +286,10 @@ class RemoveFixtureController extends _$RemoveFixtureController {
   /// Removes [fixtureId] from [roundId]. Refused (server-side) when the
   /// round is no longer open or the fixture already carries a recorded
   /// result (`competition.fixture_result_already_recorded`).
-  Future<void> remove({required String roundId, required String fixtureId}) async {
+  Future<void> remove({
+    required String roundId,
+    required String fixtureId,
+  }) async {
     state = const AsyncValue.loading();
     final result = await _api.removeFixtureFromRound(
       roundId: roundId,

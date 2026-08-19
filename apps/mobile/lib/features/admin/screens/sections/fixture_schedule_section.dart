@@ -200,9 +200,7 @@ class _FixtureScheduleSectionState
         ),
         if (_roundId != null) ...[
           const SizedBox(height: AppSpacing.xl),
-          AdminSectionHeader(
-            title: l10n.adminExistingFixturesSectionTitle,
-          ),
+          AdminSectionHeader(title: l10n.adminExistingFixturesSectionTitle),
           _RoundFixturesList(roundId: _roundId!),
         ],
       ],
@@ -341,9 +339,8 @@ class _RoundFixturesList extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: LinearProgressIndicator(),
       ),
-      error: (Object error, StackTrace _) => AdminCard(
-        child: Text(ErrorPresenter.message(error as AppError)),
-      ),
+      error: (Object error, StackTrace _) =>
+          AdminCard(child: Text(ErrorPresenter.message(error as AppError))),
       data: (List<RoundFixtureCardDto> list) {
         if (list.isEmpty) {
           return AdminCard(
