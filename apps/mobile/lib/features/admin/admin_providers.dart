@@ -234,6 +234,36 @@ class RoundOpenController extends _$RoundOpenController {
   }
 }
 
+/// Owns the lock-round command (`POST /rounds/{id}/lock`, command intent
+/// `LockRound`) over `CompetitionApi`. Modelled as a controller for the same
+/// reason as [RoundOpenController]: a one-shot admin command. A round must be
+/// locked before [ScoreRoundController] can score it.
+@riverpod
+class RoundLockController extends _$RoundLockController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<RoundDto>? build() => null;
+
+  /// Locks round [roundId].
+  Future<void> lock(String roundId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.lockRound(roundId);
+    state = switch (result) {
+      Ok<RoundDto>(:final value) => AsyncValue.data(value),
+      Err<RoundDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+    if (state is AsyncData<RoundDto>) {
+      final RoundDto locked = (state as AsyncData<RoundDto>).value;
+      ref.invalidate(seasonRoundsProvider(locked.seasonId));
+      ref.invalidate(roundDetailProvider(locked.id));
+    }
+  }
+}
+
 /// Owns the link-fixture-to-round command (`POST /rounds/{id}/fixtures`,
 /// command intent `LinkFixtureToRound`; Axiom 3) over `CompetitionApi`.
 /// Modelled as a controller for the same reason as [RoundOpenController].

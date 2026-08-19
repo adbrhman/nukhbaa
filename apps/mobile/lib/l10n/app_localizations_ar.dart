@@ -453,6 +453,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminOpenRoundButton => 'فتح الجولة';
 
   @override
+  String get adminLockRoundButton => 'إغلاق الجولة';
+
+  @override
   String get adminLinkFixtureSectionTitle => 'ربط مباراة بجولة';
 
   @override

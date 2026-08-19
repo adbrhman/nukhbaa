@@ -447,6 +447,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminOpenRoundButton => 'Open round';
 
   @override
+  String get adminLockRoundButton => 'Lock round';
+
+  @override
   String get adminLinkFixtureSectionTitle => 'Link a fixture to a round';
 
   @override

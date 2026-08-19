@@ -846,6 +846,12 @@ abstract class AppLocalizations {
   /// **'Open round'**
   String get adminOpenRoundButton;
 
+  /// No description provided for @adminLockRoundButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock round'**
+  String get adminLockRoundButton;
+
   /// No description provided for @adminLinkFixtureSectionTitle.
   ///
   /// In en, this message translates to:

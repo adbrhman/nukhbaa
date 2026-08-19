@@ -124,6 +124,7 @@
   "adminSequenceLabel": "رقم الجولة",
   "adminPickDeadlineButton": "اختر موعد إغلاق التوقعات",
   "adminOpenRoundButton": "فتح الجولة",
+  "adminLockRoundButton": "إغلاق الجولة",
   "adminLinkFixtureSectionTitle": "ربط مباراة بجولة",
   "adminRoundIdLabel": "معرّف الجولة",
   "adminFixtureIdLabel": "معرّف المباراة",

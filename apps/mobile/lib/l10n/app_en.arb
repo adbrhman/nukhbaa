@@ -316,6 +316,7 @@
   "adminSequenceLabel": "Round sequence",
   "adminPickDeadlineButton": "Pick prediction deadline",
   "adminOpenRoundButton": "Open round",
+  "adminLockRoundButton": "Lock round",
   "adminLinkFixtureSectionTitle": "Link a fixture to a round",
   "adminRoundIdLabel": "Round ID",
   "adminFixtureIdLabel": "Fixture ID",

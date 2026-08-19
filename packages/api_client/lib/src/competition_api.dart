@@ -168,6 +168,18 @@ final class CompetitionApi {
     );
   }
 
+  /// `POST /rounds/{id}/lock` — locks an open round once its prediction
+  /// window closes (command intent `LockRound`). Admin-only, enforced inside
+  /// the server use-case. No request body. A round must be locked before it
+  /// can be scored via [scoreRound].
+  Future<Result<RoundDto>> lockRound(String roundId) {
+    return _transport.postObject<RoundDto>(
+      '/rounds/$roundId/lock',
+      body: const {},
+      parse: RoundDto.fromJson,
+    );
+  }
+
   /// `POST /rounds/{id}/fixtures` — links an already-registered fixture into
   /// the round at [displayOrder] (command intent `LinkFixtureToRound`; Axiom
   /// 3: the only place Competition names a fixture). Admin-only, enforced
