@@ -46,6 +46,8 @@ final class CompositionRoot {
     required this.scoreRound,
     required this.getRoundScores,
     required this.getRoundReport,
+    required this.adminGetRoundScores,
+    required this.adminGetRoundReport,
     required this.postRoundToLedger,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
@@ -131,6 +133,8 @@ final class CompositionRoot {
     ScoreRound? scoreRound,
     GetRoundScores? getRoundScores,
     GetRoundReport? getRoundReport,
+    AdminGetRoundScores? adminGetRoundScores,
+    AdminGetRoundReport? adminGetRoundReport,
     PostRoundToLedger? postRoundToLedger,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
@@ -194,6 +198,10 @@ final class CompositionRoot {
        scoreRound = scoreRound ?? _absentScoreRound(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
        getRoundReport = getRoundReport ?? _absentGetRoundReport(),
+       adminGetRoundScores =
+           adminGetRoundScores ?? _absentAdminGetRoundScores(),
+       adminGetRoundReport =
+           adminGetRoundReport ?? _absentAdminGetRoundReport(),
        postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
        readParticipantLedger =
            readParticipantLedger ?? _absentReadParticipantLedger(),
@@ -404,6 +412,18 @@ final class CompositionRoot {
     competitionRepository: _unwiredCompetitionRepository,
     scoreRepository: _unwiredScoreRepository,
   );
+
+  static AdminGetRoundScores _absentAdminGetRoundScores() =>
+      AdminGetRoundScores(
+        competitionRepository: _unwiredCompetitionRepository,
+        scoreRepository: _unwiredScoreRepository,
+      );
+
+  static AdminGetRoundReport _absentAdminGetRoundReport() =>
+      AdminGetRoundReport(
+        competitionRepository: _unwiredCompetitionRepository,
+        scoreRepository: _unwiredScoreRepository,
+      );
 
   /// Throwing ledger repositories backing every "absent" ledger use-case, so a
   /// test that reaches an unwired ledger slice fails loudly instead of touching
@@ -719,6 +739,11 @@ final class CompositionRoot {
   /// Reads a round's aggregated report (correct/incorrect counts + points)
   /// — same visibility gate as [getRoundScores] (Task 5).
   final GetRoundReport getRoundReport;
+
+  /// Admin round-scores/report reads — same shape as [getRoundScores] /
+  /// [getRoundReport] but without the participant-of-season gate.
+  final AdminGetRoundScores adminGetRoundScores;
+  final AdminGetRoundReport adminGetRoundReport;
 
   /// Posts a scored round to the append-only Ledger (admin-only command; the
   /// point amounts are copied server-side from the frozen scores — Axioms 2/5;
@@ -1098,6 +1123,14 @@ final class CompositionRoot {
         scoreRepository: scoreRepository,
       ),
       getRoundReport: GetRoundReport(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
+      ),
+      adminGetRoundScores: AdminGetRoundScores(
+        competitionRepository: competitionRepository,
+        scoreRepository: scoreRepository,
+      ),
+      adminGetRoundReport: AdminGetRoundReport(
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
       ),

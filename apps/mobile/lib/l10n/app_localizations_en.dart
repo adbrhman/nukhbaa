@@ -486,6 +486,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminScoreRoundButton => 'Score round';
 
   @override
+  String get adminPostToLedgerButton => 'Post to ledger';
+
+  @override
+  String get adminPostToLedgerSuccessLabel => 'Posted, new entries';
+
+  @override
   String get adminRoundScoresSectionTitle => 'Round participant scores';
 
   @override

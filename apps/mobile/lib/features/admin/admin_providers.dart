@@ -427,7 +427,7 @@ class PostRoundToLedgerController extends _$PostRoundToLedgerController {
 /// is not a passive view a screen loads on entry.
 @riverpod
 class RoundScoresLookupController extends _$RoundScoresLookupController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
+  AdminApi get _api => ref.read(adminApiProvider);
 
   @override
   AsyncValue<RoundScoresDto>? build() => null;
@@ -435,7 +435,7 @@ class RoundScoresLookupController extends _$RoundScoresLookupController {
   /// Looks up [roundId]'s computed scores.
   Future<void> lookup(String roundId) async {
     state = const AsyncValue.loading();
-    final result = await _api.getRoundScores(roundId);
+    final result = await _api.adminGetRoundScores(roundId);
     state = switch (result) {
       Ok<RoundScoresDto>(:final value) => AsyncValue.data(value),
       Err<RoundScoresDto>(:final error) => AsyncValue.error(
@@ -456,7 +456,6 @@ class RoundScoresLookupController extends _$RoundScoresLookupController {
 /// half is itself an audited cross-user read that must not fire silently.
 @riverpod
 class RoundReportController extends _$RoundReportController {
-  CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
   AdminApi get _adminApi => ref.read(adminApiProvider);
 
   @override
@@ -471,7 +470,7 @@ class RoundReportController extends _$RoundReportController {
   Future<void> load(String roundId, {String? reason}) async {
     state = const AsyncValue.loading();
     final results = await (
-      _competitionApi.getRoundScores(roundId),
+      _adminApi.adminGetRoundScores(roundId),
       _adminApi.adminListRoundPredictions(roundId, reason: reason),
     ).wait;
     final scoresResult = results.$1;
@@ -501,7 +500,7 @@ class RoundReportController extends _$RoundReportController {
 /// reads).
 @riverpod
 class RoundReportSummaryController extends _$RoundReportSummaryController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
+  AdminApi get _api => ref.read(adminApiProvider);
 
   @override
   AsyncValue<RoundReportDto>? build() => null;
@@ -509,7 +508,7 @@ class RoundReportSummaryController extends _$RoundReportSummaryController {
   /// Loads the report summary for the scored round [roundId].
   Future<void> load(String roundId) async {
     state = const AsyncValue.loading();
-    final result = await _api.getRoundReport(roundId);
+    final result = await _api.adminGetRoundReport(roundId);
     state = switch (result) {
       Ok<RoundReportDto>(:final value) => AsyncValue.data(value),
       Err<RoundReportDto>(:final error) => AsyncValue.error(
