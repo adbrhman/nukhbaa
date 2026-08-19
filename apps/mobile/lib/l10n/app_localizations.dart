@@ -1151,6 +1151,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This season has no rounds yet.'**
   String get adminExistingRoundsEmpty;
+
+  /// No description provided for @adminExistingFixturesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixtures in this round'**
+  String get adminExistingFixturesSectionTitle;
+
+  /// No description provided for @adminRemoveFixtureTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this fixture from the round'**
+  String get adminRemoveFixtureTooltip;
+
+  /// No description provided for @adminRemoveFixtureConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove fixture?'**
+  String get adminRemoveFixtureConfirmTitle;
+
+  /// No description provided for @adminRemoveFixtureConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {home} vs {away} from this round? This cannot be undone.'**
+  String adminRemoveFixtureConfirmMessage(String home, String away);
+
+  /// No description provided for @adminRemoveFixtureConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get adminRemoveFixtureConfirmButton;
+
+  /// No description provided for @adminRemoveFixtureCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get adminRemoveFixtureCancelButton;
+
+  /// No description provided for @adminRemoveFixtureSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture removed from the round.'**
+  String get adminRemoveFixtureSuccess;
 }
 
 class _AppLocalizationsDelegate

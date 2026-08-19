@@ -606,4 +606,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminExistingRoundsEmpty => 'This season has no rounds yet.';
+
+  @override
+  String get adminExistingFixturesSectionTitle => 'Fixtures in this round';
+
+  @override
+  String get adminRemoveFixtureTooltip => 'Remove this fixture from the round';
+
+  @override
+  String get adminRemoveFixtureConfirmTitle => 'Remove fixture?';
+
+  @override
+  String adminRemoveFixtureConfirmMessage(String home, String away) {
+    return 'Remove $home vs $away from this round? This cannot be undone.';
+  }
+
+  @override
+  String get adminRemoveFixtureConfirmButton => 'Remove';
+
+  @override
+  String get adminRemoveFixtureCancelButton => 'Cancel';
+
+  @override
+  String get adminRemoveFixtureSuccess => 'Fixture removed from the round.';
 }

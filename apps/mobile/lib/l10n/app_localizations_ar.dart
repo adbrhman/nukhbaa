@@ -611,4 +611,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminExistingRoundsEmpty => 'لا توجد جولات لهذا الموسم بعد.';
+
+  @override
+  String get adminExistingFixturesSectionTitle => 'مباريات هذه الجولة';
+
+  @override
+  String get adminRemoveFixtureTooltip => 'حذف هذه المباراة من الجولة';
+
+  @override
+  String get adminRemoveFixtureConfirmTitle => 'حذف المباراة؟';
+
+  @override
+  String adminRemoveFixtureConfirmMessage(String home, String away) {
+    return 'حذف $home ضد $away من هذه الجولة؟ لا يمكن التراجع عن هذا الإجراء.';
+  }
+
+  @override
+  String get adminRemoveFixtureConfirmButton => 'حذف';
+
+  @override
+  String get adminRemoveFixtureCancelButton => 'إلغاء';
+
+  @override
+  String get adminRemoveFixtureSuccess => 'تم حذف المباراة من الجولة.';
 }
