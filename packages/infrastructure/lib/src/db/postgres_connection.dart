@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:infrastructure/src/db/postgres_config.dart';
 // `postgres` exports its own `Result` (the query result-row list), which
 // collides with our domain-wide `Result<T>` from `shared`. We never reference
@@ -156,6 +158,7 @@ class PostgresConnection implements DbExecutor {
           .toList(growable: false);
       return Result.ok(rows);
     } on Object catch (e) {
+      stderr.writeln('[PostgresConnection.query] $e');
       return Result.err(
         AppError.transient('db.query_failed', 'Database query failed', e),
       );
@@ -198,6 +201,7 @@ class PostgresConnection implements DbExecutor {
       // The transaction rolled back cleanly; return the domain error verbatim.
       return Result.err(signal.error);
     } on Object catch (e) {
+      stderr.writeln('[PostgresConnection.runInTransaction] $e');
       return Result.err(
         AppError.transient('db.tx_failed', 'Database transaction failed', e),
       );
@@ -246,6 +250,7 @@ final class _TxExecutor implements DbExecutor {
       // rollback. Re-raising the underlying driver exception is avoided so the
       // integrity-violation `cause` (ServerException) still reaches the adapter
       // reclassifier via the returned Err — see PostgresPredictionRepository.
+      stderr.writeln('[_TxExecutor.query] $e');
       return Result.err(
         AppError.transient('db.query_failed', 'Database query failed', e),
       );
