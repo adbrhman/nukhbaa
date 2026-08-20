@@ -300,7 +300,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                         2 => t.bronze,
                         _ => t.primary,
                       },
-                      title: scores[i].participantId,
+                      title: scores[i].displayName.isNotEmpty
+                          ? scores[i].displayName
+                          : scores[i].participantId,
                       trailing: Text(
                         '${l10n.adminTotalPointsLabel}: ${scores[i].totalPoints}',
                         style: context.text.titleMedium?.copyWith(
@@ -414,7 +416,9 @@ class _RoundReportRowCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
-                  row.participantId,
+                  row.displayName.isNotEmpty
+                      ? row.displayName
+                      : row.participantId,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodyLarge?.copyWith(

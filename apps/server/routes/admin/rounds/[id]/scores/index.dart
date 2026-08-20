@@ -21,9 +21,30 @@ Future<Response> onRequest(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<List<RoundScore>>(:final value) => Response.json(
-      body: roundScoresToJson(id, value),
+    Ok<List<RoundScore>>(:final value) => await _withDisplayNames(
+      root,
+      principal,
+      id,
+      value,
     ),
     Err<List<RoundScore>>(:final error) => errorResponse(error),
   };
+}
+
+Future<Response> _withDisplayNames(
+  CompositionRoot root,
+  AuthenticatedUser principal,
+  String roundId,
+  List<RoundScore> scores,
+) async {
+  final namesResult = await root.adminGetParticipantDisplayNames(
+    principal: principal,
+    participantIds: [for (final s in scores) s.participantId.value],
+  );
+  final names = namesResult is Ok<Map<String, String>>
+      ? namesResult.value
+      : const <String, String>{};
+  return Response.json(
+    body: roundScoresToJson(roundId, scores, displayNames: names),
+  );
 }

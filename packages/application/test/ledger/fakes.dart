@@ -134,6 +134,18 @@ final class FakeParticipantReader implements ParticipantReader {
   void seed(Participant p) => _byId[p.id.value] = p;
 
   @override
+  Future<Result<Map<String, String>>> findDisplayNames(
+    List<ParticipantId> ids,
+  ) async {
+    final failure = _takeFailure();
+    if (failure != null) return Result.err(failure);
+    return Result.ok({
+      for (final id in ids)
+        if (_byId[id.value] != null) id.value: 'Test User',
+    });
+  }
+
+  @override
   Future<Result<Participant?>> findParticipantById(ParticipantId id) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
