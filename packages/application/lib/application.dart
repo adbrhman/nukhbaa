@@ -70,6 +70,8 @@ export 'src/notification/notify_reaction_received.dart';
 export 'src/notification/notify_round_scored.dart';
 export 'src/notification/ports/notification_repository.dart';
 export 'src/platform/check_health.dart';
+export 'src/platform/get_latest_build.dart';
+export 'src/platform/ports/build_info_repository.dart';
 export 'src/platform/ports/health_repository.dart';
 export 'src/prediction/get_my_prediction.dart';
 export 'src/prediction/list_my_predictions.dart';

@@ -47,6 +47,13 @@ dependencies:
   # Pinned to the same `^1.6.0` `api_client` already verified in §3.
   http: ^1.6.0
 
+  # Verified on pub.dev 2026-08-21: url_launcher 6.3.2 (SDK compatible).
+  # The ONLY use: opening the update-check `.apk` download URL in the
+  # system browser (`features/update/update_gate.dart`). This is a URL
+  # launch, not a network request, so it does not violate the "no HTTP in
+  # apps/mobile" boundary (ADR-002 \xc2\xa72.8) \xe2\x80\x94 no `http` call is made here.
+  url_launcher: ^6.3.2
+
   # State management — ratified Riverpod (annotation-based).
   flutter_riverpod: ^3.3.2
   riverpod_annotation: ^4.0.3

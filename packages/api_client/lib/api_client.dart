@@ -34,6 +34,7 @@ export 'src/api_error.dart'
         apiErrorNetworkUnreachable,
         apiErrorUnexpectedStatus;
 export 'src/api_transport.dart' show ApiTransport, TokenProvider;
+export 'src/app_api.dart' show AppApi;
 export 'src/auth_api.dart' show AuthApi;
 export 'src/competition_api.dart' show CompetitionApi;
 export 'src/fixture_schedule_api.dart' show FixtureScheduleApi;

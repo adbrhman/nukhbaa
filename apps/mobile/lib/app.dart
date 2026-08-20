@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/session_gate.dart';
+import 'features/update/update_gate.dart';
 import 'l10n/app_localizations.dart';
 
 class NukhbaApp extends ConsumerWidget {
@@ -39,7 +40,7 @@ class NukhbaApp extends ConsumerWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: const SessionGate(),
+      home: const UpdateGate(child: SessionGate()),
     );
   }
 }

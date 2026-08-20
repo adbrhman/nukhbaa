@@ -13,6 +13,7 @@ export 'src/error_dto.dart';
 export 'src/fixture_schedule_dto.dart';
 export 'src/group_dto.dart';
 export 'src/health_dto.dart';
+export 'src/latest_build_dto.dart';
 export 'src/leaderboard_dto.dart';
 export 'src/ledger_dto.dart';
 export 'src/me_dto.dart';
