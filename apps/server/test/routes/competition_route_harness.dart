@@ -632,6 +632,16 @@ final class InMemoryParticipantReader implements ParticipantReader {
   @override
   Future<Result<Participant?>> findParticipantById(ParticipantId id) async =>
       Result.ok(_byId[id.value]);
+
+  @override
+  Future<Result<Map<String, String>>> findDisplayNames(
+    List<ParticipantId> ids,
+  ) async {
+    return Result.ok({
+      for (final id in ids)
+        if (_byId[id.value] != null) id.value: 'Test User',
+    });
+  }
 }
 
 /// A minimal in-memory [LeaderboardRepository] for the leaderboard route test.

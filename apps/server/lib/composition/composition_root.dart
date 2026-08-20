@@ -1544,6 +1544,12 @@ final class _UnwiredParticipantReader implements ParticipantReader {
   @override
   Future<Result<Participant?>> findParticipantById(ParticipantId id) =>
       throw StateError('A ledger use-case was not wired into this root');
+
+  @override
+  Future<Result<Map<String, String>>> findDisplayNames(
+    List<ParticipantId> ids,
+  ) =>
+      throw StateError('A ledger use-case was not wired into this root');
 }
 
 /// Backs the "absent" [GetSeasonLeaderboard]'s repository: throws so a test that
