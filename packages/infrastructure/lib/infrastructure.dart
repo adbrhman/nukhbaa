@@ -27,6 +27,7 @@ export 'src/leaderboard/postgres_leaderboard_repository.dart';
 export 'src/ledger/postgres_ledger_repository.dart';
 export 'src/ledger/postgres_participant_reader.dart';
 export 'src/notification/postgres_notification_repository.dart';
+export 'src/platform/github_build_info_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
 export 'src/prediction/postgres_prediction_repository.dart';
 export 'src/scoring/postgres_fixture_result_repository.dart';

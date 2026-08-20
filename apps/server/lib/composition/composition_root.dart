@@ -19,6 +19,7 @@ final class CompositionRoot {
     required PostgresConnection connection,
     required JwksClient jwksClient,
     required this.checkHealth,
+    required this.getLatestBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
     required this.login,
@@ -107,6 +108,7 @@ final class CompositionRoot {
   @visibleForTesting
   CompositionRoot.forTesting({
     CheckHealth? checkHealth,
+    GetLatestBuild? getLatestBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
     AuthenticateRequest? authenticateRequest,
@@ -165,6 +167,7 @@ final class CompositionRoot {
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
     AdminListRoundPredictions? adminListRoundPredictions,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
+       getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
        authenticateRequest =
@@ -259,6 +262,11 @@ final class CompositionRoot {
 
   static CheckHealth _absentCheckHealth() =>
       CheckHealth(_UnwiredHealthRepository());
+
+  /// Backs an "absent" [GetLatestBuild] in [CompositionRoot.forTesting]:
+  /// throws if a test reaches the update-check slice it never wired.
+  static GetLatestBuild _absentGetLatestBuild() =>
+      GetLatestBuild(_UnwiredBuildInfoRepository());
 
   /// Builds an [AuthenticateRequest] over a verifier that throws if invoked.
   static AuthenticateRequest _absentAuthenticateRequest() =>
@@ -645,6 +653,10 @@ final class CompositionRoot {
   /// The health use-case, ready to be invoked by routes.
   final CheckHealth checkHealth;
 
+  /// Reports the newest published Android build, ready to be invoked by
+  /// routes.
+  final GetLatestBuild getLatestBuild;
+
   /// Logs in with email/password, exchanging credentials for a session.
   final LoginWithPassword login;
 
@@ -898,6 +910,12 @@ final class CompositionRoot {
     // Health slice.
     final checkHealth = CheckHealth(PostgresHealthRepository(connection));
 
+    // Platform update-check slice: reads the newest published Android build
+    // from GitHub Releases. Public/unauthenticated, like health.
+    final getLatestBuild = GetLatestBuild(
+      GithubBuildInfoRepository(http.Client()),
+    );
+
     // Identity slice: JWKS-backed ES256 verifier (+ HS256 legacy fallback) and
     // the Postgres-backed canonical user directory.
     final jwksClient = JwksClient(authConfig.jwksUri);
@@ -1051,6 +1069,7 @@ final class CompositionRoot {
       connection: connection,
       jwksClient: jwksClient,
       checkHealth: checkHealth,
+      getLatestBuild: getLatestBuild,
       authenticateRequest: AuthenticateRequest(verifier),
       getCurrentUser: GetCurrentUser(directory),
       login: login,
@@ -1288,6 +1307,14 @@ final class _UnwiredHealthRepository implements HealthRepository {
   @override
   Future<Result<bool>> pingDatabase() =>
       throw StateError('CheckHealth was not wired into this test root');
+}
+
+/// Backs an "absent" [GetLatestBuild] in [CompositionRoot.forTesting]: throws
+/// if a test reaches the update-check slice it never wired.
+final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
+  @override
+  Future<Result<LatestBuild>> fetchLatest() =>
+      throw StateError('GetLatestBuild was not wired into this test root');
 }
 
 /// Backs an "absent" [AuthenticateRequest]: throws if a test reaches the auth

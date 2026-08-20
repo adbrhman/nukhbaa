@@ -53,6 +53,7 @@ export 'src/notification/notification_id.dart';
 export 'src/notification/notification_kind.dart';
 export 'src/notification/notification_subject.dart';
 export 'src/platform/health.dart';
+export 'src/platform/latest_build.dart';
 export 'src/prediction/fixture_score_prediction.dart';
 export 'src/prediction/prediction.dart';
 export 'src/prediction/prediction_id.dart';

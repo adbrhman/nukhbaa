@@ -76,6 +76,15 @@ class SessionExpiry extends _$SessionExpiry {
 @Riverpod(keepAlive: true)
 AuthApi authApi(Ref ref) => AuthApi(ref.watch(apiTransportProvider));
 
+/// The typed App (platform update-check) client over the shared transport.
+///
+/// Consumed by [UpdateGate] on launch to read `GET /app/latest-build`.
+/// Deliberately unauthenticated — like the route it wraps — so it works
+/// even before sign-in. Like the other domain clients it holds no state and
+/// performs no HTTP of its own.
+@Riverpod(keepAlive: true)
+AppApi appApi(Ref ref) => AppApi(ref.watch(apiTransportProvider));
+
 /// The typed Competition (browse + round administration) client over the
 /// shared transport.
 ///
