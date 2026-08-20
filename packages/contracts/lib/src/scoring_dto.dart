@@ -147,6 +147,7 @@ final class RoundScoreDto {
     required this.rulesetVersion,
     required this.totalPoints,
     required this.fixtureResults,
+    this.displayName = '',
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -160,6 +161,7 @@ final class RoundScoreDto {
       participantId: json['participant_id']! as String,
       rulesetVersion: json['ruleset_version']! as int,
       totalPoints: json['total_points']! as int,
+      displayName: (json['display_name'] as String?) ?? '',
       fixtureResults: rawResults
           .map(
             (e) => FixtureScoreResultDto.fromJson(
@@ -188,6 +190,10 @@ final class RoundScoreDto {
   /// The per-fixture breakdown, in the order the prediction listed its fixtures.
   final List<FixtureScoreResultDto> fixtureResults;
 
+  /// The participant's display name, joined server-side from
+  /// `identity.users.display_name`. Empty string when unavailable.
+  final String displayName;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -198,6 +204,7 @@ final class RoundScoreDto {
     'participant_id': participantId,
     'ruleset_version': rulesetVersion,
     'total_points': totalPoints,
+    'display_name': displayName,
     'fixture_results': [for (final r in fixtureResults) r.toJson()],
   };
 
@@ -208,6 +215,7 @@ final class RoundScoreDto {
       other.participantId == participantId &&
       other.rulesetVersion == rulesetVersion &&
       other.totalPoints == totalPoints &&
+      other.displayName == displayName &&
       _listEquals(other.fixtureResults, fixtureResults) &&
       other.schemaVersion == schemaVersion;
 
@@ -217,6 +225,7 @@ final class RoundScoreDto {
     participantId,
     rulesetVersion,
     totalPoints,
+    displayName,
     Object.hashAll(fixtureResults),
     schemaVersion,
   );

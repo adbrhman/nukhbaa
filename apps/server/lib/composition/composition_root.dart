@@ -1,3 +1,4 @@
+import 'package:application/src/scoring/admin_get_participant_display_names.dart';
 import 'dart:io';
 
 import 'package:application/application.dart';
@@ -73,6 +74,7 @@ final class CompositionRoot {
     required this.listUsers,
     required this.listAuditLog,
     required this.viewParticipantLedger,
+    required this.adminGetParticipantDisplayNames,
     required this.adminListRoundPredictions,
   }) : _connection = connection,
        _jwksClient = jwksClient;
@@ -160,6 +162,7 @@ final class CompositionRoot {
     ListUsers? listUsers,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
+    AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
     AdminListRoundPredictions? adminListRoundPredictions,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        login = login ?? _absentLogin(),
@@ -202,6 +205,9 @@ final class CompositionRoot {
            adminGetRoundScores ?? _absentAdminGetRoundScores(),
        adminGetRoundReport =
            adminGetRoundReport ?? _absentAdminGetRoundReport(),
+       adminGetParticipantDisplayNames =
+           adminGetParticipantDisplayNames ??
+           _absentAdminGetParticipantDisplayNames(),
        postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
        readParticipantLedger =
            readParticipantLedger ?? _absentReadParticipantLedger(),
@@ -748,6 +754,13 @@ final class CompositionRoot {
   /// Posts a scored round to the append-only Ledger (admin-only command; the
   /// point amounts are copied server-side from the frozen scores — Axioms 2/5;
   /// idempotent on the natural dedupe key — Axiom 4).
+  final AdminGetParticipantDisplayNames adminGetParticipantDisplayNames;
+
+  static AdminGetParticipantDisplayNames
+  _absentAdminGetParticipantDisplayNames() => AdminGetParticipantDisplayNames(
+    participantReader: _unwiredParticipantReader,
+  );
+
   final PostRoundToLedger postRoundToLedger;
 
   /// Reads a participant's projected balance / append-only entry stream
@@ -1133,6 +1146,9 @@ final class CompositionRoot {
       adminGetRoundReport: AdminGetRoundReport(
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
+      ),
+      adminGetParticipantDisplayNames: AdminGetParticipantDisplayNames(
+        participantReader: participantReader,
       ),
       postRoundToLedger: PostRoundToLedger(
         competitionRepository: competitionRepository,

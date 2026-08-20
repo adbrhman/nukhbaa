@@ -28,6 +28,32 @@ final class PostgresParticipantReader implements ParticipantReader {
 
   final PostgresConnection _connection;
 
+  static const String _selectDisplayNamesSql = '''
+SELECT p.id AS participant_id, u.display_name AS display_name
+FROM competition.participants p
+JOIN identity.users u ON u.id = p.user_id
+WHERE p.id = ANY(@ids)
+''';
+
+  @override
+  Future<Result<Map<String, String>>> findDisplayNames(
+    List<ParticipantId> ids,
+  ) async {
+    if (ids.isEmpty) return const Result.ok({});
+    final result = await _connection.query(
+      _selectDisplayNamesSql,
+      parameters: {'ids': [for (final id in ids) id.value]},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok({
+        for (final row in value)
+          if (row['participant_id'] != null && row['display_name'] != null)
+            row['participant_id'].toString(): row['display_name'].toString(),
+      }),
+    };
+  }
+
   static const String _selectByIdSql = '''
 SELECT id, season_id, user_id, status::text, joined_at
 FROM competition.participants

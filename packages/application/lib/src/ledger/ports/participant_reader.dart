@@ -28,4 +28,9 @@ abstract interface class ParticipantReader {
   /// a `null` result is reported to the caller as "not found" (never leaking
   /// whether the id belongs to someone else).
   Future<Result<Participant?>> findParticipantById(ParticipantId id);
+
+  /// Returns display names for the given participant [ids] (participant id
+  /// value -> `identity.users.display_name`). Ids with no matching participant
+  /// or user are simply absent from the map (never an error).
+  Future<Result<Map<String, String>>> findDisplayNames(List<ParticipantId> ids);
 }

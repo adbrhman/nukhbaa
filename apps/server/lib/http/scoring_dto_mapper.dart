@@ -16,12 +16,13 @@ import 'package:domain/domain.dart';
 /// transmitted value can never drift silently. The per-fixture breakdown echoes
 /// the stored list order the aggregate preserves (the prediction's order).
 /// Names a fixture by id only (Axiom 3); carries no group reference (Axiom 4).
-RoundScoreDto roundScoreToDto(RoundScore score) {
+RoundScoreDto roundScoreToDto(RoundScore score, {String displayName = ''}) {
   return RoundScoreDto(
     roundId: score.roundId.value,
     participantId: score.participantId.value,
     rulesetVersion: score.rulesetVersion,
     totalPoints: score.totalPoints,
+    displayName: displayName,
     fixtureResults: [
       for (final fixture in score.fixtureResults)
         FixtureScoreResultDto(
@@ -38,11 +39,18 @@ RoundScoreDto roundScoreToDto(RoundScore score) {
 /// list. [roundId] is the requested round (the same round every score shares).
 Map<String, Object?> roundScoresToJson(
   String roundId,
-  List<RoundScore> scores,
-) {
+  List<RoundScore> scores, {
+  Map<String, String> displayNames = const {},
+}) {
   return RoundScoresDto(
     roundId: roundId,
-    scores: [for (final score in scores) roundScoreToDto(score)],
+    scores: [
+      for (final score in scores)
+        roundScoreToDto(
+          score,
+          displayName: displayNames[score.participantId.value] ?? '',
+        ),
+    ],
   ).toJson();
 }
 

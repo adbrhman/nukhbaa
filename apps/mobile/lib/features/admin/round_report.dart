@@ -14,11 +14,13 @@ final class RoundReportRow {
     required this.participantId,
     required this.totalPoints,
     required this.cells,
+    this.displayName = '',
   });
 
   final int rank;
   final String participantId;
   final int totalPoints;
+  final String displayName;
 
   /// One cell per fixture, in the round's fixture order (Axiom 3: named by
   /// fixture id only).
@@ -94,6 +96,7 @@ RoundReportRow _row({
     rank: rank,
     participantId: score.participantId,
     totalPoints: score.totalPoints,
+    displayName: score.displayName,
     cells: [
       for (final fr in score.fixtureResults)
         RoundReportCell(
