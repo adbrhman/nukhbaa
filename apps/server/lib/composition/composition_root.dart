@@ -1,4 +1,3 @@
-import 'package:application/src/scoring/admin_get_participant_display_names.dart';
 import 'dart:io';
 
 import 'package:application/application.dart';

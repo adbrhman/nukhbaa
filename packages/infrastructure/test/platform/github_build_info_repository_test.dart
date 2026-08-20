@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:domain/domain.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:infrastructure/infrastructure.dart';
