@@ -42,7 +42,9 @@ WHERE p.id = ANY(@ids)
     if (ids.isEmpty) return const Result.ok({});
     final result = await _connection.query(
       _selectDisplayNamesSql,
-      parameters: {'ids': [for (final id in ids) id.value]},
+      parameters: {
+        'ids': [for (final id in ids) id.value],
+      },
     );
     return switch (result) {
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
