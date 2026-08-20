@@ -33,7 +33,7 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
   /// defaults a missing `double_multiplier` to 1 (no effect) on any
   /// already-frozen v1 snapshot, so a historical round keeps reproducing its
   /// original score exactly (Axiom 5) even though new rounds open under v2.
-  static const int _footballScorelineVersion = 2;
+  static const int _footballScorelineVersion = 3;
 
   @override
   Future<Result<RulesetSnapshot>> currentSnapshotFor(FormatType format) async {
@@ -45,10 +45,10 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
             'format': 'football_scoreline',
             'points': {
               // Exact home/away scoreline predicted correctly.
-              'exact_scoreline': 5,
+              'exact_scoreline': 3,
               // Correct match outcome (home win / draw / away win) but wrong
               // exact scoreline.
-              'correct_outcome': 2,
+              'correct_outcome': 0,
               // Neither outcome nor scoreline correct.
               'incorrect': 0,
             },
