@@ -71,7 +71,7 @@ void main() {
       final body = await _decodeBody(response);
       expect(body['published_at'], publishedAt.toIso8601String());
       expect(body['apk_url'], 'https://example.com/a.apk');
-      expect(body['schema_version'], 1);
+      expect(body['schema_version'], 2);
     });
 
     test('surfaces a transient error as 503', () async {
