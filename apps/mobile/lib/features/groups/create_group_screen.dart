@@ -35,9 +35,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.inviteCodeCopiedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.inviteCodeCopiedMessage)));
   }
 
   @override
