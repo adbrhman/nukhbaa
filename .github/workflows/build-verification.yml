@@ -181,20 +181,21 @@ jobs:
           name: nukhba-android-apk
           path: apk
 
-      - name: Rename to a stable filename
-        run: mv apk/*.apk apk/nukhbaa.apk
+      - name: Rename to a versioned filename
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          mv apk/*.apk "apk/nukhbaa-$SHORT_SHA.apk"
 
-      - name: Publish/update the 'latest' release
+      - name: Publish an immutable per-build release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: Latest build
+          tag_name: build-${{ env.SHORT_SHA }}
+          name: Build ${{ env.SHORT_SHA }}
           body: |
             بناء تلقائي من commit ${{ github.sha }}
-            رابط ثابت للتحميل دائماً:
-            https://github.com/${{ github.repository }}/releases/download/latest/nukhbaa.apk
           make_latest: true
-          files: apk/nukhbaa.apk
+          files: apk/nukhbaa-${{ env.SHORT_SHA }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
