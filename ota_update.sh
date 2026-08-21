@@ -1206,10 +1206,10 @@ else:
               if "desugar_jdk_libs" not in g:
                   if re.search(r"\\ndependencies\\s*\\{", g):
                       g = re.sub(r"(\\ndependencies\\s*\\{)",
-                                 r'\\1\\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")',
+                                 r'\\1\\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
                                  g, count=1)
                   else:
-                      g += '\\ndependencies {\\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")\\n}\\n'
+                      g += '\\ndependencies {\\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\\n}\\n'
               open(gk, "w", encoding="utf-8").write(g)
               print("  desugaring injected into build.gradle.kts")
           elif os.path.exists(gg):
@@ -1221,10 +1221,10 @@ else:
               if "desugar_jdk_libs" not in g:
                   if re.search(r"\\ndependencies\\s*\\{", g):
                       g = re.sub(r"(\\ndependencies\\s*\\{)",
-                                 r"\\1\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'",
+                                 r"\\1\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'",
                                  g, count=1)
                   else:
-                      g += "\\ndependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'\\n}\\n"
+                      g += "\\ndependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\\n}\\n"
               open(gg, "w", encoding="utf-8").write(g)
               print("  desugaring injected into build.gradle")
           else:
@@ -1794,9 +1794,9 @@ if os.path.exists(manifest):
                 else:
                     t = re.sub(r"(compileOptions\s*\{)", r"\1\n        coreLibraryDesugaringEnabled true", t, count=1)
             if "desugar_jdk_libs" not in t:
-                dep = ('    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")'
+                dep = ('    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
                        if kts else
-                       "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'")
+                       "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'")
                 if re.search(r"\ndependencies\s*\{", t):
                     t = re.sub(r"(\ndependencies\s*\{)", r"\1\n"+dep, t, count=1)
                 else:
