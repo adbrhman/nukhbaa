@@ -144,6 +144,113 @@ jobs:
       - name: Ensure platform folders exist
         working-directory: apps/mobile
         run: flutter create --platforms=android . --project-name mobile
+
+      - name: Decode release keystore
+        working-directory: apps/mobile
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+
+      - name: Write key.properties
+        working-directory: apps/mobile
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=app/keystore.jks
+          EOF
+
+      - name: Inject release signing config (idempotent)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import re, os
+
+          gk = "android/app/build.gradle.kts"
+          gg = "android/app/build.gradle"
+
+          if os.path.exists(gk):
+              path = gk
+              s = open(path, encoding="utf-8").read()
+
+              if "keystoreProperties" not in s:
+                  header = (
+                      'import java.util.Properties\n'
+                      'import java.io.FileInputStream\n\n'
+                  )
+                  s = header + s
+
+                  props_block = (
+                      '\nval keystoreProperties = Properties()\n'
+                      'val keystorePropertiesFile = rootProject.file("key.properties")\n'
+                      'if (keystorePropertiesFile.exists()) {\n'
+                      '    keystoreProperties.load(FileInputStream(keystorePropertiesFile))\n'
+                      '}\n\n'
+                  )
+                  s = re.sub(r"(\nandroid\s*\{)", props_block + r"\1", s, count=1)
+
+              if 'create("release")' not in s or "signingConfigs" not in s:
+                  signing_configs = (
+                      '    signingConfigs {\n'
+                      '        create("release") {\n'
+                      '            keyAlias = keystoreProperties["keyAlias"] as String\n'
+                      '            keyPassword = keystoreProperties["keyPassword"] as String\n'
+                      '            storeFile = file(keystoreProperties["storeFile"] as String)\n'
+                      '            storePassword = keystoreProperties["storePassword"] as String\n'
+                      '        }\n'
+                      '    }\n\n'
+                  )
+                  s = re.sub(r"(\n    buildTypes\s*\{)", "\n" + signing_configs + r"    buildTypes {", s, count=1)
+
+              s = re.sub(
+                  r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
+                  'signingConfig = signingConfigs.getByName("release")',
+                  s)
+
+              open(path, "w", encoding="utf-8").write(s)
+              print("signing config injected into build.gradle.kts")
+
+          elif os.path.exists(gg):
+              path = gg
+              s = open(path, encoding="utf-8").read()
+
+              if "keystoreProperties" not in s:
+                  header = (
+                      'import java.util.Properties\n\n'
+                      'def keystoreProperties = new Properties()\n'
+                      'def keystorePropertiesFile = rootProject.file("key.properties")\n'
+                      'if (keystorePropertiesFile.exists()) {\n'
+                      '    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n'
+                      '}\n\n'
+                  )
+                  s = header + s
+
+              if "signingConfigs {" not in s:
+                  signing_configs = (
+                      '    signingConfigs {\n'
+                      '        release {\n'
+                      '            keyAlias keystoreProperties["keyAlias"]\n'
+                      '            keyPassword keystoreProperties["keyPassword"]\n'
+                      '            storeFile file(keystoreProperties["storeFile"])\n'
+                      '            storePassword keystoreProperties["storePassword"]\n'
+                      '        }\n'
+                      '    }\n\n'
+                  )
+                  s = re.sub(r"(\n    buildTypes\s*\{)", "\n" + signing_configs + r"    buildTypes {", s, count=1)
+
+              s = re.sub(
+                  r'signingConfig\s+signingConfigs\.debug',
+                  'signingConfig signingConfigs.release',
+                  s)
+
+              open(path, "w", encoding="utf-8").write(s)
+              print("signing config injected into build.gradle")
+
+          else:
+              raise SystemExit("ERROR: no android/app/build.gradle(.kts) after flutter create")
+          PYEOF
+
       - name: Ensure INTERNET permission
         working-directory: apps/mobile
         run: sed -i "/<manifest /a\\    <uses-permission android:name=\"android.permission.INTERNET\" />" android/app/src/main/AndroidManifest.xml
