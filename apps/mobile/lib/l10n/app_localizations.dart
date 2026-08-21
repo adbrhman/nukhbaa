@@ -1032,6 +1032,36 @@ abstract class AppLocalizations {
   /// **'Join'**
   String get joinGroupButton;
 
+  /// No description provided for @groupCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group created'**
+  String get groupCreatedTitle;
+
+  /// No description provided for @groupInviteCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code with anyone you want to invite'**
+  String get groupInviteCodeHint;
+
+  /// No description provided for @copyInviteCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get copyInviteCodeButton;
+
+  /// No description provided for @inviteCodeCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code copied'**
+  String get inviteCodeCopiedMessage;
+
+  /// No description provided for @doneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneButton;
+
   /// No description provided for @ledgerTitle.
   ///
   /// In en, this message translates to:

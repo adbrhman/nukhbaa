@@ -540,6 +540,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get joinGroupButton => 'Join';
 
   @override
+  String get groupCreatedTitle => 'Group created';
+
+  @override
+  String get groupInviteCodeHint =>
+      'Share this code with anyone you want to invite';
+
+  @override
+  String get copyInviteCodeButton => 'Copy code';
+
+  @override
+  String get inviteCodeCopiedMessage => 'Invite code copied';
+
+  @override
+  String get doneButton => 'Done';
+
+  @override
   String get ledgerTitle => 'My Points';
 
   @override

@@ -546,6 +546,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get joinGroupButton => 'انضمام';
 
   @override
+  String get groupCreatedTitle => 'تم إنشاء المجموعة';
+
+  @override
+  String get groupInviteCodeHint => 'شارك هذا الرمز مع من تريد دعوته للانضمام';
+
+  @override
+  String get copyInviteCodeButton => 'نسخ الرمز';
+
+  @override
+  String get inviteCodeCopiedMessage => 'تم نسخ رمز الدعوة';
+
+  @override
+  String get doneButton => 'تم';
+
+  @override
   String get ledgerTitle => 'نقاطي';
 
   @override
