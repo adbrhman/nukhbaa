@@ -148,7 +148,8 @@ jobs:
       - name: Decode release keystore
         working-directory: apps/mobile
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 -d --ignore-garbage > android/app/keystore.jks
+          test -s android/app/keystore.jks || { echo "::error::keystore.jks فارغ — تحقق من قيمة السر ANDROID_KEYSTORE_BASE64"; exit 1; }
 
       - name: Write key.properties
         working-directory: apps/mobile
