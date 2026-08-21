@@ -147,9 +147,13 @@ jobs:
 
       - name: Decode release keystore
         working-directory: apps/mobile
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 -d --ignore-garbage > android/app/keystore.jks
-          test -s android/app/keystore.jks || { echo "::error::keystore.jks فارغ — تحقق من قيمة السر ANDROID_KEYSTORE_BASE64"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' > /tmp/keystore.b64
+          echo "طول النص المستلم: $(wc -c < /tmp/keystore.b64) حرف"
+          base64 -d --ignore-garbage /tmp/keystore.b64 > android/app/keystore.jks
+          test -s android/app/keystore.jks || { echo "::error::فشل فك الترميز — القيمة المخزّنة في السر تالفة أو غير صالحة"; exit 1; }
 
       - name: Write key.properties
         working-directory: apps/mobile
