@@ -996,6 +996,36 @@ abstract class AppLocalizations {
   /// **'No report for this round yet'**
   String get adminRoundReportSectionEmpty;
 
+  /// No description provided for @myGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'My Groups'**
+  String get myGroups;
+
+  /// No description provided for @myGroupsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t joined any group yet.'**
+  String get myGroupsEmpty;
+
+  /// No description provided for @groupRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get groupRoleOwner;
+
+  /// No description provided for @groupRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get groupRoleMember;
+
+  /// No description provided for @groupMemberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No members} =1{1 member} other{{count} members}}'**
+  String groupMemberCount(int count);
+
   /// No description provided for @createGroupTitle.
   ///
   /// In en, this message translates to:

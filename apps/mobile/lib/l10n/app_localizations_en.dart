@@ -522,6 +522,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRoundReportSectionEmpty => 'No report for this round yet';
 
   @override
+  String get myGroups => 'My Groups';
+
+  @override
+  String get myGroupsEmpty => 'You haven\'t joined any group yet.';
+
+  @override
+  String get groupRoleOwner => 'Owner';
+
+  @override
+  String get groupRoleMember => 'Member';
+
+  @override
+  String groupMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+      zero: 'No members',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get createGroupTitle => 'Create Group';
 
   @override

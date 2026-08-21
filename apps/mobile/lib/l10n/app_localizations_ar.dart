@@ -528,6 +528,33 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRoundReportSectionEmpty => 'لا يوجد تقرير لهذه الجولة بعد';
 
   @override
+  String get myGroups => 'مجموعاتي';
+
+  @override
+  String get myGroupsEmpty => 'لم تنضم إلى أي مجموعة بعد.';
+
+  @override
+  String get groupRoleOwner => 'مالك';
+
+  @override
+  String get groupRoleMember => 'عضو';
+
+  @override
+  String groupMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عضو',
+      many: '$count عضوًا',
+      few: '$count أعضاء',
+      two: 'عضوان',
+      one: 'عضو واحد',
+      zero: 'لا يوجد أعضاء',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get createGroupTitle => 'إنشاء مجموعة';
 
   @override

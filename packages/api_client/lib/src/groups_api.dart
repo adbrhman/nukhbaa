@@ -40,6 +40,14 @@ final class GroupsApi {
     );
   }
 
+  /// `GET /me/groups` — lists every group the caller belongs to.
+  Future<Result<MyGroupsDto>> myGroups() {
+    return _transport.getObject<MyGroupsDto>(
+      '/me/groups',
+      parse: MyGroupsDto.fromJson,
+    );
+  }
+
   /// `GET /groups/{groupId}` — reads the group, visible only to a member.
   Future<Result<GroupDto>> getGroup(String groupId) {
     return _transport.getObject<GroupDto>(

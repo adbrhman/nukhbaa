@@ -53,6 +53,13 @@ Future<GroupActivityFeedDto> groupFeed(Ref ref, String groupId) async {
   return _unwrap(await api.feed(groupId));
 }
 
+/// `GET /me/groups` — every group the caller belongs to.
+@riverpod
+Future<MyGroupsDto> myGroups(Ref ref) async {
+  final api = ref.watch(groupsApiProvider);
+  return _unwrap(await api.myGroups());
+}
+
 /// Owns the `POST /groups` create command. A `family`-free single-shot
 /// notifier: each screen instance drives its own [create] call and reads the
 /// result directly rather than through persistent state, mirroring how a
