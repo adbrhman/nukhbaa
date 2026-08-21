@@ -10,6 +10,7 @@ import '../competition/competition_providers.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'prediction_history_providers.dart';
+import 'round_scores_providers.dart';
 
 /// The caller's own aggregated prediction history — every prediction they
 /// have ever submitted, across every round and season, newest first.
@@ -68,6 +69,20 @@ class _PredictionCard extends ConsumerWidget {
           for (final RoundFixtureCardDto fixture in fixtures.value ?? const [])
             fixture.fixtureId: fixture,
         };
+    final AsyncValue<RoundScoresDto?> roundScoresAsync = ref.watch(
+      roundScoresProvider(prediction.roundId),
+    );
+    RoundScoreDto? myScore;
+    for (final RoundScoreDto s in roundScoresAsync.value?.scores ?? const []) {
+      if (s.participantId == prediction.participantId) {
+        myScore = s;
+        break;
+      }
+    }
+    final Map<String, String> gradeByFixtureId = <String, String>{
+      for (final FixtureScoreResultDto r in myScore?.fixtureResults ?? const [])
+        r.fixtureId: r.grade,
+    };
 
     return Card(
       key: Key('history.item.${prediction.id}'),
@@ -95,6 +110,7 @@ class _PredictionCard extends ConsumerWidget {
                   key: Key('history.score.${prediction.id}.${score.fixtureId}'),
                   score: score,
                   fixture: byFixtureId[score.fixtureId],
+                  grade: gradeByFixtureId[score.fixtureId],
                 ),
               ),
           ],
@@ -108,10 +124,30 @@ class _PredictionCard extends ConsumerWidget {
 /// the raw fixture id (no crests) when [fixture] is `null` — the resolved read
 /// hasn't returned this fixture yet, or it is no longer linked to the round.
 class _ScoreLine extends StatelessWidget {
-  const _ScoreLine({required this.score, required this.fixture, super.key});
+  const _ScoreLine({
+    required this.score,
+    required this.fixture,
+    this.grade,
+    super.key,
+  });
 
   final FixtureScoreDto score;
   final RoundFixtureCardDto? fixture;
+  final String? grade;
+
+  /// The small correctness badge, or `null` when the round isn't scored yet
+  /// or this fixture was `missed`.
+  String? get _badge {
+    switch (grade) {
+      case 'exact_scoreline':
+        return score.isDouble ? '🔥' : '✅';
+      case 'correct_outcome':
+      case 'incorrect':
+        return '❌';
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,14 +156,25 @@ class _ScoreLine extends StatelessWidget {
     final bool hasNames =
         (f?.homeTeam?.isNotEmpty ?? false) &&
         (f?.awayTeam?.isNotEmpty ?? false);
+    final String? badge = _badge;
 
     if (!hasNames) {
-      return Text(
-        l10n.predictionHistoryScoreLine(
-          score.fixtureId,
-          score.homeGoals,
-          score.awayGoals,
-        ),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            l10n.predictionHistoryScoreLine(
+              score.fixtureId,
+              score.homeGoals,
+              score.awayGoals,
+            ),
+          ),
+          if (badge != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(badge, style: const TextStyle(fontSize: 11)),
+            ),
+        ],
       );
     }
 
@@ -136,7 +183,17 @@ class _ScoreLine extends StatelessWidget {
         Expanded(child: _TeamMini(name: f!.homeTeam, alignEnd: false)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          child: _ScorePill(home: score.homeGoals, away: score.awayGoals),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _ScorePill(home: score.homeGoals, away: score.awayGoals),
+              if (badge != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(badge, style: const TextStyle(fontSize: 11)),
+                ),
+            ],
+          ),
         ),
         Expanded(child: _TeamMini(name: f.awayTeam, alignEnd: true)),
       ],
