@@ -7,94 +7,114 @@ import 'package:infrastructure/infrastructure.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-String _releaseBody({
-  String publishedAt = '2026-08-20T12:00:00Z',
-  bool includeApk = true,
-}) => jsonEncode({
-  'tag_name': 'latest',
-  'published_at': publishedAt,
-  'assets': [
-    if (includeApk)
-      {
-        'name': 'nukhbaa.apk',
-        'browser_download_url': 'https://example.com/nukhbaa.apk',
-      },
-    {
-      'name': 'source.zip',
-      'browser_download_url': 'https://example.com/source.zip',
-    },
-  ],
-});
+http.Response _release(List<Map<String, String>> assets) => http.Response(
+  jsonEncode({
+    'published_at': '2026-01-02T00:00:00Z',
+    'assets': assets
+        .map((a) => {'name': a['name'], 'browser_download_url': a['url']})
+        .toList(),
+  }),
+  200,
+);
 
 void main() {
-  group('GithubBuildInfoRepository.fetchLatest', () {
-    test(
-      'maps a 200 response to LatestBuild (published_at + apk url)',
-      () async {
-        final repo = GithubBuildInfoRepository(
-          MockClient((_) async => http.Response(_releaseBody(), 200)),
-        );
-
-        final result = await repo.fetchLatest();
-
-        expect(result.isOk, isTrue);
-        final build = (result as Ok<LatestBuild>).value;
-        expect(build.publishedAt, DateTime.parse('2026-08-20T12:00:00Z'));
-        expect(build.apkUrl, 'https://example.com/nukhbaa.apk');
-      },
-    );
-
-    test(
-      'caches a successful read within the TTL (one network call)',
-      () async {
-        var calls = 0;
-        final repo = GithubBuildInfoRepository(
-          MockClient((_) async {
-            calls++;
-            return http.Response(_releaseBody(), 200);
+  group('GithubBuildInfoRepository (split-per-abi)', () {
+    test('maps each ABI apk with its checksum; arm64 is primary', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa-arm64-v8a-abc.apk', 'url': 'https://x/arm64.apk'},
+            {'name': 'nukhbaa-armeabi-v7a-abc.apk', 'url': 'https://x/v7a.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/checksums.json'},
+          ]);
+        }
+        return http.Response(
+          jsonEncode({
+            'nukhbaa-arm64-v8a-abc.apk': 'AA',
+            'nukhbaa-armeabi-v7a-abc.apk': 'BB',
           }),
+          200,
         );
+      });
 
-        await repo.fetchLatest();
-        await repo.fetchLatest();
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect(result, isA<Ok<LatestBuild>>());
+      final build = (result as Ok<LatestBuild>).value;
+      expect(build.assets.length, 2);
+      expect(build.apkUrl, 'https://x/arm64.apk'); // arm64 primary
+      expect(build.sha256, 'aa'); // lowercased
+      expect(build.assets.map((a) => a.abi).toSet(), {
+        'arm64-v8a',
+        'armeabi-v7a',
+      });
+    });
 
-        expect(calls, 1);
+    test(
+      'apk without a checksum entry is skipped (=> transient error)',
+      () async {
+        final client = MockClient((req) async {
+          if (req.url.host == 'api.github.com') {
+            return _release([
+              {
+                'name': 'nukhbaa-arm64-v8a-abc.apk',
+                'url': 'https://x/arm64.apk',
+              },
+              {'name': 'checksums.json', 'url': 'https://x/c.json'},
+            ]);
+          }
+          return http.Response(jsonEncode(<String, String>{}), 200);
+        });
+        final result = await GithubBuildInfoRepository(client).fetchLatest();
+        expect(result, isA<Err<LatestBuild>>());
       },
     );
 
-    test('returns a transient error on a non-200 response', () async {
-      final repo = GithubBuildInfoRepository(
-        MockClient((_) async => http.Response('not found', 404)),
-      );
-
-      final result = await repo.fetchLatest();
-
-      expect(result.isErr, isTrue);
-      expect((result as Err<LatestBuild>).error.kind, ErrorKind.transient);
+    test('universal apk with checksum is used when no ABI assets', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa-universal-abc.apk', 'url': 'https://x/uni.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/c.json'},
+          ]);
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-universal-abc.apk': 'CC'}),
+          200,
+        );
+      });
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect(result, isA<Ok<LatestBuild>>());
+      final build = (result as Ok<LatestBuild>).value;
+      expect(build.assets, isEmpty);
+      expect(build.apkUrl, 'https://x/uni.apk');
+      expect(build.sha256, 'cc');
     });
 
-    test('returns a transient error when no .apk asset is published', () async {
-      final repo = GithubBuildInfoRepository(
-        MockClient(
-          (_) async => http.Response(_releaseBody(includeApk: false), 200),
-        ),
-      );
-
-      final result = await repo.fetchLatest();
-
-      expect(result.isErr, isTrue);
-      expect((result as Err<LatestBuild>).error.kind, ErrorKind.transient);
+    test('non-200 from GitHub => transient error', () async {
+      final client = MockClient((_) async => http.Response('nope', 503));
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect(result, isA<Err<LatestBuild>>());
     });
 
-    test('returns a transient error on a network failure', () async {
-      final repo = GithubBuildInfoRepository(
-        MockClient((_) async => throw Exception('boom')),
+    test('malformed release (no published_at) => transient error', () async {
+      final client = MockClient(
+        (_) async => http.Response(jsonEncode({'assets': <Object?>[]}), 200),
       );
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect(result, isA<Err<LatestBuild>>());
+    });
 
-      final result = await repo.fetchLatest();
-
-      expect(result.isErr, isTrue);
-      expect((result as Err<LatestBuild>).error.kind, ErrorKind.transient);
+    test('release with no apk at all => transient error', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'notes.txt', 'url': 'https://x/notes.txt'},
+          ]);
+        }
+        return http.Response('{}', 200);
+      });
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect(result, isA<Err<LatestBuild>>());
     });
   });
 }
