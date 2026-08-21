@@ -148,6 +148,93 @@ jobs:
         working-directory: apps/mobile
         run: sed -i "/<manifest /a\\    <uses-permission android:name=\"android.permission.INTERNET\" />" android/app/src/main/AndroidManifest.xml
 
+      - name: Inject ota_update Android requirements (idempotent)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import re, os
+
+          manifest = "android/app/src/main/AndroidManifest.xml"
+          s = open(manifest, encoding="utf-8").read()
+
+          # 1) REQUEST_INSTALL_PACKAGES permission (needed for external-APK install).
+          if "REQUEST_INSTALL_PACKAGES" not in s:
+              s = re.sub(
+                  r"(<manifest[^>]*>)",
+                  r'\1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+                  s, count=1)
+
+          # 2) FileProvider + InstallResultReceiver inside <application>.
+          if "sk.fourq.otaupdate.OtaUpdateFileProvider" not in s:
+              block = (
+                  '        <provider\n'
+                  '            android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"\n'
+                  '            android:authorities="${applicationId}.ota_update_provider"\n'
+                  '            android:exported="false"\n'
+                  '            android:grantUriPermissions="true">\n'
+                  '            <meta-data\n'
+                  '                android:name="android.support.FILE_PROVIDER_PATHS"\n'
+                  '                android:resource="@xml/filepaths" />\n'
+                  '        </provider>\n'
+                  '        <receiver android:name="sk.fourq.otaupdate.InstallResultReceiver" android:exported="false">\n'
+                  '            <intent-filter>\n'
+                  '                <action android:name="${applicationId}.ACTION_INSTALL_COMPLETE"/>\n'
+                  '            </intent-filter>\n'
+                  '        </receiver>\n'
+              )
+              s = s.replace("    </application>", block + "    </application>", 1)
+
+          open(manifest, "w", encoding="utf-8").write(s)
+
+          # 3) filepaths.xml consumed by the FileProvider.
+          os.makedirs("android/app/src/main/res/xml", exist_ok=True)
+          open("android/app/src/main/res/xml/filepaths.xml", "w", encoding="utf-8").write(
+              '<?xml version="1.0" encoding="utf-8"?>\n'
+              '<paths xmlns:android="http://schemas.android.com/apk/res/android">\n'
+              '    <files-path name="internal_apk_storage" path="ota_update/"/>\n'
+              '</paths>\n')
+
+          # 4) Java 8 core-library desugaring in app/build.gradle(.kts) — required
+          #    by ota_update 7.x. AGP for Flutter 3.44 is 8.x => desugar_jdk_libs 2.0.3.
+          gk = "android/app/build.gradle.kts"
+          gg = "android/app/build.gradle"
+          if os.path.exists(gk):
+              g = open(gk, encoding="utf-8").read()
+              if "coreLibraryDesugaringEnabled" not in g:
+                  g = re.sub(r"(compileOptions\s*\{)",
+                             r"\1\n        isCoreLibraryDesugaringEnabled = true",
+                             g, count=1)
+              if "desugar_jdk_libs" not in g:
+                  if re.search(r"\ndependencies\s*\{", g):
+                      g = re.sub(r"(\ndependencies\s*\{)",
+                                 r'\1\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")',
+                                 g, count=1)
+                  else:
+                      g += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")\n}\n'
+              open(gk, "w", encoding="utf-8").write(g)
+              print("  desugaring injected into build.gradle.kts")
+          elif os.path.exists(gg):
+              g = open(gg, encoding="utf-8").read()
+              if "coreLibraryDesugaringEnabled" not in g:
+                  g = re.sub(r"(compileOptions\s*\{)",
+                             r"\1\n        coreLibraryDesugaringEnabled true",
+                             g, count=1)
+              if "desugar_jdk_libs" not in g:
+                  if re.search(r"\ndependencies\s*\{", g):
+                      g = re.sub(r"(\ndependencies\s*\{)",
+                                 r"\1\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'",
+                                 g, count=1)
+                  else:
+                      g += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'\n}\n"
+              open(gg, "w", encoding="utf-8").write(g)
+              print("  desugaring injected into build.gradle")
+          else:
+              raise SystemExit("ERROR: no android/app/build.gradle(.kts) after flutter create")
+
+          print("ota_update Android requirements injected (idempotent).")
+          PYEOF
+
       - name: Restore committed web assets
         run: git checkout -- apps/mobile/web
 
@@ -155,12 +242,12 @@ jobs:
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build APK
+      - name: Build APK (split-per-abi)
         working-directory: apps/mobile
         run: |
           CLEAN_API_BASE_URL=$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')
           echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\"}" > /tmp/dart_defines.json
-          flutter build apk --dart-define-from-file=/tmp/dart_defines.json --release
+          flutter build apk --split-per-abi --dart-define-from-file=/tmp/dart_defines.json --release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -181,11 +268,28 @@ jobs:
           name: nukhba-android-apk
           path: apk
 
-      - name: Rename to a versioned filename
+      - name: Rename per-ABI APKs, then build checksums.json (post-rename)
         run: |
+          set -euo pipefail
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
-          mv apk/*.apk "apk/nukhbaa-$SHORT_SHA.apk"
+          cd apk
+          python3 - "$SHORT_SHA" <<'PYEOF'
+          import sys, os, re, hashlib, json, glob
+          sha = sys.argv[1]
+          # Flutter emits app-arm64-v8a-release.apk etc. Rename to
+          # nukhbaa-<abi>-<sha>.apk. If a universal apk exists, tag it "universal".
+          for f in glob.glob("*.apk"):
+              m = re.search(r"(arm64-v8a|armeabi-v7a|x86_64|x86)", f)
+              abi = m.group(1) if m else "universal"
+              os.rename(f, "nukhbaa-%s-%s.apk" % (abi, sha))
+          # Build checksums.json keyed by the FINAL published filenames.
+          out = {}
+          for f in sorted(glob.glob("nukhbaa-*.apk")):
+              out[f] = hashlib.sha256(open(f, "rb").read()).hexdigest()
+          json.dump(out, open("checksums.json", "w"), indent=2)
+          print(json.dumps(out, indent=2))
+          PYEOF
 
       - name: Publish an immutable per-build release
         uses: softprops/action-gh-release@v2
@@ -195,7 +299,9 @@ jobs:
           body: |
             بناء تلقائي من commit ${{ github.sha }}
           make_latest: true
-          files: apk/nukhbaa-${{ env.SHORT_SHA }}.apk
+          files: |
+            apk/nukhbaa-*.apk
+            apk/checksums.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

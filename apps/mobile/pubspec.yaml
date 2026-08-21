@@ -54,6 +54,25 @@ dependencies:
   # apps/mobile" boundary (ADR-002 \xc2\xa72.8) \xe2\x80\x94 no `http` call is made here.
   url_launcher: ^6.3.2
 
+  # In-App OTA update (ADR-002 §2.8 EXCEPTION — documented):
+  # `ota_update` downloads + installs the release APK via NATIVE Android
+  # (internal storage + install intent / PackageInstaller). It performs NO
+  # Dart-side HTTP, so it does NOT add an `http` transport to apps/mobile; the
+  # update METADATA (per-ABI url + sha256 + published_at) still comes only from
+  # the server via `api_client`/`contracts`. This is the sole path replacing
+  # the old `launchUrl(externalApplication)` browser download.
+  # Verified on pub.dev 2026-08-21: ota_update 7.1.0 exposes
+  # execute(sha256checksum:)/cancel() + OtaStatus events; requires Android
+  # core-library desugaring (injected in CI after `flutter create`).
+  ota_update: ^7.1.0
+
+  # Reads device supportedAbis to pick the matching per-ABI APK. This is the
+  # primary ABI source (ota_update's own getAbi() is tried first at runtime,
+  # guarded by try/catch, with this as the documented fallback). Native
+  # platform read, NOT HTTP. Verified on pub.dev 2026-08-21: device_info_plus
+  # 11.x (Dart ^3.9.0 compatible).
+  device_info_plus: ^11.3.0
+
   # State management — ratified Riverpod (annotation-based).
   flutter_riverpod: ^3.3.2
   riverpod_annotation: ^4.0.3
