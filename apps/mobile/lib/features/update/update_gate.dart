@@ -31,6 +31,7 @@ import 'dart:async';
 
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -74,6 +75,9 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
   Future<void> _checkForUpdate() async {
     if (_checked) return;
     _checked = true;
+    // PWA updates via the browser/service worker on redeploy — native
+    // OTA (ota_update plugin) has no web implementation and would hang.
+    if (kIsWeb) return;
 
     final AppApi api = ref.read(appApiProvider);
     final Result<LatestBuildDto> result = await api.latestBuild();
@@ -211,6 +215,9 @@ class _UpdateProgressDialog extends StatefulWidget {
 
 class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
   StreamSubscription<UpdateProgress>? _sub;
+  // Guards against a double Navigator.pop: the plugin's terminal stream
+  // event and the user's Cancel tap can otherwise both fire.
+  bool _settled = false;
   UpdateProgress _current = const UpdateProgress(
     UpdatePhase.downloading,
     percent: 0,
@@ -220,14 +227,17 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
   void initState() {
     super.initState();
     _sub = widget.stream.listen((p) {
-      if (!mounted) return;
+      if (!mounted || _settled) return;
       setState(() => _current = p);
       if (p.isTerminal) {
         final delay = p.phase == UpdatePhase.completed
             ? const Duration(milliseconds: 600)
             : Duration.zero;
         Future<void>.delayed(delay, () {
-          if (mounted) Navigator.of(context).pop(p.phase);
+          if (mounted && !_settled) {
+            _settled = true;
+            Navigator.of(context).pop(p.phase);
+          }
         });
       }
     });
@@ -266,12 +276,30 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
             Text('$pct%', textAlign: TextAlign.center),
           ] else if (_current.phase == UpdatePhase.installing)
             const Center(child: CircularProgressIndicator()),
+          // TEMP DIAGNOSTIC: surface the raw native error on-screen so it
+          // can be read without adb/logcat. Remove once root-caused.
+          if (_current.message != null) ...[
+            const SizedBox(height: 12),
+            SelectableText(
+              _current.message!,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 12, color: Colors.red),
+            ),
+          ],
         ],
       ),
       actions: [
         if (_current.phase == UpdatePhase.downloading)
           TextButton(
-            onPressed: () async => widget.onCancel(),
+            onPressed: () {
+              // Best-effort native cancel — never let the UI hang
+              // waiting for a terminal event the plugin might not send.
+              unawaited(widget.onCancel());
+              if (!_settled && mounted) {
+                _settled = true;
+                Navigator.of(context).pop(UpdatePhase.cancelled);
+              }
+            },
             child: const Text('إلغاء'),
           ),
       ],
