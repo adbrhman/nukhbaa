@@ -58,6 +58,7 @@ class _RoundAdministrationSectionState
             children: [
               CompetitionPickerField(
                 key: const Key('admin.rounds.competitionField'),
+                fieldKey: const Key('admin.rounds.competitionField.field'),
                 label: l10n.adminSelectCompetitionLabel,
                 enabled: !openInFlight,
                 selectedId: _competitionId,

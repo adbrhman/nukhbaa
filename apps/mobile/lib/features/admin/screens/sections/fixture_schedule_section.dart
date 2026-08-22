@@ -104,6 +104,7 @@ class _FixtureScheduleSectionState
             children: [
               CompetitionPickerField(
                 key: const Key('admin.fixtures.competitionField'),
+                fieldKey: const Key('admin.fixtures.competitionField.field'),
                 label: l10n.adminSelectCompetitionLabel,
                 enabled: !inFlight,
                 selectedId: _competitionId,

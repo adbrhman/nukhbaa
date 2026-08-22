@@ -118,13 +118,13 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (resultState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    resultState.error as AppError,
+                    resultState!.error as AppError,
                   ),
                 ),
               if (resultState is AsyncData)
                 AdminSuccessBanner(
                   message:
-                      '${resultState.value.fixtureId}: ${resultState.value.homeGoals}-${resultState.value.awayGoals}',
+                      '${resultState!.value!.fixtureId}: ${resultState.value!.homeGoals}-${resultState.value!.awayGoals}',
                 ),
               const SizedBox(height: AppSpacing.md),
               AdminPrimaryButton(
@@ -153,7 +153,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               const SizedBox(height: AppSpacing.md),
               if (scoreState is AsyncError)
                 AdminErrorBanner(
-                  message: ErrorPresenter.message(scoreState.error as AppError),
+                  message: ErrorPresenter.message(
+                    scoreState!.error as AppError,
+                  ),
                 ),
               if (scoreState is AsyncError)
                 const SizedBox(height: AppSpacing.sm),
@@ -184,13 +186,13 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         const SizedBox(height: AppSpacing.md),
         if (lookupState is AsyncError)
           AdminErrorBanner(
-            message: ErrorPresenter.message(lookupState.error as AppError),
+            message: ErrorPresenter.message(lookupState!.error as AppError),
           ),
         Builder(
           builder: (context) {
             final scores = lookupState is AsyncData
-                ? lookupState.value.scores
-                : (scoreState is AsyncData ? scoreState.value.scores : null);
+                ? lookupState!.value!.scores
+                : (scoreState is AsyncData ? scoreState!.value!.scores : null);
             if (scores == null) return const SizedBox.shrink();
             if (scores.isEmpty) {
               return AdminCard(
@@ -239,7 +241,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (reportState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    reportState.error as AppError,
+                    reportState!.error as AppError,
                   ),
                 ),
               if (reportState is AsyncError)
