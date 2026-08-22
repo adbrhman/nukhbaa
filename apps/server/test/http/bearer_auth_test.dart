@@ -55,7 +55,6 @@ User _user({
   status: status,
 );
 
-
 void main() {
   setUpAll(() {
     registerFallbackValue(_principal());
@@ -161,7 +160,6 @@ void main() {
       final downstream = okHandler();
 
       final response = await bearerAuth()(downstream.handler)(wired.context);
-
 
       expect(response.statusCode, HttpStatus.serviceUnavailable);
       expect(downstream.ran, isEmpty);

@@ -74,7 +74,6 @@ final class ApiTransport {
 
   final Future<void> Function()? _onUnauthorized;
 
-
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
   Future<Result<T>> getObject<T>(
