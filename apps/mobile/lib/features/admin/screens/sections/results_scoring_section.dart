@@ -227,8 +227,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 const SizedBox(height: AppSpacing.md),
                 SeasonPickerField(
                   competitionId: _scoreCompetitionId!,
-                  enabled:
-                      !scoreInFlight && !lookupInFlight && !reportInFlight,
+                  enabled: !scoreInFlight && !lookupInFlight && !reportInFlight,
                   selectedId: _scoreSeasonId,
                   onSelected: (String seasonId) => setState(() {
                     _scoreSeasonId = seasonId;
@@ -241,8 +240,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 RoundPickerField(
                   keyPrefix: 'admin.results.score',
                   seasonId: _scoreSeasonId!,
-                  enabled:
-                      !scoreInFlight && !lookupInFlight && !reportInFlight,
+                  enabled: !scoreInFlight && !lookupInFlight && !reportInFlight,
                   selectedId: _roundId,
                   onSelected: (RoundDto round) => setState(() {
                     _roundId = round.id;
