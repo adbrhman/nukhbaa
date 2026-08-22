@@ -45,6 +45,21 @@ Do not read any other doc file unless explicitly requested._
 - **Migration:** historical `round` / `round_fixture` data is archived,
   not dropped. Existing `predictions` / `point_entries` are relinked to
   `fixture_id` directly in one migration.
+- **Double pick rule:** the old "at most one double per round" invariant
+  cannot survive inside a single `Prediction` aggregate once each fixture
+  is its own independent prediction. Decided: **at most one double per
+  calendar day (UTC)**. This is NOT a domain-entity invariant anymore --
+  it must be enforced in the `application` layer at submit/amend time via
+  a repository query (count existing `isDouble = true` predictions for
+  that participant on that UTC calendar day), because predictions for a
+  single day arrive as separate, independent submissions over time, not
+  as one atomic batch the way a round's predictions used to.
+- **`Prediction` aggregate reshaped:** was "one prediction per round,
+  containing N `FixtureScorePrediction` children" (one per fixture in the
+  round, submitted atomically). Becomes "one prediction per fixture",
+  keyed by `(fixture_id, participant_id)`. `FixtureScorePrediction` and
+  `Prediction` effectively merge into one per-fixture entity carrying its
+  own `isDouble` flag, validated against the daily count above.
 - **Status:** design approved; implementation in progress layer by layer
   (domain -> application -> infrastructure/migration -> contracts ->
   server routes -> mobile). Do not assume completion elsewhere in this
