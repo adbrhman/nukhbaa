@@ -30,3 +30,8 @@ docker-build.log
 --list
 --list
 apps/mobile/android/
+.admin_dropdowns_backup_*/
+*.bak_*
+*.jks
+keystore_b64.txt
+android_backup_*/
