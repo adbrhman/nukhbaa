@@ -60,6 +60,11 @@ Do not read any other doc file unless explicitly requested._
   keyed by `(fixture_id, participant_id)`. `FixtureScorePrediction` and
   `Prediction` effectively merge into one per-fixture entity carrying its
   own `isDouble` flag, validated against the daily count above.
+- **New link entity:** `SeasonFixture` (season_id, fixture_id,
+  display_order) directly links `CompetitionSeason` to `Fixture`,
+  replacing the round-mediated `RoundFixture`. Required because without
+  `Round` there was no remaining path from a fixture back to its
+  season/competition.
 - **Status:** design approved; implementation in progress layer by layer
   (domain -> application -> infrastructure/migration -> contracts ->
   server routes -> mobile). Do not assume completion elsewhere in this
