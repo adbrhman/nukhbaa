@@ -133,7 +133,8 @@ class _FixtureScheduleSectionState
               ],
               if (_seasonId != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                _RoundPickerField(
+                RoundPickerField(
+                  keyPrefix: 'admin.fixtures',
                   seasonId: _seasonId!,
                   enabled: !inFlight,
                   selectedId: _roundId,
@@ -258,78 +259,6 @@ class _FixtureScheduleSectionState
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
-  }
-}
-
-/// عرض قائمة الجولات في الموسم المختار (dropdown من قاعدة البيانات، بلا UUID يدوي).
-class _RoundPickerField extends ConsumerWidget {
-  const _RoundPickerField({
-    required this.seasonId,
-    required this.enabled,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final String seasonId;
-  final bool enabled;
-  final String? selectedId;
-  final ValueChanged<RoundDto> onSelected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final AsyncValue<List<RoundDto>> rounds = ref.watch(
-      seasonRoundsProvider(seasonId),
-    );
-    return rounds.when(
-      loading: () => const LinearProgressIndicator(),
-      error: (Object error, StackTrace _) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.adminSelectRoundLabel,
-          border: const OutlineInputBorder(),
-        ),
-        child: Text(ErrorPresenter.message(error as AppError)),
-      ),
-      data: (List<RoundDto> list) {
-        if (list.isEmpty) {
-          return InputDecorator(
-            decoration: InputDecoration(
-              labelText: l10n.adminSelectRoundLabel,
-              border: const OutlineInputBorder(),
-            ),
-            child: Text(l10n.adminNoRoundsHint),
-          );
-        }
-        final String? value = list.any((r) => r.id == selectedId)
-            ? selectedId
-            : null;
-        return DropdownButtonFormField<String>(
-          key: const Key('admin.fixtures.roundField'),
-          initialValue: value,
-          decoration: InputDecoration(
-            labelText: l10n.adminSelectRoundLabel,
-            border: const OutlineInputBorder(),
-          ),
-          items: <DropdownMenuItem<String>>[
-            for (final RoundDto round in list)
-              DropdownMenuItem<String>(
-                key: Key('admin.fixtures.roundField.${round.id}'),
-                value: round.id,
-                child: Text(
-                  l10n.adminRoundOptionLabel(round.sequence, round.status),
-                ),
-              ),
-          ],
-          onChanged: !enabled
-              ? null
-              : (String? id) {
-                  if (id == null) return;
-                  final RoundDto round = list.firstWhere((r) => r.id == id);
-                  onSelected(round);
-                },
-        );
-      },
-    );
   }
 }
 

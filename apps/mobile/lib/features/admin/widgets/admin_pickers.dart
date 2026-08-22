@@ -155,3 +155,167 @@ class SeasonPickerField extends ConsumerWidget {
     );
   }
 }
+
+/// قائمة الجولة المنسدلة (الموسم ← الجولة). تعرض رقم الجولة وحالتها وتُخرج
+/// id فقط — بلا إدخال UUID يدوي. [keyPrefix] يُميّز مفاتيح الودجت بين
+/// الأقسام المختلفة التي تستخدم هذا المنتقي (المباريات، الجولات،
+/// النتائج والاحتساب).
+class RoundPickerField extends ConsumerWidget {
+  const RoundPickerField({
+    super.key,
+    required this.keyPrefix,
+    required this.seasonId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String keyPrefix;
+  final String seasonId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<RoundDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundDto>> rounds = ref.watch(
+      seasonRoundsProvider(seasonId),
+    );
+    return rounds.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectRoundLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectRoundLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoRoundsHint),
+          );
+        }
+        final String? value = list.any((r) => r.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: Key('$keyPrefix.roundField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectRoundLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final RoundDto round in list)
+              DropdownMenuItem<String>(
+                key: Key('$keyPrefix.roundField.${round.id}'),
+                value: round.id,
+                child: Text(
+                  l10n.adminRoundOptionLabel(round.sequence, round.status),
+                ),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  final RoundDto round = list.firstWhere((r) => r.id == id);
+                  onSelected(round);
+                },
+        );
+      },
+    );
+  }
+}
+
+/// قائمة المباراة المنسدلة (الجولة ← المباراة). تعرض الفريقين — أو تنويهاً
+/// عند نقص بيانات الهوية — وتُخرج fixtureId فقط، بلا إدخال UUID يدوي.
+/// [keyPrefix] يُميّز مفاتيح الودجت بين الأقسام المختلفة.
+class FixturePickerField extends ConsumerWidget {
+  const FixturePickerField({
+    super.key,
+    required this.keyPrefix,
+    required this.roundId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String keyPrefix;
+  final String roundId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<RoundFixtureCardDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
+      roundFixturesProvider(roundId),
+    );
+    return fixtures.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectFixtureLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundFixtureCardDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectFixtureLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoFixturesHint),
+          );
+        }
+        final String? value = list.any((f) => f.fixtureId == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: Key('$keyPrefix.fixtureField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectFixtureLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final RoundFixtureCardDto fixture in list)
+              DropdownMenuItem<String>(
+                key: Key('$keyPrefix.fixtureField.${fixture.fixtureId}'),
+                value: fixture.fixtureId,
+                child: Text(_fixtureLabel(fixture, l10n)),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  final RoundFixtureCardDto fixture = list.firstWhere(
+                    (f) => f.fixtureId == id,
+                  );
+                  onSelected(fixture);
+                },
+        );
+      },
+    );
+  }
+
+  String _fixtureLabel(RoundFixtureCardDto fixture, AppLocalizations l10n) {
+    final String? home = fixture.homeTeam;
+    final String? away = fixture.awayTeam;
+    if (home == null || away == null) {
+      return l10n.adminFixtureIncompleteDataLabel;
+    }
+    return '$home × $away';
+  }
+}

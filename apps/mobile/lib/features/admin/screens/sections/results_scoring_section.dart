@@ -1,5 +1,6 @@
 library;
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
@@ -10,10 +11,15 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
 import '../../round_report.dart';
+import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 /// النتائج والاحتساب — تسجيل نتيجة مباراة، احتساب جولة،
 /// عرض النتائج، وتقرير الجولة التفصيلي.
+///
+/// معرّف المباراة ومعرّف الجولة يُختاران من قوائم منسدلة (المسابقة ← الموسم
+/// ← الجولة [← المباراة])، وليس بإدخال UUID يدوي — مطابقةً لنمط
+/// `RoundAdministrationSection`/`FixtureScheduleSection`.
 class ResultsScoringSection extends ConsumerStatefulWidget {
   const ResultsScoringSection({super.key});
 
@@ -23,45 +29,52 @@ class ResultsScoringSection extends ConsumerStatefulWidget {
 }
 
 class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
-  final _fixtureId = TextEditingController();
   final _homeGoals = TextEditingController();
   final _awayGoals = TextEditingController();
-  final _roundId = TextEditingController();
+
+  // نطاق اختيار المباراة (لتسجيل النتيجة).
+  String? _resultCompetitionId;
+  String? _resultSeasonId;
+  String? _resultRoundId;
+  String? _fixtureId;
+
+  // نطاق اختيار الجولة (للاحتساب/عرض النتائج/تقرير الجولة).
+  String? _scoreCompetitionId;
+  String? _scoreSeasonId;
+  String? _roundId;
 
   @override
   void dispose() {
-    _fixtureId.dispose();
     _homeGoals.dispose();
     _awayGoals.dispose();
-    _roundId.dispose();
     super.dispose();
   }
 
   void _recordResult() {
-    final f = _fixtureId.text.trim();
+    final f = _fixtureId;
     final h = int.tryParse(_homeGoals.text.trim());
     final a = int.tryParse(_awayGoals.text.trim());
-    if (f.isEmpty || h == null || a == null) return;
+    if (f == null || h == null || a == null) return;
     ref
         .read(recordFixtureResultControllerProvider.notifier)
         .record(fixtureId: f, homeGoals: h, awayGoals: a);
   }
 
   void _scoreRound() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(scoreRoundControllerProvider.notifier).score(r);
   }
 
   void _lookup() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(roundScoresLookupControllerProvider.notifier).lookup(r);
   }
 
   void _loadReport() {
-    final r = _roundId.text.trim();
-    if (r.isEmpty) return;
+    final r = _roundId;
+    if (r == null) return;
     ref.read(roundReportControllerProvider.notifier).load(r);
   }
 
@@ -78,22 +91,71 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     final lookupInFlight = lookupState is AsyncLoading;
     final reportInFlight = reportState is AsyncLoading;
 
+    final bool canRecord = !resultInFlight && _fixtureId != null;
+    final bool canScore = _roundId != null;
+
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         AdminSectionHeader(
           title: l10n.adminRecordResultSectionTitle,
-          subtitle: 'سجّل النتيجة النهائية لمباراة',
+          subtitle: 'اختر المسابقة والموسم والجولة ثم المباراة وسجّل نتيجتها',
         ),
         AdminCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AdminTextField(
-                controller: _fixtureId,
-                hint: l10n.adminFixtureIdLabel,
-                prefixIcon: Icons.sports_soccer_rounded,
+              CompetitionPickerField(
+                key: const Key('admin.results.competitionField'),
+                fieldKey: const Key('admin.results.competitionField.field'),
+                label: l10n.adminSelectCompetitionLabel,
+                enabled: !resultInFlight,
+                selectedId: _resultCompetitionId,
+                onSelected: (CompetitionDto competition) => setState(() {
+                  _resultCompetitionId = competition.id;
+                  _resultSeasonId = null;
+                  _resultRoundId = null;
+                  _fixtureId = null;
+                }),
               ),
+              if (_resultCompetitionId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SeasonPickerField(
+                  competitionId: _resultCompetitionId!,
+                  enabled: !resultInFlight,
+                  selectedId: _resultSeasonId,
+                  onSelected: (String seasonId) => setState(() {
+                    _resultSeasonId = seasonId;
+                    _resultRoundId = null;
+                    _fixtureId = null;
+                  }),
+                ),
+              ],
+              if (_resultSeasonId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                RoundPickerField(
+                  keyPrefix: 'admin.results.record',
+                  seasonId: _resultSeasonId!,
+                  enabled: !resultInFlight,
+                  selectedId: _resultRoundId,
+                  onSelected: (RoundDto round) => setState(() {
+                    _resultRoundId = round.id;
+                    _fixtureId = null;
+                  }),
+                ),
+              ],
+              if (_resultRoundId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                FixturePickerField(
+                  keyPrefix: 'admin.results.record',
+                  roundId: _resultRoundId!,
+                  enabled: !resultInFlight,
+                  selectedId: _fixtureId,
+                  onSelected: (RoundFixtureCardDto fixture) => setState(() {
+                    _fixtureId = fixture.fixtureId;
+                  }),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
@@ -102,6 +164,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       controller: _homeGoals,
                       hint: l10n.adminHomeGoalsLabel,
                       keyboardType: TextInputType.number,
+                      enabled: !resultInFlight,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -110,6 +173,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       controller: _awayGoals,
                       hint: l10n.adminAwayGoalsLabel,
                       keyboardType: TextInputType.number,
+                      enabled: !resultInFlight,
                     ),
                   ),
                 ],
@@ -131,7 +195,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 label: l10n.adminRecordResultButton,
                 icon: Icons.scoreboard_rounded,
                 loading: resultInFlight,
-                onPressed: resultInFlight ? null : _recordResult,
+                onPressed: canRecord ? _recordResult : null,
               ),
             ],
           ),
@@ -139,17 +203,52 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         const SizedBox(height: AppSpacing.xl),
         AdminSectionHeader(
           title: l10n.adminScoreRoundSectionTitle,
-          subtitle: 'احسب نقاط جميع التوقعات في الجولة',
+          subtitle: 'اختر المسابقة والموسم ثم الجولة لاحتساب توقعاتها',
         ),
         AdminCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AdminTextField(
-                controller: _roundId,
-                hint: l10n.adminRoundIdLabel,
-                prefixIcon: Icons.tag_rounded,
+              CompetitionPickerField(
+                key: const Key('admin.results.score.competitionField'),
+                fieldKey: const Key(
+                  'admin.results.score.competitionField.field',
+                ),
+                label: l10n.adminSelectCompetitionLabel,
+                enabled: !scoreInFlight && !lookupInFlight && !reportInFlight,
+                selectedId: _scoreCompetitionId,
+                onSelected: (CompetitionDto competition) => setState(() {
+                  _scoreCompetitionId = competition.id;
+                  _scoreSeasonId = null;
+                  _roundId = null;
+                }),
               ),
+              if (_scoreCompetitionId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SeasonPickerField(
+                  competitionId: _scoreCompetitionId!,
+                  enabled:
+                      !scoreInFlight && !lookupInFlight && !reportInFlight,
+                  selectedId: _scoreSeasonId,
+                  onSelected: (String seasonId) => setState(() {
+                    _scoreSeasonId = seasonId;
+                    _roundId = null;
+                  }),
+                ),
+              ],
+              if (_scoreSeasonId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                RoundPickerField(
+                  keyPrefix: 'admin.results.score',
+                  seasonId: _scoreSeasonId!,
+                  enabled:
+                      !scoreInFlight && !lookupInFlight && !reportInFlight,
+                  selectedId: _roundId,
+                  onSelected: (RoundDto round) => setState(() {
+                    _roundId = round.id;
+                  }),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               if (scoreState is AsyncError)
                 AdminErrorBanner(
@@ -166,7 +265,9 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       label: l10n.adminScoreRoundButton,
                       icon: Icons.calculate_rounded,
                       loading: scoreInFlight,
-                      onPressed: scoreInFlight ? null : _scoreRound,
+                      onPressed: scoreInFlight || !canScore
+                          ? null
+                          : _scoreRound,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -175,7 +276,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                       label: l10n.adminViewScoresButton,
                       icon: Icons.leaderboard_rounded,
                       loading: lookupInFlight,
-                      onPressed: lookupInFlight ? null : _lookup,
+                      onPressed: lookupInFlight || !canScore ? null : _lookup,
                     ),
                   ),
                 ],
@@ -250,7 +351,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 label: l10n.adminViewRoundReportButton,
                 icon: Icons.table_chart_rounded,
                 loading: reportInFlight,
-                onPressed: reportInFlight ? null : _loadReport,
+                onPressed: reportInFlight || !canScore ? null : _loadReport,
               ),
             ],
           ),
