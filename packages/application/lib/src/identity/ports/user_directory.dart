@@ -34,4 +34,15 @@ abstract interface class UserDirectory {
   /// [userId] — the sole path, besides registration seeding, allowed to
   /// change a user's display name (`UpdateDisplayName` use-case).
   Future<Result<User>> updateDisplayName(UserId userId, String displayName);
+
+  /// Reads the canonical [User] for [id] WITHOUT creating it.
+  ///
+  /// Returns `Ok(null)` when no platform row exists yet.
+  ///
+  /// This is the per-request reconciliation read on the authentication path:
+  /// the stored role/status are authoritative over the token's claims, so
+  /// every guarded request must consult them. Deliberately a pure READ —
+  /// unlike [ensureUser], this runs on every single request, and an upsert
+  /// there would put a write on the hottest path in the system.
+  Future<Result<User?>> findUser(UserId id);
 }

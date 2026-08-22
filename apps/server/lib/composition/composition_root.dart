@@ -1080,7 +1080,7 @@ final class CompositionRoot {
       jwksClient: jwksClient,
       checkHealth: checkHealth,
       getLatestBuild: getLatestBuild,
-      authenticateRequest: AuthenticateRequest(verifier),
+      authenticateRequest: AuthenticateRequest(verifier, directory: directory),
       getCurrentUser: GetCurrentUser(directory),
       login: login,
       register: register,
@@ -1344,8 +1344,14 @@ final class _UnwiredUserDirectory implements UserDirectory {
       throw StateError('GetCurrentUser was not wired into this test root');
 
   @override
+  @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw StateError('UpdateDisplayName was not wired into this test root');
+
+  @override
+  Future<Result<User?>> findUser(UserId id) {
+    throw StateError('GetCurrentUser was not wired into this test root');
+  }
 }
 
 /// Backs every "absent" competition use-case: any method throws so a test that

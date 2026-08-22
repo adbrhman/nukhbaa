@@ -28,6 +28,10 @@ final class _FakeUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw UnimplementedError();
+
+  @override
+  Future<Result<User?>> findUser(UserId id) async =>
+      throw StateError('findUser not wired in this test fake');
 }
 
 class _MockRequestContext extends Mock implements RequestContext {}

@@ -4,58 +4,27 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared/shared.dart';
 
-/// A single JSON Web Key as returned by the Supabase JWKS endpoint, retaining
-/// the raw map so it can be handed to `JWTKey.fromJWK` unchanged, plus the
-/// `kid` used for selection.
 final class Jwk {
-  /// Wraps a raw JWK map, extracting its `kid`.
   Jwk(this.raw) : kid = raw['kid'] as String?;
-
-  /// The key id used to match a token header's `kid`, or `null` if the key
-  /// carried none (in which case it participates only in fallback matching).
   final String? kid;
-
-  /// The raw JWK JSON object (`kty`, `crv`, `x`, `y`, `kid`, `alg`, ...).
   final Map<String, dynamic> raw;
 }
 
-/// Fetches and caches a Supabase project's JWKS for local ES256 verification
-/// (Version-Verification log, 2026-07-09: JWKS is Edge-cached ~10 min and the
-/// previous key is retained ≥20 min on rotation).
-///
-/// Caching policy, mirroring those guarantees while staying correct across key
-/// rotation:
-/// * Keys are cached for a bounded [ttl] (default 10 minutes).
-/// * A lookup for a `kid` absent from the cache triggers at most one refresh
-///   (rate-limited by [minRefreshInterval]) so a freshly-rotated key is picked
-///   up promptly without letting an attacker force unbounded fetches with
-///   bogus `kid`s.
-///
-/// The HTTP client and clock are injected so the whole class is unit-testable
-/// with no real network or wall-clock dependency.
 final class JwksClient {
-  /// Creates a JWKS client for [jwksUri].
-  ///
-  /// [httpClient] defaults to a fresh [http.Client]; tests inject a fake.
-  /// [now] defaults to [DateTime.now]; tests inject a controllable clock.
   JwksClient(
     this.jwksUri, {
     http.Client? httpClient,
     DateTime Function()? now,
     this.ttl = const Duration(minutes: 10),
     this.minRefreshInterval = const Duration(seconds: 30),
+    this.fetchTimeout = const Duration(seconds: 5),
   }) : _http = httpClient ?? http.Client(),
        _now = now ?? DateTime.now;
 
-  /// The project JWKS endpoint.
   final Uri jwksUri;
-
-  /// How long a fetched key set is considered fresh.
   final Duration ttl;
-
-  /// The minimum spacing between forced refreshes triggered by an unknown
-  /// `kid`, bounding fetch amplification from bogus key ids.
   final Duration minRefreshInterval;
+  final Duration fetchTimeout;
 
   final http.Client _http;
   final DateTime Function() _now;
@@ -66,29 +35,13 @@ final class JwksClient {
   DateTime? _lastRefreshAttempt;
 
   /// Eagerly populates the key cache at server startup (composition root
-  /// bootstrap), so the very first authenticated request — and every request
-  /// within [ttl] afterwards — resolves a `kid` from the in-memory cache with
-  /// **no** network call on the request's hot path. Mirrors the same
-  /// fail-fast-at-startup discipline `PostgresConnection.open` already
-  /// applies to the database: a flaky egress path to the JWKS endpoint is
-  /// discovered loudly at boot (with bounded retries) rather than silently
-  /// stalling whichever user's request happens to trigger the first-ever
-  /// (or first post-expiry) fetch.
+  /// bootstrap), so the very first authenticated request resolves a `kid`
+  /// from the in-memory cache with no network call on the request's hot path.
   Future<Result<void>> warmUp() => _refresh();
 
-  /// Resolves the JWK matching [kid], fetching or refreshing as needed.
-  ///
-  /// Resolution order:
-  /// 1. If the cache is empty or stale, (re)fetch.
-  /// 2. Return the cached key for [kid] if present.
-  /// 3. On a cache miss, force one rate-limited refresh (handles rotation) and
-  ///    retry the lookup.
-  /// 4. If [kid] is `null` and exactly one key exists, return it (tolerates a
-  ///    token without a `kid`, as some legacy tokens omit it).
-  ///
-  /// Returns [ErrorKind.transient] on fetch failure (retryable), or an
-  /// [ErrorKind.authorization] `no_matching_key` when the key genuinely cannot
-  /// be found after a fresh fetch.
+  /// The in-flight refresh, shared by concurrent callers.
+  Future<Result<void>>? _inFlight;
+
   Future<Result<Jwk>> keyForKid(String? kid) async {
     if (_isStale()) {
       final refreshed = await _refresh();
@@ -98,8 +51,6 @@ final class JwksClient {
     final hit = _lookup(kid);
     if (hit != null) return Result.ok(hit);
 
-    // Cache miss: the signing key may have just rotated in. Force one refresh,
-    // rate-limited, then retry once.
     if (_mayForceRefresh()) {
       final refreshed = await _refresh();
       if (refreshed is Err<void>) return Result.err(refreshed.error);
@@ -121,7 +72,6 @@ final class JwksClient {
       if (byKid != null) return byKid;
       return null;
     }
-    // No kid in the token: only unambiguous when a single key is published.
     if (_byKid.length == 1 && _keyless.isEmpty) return _byKid.values.first;
     if (_byKid.isEmpty && _keyless.length == 1) return _keyless.first;
     return null;
@@ -139,11 +89,22 @@ final class JwksClient {
     return _now().difference(last) >= minRefreshInterval;
   }
 
-  Future<Result<void>> _refresh() async {
+  Future<Result<void>> _refresh() {
+    final inFlight = _inFlight;
+    if (inFlight != null) return inFlight;
+
+    final pending = _fetchAndCache();
+    _inFlight = pending;
+    return pending.whenComplete(() {
+      if (identical(_inFlight, pending)) _inFlight = null;
+    });
+  }
+
+  Future<Result<void>> _fetchAndCache() async {
     _lastRefreshAttempt = _now();
     final http.Response response;
     try {
-      response = await _http.get(jwksUri).timeout(const Duration(seconds: 10));
+      response = await _http.get(jwksUri).timeout(fetchTimeout);
     } on Object catch (e) {
       return Result.err(
         AppError.transient('auth.jwks_fetch_failed', 'JWKS fetch failed', e),
@@ -184,6 +145,5 @@ final class JwksClient {
     return const Result.ok(null);
   }
 
-  /// Releases the underlying HTTP client. Called on graceful shutdown.
   void close() => _http.close();
 }

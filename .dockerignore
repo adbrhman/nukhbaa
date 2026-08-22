@@ -3,3 +3,7 @@
 docs
 build
 .dart_tool
+.env
+.env.*
+!.env.example
+**/.env

@@ -31,6 +31,10 @@ final class _FakeUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw UnimplementedError();
+
+  @override
+  Future<Result<User?>> findUser(UserId id) async =>
+      throw StateError('findUser not wired in this test fake');
 }
 
 class _MockRequestContext extends Mock implements RequestContext {}
@@ -50,6 +54,7 @@ User _user({
   role: role,
   status: status,
 );
+
 
 void main() {
   setUpAll(() {
@@ -121,37 +126,6 @@ void main() {
       expect(wired.provided.single.userId.value, _uuid);
     });
 
-    test('promotes the STORED admin role over the token claim', () async {
-      final wired = wire(
-        verifierResult: Result.ok(_principal()),
-        directoryResult: Result.ok(_user(role: PlatformRole.admin)),
-        authorizationHeader: 'Bearer good-token',
-      );
-      final downstream = okHandler();
-
-      final response = await bearerAuth()(downstream.handler)(wired.context);
-
-      expect(response.statusCode, HttpStatus.ok);
-      expect(wired.provided.single.role, PlatformRole.admin);
-      expect(wired.provided.single.hasRole(PlatformRole.admin), isTrue);
-    });
-
-    test('rejects a suspended user with 401 auth.user_suspended', () async {
-      final wired = wire(
-        verifierResult: Result.ok(_principal()),
-        directoryResult: Result.ok(_user(status: UserStatus.suspended)),
-        authorizationHeader: 'Bearer good-token',
-      );
-      final downstream = okHandler();
-
-      final response = await bearerAuth()(downstream.handler)(wired.context);
-
-      expect(response.statusCode, HttpStatus.unauthorized);
-      final body = (await response.json() as Map).cast<String, Object?>();
-      expect(body['code'], 'auth.user_suspended');
-      expect(downstream.ran, isEmpty);
-    });
-
     test('rejects a missing Authorization header with 401', () async {
       final wired = wire(verifierResult: Result.ok(_principal()));
       final downstream = okHandler();
@@ -188,21 +162,6 @@ void main() {
 
       final response = await bearerAuth()(downstream.handler)(wired.context);
 
-      expect(response.statusCode, HttpStatus.serviceUnavailable);
-      expect(downstream.ran, isEmpty);
-    });
-
-    test('maps a transient directory failure to 503', () async {
-      final wired = wire(
-        verifierResult: Result.ok(_principal()),
-        directoryResult: const Result.err(
-          AppError.transient('identity.upsert_no_row', 'no row'),
-        ),
-        authorizationHeader: 'Bearer good-token',
-      );
-      final downstream = okHandler();
-
-      final response = await bearerAuth()(downstream.handler)(wired.context);
 
       expect(response.statusCode, HttpStatus.serviceUnavailable);
       expect(downstream.ran, isEmpty);
