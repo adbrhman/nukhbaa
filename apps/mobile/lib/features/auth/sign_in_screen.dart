@@ -23,6 +23,7 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -32,6 +33,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -46,6 +48,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ? ref
                 .read(sessionControllerProvider.notifier)
                 .register(
+                  displayName: _nameController.text.trim(),
                   email: _emailController.text.trim(),
                   password: _passwordController.text,
                 )
@@ -62,6 +65,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (_isRegister == toRegister) return;
     ref.read(sessionControllerProvider.notifier).clearFailure();
     _confirmPasswordController.clear();
+    _nameController.clear();
     setState(() => _isRegister = toRegister);
   }
 
@@ -146,6 +150,40 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               _ErrorBanner(
                                 key: const Key('signIn.errorBanner'),
                                 message: ErrorPresenter.message(failure),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (_isRegister) ...[
+                              AppTextField(
+                                fieldKey: const Key('signIn.nameField'),
+                                controller: _nameController,
+                                enabled: !inFlight,
+                                label: l10n.displayName,
+                                hint: l10n.displayNameHint,
+                                prefixIcon: Icons.person_outline,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
+                                validator: (String? value) =>
+                                    (value == null || value.trim().isEmpty)
+                                    ? l10n.displayNameRequired
+                                    : null,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (_isRegister) ...[
+                              AppTextField(
+                                fieldKey: const Key('signIn.nameField'),
+                                controller: _nameController,
+                                enabled: !inFlight,
+                                label: l10n.displayName,
+                                hint: l10n.displayNameHint,
+                                prefixIcon: Icons.person_outline,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
+                                validator: (String? value) =>
+                                    (value == null || value.trim().isEmpty)
+                                    ? l10n.displayNameRequired
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.lg),
                             ],

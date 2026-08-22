@@ -23,6 +23,7 @@ final class CompositionRoot {
     required this.getCurrentUser,
     required this.login,
     required this.register,
+    required this.updateDisplayName,
     required this.createCompetition,
     required this.startSeason,
     required this.openRound,
@@ -112,6 +113,7 @@ final class CompositionRoot {
     RegisterWithPassword? register,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
+    UpdateDisplayName? updateDisplayName,
     CreateCompetition? createCompetition,
     StartSeason? startSeason,
     OpenRound? openRound,
@@ -172,6 +174,7 @@ final class CompositionRoot {
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
+       updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
        createCompetition = createCompetition ?? _absentCreateCompetition(),
        startSeason = startSeason ?? _absentStartSeason(),
        openRound = openRound ?? _absentOpenRound(),
@@ -274,6 +277,11 @@ final class CompositionRoot {
   /// Builds a [GetCurrentUser] over a directory that throws if invoked.
   static GetCurrentUser _absentGetCurrentUser() =>
       GetCurrentUser(_UnwiredUserDirectory());
+
+  /// Builds an "absent" [UpdateDisplayName] over a directory that throws
+  /// if a test reaches the display-name slice it never wired.
+  static UpdateDisplayName _absentUpdateDisplayName() =>
+      UpdateDisplayName(userDirectory: _UnwiredUserDirectory());
 
   /// A single throwing repository backing every "absent" competition use-case,
   /// so a test that reaches an unwired competition slice fails loudly.
@@ -661,6 +669,9 @@ final class CompositionRoot {
 
   /// Registers a new email/password account.
   final RegisterWithPassword register;
+
+  /// Changes the caller's own display name (backs `PATCH /me/display-name`).
+  final UpdateDisplayName updateDisplayName;
 
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
@@ -1073,6 +1084,7 @@ final class CompositionRoot {
       getCurrentUser: GetCurrentUser(directory),
       login: login,
       register: register,
+      updateDisplayName: UpdateDisplayName(userDirectory: directory),
       createCompetition: CreateCompetition(
         repository: competitionRepository,
         idGenerator: idGenerator,
@@ -1330,6 +1342,10 @@ final class _UnwiredUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> ensureUser(AuthenticatedUser principal) =>
       throw StateError('GetCurrentUser was not wired into this test root');
+
+  @override
+  Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
+      throw StateError('UpdateDisplayName was not wired into this test root');
 }
 
 /// Backs every "absent" competition use-case: any method throws so a test that
@@ -1736,5 +1752,6 @@ final class _UnwiredAuthGateway implements AuthGateway {
   Future<Result<IssuedSession>> signUpWithPassword({
     required String email,
     required String password,
+    required String displayName,
   }) => throw StateError('An auth use-case was not wired into this root');
 }

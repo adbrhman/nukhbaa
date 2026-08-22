@@ -13,6 +13,7 @@ final class AuthenticatedUserDto {
     required this.role,
     required this.status,
     this.email,
+    this.displayName = '',
   });
 
   /// Deserializes from a JSON map, tolerating older schema versions by reading
@@ -23,6 +24,7 @@ final class AuthenticatedUserDto {
       role: json['role']! as String,
       status: json['status']! as String,
       email: json['email'] as String?,
+      displayName: (json['display_name'] as String?) ?? '',
     );
   }
 
@@ -38,12 +40,17 @@ final class AuthenticatedUserDto {
   /// The user's email, when known.
   final String? email;
 
+  /// The platform display name (migration 0015; empty string for payloads
+  /// from before this field existed).
+  final String displayName;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'user_id': userId,
     'role': role,
     'status': status,
     'email': email,
+    'display_name': displayName,
   };
 
   @override
@@ -52,10 +59,11 @@ final class AuthenticatedUserDto {
       other.userId == userId &&
       other.role == role &&
       other.status == status &&
-      other.email == email;
+      other.email == email &&
+      other.displayName == displayName;
 
   @override
-  int get hashCode => Object.hash(userId, role, status, email);
+  int get hashCode => Object.hash(userId, role, status, email, displayName);
 }
 
 /// The response body of `GET /me`: the current principal plus a schema version

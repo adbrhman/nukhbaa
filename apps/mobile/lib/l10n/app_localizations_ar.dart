@@ -61,6 +61,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordRequired => 'الرجاء إدخال كلمة المرور.';
 
   @override
+  String get displayName => 'الاسم';
+
+  @override
+  String get displayNameHint => 'اسمك الظاهر للآخرين';
+
+  @override
+  String get displayNameRequired => 'الرجاء إدخال اسمك.';
+
+  @override
+  String get changeDisplayName => 'تغيير الاسم';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
   String get toggleToSignIn => 'لديك حساب بالفعل؟ سجّل الدخول';
 
   @override

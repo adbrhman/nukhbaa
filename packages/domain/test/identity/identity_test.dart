@@ -115,11 +115,13 @@ void main() {
         userId: UserId(_uuid),
         role: PlatformRole.user,
         email: 'a@example.com',
+        displayName: 'Human',
       );
       final b = const AuthenticatedUser(
         userId: UserId(_uuid),
         role: PlatformRole.user,
         email: 'a@example.com',
+        displayName: 'Human',
       );
       expect(a, b);
       expect(a.hashCode, b.hashCode);
@@ -127,8 +129,13 @@ void main() {
   });
 
   group('User.canAct', () {
-    User user(PlatformRole role, UserStatus status) =>
-        User(id: const UserId(_uuid), email: null, role: role, status: status);
+    User user(PlatformRole role, UserStatus status) => User(
+      id: const UserId(_uuid),
+      email: null,
+      displayName: 'Human',
+      role: role,
+      status: status,
+    );
 
     test('active human user may act', () {
       expect(user(PlatformRole.user, UserStatus.active).canAct, isTrue);
@@ -155,6 +162,7 @@ void main() {
     User user(PlatformRole role, UserStatus status) => User(
       id: const UserId(_uuid),
       email: 'human@example.com',
+      displayName: 'Human',
       role: role,
       status: status,
     );
@@ -209,6 +217,7 @@ void main() {
     User user(PlatformRole role, UserStatus status) => User(
       id: const UserId(_uuid),
       email: 'human@example.com',
+      displayName: 'Human',
       role: role,
       status: status,
     );
@@ -245,6 +254,7 @@ void main() {
     User activeUser() => const User(
       id: UserId(_uuid),
       email: 'human@example.com',
+      displayName: 'Human',
       role: PlatformRole.user,
       status: UserStatus.active,
     );

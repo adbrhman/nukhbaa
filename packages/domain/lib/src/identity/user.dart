@@ -37,6 +37,7 @@ final class User {
     required this.email,
     required this.role,
     required this.status,
+    required this.displayName,
   });
 
   /// The platform identity, equal to the Supabase Auth subject UUID.
@@ -52,19 +53,67 @@ final class User {
   /// The lifecycle state governing whether the user may act.
   final UserStatus status;
 
+  /// The platform-owned display name shown across the app instead of the raw
+  /// email/id (migration 0015; defaults from the email local-part when not
+  /// explicitly chosen). Always non-empty once the row exists.
+  final String displayName;
+
+  /// The maximum length of a [displayName], enforced by [validateDisplayName].
+  static const int maxDisplayNameLength = 60;
+
+  /// Validates a raw, untrusted display name: trims it, rejects empty/too-long
+  /// input. Shared by registration (initial name) and [renameDisplayName]
+  /// (later changes) so both paths enforce the same invariant.
+  static Result<String> validateDisplayName(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return const Result.err(
+        AppError.validation('identity.display_name_empty', 'الاسم مطلوب'),
+      );
+    }
+    if (trimmed.length > maxDisplayNameLength) {
+      return Result.err(
+        AppError.validation(
+          'identity.display_name_too_long',
+          'الاسم طويل جدًا (الحد الأقصى $maxDisplayNameLength حرفًا)',
+        ),
+      );
+    }
+    return Result.ok(trimmed);
+  }
+
   /// Whether this user is currently permitted to perform privileged actions.
   /// A [service] principal is always permitted; human users must be [active].
   bool get canAct => role == PlatformRole.service || status.canAct;
 
   /// Returns a copy with selected fields replaced. Used by directory upserts to
   /// reconcile provider-sourced fields without mutating the original value.
-  User copyWith({String? email, PlatformRole? role, UserStatus? status}) {
+  User copyWith({
+    String? email,
+    PlatformRole? role,
+    UserStatus? status,
+    String? displayName,
+  }) {
     return User(
       id: id,
       email: email ?? this.email,
       role: role ?? this.role,
       status: status ?? this.status,
+      displayName: displayName ?? this.displayName,
     );
+  }
+
+  /// Changes this user's [displayName] to a validated [name] — the user-driven
+  /// counterpart to the auto-derived default from migration 0015. Mirrors
+  /// `Group.rename`: validation lives on the aggregate, authority (the caller
+  /// may only rename themselves) is enforced by the use-case
+  /// (`UpdateDisplayName`), not here.
+  Result<User> renameDisplayName(String name) {
+    final validated = User.validateDisplayName(name);
+    if (validated is Err<String>) {
+      return Result.err(validated.error);
+    }
+    return Result.ok(copyWith(displayName: (validated as Ok<String>).value));
   }
 
   /// Transitions this user into [UserStatus.suspended] — the reversible
@@ -113,10 +162,11 @@ final class User {
       other.id == id &&
       other.email == email &&
       other.role == role &&
-      other.status == status;
+      other.status == status &&
+      other.displayName == displayName;
 
   @override
-  int get hashCode => Object.hash(id, email, role, status);
+  int get hashCode => Object.hash(id, email, role, status, displayName);
 
   @override
   String toString() =>

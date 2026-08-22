@@ -18,6 +18,7 @@ final class AuthenticatedUser {
     required this.userId,
     required this.role,
     this.email,
+    this.displayName,
   });
 
   /// The verified subject identity (JWT `sub`).
@@ -31,6 +32,12 @@ final class AuthenticatedUser {
   /// The verified email claim, if the token carried one. Optional because
   /// phone-only or service principals may have none.
   final String? email;
+
+  /// The `user_metadata.display_name` claim, when the token carries one (set
+  /// at registration). Only ever consulted to SEED [User.displayName] on the
+  /// first-sight upsert in [UserDirectory.ensureUser] — never trusted as the
+  /// platform's current record of the name once the row exists.
+  final String? displayName;
 
   /// Whether this principal holds the given platform [required] role.
   ///
@@ -52,10 +59,11 @@ final class AuthenticatedUser {
       other is AuthenticatedUser &&
       other.userId == userId &&
       other.role == role &&
-      other.email == email;
+      other.email == email &&
+      other.displayName == displayName;
 
   @override
-  int get hashCode => Object.hash(userId, role, email);
+  int get hashCode => Object.hash(userId, role, email, displayName);
 
   @override
   String toString() => 'AuthenticatedUser(${userId.value}, role: ${role.name})';

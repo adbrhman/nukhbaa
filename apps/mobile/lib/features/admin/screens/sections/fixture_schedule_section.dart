@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
-import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/competition_providers.dart';
@@ -104,7 +103,7 @@ class _FixtureScheduleSectionState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CompetitionPickerField(
-                fieldKey: const Key('admin.fixtures.competitionField'),
+                key: const Key('admin.fixtures.competitionField'),
                 label: l10n.adminSelectCompetitionLabel,
                 enabled: !inFlight,
                 selectedId: _competitionId,
@@ -133,7 +132,7 @@ class _FixtureScheduleSectionState
               ],
               if (_seasonId != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                RoundPickerField(
+                _RoundPickerField(
                   seasonId: _seasonId!,
                   enabled: !inFlight,
                   selectedId: _roundId,
@@ -164,13 +163,13 @@ class _FixtureScheduleSectionState
                 onChanged: () => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.md),
-              AdminDateTimeField(
+              AdminSecondaryButton(
                 key: const Key('admin.fixtures.kickoffPicker'),
-                value: _kickoffLocal,
-                placeholder: l10n.adminPickKickoffButton,
-                enabled: !inFlight,
-                onChanged: (DateTime picked) =>
-                    setState(() => _kickoffLocal = picked),
+                label: _kickoffLocal == null
+                    ? l10n.adminPickKickoffButton
+                    : _formatKickoff(_kickoffLocal!),
+                icon: Icons.event_outlined,
+                onPressed: inFlight ? null : _pickKickoff,
               ),
               const SizedBox(height: AppSpacing.md),
               if (state is AsyncError<AddMatchResult>)
@@ -198,13 +197,35 @@ class _FixtureScheduleSectionState
             ],
           ),
         ),
-        if (_roundId != null) ...[
-          const SizedBox(height: AppSpacing.xl),
-          AdminSectionHeader(title: l10n.adminExistingFixturesSectionTitle),
-          _RoundFixturesList(roundId: _roundId!),
-        ],
       ],
     );
+  }
+
+  Future<void> _pickKickoff() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _kickoffLocal ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _kickoffLocal == null
+          ? TimeOfDay.fromDateTime(now)
+          : TimeOfDay.fromDateTime(_kickoffLocal!),
+    );
+    if (time == null) return;
+    setState(() {
+      _kickoffLocal = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
   }
 
   void _addMatch(int displayOrder) {
@@ -230,6 +251,84 @@ class _FixtureScheduleSectionState
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
         );
+  }
+
+  String _formatKickoff(DateTime local) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
+}
+
+/// عرض قائمة الجولات في الموسم المختار (dropdown من قاعدة البيانات، بلا UUID يدوي).
+class _RoundPickerField extends ConsumerWidget {
+  const _RoundPickerField({
+    required this.seasonId,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String seasonId;
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<RoundDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<RoundDto>> rounds = ref.watch(
+      seasonRoundsProvider(seasonId),
+    );
+    return rounds.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectRoundLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<RoundDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectRoundLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoRoundsHint),
+          );
+        }
+        final String? value = list.any((r) => r.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.fixtures.roundField'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectRoundLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final RoundDto round in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.roundField.${round.id}'),
+                value: round.id,
+                child: Text(
+                  l10n.adminRoundOptionLabel(round.sequence, round.status),
+                ),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  final RoundDto round = list.firstWhere((r) => r.id == id);
+                  onSelected(round);
+                },
+        );
+      },
+    );
   }
 }
 
@@ -314,118 +413,5 @@ class _TeamPickerField extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-/// قائمة مباريات الجولة المختارة مع زر حذف لكل مباراة (المشكلة 1: تصحيح
-/// مباراة مكرّرة/مُضافة بالخطأ). يعتمد على `roundFixturesProvider` — نفس
-/// مصدر البيانات المستخدم أعلاه لحساب `nextDisplayOrder`.
-class _RoundFixturesList extends ConsumerWidget {
-  const _RoundFixturesList({required this.roundId});
-
-  final String roundId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
-      roundFixturesProvider(roundId),
-    );
-    final removeState = ref.watch(removeFixtureControllerProvider);
-    final bool removing = removeState is AsyncLoading<bool>;
-
-    return fixtures.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: LinearProgressIndicator(),
-      ),
-      error: (Object error, StackTrace _) =>
-          AdminCard(child: Text(ErrorPresenter.message(error as AppError))),
-      data: (List<RoundFixtureCardDto> list) {
-        if (list.isEmpty) {
-          return AdminCard(
-            child: AdminEmptyState(
-              icon: Icons.sports_soccer_rounded,
-              title: l10n.adminNoFixturesHint,
-            ),
-          );
-        }
-        return AdminCard(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Column(
-            children: [
-              for (final RoundFixtureCardDto fixture in list)
-                AdminListRow(
-                  key: Key('admin.fixtures.existing.${fixture.fixtureId}'),
-                  leadingIcon: Icons.sports_soccer_rounded,
-                  leadingColor: context.tokens.primary,
-                  title: fixture.homeTeam != null && fixture.awayTeam != null
-                      ? '${fixture.homeTeam} × ${fixture.awayTeam}'
-                      : l10n.adminFixtureIncompleteDataLabel,
-                  trailing: IconButton(
-                    key: Key('admin.fixtures.remove.${fixture.fixtureId}'),
-                    tooltip: l10n.adminRemoveFixtureTooltip,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: context.tokens.error,
-                    ),
-                    onPressed: removing
-                        ? null
-                        : () => _confirmAndRemove(context, ref, fixture),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _confirmAndRemove(
-    BuildContext context,
-    WidgetRef ref,
-    RoundFixtureCardDto fixture,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    final home = fixture.homeTeam ?? l10n.adminFixtureIncompleteDataLabel;
-    final away = fixture.awayTeam ?? l10n.adminFixtureIncompleteDataLabel;
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.adminRemoveFixtureConfirmTitle),
-        content: Text(l10n.adminRemoveFixtureConfirmMessage(home, away)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.adminRemoveFixtureCancelButton),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.adminRemoveFixtureConfirmButton),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    if (!context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    await ref
-        .read(removeFixtureControllerProvider.notifier)
-        .remove(roundId: roundId, fixtureId: fixture.fixtureId);
-
-    final state = ref.read(removeFixtureControllerProvider);
-    if (!context.mounted) return;
-    if (state is AsyncData<bool>) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.adminRemoveFixtureSuccess)),
-      );
-    } else if (state is AsyncError<bool>) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(ErrorPresenter.message(state.error as AppError)),
-        ),
-      );
-    }
   }
 }

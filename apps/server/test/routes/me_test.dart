@@ -24,6 +24,10 @@ final class _FakeUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> ensureUser(AuthenticatedUser principal) async =>
       _response;
+
+  @override
+  Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
+      throw UnimplementedError();
 }
 
 class _MockRequestContext extends Mock implements RequestContext {}
@@ -34,6 +38,7 @@ AuthenticatedUser _principal() => const AuthenticatedUser(
   userId: UserId(_uuid),
   role: PlatformRole.user,
   email: 'a@example.com',
+  displayName: 'Human',
 );
 
 /// Wires a context that provides a real composition root (GetCurrentUser over
@@ -74,6 +79,7 @@ void main() {
       final canonical = const User(
         id: UserId(_uuid),
         email: 'a@example.com',
+        displayName: 'Human',
         // Platform-owned role/status are what the response must reflect,
         // even though the token principal was a plain `user`.
         role: PlatformRole.admin,
@@ -113,6 +119,7 @@ void main() {
           User(
             id: UserId(_uuid),
             email: null,
+            displayName: 'Human',
             role: PlatformRole.user,
             status: UserStatus.active,
           ),

@@ -200,6 +200,42 @@ abstract class AppLocalizations {
   /// **'Please enter your password.'**
   String get passwordRequired;
 
+  /// No description provided for @displayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get displayName;
+
+  /// No description provided for @displayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name, shown to others'**
+  String get displayNameHint;
+
+  /// No description provided for @displayNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name.'**
+  String get displayNameRequired;
+
+  /// No description provided for @changeDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Change name'**
+  String get changeDisplayName;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
   /// No description provided for @toggleToSignIn.
   ///
   /// In en, this message translates to:

@@ -29,4 +29,9 @@ abstract interface class UserDirectory {
   /// created row is seeded with the principal's token role and
   /// [UserStatus.active].
   Future<Result<User>> ensureUser(AuthenticatedUser principal);
+
+  /// Persists a new [displayName] (already validated by the caller) for
+  /// [userId] — the sole path, besides registration seeding, allowed to
+  /// change a user's display name (`UpdateDisplayName` use-case).
+  Future<Result<User>> updateDisplayName(UserId userId, String displayName);
 }

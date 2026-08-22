@@ -116,14 +116,19 @@ class SessionController extends _$SessionController {
     state = AsyncData(await _onAuthResponse(result));
   }
 
-  /// Registers a new account with [email] + [password] via
+  /// Registers a new account with [displayName] + [email] + [password] via
   /// `POST /auth/register`.
   Future<void> register({
+    required String displayName,
     required String email,
     required String password,
   }) async {
     state = const AsyncData(SessionAuthenticating());
-    final result = await _authApi.register(email: email, password: password);
+    final result = await _authApi.register(
+      displayName: displayName,
+      email: email,
+      password: password,
+    );
     state = AsyncData(await _onAuthResponse(result));
   }
 
@@ -146,6 +151,20 @@ class SessionController extends _$SessionController {
         await _store.clear();
         return SessionFailed(error);
     }
+  }
+
+  /// Renames the current user via `PATCH /me/display-name`, then re-validates
+  /// the held token (`GET /me`) so [SessionAuthenticated] reflects the new
+  /// name — mirrors [register]/[signInWithCredentials]'s "call, then
+  /// revalidate" shape rather than patching local state, so the displayed
+  /// name is always what the server actually stored.
+  Future<Result<void>> updateDisplayName(String displayName) async {
+    final result = await _authApi.updateDisplayName(displayName);
+    if (result is Err<MeResponseDto>) {
+      return Result.err(result.error);
+    }
+    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
+    return const Result.ok(null);
   }
 
   /// Signs the current user out: clear the persisted token and drop to

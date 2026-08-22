@@ -38,9 +38,13 @@ abstract class AuthGateway {
     required String password,
   });
 
-  /// Registers a new email/password account.
+  /// Registers a new email/password account, seeding the identity provider's
+  /// `user_metadata.display_name` with [displayName] (already validated) so
+  /// the platform's first-sight upsert (`UserDirectory.ensureUser`) can seed
+  /// the canonical row with the chosen name instead of an email-derived one.
   Future<Result<IssuedSession>> signUpWithPassword({
     required String email,
     required String password,
+    required String displayName,
   });
 }

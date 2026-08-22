@@ -27,6 +27,10 @@ final class _FakeUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> ensureUser(AuthenticatedUser principal) async =>
       _response;
+
+  @override
+  Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
+      throw UnimplementedError();
 }
 
 class _MockRequestContext extends Mock implements RequestContext {}
@@ -42,6 +46,7 @@ User _user({
 }) => User(
   id: const UserId(_uuid),
   email: 'a@example.com',
+  displayName: 'Human',
   role: role,
   status: status,
 );

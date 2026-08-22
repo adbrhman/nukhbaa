@@ -20,12 +20,20 @@ final class PostgresUserDirectory implements UserDirectory {
   final PostgresConnection _connection;
 
   static const String _upsertSql = '''
-INSERT INTO identity.users (id, email, role, status)
-VALUES (@id, @email, @role, 'active')
+INSERT INTO identity.users (id, email, role, status, display_name)
+VALUES (@id, @email, @role, 'active', @displayName)
 ON CONFLICT (id) DO UPDATE
   SET email = COALESCE(EXCLUDED.email, identity.users.email),
       updated_at = now()
-RETURNING id, email, role::text, status::text
+RETURNING id, email, role::text, status::text, display_name
+''';
+
+  static const String _updateDisplayNameSql = '''
+UPDATE identity.users
+SET display_name = @displayName,
+    updated_at = now()
+WHERE id = @id
+RETURNING id, email, role::text, status::text, display_name
 ''';
 
   @override
@@ -38,6 +46,13 @@ RETURNING id, email, role::text, status::text
         // Seed role from the verified principal on first insert only; on
         // conflict the stored role is preserved (not in the UPDATE SET clause).
         'role': principal.role.name,
+        // Seed display_name from the token's user_metadata (set at
+        // registration) on first insert only — on conflict it is NOT in the
+        // UPDATE SET clause, so a later user-chosen name (updateDisplayName)
+        // is never clobbered by a stale claim on a later sign-in. When null,
+        // the `identity.default_display_name` trigger (migration 0015) fills
+        // it from the email local-part.
+        'displayName': principal.displayName,
       },
     );
 
@@ -80,8 +95,35 @@ RETURNING id, email, role::text, status::text
         email: row['email'] as String?,
         role: (roleResult as Ok<PlatformRole>).value,
         status: status,
+        displayName: (row['display_name'] as String?) ?? '',
       ),
     );
+  }
+
+  /// Persists a new, already-validated [displayName] for [userId]
+  /// (`UpdateDisplayName` use-case). Unlike [ensureUser], this ALWAYS writes
+  /// the column — it is the one path allowed to change a name after signup.
+  @override
+  Future<Result<User>> updateDisplayName(
+    UserId userId,
+    String displayName,
+  ) async {
+    final queryResult = await _connection.query(
+      _updateDisplayNameSql,
+      parameters: {'id': userId.value, 'displayName': displayName},
+    );
+    return switch (queryResult) {
+      Ok<List<Map<String, dynamic>>>(:final value) =>
+        value.isEmpty
+            ? const Result.err(
+                AppError.transient(
+                  'identity.update_no_row',
+                  'Display name update affected no user row',
+                ),
+              )
+            : _mapSingleRow(value),
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+    };
   }
 
   static UserStatus? _statusFrom(String? raw) {

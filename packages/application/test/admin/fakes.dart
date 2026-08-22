@@ -213,7 +213,13 @@ User storedUser({
   PlatformRole role = PlatformRole.user,
   UserStatus status = UserStatus.active,
   String? email = 'human@example.com',
-}) => User(id: UserId(id), email: email, role: role, status: status);
+}) => User(
+  id: UserId(id),
+  email: email,
+  displayName: 'Human',
+  role: role,
+  status: status,
+);
 
 /// Builds a stored active participant.
 Participant storedParticipant({

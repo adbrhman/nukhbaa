@@ -38,6 +38,7 @@ Future<Response> onRequest(RequestContext context) async {
           role: value.role.name,
           status: value.status.name,
           email: value.email,
+          displayName: value.displayName,
         ),
       ).toJson(),
     ),

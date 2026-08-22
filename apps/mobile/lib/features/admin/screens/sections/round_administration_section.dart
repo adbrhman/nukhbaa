@@ -57,7 +57,7 @@ class _RoundAdministrationSectionState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CompetitionPickerField(
-                fieldKey: const Key('admin.rounds.competitionField'),
+                key: const Key('admin.rounds.competitionField'),
                 label: l10n.adminSelectCompetitionLabel,
                 enabled: !openInFlight,
                 selectedId: _competitionId,
@@ -87,13 +87,13 @@ class _RoundAdministrationSectionState
                 enabled: !openInFlight,
               ),
               const SizedBox(height: AppSpacing.md),
-              AdminDateTimeField(
+              AdminSecondaryButton(
                 key: const Key('admin.rounds.deadlinePicker'),
-                value: _deadlineLocal,
-                placeholder: l10n.adminPickDeadlineButton,
-                enabled: !openInFlight,
-                onChanged: (DateTime picked) =>
-                    setState(() => _deadlineLocal = picked),
+                label: _deadlineLocal == null
+                    ? l10n.adminPickDeadlineButton
+                    : _formatInstant(_deadlineLocal!),
+                icon: Icons.event_outlined,
+                onPressed: openInFlight ? null : _pickDeadline,
               ),
               const SizedBox(height: AppSpacing.md),
               if (openState is AsyncError<RoundDto>)
@@ -146,6 +146,33 @@ class _RoundAdministrationSectionState
     _sequenceController.text = '$next';
   }
 
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _deadlineLocal ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _deadlineLocal == null
+          ? TimeOfDay.fromDateTime(now)
+          : TimeOfDay.fromDateTime(_deadlineLocal!),
+    );
+    if (time == null) return;
+    setState(() {
+      _deadlineLocal = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
   void _openRound() {
     final seasonId = _seasonId;
     final sequence = int.tryParse(_sequenceController.text.trim());
@@ -158,6 +185,12 @@ class _RoundAdministrationSectionState
           sequence: sequence,
           predictionDeadline: deadline.toUtc().toIso8601String(),
         );
+  }
+
+  String _formatInstant(DateTime local) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
   }
 }
 
@@ -192,67 +225,28 @@ class _ExistingRoundsList extends ConsumerWidget {
         return Column(
           children: [
             for (final RoundDto round in list) ...[
-              _ExistingRoundCard(round: round),
+              AdminCard(
+                key: Key('admin.rounds.existing.${round.id}'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.adminRoundOptionLabel(round.sequence, round.status),
+                      style: context.text.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      round.predictionDeadline,
+                      style: TextStyle(color: context.tokens.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
             ],
           ],
         );
       },
-    );
-  }
-}
-
-/// بطاقة جولة واحدة: تعرض حالتها، وزر "إغلاق الجولة" عندما تكون مفتوحة
-/// (شرط سابق لاحتساب النقاط عبر [ScoreRoundController]).
-class _ExistingRoundCard extends ConsumerWidget {
-  const _ExistingRoundCard({required this.round});
-
-  final RoundDto round;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final AsyncValue<RoundDto>? lockState = ref.watch(
-      roundLockControllerProvider,
-    );
-    final bool lockInFlight = lockState is AsyncLoading<RoundDto>;
-
-    return AdminCard(
-      key: Key('admin.rounds.existing.${round.id}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.adminRoundOptionLabel(round.sequence, round.status),
-            style: context.text.titleSmall,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            round.predictionDeadline,
-            style: TextStyle(color: context.tokens.textSecondary),
-          ),
-          if (round.status == 'open') ...[
-            const SizedBox(height: AppSpacing.md),
-            if (lockState is AsyncError<RoundDto>)
-              AdminErrorBanner(
-                key: Key('admin.rounds.lock.error.${round.id}'),
-                message: ErrorPresenter.message(lockState.error as AppError),
-              ),
-            const SizedBox(height: AppSpacing.sm),
-            AdminPrimaryButton(
-              key: Key('admin.rounds.lock.${round.id}'),
-              label: l10n.adminLockRoundButton,
-              icon: Icons.lock_rounded,
-              loading: lockInFlight,
-              onPressed: lockInFlight
-                  ? null
-                  : () => ref
-                        .read(roundLockControllerProvider.notifier)
-                        .lock(round.id),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

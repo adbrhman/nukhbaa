@@ -26,8 +26,13 @@ final class SupabaseAuthGateway implements AuthGateway {
   Future<Result<IssuedSession>> signUpWithPassword({
     required String email,
     required String password,
+    required String displayName,
   }) async {
-    final result = await _client.signUp(email: email, password: password);
+    final result = await _client.signUp(
+      email: email,
+      password: password,
+      displayName: displayName,
+    );
     return result.map(_toIssuedSession);
   }
 

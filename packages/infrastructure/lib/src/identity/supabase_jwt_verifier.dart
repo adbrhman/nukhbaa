@@ -185,8 +185,20 @@ final class SupabaseJwtVerifier implements TokenVerifier {
         userId: userId,
         role: platformRole,
         email: claims['email'] as String?,
+        displayName: _displayNameFrom(claims['user_metadata']),
       ),
     );
+  }
+
+  /// Reads the `display_name` set at registration (POST /signup `data`
+  /// field) out of the `user_metadata` claim GoTrue embeds in the token.
+  /// Absent for every token minted before this feature — a null result is
+  /// expected and handled by `identity.default_display_name` (migration
+  /// 0015), not an error here.
+  static String? _displayNameFrom(dynamic userMetadata) {
+    if (userMetadata is! Map) return null;
+    final value = userMetadata['display_name'];
+    return value is String && value.trim().isNotEmpty ? value : null;
   }
 
   /// Maps a Supabase `role` claim to a [PlatformRole]. Unknown or absent values

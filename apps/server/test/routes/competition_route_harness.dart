@@ -1450,7 +1450,13 @@ User storedUser({
   String? email = 'target@example.com',
   PlatformRole role = PlatformRole.user,
   UserStatus status = UserStatus.active,
-}) => User(id: UserId(id), email: email, role: role, status: status);
+}) => User(
+  id: UserId(id),
+  email: email,
+  displayName: 'Human',
+  role: role,
+  status: status,
+);
 
 /// Builds a stored [AuditEntry] (rehydrated, typing only — no validation
 /// branch), an element of the append-only admin trail.

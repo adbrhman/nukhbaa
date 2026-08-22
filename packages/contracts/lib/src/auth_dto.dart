@@ -45,15 +45,23 @@ final class LoginRequestDto {
 /// Request body for POST /auth/register.
 final class RegisterRequestDto {
   /// Creates a registration request.
-  const RegisterRequestDto({required this.email, required this.password});
+  const RegisterRequestDto({
+    required this.displayName,
+    required this.email,
+    required this.password,
+  });
 
   /// Deserializes from a JSON map.
   factory RegisterRequestDto.fromJson(Map<String, dynamic> json) {
     return RegisterRequestDto(
+      displayName: json['display_name']! as String,
       email: json['email']! as String,
       password: json['password']! as String,
     );
   }
+
+  /// The chosen display name, set at registration (migration 0015).
+  final String displayName;
 
   /// The account email.
   final String email;
@@ -62,16 +70,21 @@ final class RegisterRequestDto {
   final String password;
 
   /// Serializes to a JSON-encodable map.
-  Map<String, dynamic> toJson() => {'email': email, 'password': password};
+  Map<String, dynamic> toJson() => {
+    'display_name': displayName,
+    'email': email,
+    'password': password,
+  };
 
   @override
   bool operator ==(Object other) =>
       other is RegisterRequestDto &&
+      other.displayName == displayName &&
       other.email == email &&
       other.password == password;
 
   @override
-  int get hashCode => Object.hash(email, password);
+  int get hashCode => Object.hash(displayName, email, password);
 }
 
 /// Response body of POST /auth/login and POST /auth/register.

@@ -45,7 +45,7 @@ final class PostgresUserAdminRepository implements UserAdminRepository {
   // --------------------------------------------------------------------------
 
   static const String _findSql = '''
-SELECT id, email, role::text, status::text
+SELECT id, email, role::text, status::text, display_name
 FROM identity.users
 WHERE id = @id
 ''';
@@ -79,7 +79,7 @@ UPDATE identity.users
 SET status = @status,
     updated_at = now()
 WHERE id = @id
-RETURNING id, email, role::text, status::text
+RETURNING id, email, role::text, status::text, display_name
 ''';
 
   @override
@@ -109,7 +109,7 @@ RETURNING id, email, role::text, status::text
   // --------------------------------------------------------------------------
 
   static const String _listSql = '''
-SELECT id, email, role::text, status::text
+SELECT id, email, role::text, status::text, display_name
 FROM identity.users
 WHERE (@search::text IS NULL OR email ILIKE @search)
 ORDER BY email ASC
@@ -171,6 +171,7 @@ LIMIT @limit
         email: row['email'] as String?,
         role: (roleResult as Ok<PlatformRole>).value,
         status: status,
+        displayName: (row['display_name'] as String?) ?? '',
       ),
     );
   }

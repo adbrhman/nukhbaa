@@ -34,11 +34,16 @@ Future<Response> _handle(
   if (passwordResult is Err<String>) {
     return errorResponse(passwordResult.error);
   }
+  final displayNameResult = requireString(body, 'display_name');
+  if (displayNameResult is Err<String>) {
+    return errorResponse(displayNameResult.error);
+  }
 
   final root = await context.read<Future<CompositionRoot>>();
   final result = await root.register(
     email: (emailResult as Ok<String>).value,
     password: (passwordResult as Ok<String>).value,
+    displayName: (displayNameResult as Ok<String>).value,
   );
 
   return switch (result) {

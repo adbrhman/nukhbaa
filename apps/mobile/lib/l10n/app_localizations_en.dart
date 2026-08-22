@@ -61,6 +61,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordRequired => 'Please enter your password.';
 
   @override
+  String get displayName => 'Name';
+
+  @override
+  String get displayNameHint => 'Your name, shown to others';
+
+  @override
+  String get displayNameRequired => 'Please enter your name.';
+
+  @override
+  String get changeDisplayName => 'Change name';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
+
+  @override
   String get toggleToSignIn => 'Already have an account? Sign in';
 
   @override

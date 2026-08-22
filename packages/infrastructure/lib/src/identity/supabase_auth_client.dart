@@ -83,11 +83,21 @@ final class SupabaseAuthClient {
   Future<Result<SupabaseSession>> signUp({
     required String email,
     required String password,
+    String? displayName,
   }) {
     return _post(
       path: 'signup',
       query: const {},
-      body: {'email': email, 'password': password},
+      body: {
+        'email': email,
+        'password': password,
+        // GoTrue stores this under auth.users.raw_user_meta_data and mirrors
+        // it into the issued JWT's `user_metadata` claim, where
+        // SupabaseJwtVerifier reads it back to seed identity.users on first
+        // sight. Omitted entirely (not sent as null/empty) when absent.
+        if (displayName != null && displayName.trim().isNotEmpty)
+          'data': {'display_name': displayName.trim()},
+      },
       onSuccess: _sessionFromSignup,
     );
   }

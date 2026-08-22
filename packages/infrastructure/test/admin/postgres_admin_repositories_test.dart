@@ -194,6 +194,7 @@ void main() {
     User candidate({UserStatus status = UserStatus.suspended}) => User(
       id: _uId,
       email: 'human@example.com',
+      displayName: 'Human',
       role: PlatformRole.user,
       status: status,
     );

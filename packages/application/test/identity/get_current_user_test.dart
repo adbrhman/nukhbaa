@@ -18,12 +18,17 @@ final class _FakeUserDirectory implements UserDirectory {
     lastPrincipal = principal;
     return _response;
   }
+
+  @override
+  Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
+      throw UnimplementedError();
 }
 
 AuthenticatedUser _principal() => const AuthenticatedUser(
   userId: UserId(_uuid),
   role: PlatformRole.user,
   email: 'a@example.com',
+  displayName: 'Human',
 );
 
 void main() {
@@ -32,6 +37,7 @@ void main() {
       final canonical = const User(
         id: UserId(_uuid),
         email: 'a@example.com',
+        displayName: 'Human',
         role: PlatformRole.admin, // platform-owned, may differ from token role
         status: UserStatus.active,
       );
