@@ -8,10 +8,8 @@ import 'ports/user_directory.dart';
 /// Verifies a bearer token and reconciles the resulting principal against the
 /// platform's canonical identity.users row.
 final class AuthenticateRequest {
-  const AuthenticateRequest(
-    this._verifier, {
-    UserDirectory? directory,
-  }) : _directory = directory;
+  const AuthenticateRequest(this._verifier, {UserDirectory? directory})
+    : _directory = directory;
 
   final TokenVerifier _verifier;
   final UserDirectory? _directory;

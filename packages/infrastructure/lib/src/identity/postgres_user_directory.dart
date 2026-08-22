@@ -51,12 +51,13 @@ final class PostgresUserDirectory implements UserDirectory {
     );
 
     return switch (queryResult) {
-      Ok<List<Map<String, dynamic>>>(:final value) => value.isEmpty
-          ? const Result.ok(null)
-          : switch (_mapSingleRow(value)) {
-              Ok<User>(:final value) => Result.ok(value),
-              Err<User>(:final error) => Result.err(error),
-            },
+      Ok<List<Map<String, dynamic>>>(:final value) =>
+        value.isEmpty
+            ? const Result.ok(null)
+            : switch (_mapSingleRow(value)) {
+                Ok<User>(:final value) => Result.ok(value),
+                Err<User>(:final error) => Result.err(error),
+              },
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
     };
   }
@@ -97,13 +98,13 @@ final class PostgresUserDirectory implements UserDirectory {
   }
 
   static UserStatus? _statusFrom(String? raw) => switch (raw) {
-        'active' => UserStatus.active,
-        'suspended' => UserStatus.suspended,
-        _ => null,
-      };
+    'active' => UserStatus.active,
+    'suspended' => UserStatus.suspended,
+    _ => null,
+  };
 
   static AppError _corrupt(String field, String detail) => AppError.transient(
-        'identity.row_corrupt',
-        'Stored user has invalid $field: $detail',
-      );
+    'identity.row_corrupt',
+    'Stored user has invalid $field: $detail',
+  );
 }

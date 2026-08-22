@@ -1,7 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
-
 /// Port: the platform's canonical user store.
 ///
 /// Implementations are owned by the infrastructure layer.
