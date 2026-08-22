@@ -19,12 +19,36 @@ Do not read any other doc file unless explicitly requested._
 2. **Private groups are first-class** from the architectural root.
 3. **Football-focused**, with one deliberate abstraction seam for how a
    fixture's result is represented (no general "sports" platform today).
-4. **Predict once, rank everywhere (Model B)** — one prediction per round,
-   reused across all ranking contexts.
+4. **Predict once, rank everywhere (Model B)** — one prediction per fixture,
+   reused across all ranking contexts. **(AMENDED — see Axiom 4 Amendment
+   below: "round" as a scoring/locking unit is removed; the calendar month
+   is now the ranking aggregation window, and each fixture locks/scores
+   individually at its own kickoff.)**
 5. (Ledger/points) — points are a virtual-value instrument; the competitive
    record is the asset to protect (drives Security ADR).
 6. **The database is the last line of defense, not the first** — application
    enforces invariants; DB triggers/permissions are the backstop.
+
+#### Axiom 4 Amendment — Round removed, monthly competition (decided, in progress)
+
+- **Removed unit:** `Round` (and `RoundFixture`) as a scoring/locking
+  aggregate is eliminated. No more `open_round` / `lock_round` /
+  `link_fixture_to_round`.
+- **New unit:** `Fixture` locks and scores individually at its own
+  `kickoff_at`. `ScoreFixture` replaces `ScoreRound`.
+- **Prediction key:** `(fixture_id, participant_id)` replaces
+  `(round_id, participant_id)`.
+- **Ranking:** monthly aggregation = sum of `PointEntry` rows whose
+  `fixture.kickoff_at` falls in the same calendar month, per
+  `CompetitionSeason`. This is a query/read-model, not a new stored
+  entity.
+- **Migration:** historical `round` / `round_fixture` data is archived,
+  not dropped. Existing `predictions` / `point_entries` are relinked to
+  `fixture_id` directly in one migration.
+- **Status:** design approved; implementation in progress layer by layer
+  (domain -> application -> infrastructure/migration -> contracts ->
+  server routes -> mobile). Do not assume completion elsewhere in this
+  document until this note is removed/updated.
 
 ### Core Architecture (ADR 0002)
 Layered, event-driven, strict integrity boundary:
