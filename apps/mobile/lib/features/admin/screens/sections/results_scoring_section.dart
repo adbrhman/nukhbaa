@@ -471,6 +471,7 @@ class _ReportCellChip extends StatelessWidget {
       'correct_outcome' => (t.primary, 'نتيجة صحيحة'),
       'incorrect' => (t.error, 'خاطئ'),
       'missed' => (t.textMuted, 'لم يشارك'),
+      'pending' => (t.textSecondary, 'بانتظار النتيجة'),
       _ => (t.textMuted, cell.grade),
     };
 

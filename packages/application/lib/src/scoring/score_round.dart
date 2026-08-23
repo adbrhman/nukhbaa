@@ -14,29 +14,37 @@ import 'package:shared/shared.dart';
 /// computed and written server-side only; the client never computes or submits
 /// them). It:
 /// 1. authorizes the caller as an **admin** (only the platform scores);
-/// 2. loads the round and enforces the phase precondition — a round may be
-///    scored only while it is [RoundStatus.locked] (never `open`: predictions
-///    would still be mutable; never re-scored once `scored` unless idempotently
-///    replayed — see below). This is the application's first line of defence;
-///    the migration's constraint is the backstop (Axiom 6);
+/// 2. loads the round — scoring is now allowed regardless of round status
+///    (`open`, `locked`, or `scored`; live/partial scoring, Phase: احتساب
+///    فوري): fixtures with no recorded result yet are graded `pending` (see
+///    below), so an admin can see a live, continuously-updating leaderboard
+///    while a round is still in progress rather than only after it locks;
 /// 3. interprets the round's **frozen** [RulesetSnapshot] as a [ScoringRuleset]
 ///    (reading the frozen rules is what makes a historical round reproducible —
 ///    Axiom 5);
 /// 4. reads every participant's one prediction ([PredictionRepository.listByRound])
-///    and the actual [FixtureResult]s for the round's fixtures
-///    ([FixtureResultRepository]);
+///    and whatever actual [FixtureResult]s have been recorded so far for the
+///    round's fixtures ([FixtureResultRepository]) — no longer required to be
+///    complete: any fixture still missing a result is graded
+///    [FixtureScoreGrade.pending] (always zero points) by the pure domain
+///    service rather than blocking the whole round's scoring;
 /// 5. runs the pure domain [Scoring.scoreRound] per prediction (total,
 ///    deterministic — same inputs, same score);
-/// 6. persists all [RoundScore]s atomically and transitions the round
-///    `locked → scored` under an optimistic-concurrency guard.
+/// 6. persists all [RoundScore]s atomically and, only once the round is
+///    [RoundStatus.locked] AND every one of its fixtures now has a recorded
+///    result, transitions it `locked → scored` under an optimistic-concurrency
+///    guard. A partial scoring pass (round still `open`, or some fixtures
+///    still without a result) persists the live scores without moving the
+///    round's status.
 ///
 /// **Idempotent** (Application ADR, Section 2): the score persistence upserts
-/// per `(round, participant)` and re-running scoring on an already-`scored`
-/// round recomputes the same deterministic result and re-persists it without
-/// creating duplicates. Because the guarded status transition only fires on the
-/// `locked → scored` edge, a replay on an already-`scored` round re-writes the
-/// (identical) scores and reports success without a spurious transition
-/// conflict.
+/// per `(round, participant)` and re-running scoring — whether partially, as
+/// more results arrive, or on an already-`scored` round — recomputes the same
+/// deterministic result and re-persists it without creating duplicates.
+/// Because the guarded status transition only fires on the `locked → scored`
+/// edge once results are complete, a replay on an already-`scored` round
+/// re-writes the (identical) scores and reports success without a spurious
+/// transition conflict.
 ///
 /// Never throws; returns a typed [Result] carrying the scored [RoundScore]s.
 final class ScoreRound {
@@ -78,19 +86,6 @@ final class ScoreRound {
     }
     final round = (roundResult as Ok<Round>).value;
 
-    // Precondition: score only a round that is locked or already scored (a
-    // deterministic idempotent replay). An open round is refused — its
-    // predictions are still mutable, so scoring it would corrupt the record.
-    if (round.status == RoundStatus.open) {
-      return Result.err(
-        AppError.invariant(
-          'scoring.round_not_locked',
-          'A round can be scored only after it is locked '
-              '(round is ${round.status.wireValue})',
-        ),
-      );
-    }
-
     // Interpret the frozen ruleset. A corrupt/foreign snapshot is a typed
     // failure, never a silent zero score.
     final rulesetResult = ScoringRuleset.fromSnapshot(round.ruleset);
@@ -118,22 +113,16 @@ final class ScoreRound {
       for (final link in roundFixtures) link.fixture,
     ];
 
-    // Load the actual results and require one per linked fixture — scoring an
-    // incomplete result set would silently corrupt the record (Axiom 5).
+    // Load whatever actual results have been recorded so far. No longer
+    // required to cover every linked fixture (live/partial scoring, Phase:
+    // احتساب فوري) — any fixture still missing a result is graded `pending`
+    // by the pure domain service below, rather than blocking scoring.
     final resultsResult = await _results.findByFixtures(fixtureRefs);
     if (resultsResult is Err<List<FixtureResult>>) {
       return Result.err(resultsResult.error);
     }
     final results = (resultsResult as Ok<List<FixtureResult>>).value;
-    if (results.length != fixtureRefs.length) {
-      return const Result.err(
-        AppError.invariant(
-          'scoring.results_incomplete',
-          'Every fixture in the round must have a recorded result before '
-              'the round can be scored',
-        ),
-      );
-    }
+    final resultsComplete = results.length == fixtureRefs.length;
 
     // Load every participant's prediction for the round.
     final predictionsResult = await _predictions.listByRound(rId);
@@ -162,10 +151,15 @@ final class ScoreRound {
       return Result.err(saved.error);
     }
 
-    // Transition locked → scored under an optimistic-concurrency guard. When the
-    // round is already scored (idempotent replay) there is no edge to fire: the
-    // scores were re-persisted above, so report success without transitioning.
-    if (round.status == RoundStatus.locked) {
+    // Transition locked → scored under an optimistic-concurrency guard — only
+    // once every fixture actually has a recorded result (live/partial scoring
+    // must never mark a round `scored` while some fixtures are still
+    // `pending`). When the round is already scored (idempotent replay) there
+    // is no edge to fire: the scores were re-persisted above, so report
+    // success without transitioning. An `open` round, or a `locked` round with
+    // incomplete results, simply keeps its current status — this is a live
+    // partial-scoring pass, not a phase transition.
+    if (round.status == RoundStatus.locked && resultsComplete) {
       final transitioned = round.transitionTo(RoundStatus.scored);
       if (transitioned is Err<Round>) {
         return Result.err(transitioned.error);

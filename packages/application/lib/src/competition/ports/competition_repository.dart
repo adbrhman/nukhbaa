@@ -169,4 +169,18 @@ abstract interface class CompetitionRepository {
   Future<Result<List<RoundFixture>>> listFixturesForRounds(
     List<RoundId> roundIds,
   );
+
+  // ---------------------------------------------------------------------------
+  // Live/partial scoring (Phase: احتساب فوري) — resolves every round a given
+  // fixture belongs to, so recording that fixture's actual result can
+  // immediately re-score each of those rounds rather than waiting for the
+  // whole round to lock. Additive, read-only; same total/never-throws
+  // contract as every other browse read above.
+  // ---------------------------------------------------------------------------
+
+  /// Lists the ids of every round [fixture] is linked to (a fixture may
+  /// belong to more than one round/competition — Axiom 3). Ordered by round
+  /// id for a stable, deterministic result. A fixture linked to no round
+  /// yields `Ok(<empty list>)`, never an error.
+  Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture);
 }

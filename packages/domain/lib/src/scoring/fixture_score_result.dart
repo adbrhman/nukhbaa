@@ -1,14 +1,20 @@
 import 'package:domain/src/competition/fixture_ref.dart';
 import 'package:shared/shared.dart';
 
-/// How well a single fixture prediction matched the actual result — a closed,
-/// ordered classification (Axiom 3: football-specific).
+/// How well a single fixture prediction matched the actual result — a closed
+/// classification (Axiom 3: football-specific).
 ///
-/// The four grades are mutually exclusive and ordered by specificity:
-/// exact ⊃ correctOutcome ⊃ incorrect, with [missed] standing apart from that
-/// chain — it means no prediction was ever made, not that one was wrong.
-/// Scoring maps each grade to a point award from the frozen ruleset (missed is
-/// always zero, unconditionally); nothing else can grade a fixture.
+/// [exactScoreline], [correctOutcome] and [incorrect] are mutually exclusive
+/// and ordered by specificity (exact ⊃ correctOutcome ⊃ incorrect) and apply
+/// only once the fixture's actual result is known. [missed] stands apart from
+/// that chain — it means no prediction was ever made, not that one was wrong.
+/// [pending] stands apart too — a prediction exists but the fixture's actual
+/// result has not been recorded yet (live/partial scoring, Phase: احتساب
+/// فوري): the round can be scored while still in progress, and every
+/// not-yet-decided fixture is graded [pending] rather than blocking the whole
+/// round's scoring. Scoring maps each grade to a point award from the frozen
+/// ruleset ([missed] and [pending] are always zero, unconditionally); nothing
+/// else can grade a fixture.
 enum FixtureScoreGrade {
   /// The predicted scoreline exactly matched the actual scoreline (which implies
   /// the outcome matched too).
@@ -25,7 +31,15 @@ enum FixtureScoreGrade {
   /// per-fixture lock, not a round-wide one), so there is no prediction to
   /// grade. Always worth zero points — never reward non-participation — and
   /// never subject to the double multiplier (there is nothing to double).
-  missed;
+  missed,
+
+  /// A prediction exists for this fixture, but the fixture's actual result has
+  /// not been recorded yet — the match has not finished (or has not been
+  /// ingested) at scoring time. Always worth zero points; re-scoring the round
+  /// later, once the result lands, replaces this grade with the real one
+  /// (exact/correct/incorrect). Never subject to the double multiplier (there
+  /// is nothing final to double yet).
+  pending;
 
   /// The stable wire/storage token for this grade, decoupled from the Dart
   /// identifier so persisted values can never drift silently.
@@ -34,6 +48,7 @@ enum FixtureScoreGrade {
     FixtureScoreGrade.correctOutcome => 'correct_outcome',
     FixtureScoreGrade.incorrect => 'incorrect',
     FixtureScoreGrade.missed => 'missed',
+    FixtureScoreGrade.pending => 'pending',
   };
 
   /// Parses a [FixtureScoreGrade] from an untrusted [raw] token (e.g. a stored

@@ -253,6 +253,17 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
     return Result.ok(roundLinks);
   }
 
+  @override
+  Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) async {
+    final roundIds =
+        {
+          for (final link in links)
+            if (link.fixture.value == fixture.value) link.roundId,
+        }.toList()
+          ..sort((a, b) => a.value.compareTo(b.value));
+    return Result.ok(roundIds);
+  }
+
   // Matches-feed aggregate read (BLOCKER perf, 2026-08-17): real in-memory
   // reads over this harness's own store, mirroring the Postgres adapter's
   // join/filter/order semantics — NOT stubs/throws.

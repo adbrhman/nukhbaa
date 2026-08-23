@@ -34,16 +34,18 @@ import 'package:shared/shared.dart';
 abstract final class Scoring {
   /// Scores [prediction] against [results] under [ruleset].
   ///
-  /// [results] must contain the actual result for every fixture in the round
-  /// (the caller — `ScoreRound` — already guarantees this before invoking
-  /// scoring) and no duplicates. [prediction] no longer needs to cover every
-  /// one of those fixtures: since fixtures lock individually at kickoff, a
-  /// participant who joined late may have fewer scores than the round has
-  /// fixtures, and each of those uncovered fixtures is graded `missed` rather
-  /// than rejected. It remains an [ErrorKind.invariant] failure for a fixture
-  /// the participant DID predict to be missing its actual result — scoring a
-  /// round against an incomplete result set would silently corrupt the
-  /// competitive record (Axiom 5).
+  /// [results] holds whatever actual results have been recorded for the round
+  /// so far — it no longer needs to cover every fixture (live/partial
+  /// scoring, Phase: احتساب فوري): a round may now be scored while some
+  /// fixtures haven't kicked off or finished yet. [prediction] likewise no
+  /// longer needs to cover every fixture in the round: since fixtures lock
+  /// individually at kickoff, a participant who joined late may have fewer
+  /// scores than the round has fixtures, and each of those uncovered fixtures
+  /// is graded `missed` rather than rejected. A fixture the participant DID
+  /// predict but that has no recorded result yet is graded `pending`
+  /// (always zero points) rather than rejected — re-scoring the round later,
+  /// once the result lands, replaces it with the real grade. [results] must
+  /// still contain no duplicates for the same fixture.
   ///
   /// The per-fixture breakdown preserves the prediction's own fixture order
   /// for every fixture it covers (Axiom 4: the one forecast, graded in
@@ -73,13 +75,20 @@ abstract final class Scoring {
     for (final scorePrediction in prediction.scores) {
       final result = resultsByFixture[scorePrediction.fixture.value];
       if (result == null) {
-        return Result.err(
-          AppError.invariant(
-            'scoring.result_missing_for_fixture',
-            'No actual result supplied for fixture '
-                '${scorePrediction.fixture.value}',
+        // The fixture was predicted, but its actual result hasn't been
+        // recorded yet — live/partial scoring grades it `pending` (always
+        // zero) rather than rejecting the whole round's scoring. Re-scoring
+        // later, once the result lands, replaces this grade with the real
+        // one.
+        graded.add(
+          FixtureScoreResult(
+            fixture: scorePrediction.fixture,
+            grade: FixtureScoreGrade.pending,
+            points: 0,
           ),
         );
+        coveredFixtureIds.add(scorePrediction.fixture.value);
+        continue;
       }
       graded.add(_gradeFixture(scorePrediction, result, ruleset));
       coveredFixtureIds.add(scorePrediction.fixture.value);

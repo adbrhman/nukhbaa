@@ -89,6 +89,7 @@ export 'src/scoring/ports/fixture_result_repository.dart';
 export 'src/scoring/ports/score_repository.dart';
 export 'src/scoring/record_fixture_result.dart';
 export 'src/scoring/score_round.dart';
+export 'src/scoring/score_rounds_for_fixture.dart';
 export 'src/social/activity_event.dart';
 export 'src/social/get_group_activity_feed.dart';
 export 'src/social/list_round_reactions.dart';

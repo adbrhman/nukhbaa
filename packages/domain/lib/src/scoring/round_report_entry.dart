@@ -11,7 +11,9 @@ import 'package:domain/src/scoring/round_score.dart';
 /// or [FixtureScoreGrade.correctOutcome]; [incorrectCount] counts
 /// [FixtureScoreGrade.incorrect]. A [FixtureScoreGrade.missed] fixture (no
 /// prediction was ever made) counts toward neither — it is absence, not a
-/// wrong guess.
+/// wrong guess. A [FixtureScoreGrade.pending] fixture (predicted, but no
+/// actual result recorded yet) likewise counts toward neither — it is not
+/// yet decided, not a wrong guess.
 final class RoundReportEntry {
   const RoundReportEntry({
     required this.participantId,
@@ -32,6 +34,7 @@ final class RoundReportEntry {
         case FixtureScoreGrade.incorrect:
           incorrect++;
         case FixtureScoreGrade.missed:
+        case FixtureScoreGrade.pending:
           break;
       }
     }

@@ -114,10 +114,24 @@ void main() {
     ({CompositionRoot root, InMemoryFixtureResultRepository results})
     rootFor() {
       final results = InMemoryFixtureResultRepository();
+      // No rounds/links are seeded, so `scoreRoundsForFixture` resolves an
+      // empty round list for `kFixtureId` and does nothing — these tests
+      // exercise result recording only, not the live re-score fan-out (that
+      // has its own coverage below).
+      final comp = InMemoryCompetitionRepository();
       final root = CompositionRoot.forTesting(
         recordFixtureResult: RecordFixtureResult(
           resultRepository: results,
           clock: FixedClock(_at),
+        ),
+        scoreRoundsForFixture: ScoreRoundsForFixture(
+          competitionRepository: comp,
+          scoreRound: ScoreRound(
+            competitionRepository: comp,
+            predictionRepository: InMemoryPredictionRepository(),
+            resultRepository: results,
+            scoreRepository: InMemoryScoreRepository(),
+          ),
         ),
       );
       return (root: root, results: results);
@@ -244,6 +258,59 @@ void main() {
       );
       expect(response.statusCode, HttpStatus.methodNotAllowed);
     });
+
+    test(
+      'recording a result immediately re-scores every round the fixture '
+      'belongs to (Phase: احتساب فوري — live/partial scoring)',
+      () async {
+        final results = InMemoryFixtureResultRepository();
+        final comp = InMemoryCompetitionRepository()
+          ..rounds[kRoundId] = roundIn(RoundStatus.open)
+          ..links.add(link(kFixtureId, 0))
+          ..participants.add(participant(kParticipantId, kUserId));
+        final preds = InMemoryPredictionRepository()
+          ..roundFixtures.addAll([link(kFixtureId, 0)]);
+        await preds.save(
+          prediction(
+            id: kPredictionId,
+            participantId: kParticipantId,
+            scores: [(kFixtureId, 2, 1)],
+          ),
+          _at,
+        );
+        final scores = InMemoryScoreRepository();
+        final root = CompositionRoot.forTesting(
+          recordFixtureResult: RecordFixtureResult(
+            resultRepository: results,
+            clock: FixedClock(_at),
+          ),
+          scoreRoundsForFixture: ScoreRoundsForFixture(
+            competitionRepository: comp,
+            scoreRound: ScoreRound(
+              competitionRepository: comp,
+              predictionRepository: preds,
+              resultRepository: results,
+              scoreRepository: scores,
+            ),
+          ),
+        );
+
+        final response = await result_route.onRequest(
+          wireContext(
+            root: root,
+            principal: adminPrincipal(),
+            method: HttpMethod.put,
+            body: const {'home_goals': 2, 'away_goals': 1},
+          ),
+          kFixtureId,
+        );
+
+        expect(response.statusCode, HttpStatus.ok);
+        // The open round was live-scored as a side effect — one row, exact
+        // scoreline (2-1 predicted, 2-1 actual) = 3 points, no lock needed.
+        expect(scores.count, 1);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -354,45 +421,41 @@ void main() {
     });
 
     test(
-      'scoring an open round is rejected 409 scoring.round_not_locked',
+      'scoring an open round succeeds (live/partial scoring, 200) without '
+      'transitioning it',
       () async {
         final setup = await rootFor(status: RoundStatus.open);
         final response = await post(setup.root, adminPrincipal());
 
-        expect(response.statusCode, HttpStatus.conflict);
-        expect(
-          (await decodeBody(response))['code'],
-          'scoring.round_not_locked',
-        );
-        expect(setup.scores.count, 0);
+        expect(response.statusCode, HttpStatus.ok);
         expect(setup.comp.rounds[kRoundId]!.status, RoundStatus.open);
       },
     );
 
-    test('scoring with an incomplete result set is rejected 409 '
-        'scoring.results_incomplete', () async {
-      final setup = await rootFor(
-        status: RoundStatus.locked,
-        completeResults: false,
-        predictions: [
-          prediction(
-            id: kPredictionId,
-            participantId: kParticipantId,
-            scores: [(kFixtureId, 2, 1), (kFixtureId2, 0, 0)],
-          ),
-        ],
-      );
-      final response = await post(setup.root, adminPrincipal());
+    test(
+      'scoring with an incomplete result set succeeds (200); the fixture '
+      'without a result grades pending and the round stays locked',
+      () async {
+        final setup = await rootFor(
+          status: RoundStatus.locked,
+          completeResults: false,
+          predictions: [
+            prediction(
+              id: kPredictionId,
+              participantId: kParticipantId,
+              scores: [(kFixtureId, 2, 1), (kFixtureId2, 0, 0)],
+            ),
+          ],
+        );
+        final response = await post(setup.root, adminPrincipal());
 
-      expect(response.statusCode, HttpStatus.conflict);
-      expect(
-        (await decodeBody(response))['code'],
-        'scoring.results_incomplete',
-      );
-      expect(setup.scores.count, 0);
-      // The round is untouched — still locked, ready to be scored once complete.
-      expect(setup.comp.rounds[kRoundId]!.status, RoundStatus.locked);
-    });
+        expect(response.statusCode, HttpStatus.ok);
+        expect(setup.scores.count, 1);
+        // The round stays locked — it only transitions to scored once every
+        // fixture actually has a recorded result.
+        expect(setup.comp.rounds[kRoundId]!.status, RoundStatus.locked);
+      },
+    );
 
     test('re-scoring an already-scored round is idempotent (200, one row, '
         'no transition conflict)', () async {

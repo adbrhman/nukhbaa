@@ -366,4 +366,23 @@ base class FakeCompetitionRepository implements CompetitionRepository {
         });
     return Result.ok(matched);
   }
+
+  // ---------------------------------------------------------------------------
+  // Live/partial scoring (Phase: احتساب فوري) — real in-memory read over the
+  // same `_roundFixtures` backing store, mirroring the Postgres adapter's
+  // filter/order semantics.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final roundIds =
+        {
+          for (final link in _roundFixtures)
+            if (link.fixture.value == fixture.value) link.roundId,
+        }.toList()
+          ..sort((a, b) => a.value.compareTo(b.value));
+    return Result.ok(roundIds);
+  }
 }

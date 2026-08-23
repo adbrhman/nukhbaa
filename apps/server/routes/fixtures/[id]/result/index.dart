@@ -62,13 +62,40 @@ Future<Response> onRequest(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<FixtureResult>(:final value) => Response.json(
-      body: FixtureResultDto(
-        fixtureId: value.fixture.value,
-        homeGoals: value.homeGoals,
-        awayGoals: value.awayGoals,
-      ).toJson(),
+    Ok<FixtureResult>(:final value) => await _respondAndRescore(
+      root: root,
+      principal: principal,
+      fixtureId: id,
+      value: value,
     ),
     Err<FixtureResult>(:final error) => errorResponse(error),
   };
+}
+
+/// After a result is recorded, immediately re-scores every round this
+/// fixture belongs to (Phase: احتساب فوري — live/partial scoring), so the
+/// leaderboard/report an admin looks at next is already current. A failure in
+/// the fan-out re-score is a genuine, caller-visible error (never silently
+/// swallowed) — but it is reported as a distinct step from the already-
+/// successful result recording, which is not rolled back.
+Future<Response> _respondAndRescore({
+  required CompositionRoot root,
+  required AuthenticatedUser principal,
+  required String fixtureId,
+  required FixtureResult value,
+}) async {
+  final rescored = await root.scoreRoundsForFixture(
+    principal: principal,
+    fixtureId: fixtureId,
+  );
+  if (rescored is Err<List<RoundScore>>) {
+    return errorResponse(rescored.error);
+  }
+  return Response.json(
+    body: FixtureResultDto(
+      fixtureId: value.fixture.value,
+      homeGoals: value.homeGoals,
+      awayGoals: value.awayGoals,
+    ).toJson(),
+  );
 }

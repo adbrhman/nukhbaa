@@ -46,6 +46,7 @@ final class CompositionRoot {
     required this.registerFixtureSchedule,
     required this.correctFixtureSchedule,
     required this.scoreRound,
+    required this.scoreRoundsForFixture,
     required this.getRoundScores,
     required this.getRoundReport,
     required this.adminGetRoundScores,
@@ -136,6 +137,7 @@ final class CompositionRoot {
     RegisterFixtureSchedule? registerFixtureSchedule,
     CorrectFixtureSchedule? correctFixtureSchedule,
     ScoreRound? scoreRound,
+    ScoreRoundsForFixture? scoreRoundsForFixture,
     GetRoundScores? getRoundScores,
     GetRoundReport? getRoundReport,
     AdminGetRoundScores? adminGetRoundScores,
@@ -204,6 +206,8 @@ final class CompositionRoot {
        correctFixtureSchedule =
            correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
        scoreRound = scoreRound ?? _absentScoreRound(),
+       scoreRoundsForFixture =
+           scoreRoundsForFixture ?? _absentScoreRoundsForFixture(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
        getRoundReport = getRoundReport ?? _absentGetRoundReport(),
        adminGetRoundScores =
@@ -419,6 +423,12 @@ final class CompositionRoot {
     resultRepository: _unwiredFixtureResultRepository,
     scoreRepository: _unwiredScoreRepository,
   );
+
+  static ScoreRoundsForFixture _absentScoreRoundsForFixture() =>
+      ScoreRoundsForFixture(
+        competitionRepository: _unwiredCompetitionRepository,
+        scoreRound: _absentScoreRound(),
+      );
 
   static GetRoundScores _absentGetRoundScores() => GetRoundScores(
     competitionRepository: _unwiredCompetitionRepository,
@@ -760,6 +770,11 @@ final class CompositionRoot {
   /// Scores every prediction in a locked round (admin-only command; the points
   /// are computed and written server-side — Axioms 2/5).
   final ScoreRound scoreRound;
+
+  /// Re-scores every round a fixture belongs to (Phase: احتساب فوري —
+  /// live/partial scoring); the fan-out `RecordFixtureResult` triggers so a
+  /// round's scores update immediately as results come in.
+  final ScoreRoundsForFixture scoreRoundsForFixture;
 
   /// Reads every participant's score for a scored round (visibility-gated).
   final GetRoundScores getRoundScores;
@@ -1161,6 +1176,15 @@ final class CompositionRoot {
         resultRepository: fixtureResultRepository,
         scoreRepository: scoreRepository,
       ),
+      scoreRoundsForFixture: ScoreRoundsForFixture(
+        competitionRepository: competitionRepository,
+        scoreRound: ScoreRound(
+          competitionRepository: competitionRepository,
+          predictionRepository: predictionRepository,
+          resultRepository: fixtureResultRepository,
+          scoreRepository: scoreRepository,
+        ),
+      ),
       getRoundScores: GetRoundScores(
         competitionRepository: competitionRepository,
         scoreRepository: scoreRepository,
@@ -1425,6 +1449,10 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   Future<Result<List<RoundFixture>>> listFixturesForRounds(
     List<RoundId> roundIds,
   ) => _unwired();
+
+  @override
+  Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) =>
+      _unwired();
 }
 
 /// Backs an "absent" [OpenRound]'s ruleset provider.

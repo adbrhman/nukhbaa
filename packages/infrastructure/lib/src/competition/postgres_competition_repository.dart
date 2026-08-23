@@ -621,6 +621,42 @@ ORDER BY display_order ASC, fixture_id ASC
     );
   }
 
+  // Live/partial scoring (Phase: احتساب فوري): every round id a fixture is
+  // linked to, so recording that fixture's result can re-score each of those
+  // rounds immediately. Ordered by round id for a stable result. A corrupt row
+  // maps to transient `row_corrupt`, exactly as every other browse read.
+  static const String _listRoundsByFixtureSql = '''
+SELECT DISTINCT round_id
+FROM competition.round_fixtures
+WHERE fixture_id = @fixture_id
+ORDER BY round_id ASC
+''';
+
+  @override
+  Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) async {
+    final result = await _connection.query(
+      _listRoundsByFixtureSql,
+      parameters: {'fixture_id': fixture.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapAll(
+        value,
+        _mapRoundIdRow,
+      ),
+    };
+  }
+
+  Result<RoundId> _mapRoundIdRow(Map<String, dynamic> row) {
+    final roundIdResult = RoundId.tryParse(row['round_id']?.toString());
+    if (roundIdResult is Err<RoundId>) {
+      return Result.err(
+        _corrupt('round_fixtures', 'round_id', roundIdResult.error.message),
+      );
+    }
+    return Result.ok((roundIdResult as Ok<RoundId>).value);
+  }
+
   // --------------------------------------------------------------------------
   // Matches-feed aggregate read (server-side fan-in, replacing the client-side
   // competition -> season -> round -> fixtures drill-down). Two batched

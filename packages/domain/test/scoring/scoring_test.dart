@@ -176,7 +176,8 @@ void main() {
   });
 
   group('Scoring.scoreRound result-set integrity (Axiom 5)', () {
-    test('rejects a missing result for a predicted fixture', () {
+    test('a predicted fixture with no recorded result yet is graded pending '
+        '(live/partial scoring), not rejected', () {
       final result = Scoring.scoreRound(
         prediction: _prediction([
           _pred(_fixtureA, 1, 0),
@@ -185,9 +186,12 @@ void main() {
         ruleset: _ruleset,
         results: [_res(_fixtureA, 1, 0)],
       );
-      final error = (result as Err<RoundScore>).error;
-      expect(error.kind, ErrorKind.invariant);
-      expect(error.code, 'scoring.result_missing_for_fixture');
+      final score = (result as Ok<RoundScore>).value;
+      expect(score.fixtureResults, hasLength(2));
+      final pending = score.fixtureResults.last;
+      expect(pending.fixture.value, _fixtureB);
+      expect(pending.grade, FixtureScoreGrade.pending);
+      expect(pending.points, 0);
     });
 
     test(
@@ -228,15 +232,22 @@ void main() {
       expect(error.code, 'scoring.duplicate_result');
     });
 
-    test('rejects a same-count result set that covers a different fixture', () {
-      final result = Scoring.scoreRound(
-        prediction: _prediction([_pred(_fixtureA, 1, 0)]),
-        ruleset: _ruleset,
-        results: [_res(_fixtureB, 1, 0)],
-      );
-      final error = (result as Err<RoundScore>).error;
-      expect(error.kind, ErrorKind.invariant);
-      expect(error.code, 'scoring.result_missing_for_fixture');
-    });
+    test(
+      'a same-count result set covering a different fixture yields pending '
+      '+ missed, not a rejection',
+      () {
+        final result = Scoring.scoreRound(
+          prediction: _prediction([_pred(_fixtureA, 1, 0)]),
+          ruleset: _ruleset,
+          results: [_res(_fixtureB, 1, 0)],
+        );
+        final score = (result as Ok<RoundScore>).value;
+        expect(score.fixtureResults, hasLength(2));
+        expect(score.fixtureResults[0].fixture.value, _fixtureA);
+        expect(score.fixtureResults[0].grade, FixtureScoreGrade.pending);
+        expect(score.fixtureResults[1].fixture.value, _fixtureB);
+        expect(score.fixtureResults[1].grade, FixtureScoreGrade.missed);
+      },
+    );
   });
 }
