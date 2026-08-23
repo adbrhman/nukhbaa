@@ -301,14 +301,16 @@ void main() {
     );
 
     test(
-      'saveRoundScores writes parent upsert + child delete + ordered inserts',
+      'saveRoundScores batches parent upsert + child delete + child insert '
+      'into exactly 3 queries regardless of participant/fixture count',
       () async {
-        // One participant, two fixtures: expect 1 upsert + 1 delete + 2 inserts.
+        // One participant, two fixtures: still just 1 upsert + 1 delete + 1
+        // batched insert (not one insert per fixture) — the whole point of
+        // batching via `unnest` instead of a per-row loop.
         final conn = _script(const [
-          Result.ok(<Map<String, dynamic>>[]), // upsert parent
-          Result.ok(<Map<String, dynamic>>[]), // delete children
-          Result.ok(<Map<String, dynamic>>[]), // insert fixture A
-          Result.ok(<Map<String, dynamic>>[]), // insert fixture B
+          Result.ok(<Map<String, dynamic>>[]), // upsert parents (batched)
+          Result.ok(<Map<String, dynamic>>[]), // delete children (batched)
+          Result.ok(<Map<String, dynamic>>[]), // insert children (batched)
         ]);
         final repo = PostgresScoreRepository(conn);
 
@@ -322,8 +324,9 @@ void main() {
         ]);
 
         expect(result, isA<Ok<void>>());
-        expect(conn.sqls.length, 4);
+        expect(conn.sqls.length, 3);
         expect(conn.sqls[0], contains('INSERT INTO scoring.round_scores'));
+        expect(conn.sqls[0], contains('unnest('));
         expect(
           conn.sqls[0],
           contains('ON CONFLICT (round_id, participant_id)'),
@@ -332,21 +335,24 @@ void main() {
           conn.sqls[1],
           contains('DELETE FROM scoring.round_score_fixtures'),
         );
+        expect(conn.sqls[1], contains('unnest('));
         expect(
           conn.sqls[2],
           contains('INSERT INTO scoring.round_score_fixtures'),
         );
-        // Parent carries the derived total (5 + 2).
-        expect(conn.parameters[0]['total_points'], 7);
-        expect(conn.parameters[0]['ruleset_version'], 1);
-        // Children inserted in list (prediction) order with display_order 0,1.
-        expect(conn.parameters[2]['fixture_id'], _fixtureA);
-        expect(conn.parameters[2]['grade'], 'exact_scoreline');
-        expect(conn.parameters[2]['points'], 5);
-        expect(conn.parameters[2]['display_order'], 0);
-        expect(conn.parameters[3]['fixture_id'], _fixtureB);
-        expect(conn.parameters[3]['grade'], 'correct_outcome');
-        expect(conn.parameters[3]['display_order'], 1);
+        expect(conn.sqls[2], contains('unnest('));
+        // Parent arrays carry the derived total (5 + 2) for the one score.
+        expect(conn.parameters[0]['total_points'], [7]);
+        expect(conn.parameters[0]['ruleset_versions'], [1]);
+        // Children flattened in list (prediction) order with display_order
+        // 0,1 as parallel arrays.
+        expect(conn.parameters[2]['fixture_ids'], [_fixtureA, _fixtureB]);
+        expect(conn.parameters[2]['grades'], [
+          'exact_scoreline',
+          'correct_outcome',
+        ]);
+        expect(conn.parameters[2]['points'], [5, 2]);
+        expect(conn.parameters[2]['display_orders'], [0, 1]);
       },
     );
 
@@ -356,7 +362,7 @@ void main() {
         // Parent upsert ok, then the child delete fails: the whole batch rolls
         // back (modelled by the fake returning the Err verbatim).
         final conn = _script(const [
-          Result.ok(<Map<String, dynamic>>[]), // upsert parent
+          Result.ok(<Map<String, dynamic>>[]), // upsert parents
           Result.err(
             AppError.transient('db.query_failed', 'Database query failed'),
           ), // delete children fails
