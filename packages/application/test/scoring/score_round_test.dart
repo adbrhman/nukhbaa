@@ -135,29 +135,26 @@ void main() {
     expect(scores.count, 0);
   });
 
-  test(
-    'an open round can be scored (live/partial scoring) without '
-    'transitioning its status',
-    () async {
-      wire(status: RoundStatus.open);
-      predictions.seedPrediction(
-        scoringPrediction(
-          id: _pred1,
-          roundId: _round,
-          participantId: _p1,
-          scores: [(_f1, 2, 1), (_f2, 0, 0)],
-        ),
-        DateTime.utc(2026, 7, 10, 12),
-      );
-      final r = await useCase.call(
-        principal: adminPrincipal(_admin),
+  test('an open round can be scored (live/partial scoring) without '
+      'transitioning its status', () async {
+    wire(status: RoundStatus.open);
+    predictions.seedPrediction(
+      scoringPrediction(
+        id: _pred1,
         roundId: _round,
-      );
-      expect(r, isA<Ok<List<RoundScore>>>());
-      expect(scores.count, 1);
-      expect(competition.round(_round)!.status, RoundStatus.open);
-    },
-  );
+        participantId: _p1,
+        scores: [(_f1, 2, 1), (_f2, 0, 0)],
+      ),
+      DateTime.utc(2026, 7, 10, 12),
+    );
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      roundId: _round,
+    );
+    expect(r, isA<Ok<List<RoundScore>>>());
+    expect(scores.count, 1);
+    expect(competition.round(_round)!.status, RoundStatus.open);
+  });
 
   test('scoring transitions the round locked → scored', () async {
     wire();
@@ -210,38 +207,35 @@ void main() {
     },
   );
 
-  test(
-    'a missing actual result grades that fixture pending (live/partial '
-    "scoring) and doesn't transition a locked round to scored",
-    () async {
-      wire();
-      // Drop f2's result.
-      results = FakeFixtureResultRepository()
-        ..seed(scoringResult(fixtureId: _f1, home: 2, away: 1));
-      useCase = ScoreRound(
-        competitionRepository: competition,
-        predictionRepository: predictions,
-        resultRepository: results,
-        scoreRepository: scores,
-      );
-      predictions.seedPrediction(
-        scoringPrediction(
-          id: _pred1,
-          roundId: _round,
-          participantId: _p1,
-          scores: [(_f1, 2, 1), (_f2, 0, 0)],
-        ),
-        DateTime.utc(2026, 7, 10, 12),
-      );
-      final r = await useCase.call(
-        principal: adminPrincipal(_admin),
+  test('a missing actual result grades that fixture pending (live/partial '
+      "scoring) and doesn't transition a locked round to scored", () async {
+    wire();
+    // Drop f2's result.
+    results = FakeFixtureResultRepository()
+      ..seed(scoringResult(fixtureId: _f1, home: 2, away: 1));
+    useCase = ScoreRound(
+      competitionRepository: competition,
+      predictionRepository: predictions,
+      resultRepository: results,
+      scoreRepository: scores,
+    );
+    predictions.seedPrediction(
+      scoringPrediction(
+        id: _pred1,
         roundId: _round,
-      );
-      expect(r, isA<Ok<List<RoundScore>>>());
-      expect(scores.count, 1);
-      expect(competition.round(_round)!.status, RoundStatus.locked);
-    },
-  );
+        participantId: _p1,
+        scores: [(_f1, 2, 1), (_f2, 0, 0)],
+      ),
+      DateTime.utc(2026, 7, 10, 12),
+    );
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      roundId: _round,
+    );
+    expect(r, isA<Ok<List<RoundScore>>>());
+    expect(scores.count, 1);
+    expect(competition.round(_round)!.status, RoundStatus.locked);
+  });
 
   test('a round with no fixtures cannot be scored', () async {
     competition.seedRound(

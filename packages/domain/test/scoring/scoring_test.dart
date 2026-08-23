@@ -232,22 +232,19 @@ void main() {
       expect(error.code, 'scoring.duplicate_result');
     });
 
-    test(
-      'a same-count result set covering a different fixture yields pending '
-      '+ missed, not a rejection',
-      () {
-        final result = Scoring.scoreRound(
-          prediction: _prediction([_pred(_fixtureA, 1, 0)]),
-          ruleset: _ruleset,
-          results: [_res(_fixtureB, 1, 0)],
-        );
-        final score = (result as Ok<RoundScore>).value;
-        expect(score.fixtureResults, hasLength(2));
-        expect(score.fixtureResults[0].fixture.value, _fixtureA);
-        expect(score.fixtureResults[0].grade, FixtureScoreGrade.pending);
-        expect(score.fixtureResults[1].fixture.value, _fixtureB);
-        expect(score.fixtureResults[1].grade, FixtureScoreGrade.missed);
-      },
-    );
+    test('a same-count result set covering a different fixture yields pending '
+        '+ missed, not a rejection', () {
+      final result = Scoring.scoreRound(
+        prediction: _prediction([_pred(_fixtureA, 1, 0)]),
+        ruleset: _ruleset,
+        results: [_res(_fixtureB, 1, 0)],
+      );
+      final score = (result as Ok<RoundScore>).value;
+      expect(score.fixtureResults, hasLength(2));
+      expect(score.fixtureResults[0].fixture.value, _fixtureA);
+      expect(score.fixtureResults[0].grade, FixtureScoreGrade.pending);
+      expect(score.fixtureResults[1].fixture.value, _fixtureB);
+      expect(score.fixtureResults[1].grade, FixtureScoreGrade.missed);
+    });
   });
 }

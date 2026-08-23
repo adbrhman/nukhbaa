@@ -377,12 +377,10 @@ base class FakeCompetitionRepository implements CompetitionRepository {
   Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
-    final roundIds =
-        {
-          for (final link in _roundFixtures)
-            if (link.fixture.value == fixture.value) link.roundId,
-        }.toList()
-          ..sort((a, b) => a.value.compareTo(b.value));
+    final roundIds = {
+      for (final link in _roundFixtures)
+        if (link.fixture.value == fixture.value) link.roundId,
+    }.toList()..sort((a, b) => a.value.compareTo(b.value));
     return Result.ok(roundIds);
   }
 }

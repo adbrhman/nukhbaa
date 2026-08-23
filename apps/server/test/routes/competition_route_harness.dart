@@ -255,12 +255,10 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
 
   @override
   Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) async {
-    final roundIds =
-        {
-          for (final link in links)
-            if (link.fixture.value == fixture.value) link.roundId,
-        }.toList()
-          ..sort((a, b) => a.value.compareTo(b.value));
+    final roundIds = {
+      for (final link in links)
+        if (link.fixture.value == fixture.value) link.roundId,
+    }.toList()..sort((a, b) => a.value.compareTo(b.value));
     return Result.ok(roundIds);
   }
 
