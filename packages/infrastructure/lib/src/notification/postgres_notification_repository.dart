@@ -380,6 +380,19 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
             actorUserId: (actorResult as Ok<UserId>).value,
           ),
         );
+      case NotificationKind.fixtureScored:
+        // Deferred (Axiom 4 Amendment, Phase 6b note): NotifyFixtureScored
+        // is not yet wired to Postgres — notification.notifications has no
+        // `fixture_id` column and notification_kind has no 'fixture_scored'
+        // value yet (both land in a dedicated follow-up migration). Until
+        // then a stored fixtureScored row is unreachable via application
+        // code; this is a defensive, honest guard rather than a placeholder.
+        return const Result.err(
+          AppError.transient(
+            'notification.fixture_scored_not_supported',
+            'fixtureScored notifications are not yet backed by storage',
+          ),
+        );
     }
   }
 

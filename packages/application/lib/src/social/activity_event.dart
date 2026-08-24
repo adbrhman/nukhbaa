@@ -17,13 +17,19 @@ enum ActivityEventType {
 
   /// A member's rank on the group leaderboard shifted. Carries the user id and
   /// the old/new rank.
-  rankShift;
+  rankShift,
+
+  /// A fixture in a competition the group's members play was scored (its
+  /// result was posted) (docs/project-context.md, Axiom 4 Amendment; the
+  /// per-fixture sibling of [roundScored]). Carries the fixture id.
+  fixtureScored;
 
   /// The stable wire token for this event type.
   String get wireValue => switch (this) {
     ActivityEventType.roundScored => 'round_scored',
     ActivityEventType.memberJoined => 'member_joined',
     ActivityEventType.rankShift => 'rank_shift',
+    ActivityEventType.fixtureScored => 'fixture_scored',
   };
 }
 
@@ -49,6 +55,7 @@ final class ActivityEvent {
     this.userId,
     this.oldRank,
     this.newRank,
+    this.fixture,
   });
 
   /// A round-scored event.
@@ -91,6 +98,18 @@ final class ActivityEvent {
     occurredAt: occurredAt,
   );
 
+  /// A fixture-scored event (Axiom 4 Amendment).
+  static ActivityEvent fixtureScored({
+    required GroupId groupId,
+    required FixtureRef fixture,
+    required DateTime occurredAt,
+  }) => ActivityEvent._(
+    type: ActivityEventType.fixtureScored,
+    groupId: groupId,
+    fixture: fixture,
+    occurredAt: occurredAt,
+  );
+
   /// The event type discriminator.
   final ActivityEventType type;
 
@@ -102,6 +121,10 @@ final class ActivityEvent {
 
   /// The round involved (for `roundScored`); else null.
   final RoundId? roundId;
+
+  /// The fixture involved (for `fixtureScored`); else null (Axiom 4
+  /// Amendment).
+  final FixtureRef? fixture;
 
   /// The user involved (for `memberJoined`/`rankShift`); else null.
   final UserId? userId;
@@ -121,11 +144,14 @@ final class ActivityEvent {
       other.roundId == roundId &&
       other.userId == userId &&
       other.oldRank == oldRank &&
-      other.newRank == newRank;
+      other.newRank == newRank &&
+      other.fixture == fixture;
 
   @override
   int get hashCode =>
-      Object.hash(type, groupId, occurredAt, roundId, userId, oldRank, newRank);
+      Object.hash(
+        type, groupId, occurredAt, roundId, userId, oldRank, newRank, fixture,
+      );
 
   @override
   String toString() =>

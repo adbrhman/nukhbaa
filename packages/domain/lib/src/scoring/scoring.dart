@@ -1,8 +1,10 @@
 import 'package:domain/src/competition/fixture_ref.dart';
+import 'package:domain/src/prediction/fixture_prediction.dart';
 import 'package:domain/src/prediction/fixture_score_prediction.dart';
 import 'package:domain/src/prediction/prediction.dart';
 import 'package:domain/src/scoring/fixture_result.dart';
 import 'package:domain/src/scoring/fixture_score_result.dart';
+import 'package:domain/src/scoring/participant_fixture_score.dart';
 import 'package:domain/src/scoring/round_score.dart';
 import 'package:domain/src/scoring/scoring_ruleset.dart';
 import 'package:shared/shared.dart';
@@ -121,6 +123,84 @@ abstract final class Scoring {
       participantId: prediction.participantId,
       rulesetVersion: ruleset.rulesetVersion,
       fixtureResults: graded,
+    );
+  }
+
+  /// Scores a single [FixturePrediction] against its fixture's actual
+  /// [result] (if recorded yet) under [ruleset] -- the per-fixture sibling of
+  /// [scoreRound] (docs/project-context.md, Axiom 4 Amendment: "ScoreFixture
+  /// replaces ScoreRound").
+  ///
+  /// [result] is `null` when the fixture's actual result has not been
+  /// recorded yet -- graded [FixtureScoreGrade.pending] (always zero points),
+  /// exactly like [scoreRound]'s live/partial-scoring behaviour. There is no
+  /// `missed` grade here: `missed` only ever applied to a round fixture the
+  /// participant never predicted, and a [FixturePrediction] by construction
+  /// always names the fixture it is for.
+  static Result<ParticipantFixtureScore> scoreFixture({
+    required FixturePrediction prediction,
+    required FixtureResult? result,
+    required ScoringRuleset ruleset,
+    required int rulesetVersion,
+  }) {
+    if (result != null && result.fixture != prediction.fixture) {
+      return const Result.err(
+        AppError.invariant(
+          'scoring.fixture_mismatch',
+          'The result must be for the same fixture being scored',
+        ),
+      );
+    }
+
+    final graded = result == null
+        ? FixtureScoreResult(
+            fixture: prediction.fixture,
+            grade: FixtureScoreGrade.pending,
+            points: 0,
+          )
+        : _gradeFixturePrediction(prediction, result, ruleset);
+
+    return ParticipantFixtureScore.fromGraded(
+      fixture: prediction.fixture,
+      participantId: prediction.participantId,
+      rulesetVersion: rulesetVersion,
+      result: graded,
+    );
+  }
+
+  static FixtureScoreResult _gradeFixturePrediction(
+    FixturePrediction prediction,
+    FixtureResult result,
+    ScoringRuleset ruleset,
+  ) {
+    final FixtureRef fixture = prediction.fixture;
+    final multiplier = prediction.isDouble ? ruleset.doubleMultiplier : 1;
+
+    if (prediction.homeGoals == result.homeGoals &&
+        prediction.awayGoals == result.awayGoals) {
+      return FixtureScoreResult(
+        fixture: fixture,
+        grade: FixtureScoreGrade.exactScoreline,
+        points: ruleset.exactScorelinePoints * multiplier,
+      );
+    }
+
+    final predictedOutcome = MatchOutcome.fromGoals(
+      prediction.homeGoals,
+      prediction.awayGoals,
+    );
+    if (predictedOutcome == result.outcome) {
+      return FixtureScoreResult(
+        fixture: fixture,
+        grade: FixtureScoreGrade.correctOutcome,
+        points: ruleset.correctOutcomePoints * multiplier,
+      );
+    }
+
+    return FixtureScoreResult(
+      fixture: fixture,
+      grade: FixtureScoreGrade.incorrect,
+      points: ruleset.incorrectPoints * multiplier,
     );
   }
 

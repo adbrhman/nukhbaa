@@ -1,0 +1,1008 @@
+############################################
+FILE: packages/application/lib/src/ledger/post_round_to_ledger.dart
+############################################
+import 'package:application/src/common/clock.dart';
+import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/ledger/ports/ledger_repository.dart';
+import 'package:application/src/scoring/ports/score_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Command use-case: post a **scored** round to the append-only Ledger
+/// (Application ADR §2: command intent `PostRoundToLedger`).
+///
+/// This is the Scoring → Ledger seam, realized as a **separate, explicit
+/// admin/server-triggered command** rather than a domain event emitted by
+/// `ScoreRound` (the architecture decision ratified in §2 before any code — it
+/// keeps Scoring's public surface untouched and stays inside the event-driven
+/// boundary, ADR 0002). It:
+/// 1. authorizes the caller as an **admin** (Axiom 2: the client never posts
+///    points — only the platform turns scores into the protected competitive
+///    record), mirroring `ScoreRound`'s admin gate;
+/// 2. loads the round via [CompetitionRepository.findRound] and gates on
+///    [RoundStatus.scored] — a round may be posted to the ledger only once its
+///    scores are final (`ledger.round_not_scored` otherwise). This is the
+///    application's first line of defence; the migration's constraints/RLS are
+///    the backstop (Axiom 6);
+/// 3. reads the already-persisted [RoundScore]s via
+///    [ScoreRepository.listByRound] (a *read* of Scoring's output — never a
+///    mutation of Scoring's surface);
+/// 4. builds exactly one [PointEntry] of kind [EntryKind.roundScore] per
+///    participant, carrying that round's `RoundScore.totalPoints` as the signed
+///    [PointEntry.amount] and the originating score's provenance in
+///    [PointEntry.sourceRef];
+/// 5. appends them **atomically and idempotently** via
+///    [LedgerRepository.appendEntries] — the adapter dedupes on the ratified
+///    `(participant_id, round_id, entry_kind)` key, so re-posting the same
+///    scored round appends nothing new and never double-credits (Axiom 4).
+///
+/// **Idempotent** (Application ADR §2; Axiom 4): a replay of an already-posted
+/// round is a no-op on the ledger — [LedgerRepository.appendEntries] returns the
+/// subset actually appended (empty on replay), which this use-case returns
+/// verbatim so the caller reports "nothing new posted" without a spurious
+/// failure. Because the ledger is append-only (Axiom 5), the dedupe is a *skip*,
+/// never an update/delete.
+///
+/// A round with no scored participants (scored, but nobody predicted) posts zero
+/// entries — a legitimate empty result, not an error.
+///
+/// Never throws; returns a typed [Result] carrying the entries appended by this
+/// post (empty on an idempotent replay or an empty round).
+final class PostRoundToLedger {
+  /// Creates the use-case over its collaborators.
+  const PostRoundToLedger({
+    required CompetitionRepository competitionRepository,
+    required ScoreRepository scoreRepository,
+    required LedgerRepository ledgerRepository,
+    required IdGenerator idGenerator,
+    required Clock clock,
+  }) : _competition = competitionRepository,
+       _scores = scoreRepository,
+       _ledger = ledgerRepository,
+       _ids = idGenerator,
+       _clock = clock;
+
+  final CompetitionRepository _competition;
+  final ScoreRepository _scores;
+  final LedgerRepository _ledger;
+  final IdGenerator _ids;
+  final Clock _clock;
+
+  /// Posts round [roundId]'s scores to the ledger on behalf of admin
+  /// [principal].
+  Future<Result<List<PointEntry>>> call({
+    required AuthenticatedUser principal,
+    required String roundId,
+  }) async {
+    // Layer 1: platform authority. Only an admin (or service) may post points.
+    final auth = Authorization.requireRole(principal, PlatformRole.admin);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final roundIdResult = RoundId.tryParse(roundId);
+    if (roundIdResult is Err<RoundId>) {
+      return Result.err(roundIdResult.error);
+    }
+    final rId = (roundIdResult as Ok<RoundId>).value;
+
+    // Layer 2 (business invariant): the round must exist and be scored.
+    final roundResult = await _competition.findRound(rId);
+    if (roundResult is Err<Round>) {
+      return Result.err(roundResult.error);
+    }
+    final round = (roundResult as Ok<Round>).value;
+    if (round.status != RoundStatus.scored) {
+      return Result.err(
+        AppError.invariant(
+          'ledger.round_not_scored',
+          'A round can be posted to the ledger only after it is scored '
+              '(round is ${round.status.wireValue})',
+        ),
+      );
+    }
+
+    // Read the already-persisted scores (Scoring's output — never mutated here).
+    final scoresResult = await _scores.listByRound(rId);
+    if (scoresResult is Err<List<RoundScore>>) {
+      return Result.err(scoresResult.error);
+    }
+    final roundScores = (scoresResult as Ok<List<RoundScore>>).value;
+
+    // Build one round_score credit per participant. `now` is stamped once so
+    // every entry in a single post shares an unambiguous occurred-at instant.
+    final now = _clock.nowUtc();
+    final entries = <PointEntry>[];
+    for (final score in roundScores) {
+      final idResult = PointEntryId.tryParse(_ids.newUuid());
+      if (idResult is Err<PointEntryId>) {
+        return Result.err(idResult.error);
+      }
+      final entryResult = PointEntry.create(
+        id: (idResult as Ok<PointEntryId>).value,
+        participantId: score.participantId,
+        roundId: rId,
+        kind: EntryKind.roundScore,
+        amount: score.totalPoints,
+        // Provenance: the originating round_score for this (participant, round).
+        // Stable and audit-meaningful; distinct from the dedupe key so the same
+        // handle re-derives on a replay without changing what is deduped.
+        sourceRef: 'round_score:${rId.value}:${score.participantId.value}',
+        occurredAt: now,
+      );
+      if (entryResult is Err<PointEntry>) {
+        return Result.err(entryResult.error);
+      }
+      entries.add((entryResult as Ok<PointEntry>).value);
+    }
+
+    // Append atomically + idempotently. The adapter returns the subset actually
+    // appended (empty on an idempotent replay); an empty batch is a no-op.
+    return _ledger.appendEntries(entries);
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/leaderboard/get_round_leaderboard.dart
+############################################
+import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/scoring/ports/score_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Query use-case: read a round's ranked standings — a **round leaderboard**
+/// (Application ADR §2: query separated from command; mirrors
+/// [GetSeasonLeaderboard]/[GetHallOfFame], scoped to a single scored round
+/// instead of a season or all-time).
+///
+/// A round leaderboard is a **read-side projection** over the round's
+/// already-computed [RoundScore]s (Axiom 5: the SAME points `ScoreRound`
+/// already produced — this never computes or stores a point total of its
+/// own). It reuses exactly the same visibility gate as [GetRoundScores] (a
+/// round is rankable only once [RoundStatus.scored]; only a participant of
+/// the round's season may see the competing pool) — this read reveals nothing
+/// a caller could not already see via `GET /rounds/{id}/scores`; it only adds
+/// the [RoundLeaderboard.rank] ordering the pure domain computes. The two
+/// error codes below are therefore intentionally identical to
+/// [GetRoundScores]'s, so the client's [ErrorPresenter]-style handling needs
+/// no new case.
+///
+/// Never throws; returns a typed [Result].
+final class GetRoundLeaderboard {
+  /// Creates the use-case over its collaborators.
+  const GetRoundLeaderboard({
+    required CompetitionRepository competitionRepository,
+    required ScoreRepository scoreRepository,
+  }) : _competition = competitionRepository,
+       _scores = scoreRepository;
+
+  final CompetitionRepository _competition;
+  final ScoreRepository _scores;
+
+  /// Returns the ranked [RoundLeaderboard] for the scored round [roundId],
+  /// visible to [principal] as a participant of its season.
+  Future<Result<RoundLeaderboard>> call({
+    required AuthenticatedUser principal,
+    required String roundId,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final roundIdResult = RoundId.tryParse(roundId);
+    if (roundIdResult is Err<RoundId>) {
+      return Result.err(roundIdResult.error);
+    }
+    final rId = (roundIdResult as Ok<RoundId>).value;
+
+    final roundResult = await _competition.findRound(rId);
+    if (roundResult is Err<Round>) {
+      return Result.err(roundResult.error);
+    }
+    final round = (roundResult as Ok<Round>).value;
+
+    // Visibility gate: a round is rankable only once it is scored — same
+    // reasoning as GetRoundScores (exposing an in-progress round would reveal
+    // partial/absent results).
+    if (round.status != RoundStatus.scored) {
+      return Result.err(
+        AppError.invariant(
+          'scoring.round_not_scored',
+          'Round scores become visible only after the round is scored '
+              '(round is ${round.status.wireValue})',
+        ),
+      );
+    }
+
+    // Membership: only a participant of the season sees the competing pool.
+    final participantResult = await _competition.findParticipant(
+      round.seasonId,
+      principal.userId,
+    );
+    if (participantResult is Err<Participant?>) {
+      return Result.err(participantResult.error);
+    }
+    final participant = (participantResult as Ok<Participant?>).value;
+    if (participant == null) {
+      return const Result.err(
+        AppError.authorization(
+          'scoring.not_a_participant',
+          'Only a participant of the season may view its scores',
+        ),
+      );
+    }
+
+    final scoresResult = await _scores.listByRound(rId);
+    if (scoresResult is Err<List<RoundScore>>) {
+      return Result.err(scoresResult.error);
+    }
+    final scores = (scoresResult as Ok<List<RoundScore>>).value;
+
+    return RoundLeaderboard.rank(roundId: rId, scores: scores);
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/social/activity_event.dart
+############################################
+import 'package:domain/domain.dart';
+
+/// The kind of a group activity-feed event (Social decision #1: the feed shows
+/// round-scored, member-joined, and rank-shift events — a bounded, closed set,
+/// no arbitrary object stream).
+///
+/// A stable wire token travels to the client ([wireValue]); the label/glyph is
+/// a presentation concern. Unknown values are never produced (the reader emits
+/// only these), so there is no `tryParse` on the produce-only read path.
+enum ActivityEventType {
+  /// A round in a competition the group's members play was scored (its results
+  /// were posted). Carries the round id.
+  roundScored,
+
+  /// A member joined the group. Carries the joining user's id.
+  memberJoined,
+
+  /// A member's rank on the group leaderboard shifted. Carries the user id and
+  /// the old/new rank.
+  rankShift;
+
+  /// The stable wire token for this event type.
+  String get wireValue => switch (this) {
+    ActivityEventType.roundScored => 'round_scored',
+    ActivityEventType.memberJoined => 'member_joined',
+    ActivityEventType.rankShift => 'rank_shift',
+  };
+}
+
+/// A single group activity-feed event — an **application read value**, NOT a
+/// stored entity (Social decision #2: the Activity Feed is a pure read
+/// projection assembled from existing ratified data — `group.group_memberships`
+/// join timestamps, scored `competition.rounds` + `ledger` postings, and
+/// `leaderboard.season_standings` rank deltas — never a new writable source).
+///
+/// It is group-scoped ([groupId]) and ordered by [occurredAt] (UTC). The
+/// remaining fields are type-specific and nullable, discriminated by [type]:
+/// * `roundScored` — [roundId] set; user/rank fields null.
+/// * `memberJoined` — [userId] set; round/rank fields null.
+/// * `rankShift` — [userId] + [oldRank] + [newRank] set; [roundId] null.
+///
+/// Carries NO points-write field (Axiom 5) and NO open-graph edge (ADR-001).
+final class ActivityEvent {
+  const ActivityEvent._({
+    required this.type,
+    required this.groupId,
+    required this.occurredAt,
+    this.roundId,
+    this.userId,
+    this.oldRank,
+    this.newRank,
+  });
+
+  /// A round-scored event.
+  static ActivityEvent roundScored({
+    required GroupId groupId,
+    required RoundId roundId,
+    required DateTime occurredAt,
+  }) => ActivityEvent._(
+    type: ActivityEventType.roundScored,
+    groupId: groupId,
+    roundId: roundId,
+    occurredAt: occurredAt,
+  );
+
+  /// A member-joined event.
+  static ActivityEvent memberJoined({
+    required GroupId groupId,
+    required UserId userId,
+    required DateTime occurredAt,
+  }) => ActivityEvent._(
+    type: ActivityEventType.memberJoined,
+    groupId: groupId,
+    userId: userId,
+    occurredAt: occurredAt,
+  );
+
+  /// A rank-shift event.
+  static ActivityEvent rankShift({
+    required GroupId groupId,
+    required UserId userId,
+    required int oldRank,
+    required int newRank,
+    required DateTime occurredAt,
+  }) => ActivityEvent._(
+    type: ActivityEventType.rankShift,
+    groupId: groupId,
+    userId: userId,
+    oldRank: oldRank,
+    newRank: newRank,
+    occurredAt: occurredAt,
+  );
+
+  /// The event type discriminator.
+  final ActivityEventType type;
+
+  /// The group this event is scoped to.
+  final GroupId groupId;
+
+  /// When the event occurred (UTC) — the feed's ordering key.
+  final DateTime occurredAt;
+
+  /// The round involved (for `roundScored`); else null.
+  final RoundId? roundId;
+
+  /// The user involved (for `memberJoined`/`rankShift`); else null.
+  final UserId? userId;
+
+  /// The prior rank (for `rankShift`); else null.
+  final int? oldRank;
+
+  /// The new rank (for `rankShift`); else null.
+  final int? newRank;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ActivityEvent &&
+      other.type == type &&
+      other.groupId == groupId &&
+      other.occurredAt == occurredAt &&
+      other.roundId == roundId &&
+      other.userId == userId &&
+      other.oldRank == oldRank &&
+      other.newRank == newRank;
+
+  @override
+  int get hashCode =>
+      Object.hash(type, groupId, occurredAt, roundId, userId, oldRank, newRank);
+
+  @override
+  String toString() =>
+      'ActivityEvent(${type.wireValue}, group: ${groupId.value}, $occurredAt)';
+}
+
+############################################
+FILE: packages/application/lib/src/social/list_round_reactions.dart
+############################################
+import 'package:application/src/group/ports/group_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/social/ports/reaction_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Query use-case: list the reactions to a round-result within a group
+/// (Application ADR §2: a query intent `ListRoundReactions`, separated from
+/// commands).
+///
+/// **Member-only visibility gate (decision #3, mirror of `ListGroupMembers`):**
+/// only a member of the group may read its reactions. A caller who is not a
+/// member is refused [ErrorKind.authorization] `group.not_a_member`, identically
+/// whether or not the group exists — so the response is never a group-existence
+/// oracle for a non-member (private-by-default). There is no admin/owner gate —
+/// every member sees the banter in their circle (Axiom 1, social-first).
+///
+/// The principal's membership is resolved from the verified token, never the
+/// body (Security ADR §2). The returned reactions are in the repository's
+/// reactedAt-ascending order; an empty list means no member has reacted yet (a
+/// legitimate result, not an error).
+///
+/// **Tier-3 (decision #4):** this is a Social read; a failure is confined to
+/// this use-case and never blocks a Tier-1 core operation.
+///
+/// Never throws; returns a typed [Result].
+final class ListRoundReactions {
+  /// Creates the use-case over its collaborators.
+  const ListRoundReactions({
+    required ReactionRepository reactions,
+    required GroupRepository groups,
+  }) : _reactions = reactions,
+       _groups = groups;
+
+  final ReactionRepository _reactions;
+  final GroupRepository _groups;
+
+  /// Lists the reactions to `(groupId, roundId)`, visible to [principal] as a
+  /// member.
+  Future<Result<List<Reaction>>> call({
+    required AuthenticatedUser principal,
+    required String groupId,
+    required String roundId,
+  }) async {
+    // Layer 1: platform authority — any signed-in user.
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final gIdResult = GroupId.tryParse(groupId);
+    if (gIdResult is Err<GroupId>) {
+      return Result.err(gIdResult.error);
+    }
+    final gId = (gIdResult as Ok<GroupId>).value;
+
+    final rIdResult = RoundId.tryParse(roundId);
+    if (rIdResult is Err<RoundId>) {
+      return Result.err(rIdResult.error);
+    }
+    final rId = (rIdResult as Ok<RoundId>).value;
+
+    // Layer 2 (visibility): the caller must be a member. A non-member is refused
+    // identically whether or not the group exists (no existence oracle —
+    // decision #3, mirror of `ListGroupMembers`).
+    final membershipResult = await _groups.findMembership(
+      gId,
+      principal.userId,
+    );
+    if (membershipResult is Err<GroupMembership?>) {
+      return Result.err(membershipResult.error);
+    }
+    final membership = (membershipResult as Ok<GroupMembership?>).value;
+    if (membership == null) {
+      return const Result.err(
+        AppError.authorization(
+          'group.not_a_member',
+          'Only a member of the group may view its reactions',
+        ),
+      );
+    }
+
+    // Read the round's reactions. The membership gate above already proved
+    // existence to this member, so this list is theirs to see.
+    return _reactions.listReactionsForRound(gId, rId);
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/social/ports/reaction_repository.dart
+############################################
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Persistence port for the Social Reactions surface — the ONE new stored
+/// Tier-3 aggregate (Social decision #2; Application ADR §9: use-cases depend on
+/// repository interfaces, Infrastructure implements them).
+///
+/// Backed by `PostgresReactionRepository`. The interface speaks in the domain
+/// [Reaction] aggregate and typed ids, never rows or SQL, so use-cases stay pure
+/// and testable against an in-memory fake.
+///
+/// General contract for every method (Application ADR §2):
+/// * MUST NOT throw — every outcome is a typed [Result].
+/// * MUST map infrastructure failures to [ErrorKind.transient].
+/// * MUST map a storage-only uniqueness conflict to [ErrorKind.invariant] so
+///   the use-case reports it as a business conflict — a duplicate
+///   `(groupId, roundId, userId)` surfaces as `social.reaction_conflict`, which
+///   the idempotent upsert converges on rather than erroring.
+///
+/// **Tier-3 degradation (decision #4):** a failure here is a typed
+/// `Result.err` confined to the Social use-case that called it; it never
+/// propagates into a Tier-1 core operation (prediction/scoring/ledger/
+/// leaderboard), which do not depend on this port.
+abstract interface class ReactionRepository {
+  /// Persists a member's [reaction] **idempotently** on the natural key
+  /// `(groupId, roundId, userId)`: a first reaction inserts; a member changing
+  /// their emoji updates the existing row in place (never a second row —
+  /// decision #1/#2). The caller-generated [Reaction.id] is used only on the
+  /// initial insert; a subsequent change keeps the stored id. A genuine racing
+  /// duplicate that the DB rejects surfaces as [ErrorKind.invariant]
+  /// `social.reaction_conflict`, which the use-case resolves by re-reading.
+  Future<Result<void>> upsertReaction(Reaction reaction);
+
+  /// Finds the caller's reaction for `(groupId, roundId, userId)`, or
+  /// `Ok(null)` when the member has not reacted. Used to make the react/remove
+  /// use-cases idempotent.
+  Future<Result<Reaction?>> findReaction(
+    GroupId groupId,
+    RoundId roundId,
+    UserId userId,
+  );
+
+  /// Lists all reactions to `(groupId, roundId)` in reactedAt-ascending order.
+  /// An empty list means no member has reacted yet (a legitimate result).
+  Future<Result<List<Reaction>>> listReactionsForRound(
+    GroupId groupId,
+    RoundId roundId,
+  );
+
+  /// Removes the caller's reaction for `(groupId, roundId, userId)`, if any.
+  /// Idempotent: removing an absent reaction is a no-op success (`Ok`), so a
+  /// retried remove converges. Returns `Ok(true)` when a row was removed,
+  /// `Ok(false)` when there was nothing to remove.
+  Future<Result<bool>> removeReaction(
+    GroupId groupId,
+    RoundId roundId,
+    UserId userId,
+  );
+}
+
+############################################
+FILE: packages/application/lib/src/social/react_to_round.dart
+############################################
+import 'package:application/src/common/clock.dart';
+import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/group/ports/group_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/social/ports/reaction_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Command use-case: a group member reacts to a round-result with an emoji, or
+/// changes an existing reaction (Application ADR §2: command intent
+/// `ReactToRound`).
+///
+/// *Any* authenticated user may react (Axiom 1, social-first), but only as a
+/// **member** of the group the reaction is scoped to — the exact ratified
+/// `group.not_a_member` gate (Groups decision #3), reused via
+/// [GroupRepository.findMembership], with NO existence oracle (a non-member is
+/// refused identically whether or not the group/round exists). The author is
+/// taken from the verified token, never the body (Security ADR §2), so a caller
+/// can never react as someone else.
+///
+/// Idempotent (Application ADR §2; decision #2): a member reacting again — with
+/// the same or a different emoji — updates their single reaction in place rather
+/// than creating a second row (uniqueness `(groupId, roundId, userId)`). A lost
+/// concurrent-react race that the storage layer rejects
+/// (`social.reaction_conflict`) is resolved by re-reading and re-applying, so
+/// the caller still gets a successful result.
+///
+/// **Tier-3 (decision #4):** this is a Social write; a failure is confined to
+/// this use-case and never blocks a Tier-1 core operation.
+///
+/// Never throws; returns a typed [Result] carrying the resulting [Reaction].
+final class ReactToRound {
+  /// Creates the use-case over its collaborators.
+  const ReactToRound({
+    required ReactionRepository reactions,
+    required GroupRepository groups,
+    required IdGenerator idGenerator,
+    required Clock clock,
+  }) : _reactions = reactions,
+       _groups = groups,
+       _idGenerator = idGenerator,
+       _clock = clock;
+
+  final ReactionRepository _reactions;
+  final GroupRepository _groups;
+  final IdGenerator _idGenerator;
+  final Clock _clock;
+
+  /// Records [principal]'s [emoji] reaction to `(groupId, roundId)`.
+  Future<Result<Reaction>> call({
+    required AuthenticatedUser principal,
+    required String groupId,
+    required String roundId,
+    required String emoji,
+  }) async {
+    // Layer 1: platform authority — any signed-in user.
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final gIdResult = GroupId.tryParse(groupId);
+    if (gIdResult is Err<GroupId>) {
+      return Result.err(gIdResult.error);
+    }
+    final gId = (gIdResult as Ok<GroupId>).value;
+
+    final rIdResult = RoundId.tryParse(roundId);
+    if (rIdResult is Err<RoundId>) {
+      return Result.err(rIdResult.error);
+    }
+    final rId = (rIdResult as Ok<RoundId>).value;
+
+    final emojiResult = ReactionEmoji.tryParse(emoji);
+    if (emojiResult is Err<ReactionEmoji>) {
+      return Result.err(emojiResult.error);
+    }
+    final chosen = (emojiResult as Ok<ReactionEmoji>).value;
+
+    // Layer 2 (visibility): the caller must be a member of the group. Refused
+    // identically whether or not the group exists (no existence oracle —
+    // decision #3, mirror of `ListGroupMembers`/`GetGroupLeaderboard`).
+    final gate = await _requireMember(gId, principal.userId);
+    if (gate is Err<void>) {
+      return Result.err(gate.error);
+    }
+
+    // Idempotency: if the member already has a reaction, change it in place
+    // (preserving the stored id + key), else create a new one.
+    final existingResult = await _reactions.findReaction(
+      gId,
+      rId,
+      principal.userId,
+    );
+    if (existingResult is Err<Reaction?>) {
+      return Result.err(existingResult.error);
+    }
+    final existing = (existingResult as Ok<Reaction?>).value;
+
+    final now = _clock.nowUtc();
+    final Result<Reaction> built;
+    if (existing != null) {
+      built = existing.changeEmoji(chosen, now);
+    } else {
+      final idResult = ReactionId.tryParse(_idGenerator.newUuid());
+      if (idResult is Err<ReactionId>) {
+        return Result.err(idResult.error);
+      }
+      built = Reaction.create(
+        id: (idResult as Ok<ReactionId>).value,
+        groupId: gId,
+        roundId: rId,
+        userId: principal.userId,
+        emoji: chosen,
+        reactedAt: now,
+      );
+    }
+    if (built is Err<Reaction>) {
+      return Result.err(built.error);
+    }
+    final reaction = (built as Ok<Reaction>).value;
+
+    final saved = await _reactions.upsertReaction(reaction);
+    return switch (saved) {
+      Ok<void>() => Result.ok(reaction),
+      Err<void>(:final error) => await _resolveConflict(
+        error,
+        gId,
+        rId,
+        principal.userId,
+        chosen,
+      ),
+    };
+  }
+
+  /// Reuses the ratified member-scoped visibility gate. A non-member (or an
+  /// absent group) is refused `group.not_a_member` — no existence oracle.
+  Future<Result<void>> _requireMember(GroupId groupId, UserId userId) async {
+    final membershipResult = await _groups.findMembership(groupId, userId);
+    if (membershipResult is Err<GroupMembership?>) {
+      return Result.err(membershipResult.error);
+    }
+    final membership = (membershipResult as Ok<GroupMembership?>).value;
+    if (membership == null) {
+      return const Result.err(
+        AppError.authorization(
+          'group.not_a_member',
+          'Only a member of the group may react in it',
+        ),
+      );
+    }
+    return const Result.ok(null);
+  }
+
+  /// On a unique-violation conflict from a concurrent react, re-read the winning
+  /// reaction and re-apply the caller's chosen emoji so the result is still a
+  /// successful, idempotent upsert. Any other error is propagated unchanged.
+  Future<Result<Reaction>> _resolveConflict(
+    AppError error,
+    GroupId groupId,
+    RoundId roundId,
+    UserId userId,
+    ReactionEmoji chosen,
+  ) async {
+    if (error.code != 'social.reaction_conflict') {
+      return Result.err(error);
+    }
+    final reread = await _reactions.findReaction(groupId, roundId, userId);
+    if (reread is Err<Reaction?>) {
+      return Result.err(reread.error);
+    }
+    final winning = (reread as Ok<Reaction?>).value;
+    if (winning == null) {
+      return Result.err(error);
+    }
+    // Re-apply the caller's intended emoji on top of the winning row (in place).
+    final updated = winning.changeEmoji(chosen, _clock.nowUtc());
+    if (updated is Err<Reaction>) {
+      return Result.err(updated.error);
+    }
+    final reaction = (updated as Ok<Reaction>).value;
+    final resaved = await _reactions.upsertReaction(reaction);
+    return switch (resaved) {
+      Ok<void>() => Result.ok(reaction),
+      Err<void>(:final error) => Result.err(error),
+    };
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/social/remove_reaction.dart
+############################################
+import 'package:application/src/group/ports/group_repository.dart';
+import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/social/ports/reaction_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Command use-case: a group member removes their own reaction to a
+/// round-result (Application ADR §2: command intent `RemoveReaction`).
+///
+/// *Any* authenticated user may act (Axiom 1, social-first), but only as a
+/// **member** of the group the reaction is scoped to — the exact ratified
+/// `group.not_a_member` gate (Groups decision #3), reused via
+/// [GroupRepository.findMembership], with NO existence oracle (a non-member is
+/// refused identically whether or not the group/round exists). The author is
+/// taken from the verified token, never the body (Security ADR §2), so a caller
+/// can only ever remove **their own** reaction — the storage port is keyed on
+/// `(groupId, roundId, userId)` with `userId` bound from the principal.
+///
+/// Idempotent (Application ADR §2; decision #2): removing an absent reaction is
+/// a no-op success, so a retried remove converges. The boolean carried in the
+/// [Result] reports whether a row was actually removed (`true`) or there was
+/// nothing to remove (`false`) — both are successful outcomes.
+///
+/// **Tier-3 (decision #4):** this is a Social write; a failure is confined to
+/// this use-case and never blocks a Tier-1 core operation.
+///
+/// Never throws; returns a typed [Result].
+final class RemoveReaction {
+  /// Creates the use-case over its collaborators.
+  const RemoveReaction({
+    required ReactionRepository reactions,
+    required GroupRepository groups,
+  }) : _reactions = reactions,
+       _groups = groups;
+
+  final ReactionRepository _reactions;
+  final GroupRepository _groups;
+
+  /// Removes [principal]'s reaction to `(groupId, roundId)`, if any.
+  Future<Result<bool>> call({
+    required AuthenticatedUser principal,
+    required String groupId,
+    required String roundId,
+  }) async {
+    // Layer 1: platform authority — any signed-in user.
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+
+    final gIdResult = GroupId.tryParse(groupId);
+    if (gIdResult is Err<GroupId>) {
+      return Result.err(gIdResult.error);
+    }
+    final gId = (gIdResult as Ok<GroupId>).value;
+
+    final rIdResult = RoundId.tryParse(roundId);
+    if (rIdResult is Err<RoundId>) {
+      return Result.err(rIdResult.error);
+    }
+    final rId = (rIdResult as Ok<RoundId>).value;
+
+    // Layer 2 (visibility): the caller must be a member of the group. Refused
+    // identically whether or not the group exists (no existence oracle —
+    // decision #3, mirror of `ListGroupMembers`/`ReactToRound`).
+    final membershipResult = await _groups.findMembership(
+      gId,
+      principal.userId,
+    );
+    if (membershipResult is Err<GroupMembership?>) {
+      return Result.err(membershipResult.error);
+    }
+    final membership = (membershipResult as Ok<GroupMembership?>).value;
+    if (membership == null) {
+      return const Result.err(
+        AppError.authorization(
+          'group.not_a_member',
+          'Only a member of the group may remove a reaction in it',
+        ),
+      );
+    }
+
+    // Remove only the caller's own reaction (userId bound from the principal).
+    // Idempotent: `Ok(false)` when there was nothing to remove.
+    return _reactions.removeReaction(gId, rId, principal.userId);
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/notification/create_notification.dart
+############################################
+import 'package:application/src/common/clock.dart';
+import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/notification/ports/notification_repository.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Server-side creation facade for a single [Notification] — the ONE idempotent
+/// create path all three ratified trigger commands (`NotifyRoundScored`,
+/// `NotifyGroupMemberJoined`, `NotifyReactionReceived`) delegate to, so the
+/// trigger sites depend on one thing (Notifications design-anchors §2).
+///
+/// This is **NOT client-callable** (decision #4: creation is server-triggered
+/// only). It carries no `Authorization.requireRole(user)` self-gate — it is
+/// invoked by the backend AFTER a ratified event with an already-resolved
+/// recipient + subject, generates the id server-side ([IdGenerator]), stamps
+/// `createdAt` from the injected [Clock] (UTC), and performs an idempotent
+/// [NotificationRepository.createIfAbsent] keyed on the deterministic
+/// `(recipientId, kind, subjectRef)` dedupe ref (decision #3, mirror of the
+/// Ledger dedupe discipline) — a replayed trigger is a no-op skip, never a
+/// second row.
+///
+/// **Tier-3 degradation (decision #4; ADR 0007 §2.4):** the returned
+/// [Result.err] on failure is confined to the notification call; the trigger
+/// site (ScoreRound / JoinGroup / ReactToRound) treats notification creation as
+/// best-effort and MUST NOT propagate a failure into its Tier-1 result. This
+/// use-case therefore neither throws nor blocks; it just reports.
+///
+/// Returns `Ok(true)` when a NEW notification was created, `Ok(false)` when an
+/// identical one already existed (an idempotent replay).
+final class CreateNotification {
+  /// Creates the use-case over its collaborators.
+  const CreateNotification({
+    required NotificationRepository notifications,
+    required IdGenerator idGenerator,
+    required Clock clock,
+  }) : _notifications = notifications,
+       _idGenerator = idGenerator,
+       _clock = clock;
+
+  final NotificationRepository _notifications;
+  final IdGenerator _idGenerator;
+  final Clock _clock;
+
+  /// Creates a notification for [recipientId] of [kind] with [subject],
+  /// idempotently. The [subject]'s kind must match [kind] (enforced by
+  /// [Notification.create]); a mismatch is a caller bug surfaced as a typed
+  /// validation error, never persisted.
+  Future<Result<bool>> call({
+    required UserId recipientId,
+    required NotificationKind kind,
+    required NotificationSubject subject,
+  }) async {
+    final idResult = NotificationId.tryParse(_idGenerator.newUuid());
+    if (idResult is Err<NotificationId>) {
+      return Result.err(idResult.error);
+    }
+    final id = (idResult as Ok<NotificationId>).value;
+
+    final built = Notification.create(
+      id: id,
+      recipientId: recipientId,
+      kind: kind,
+      subject: subject,
+      createdAt: _clock.nowUtc(),
+    );
+    if (built is Err<Notification>) {
+      return Result.err(built.error);
+    }
+    final notification = (built as Ok<Notification>).value;
+
+    return _notifications.createIfAbsent(notification);
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/notification/notify_reaction_received.dart
+############################################
+import 'package:application/src/notification/create_notification.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Server-side trigger command: notify a round's participant that another member
+/// reacted to their round-result (Notifications decision #1 —
+/// `reaction_received`, "someone reacted to your prediction").
+///
+/// **NOT client-callable** — invoked by the backend from the `ReactToRound`
+/// trigger edge (composition) AFTER a reaction is recorded. The recipient is the
+/// round's participant `User` ([recipientId]); the actor is the reactor
+/// ([actorUserId]). A member reacting to their OWN round-result notifies no one
+/// — the trigger site MUST NOT invoke this command when `recipientId ==
+/// actorUserId`; this command enforces that as a guard (a self-reaction is a
+/// silent `Ok(false)` no-op rather than a self-notification).
+///
+/// The subject references the [groupId] + [roundId] + reacting [actorUserId]
+/// (via [NotificationSubject.reactionReceived]), so the dedupe ref is
+/// `reaction:<groupId>:<roundId>:<actorUserId>` — the same reactor's repeated
+/// reactions to the same round-result in the same group never notify the
+/// recipient twice (decision #3 idempotency; a reactor swapping emoji is one
+/// event).
+///
+/// **Tier-3 (decision #4; ADR 0007 §2.4):** delegates to [CreateNotification],
+/// whose failure is a typed `Result.err` the trigger site treats as
+/// best-effort — it never blocks or fails `ReactToRound` (a Tier-1 operation).
+///
+/// Returns `Ok(true)` when a new notification was created, `Ok(false)` on an
+/// idempotent replay or a suppressed self-reaction.
+final class NotifyReactionReceived {
+  /// Creates the use-case over its single collaborator.
+  const NotifyReactionReceived({required CreateNotification create})
+    : _create = create;
+
+  final CreateNotification _create;
+
+  /// Notifies [recipientId] (the round's participant) that [actorUserId] reacted
+  /// to [roundId] within [groupId].
+  Future<Result<bool>> call({
+    required UserId recipientId,
+    required GroupId groupId,
+    required RoundId roundId,
+    required UserId actorUserId,
+  }) async {
+    // A member reacting to their own round-result notifies no one (decision #1).
+    if (recipientId == actorUserId) {
+      return const Result.ok(false);
+    }
+    return _create(
+      recipientId: recipientId,
+      kind: NotificationKind.reactionReceived,
+      subject: NotificationSubject.reactionReceived(
+        groupId: groupId,
+        roundId: roundId,
+        actorUserId: actorUserId,
+      ),
+    );
+  }
+}
+
+############################################
+FILE: packages/application/lib/src/notification/notify_round_scored.dart
+############################################
+import 'package:application/src/notification/create_notification.dart';
+import 'package:domain/domain.dart';
+import 'package:shared/shared.dart';
+
+/// Server-side trigger command: notify each participant of a round that was
+/// scored (Notifications decision #1 — `round_scored`, the single most-awaited
+/// moment in the predict-once loop).
+///
+/// **NOT client-callable** — invoked by the backend from the `ScoreRound`
+/// trigger edge (composition), once per participant of the just-scored round,
+/// AFTER the `locked → scored` transition. The recipient is the participant's
+/// `User`; the subject references the scored [roundId] (via
+/// [NotificationSubject.roundScored]), so the dedupe ref is `round:<roundId>` —
+/// re-scoring the same round never notifies a participant twice (decision #3
+/// idempotency).
+///
+/// **Tier-3 (decision #4; ADR 0007 §2.4):** delegates to [CreateNotification],
+/// whose failure is a typed `Result.err` the trigger site treats as
+/// best-effort — it never blocks or fails `ScoreRound` (a Tier-1 operation).
+///
+/// Returns `Ok(true)` when a new notification was created, `Ok(false)` on an
+/// idempotent replay.
+final class NotifyRoundScored {
+  /// Creates the use-case over its single collaborator.
+  const NotifyRoundScored({required CreateNotification create})
+    : _create = create;
+
+  final CreateNotification _create;
+
+  /// Notifies [recipientId] that [roundId] (which they participate in) was
+  /// scored.
+  Future<Result<bool>> call({
+    required UserId recipientId,
+    required RoundId roundId,
+  }) {
+    return _create(
+      recipientId: recipientId,
+      kind: NotificationKind.roundScored,
+      subject: NotificationSubject.roundScored(roundId: roundId),
+    );
+  }
+}
+

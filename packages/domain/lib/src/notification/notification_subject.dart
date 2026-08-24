@@ -1,3 +1,4 @@
+import 'package:domain/src/competition/fixture_ref.dart';
 import 'package:domain/src/competition/round_id.dart';
 import 'package:domain/src/group/group_id.dart';
 import 'package:domain/src/identity/user_id.dart';
@@ -30,6 +31,7 @@ final class NotificationSubject {
     this.roundId,
     this.groupId,
     this.actorUserId,
+    this.fixture,
   });
 
   /// Rehydrates a subject from already-trusted stored fields (used by the
@@ -41,6 +43,7 @@ final class NotificationSubject {
     this.roundId,
     this.groupId,
     this.actorUserId,
+    this.fixture,
   });
 
   /// The subject of a `roundScored` notification — the scored [roundId].
@@ -74,6 +77,15 @@ final class NotificationSubject {
     actorUserId: actorUserId,
   );
 
+  /// The subject of a `fixtureScored` notification — the scored [fixture]
+  /// (docs/project-context.md, Axiom 4 Amendment; the per-fixture sibling of
+  /// [roundScored]).
+  static NotificationSubject fixtureScored({required FixtureRef fixture}) =>
+      NotificationSubject._(
+        kind: NotificationKind.fixtureScored,
+        fixture: fixture,
+      );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -87,6 +99,9 @@ final class NotificationSubject {
   /// the reactor); else null.
   final UserId? actorUserId;
 
+  /// The fixture involved (`fixtureScored`); else null (Axiom 4 Amendment).
+  final FixtureRef? fixture;
+
   /// A deterministic string that identifies the originating event, keying the
   /// `(recipientId, kind, subjectRef)` idempotency constraint so a replayed
   /// trigger dedupes and a distinct event does not. Built purely from the
@@ -96,6 +111,7 @@ final class NotificationSubject {
     NotificationKind.roundScored => 'round:${roundId!.value}',
     NotificationKind.groupMemberJoined =>
       'group_join:${groupId!.value}:${actorUserId!.value}',
+    NotificationKind.fixtureScored => 'fixture:${fixture!.value}',
     NotificationKind.reactionReceived =>
       'reaction:${groupId!.value}:${roundId!.value}:${actorUserId!.value}',
   };
@@ -106,10 +122,12 @@ final class NotificationSubject {
       other.kind == kind &&
       other.roundId == roundId &&
       other.groupId == groupId &&
-      other.actorUserId == actorUserId;
+      other.actorUserId == actorUserId &&
+      other.fixture == fixture;
 
   @override
-  int get hashCode => Object.hash(kind, roundId, groupId, actorUserId);
+  int get hashCode =>
+      Object.hash(kind, roundId, groupId, actorUserId, fixture);
 
   @override
   String toString() => 'NotificationSubject(${kind.wireValue}, $dedupeRef)';

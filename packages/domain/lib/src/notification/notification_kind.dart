@@ -27,13 +27,19 @@ enum NotificationKind {
   /// member of, targeting a round the recipient participated in ("someone
   /// reacted to your prediction"). Subject references the group, the round, and
   /// the reacting user.
-  reactionReceived;
+  reactionReceived,
+
+  /// A fixture the recipient predicted was scored (its result was posted)
+  /// (docs/project-context.md, Axiom 4 Amendment — the per-fixture sibling
+  /// of [roundScored]). Subject references the scored fixture.
+  fixtureScored;
 
   /// The stable wire/storage token for this notification kind.
   String get wireValue => switch (this) {
     NotificationKind.roundScored => 'round_scored',
     NotificationKind.groupMemberJoined => 'group_member_joined',
     NotificationKind.reactionReceived => 'reaction_received',
+    NotificationKind.fixtureScored => 'fixture_scored',
   };
 
   /// Parses a [NotificationKind] from an untrusted [raw] token, returning a

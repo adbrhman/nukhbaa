@@ -39,6 +39,7 @@ final class CompositionRoot {
     required this.browseRoundFixtures,
     required this.listMatchesFeed,
     required this.submitPrediction,
+    required this.submitFixturePrediction,
     required this.getMyPrediction,
     required this.listRoundPredictions,
     required this.listMyPredictions,
@@ -46,6 +47,7 @@ final class CompositionRoot {
     required this.registerFixtureSchedule,
     required this.correctFixtureSchedule,
     required this.scoreRound,
+    required this.scoreFixture,
     required this.scoreRoundsForFixture,
     required this.getRoundScores,
     required this.getRoundReport,
@@ -67,6 +69,10 @@ final class CompositionRoot {
     required this.reactToRound,
     required this.removeReaction,
     required this.listRoundReactions,
+    required this.postFixtureToLedger,
+    required this.reactToFixture,
+    required this.removeFixtureReaction,
+    required this.listFixtureReactions,
     required this.getGroupActivityFeed,
     required this.listMyNotifications,
     required this.getUnreadCount,
@@ -130,6 +136,7 @@ final class CompositionRoot {
     BrowseRoundFixtures? browseRoundFixtures,
     ListMatchesFeed? listMatchesFeed,
     SubmitPrediction? submitPrediction,
+    SubmitFixturePrediction? submitFixturePrediction,
     GetMyPrediction? getMyPrediction,
     ListRoundPredictions? listRoundPredictions,
     ListMyPredictions? listMyPredictions,
@@ -137,6 +144,7 @@ final class CompositionRoot {
     RegisterFixtureSchedule? registerFixtureSchedule,
     CorrectFixtureSchedule? correctFixtureSchedule,
     ScoreRound? scoreRound,
+    ScoreFixture? scoreFixture,
     ScoreRoundsForFixture? scoreRoundsForFixture,
     GetRoundScores? getRoundScores,
     GetRoundReport? getRoundReport,
@@ -158,6 +166,10 @@ final class CompositionRoot {
     ReactToRound? reactToRound,
     RemoveReaction? removeReaction,
     ListRoundReactions? listRoundReactions,
+    PostFixtureToLedger? postFixtureToLedger,
+    ReactToFixture? reactToFixture,
+    RemoveFixtureReaction? removeFixtureReaction,
+    ListFixtureReactions? listFixtureReactions,
     GetGroupActivityFeed? getGroupActivityFeed,
     ListMyNotifications? listMyNotifications,
     GetUnreadCount? getUnreadCount,
@@ -195,6 +207,8 @@ final class CompositionRoot {
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
        listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
+       submitFixturePrediction =
+           submitFixturePrediction ?? _absentSubmitFixturePrediction(),
        getMyPrediction = getMyPrediction ?? _absentGetMyPrediction(),
        listRoundPredictions =
            listRoundPredictions ?? _absentListRoundPredictions(),
@@ -206,6 +220,7 @@ final class CompositionRoot {
        correctFixtureSchedule =
            correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
        scoreRound = scoreRound ?? _absentScoreRound(),
+       scoreFixture = scoreFixture ?? _absentScoreFixture(),
        scoreRoundsForFixture =
            scoreRoundsForFixture ?? _absentScoreRoundsForFixture(),
        getRoundScores = getRoundScores ?? _absentGetRoundScores(),
@@ -237,6 +252,13 @@ final class CompositionRoot {
        reactToRound = reactToRound ?? _absentReactToRound(),
        removeReaction = removeReaction ?? _absentRemoveReaction(),
        listRoundReactions = listRoundReactions ?? _absentListRoundReactions(),
+       postFixtureToLedger =
+           postFixtureToLedger ?? _absentPostFixtureToLedger(),
+       reactToFixture = reactToFixture ?? _absentReactToFixture(),
+       removeFixtureReaction =
+           removeFixtureReaction ?? _absentRemoveFixtureReaction(),
+       listFixtureReactions =
+           listFixtureReactions ?? _absentListFixtureReactions(),
        getGroupActivityFeed =
            getGroupActivityFeed ?? _absentGetGroupActivityFeed(),
        listMyNotifications =
@@ -390,6 +412,21 @@ final class CompositionRoot {
   static ListMyPredictions _absentListMyPredictions() =>
       ListMyPredictions(predictionRepository: _unwiredPredictionRepository);
 
+  /// Backs the "absent" fixture-prediction use-case, so a test that reaches
+  /// an unwired Axiom-4-Amendment prediction slice fails loudly instead of
+  /// touching a real database.
+  static final FixturePredictionRepository _unwiredFixturePredictionRepository =
+      _UnwiredFixturePredictionRepository();
+
+  static SubmitFixturePrediction _absentSubmitFixturePrediction() =>
+      SubmitFixturePrediction(
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        competitionRepository: _unwiredCompetitionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+        idGenerator: _unwiredIdGenerator,
+        clock: _unwiredClock,
+      );
+
   /// Throwing scoring repositories backing every "absent" scoring use-case, so
   /// a test that reaches an unwired scoring slice fails loudly instead of
   /// touching a real database.
@@ -429,6 +466,19 @@ final class CompositionRoot {
         competitionRepository: _unwiredCompetitionRepository,
         scoreRound: _absentScoreRound(),
       );
+
+  /// Backs the "absent" fixture-scoring use-case, so a test that reaches an
+  /// unwired Axiom-4-Amendment scoring slice fails loudly instead of touching
+  /// a real database.
+  static final FixtureScoreRepository _unwiredFixtureScoreRepository =
+      _UnwiredFixtureScoreRepository();
+
+  static ScoreFixture _absentScoreFixture() => ScoreFixture(
+    fixturePredictionRepository: _unwiredFixturePredictionRepository,
+    resultRepository: _unwiredFixtureResultRepository,
+    scoreRepository: _unwiredFixtureScoreRepository,
+    rulesetProvider: _unwiredRulesetProvider,
+  );
 
   static GetRoundScores _absentGetRoundScores() => GetRoundScores(
     competitionRepository: _unwiredCompetitionRepository,
@@ -564,6 +614,10 @@ final class CompositionRoot {
 
   static final ActivityFeedReader _unwiredActivityFeedReader =
       _UnwiredActivityFeedReader();
+  static final FixtureLedgerRepository _unwiredFixtureLedgerRepository =
+      _UnwiredFixtureLedgerRepository();
+  static final FixtureReactionRepository _unwiredFixtureReactionRepository =
+      _UnwiredFixtureReactionRepository();
 
   static ReactToRound _absentReactToRound() => ReactToRound(
     reactions: _unwiredReactionRepository,
@@ -581,6 +635,33 @@ final class CompositionRoot {
     reactions: _unwiredReactionRepository,
     groups: _unwiredGroupRepository,
   );
+
+  static PostFixtureToLedger _absentPostFixtureToLedger() =>
+      PostFixtureToLedger(
+        fixtureScoreRepository: _unwiredFixtureScoreRepository,
+        fixtureLedgerRepository: _unwiredFixtureLedgerRepository,
+        idGenerator: _unwiredIdGenerator,
+        clock: _unwiredClock,
+      );
+
+  static ReactToFixture _absentReactToFixture() => ReactToFixture(
+    reactions: _unwiredFixtureReactionRepository,
+    groups: _unwiredGroupRepository,
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
+  static RemoveFixtureReaction _absentRemoveFixtureReaction() =>
+      RemoveFixtureReaction(
+        reactions: _unwiredFixtureReactionRepository,
+        groups: _unwiredGroupRepository,
+      );
+
+  static ListFixtureReactions _absentListFixtureReactions() =>
+      ListFixtureReactions(
+        reactions: _unwiredFixtureReactionRepository,
+        groups: _unwiredGroupRepository,
+      );
 
   static GetGroupActivityFeed _absentGetGroupActivityFeed() =>
       GetGroupActivityFeed(
@@ -748,6 +829,10 @@ final class CompositionRoot {
   /// Submits (or idempotently amends) the caller's prediction for a round.
   final SubmitPrediction submitPrediction;
 
+  /// Submits (or idempotently amends) the caller's prediction for a single
+  /// fixture (Axiom 4 Amendment; per-fixture sibling of [submitPrediction]).
+  final SubmitFixturePrediction submitFixturePrediction;
+
   /// Reads the caller's own prediction for a round (any status; self-read).
   final GetMyPrediction getMyPrediction;
 
@@ -770,6 +855,11 @@ final class CompositionRoot {
   /// Scores every prediction in a locked round (admin-only command; the points
   /// are computed and written server-side — Axioms 2/5).
   final ScoreRound scoreRound;
+
+  /// Scores every prediction recorded for a single fixture (Axiom 4
+  /// Amendment; "ScoreFixture replaces ScoreRound" — per-fixture sibling of
+  /// [scoreRound], admin-only, computed and written server-side).
+  final ScoreFixture scoreFixture;
 
   /// Re-scores every round a fixture belongs to (Phase: احتساب فوري —
   /// live/partial scoring); the fan-out `RecordFixtureResult` triggers so a
@@ -867,6 +957,25 @@ final class CompositionRoot {
   /// Lists a round-result's reactions within a group (member-gated read —
   /// Social decision #3).
   final ListRoundReactions listRoundReactions;
+
+  /// Posts a scored fixture to the append-only Ledger (Axiom 4 Amendment;
+  /// admin-only, enforced inside the use-case — the per-fixture sibling of
+  /// [postRoundToLedger]).
+  final PostFixtureToLedger postFixtureToLedger;
+
+  /// Reacts (or changes a reaction) to a fixture-result within a group
+  /// (member-gated — Axiom 4 Amendment; the per-fixture sibling of
+  /// [reactToRound]).
+  final ReactToFixture reactToFixture;
+
+  /// Removes the caller's own reaction to a fixture-result within a group
+  /// (member-gated, idempotent — Axiom 4 Amendment; the per-fixture sibling
+  /// of [removeReaction]).
+  final RemoveFixtureReaction removeFixtureReaction;
+
+  /// Lists a fixture-result's reactions within a group (member-gated read —
+  /// Axiom 4 Amendment; the per-fixture sibling of [listRoundReactions]).
+  final ListFixtureReactions listFixtureReactions;
 
   /// Reads a group's activity feed — a pure read projection over already-
   /// ratified data (member-gated; NO table, NEVER a source of truth — Social
@@ -986,6 +1095,13 @@ final class CompositionRoot {
     // writes. Points are never wired here — Scoring is a later phase.
     final predictionRepository = PostgresPredictionRepository(connection);
 
+    // Axiom 4 Amendment: the per-fixture Prediction context, its own
+    // Postgres-backed repository (kept separate, same reasoning as
+    // predictionRepository above).
+    final fixturePredictionRepository = PostgresFixturePredictionRepository(
+      connection,
+    );
+
     // Scoring slice: its own Postgres-backed adapters over the scoring.* tables
     // (the actual-result seam — Axiom 3 option (a) — and the server-computed
     // round scores). ScoreRound reuses the competition + prediction repos
@@ -994,6 +1110,11 @@ final class CompositionRoot {
     // (Axioms 2/5). GetRoundScores gates the read to a scored round.
     final fixtureResultRepository = PostgresFixtureResultRepository(connection);
     final scoreRepository = PostgresScoreRepository(connection);
+
+    // Axiom 4 Amendment: the per-fixture Scoring context, its own
+    // Postgres-backed repository (kept separate, same reasoning as
+    // scoreRepository above).
+    final fixtureScoreRepository = PostgresFixtureScoreRepository(connection);
 
     final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
       connection,
@@ -1045,6 +1166,10 @@ final class CompositionRoot {
     // Social failure is confined to its endpoint and never blocks a Tier-1
     // core operation (decision #4).
     final reactionRepository = PostgresReactionRepository(connection);
+    final fixtureLedgerRepository = PostgresFixtureLedgerRepository(connection);
+    final fixtureReactionRepository = PostgresFixtureReactionRepository(
+      connection,
+    );
     final activityFeedReader = PostgresActivityFeedReader(connection);
 
     // Notifications slice (Tier-3, peripheral, rebuildable — NEVER a source of
@@ -1150,6 +1275,13 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         clock: clock,
       ),
+      submitFixturePrediction: SubmitFixturePrediction(
+        fixturePredictionRepository: fixturePredictionRepository,
+        competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
       getMyPrediction: GetMyPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
@@ -1175,6 +1307,12 @@ final class CompositionRoot {
         predictionRepository: predictionRepository,
         resultRepository: fixtureResultRepository,
         scoreRepository: scoreRepository,
+      ),
+      scoreFixture: ScoreFixture(
+        fixturePredictionRepository: fixturePredictionRepository,
+        resultRepository: fixtureResultRepository,
+        scoreRepository: fixtureScoreRepository,
+        rulesetProvider: rulesetProvider,
       ),
       scoreRoundsForFixture: ScoreRoundsForFixture(
         competitionRepository: competitionRepository,
@@ -1261,6 +1399,26 @@ final class CompositionRoot {
       ),
       listRoundReactions: ListRoundReactions(
         reactions: reactionRepository,
+        groups: groupRepository,
+      ),
+      postFixtureToLedger: PostFixtureToLedger(
+        fixtureScoreRepository: fixtureScoreRepository,
+        fixtureLedgerRepository: fixtureLedgerRepository,
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      reactToFixture: ReactToFixture(
+        reactions: fixtureReactionRepository,
+        groups: groupRepository,
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      removeFixtureReaction: RemoveFixtureReaction(
+        reactions: fixtureReactionRepository,
+        groups: groupRepository,
+      ),
+      listFixtureReactions: ListFixtureReactions(
+        reactions: fixtureReactionRepository,
         groups: groupRepository,
       ),
       getGroupActivityFeed: GetGroupActivityFeed(
@@ -1509,6 +1667,52 @@ final class _UnwiredPredictionRepository implements PredictionRepository {
       _unwired();
 }
 
+/// Backs the "absent" fixture-prediction use-case's port (Axiom 4 Amendment):
+/// any method throws so a test that reaches an unwired slice fails loudly
+/// instead of touching a real database.
+final class _UnwiredFixturePredictionRepository
+    implements FixturePredictionRepository {
+  static Never _unwired() => throw StateError(
+    'A fixture-prediction use-case was not wired into this root',
+  );
+
+  @override
+  Future<Result<FixturePredictionView?>> findByFixtureAndParticipant(
+    FixtureRef fixture,
+    ParticipantId participantId,
+  ) => _unwired();
+
+  @override
+  Future<Result<void>> save(
+    FixturePrediction prediction,
+    DateTime submittedAt,
+  ) => _unwired();
+
+  @override
+  Future<Result<void>> update(
+    FixturePrediction prediction,
+    DateTime submittedAt,
+  ) => _unwired();
+
+  @override
+  Future<Result<SeasonFixture?>> findSeasonFixture(
+    SeasonId seasonId,
+    FixtureRef fixture,
+  ) => _unwired();
+
+  @override
+  Future<Result<int>> countDoublesOnDay(
+    ParticipantId participantId,
+    DateTime dayUtc, {
+    FixtureRef? excludingFixture,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByFixture(
+    FixtureRef fixture,
+  ) => _unwired();
+}
+
 /// Backs every "absent" scoring use-case's fixture-result port: any method
 /// throws so a test that reaches an unwired scoring slice fails loudly instead
 /// of touching a real database.
@@ -1560,6 +1764,25 @@ final class _UnwiredScoreRepository implements ScoreRepository {
 
   @override
   Future<Result<List<RoundScore>>> listByRound(RoundId roundId) => _unwired();
+}
+
+/// Backs the "absent" fixture-scoring use-case's port (Axiom 4 Amendment): any
+/// method throws so a test that reaches an unwired slice fails loudly instead
+/// of touching a real database.
+final class _UnwiredFixtureScoreRepository implements FixtureScoreRepository {
+  static Never _unwired() => throw StateError(
+    'A fixture-scoring use-case was not wired into this root',
+  );
+
+  @override
+  Future<Result<void>> saveFixtureScores(
+    List<ParticipantFixtureScore> scores,
+  ) => _unwired();
+
+  @override
+  Future<Result<List<ParticipantFixtureScore>>> listByFixture(
+    FixtureRef fixture,
+  ) => _unwired();
 }
 
 /// Backs every "absent" ledger use-case's ledger port: any method throws so a
@@ -1726,6 +1949,58 @@ final class _UnwiredReactionRepository implements ReactionRepository {
   Future<Result<bool>> removeReaction(
     GroupId groupId,
     RoundId roundId,
+    UserId userId,
+  ) => _unwired();
+}
+
+/// Backs every "absent" fixture-ledger use-case's port (Axiom 4 Amendment):
+/// any method throws so a test that reaches an unwired slice fails loudly
+/// instead of touching a real database.
+final class _UnwiredFixtureLedgerRepository implements FixtureLedgerRepository {
+  static Never _unwired() => throw StateError(
+    'A fixture-ledger use-case was not wired into this root',
+  );
+
+  @override
+  Future<Result<List<FixturePointEntry>>> appendEntries(
+    List<FixturePointEntry> entries,
+  ) => _unwired();
+
+  @override
+  Future<Result<List<FixturePointEntry>>> listEntries(
+    ParticipantId participantId,
+  ) => _unwired();
+}
+
+/// Backs every "absent" fixture-social use-case's port (Axiom 4 Amendment):
+/// any method throws so a test that reaches an unwired slice fails loudly
+/// instead of touching a real database.
+final class _UnwiredFixtureReactionRepository
+    implements FixtureReactionRepository {
+  static Never _unwired() => throw StateError(
+    'A fixture-social use-case was not wired into this root',
+  );
+
+  @override
+  Future<Result<void>> upsertReaction(FixtureReaction reaction) => _unwired();
+
+  @override
+  Future<Result<FixtureReaction?>> findReaction(
+    GroupId groupId,
+    FixtureRef fixture,
+    UserId userId,
+  ) => _unwired();
+
+  @override
+  Future<Result<List<FixtureReaction>>> listReactionsForFixture(
+    GroupId groupId,
+    FixtureRef fixture,
+  ) => _unwired();
+
+  @override
+  Future<Result<bool>> removeReaction(
+    GroupId groupId,
+    FixtureRef fixture,
     UserId userId,
   ) => _unwired();
 }

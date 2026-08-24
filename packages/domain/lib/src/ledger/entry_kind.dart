@@ -26,6 +26,10 @@ enum EntryKind {
   /// The points credited for a participant's scored round.
   roundScore,
 
+  /// The points credited for a participant's scored fixture (Axiom 4
+  /// Amendment; the per-fixture sibling of [roundScore]).
+  fixtureScore,
+
   /// A compensating adjustment to a previously posted amount (may be negative).
   correction;
 
@@ -33,6 +37,7 @@ enum EntryKind {
   /// identifier so a persisted value can never drift silently.
   String get wireValue => switch (this) {
     EntryKind.roundScore => 'round_score',
+    EntryKind.fixtureScore => 'fixture_score',
     EntryKind.correction => 'correction',
   };
 
@@ -41,7 +46,8 @@ enum EntryKind {
   /// A [roundScore] credit is always non-negative (points awards are
   /// non-negative — it mirrors `RoundScore.totalPoints`). A [correction] may be
   /// negative (it compensates), so it is exempt from the non-negativity rule.
-  bool get requiresNonNegativeAmount => this == EntryKind.roundScore;
+  bool get requiresNonNegativeAmount =>
+      this == EntryKind.roundScore || this == EntryKind.fixtureScore;
 
   /// Whether an entry of this kind participates in the append-only dedupe key
   /// so that re-posting cannot create a duplicate crediting row.
@@ -52,6 +58,12 @@ enum EntryKind {
   /// time — so it is not deduped by this natural key (each correction carries
   /// its own distinct `source_ref`).
   bool get isDedupedPerRound => this == EntryKind.roundScore;
+
+  /// Whether an entry of this kind participates in the fixture-scoped
+  /// append-only dedupe key (Axiom 4 Amendment; the per-fixture sibling of
+  /// [isDedupedPerRound]). Only [fixtureScore] is deduped on
+  /// `(participant, fixture, kind)`.
+  bool get isDedupedPerFixture => this == EntryKind.fixtureScore;
 
   /// Parses an [EntryKind] from an untrusted [raw] token (e.g. a stored row),
   /// returning a validation [AppError] when absent or unrecognized.
