@@ -35,3 +35,4 @@ apps/mobile/android/
 *.jks
 keystore_b64.txt
 android_backup_*/
+nukhbaa-current.zip
