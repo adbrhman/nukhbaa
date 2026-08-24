@@ -2,54 +2,53 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// Dark palette — Slate neutrals + a single calm Emerald accent.
+/// Dark palette — ELITE OBSIDIAN V1.0 design system (violet action + gold
+/// achievement, on an Obsidian dark foundation).
 abstract final class AppColors {
-  static const Color background = Color(0xFF0B0F14);
-  static const Color backgroundElevated = Color(0xFF11161F);
-  static const Color surface = Color(0xFF151B22);
-  static const Color surfaceElevated = Color(0xFF1C2330);
-  static const Color surfaceHigh = Color(0xFF272F3D);
+  static const Color background = Color(0xFF07050D);
+  static const Color backgroundElevated = Color(0xFF0A0811);
+  static const Color surface = Color(0xFF181326);
+  static const Color surfaceElevated = Color(0xFF1D1730);
+  static const Color surfaceHigh = Color(0xFF241C3A);
 
-  static const Color primary = Color(0xFF00A868);
-  static const Color primaryDark = Color(0xFF00794C);
-  static const Color primaryLight = Color(0xFF4FD1A0);
+  static const Color primary = Color(0xFF7C3AED);
+  static const Color primaryDark = Color(0xFF5B21B6);
+  static const Color primaryLight = Color(0xFF8B5CF6);
 
-  static const Color gold = Color(0xFFFFB020);
-  static const Color goldDark = Color(0xFFB77F17);
+  static const Color gold = Color(0xFFF5C451);
+  static const Color goldDark = Color(0xFFB8860B);
   static const Color silver = Color(0xFFC3CBD6);
   static const Color onSilver = Color(0xFF1B2430);
   static const Color bronze = Color(0xFFCD8A4E);
   static const Color onBronze = Color(0xFF2A1608);
 
-  static const Color error = Color(0xFFF87171);
-  static const Color errorContainer = Color(0xFF3A1D22);
+  static const Color error = Color(0xFFEF4444);
+  static const Color errorContainer = Color(0xFF3A151A);
 
-  /// Semantic status colors. `success`/`warning` deliberately reuse the
-  /// existing primary/gold hues (see design tokens addendum decision log)
-  /// to avoid a second color competing visually with the medal gold.
-  /// `info` is the one genuinely new hue — no blue exists elsewhere in
-  /// this palette to repurpose.
-  static const Color success = primary;
-  static const Color successContainer = Color(0xFF102A22);
-  static const Color onSuccess = onPrimary;
+  /// Semantic status colors — each an independent hue per the ELITE OBSIDIAN
+  /// spec (violet = action, gold = achievement; success/warning/info are
+  /// their own distinct colors, no longer aliased to primary/gold).
+  static const Color success = Color(0xFF22C55E);
+  static const Color successContainer = Color(0xFF14291D);
+  static const Color onSuccess = Color(0xFFFFFFFF);
 
-  static const Color warning = gold;
-  static const Color warningContainer = Color(0xFF3A2E0E);
-  static const Color onWarning = onGold;
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningContainer = Color(0xFF3A2A0E);
+  static const Color onWarning = Color(0xFF2A1B04);
 
-  static const Color info = Color(0xFF60A5FA);
-  static const Color infoContainer = Color(0xFF13233A);
+  static const Color info = Color(0xFF38BDF8);
+  static const Color infoContainer = Color(0xFF122A3A);
   static const Color onInfo = Color(0xFF0B1220);
 
-  static const Color textPrimary = Color(0xFFF1F5F9);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textSecondary = Color(0xFFC8C2D3);
+  static const Color textMuted = Color(0xFF6F687D);
 
-  static const Color onPrimary = Color(0xFF04140E);
+  static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onGold = Color(0xFF2A1E04);
-  static const Color onError = Color(0xFF2A0A0E);
+  static const Color onError = Color(0xFFFFFFFF);
 
-  static const Color border = Color(0x14FFFFFF);
+  static const Color border = Color(0x0FFFFFFF);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
