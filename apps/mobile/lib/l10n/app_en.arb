@@ -92,6 +92,8 @@
   },
   "roundLeaderboardTab": "Round points",
   "seasonLeaderboardTab": "Season points",
+  "fixtureLeaderboardTab": "Fixture points",
+  "fixtureLeaderboardEmpty": "No fixture has been scored yet this season.",
   "selectRoundLabel": "Select round",
   "roundLeaderboardNoScoredRounds": "This season has no scored rounds yet.",
   "roundLeaderboardEmpty": "Nobody predicted this round.",

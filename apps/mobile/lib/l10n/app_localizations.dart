@@ -440,6 +440,18 @@ abstract class AppLocalizations {
   /// **'Season points'**
   String get seasonLeaderboardTab;
 
+  /// No description provided for @fixtureLeaderboardTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture points'**
+  String get fixtureLeaderboardTab;
+
+  /// No description provided for @fixtureLeaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No fixture has been scored yet this season.'**
+  String get fixtureLeaderboardEmpty;
+
   /// No description provided for @selectRoundLabel.
   ///
   /// In en, this message translates to:

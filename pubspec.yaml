@@ -21,6 +21,7 @@ workspace:
   - packages/application
   - packages/infrastructure
   - packages/api_client
+  - apps/mobile
   - apps/server
   - tooling/import_lint
 

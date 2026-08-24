@@ -219,6 +219,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get seasonLeaderboardTab => 'نقاط الموسم';
 
   @override
+  String get fixtureLeaderboardTab => 'نقاط المباريات';
+
+  @override
+  String get fixtureLeaderboardEmpty =>
+      'لا توجد مباراة محتسبة بعد في هذا الموسم.';
+
+  @override
   String get selectRoundLabel => 'اختر الجولة';
 
   @override

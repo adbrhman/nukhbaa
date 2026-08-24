@@ -211,6 +211,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonLeaderboardTab => 'Season points';
 
   @override
+  String get fixtureLeaderboardTab => 'Fixture points';
+
+  @override
+  String get fixtureLeaderboardEmpty =>
+      'No fixture has been scored yet this season.';
+
+  @override
   String get selectRoundLabel => 'Select round';
 
   @override

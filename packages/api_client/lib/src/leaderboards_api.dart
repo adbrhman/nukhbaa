@@ -9,6 +9,8 @@ import 'package:shared/shared.dart';
 ///     (`routes/seasons/[id]/leaderboard/index.dart`).
 ///   * `GET /rounds/{id}/leaderboard` -> [RoundLeaderboardDto]
 ///     (`routes/rounds/[id]/leaderboard/index.dart`).
+///   * `GET /seasons/{id}/fixture-leaderboard` -> [FixtureLeaderboardDto]
+///     (`routes/seasons/[id]/fixture-leaderboard/index.dart`).
 ///   * `GET /leaderboard/hall-of-fame` -> [HallOfFameDto]
 ///     (`routes/leaderboard/hall-of-fame/index.dart`).
 ///
@@ -74,6 +76,28 @@ final class LeaderboardsApi {
     return _transport.getObject<RoundLeaderboardDto>(
       '/rounds/$roundId/leaderboard',
       parse: RoundLeaderboardDto.fromJson,
+    );
+  }
+
+  /// `GET /seasons/{id}/fixture-leaderboard` — a season's live, per-fixture
+  /// standings (Axiom 4 Amendment sibling of [roundLeaderboard]; aggregated
+  /// over every fixture scored so far instead of a single round).
+  ///
+  /// Returns:
+  ///   * `Ok(FixtureLeaderboardDto)` on `200` — an **empty** `entries` list
+  ///     is a legitimate result (no fixture has been scored yet), never an
+  ///     error; this board is live/partial by construction, never gated on
+  ///     "the season being finished";
+  ///   * `Err(authorization, code: leaderboard.not_a_participant)` on `401`
+  ///     when the caller is not a member of the season;
+  ///   * `Err(validation)` if [seasonId] is malformed (server `400`);
+  ///   * `Err(transient)` on `503` or a network failure (retryable);
+  ///   * `Err(validation, code: api_client.malformed_response)` if the `200`
+  ///     body is not a valid [FixtureLeaderboardDto].
+  Future<Result<FixtureLeaderboardDto>> fixtureLeaderboard(String seasonId) {
+    return _transport.getObject<FixtureLeaderboardDto>(
+      '/seasons/$seasonId/fixture-leaderboard',
+      parse: FixtureLeaderboardDto.fromJson,
     );
   }
 

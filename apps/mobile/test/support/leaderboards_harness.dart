@@ -141,3 +141,30 @@ const SeasonLeaderboardDto emptyBoard = SeasonLeaderboardDto(
   seasonId: 's-2',
   entries: <LeaderboardEntryDto>[],
 );
+
+/// A sample two-entry season fixture-leaderboard in server display order
+/// (rank 1 then rank 2) — the Axiom 4 Amendment sibling of [sampleBoard].
+const FixtureLeaderboardDto sampleFixtureBoard = FixtureLeaderboardDto(
+  seasonId: 's-1',
+  entries: <FixtureLeaderboardEntryDto>[
+    FixtureLeaderboardEntryDto(
+      rank: 1,
+      participantId: 'p-a',
+      totalPoints: 9,
+      fixturesScored: 3,
+    ),
+    FixtureLeaderboardEntryDto(
+      rank: 2,
+      participantId: 'p-b',
+      totalPoints: 4,
+      fixturesScored: 3,
+    ),
+  ],
+);
+
+/// A sample fixture-leaderboard for a season with no fixtures scored yet (a
+/// legitimate empty board, never an error).
+const FixtureLeaderboardDto emptyFixtureBoard = FixtureLeaderboardDto(
+  seasonId: 's-2',
+  entries: <FixtureLeaderboardEntryDto>[],
+);

@@ -57,6 +57,8 @@
   "pointsAbbreviated": "{count, plural, zero{0 نقطة} one{نقطة واحدة} two{نقطتان} few{{count} نقاط} many{{count} نقطة} other{{count} نقطة}}",
   "roundLeaderboardTab": "نقاط الجولة",
   "seasonLeaderboardTab": "نقاط الموسم",
+  "fixtureLeaderboardTab": "نقاط المباريات",
+  "fixtureLeaderboardEmpty": "لا توجد مباراة محتسبة بعد في هذا الموسم.",
   "selectRoundLabel": "اختر الجولة",
   "roundLeaderboardNoScoredRounds": "لا توجد جولات محتسبة بعد في هذا الموسم.",
   "roundLeaderboardEmpty": "لم يشارك أحد في هذه الجولة.",

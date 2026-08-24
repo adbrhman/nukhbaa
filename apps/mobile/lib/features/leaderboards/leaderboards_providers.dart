@@ -76,3 +76,20 @@ Future<RoundLeaderboardDto> roundLeaderboard(Ref ref, String roundId) async {
   final api = ref.watch(leaderboardsApiProvider);
   return _unwrap(await api.roundLeaderboard(roundId));
 }
+
+/// `GET /seasons/{id}/fixture-leaderboard` — a season's live, per-fixture
+/// standings (Axiom 4 Amendment sibling of [seasonLeaderboard]).
+///
+/// An **empty** `entries` list is a legitimate result (no fixture has been
+/// scored yet) — the board is live/partial by construction, never gated on
+/// "the season being finished". A non-member is refused
+/// `Err(authorization, code: leaderboard.not_a_participant)`, rethrown here
+/// so the screen renders the tailored message via `ErrorPresenter`.
+@riverpod
+Future<FixtureLeaderboardDto> fixtureLeaderboard(
+  Ref ref,
+  String seasonId,
+) async {
+  final api = ref.watch(leaderboardsApiProvider);
+  return _unwrap(await api.fixtureLeaderboard(seasonId));
+}

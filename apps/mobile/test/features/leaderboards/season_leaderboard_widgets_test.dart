@@ -8,12 +8,13 @@
 /// `ErrorPresenter` with NO retry, and that the additive
 /// `SeasonRoundsScreen` entry point navigates to this screen.
 ///
-/// The screen now lands on the **round points** tab by default (Tab index 0);
-/// these tests exercise the **season points** tab (`GET
-/// /seasons/{id}/leaderboard`), so each one taps `leaderboard.tab.season`
-/// before asserting on it. The round tab's own read
-/// (`GET /seasons/{id}/rounds`) is routed separately to a legitimate empty
-/// list so it never interferes with the season-tab assertions under test.
+/// The screen now lands on the **fixture points** tab by default (Tab index
+/// 0, Axiom 4 Amendment); these tests exercise the **season points** tab
+/// (`GET /seasons/{id}/leaderboard`), so each one taps
+/// `leaderboard.tab.season` before asserting on it. The fixture tab's own
+/// read (`GET /seasons/{id}/fixture-leaderboard`) is routed separately to a
+/// legitimate empty board so it never interferes with the season-tab
+/// assertions under test.
 library;
 
 import 'dart:async';
@@ -29,9 +30,9 @@ import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/leaderboards_harness.dart';
 
-/// A `200 OK` empty JSON array — the rounds browse read the round tab (and
-/// the `SeasonRoundsScreen` integration test) issues; a season with no
-/// rounds is a legitimate empty list.
+/// A `200 OK` empty JSON array — the rounds browse read the
+/// `SeasonRoundsScreen` integration test issues; a season with no rounds is
+/// a legitimate empty list.
 http.Response _okEmptyList() => http.Response(
   '[]',
   200,
@@ -48,7 +49,7 @@ Widget _host(LeaderboardsHarness harness, Widget child) => ProviderScope(
   ),
 );
 
-/// Switches from the default round tab to the season tab and lets the tab
+/// Switches from the default fixture tab to the season tab and lets the tab
 /// transition finish.
 Future<void> _openSeasonTab(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('leaderboard.tab.season')));
@@ -61,12 +62,12 @@ void main() {
     testWidgets('shows a loading indicator while the read is in flight', (
       tester,
     ) async {
-      // The rounds read settles immediately (empty is fine); the leaderboard
-      // read never completes, keeping the season tab's provider in the
-      // loading state.
+      // The fixture tab's read settles immediately (empty is fine); the
+      // season-tab leaderboard read never completes, keeping the season
+      // tab's provider in the loading state.
       final harness = buildLeaderboardsHarness((request) async {
-        if (request.url.path == '/seasons/s-1/rounds') {
-          return _okEmptyList();
+        if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
+          return okJsonObject(emptyFixtureBoard.toJson());
         }
         return Completer<http.Response>().future;
       });
@@ -92,8 +93,8 @@ void main() {
       tester,
     ) async {
       final harness = buildLeaderboardsHarness((request) async {
-        if (request.url.path == '/seasons/s-1/rounds') {
-          return _okEmptyList();
+        if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
+          return okJsonObject(emptyFixtureBoard.toJson());
         }
         return okJsonObject(sampleBoard.toJson());
       });
@@ -121,8 +122,8 @@ void main() {
       tester,
     ) async {
       final harness = buildLeaderboardsHarness((request) async {
-        if (request.url.path == '/seasons/s-2/rounds') {
-          return _okEmptyList();
+        if (request.url.path == '/seasons/s-2/fixture-leaderboard') {
+          return okJsonObject(emptyFixtureBoard.toJson());
         }
         return okJsonObject(emptyBoard.toJson());
       });
@@ -146,8 +147,8 @@ void main() {
       'no retry',
       (tester) async {
         final harness = buildLeaderboardsHarness((request) async {
-          if (request.url.path == '/seasons/s-1/rounds') {
-            return _okEmptyList();
+          if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
+            return okJsonObject(emptyFixtureBoard.toJson());
           }
           return errorEnvelope(
             401,
@@ -183,12 +184,12 @@ void main() {
     testWidgets('transport failure -> error message + retry affordance', (
       tester,
     ) async {
-      // The retry counter is scoped to the leaderboard endpoint only, so the
-      // round tab's own (always-successful) rounds read never consumes it.
+      // The retry counter is scoped to the season-leaderboard endpoint only,
+      // so the fixture tab's own (always-successful) read never consumes it.
       var leaderboardCalls = 0;
       final harness = buildLeaderboardsHarness((request) async {
-        if (request.url.path == '/seasons/s-1/rounds') {
-          return _okEmptyList();
+        if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
+          return okJsonObject(emptyFixtureBoard.toJson());
         }
         leaderboardCalls++;
         if (leaderboardCalls == 1) throw Exception('offline');
