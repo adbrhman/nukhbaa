@@ -22,14 +22,23 @@ abstract interface class FixtureScoreRepository {
   ///
   /// Every [ParticipantFixtureScore] in [scores] MUST share the same
   /// fixture; the adapter does not mix fixtures in a single call.
-  Future<Result<void>> saveFixtureScores(
-    List<ParticipantFixtureScore> scores,
-  );
+  Future<Result<void>> saveFixtureScores(List<ParticipantFixtureScore> scores);
 
   /// Lists every participant's [ParticipantFixtureScore] for [fixture],
   /// ordered by participant id for a stable read. An empty list means the
   /// fixture has not been scored yet.
   Future<Result<List<ParticipantFixtureScore>>> listByFixture(
     FixtureRef fixture,
+  );
+
+  /// Lists every already-computed score for any fixture in [fixtures], in
+  /// one batched read — the batch sibling of [listByFixture], used to build
+  /// the season-scoped "monthly" fixture leaderboard without one query per
+  /// fixture. Unordered (the caller aggregates/ranks). An empty [fixtures]
+  /// list — or a set of fixtures none of which has been scored yet — yields
+  /// `Ok(<empty list>)`, a legitimate partial/live state (Axiom 4 Amendment:
+  /// scoring is live, per fixture, never waiting for the rest of a season).
+  Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
+    List<FixtureRef> fixtures,
   );
 }

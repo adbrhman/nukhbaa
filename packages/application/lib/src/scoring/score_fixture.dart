@@ -94,9 +94,7 @@ final class ScoreFixture {
     }
     final result = (resultResult as Ok<FixtureResult?>).value;
 
-    final predictionsResult = await _fixturePredictions.listByFixture(
-      fixture,
-    );
+    final predictionsResult = await _fixturePredictions.listByFixture(fixture);
     if (predictionsResult is Err<List<FixturePredictionView>>) {
       return Result.err(predictionsResult.error);
     }
@@ -130,8 +128,6 @@ final class ScoreFixture {
       return Result.err(saved.error);
     }
 
-    return Result.ok(
-      List<ParticipantFixtureScore>.unmodifiable(fixtureScores),
-    );
+    return Result.ok(List<ParticipantFixtureScore>.unmodifiable(fixtureScores));
   }
 }

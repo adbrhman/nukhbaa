@@ -1,0 +1,11 @@
+  admin-add-match-flow               [m 82c4008 [[34morigin/admin-add-match-flow[m] refactor(admin): extract AdminDateTimeField, unify kickoff/deadline pickers
+  feature/participant-display-name   [m a223804 [[34morigin/feature/participant-display-name[m] feat: in-app update check (GET /app/latest-build)
+  fix/admin-round-scores-report      [m d93b92f admin: add unrestricted round scores/report reads
+  fix/log-db-query-failed            [m c8f44fd [[34morigin/fix/log-db-query-failed[m] fix: scoring points (exact=3, double=6) + show display name instead of participant id
+  fix/task1-account-screen-raw-fields[m eaa3a4a fix(mobile): hide raw user fields on account screen behind kDebugMode
+  fix/task10a-color-tokens-and-radius[m 935bf34 [[34morigin/fix/task10a-color-tokens-and-radius[m] task10a: unify color tokens and radius
+  fix/task10b-remove-hardcoded-colors[m aa7621e [[34morigin/fix/task10b-remove-hardcoded-colors[m] task10b: replace hardcoded colors with design tokens
+  fix/task3-admin-dropdowns          [m 03c080f [[34morigin/fix/task3-admin-dropdowns[m] task3: replace admin fixture/round ID text fields with dropdowns
+  fix/task7-round-leaderboard        [m 9179139 [[34morigin/fix/task7-round-leaderboard[m] chore: apply dart format
+  fix/task9-ibm-plex-sans-arabic     [m f0db167 feat(mobile): switch to IBM Plex Sans Arabic (local font assets, no new package)
+* [32mmain                               [m 949ed69 [[34morigin/main[m: ahead 1] wip: phases 1-6c local work (fixture scoring/ledger/notifications migration) - checkpoint before fixture-leaderboard mobile wiring

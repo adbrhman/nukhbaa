@@ -451,4 +451,45 @@ ORDER BY submitted_at ASC, id ASC
         'prediction.row_corrupt',
         'Stored $table row has invalid $field: $detail',
       );
+
+  // --------------------------------------------------------------------------
+  // listSeasonFixtures — every fixture linked to a season, display-ordered
+  // --------------------------------------------------------------------------
+
+  static const String _selectSeasonFixturesSql = '''
+SELECT fixture_id
+FROM competition.season_fixtures
+WHERE season_id = @season_id
+ORDER BY display_order ASC
+''';
+
+  @override
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) async {
+    final result = await _connection.query(
+      _selectSeasonFixturesSql,
+      parameters: {'season_id': seasonId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapFixtureRefs(value),
+    };
+  }
+
+  Result<List<FixtureRef>> _mapFixtureRefs(List<Map<String, dynamic>> rows) {
+    final refs = <FixtureRef>[];
+    for (final row in rows) {
+      final fixtureResult = FixtureRef.tryParse(row['fixture_id']?.toString());
+      if (fixtureResult is Err<FixtureRef>) {
+        return Result.err(
+          AppError.transient(
+            'competition.row_corrupt',
+            'Stored season_fixtures row has invalid fixture_id: '
+                '${fixtureResult.error.message}',
+          ),
+        );
+      }
+      refs.add((fixtureResult as Ok<FixtureRef>).value);
+    }
+    return Result.ok(List<FixtureRef>.unmodifiable(refs));
+  }
 }

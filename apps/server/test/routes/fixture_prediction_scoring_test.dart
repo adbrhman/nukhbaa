@@ -396,6 +396,14 @@ final class _InMemoryFixturePredictionRepository
           ),
     ]);
   }
+
+  @override
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) async {
+    return Result.ok([
+      for (final link in links)
+        if (link.seasonId == seasonId) link.fixture,
+    ]);
+  }
 }
 
 /// A minimal in-memory [FixtureScoreRepository] for these route tests only.
@@ -422,6 +430,17 @@ final class _InMemoryFixtureScoreRepository implements FixtureScoreRepository {
     return Result.ok([
       for (final s in _byKey.values)
         if (s.fixture == fixture) s,
+    ]);
+  }
+
+  @override
+  Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    final wanted = {for (final f in fixtures) f.value};
+    return Result.ok([
+      for (final s in _byKey.values)
+        if (wanted.contains(s.fixture.value)) s,
     ]);
   }
 }

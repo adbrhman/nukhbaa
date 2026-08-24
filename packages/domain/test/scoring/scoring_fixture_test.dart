@@ -34,12 +34,13 @@ void main() {
                     '11111111-1111-1111-1111-111111111111',
                   ),
                   participantId: const ParticipantId('participant-1'),
-                  lock: (FixtureLock.at(
-                            kickoffAt: DateTime.utc(2026, 8, 2),
-                            nowUtc: DateTime.utc(2026, 8, 1),
-                          )
-                          as Ok<FixtureLock>)
-                      .value,
+                  lock:
+                      (FixtureLock.at(
+                                kickoffAt: DateTime.utc(2026, 8, 2),
+                                nowUtc: DateTime.utc(2026, 8, 1),
+                              )
+                              as Ok<FixtureLock>)
+                          .value,
                   homeGoals: home,
                   awayGoals: away,
                   isDouble: isDouble,

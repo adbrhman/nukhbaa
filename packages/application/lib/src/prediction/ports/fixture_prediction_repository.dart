@@ -23,10 +23,7 @@ abstract interface class FixturePredictionRepository {
   );
 
   /// Persists a brand-new [prediction] stamped [submittedAt] (UTC).
-  Future<Result<void>> save(
-    FixturePrediction prediction,
-    DateTime submittedAt,
-  );
+  Future<Result<void>> save(FixturePrediction prediction, DateTime submittedAt);
 
   /// Persists an amended [prediction] in place, refreshing [submittedAt]
   /// (UTC). Identity (`id`, `fixture`, `participantId`) is unchanged — an
@@ -61,7 +58,12 @@ abstract interface class FixturePredictionRepository {
   /// unordered — the per-fixture replacement for the round-wide
   /// `listByRound`, used by `ScoreFixture` to grade every participant who
   /// predicted this fixture.
-  Future<Result<List<FixturePredictionView>>> listByFixture(
-    FixtureRef fixture,
-  );
+  Future<Result<List<FixturePredictionView>>> listByFixture(FixtureRef fixture);
+
+  /// Lists every fixture linked to [seasonId] via
+  /// `competition.season_fixtures`, ordered by display order — the
+  /// season-scoped fixture set the live "monthly" fixture leaderboard
+  /// aggregates over (Axiom 4 Amendment). A season with no linked fixtures
+  /// (or one that does not exist) yields `Ok(<empty list>)`.
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId);
 }

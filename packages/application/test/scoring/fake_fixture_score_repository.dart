@@ -56,4 +56,19 @@ final class FakeFixtureScoreRepository implements FixtureScoreRepository {
     ]..sort((a, b) => a.participantId.value.compareTo(b.participantId.value));
     return Result.ok(out);
   }
+
+  @override
+  Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    if (fixtures.isEmpty) return const Result.ok([]);
+    final wanted = {for (final fx in fixtures) fx.value};
+    final out = <ParticipantFixtureScore>[
+      for (final s in _byKey.values)
+        if (wanted.contains(s.fixture.value)) s,
+    ];
+    return Result.ok(out);
+  }
 }

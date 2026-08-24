@@ -461,3 +461,164 @@ final class HallOfFameDto {
     return true;
   }
 }
+
+/// The wire shape of one participant's line on a season's live "monthly"
+/// fixture leaderboard (read projection of the domain
+/// `FixtureLeaderboardEntry`) — the Axiom 4 Amendment sibling of
+/// [RoundLeaderboardEntryDto], aggregated over every fixture scored so far
+/// instead of a single round.
+///
+/// Names the participant by id only and carries the standard-competition
+/// [rank] ("1224"), the running [totalPoints] summed from every
+/// already-computed fixture score so far (Axiom 5: never recomputed here),
+/// and [fixturesScored] — how many of the season's fixtures contributed to
+/// that total (a transparency count for a board that is live/partial by
+/// construction, never gated on "the season being finished"). Every field is
+/// server-produced; none is client-writable. Versioned.
+final class FixtureLeaderboardEntryDto {
+  /// Creates a fixture-leaderboard-entry DTO.
+  const FixtureLeaderboardEntryDto({
+    required this.rank,
+    required this.participantId,
+    required this.totalPoints,
+    required this.fixturesScored,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory FixtureLeaderboardEntryDto.fromJson(Map<String, Object?> json) {
+    return FixtureLeaderboardEntryDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      rank: json['rank']! as int,
+      participantId: json['participant_id']! as String,
+      totalPoints: json['total_points']! as int,
+      fixturesScored: json['fixtures_scored']! as int,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The participant's standard-competition rank (1-based; tied totals share
+  /// a rank, the next distinct total skips by the number tied).
+  final int rank;
+
+  /// The owning participant id (UUID string).
+  final String participantId;
+
+  /// The running point total summed from every fixture score so far.
+  final int totalPoints;
+
+  /// How many of the season's fixtures have been scored for this participant
+  /// so far.
+  final int fixturesScored;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'rank': rank,
+    'participant_id': participantId,
+    'total_points': totalPoints,
+    'fixtures_scored': fixturesScored,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is FixtureLeaderboardEntryDto &&
+      other.rank == rank &&
+      other.participantId == participantId &&
+      other.totalPoints == totalPoints &&
+      other.fixturesScored == fixturesScored &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    rank,
+    participantId,
+    totalPoints,
+    fixturesScored,
+    schemaVersion,
+  );
+}
+
+/// The wire shape of a season's live "monthly" fixture-leaderboard standings
+/// (read projection of the domain `FixtureLeaderboard`) — the response of
+/// `GET /seasons/{id}/fixture-leaderboard` (Axiom 4 Amendment sibling of
+/// [RoundLeaderboardDto]).
+///
+/// Names the season by id and carries the [entries] in the server-defined
+/// display order (points descending, then participant id ascending). An
+/// **empty** [entries] list is a legitimate result: no fixture has been
+/// scored yet — this board is live/partial by construction, never gated on
+/// "the season being finished". Visibility gating (season-membership) lives
+/// in the use-case, not this shape. Versioned.
+final class FixtureLeaderboardDto {
+  /// Creates a fixture-leaderboard DTO.
+  const FixtureLeaderboardDto({
+    required this.seasonId,
+    required this.entries,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory FixtureLeaderboardDto.fromJson(Map<String, Object?> json) {
+    final raw = json['entries']! as List<Object?>;
+    return FixtureLeaderboardDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      seasonId: json['season_id']! as String,
+      entries: raw
+          .map(
+            (e) => FixtureLeaderboardEntryDto.fromJson(
+              (e! as Map<Object?, Object?>).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The season these standings are for (UUID string).
+  final String seasonId;
+
+  /// The ranked entries, in the server-defined display order.
+  final List<FixtureLeaderboardEntryDto> entries;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'season_id': seasonId,
+    'entries': [for (final e in entries) e.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is FixtureLeaderboardDto &&
+      other.seasonId == seasonId &&
+      _listEquals(other.entries, entries) &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(seasonId, Object.hashAll(entries), schemaVersion);
+
+  static bool _listEquals(
+    List<FixtureLeaderboardEntryDto> a,
+    List<FixtureLeaderboardEntryDto> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}

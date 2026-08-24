@@ -73,3 +73,5 @@ export 'src/social/fixture_reaction.dart';
 export 'src/social/reaction.dart';
 export 'src/social/reaction_emoji.dart';
 export 'src/social/reaction_id.dart';
+export 'src/leaderboard/fixture_leaderboard.dart';
+export 'src/leaderboard/fixture_leaderboard_entry.dart';

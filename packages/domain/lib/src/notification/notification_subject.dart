@@ -126,8 +126,7 @@ final class NotificationSubject {
       other.fixture == fixture;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, roundId, groupId, actorUserId, fixture);
+  int get hashCode => Object.hash(kind, roundId, groupId, actorUserId, fixture);
 
   @override
   String toString() => 'NotificationSubject(${kind.wireValue}, $dedupeRef)';

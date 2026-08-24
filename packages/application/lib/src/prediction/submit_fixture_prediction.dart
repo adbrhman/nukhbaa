@@ -137,10 +137,7 @@ final class SubmitFixturePrediction {
     final kickoffAt = schedules.isEmpty ? null : schedules.first.kickoffAt;
     final effectiveKickoff = kickoffAt ?? now.add(const Duration(days: 1));
 
-    final lockResult = FixtureLock.at(
-      kickoffAt: effectiveKickoff,
-      nowUtc: now,
-    );
+    final lockResult = FixtureLock.at(kickoffAt: effectiveKickoff, nowUtc: now);
     if (lockResult is Err<FixtureLock>) {
       return Result.err(lockResult.error);
     }
@@ -191,7 +188,14 @@ final class SubmitFixturePrediction {
     final existing = (existingResult as Ok<FixturePredictionView?>).value;
 
     if (existing != null) {
-      return _amend(existing.prediction, lock, homeGoals, awayGoals, isDouble, now);
+      return _amend(
+        existing.prediction,
+        lock,
+        homeGoals,
+        awayGoals,
+        isDouble,
+        now,
+      );
     }
     return _insert(
       fixture,
@@ -298,7 +302,14 @@ final class SubmitFixturePrediction {
     return switch (reread) {
       Ok<FixturePredictionView?>(:final value) =>
         value != null
-            ? await _amend(value.prediction, lock, homeGoals, awayGoals, isDouble, now)
+            ? await _amend(
+                value.prediction,
+                lock,
+                homeGoals,
+                awayGoals,
+                isDouble,
+                now,
+              )
             : Result.err(insertError),
       Err<FixturePredictionView?>(:final error) => Result.err(error),
     };

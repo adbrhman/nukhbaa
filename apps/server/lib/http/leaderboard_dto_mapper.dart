@@ -93,3 +93,35 @@ Map<String, Object?> hallOfFameToJson(HallOfFame hallOfFame) {
     ],
   ).toJson();
 }
+
+/// Projects one domain `FixtureLeaderboardEntry` onto
+/// [FixtureLeaderboardEntryDto].
+///
+/// Same integrity boundary as [leaderboardEntryToDto]: every field is echoed
+/// exactly as the domain computed it from the season's already-scored
+/// fixture scores — nothing here is client-writable, and there is no
+/// inverse.
+FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
+  FixtureLeaderboardEntry entry,
+) {
+  return FixtureLeaderboardEntryDto(
+    rank: entry.rank,
+    participantId: entry.participantId.value,
+    totalPoints: entry.totalPoints,
+    fixturesScored: entry.fixturesScored,
+  );
+}
+
+/// Shapes a ranked `FixtureLeaderboard` into the whole-board read response
+/// [FixtureLeaderboardDto], preserving the aggregate's ranked entry order. An
+/// empty `FixtureLeaderboard.entries` shapes an empty `entries` array — a
+/// legitimate live/partial state (no fixture scored yet), never an error.
+Map<String, Object?> fixtureLeaderboardToJson(FixtureLeaderboard leaderboard) {
+  return FixtureLeaderboardDto(
+    seasonId: leaderboard.seasonId.value,
+    entries: [
+      for (final entry in leaderboard.entries)
+        fixtureLeaderboardEntryToDto(entry),
+    ],
+  ).toJson();
+}

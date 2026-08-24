@@ -210,4 +210,34 @@ ORDER BY participant_id ASC
         'scoring.row_corrupt',
         'Stored $table row has invalid $field: $detail',
       );
+
+  // --------------------------------------------------------------------------
+  // listBySeasonFixtures — batched read over many fixtures, unordered
+  // --------------------------------------------------------------------------
+
+  static const String _selectBySeasonFixturesSql = '''
+SELECT fixture_id, participant_id, ruleset_version, grade, points
+FROM scoring.fixture_scores
+WHERE fixture_id = ANY(@fixture_ids::uuid[])
+ORDER BY participant_id ASC, fixture_id ASC
+''';
+
+  @override
+  Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
+    List<FixtureRef> fixtures,
+  ) async {
+    if (fixtures.isEmpty) {
+      return const Result.ok([]);
+    }
+    final result = await _connection.query(
+      _selectBySeasonFixturesSql,
+      parameters: {
+        'fixture_ids': [for (final f in fixtures) f.value],
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapList(value),
+    };
+  }
 }

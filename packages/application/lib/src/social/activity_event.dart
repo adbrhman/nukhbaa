@@ -148,10 +148,16 @@ final class ActivityEvent {
       other.fixture == fixture;
 
   @override
-  int get hashCode =>
-      Object.hash(
-        type, groupId, occurredAt, roundId, userId, oldRank, newRank, fixture,
-      );
+  int get hashCode => Object.hash(
+    type,
+    groupId,
+    occurredAt,
+    roundId,
+    userId,
+    oldRank,
+    newRank,
+    fixture,
+  );
 
   @override
   String toString() =>

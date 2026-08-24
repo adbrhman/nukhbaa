@@ -40,12 +40,13 @@ void main() {
                     id: const PredictionId('prediction-1'),
                     fixture: const FixtureRef(fixtureId),
                     participantId: const ParticipantId(participantId),
-                    lock: (FixtureLock.at(
-                              kickoffAt: DateTime.utc(2026, 8, 2),
-                              nowUtc: DateTime.utc(2026, 8, 1),
-                            )
-                            as Ok<FixtureLock>)
-                        .value,
+                    lock:
+                        (FixtureLock.at(
+                                  kickoffAt: DateTime.utc(2026, 8, 2),
+                                  nowUtc: DateTime.utc(2026, 8, 1),
+                                )
+                                as Ok<FixtureLock>)
+                            .value,
                     homeGoals: home,
                     awayGoals: away,
                     isDouble: isDouble,
@@ -56,27 +57,30 @@ void main() {
       return prediction;
     }
 
-    test('grades an exact-scoreline prediction once the result lands', () async {
-      seedPrediction(home: 2, away: 1);
-      results.seed(
-        FixtureResult.fromStored(
-          fixture: const FixtureRef(fixtureId),
-          homeGoals: 2,
-          awayGoals: 1,
-        ),
-      );
+    test(
+      'grades an exact-scoreline prediction once the result lands',
+      () async {
+        seedPrediction(home: 2, away: 1);
+        results.seed(
+          FixtureResult.fromStored(
+            fixture: const FixtureRef(fixtureId),
+            homeGoals: 2,
+            awayGoals: 1,
+          ),
+        );
 
-      final result = await useCase(
-        principal: adminPrincipal('admin-1'),
-        fixtureId: fixtureId,
-      );
+        final result = await useCase(
+          principal: adminPrincipal('admin-1'),
+          fixtureId: fixtureId,
+        );
 
-      expect(result, isA<Ok<List<ParticipantFixtureScore>>>());
-      final list = (result as Ok<List<ParticipantFixtureScore>>).value;
-      expect(list, hasLength(1));
-      expect(list.single.result.grade, FixtureScoreGrade.exactScoreline);
-      expect(scores.count, 1);
-    });
+        expect(result, isA<Ok<List<ParticipantFixtureScore>>>());
+        final list = (result as Ok<List<ParticipantFixtureScore>>).value;
+        expect(list, hasLength(1));
+        expect(list.single.result.grade, FixtureScoreGrade.exactScoreline);
+        expect(scores.count, 1);
+      },
+    );
 
     test('grades pending when no result has been recorded yet', () async {
       seedPrediction(home: 2, away: 1);

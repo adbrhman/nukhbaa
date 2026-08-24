@@ -41,10 +41,7 @@ void main() {
     });
 
     test('rejects a non-UTC reference instant', () {
-      final result = FixtureLock.at(
-        kickoffAt: kickoff,
-        nowUtc: DateTime.now(),
-      );
+      final result = FixtureLock.at(kickoffAt: kickoff, nowUtc: DateTime.now());
       expect(result, isA<Err<FixtureLock>>());
       expect(
         (result as Err<FixtureLock>).error.code,

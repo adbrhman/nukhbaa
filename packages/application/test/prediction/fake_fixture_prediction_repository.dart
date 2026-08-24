@@ -78,10 +78,7 @@ final class FakeFixturePredictionRepository
     final key = _key(prediction.fixture, prediction.participantId);
     if (_byKey.containsKey(key)) {
       return const Result.err(
-        AppError.invariant(
-          'prediction.already_submitted',
-          'already submitted',
-        ),
+        AppError.invariant('prediction.already_submitted', 'already submitted'),
       );
     }
     _byKey[key] = _Stored(prediction, submittedAt);
@@ -156,6 +153,17 @@ final class FakeFixturePredictionRepository
             submittedAt: s.submittedAt,
           ),
     ]);
+  }
+
+  @override
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final links = [
+      for (final link in _seasonFixtures.values)
+        if (link.seasonId == seasonId) link,
+    ]..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+    return Result.ok([for (final link in links) link.fixture]);
   }
 }
 

@@ -22,7 +22,6 @@ workspace:
   - packages/infrastructure
   - packages/api_client
   - apps/server
-  - apps/mobile
   - tooling/import_lint
 
 dev_dependencies:
