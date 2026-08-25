@@ -157,6 +157,10 @@
   "@viewLeaderboardTooltip": {
     "description": "Tooltip for the app bar action that navigates to the season leaderboard."
   },
+  "fixturePredictionTooltip": "Predict season fixtures",
+  "@fixturePredictionTooltip": {
+    "description": "Tooltip for the app bar action that navigates to the fixture prediction screen."
+  },
   "seasonRoundsEmpty": "This season has no rounds yet.",
   "@seasonRoundsEmpty": {
     "description": "Empty state message when a season has no rounds."
@@ -281,6 +285,22 @@
     "description": "Shown while at least one open fixture is missing a valid score."
   },
   "predictionNoOpenFixturesMessage": "Every fixture in this round has already kicked off. There is nothing left to predict.",
+  "fixturePredictionTitle": "Predict Season Fixtures",
+  "@fixturePredictionTitle": {
+    "description": "App bar title for the per-fixture prediction screen (Axiom 4 Amendment)."
+  },
+  "fixturePredictionEmptyMessage": "No fixtures are linked to this season yet.",
+  "@fixturePredictionEmptyMessage": {
+    "description": "Shown when a season has no linked fixtures to predict."
+  },
+  "fixturePredictionSavedMessage": "Your prediction for this fixture was saved.",
+  "@fixturePredictionSavedMessage": {
+    "description": "Success confirmation after submitting a single fixture's prediction."
+  },
+  "submitFixturePredictionButton": "Submit",
+  "@submitFixturePredictionButton": {
+    "description": "Per-fixture submit button label on the fixture prediction screen."
+  },
   "matchesTitle": "Matches",
   "matchesEmpty": "No open matches right now.",
   "@predictionNoOpenFixturesMessage": {

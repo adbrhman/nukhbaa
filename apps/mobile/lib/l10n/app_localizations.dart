@@ -570,6 +570,12 @@ abstract class AppLocalizations {
   /// **'View leaderboard'**
   String get viewLeaderboardTooltip;
 
+  /// Tooltip for the app bar action that navigates to the fixture prediction screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict season fixtures'**
+  String get fixturePredictionTooltip;
+
   /// Empty state message when a season has no rounds.
   ///
   /// In en, this message translates to:
@@ -719,6 +725,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every fixture in this round has already kicked off. There is nothing left to predict.'**
   String get predictionNoOpenFixturesMessage;
+
+  /// App bar title for the per-fixture prediction screen (Axiom 4 Amendment).
+  ///
+  /// In en, this message translates to:
+  /// **'Predict Season Fixtures'**
+  String get fixturePredictionTitle;
+
+  /// Shown when a season has no linked fixtures to predict.
+  ///
+  /// In en, this message translates to:
+  /// **'No fixtures are linked to this season yet.'**
+  String get fixturePredictionEmptyMessage;
+
+  /// Success confirmation after submitting a single fixture's prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Your prediction for this fixture was saved.'**
+  String get fixturePredictionSavedMessage;
+
+  /// Per-fixture submit button label on the fixture prediction screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submitFixturePredictionButton;
 
   /// No description provided for @matchesTitle.
   ///

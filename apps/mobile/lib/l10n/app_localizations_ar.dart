@@ -297,6 +297,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get viewLeaderboardTooltip => 'عرض لوحة الصدارة';
 
   @override
+  String get fixturePredictionTooltip => 'توقّع مباريات الموسم';
+
+  @override
   String get seasonRoundsEmpty => 'لا توجد جولات لهذا الموسم بعد.';
 
   @override
@@ -386,6 +389,19 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get predictionNoOpenFixturesMessage =>
       'كل مباريات هذه الجولة بدأت بالفعل. لا يوجد ما يمكن توقّعه الآن.';
+
+  @override
+  String get fixturePredictionTitle => 'توقّع مباريات الموسم';
+
+  @override
+  String get fixturePredictionEmptyMessage =>
+      'لا توجد مباريات مرتبطة بهذا الموسم بعد.';
+
+  @override
+  String get fixturePredictionSavedMessage => 'تم حفظ توقعك لهذه المباراة.';
+
+  @override
+  String get submitFixturePredictionButton => 'إرسال';
 
   @override
   String get matchesTitle => 'المباريات';

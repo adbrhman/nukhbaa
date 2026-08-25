@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../fixture_prediction/fixture_prediction_screen.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
 import 'competition_providers.dart';
 import 'round_fixtures_screen.dart';
@@ -50,6 +51,16 @@ class SeasonRoundsScreen extends ConsumerWidget {
           key: const Key('rounds.title'),
         ),
         actions: <Widget>[
+          IconButton(
+            key: const Key('rounds.predictFixtures'),
+            tooltip: l10n.fixturePredictionTooltip,
+            icon: const Icon(Icons.sports_soccer_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => FixturePredictionScreen(seasonId: seasonId),
+              ),
+            ),
+          ),
           IconButton(
             key: const Key('rounds.viewLeaderboard'),
             tooltip: l10n.viewLeaderboardTooltip,

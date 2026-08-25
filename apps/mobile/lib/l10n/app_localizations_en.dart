@@ -290,6 +290,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewLeaderboardTooltip => 'View leaderboard';
 
   @override
+  String get fixturePredictionTooltip => 'Predict season fixtures';
+
+  @override
   String get seasonRoundsEmpty => 'This season has no rounds yet.';
 
   @override
@@ -380,6 +383,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get predictionNoOpenFixturesMessage =>
       'Every fixture in this round has already kicked off. There is nothing left to predict.';
+
+  @override
+  String get fixturePredictionTitle => 'Predict Season Fixtures';
+
+  @override
+  String get fixturePredictionEmptyMessage =>
+      'No fixtures are linked to this season yet.';
+
+  @override
+  String get fixturePredictionSavedMessage =>
+      'Your prediction for this fixture was saved.';
+
+  @override
+  String get submitFixturePredictionButton => 'Submit';
 
   @override
   String get matchesTitle => 'Matches';
