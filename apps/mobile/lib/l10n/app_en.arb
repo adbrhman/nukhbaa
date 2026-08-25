@@ -337,14 +337,8 @@
   "adminPickKickoffButton": "Pick kickoff time",
   "adminRegisterFixtureButton": "Register fixture",
   "adminCorrectFixtureButton": "Correct fixture",
-  "adminRoundsTab": "Rounds",
   "adminResultsScoringTab": "Results & Scoring",
-  "adminOpenRoundSectionTitle": "Open a new round",
   "adminSeasonIdLabel": "Season ID",
-  "adminSequenceLabel": "Round sequence",
-  "adminPickDeadlineButton": "Pick prediction deadline",
-  "adminOpenRoundButton": "Open round",
-  "adminLockRoundButton": "Lock round",
   "adminLinkFixtureSectionTitle": "Link a fixture to a round",
   "adminRoundIdLabel": "Round ID",
   "adminFixtureIdLabel": "Fixture ID",
@@ -417,17 +411,6 @@
   "adminSelectFixtureLabel": "Select fixture",
   "adminNoFixturesHint": "This round has no fixtures.",
   "adminFixtureIncompleteDataLabel": "Fixture with incomplete data",
-  "adminRoundOptionLabel": "Round {sequence} — {status}",
-  "@adminRoundOptionLabel": {
-    "placeholders": {
-      "sequence": {
-        "type": "int"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "adminAddMatchButton": "Register match and add to round",
   "adminAddMatchSuccess": "Added {home} vs {away} to round {sequence}.",
   "@adminAddMatchSuccess": {
@@ -444,8 +427,6 @@
     }
   },
   "adminSelectRoundFirst": "Select a round first.",
-  "adminManageRoundsSectionTitle": "Manage rounds",
-  "adminExistingRoundsEmpty": "This season has no rounds yet.",
   "adminExistingFixturesSectionTitle": "Fixtures in this round",
   "adminRemoveFixtureTooltip": "Remove this fixture from the round",
   "adminRemoveFixtureConfirmTitle": "Remove fixture?",

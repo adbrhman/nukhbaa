@@ -11,7 +11,6 @@ import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/results_scoring_section.dart';
-import 'screens/sections/round_administration_section.dart';
 import 'screens/sections/user_sanction_section.dart';
 
 /// الغلاف المتجاوب للوحة الأدمن: يعرض قسماً واحداً من [AdminSection] في كل
@@ -34,7 +33,6 @@ class _AdminShellState extends State<AdminShell> {
       AdminSection.users => l10n.adminUsersTab,
       AdminSection.ledger => l10n.adminLedgerLookupTab,
       AdminSection.fixtures => l10n.adminFixturesTab,
-      AdminSection.rounds => l10n.adminRoundsTab,
       AdminSection.resultsScoring => l10n.adminResultsScoringTab,
     };
   }
@@ -45,7 +43,6 @@ class _AdminShellState extends State<AdminShell> {
       AdminSection.users => const UserSanctionSection(),
       AdminSection.ledger => const LedgerLookupSection(),
       AdminSection.fixtures => const FixtureScheduleSection(),
-      AdminSection.rounds => const RoundAdministrationSection(),
       AdminSection.resultsScoring => const ResultsScoringSection(),
     };
   }
