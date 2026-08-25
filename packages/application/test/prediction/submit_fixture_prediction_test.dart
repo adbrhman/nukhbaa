@@ -15,7 +15,7 @@ void main() {
     late FakeFixtureScheduleRepository schedules;
     late SubmitFixturePrediction useCase;
 
-    const seasonId = 'season-1';
+    const seasonId = '33333333-3333-3333-3333-333333333333';
     const fixtureId = '11111111-1111-1111-1111-111111111111';
     const userId = 'user-1';
     const participantId = 'participant-1';
@@ -28,14 +28,14 @@ void main() {
         fixturePredictionRepository: fixturePredictions,
         competitionRepository: competition,
         fixtureScheduleRepository: schedules,
-        idGenerator: FakeIdGenerator(['prediction-1']),
+        idGenerator: FakeIdGenerator(['66666666-6666-6666-6666-666666666666']),
         clock: FixedClock(DateTime.utc(2026, 8, 1, 10)),
       );
 
       fixturePredictions.seedSeasonFixture(
         (SeasonFixture.create(
-                  seasonId: SeasonId(seasonId),
-                  fixture: FixtureRef(fixtureId),
+                  seasonId: const SeasonId(seasonId),
+                  fixture: const FixtureRef(fixtureId),
                   displayOrder: 0,
                 )
                 as Ok<SeasonFixture>)
@@ -43,9 +43,9 @@ void main() {
       );
       competition.seedParticipant(
         Participant.fromStored(
-          id: ParticipantId(participantId),
-          seasonId: SeasonId(seasonId),
-          userId: UserId(userId),
+          id: const ParticipantId(participantId),
+          seasonId: const SeasonId(seasonId),
+          userId: const UserId(userId),
           status: ParticipantStatus.active,
           joinedAt: DateTime.utc(2026),
         ),
@@ -128,7 +128,7 @@ void main() {
     test('rejects a fixture that has already kicked off', () async {
       schedules.seed(
         FixtureSchedule.fromStored(
-          fixture: FixtureRef(fixtureId),
+          fixture: const FixtureRef(fixtureId),
           homeTeam: 'Home FC',
           awayTeam: 'Away FC',
           kickoffAt: DateTime.utc(2026, 8, 1, 9), // before the fixed clock
@@ -154,19 +154,19 @@ void main() {
       const otherFixtureId = '33333333-3333-3333-3333-333333333333';
       fixturePredictions.seedSeasonFixture(
         (SeasonFixture.create(
-                  seasonId: SeasonId(seasonId),
-                  fixture: FixtureRef(otherFixtureId),
+                  seasonId: const SeasonId(seasonId),
+                  fixture: const FixtureRef(otherFixtureId),
                   displayOrder: 1,
                 )
                 as Ok<SeasonFixture>)
             .value,
       );
       fixturePredictions.seedKickoff(
-        FixtureRef(otherFixtureId),
+        const FixtureRef(otherFixtureId),
         DateTime.utc(2026, 8, 1, 12),
       );
       fixturePredictions.seedKickoff(
-        FixtureRef(fixtureId),
+        const FixtureRef(fixtureId),
         DateTime.utc(2026, 8, 1, 20),
       );
       await useCase(

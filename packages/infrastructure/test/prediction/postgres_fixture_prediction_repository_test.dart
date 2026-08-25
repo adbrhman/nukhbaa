@@ -180,7 +180,7 @@ void main() {
     test('findSeasonFixture maps a linked row', () async {
       final repo = PostgresFixturePredictionRepository(
         _FakeConnection([
-          Result.ok([
+          const Result.ok([
             {
               'season_id': _seasonId,
               'fixture_id': _fixtureA,
@@ -200,7 +200,7 @@ void main() {
     test('countDoublesOnDay maps the count column', () async {
       final repo = PostgresFixturePredictionRepository(
         _FakeConnection([
-          Result.ok([
+          const Result.ok([
             {'n': 2},
           ]),
         ]),

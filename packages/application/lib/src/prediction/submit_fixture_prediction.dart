@@ -170,7 +170,7 @@ final class SubmitFixturePrediction {
       }
       final existingDoubles = (countResult as Ok<int>).value;
       if (!DailyDoublePolicy.allowsAnotherDouble(existingDoubles)) {
-        return Result.err(
+        return const Result.err(
           AppError.invariant(
             'prediction.daily_double_exceeded',
             'Only one fixture may be marked as your double per day',

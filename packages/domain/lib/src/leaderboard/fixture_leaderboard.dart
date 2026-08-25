@@ -1,5 +1,5 @@
-import 'package:domain/src/competition/season_id.dart';
 import 'package:domain/src/competition/participant_id.dart';
+import 'package:domain/src/competition/season_id.dart';
 import 'package:domain/src/leaderboard/fixture_leaderboard_entry.dart';
 import 'package:domain/src/scoring/participant_fixture_score.dart';
 import 'package:shared/shared.dart';

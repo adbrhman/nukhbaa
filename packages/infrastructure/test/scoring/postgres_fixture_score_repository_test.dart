@@ -1,4 +1,3 @@
-import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:infrastructure/src/scoring/postgres_fixture_score_repository.dart';
@@ -104,7 +103,7 @@ void main() {
     test('listByFixture maps every row, ordered as returned', () async {
       final repo = PostgresFixtureScoreRepository(
         _FakeConnection([
-          Result.ok([
+          const Result.ok([
             {
               'fixture_id': _fixtureA,
               'participant_id': _participantA,
@@ -143,7 +142,7 @@ void main() {
     test('an unparseable grade surfaces as row_corrupt', () async {
       final repo = PostgresFixtureScoreRepository(
         _FakeConnection([
-          Result.ok([
+          const Result.ok([
             {
               'fixture_id': _fixtureA,
               'participant_id': _participantA,

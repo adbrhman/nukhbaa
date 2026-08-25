@@ -62,8 +62,8 @@ void main() {
       () async {
         seedPrediction(home: 2, away: 1);
         results.seed(
-          FixtureResult.fromStored(
-            fixture: const FixtureRef(fixtureId),
+          const FixtureResult.fromStored(
+            fixture: FixtureRef(fixtureId),
             homeGoals: 2,
             awayGoals: 1,
           ),

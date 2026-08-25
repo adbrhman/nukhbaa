@@ -18,7 +18,7 @@ ParticipantFixtureScore _score({
 }
 
 void main() {
-  final seasonId = SeasonId('11111111-1111-1111-1111-111111111111');
+  final seasonId = const SeasonId('11111111-1111-1111-1111-111111111111');
 
   group('FixtureLeaderboard.rank', () {
     test(

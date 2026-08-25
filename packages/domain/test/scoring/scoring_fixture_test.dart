@@ -63,8 +63,8 @@ void main() {
     });
 
     test('grades exact scoreline, doubled', () {
-      final result = FixtureResult.fromStored(
-        fixture: const FixtureRef('11111111-1111-1111-1111-111111111111'),
+      final result = const FixtureResult.fromStored(
+        fixture: FixtureRef('11111111-1111-1111-1111-111111111111'),
         homeGoals: 2,
         awayGoals: 1,
       );
@@ -83,8 +83,8 @@ void main() {
     });
 
     test('grades correct outcome without exact scoreline', () {
-      final result = FixtureResult.fromStored(
-        fixture: const FixtureRef('11111111-1111-1111-1111-111111111111'),
+      final result = const FixtureResult.fromStored(
+        fixture: FixtureRef('11111111-1111-1111-1111-111111111111'),
         homeGoals: 3,
         awayGoals: 1,
       );
@@ -103,8 +103,8 @@ void main() {
     });
 
     test('rejects a result for a different fixture', () {
-      final result = FixtureResult.fromStored(
-        fixture: const FixtureRef('22222222-2222-2222-2222-222222222222'),
+      final result = const FixtureResult.fromStored(
+        fixture: FixtureRef('22222222-2222-2222-2222-222222222222'),
         homeGoals: 1,
         awayGoals: 0,
       );

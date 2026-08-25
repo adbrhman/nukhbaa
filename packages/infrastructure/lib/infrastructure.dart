@@ -18,14 +18,13 @@ export 'src/identity/auth_config.dart';
 export 'src/identity/jwks_client.dart';
 export 'src/identity/postgres_user_directory.dart';
 export 'src/identity/supabase_auth_client.dart';
-
 /// (postgres). Nothing depends on this package except the composition root
 /// The infrastructure layer: concrete adapters implementing application ports.
 export 'src/identity/supabase_auth_gateway.dart';
 export 'src/identity/supabase_jwt_verifier.dart';
 export 'src/leaderboard/postgres_leaderboard_repository.dart';
-export 'src/ledger/postgres_ledger_repository.dart';
 export 'src/ledger/postgres_fixture_ledger_repository.dart';
+export 'src/ledger/postgres_ledger_repository.dart';
 export 'src/ledger/postgres_participant_reader.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
@@ -36,5 +35,5 @@ export 'src/scoring/postgres_fixture_result_repository.dart';
 export 'src/scoring/postgres_fixture_score_repository.dart';
 export 'src/scoring/postgres_score_repository.dart';
 export 'src/social/postgres_activity_feed_reader.dart';
-export 'src/social/postgres_reaction_repository.dart';
 export 'src/social/postgres_fixture_reaction_repository.dart';
+export 'src/social/postgres_reaction_repository.dart';

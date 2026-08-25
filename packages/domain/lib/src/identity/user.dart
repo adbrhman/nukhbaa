@@ -72,7 +72,7 @@ final class User {
       );
     }
     if (trimmed.length > maxDisplayNameLength) {
-      return Result.err(
+      return const Result.err(
         AppError.validation(
           'identity.display_name_too_long',
           'الاسم طويل جدًا (الحد الأقصى $maxDisplayNameLength حرفًا)',

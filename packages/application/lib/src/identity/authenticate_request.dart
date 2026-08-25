@@ -1,9 +1,6 @@
+import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
-
-import 'package:application/application.dart';
-import 'ports/token_verifier.dart';
-import 'ports/user_directory.dart';
 
 /// Verifies a bearer token and reconciles the resulting principal against the
 /// platform's canonical identity.users row.
