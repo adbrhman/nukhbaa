@@ -1,63 +1,24 @@
-# SESSION STATE — Phase 7 (production readiness + ELITE OBSIDIAN)
+# نقطة توقف — Phase 7.8 و7.9 مكتملتان (commit 982ea8f)
 
-**آخر تحديث:** 2026-08-25.
+## آخر ما أُنجز
+- **7.8**: حذف كامل لـ RoundOpenController/RoundLockController من الموبايل (admin_providers.dart, admin_sections.dart, admin_shell.dart, round_administration_section.dart محذوف بالكامل)، حذف openRound()/lockRound() من competition_api.dart، حذف OpenRoundRequestDto من contracts، تنظيف مفاتيح ARB المرتبطة. Commit: 566eedd
+- **7.9**: تحقق من get_round_leaderboard — الخادم (GetRoundLeaderboard + route) لا يزال حيًا تقنيًا لكن بلا أي مستهلك من الموبايل (كود ميت مؤكَّد). حُذف roundLeaderboard provider + مفاتيح ARB الثلاث من الموبايل فقط، مع استرجاع خطأ عرضي: adminRoundOptionLabel كانت قد حُذفت خطأً في 7.8 رغم استخدامها الحي في admin_pickers.dart (منتقي الجولة عبر fixture_schedule_section.dart / results_scoring_section.dart) — تم استرجاعها. حُذف أيضًا سطر KPI يتيم (adminRoundsTab) من admin_hub_screen.dart. Commit: 982ea8f
 
-## ما تم إنجازه فعليًا ومدفوعًا
-- Phase 6 (FixtureLeaderboard): كامل، backend (5ada79e) + mobile (e76b75d).
-- Checkpoint system نفسه: مُنشأ (e49be2d).
-- ELITE OBSIDIAN theme (dark + light): app_colors.dart + app_colors_light.dart
-  محدَّثان بقيم النظام الجديد. تعديل قيم فقط، لا تغيير بنيوي — كل الشاشات
-  تقرأ عبر AppColors/AppTokens فلا حاجة لتعديل أي شاشة لهذه الدفعة.
-  flutter analyze نظيف بعد dark. flutter test الكامل + analyze النهائي
-  بعد إضافة light: **تحقق من نتيجته الفعلية في بداية الجلسة القادمة —
-  لم يُؤكَّد بعد داخل هذه الجلسة.**
-- Commit المتوقع لهذه الدفعة: "chore(theme): apply ELITE OBSIDIAN palette"
-  — تحقق فعليًا عبر git log أنه تم فعلاً قبل افتراض ذلك.
+## دروس منهجية مهمة لهذه الجلسة
+- استخدم `flutter pub run build_runner build` وليس `dart run build_runner build` (يفشل بسبب SDK resolution).
+- بعد أي حذف من ARB يجب تشغيل `flutter gen-l10n` ثم `build_runner` فورًا — تأخير ذلك يخفي أخطاء حقيقية عن flutter analyze لأنه يعتمد الملفات المولَّدة القديمة.
+- عند حذف مفتاح من admin_pickers.dart أو أي ويدجت مشترك، تحقق أولاً من مستهلكيه الفعليين (grep) قبل الحذف — ليس كل ما "يبدو Round-legacy" كود ميت فعليًا.
+- ملفات *.g.dart مستثناة من git (.gitignore) — طبيعي ألا تظهر في git status.
 
-## القرار المعماري النهائي (Phase 7)
-Fixture/FixturePrediction = المصدر الوحيد لدورة حياة التنبؤ/التسجيل/القفل/
-Ledger/Reactions/Notifications. Round يتحول لمفهوم تنظيمي فقط (matchday/
-تجميع/فلترة/admin) — لا يُحذف قبل إثبات صفر استخدام فعلي، ملفًا ملفًا.
+## الاختبارات
+- flutter analyze: نظيف (No issues found!)
+- flutter test: 107/107 ناجح
 
-## Phase 7.1 (تحليل) — النتيجة الحاسمة
-Backend لـ FixturePrediction **مكتمل 100%**: migrations 0019/0020، route
-`apps/server/routes/seasons/[id]/fixtures/[fixtureId]/prediction/index.dart`
-(body: home_goals/away_goals/is_double → FixturePredictionView)،
-composition_root مربوط (submitFixturePrediction/scoreFixture)، DTOs جاهزة
-(FixturePredictionDto, FixturePredictionCommandDto, ParticipantFixtureScoreDto,
-FixtureScoresDto — كل الحقول موثقة في هذا الملف).
+## الخطوة التالية
+- Phase 7.10: Legacy Round cleanup الكامل (بعد إثبات صفر استخدام إنتاجي) — يشمل حذف routes/rounds/**, application use-cases القديمة، domain: round.dart وما شابه (راجع القسم 12 من خريطة الاعتماديات لكل القائمة).
+- ملاحظة: admin_pickers.dart (منتقي Round) و fixture_schedule_section.dart لا يزالان مرتبطين إنتاجيًا — لا يُحذفان إلا ضمن 7.4/7.10 بعد إعادة تصميم ربط Fixture بالموسم مباشرة.
 
-**الفجوة الكاملة محصورة في:**
-- packages/api_client/lib/src/prediction_api.dart — صفر methods لـ fixture
-  prediction (فقط Round-based: submitPrediction/getMyPrediction/
-  listRoundPredictions/myPredictions).
-- apps/mobile/lib/features — لا يوجد مجلد fixture_prediction إطلاقًا.
-
-## سلسلة التنقل الحية المؤكدة (لا تُكسر)
-competition_seasons_screen → SeasonRoundsScreen → RoundFixturesScreen →
-PredictionScreen (Round-based بالكامل، 562+634 سطر).
-matches_feed_screen.dart (386 سطر) يعرض RoundFixtureCardDto من
-GET /feed/matches — أقرب نقطة دخول طبيعية لإضافة زر "توقّع" الجديد لاحقًا.
-
-## بنية الثيم الحالية (مرجع لأي عمل UI قادم)
-كل شيء مركزي وسليم: AppColors/AppColorsLight (قيم فقط) → AppTokens
-(ThemeExtension، dark/light) → AppTheme._build (يبني ThemeData كاملاً) →
-ThemeController (Riverpod Notifier + SecureStorage). AppRadius وAppTypography
-منفصلان (font الحالي: IBMPlexSansArabic — Tajawal لم يُستبدل بعد، لم يُطلب
-صراحة كأولوية). Color(0xFF..) مباشر خارج theme/design: ملفان فقط
-(team_branding.dart, match_card.dart) — نطاق استبدال صغير لاحقًا.
-
-## الخطوة التالية الفورية (ابدأ هنا في الجلسة القادمة)
-1. تحقق من نتيجة flutter analyze/test بعد app_colors_light.dart (لم تُؤكَّد).
-2. إن نجحت: تأكد أن commit "ELITE OBSIDIAN palette" و push تم فعلاً
-   (git log --oneline -5).
-3. انتقل لبقية 7.2: تصميم api_client method (submitFixturePrediction) على
-   نمط prediction_api.dart الحالي، ثم شاشة FixturePrediction في mobile
-   (استخدم matches_feed كنقطة انطلاق للتصفح، أضف زر توقّع).
-4. طبّق ELITE OBSIDIAN على الشاشة الجديدة مباشرة بما أنها جديدة بالكامل
-   (لا حاجة لإعادة تصميم شاشة قديمة أولاً).
-5. لا تلمس Round/RoundFixture بالحذف حتى اكتمال 7.2-7.6.
-
-## أين المشروع
-الجذر: /home/dev/nukhbaa-backup-1787537565 (GitHub adbrhman/nukhbaa, main).
-proot-distro login ubuntu ثم su - dev.
+## القرارات المؤجَّلة (لم تُمس)
+- score_round.dart / RulesetSnapshot المجمَّد — خارج النطاق، بند تصميم منفصل.
+- score_fixture doubling bug — بند إصلاح مستقل يحجب Phase 7.7.
+- notification_kind_test.dart — تحديث بسيط لعدد enum values (4 بدل 3).
