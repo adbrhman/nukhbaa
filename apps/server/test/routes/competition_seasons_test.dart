@@ -18,8 +18,7 @@ void main() {
       repo = InMemoryCompetitionRepository();
       if (withCompetition) {
         repo.competitions[kCompetitionId] = Competition.fromStored(
-          id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
-              .value,
+          id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value,
           name: 'Comp',
           format: FormatType.footballScoreline,
           visibility: CompetitionVisibility.public,
@@ -33,11 +32,11 @@ void main() {
       );
     }
 
-    test('starts a season under the competition and returns 201', () async {
+    test('starts the calendar-month season and returns 201', () async {
       final context = wireContext(
         root: rootWith(),
         principal: adminPrincipal(),
-        body: const {'label': '2026/27'},
+        body: const {'year': 2026, 'month': 8},
       );
 
       final response = await route.onRequest(context, kCompetitionId);
@@ -46,7 +45,9 @@ void main() {
       final body = await decodeBody(response);
       expect(body['id'], kSeasonId);
       expect(body['competition_id'], kCompetitionId);
-      expect(body['label'], '2026/27');
+      expect(body['label'], '08/2026');
+      expect(body['start_at'], '2026-08-01T00:00:00.000Z');
+      expect(body['end_at'], '2026-09-01T00:00:00.000Z');
       expect(repo.seasons[kSeasonId], isNotNull);
     });
 
@@ -54,7 +55,7 @@ void main() {
       final context = wireContext(
         root: rootWith(withCompetition: false),
         principal: adminPrincipal(),
-        body: const {'label': '2026/27'},
+        body: const {'year': 2026, 'month': 8},
       );
 
       final response = await route.onRequest(context, kCompetitionId);
@@ -68,7 +69,7 @@ void main() {
       final context = wireContext(
         root: rootWith(),
         principal: userPrincipal(),
-        body: const {'label': '2026/27'},
+        body: const {'year': 2026, 'month': 8},
       );
 
       final response = await route.onRequest(context, kCompetitionId);
@@ -76,11 +77,35 @@ void main() {
       expect(response.statusCode, HttpStatus.unauthorized);
     });
 
-    test('a missing label field is 400', () async {
+    test('a missing year field is 400', () async {
       final context = wireContext(
         root: rootWith(),
         principal: adminPrincipal(),
-        body: const <String, Object?>{},
+        body: const {'month': 8},
+      );
+
+      final response = await route.onRequest(context, kCompetitionId);
+
+      expect(response.statusCode, HttpStatus.badRequest);
+    });
+
+    test('a missing month field is 400', () async {
+      final context = wireContext(
+        root: rootWith(),
+        principal: adminPrincipal(),
+        body: const {'year': 2026},
+      );
+
+      final response = await route.onRequest(context, kCompetitionId);
+
+      expect(response.statusCode, HttpStatus.badRequest);
+    });
+
+    test('an out-of-range month is 400', () async {
+      final context = wireContext(
+        root: rootWith(),
+        principal: adminPrincipal(),
+        body: const {'year': 2026, 'month': 13},
       );
 
       final response = await route.onRequest(context, kCompetitionId);

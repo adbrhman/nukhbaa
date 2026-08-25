@@ -42,6 +42,8 @@ void main() {
         id: (SeasonId.tryParse(id) as Ok<SeasonId>).value,
         competitionId: competitionId,
         label: label,
+        startAt: DateTime.utc(2026, 8, 1),
+        endAt: DateTime.utc(2026, 9, 1),
       );
 
   /// The exact `football_scoreline` payload the production
@@ -107,7 +109,7 @@ void main() {
         expect(items[0]['label'], '2025/26');
         expect(items[1]['label'], '2026/27');
         // Shape is the versioned SeasonDto.
-        expect(items[0]['schema_version'], 1);
+        expect(items[0]['schema_version'], 2);
         expect(items[0]['id'], 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
         expect(items[0]['competition_id'], kCompetitionId);
       },

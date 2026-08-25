@@ -5,19 +5,26 @@ import 'package:test/test.dart';
 const _seasonId = '11111111-1111-1111-1111-111111111111';
 const _competitionId = '22222222-2222-2222-2222-222222222222';
 
+final _start = DateTime.utc(2026, 8, 1);
+final _end = DateTime.utc(2026, 9, 1);
+
 void main() {
   group('CompetitionSeason.create', () {
     test('creates a valid season with a trimmed label', () {
       final result = CompetitionSeason.create(
         id: const SeasonId(_seasonId),
         competitionId: const CompetitionId(_competitionId),
-        label: '  2026/27  ',
+        label: '  08/2026  ',
+        startAt: _start,
+        endAt: _end,
       );
 
       final season = (result as Ok<CompetitionSeason>).value;
       expect(season.id, const SeasonId(_seasonId));
       expect(season.competitionId, const CompetitionId(_competitionId));
-      expect(season.label, '2026/27'); // trimmed
+      expect(season.label, '08/2026');
+      expect(season.startAt, _start);
+      expect(season.endAt, _end);
     });
 
     test('rejects an empty label', () {
@@ -25,8 +32,9 @@ void main() {
         id: const SeasonId(_seasonId),
         competitionId: const CompetitionId(_competitionId),
         label: '   ',
+        startAt: _start,
+        endAt: _end,
       );
-
       final error = (result as Err<CompetitionSeason>).error;
       expect(error.kind, ErrorKind.validation);
       expect(error.code, 'competition.season_label_empty');
@@ -37,8 +45,9 @@ void main() {
         id: const SeasonId(_seasonId),
         competitionId: const CompetitionId(_competitionId),
         label: 'x' * 61,
+        startAt: _start,
+        endAt: _end,
       );
-
       final error = (result as Err<CompetitionSeason>).error;
       expect(error.kind, ErrorKind.validation);
       expect(error.code, 'competition.season_label_too_long');
@@ -49,8 +58,34 @@ void main() {
         id: const SeasonId(_seasonId),
         competitionId: const CompetitionId(_competitionId),
         label: 'x' * 60,
+        startAt: _start,
+        endAt: _end,
       );
       expect(result.isOk, isTrue);
+    });
+
+    test('rejects a non-UTC startAt', () {
+      final result = CompetitionSeason.create(
+        id: const SeasonId(_seasonId),
+        competitionId: const CompetitionId(_competitionId),
+        label: '08/2026',
+        startAt: DateTime(2026, 8, 1),
+        endAt: _end,
+      );
+      final error = (result as Err<CompetitionSeason>).error;
+      expect(error.code, 'competition.season_window_not_utc');
+    });
+
+    test('rejects endAt not after startAt', () {
+      final result = CompetitionSeason.create(
+        id: const SeasonId(_seasonId),
+        competitionId: const CompetitionId(_competitionId),
+        label: '08/2026',
+        startAt: _start,
+        endAt: _start,
+      );
+      final error = (result as Err<CompetitionSeason>).error;
+      expect(error.code, 'competition.season_window_invalid');
     });
   });
 
@@ -60,7 +95,9 @@ void main() {
           (CompetitionSeason.create(
                     id: const SeasonId(_seasonId),
                     competitionId: const CompetitionId(_competitionId),
-                    label: '2026/27',
+                    label: '08/2026',
+                    startAt: _start,
+                    endAt: _end,
                   )
                   as Ok<CompetitionSeason>)
               .value;
@@ -74,6 +111,8 @@ void main() {
                     id: const SeasonId(_seasonId),
                     competitionId: const CompetitionId(_competitionId),
                     label: 'x',
+                    startAt: _start,
+                    endAt: _end,
                   )
                   as Ok<CompetitionSeason>)
               .value;
@@ -84,6 +123,8 @@ void main() {
                       '33333333-3333-3333-3333-333333333333',
                     ),
                     label: 'x',
+                    startAt: _start,
+                    endAt: _end,
                   )
                   as Ok<CompetitionSeason>)
               .value;

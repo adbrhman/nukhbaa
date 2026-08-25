@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
@@ -48,11 +47,14 @@ Future<Response> _list(RequestContext context, String id) async {
   };
 }
 
-/// POST /competitions/{id}/seasons — start a season (unchanged command path;
-/// API ADR §2: command intent `StartSeason`). Admin-only (use-case layer).
+/// POST /competitions/{id}/seasons -- start the calendar-month season
+/// (command intent StartSeason, Phase 7.2 -- calendar-driven monthly
+/// competition). Admin-only (use-case layer).
 ///
-/// The competition id comes from the path; the season [label] from the body
-/// `{ "label" }`. Returns the created [SeasonDto] (`201`) or the error envelope.
+/// The competition id comes from the path; the target calendar month from
+/// the body { "year", "month" } (both required integers; month is 1-12).
+/// The server computes start_at/end_at and the label itself. Returns the
+/// created [SeasonDto] (201) or the error envelope.
 Future<Response> _create(RequestContext context, String id) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
@@ -63,23 +65,22 @@ Future<Response> _create(RequestContext context, String id) async {
   }
   final body = (bodyResult as Ok<Map<String, Object?>>).value;
 
-  final label = requireString(body, 'label');
-  if (label is Err<String>) return errorResponse(label.error);
+  final year = requireInt(body, 'year');
+  if (year is Err<int>) return errorResponse(year.error);
+  final month = requireInt(body, 'month');
+  if (month is Err<int>) return errorResponse(month.error);
 
   final result = await root.startSeason(
     principal: principal,
     competitionId: id,
-    label: (label as Ok<String>).value,
+    year: (year as Ok<int>).value,
+    month: (month as Ok<int>).value,
   );
 
   return switch (result) {
     Ok<CompetitionSeason>(:final value) => Response.json(
       statusCode: HttpStatus.created,
-      body: SeasonDto(
-        id: value.id.value,
-        competitionId: value.competitionId.value,
-        label: value.label,
-      ).toJson(),
+      body: seasonToDto(value).toJson(),
     ),
     Err<CompetitionSeason>(:final error) => errorResponse(error),
   };

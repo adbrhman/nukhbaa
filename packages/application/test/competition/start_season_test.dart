@@ -32,20 +32,37 @@ void main() {
     );
   });
 
-  test('admin starts a season under an existing competition', () async {
+  test('admin starts the calendar-month season', () async {
     repo.seedCompetition(_competition());
 
     final result = await useCase(
       principal: adminPrincipal(_adminId),
       competitionId: _competitionId,
-      label: '2026/27',
+      year: 2026,
+      month: 8,
     );
 
     final season = (result as Ok<CompetitionSeason>).value;
     expect(season.id, const SeasonId(_newSeasonId));
     expect(season.competitionId, const CompetitionId(_competitionId));
-    expect(season.label, '2026/27');
+    expect(season.label, '08/2026');
+    expect(season.startAt, DateTime.utc(2026, 8, 1));
+    expect(season.endAt, DateTime.utc(2026, 9, 1));
     expect((await repo.findSeason(const SeasonId(_newSeasonId))).isOk, isTrue);
+  });
+
+  test('rolls over correctly for December', () async {
+    repo.seedCompetition(_competition());
+    final result = await useCase(
+      principal: adminPrincipal(_adminId),
+      competitionId: _competitionId,
+      year: 2026,
+      month: 12,
+    );
+    final season = (result as Ok<CompetitionSeason>).value;
+    expect(season.startAt, DateTime.utc(2026, 12, 1));
+    expect(season.endAt, DateTime.utc(2027, 1, 1));
+    expect(season.label, '12/2026');
   });
 
   test('non-admin is rejected', () async {
@@ -53,51 +70,53 @@ void main() {
     final result = await useCase(
       principal: userPrincipal(_adminId),
       competitionId: _competitionId,
-      label: '2026/27',
+      year: 2026,
+      month: 8,
     );
-    expect(
-      (result as Err<CompetitionSeason>).error.kind,
-      ErrorKind.authorization,
-    );
+    expect((result as Err<CompetitionSeason>).error.kind, ErrorKind.authorization);
   });
 
   test('a malformed competition id is a validation error', () async {
     final result = await useCase(
       principal: adminPrincipal(_adminId),
       competitionId: 'not-a-uuid',
-      label: '2026/27',
+      year: 2026,
+      month: 8,
     );
-    expect(
-      (result as Err<CompetitionSeason>).error.code,
-      'competition.competition_id_malformed',
-    );
+    expect((result as Err<CompetitionSeason>).error.code, 'competition.competition_id_malformed');
   });
 
-  test(
-    'a missing competition is an invariant (not_found) precondition failure',
-    () async {
-      // No competition seeded.
-      final result = await useCase(
-        principal: adminPrincipal(_adminId),
-        competitionId: _competitionId,
-        label: '2026/27',
-      );
-      final error = (result as Err<CompetitionSeason>).error;
-      expect(error.kind, ErrorKind.invariant);
-      expect(error.code, 'competition.not_found');
-    },
-  );
+  test('a missing competition is invariant not_found', () async {
+    final result = await useCase(
+      principal: adminPrincipal(_adminId),
+      competitionId: _competitionId,
+      year: 2026,
+      month: 8,
+    );
+    final error = (result as Err<CompetitionSeason>).error;
+    expect(error.kind, ErrorKind.invariant);
+    expect(error.code, 'competition.not_found');
+  });
 
-  test('an empty label is rejected by the domain', () async {
+  test('an out-of-range month is rejected', () async {
     repo.seedCompetition(_competition());
     final result = await useCase(
       principal: adminPrincipal(_adminId),
       competitionId: _competitionId,
-      label: '  ',
+      year: 2026,
+      month: 13,
     );
-    expect(
-      (result as Err<CompetitionSeason>).error.code,
-      'competition.season_label_empty',
+    expect((result as Err<CompetitionSeason>).error.code, 'competition.season_month_invalid');
+  });
+
+  test('an out-of-range year is rejected', () async {
+    repo.seedCompetition(_competition());
+    final result = await useCase(
+      principal: adminPrincipal(_adminId),
+      competitionId: _competitionId,
+      year: 1999,
+      month: 8,
     );
+    expect((result as Err<CompetitionSeason>).error.code, 'competition.season_year_invalid');
   });
 }

@@ -45,6 +45,8 @@ SeasonDto seasonToDto(CompetitionSeason season) {
     id: season.id.value,
     competitionId: season.competitionId.value,
     label: season.label,
+    startAt: season.startAt,
+    endAt: season.endAt,
   );
 }
 

@@ -258,6 +258,8 @@ void main() {
             'id': _seasonId,
             'competition_id': _competitionId,
             'label': '2026/27',
+            'start_at': DateTime.utc(2026, 8, 1),
+            'end_at': DateTime.utc(2027, 5, 31),
           },
         ]),
       );

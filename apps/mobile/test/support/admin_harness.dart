@@ -247,8 +247,10 @@ const CompetitionDto oneCompetition = CompetitionDto(
 );
 
 /// One season under [oneCompetition].
-const SeasonDto oneSeason = SeasonDto(
+final SeasonDto oneSeason = SeasonDto(
   id: 'season-1',
   competitionId: 'comp-1',
-  label: '2026/27',
+  label: '08/2026',
+  startAt: DateTime.utc(2026, 8, 1),
+  endAt: DateTime.utc(2026, 9, 1),
 );

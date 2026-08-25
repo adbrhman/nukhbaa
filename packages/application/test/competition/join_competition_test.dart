@@ -18,6 +18,8 @@ CompetitionSeason _season() =>
               id: const SeasonId(_seasonId),
               competitionId: const CompetitionId(_competitionId),
               label: '2026/27',
+              startAt: DateTime.utc(2026, 8, 1),
+              endAt: DateTime.utc(2026, 9, 1),
             )
             as Ok<CompetitionSeason>)
         .value;

@@ -78,21 +78,26 @@ final class SeasonDto {
     required this.id,
     required this.competitionId,
     required this.label,
+    required this.startAt,
+    required this.endAt,
     this.schemaVersion = currentSchemaVersion,
   });
 
-  /// Deserializes from a JSON map.
+  /// Deserializes from a JSON map. start_at/end_at are new in schema
+  /// version 2 (Phase 7.2 -- the calendar-driven monthly season).
   factory SeasonDto.fromJson(Map<String, Object?> json) {
     return SeasonDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       id: json['id']! as String,
       competitionId: json['competition_id']! as String,
       label: json['label']! as String,
+      startAt: DateTime.parse(json['start_at']! as String),
+      endAt: DateTime.parse(json['end_at']! as String),
     );
   }
 
   /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   /// The season id (UUID string).
   final String id;
@@ -100,8 +105,14 @@ final class SeasonDto {
   /// The owning competition id (UUID string).
   final String competitionId;
 
-  /// The display label (e.g. "2026/27").
+  /// The display label (e.g. "08/2026").
   final String label;
+
+  /// The UTC instant the season's calendar window opens (inclusive).
+  final DateTime startAt;
+
+  /// The UTC instant the season's calendar window closes (exclusive).
+  final DateTime endAt;
 
   /// The schema version of this payload.
   final int schemaVersion;
@@ -112,6 +123,8 @@ final class SeasonDto {
     'id': id,
     'competition_id': competitionId,
     'label': label,
+    'start_at': startAt.toUtc().toIso8601String(),
+    'end_at': endAt.toUtc().toIso8601String(),
   };
 
   @override
@@ -120,10 +133,13 @@ final class SeasonDto {
       other.id == id &&
       other.competitionId == competitionId &&
       other.label == label &&
+      other.startAt == startAt &&
+      other.endAt == endAt &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(id, competitionId, label, schemaVersion);
+  int get hashCode =>
+      Object.hash(id, competitionId, label, startAt, endAt, schemaVersion);
 }
 
 /// The wire shape of a round (read projection).

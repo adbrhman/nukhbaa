@@ -40,10 +40,12 @@ void main() {
 
   group('SeasonDto', () {
     test('round-trips through JSON', () {
-      const dto = SeasonDto(
+      final dto = SeasonDto(
         id: '22222222-2222-2222-2222-222222222222',
         competitionId: '11111111-1111-1111-1111-111111111111',
-        label: '2026/27',
+        label: '08/2026',
+        startAt: DateTime.utc(2026, 8, 1),
+        endAt: DateTime.utc(2026, 9, 1),
       );
       final decoded = SeasonDto.fromJson(dto.toJson());
       expect(decoded, dto);

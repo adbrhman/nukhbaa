@@ -38,6 +38,8 @@ CompetitionSeason _season(String id, String competitionId) =>
               id: SeasonId(id),
               competitionId: CompetitionId(competitionId),
               label: '2026/27',
+              startAt: DateTime.utc(2026, 8, 1),
+              endAt: DateTime.utc(2026, 9, 1),
             )
             as Ok<CompetitionSeason>)
         .value;

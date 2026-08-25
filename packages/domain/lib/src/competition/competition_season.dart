@@ -2,13 +2,12 @@ import 'package:domain/src/competition/competition_id.dart';
 import 'package:domain/src/competition/season_id.dart';
 import 'package:shared/shared.dart';
 
-/// A season of a [Competition] (Database ADR, Section 3: `Competition` →
-/// `CompetitionSeason` → `Round`; a season belongs to exactly one competition).
+/// A season of a [Competition] (Database ADR, Section 3: Competition ->
+/// CompetitionSeason -> Round; a season belongs to exactly one competition).
 ///
-/// A season is the scope a `Participant` joins (Database ADR, Section 1:
-/// Participant is keyed on the season) and the partition key for the large
-/// tables (predictions, ledger — Database ADR, Section: "partitionable by
-/// season"). It carries a human [label] (e.g. "2026/27") for display.
+/// Phase 7.2: the competition model is calendar-driven and monthly -- a
+/// season is a calendar-bounded window ([startAt]/[endAt]), not a
+/// Round-sequenced concept.
 ///
 /// Pure and immutable; value-comparable.
 final class CompetitionSeason {
@@ -16,6 +15,8 @@ final class CompetitionSeason {
     required this.id,
     required this.competitionId,
     required this.label,
+    required this.startAt,
+    required this.endAt,
   });
 
   /// Rehydrates a season from already-trusted stored fields (infrastructure
@@ -24,14 +25,19 @@ final class CompetitionSeason {
     required this.id,
     required this.competitionId,
     required this.label,
+    required this.startAt,
+    required this.endAt,
   });
 
   /// Creates a new season from validated inputs. [label] is trimmed and
-  /// length-checked (1–60 chars) so an empty or oversized label is rejected.
+  /// length-checked (1-60 chars). [startAt]/[endAt] must both be UTC
+  /// instants with endAt strictly after startAt.
   static Result<CompetitionSeason> create({
     required SeasonId id,
     required CompetitionId competitionId,
     required String label,
+    required DateTime startAt,
+    required DateTime endAt,
   }) {
     final trimmed = label.trim();
     if (trimmed.isEmpty) {
@@ -50,35 +56,55 @@ final class CompetitionSeason {
         ),
       );
     }
+    if (!startAt.isUtc || !endAt.isUtc) {
+      return const Result.err(
+        AppError.validation(
+          'competition.season_window_not_utc',
+          'Season startAt/endAt must be UTC instants',
+        ),
+      );
+    }
+    if (!endAt.isAfter(startAt)) {
+      return const Result.err(
+        AppError.validation(
+          'competition.season_window_invalid',
+          'Season endAt must be after startAt',
+        ),
+      );
+    }
     return Result.ok(
-      CompetitionSeason._(id: id, competitionId: competitionId, label: trimmed),
+      CompetitionSeason._(
+        id: id,
+        competitionId: competitionId,
+        label: trimmed,
+        startAt: startAt,
+        endAt: endAt,
+      ),
     );
   }
 
   static const int _maxLabelLength = 60;
 
-  /// The season identity.
   final SeasonId id;
-
-  /// The owning competition. A season belongs to exactly one competition
-  /// (Database ADR, Section 3).
   final CompetitionId competitionId;
-
-  /// The display label for the season (trimmed, 1–60 chars).
   final String label;
+  final DateTime startAt;
+  final DateTime endAt;
 
   @override
   bool operator ==(Object other) =>
       other is CompetitionSeason &&
       other.id == id &&
       other.competitionId == competitionId &&
-      other.label == label;
+      other.label == label &&
+      other.startAt == startAt &&
+      other.endAt == endAt;
 
   @override
-  int get hashCode => Object.hash(id, competitionId, label);
+  int get hashCode => Object.hash(id, competitionId, label, startAt, endAt);
 
   @override
   String toString() =>
       'CompetitionSeason(${id.value}, competition: ${competitionId.value}, '
-      '"$label")';
+      '"$label", $startAt - $endAt)';
 }

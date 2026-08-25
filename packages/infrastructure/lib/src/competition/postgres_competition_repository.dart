@@ -164,8 +164,8 @@ ORDER BY name ASC, id ASC
   // --------------------------------------------------------------------------
 
   static const String _insertSeasonSql = '''
-INSERT INTO competition.seasons (id, competition_id, label)
-VALUES (@id, @competition_id, @label)
+INSERT INTO competition.seasons (id, competition_id, label, start_at, end_at)
+VALUES (@id, @competition_id, @label, @start_at, @end_at)
 ''';
 
   @override
@@ -176,6 +176,8 @@ VALUES (@id, @competition_id, @label)
         'id': season.id.value,
         'competition_id': season.competitionId.value,
         'label': season.label,
+        'start_at': season.startAt,
+        'end_at': season.endAt,
       },
     );
     return _asVoid(
@@ -197,7 +199,7 @@ VALUES (@id, @competition_id, @label)
   }
 
   static const String _selectSeasonSql = '''
-SELECT id, competition_id, label
+SELECT id, competition_id, label, start_at, end_at
 FROM competition.seasons
 WHERE id = @id
 ''';
@@ -229,7 +231,7 @@ WHERE id = @id
   // simply returns no rows. Reuses `_mapSeason` so a corrupt row maps to
   // transient `row_corrupt`, exactly as `findSeason` does.
   static const String _listCompetitionSeasonsSql = '''
-SELECT id, competition_id, label
+SELECT id, competition_id, label, start_at, end_at
 FROM competition.seasons
 WHERE competition_id = @competition_id
 ORDER BY label ASC, id ASC
@@ -258,6 +260,8 @@ ORDER BY label ASC, id ASC
       row['competition_id']?.toString(),
     );
     final label = row['label'];
+    final startAt = _readUtcTimestamp(row['start_at']);
+    final endAt = _readUtcTimestamp(row['end_at']);
 
     if (idResult is Err<SeasonId>) {
       return Result.err(_corrupt('seasons', 'id', idResult.error.message));
@@ -274,12 +278,20 @@ ORDER BY label ASC, id ASC
     if (label is! String) {
       return Result.err(_corrupt('seasons', 'label', 'not a string'));
     }
+    if (startAt == null) {
+      return Result.err(_corrupt('seasons', 'start_at', 'not a timestamp'));
+    }
+    if (endAt == null) {
+      return Result.err(_corrupt('seasons', 'end_at', 'not a timestamp'));
+    }
 
     return Result.ok(
       CompetitionSeason.fromStored(
         id: (idResult as Ok<SeasonId>).value,
         competitionId: (competitionIdResult as Ok<CompetitionId>).value,
         label: label,
+        startAt: startAt,
+        endAt: endAt,
       ),
     );
   }

@@ -108,15 +108,27 @@ void main() {
   group('CompetitionApi.listCompetitionSeasons '
       '(GET /competitions/{id}/seasons)', () {
     test('200 array -> Ok(List<SeasonDto>) at the seasons path', () async {
-      const a = SeasonDto(id: 's-1', competitionId: 'c-1', label: '2025/26');
-      const b = SeasonDto(id: 's-2', competitionId: 'c-1', label: '2026/27');
+      final a = SeasonDto(
+        id: 's-1',
+        competitionId: 'c-1',
+        label: '07/2025',
+        startAt: DateTime.utc(2025, 7, 1),
+        endAt: DateTime.utc(2025, 8, 1),
+      );
+      final b = SeasonDto(
+        id: 's-2',
+        competitionId: 'c-1',
+        label: '08/2026',
+        startAt: DateTime.utc(2026, 8, 1),
+        endAt: DateTime.utc(2026, 9, 1),
+      );
       final ctx = buildTransport((_) async => okJson([a.toJson(), b.toJson()]));
 
       final result = await CompetitionApi(
         ctx.transport,
       ).listCompetitionSeasons('c-1');
 
-      expect(result, const Result<List<SeasonDto>>.ok([a, b]));
+      expect(result, Result<List<SeasonDto>>.ok([a, b]));
       expect(ctx.captured.single.url.path, '/competitions/c-1/seasons');
       expect(ctx.captured.single.method, 'GET');
     });

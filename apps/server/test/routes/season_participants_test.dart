@@ -24,6 +24,8 @@ void main() {
           id: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
           competitionId: compId,
           label: '2026/27',
+          startAt: DateTime.utc(2026, 8, 1),
+          endAt: DateTime.utc(2026, 9, 1),
         );
       }
       return CompositionRoot.forTesting(
