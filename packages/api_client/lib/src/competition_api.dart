@@ -27,6 +27,13 @@ import 'package:shared/shared.dart';
 ///     exists, Axiom 3; query intent `BrowseRoundFixtures`, Session decision
 ///     2026-08-07 widened this read instead of a new endpoint; an absent round
 ///     is a legitimate empty array — no existence oracle)
+///   * `GET /seasons/{id}/fixtures`      -> `List<SeasonFixtureCardDto>`
+///     (`routes/seasons/[id]/fixtures/index.dart` GET branch, display order,
+///     each card enriched with its schedule identity — team names + kickoff,
+///     all nullable since the season<->fixture link never verifies a
+///     schedule exists, Axiom 3; query intent `BrowseSeasonFixtures`, Axiom 4
+///     Amendment — the season-scoped sibling of [browseRoundFixtures]; an
+///     absent season is a legitimate empty array — no existence oracle)
 ///
 /// All routes are behind `bearerAuth`. The browse reads above are pure (no
 /// side effect); [openRound], [linkFixtureToRound], [recordFixtureResult],
@@ -131,6 +138,27 @@ final class CompetitionApi {
     return _transport.getList<RoundFixtureCardDto>(
       '/rounds/$roundId/fixtures',
       parseElement: RoundFixtureCardDto.fromJson,
+    );
+  }
+
+  /// `GET /seasons/{id}/fixtures` — the season's fixtures in display order,
+  /// each enriched with its schedule identity (team names + kickoff) for the
+  /// per-fixture prediction browse read (query intent `BrowseSeasonFixtures`;
+  /// Axiom 4 Amendment — the season-scoped sibling of [browseRoundFixtures],
+  /// since a fixture's prediction belongs to its season directly via
+  /// `SeasonFixture`, never a round; batched, no N+1).
+  ///
+  /// A season with no linked fixtures — or one that does not exist — is a
+  /// legitimate `Ok(<empty list>)` (the server reveals no existence oracle on
+  /// this browse read). `homeTeam`/`awayTeam`/`kickoffAt` are `null` when the
+  /// linked fixture has no schedule yet (the link never verifies one exists —
+  /// Axiom 3).
+  Future<Result<List<SeasonFixtureCardDto>>> browseSeasonFixtures(
+    String seasonId,
+  ) {
+    return _transport.getList<SeasonFixtureCardDto>(
+      '/seasons/$seasonId/fixtures',
+      parseElement: SeasonFixtureCardDto.fromJson,
     );
   }
 

@@ -23,6 +23,12 @@ import 'package:shared/shared.dart';
 ///     -> `List<PredictionDto>` (`routes/me/predictions.dart`). Always the
 ///     caller's own predictions regardless of round status; a caller who has
 ///     never predicted gets a legitimate empty array.
+///   * `POST /seasons/{id}/fixtures/{fixtureId}/prediction` (submit/amend a
+///     single fixture) -> [FixturePredictionDto] (Axiom 4 Amendment; the
+///     per-fixture sibling of the round-based submit above — the body is
+///     [FixturePredictionCommandDto]: predicted scoreline + optional
+///     `is_double`; the participant is resolved server-side, never sent by
+///     the client).
 ///
 /// The whole `/rounds` subtree is behind `bearerAuth`. Every method returns a
 /// typed [Result] and never throws. This is the ONLY prediction write path a
@@ -52,6 +58,35 @@ final class PredictionApi {
       '/rounds/$roundId/predictions',
       body: command.toJson(),
       parse: PredictionDto.fromJson,
+    );
+  }
+
+  /// `POST /seasons/{id}/fixtures/{fixtureId}/prediction` — submit or
+  /// idempotently amend the caller's prediction for a single [fixtureId]
+  /// within season [seasonId] (Axiom 4 Amendment; the per-fixture sibling of
+  /// [submitPrediction]).
+  ///
+  /// [isDouble] defaults to `false`, matching the server's optional-field
+  /// default. Returns the stored [FixturePredictionDto] on `200`. Business
+  /// failures surface with their stable codes, e.g.:
+  ///   * malformed body                     -> `Err(validation)` (`400`);
+  ///   * fixture locked / daily-double cap   -> `Err(invariant)` (`409`).
+  Future<Result<FixturePredictionDto>> submitFixturePrediction({
+    required String seasonId,
+    required String fixtureId,
+    required int homeGoals,
+    required int awayGoals,
+    bool isDouble = false,
+  }) {
+    final command = FixturePredictionCommandDto(
+      homeGoals: homeGoals,
+      awayGoals: awayGoals,
+      isDouble: isDouble,
+    );
+    return _transport.postObject<FixturePredictionDto>(
+      '/seasons/$seasonId/fixtures/$fixtureId/prediction',
+      body: command.toJson(),
+      parse: FixturePredictionDto.fromJson,
     );
   }
 

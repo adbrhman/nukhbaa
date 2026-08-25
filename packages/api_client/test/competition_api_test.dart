@@ -289,6 +289,69 @@ void main() {
     });
   });
 
+  group(
+    'CompetitionApi.browseSeasonFixtures (GET /seasons/{id}/fixtures)',
+    () {
+      test(
+        '200 -> Ok(List<SeasonFixtureCardDto>) at the fixtures path',
+        () async {
+          const f0 = SeasonFixtureCardDto(
+            seasonId: 's',
+            fixtureId: 'f-a',
+            homeTeam: 'Al Hilal',
+            awayTeam: 'Al Nassr',
+            kickoffAt: '2026-08-15T18:00:00.000Z',
+          );
+          const f1 = SeasonFixtureCardDto(
+            seasonId: 's',
+            fixtureId: 'f-b',
+            homeTeam: null,
+            awayTeam: null,
+            kickoffAt: null,
+          );
+          final ctx = buildTransport(
+            (_) async => okJson([f0.toJson(), f1.toJson()]),
+          );
+
+          final result = await CompetitionApi(
+            ctx.transport,
+          ).browseSeasonFixtures('s');
+
+          expect(
+            result,
+            const Result<List<SeasonFixtureCardDto>>.ok([f0, f1]),
+          );
+          expect(ctx.captured.single.url.path, '/seasons/s/fixtures');
+        },
+      );
+
+      test('an absent season is a legitimate empty array (no oracle)', () async {
+        final ctx = buildTransport((_) async => okJson(<Object>[]));
+
+        final result = await CompetitionApi(
+          ctx.transport,
+        ).browseSeasonFixtures('gone');
+
+        expect((result as Ok<List<SeasonFixtureCardDto>>).value, isEmpty);
+      });
+
+      test('503 -> Err(transient) retryable', () async {
+        final ctx = buildTransport(
+          (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+        );
+
+        final result = await CompetitionApi(
+          ctx.transport,
+        ).browseSeasonFixtures('s');
+
+        expect(
+          (result as Err<List<SeasonFixtureCardDto>>).error.isRetryable,
+          isTrue,
+        );
+      });
+    },
+  );
+
   group('CompetitionApi.getMatchesFeed (GET /feed/matches)', () {
     test('200 array -> Ok(List<MatchFeedItemDto>)', () async {
       const item = MatchFeedItemDto(

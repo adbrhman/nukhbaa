@@ -452,6 +452,87 @@ final class RoundFixtureCardDto {
   );
 }
 
+/// A [SeasonFixture] link enriched with its fixture-schedule identity (team
+/// names + kickoff), for the per-fixture Prediction browse read (Axiom 4
+/// Amendment — the season-scoped sibling of [RoundFixtureCardDto]; the same
+/// nullability contract, since the season-fixture link never verifies a
+/// schedule exists — Axiom 3).
+final class SeasonFixtureCardDto {
+  /// Creates a season-fixture card DTO.
+  const SeasonFixtureCardDto({
+    required this.seasonId,
+    required this.fixtureId,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.kickoffAt,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory SeasonFixtureCardDto.fromJson(Map<String, Object?> json) {
+    return SeasonFixtureCardDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      seasonId: json['season_id']! as String,
+      fixtureId: json['fixture_id']! as String,
+      homeTeam: json['home_team'] as String?,
+      awayTeam: json['away_team'] as String?,
+      kickoffAt: json['kickoff_at'] as String?,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning season id (UUID string).
+  final String seasonId;
+
+  /// The referenced fixture id (UUID string).
+  final String fixtureId;
+
+  /// The home side's team name, or `null` if not yet scheduled.
+  final String? homeTeam;
+
+  /// The away side's team name, or `null` if not yet scheduled.
+  final String? awayTeam;
+
+  /// The kickoff time as an ISO 8601 UTC timestamp string, or `null` if not
+  /// yet scheduled.
+  final String? kickoffAt;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'season_id': seasonId,
+    'fixture_id': fixtureId,
+    'home_team': homeTeam,
+    'away_team': awayTeam,
+    'kickoff_at': kickoffAt,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is SeasonFixtureCardDto &&
+      other.seasonId == seasonId &&
+      other.fixtureId == fixtureId &&
+      other.homeTeam == homeTeam &&
+      other.awayTeam == awayTeam &&
+      other.kickoffAt == kickoffAt &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    seasonId,
+    fixtureId,
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+    schemaVersion,
+  );
+}
+
 /// One card in the unified matches feed (`GET /feed/matches` — the
 /// server-side aggregate read replacing the client-side competition → season
 /// → round → fixtures drill-down). Reuses [RoundFixtureCardDto]'s nested

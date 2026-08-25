@@ -93,6 +93,18 @@ RoundFixtureCardDto roundFixtureCardToDto(RoundFixtureCard card) {
   );
 }
 
+/// Projects a [SeasonFixtureCard] onto its wire shape [SeasonFixtureCardDto]
+/// (`GET /seasons/{id}/fixtures`, Axiom 4 Amendment).
+SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
+  return SeasonFixtureCardDto(
+    seasonId: card.seasonId.value,
+    fixtureId: card.fixtureId.value,
+    homeTeam: card.homeTeam,
+    awayTeam: card.awayTeam,
+    kickoffAt: card.kickoffAt?.toIso8601String(),
+  );
+}
+
 /// Projects a [MatchFeedEntry] onto its wire shape [MatchFeedItemDto]
 /// (`GET /feed/matches`, the server-side aggregate read). Reuses
 /// [roundFixtureCardToDto]'s nested projection verbatim so a fixture's shape

@@ -16,6 +16,7 @@ export 'src/common/clock.dart';
 export 'src/common/id_generator.dart';
 export 'src/common/invite_code_generator.dart';
 export 'src/competition/browse_round_fixtures.dart';
+export 'src/competition/browse_season_fixtures.dart';
 export 'src/competition/correct_fixture_schedule.dart';
 export 'src/competition/create_competition.dart';
 export 'src/competition/get_competition.dart';

@@ -37,6 +37,7 @@ final class CompositionRoot {
     required this.listCompetitionSeasons,
     required this.listSeasonRounds,
     required this.browseRoundFixtures,
+    required this.browseSeasonFixtures,
     required this.listMatchesFeed,
     required this.submitPrediction,
     required this.submitFixturePrediction,
@@ -135,6 +136,7 @@ final class CompositionRoot {
     ListCompetitionSeasons? listCompetitionSeasons,
     ListSeasonRounds? listSeasonRounds,
     BrowseRoundFixtures? browseRoundFixtures,
+    BrowseSeasonFixtures? browseSeasonFixtures,
     ListMatchesFeed? listMatchesFeed,
     SubmitPrediction? submitPrediction,
     SubmitFixturePrediction? submitFixturePrediction,
@@ -207,6 +209,8 @@ final class CompositionRoot {
        listSeasonRounds = listSeasonRounds ?? _absentListSeasonRounds(),
        browseRoundFixtures =
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
+       browseSeasonFixtures =
+           browseSeasonFixtures ?? _absentBrowseSeasonFixtures(),
        listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        submitFixturePrediction =
@@ -380,6 +384,12 @@ final class CompositionRoot {
   static BrowseRoundFixtures _absentBrowseRoundFixtures() =>
       BrowseRoundFixtures(
         competitionRepository: _unwiredCompetitionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+      );
+
+  static BrowseSeasonFixtures _absentBrowseSeasonFixtures() =>
+      BrowseSeasonFixtures(
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
       );
 
@@ -833,6 +843,14 @@ final class CompositionRoot {
   /// internal `PredictionRepository.listRoundFixtures`.
   final BrowseRoundFixtures browseRoundFixtures;
 
+  /// Lists a season's fixtures in display order, each enriched with its
+  /// schedule identity (team names + kickoff), for the per-fixture
+  /// prediction browse read (any authenticated user; Axiom 4 Amendment — the
+  /// season-scoped sibling of [browseRoundFixtures], since a fixture's
+  /// prediction belongs to its season directly via `SeasonFixture`, never a
+  /// round). Read-only, no side effect.
+  final BrowseSeasonFixtures browseSeasonFixtures;
+
   /// The unified matches feed: every open round's fixture(s) across every
   /// public competition, flattened into one ordered list, in three batched
   /// database reads (server-side aggregate read replacing the client-side
@@ -1282,6 +1300,10 @@ final class CompositionRoot {
       listSeasonRounds: ListSeasonRounds(repository: competitionRepository),
       browseRoundFixtures: BrowseRoundFixtures(
         competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+      ),
+      browseSeasonFixtures: BrowseSeasonFixtures(
+        fixturePredictionRepository: fixturePredictionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
       listMatchesFeed: ListMatchesFeed(
