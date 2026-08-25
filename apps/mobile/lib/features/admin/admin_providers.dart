@@ -423,32 +423,6 @@ class RoundReportController extends _$RoundReportController {
   }
 }
 
-/// Owns the round-report **summary** read: fetches `GET /rounds/{id}/report`
-/// directly (Task 5) — server-side aggregated correct/incorrect counts and
-/// points, no client-side merge. Named "Summary" to avoid colliding with
-/// [RoundReportController] (Task 4's grid — a client merge of two other
-/// reads).
-@riverpod
-class RoundReportSummaryController extends _$RoundReportSummaryController {
-  AdminApi get _api => ref.read(adminApiProvider);
-
-  @override
-  AsyncValue<RoundReportDto>? build() => null;
-
-  /// Loads the report summary for the scored round [roundId].
-  Future<void> load(String roundId) async {
-    state = const AsyncValue.loading();
-    final result = await _api.adminGetRoundReport(roundId);
-    state = switch (result) {
-      Ok<RoundReportDto>(:final value) => AsyncValue.data(value),
-      Err<RoundReportDto>(:final error) => AsyncValue.error(
-        error,
-        StackTrace.current,
-      ),
-    };
-  }
-}
-
 /// نتيجة دمج تسجيل المباراة وربطها بالجولة — نجاح فقط إذا نجحت العمليتان معاً.
 class AddMatchResult {
   const AddMatchResult({

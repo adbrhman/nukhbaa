@@ -275,16 +275,4 @@ final class CompetitionApi {
       parse: (json) => json['removed']! as bool,
     );
   }
-
-  /// `GET /rounds/{id}/report` — every participant's correct/incorrect
-  /// fixture-grade counts and total points for a **scored** round (Task 5).
-  /// Same gates as [getRoundScores]: a not-yet-scored round is refused
-  /// `409 scoring.round_not_scored`; a non-participant is refused
-  /// `401 scoring.not_a_participant` (server-enforced).
-  Future<Result<RoundReportDto>> getRoundReport(String roundId) {
-    return _transport.getObject<RoundReportDto>(
-      '/rounds/$roundId/report',
-      parse: RoundReportDto.fromJson,
-    );
-  }
 }
