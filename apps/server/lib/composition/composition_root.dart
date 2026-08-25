@@ -26,8 +26,6 @@ final class CompositionRoot {
     required this.updateDisplayName,
     required this.createCompetition,
     required this.startSeason,
-    required this.openRound,
-    required this.lockRound,
     required this.linkFixtureToRound,
     required this.removeFixtureFromRound,
     required this.joinCompetition,
@@ -125,8 +123,6 @@ final class CompositionRoot {
     UpdateDisplayName? updateDisplayName,
     CreateCompetition? createCompetition,
     StartSeason? startSeason,
-    OpenRound? openRound,
-    LockRound? lockRound,
     LinkFixtureToRound? linkFixtureToRound,
     RemoveFixtureFromRound? removeFixtureFromRound,
     JoinCompetition? joinCompetition,
@@ -195,8 +191,6 @@ final class CompositionRoot {
        updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
        createCompetition = createCompetition ?? _absentCreateCompetition(),
        startSeason = startSeason ?? _absentStartSeason(),
-       openRound = openRound ?? _absentOpenRound(),
-       lockRound = lockRound ?? _absentLockRound(),
        linkFixtureToRound = linkFixtureToRound ?? _absentLinkFixtureToRound(),
        removeFixtureFromRound =
            removeFixtureFromRound ?? _absentRemoveFixtureFromRound(),
@@ -338,15 +332,6 @@ final class CompositionRoot {
     repository: _unwiredCompetitionRepository,
     idGenerator: _unwiredIdGenerator,
   );
-
-  static OpenRound _absentOpenRound() => OpenRound(
-    repository: _unwiredCompetitionRepository,
-    rulesetProvider: _unwiredRulesetProvider,
-    idGenerator: _unwiredIdGenerator,
-  );
-
-  static LockRound _absentLockRound() =>
-      LockRound(_unwiredCompetitionRepository);
 
   static LinkFixtureToRound _absentLinkFixtureToRound() =>
       LinkFixtureToRound(_unwiredCompetitionRepository);
@@ -799,12 +784,6 @@ final class CompositionRoot {
 
   /// Starts a season under a competition (admin-only command).
   final StartSeason startSeason;
-
-  /// Opens a round in a season, freezing the ruleset (admin-only command).
-  final OpenRound openRound;
-
-  /// Locks an open round (admin-only command).
-  final LockRound lockRound;
 
   /// Links a fixture to an open round (admin-only command).
   final LinkFixtureToRound linkFixtureToRound;
@@ -1271,12 +1250,6 @@ final class CompositionRoot {
         repository: competitionRepository,
         idGenerator: idGenerator,
       ),
-      openRound: OpenRound(
-        repository: competitionRepository,
-        rulesetProvider: rulesetProvider,
-        idGenerator: idGenerator,
-      ),
-      lockRound: LockRound(competitionRepository),
       linkFixtureToRound: LinkFixtureToRound(competitionRepository),
       removeFixtureFromRound: RemoveFixtureFromRound(
         competitionRepository: competitionRepository,
@@ -1660,11 +1633,11 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
       _unwired();
 }
 
-/// Backs an "absent" [OpenRound]'s ruleset provider.
+/// Backs an "absent" ruleset-dependent use-case's ruleset provider.
 final class _UnwiredRulesetProvider implements RulesetProvider {
   @override
   Future<Result<RulesetSnapshot>> currentSnapshotFor(FormatType format) =>
-      throw StateError('OpenRound was not wired into this root');
+      throw StateError('A ruleset-dependent use-case was not wired into this root');
 }
 
 /// Backs "absent" competition use-cases' id generator.
