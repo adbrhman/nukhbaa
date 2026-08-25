@@ -90,13 +90,10 @@
       }
     }
   },
-  "roundLeaderboardTab": "Round points",
   "seasonLeaderboardTab": "Season points",
   "fixtureLeaderboardTab": "Fixture points",
   "fixtureLeaderboardEmpty": "No fixture has been scored yet this season.",
   "selectRoundLabel": "Select round",
-  "roundLeaderboardNoScoredRounds": "This season has no scored rounds yet.",
-  "roundLeaderboardEmpty": "Nobody predicted this round.",
   "roundKingLabel": "Round king",
   "groupLeaderboardEmpty": "No members of this group have joined the season yet.",
   "competitions": "Competitions",
@@ -411,6 +408,17 @@
   "adminSelectFixtureLabel": "Select fixture",
   "adminNoFixturesHint": "This round has no fixtures.",
   "adminFixtureIncompleteDataLabel": "Fixture with incomplete data",
+  "adminRoundOptionLabel": "Round {sequence} — {status}",
+  "@adminRoundOptionLabel": {
+    "placeholders": {
+      "sequence": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "adminAddMatchButton": "Register match and add to round",
   "adminAddMatchSuccess": "Added {home} vs {away} to round {sequence}.",
   "@adminAddMatchSuccess": {

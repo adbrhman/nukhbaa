@@ -213,9 +213,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get roundLeaderboardTab => 'نقاط الجولة';
-
-  @override
   String get seasonLeaderboardTab => 'نقاط الموسم';
 
   @override
@@ -227,13 +224,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get selectRoundLabel => 'اختر الجولة';
-
-  @override
-  String get roundLeaderboardNoScoredRounds =>
-      'لا توجد جولات محتسبة بعد في هذا الموسم.';
-
-  @override
-  String get roundLeaderboardEmpty => 'لم يشارك أحد في هذه الجولة.';
 
   @override
   String get roundKingLabel => 'ملك الجولة';
@@ -473,28 +463,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminCorrectFixtureButton => 'تصحيح المباراة';
 
   @override
-  String get adminRoundsTab => 'الجولات';
-
-  @override
   String get adminResultsScoringTab => 'النتائج والاحتساب';
 
   @override
-  String get adminOpenRoundSectionTitle => 'فتح جولة جديدة';
-
-  @override
   String get adminSeasonIdLabel => 'معرّف الموسم';
-
-  @override
-  String get adminSequenceLabel => 'رقم الجولة';
-
-  @override
-  String get adminPickDeadlineButton => 'اختر موعد إغلاق التوقعات';
-
-  @override
-  String get adminOpenRoundButton => 'فتح الجولة';
-
-  @override
-  String get adminLockRoundButton => 'إغلاق الجولة';
 
   @override
   String get adminLinkFixtureSectionTitle => 'ربط مباراة بجولة';
@@ -697,12 +669,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminSelectRoundFirst => 'اختر الجولة أولاً.';
-
-  @override
-  String get adminManageRoundsSectionTitle => 'إدارة الجولات';
-
-  @override
-  String get adminExistingRoundsEmpty => 'لا توجد جولات لهذا الموسم بعد.';
 
   @override
   String get adminExistingFixturesSectionTitle => 'مباريات هذه الجولة';

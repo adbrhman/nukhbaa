@@ -428,12 +428,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}'**
   String pointsAbbreviated(int count);
 
-  /// No description provided for @roundLeaderboardTab.
-  ///
-  /// In en, this message translates to:
-  /// **'Round points'**
-  String get roundLeaderboardTab;
-
   /// No description provided for @seasonLeaderboardTab.
   ///
   /// In en, this message translates to:
@@ -457,18 +451,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select round'**
   String get selectRoundLabel;
-
-  /// No description provided for @roundLeaderboardNoScoredRounds.
-  ///
-  /// In en, this message translates to:
-  /// **'This season has no scored rounds yet.'**
-  String get roundLeaderboardNoScoredRounds;
-
-  /// No description provided for @roundLeaderboardEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nobody predicted this round.'**
-  String get roundLeaderboardEmpty;
 
   /// No description provided for @roundKingLabel.
   ///
@@ -882,53 +864,17 @@ abstract class AppLocalizations {
   /// **'Correct fixture'**
   String get adminCorrectFixtureButton;
 
-  /// No description provided for @adminRoundsTab.
-  ///
-  /// In en, this message translates to:
-  /// **'Rounds'**
-  String get adminRoundsTab;
-
   /// No description provided for @adminResultsScoringTab.
   ///
   /// In en, this message translates to:
   /// **'Results & Scoring'**
   String get adminResultsScoringTab;
 
-  /// No description provided for @adminOpenRoundSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Open a new round'**
-  String get adminOpenRoundSectionTitle;
-
   /// No description provided for @adminSeasonIdLabel.
   ///
   /// In en, this message translates to:
   /// **'Season ID'**
   String get adminSeasonIdLabel;
-
-  /// No description provided for @adminSequenceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Round sequence'**
-  String get adminSequenceLabel;
-
-  /// No description provided for @adminPickDeadlineButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick prediction deadline'**
-  String get adminPickDeadlineButton;
-
-  /// No description provided for @adminOpenRoundButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Open round'**
-  String get adminOpenRoundButton;
-
-  /// No description provided for @adminLockRoundButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Lock round'**
-  String get adminLockRoundButton;
 
   /// No description provided for @adminLinkFixtureSectionTitle.
   ///
@@ -1295,18 +1241,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a round first.'**
   String get adminSelectRoundFirst;
-
-  /// No description provided for @adminManageRoundsSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage rounds'**
-  String get adminManageRoundsSectionTitle;
-
-  /// No description provided for @adminExistingRoundsEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'This season has no rounds yet.'**
-  String get adminExistingRoundsEmpty;
 
   /// No description provided for @adminExistingFixturesSectionTitle.
   ///

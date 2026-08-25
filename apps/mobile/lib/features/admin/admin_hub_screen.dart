@@ -48,7 +48,6 @@ class _AdminKpiRow extends StatelessWidget {
     final AppTokens t = context.tokens;
 
     final List<(IconData, String, int)> kpis = <(IconData, String, int)>[
-      (Icons.event_note_rounded, l10n.adminRoundsTab, 0),
       (Icons.people_alt_rounded, l10n.adminUsersTab, 0),
       (Icons.receipt_long_rounded, l10n.adminAuditLogTab, 0),
     ];

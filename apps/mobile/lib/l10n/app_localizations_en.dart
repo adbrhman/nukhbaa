@@ -205,9 +205,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get roundLeaderboardTab => 'Round points';
-
-  @override
   String get seasonLeaderboardTab => 'Season points';
 
   @override
@@ -219,13 +216,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectRoundLabel => 'Select round';
-
-  @override
-  String get roundLeaderboardNoScoredRounds =>
-      'This season has no scored rounds yet.';
-
-  @override
-  String get roundLeaderboardEmpty => 'Nobody predicted this round.';
 
   @override
   String get roundKingLabel => 'Round king';
@@ -468,28 +458,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminCorrectFixtureButton => 'Correct fixture';
 
   @override
-  String get adminRoundsTab => 'Rounds';
-
-  @override
   String get adminResultsScoringTab => 'Results & Scoring';
 
   @override
-  String get adminOpenRoundSectionTitle => 'Open a new round';
-
-  @override
   String get adminSeasonIdLabel => 'Season ID';
-
-  @override
-  String get adminSequenceLabel => 'Round sequence';
-
-  @override
-  String get adminPickDeadlineButton => 'Pick prediction deadline';
-
-  @override
-  String get adminOpenRoundButton => 'Open round';
-
-  @override
-  String get adminLockRoundButton => 'Lock round';
 
   @override
   String get adminLinkFixtureSectionTitle => 'Link a fixture to a round';
@@ -691,12 +663,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminSelectRoundFirst => 'Select a round first.';
-
-  @override
-  String get adminManageRoundsSectionTitle => 'Manage rounds';
-
-  @override
-  String get adminExistingRoundsEmpty => 'This season has no rounds yet.';
 
   @override
   String get adminExistingFixturesSectionTitle => 'Fixtures in this round';
