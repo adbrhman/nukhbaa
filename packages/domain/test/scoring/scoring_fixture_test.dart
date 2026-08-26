@@ -9,6 +9,7 @@ void main() {
                   (RulesetSnapshot.create(
                             payload: const {
                               'format': 'football_scoreline',
+                              'double_multiplier': 2,
                               'points': {
                                 'exact_scoreline': 3,
                                 'correct_outcome': 1,
