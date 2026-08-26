@@ -112,4 +112,17 @@ void main() {
       expect(decoded.hashCode, dto.hashCode);
     });
   });
+
+  group('SeasonFixtureDto', () {
+    test('round-trips through JSON', () {
+      const dto = SeasonFixtureDto(
+        seasonId: '22222222-2222-2222-2222-222222222222',
+        fixtureId: '66666666-6666-6666-6666-666666666666',
+        displayOrder: 0,
+      );
+      final decoded = SeasonFixtureDto.fromJson(dto.toJson());
+      expect(decoded, dto);
+      expect(decoded.hashCode, dto.hashCode);
+    });
+  });
 }

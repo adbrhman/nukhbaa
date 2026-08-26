@@ -377,6 +377,12 @@ final class _InMemoryFixturePredictionRepository
   }
 
   @override
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) async {
+    links.add(link);
+    return const Result.ok(null);
+  }
+
+  @override
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {

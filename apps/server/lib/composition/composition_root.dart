@@ -36,6 +36,7 @@ final class CompositionRoot {
     required this.listSeasonRounds,
     required this.browseRoundFixtures,
     required this.browseSeasonFixtures,
+    required this.linkFixtureToSeason,
     required this.listMatchesFeed,
     required this.submitPrediction,
     required this.submitFixturePrediction,
@@ -133,6 +134,7 @@ final class CompositionRoot {
     ListSeasonRounds? listSeasonRounds,
     BrowseRoundFixtures? browseRoundFixtures,
     BrowseSeasonFixtures? browseSeasonFixtures,
+    LinkFixtureToSeason? linkFixtureToSeason,
     ListMatchesFeed? listMatchesFeed,
     SubmitPrediction? submitPrediction,
     SubmitFixturePrediction? submitFixturePrediction,
@@ -205,6 +207,8 @@ final class CompositionRoot {
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
        browseSeasonFixtures =
            browseSeasonFixtures ?? _absentBrowseSeasonFixtures(),
+       linkFixtureToSeason =
+           linkFixtureToSeason ?? _absentLinkFixtureToSeason(),
        listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        submitFixturePrediction =
@@ -376,6 +380,12 @@ final class CompositionRoot {
       BrowseSeasonFixtures(
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+      );
+
+  static LinkFixtureToSeason _absentLinkFixtureToSeason() =>
+      LinkFixtureToSeason(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
       );
 
   static ListMatchesFeed _absentListMatchesFeed() => ListMatchesFeed(
@@ -830,6 +840,10 @@ final class CompositionRoot {
   /// round). Read-only, no side effect.
   final BrowseSeasonFixtures browseSeasonFixtures;
 
+  /// Links a fixture to a season (admin-only command; Axiom 4 Amendment —
+  /// the per-fixture sibling of [linkFixtureToRound]).
+  final LinkFixtureToSeason linkFixtureToSeason;
+
   /// The unified matches feed: every open round's fixture(s) across every
   /// public competition, flattened into one ordered list, in three batched
   /// database reads (server-side aggregate read replacing the client-side
@@ -1279,6 +1293,10 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
+      linkFixtureToSeason: LinkFixtureToSeason(
+        competitionRepository: competitionRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+      ),
       listMatchesFeed: ListMatchesFeed(
         competitionRepository: competitionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
@@ -1719,6 +1737,10 @@ final class _UnwiredFixturePredictionRepository
     SeasonId seasonId,
     FixtureRef fixture,
   ) => _unwired();
+
+  @override
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) =>
+      _unwired();
 
   @override
   Future<Result<int>> countDoublesOnDay(

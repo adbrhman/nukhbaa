@@ -379,6 +379,65 @@ final class RoundFixtureDto {
       Object.hash(roundId, fixtureId, displayOrder, schemaVersion);
 }
 
+/// A season-fixture link (Phase 7.4 — the per-fixture sibling of
+/// [RoundFixtureDto] now that a fixture links to its season directly via
+/// `SeasonFixture`, Axiom 4 Amendment). Returned by
+/// `POST /seasons/{id}/fixtures` (command intent `LinkFixtureToSeason`).
+final class SeasonFixtureDto {
+  /// Creates a season-fixture link DTO.
+  const SeasonFixtureDto({
+    required this.seasonId,
+    required this.fixtureId,
+    required this.displayOrder,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory SeasonFixtureDto.fromJson(Map<String, Object?> json) {
+    return SeasonFixtureDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      seasonId: json['season_id']! as String,
+      fixtureId: json['fixture_id']! as String,
+      displayOrder: json['display_order']! as int,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning season id (UUID string).
+  final String seasonId;
+
+  /// The referenced fixture id (UUID string).
+  final String fixtureId;
+
+  /// The 0-based presentation order within the season.
+  final int displayOrder;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'season_id': seasonId,
+    'fixture_id': fixtureId,
+    'display_order': displayOrder,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is SeasonFixtureDto &&
+      other.seasonId == seasonId &&
+      other.fixtureId == fixtureId &&
+      other.displayOrder == displayOrder &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(seasonId, fixtureId, displayOrder, schemaVersion);
+}
+
 /// A round-fixture link enriched with its fixture-schedule identity (team
 /// names + kickoff), for the client's prediction-form render (Session
 /// decision 2026-08-07: `GET /rounds/{id}/fixtures` widened instead of a new
