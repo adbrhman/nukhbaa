@@ -197,6 +197,24 @@ final class CompetitionApi {
     );
   }
 
+  /// `POST /seasons/{id}/fixtures` — links an already-registered fixture
+  /// into the season at [displayOrder] (command intent
+  /// `LinkFixtureToSeason`; Phase 7.4 — the per-fixture sibling of
+  /// [linkFixtureToRound], Axiom 4 Amendment). Admin-only, enforced inside
+  /// the server use-case. Same URL as the season fixtures browse `GET`
+  /// (2026-08 decision: no competitionId in the path).
+  Future<Result<SeasonFixtureDto>> linkFixtureToSeason({
+    required String seasonId,
+    required String fixtureId,
+    required int displayOrder,
+  }) {
+    return _transport.postObject<SeasonFixtureDto>(
+      '/seasons/$seasonId/fixtures',
+      body: {'fixture_id': fixtureId, 'display_order': displayOrder},
+      parse: SeasonFixtureDto.fromJson,
+    );
+  }
+
   /// `PUT /fixtures/{id}/result` — records (or idempotently corrects) the
   /// fixture's actual final score (command intent `RecordFixtureResult`;
   /// Axiom 3: a result carries no competition/round reference). Admin-only,
