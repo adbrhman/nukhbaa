@@ -113,6 +113,23 @@ final class FakeFixturePredictionRepository
   }
 
   @override
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final key = '${link.seasonId.value}|${link.fixture.value}';
+    if (_seasonFixtures.containsKey(key)) {
+      return const Result.err(
+        AppError.invariant(
+          'competition.season_fixture_already_linked',
+          'already linked',
+        ),
+      );
+    }
+    _seasonFixtures[key] = link;
+    return const Result.ok(null);
+  }
+
+  @override
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {

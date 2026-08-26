@@ -270,6 +270,28 @@ WHERE season_id = @season_id AND fixture_id = @fixture_id
   }
 
   // --------------------------------------------------------------------------
+  // linkFixtureToSeason — persists a SeasonFixture link
+  // --------------------------------------------------------------------------
+
+  static const String _insertSeasonFixtureSql = '''
+INSERT INTO competition.season_fixtures (season_id, fixture_id, display_order)
+VALUES (@season_id, @fixture_id, @display_order)
+''';
+
+  @override
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) async {
+    final result = await _connection.query(
+      _insertSeasonFixtureSql,
+      parameters: {
+        'season_id': link.seasonId.value,
+        'fixture_id': link.fixture.value,
+        'display_order': link.displayOrder,
+      },
+    );
+    return _asVoid(result);
+  }
+
+  // --------------------------------------------------------------------------
   // countDoublesOnDay
   //
   // Joins fixture_predictions -> competition.fixture_schedules to group
@@ -429,6 +451,11 @@ ORDER BY submitted_at ASC, id ASC
         return const AppError.invariant(
           'prediction.not_a_participant',
           'Participant not found',
+        );
+      case 'season_fixtures_pkey':
+        return const AppError.invariant(
+          'competition.season_fixture_already_linked',
+          'This fixture is already linked to the season',
         );
     }
 

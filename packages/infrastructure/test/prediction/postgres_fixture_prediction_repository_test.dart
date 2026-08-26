@@ -197,6 +197,47 @@ void main() {
       expect(link.displayOrder, 3);
     });
 
+    test('linkFixtureToSeason binds every field', () async {
+      final connection = _FakeConnection([
+        const Result.ok(<Map<String, dynamic>>[]),
+      ]);
+      final repo = PostgresFixturePredictionRepository(connection);
+      final link =
+          (SeasonFixture.create(
+                    seasonId: const SeasonId(_seasonId),
+                    fixture: const FixtureRef(_fixtureA),
+                    displayOrder: 2,
+                  )
+                  as Ok<SeasonFixture>)
+              .value;
+
+      final result = await repo.linkFixtureToSeason(link);
+
+      expect(result, isA<Ok<void>>());
+      expect(connection.parameters.single['season_id'], _seasonId);
+      expect(connection.parameters.single['fixture_id'], _fixtureA);
+      expect(connection.parameters.single['display_order'], 2);
+    });
+
+    test('linkFixtureToSeason passes a transient error through verbatim', () async {
+      const error = AppError.transient('boom', 'db down');
+      final repo = PostgresFixturePredictionRepository(
+        _FakeConnection([const Result.err(error)]),
+      );
+      final link =
+          (SeasonFixture.create(
+                    seasonId: const SeasonId(_seasonId),
+                    fixture: const FixtureRef(_fixtureA),
+                    displayOrder: 0,
+                  )
+                  as Ok<SeasonFixture>)
+              .value;
+
+      final result = await repo.linkFixtureToSeason(link);
+
+      expect((result as Err<void>).error.code, 'boom');
+    });
+
     test('countDoublesOnDay maps the count column', () async {
       final repo = PostgresFixturePredictionRepository(
         _FakeConnection([

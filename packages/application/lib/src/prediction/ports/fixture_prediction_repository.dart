@@ -43,6 +43,14 @@ abstract interface class FixturePredictionRepository {
     FixtureRef fixture,
   );
 
+  /// Links a fixture to a season (persists a [SeasonFixture]) — the
+  /// per-fixture sibling of `CompetitionRepository.saveRoundFixture`, kept
+  /// here (not on `CompetitionRepository`) for the same reason
+  /// [findSeasonFixture] is: it keeps that port frozen. A duplicate
+  /// `(seasonId, fixture)` link surfaces as [ErrorKind.invariant]
+  /// `competition.season_fixture_already_linked`.
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link);
+
   /// Counts how many fixtures [participantId] has already marked as their
   /// double whose kickoff falls on the UTC calendar day [dayUtc] (midnight
   /// UTC of that day), optionally excluding [excludingFixture] (an amendment
