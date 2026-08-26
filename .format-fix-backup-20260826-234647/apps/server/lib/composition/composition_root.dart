@@ -1594,12 +1594,6 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   Future<Result<CompetitionSeason>> findSeason(SeasonId id) => _unwired();
 
   @override
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  }) => _unwired();
-
-  @override
   Future<Result<void>> saveRound(Round round) => _unwired();
 
   @override
@@ -1661,9 +1655,7 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
 final class _UnwiredRulesetProvider implements RulesetProvider {
   @override
   Future<Result<RulesetSnapshot>> currentSnapshotFor(FormatType format) =>
-      throw StateError(
-        'A ruleset-dependent use-case was not wired into this root',
-      );
+      throw StateError('A ruleset-dependent use-case was not wired into this root');
 }
 
 /// Backs "absent" competition use-cases' id generator.
@@ -1747,7 +1739,8 @@ final class _UnwiredFixturePredictionRepository
   ) => _unwired();
 
   @override
-  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) => _unwired();
+  Future<Result<void>> linkFixtureToSeason(SeasonFixture link) =>
+      _unwired();
 
   @override
   Future<Result<int>> countDoublesOnDay(

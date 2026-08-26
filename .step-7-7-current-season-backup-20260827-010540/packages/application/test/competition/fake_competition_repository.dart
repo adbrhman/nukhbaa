@@ -269,30 +269,6 @@ base class FakeCompetitionRepository implements CompetitionRepository {
   }
 
   @override
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  }) async {
-    final f = _takeFailure();
-    if (f != null) return Result.err(f);
-    // Every season of this competition whose window covers `nowUtc`
-    // (mirrors the adapter's `start_at <= now AND end_at > now`), tie-broken
-    // deterministically by earliest `startAt` then id -- matches the port's
-    // documented tie-break for the (currently unconstrained) overlap gap.
-    final matches =
-        [
-          for (final s in _seasons.values)
-            if (s.competitionId.value == competitionId.value &&
-                s.isCurrentAt(nowUtc))
-              s,
-        ]..sort((a, b) {
-          final byStart = a.startAt.compareTo(b.startAt);
-          return byStart != 0 ? byStart : a.id.value.compareTo(b.id.value);
-        });
-    return Result.ok(matches.isEmpty ? null : matches.first);
-  }
-
-  @override
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);

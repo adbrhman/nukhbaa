@@ -127,23 +127,6 @@ abstract interface class CompetitionRepository {
     CompetitionId competitionId,
   );
 
-  /// Finds the single-current-season resolution: the season of
-  /// [competitionId] whose window contains [nowUtc] ([CompetitionSeason.
-  /// isCurrentAt]), or `Ok(null)` when no season currently covers it (e.g. a
-  /// new month has begun and the admin has not yet created its season -- a
-  /// legitimate operational gap, not an error).
-  ///
-  /// There is currently no database constraint preventing two seasons of the
-  /// same competition from overlapping (a known gap -- a candidate exclusion
-  /// constraint has not been added yet). If more than one season matches,
-  /// implementations MUST resolve the tie deterministically by the earliest
-  /// [CompetitionSeason.startAt] (then id), so behaviour is stable in the
-  /// interim rather than implementation-order-dependent.
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  });
-
   /// Lists the rounds of a season, ordered by their 1-based [Round.sequence].
   ///
   /// A season with no rounds yet — or one that does not exist — yields

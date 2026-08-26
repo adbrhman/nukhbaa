@@ -225,27 +225,6 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
   }
 
   @override
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  }) async {
-    // The season of this competition whose window covers `nowUtc` (matches
-    // `_findCurrentSeasonSql`: start_at <= now AND end_at > now), tie-broken
-    // by earliest startAt then id. Absent -> a legitimate `Ok(null)`.
-    final matches =
-        [
-          for (final s in seasons.values)
-            if (s.competitionId.value == competitionId.value &&
-                s.isCurrentAt(nowUtc))
-              s,
-        ]..sort((a, b) {
-          final byStart = a.startAt.compareTo(b.startAt);
-          return byStart != 0 ? byStart : a.id.value.compareTo(b.id.value);
-        });
-    return Result.ok(matches.isEmpty ? null : matches.first);
-  }
-
-  @override
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId) async {
     // A season's rounds ordered by their 1-based sequence (matches
     // `_listSeasonRoundsSql` ORDER BY sequence ASC). Absent/empty season → [].

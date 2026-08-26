@@ -280,62 +280,6 @@ void main() {
     });
   });
 
-  group('findCurrentSeason', () {
-    test('maps the matching row and binds competition_id + now', () async {
-      final connection = _rows([
-        {
-          'id': _seasonId,
-          'competition_id': _competitionId,
-          'label': '08/2026',
-          'start_at': DateTime.utc(2026, 8, 1),
-          'end_at': DateTime.utc(2026, 9, 1),
-        },
-      ]);
-      final repo = PostgresCompetitionRepository(connection);
-      final now = DateTime.utc(2026, 8, 15);
-
-      final season =
-          (await repo.findCurrentSeason(competitionId: _cId, nowUtc: now)
-                  as Ok<CompetitionSeason?>)
-              .value;
-
-      expect(season?.id.value, _seasonId);
-      expect(connection.lastParameters, {
-        'competition_id': _competitionId,
-        'now': now,
-      });
-    });
-
-    test(
-      'an empty result is a legitimate Ok(null) -- no active season now',
-      () async {
-        final repo = PostgresCompetitionRepository(_rows(const []));
-
-        final result = await repo.findCurrentSeason(
-          competitionId: _cId,
-          nowUtc: DateTime.utc(2026, 8, 15),
-        );
-
-        expect(result, isA<Ok<CompetitionSeason?>>());
-        expect((result as Ok<CompetitionSeason?>).value, isNull);
-      },
-    );
-
-    test('a transient query failure is propagated unchanged', () async {
-      final repo = PostgresCompetitionRepository(_fails());
-
-      final err =
-          (await repo.findCurrentSeason(
-                    competitionId: _cId,
-                    nowUtc: DateTime.utc(2026, 8, 15),
-                  )
-                  as Err<CompetitionSeason?>)
-              .error;
-
-      expect(err.kind, ErrorKind.transient);
-    });
-  });
-
   group('findRound', () {
     Map<String, dynamic> roundRow({
       Object? snapshot = '{"exact":3}',

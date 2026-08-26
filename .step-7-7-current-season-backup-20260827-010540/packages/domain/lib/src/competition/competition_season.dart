@@ -91,19 +91,6 @@ final class CompetitionSeason {
   final DateTime startAt;
   final DateTime endAt;
 
-  /// Whether [nowUtc] falls inside this season's window — [startAt]
-  /// inclusive, [endAt] exclusive.
-  ///
-  /// Computed, never stored (the same "no lifecycle field" principle as
-  /// `FixtureLock`, docs/project-context.md): the domain carries no
-  /// `status`/`isActive` flag, so "the current season" is always a fresh
-  /// comparison against "now", not a persisted state that can drift out of
-  /// sync. Pure and total; the caller supplies an already-UTC instant (the
-  /// `Clock` port's contract) -- this method does not itself validate
-  /// `nowUtc.isUtc`.
-  bool isCurrentAt(DateTime nowUtc) =>
-      !nowUtc.isBefore(startAt) && nowUtc.isBefore(endAt);
-
   @override
   bool operator ==(Object other) =>
       other is CompetitionSeason &&

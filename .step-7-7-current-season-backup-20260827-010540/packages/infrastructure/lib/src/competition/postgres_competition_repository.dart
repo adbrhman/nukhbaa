@@ -254,42 +254,6 @@ ORDER BY label ASC, id ASC
     };
   }
 
-  // Single-current-season resolution (docs/project-context.md, "computed,
-  // never stored" -- the same principle as `FixtureLock`): the season whose
-  // `[start_at, end_at)` window covers `@now`. No `status`/`isActive` column
-  // exists or is needed. There is currently no exclusion constraint
-  // preventing two seasons of the same competition from overlapping (a known
-  // gap); until it lands, `ORDER BY start_at ASC, id ASC LIMIT 1` resolves any
-  // overlap deterministically, matching the port's documented tie-break. A
-  // month with no season yet -- the query simply returns no row -- is
-  // `Ok(null)`, never `not_found` (mirrors `findParticipant`'s legitimate-
-  // absence read).
-  static const String _findCurrentSeasonSql = '''
-SELECT id, competition_id, label, start_at, end_at
-FROM competition.seasons
-WHERE competition_id = @competition_id
-  AND start_at <= @now
-  AND end_at > @now
-ORDER BY start_at ASC, id ASC
-LIMIT 1
-''';
-
-  @override
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  }) async {
-    final result = await _connection.query(
-      _findCurrentSeasonSql,
-      parameters: {'competition_id': competitionId.value, 'now': nowUtc},
-    );
-    return switch (result) {
-      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
-      Ok<List<Map<String, dynamic>>>(:final value) =>
-        value.isEmpty ? const Result.ok(null) : _mapSeason(value.first),
-    };
-  }
-
   Result<CompetitionSeason> _mapSeason(Map<String, dynamic> row) {
     final idResult = SeasonId.tryParse(row['id']?.toString());
     final competitionIdResult = CompetitionId.tryParse(

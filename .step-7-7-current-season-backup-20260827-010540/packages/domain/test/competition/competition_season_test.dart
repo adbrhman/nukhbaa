@@ -131,40 +131,4 @@ void main() {
       expect(a, isNot(b));
     });
   });
-
-  group('CompetitionSeason.isCurrentAt', () {
-    CompetitionSeason season() =>
-        (CompetitionSeason.create(
-                  id: const SeasonId(_seasonId),
-                  competitionId: const CompetitionId(_competitionId),
-                  label: 'x',
-                  startAt: _start,
-                  endAt: _end,
-                )
-                as Ok<CompetitionSeason>)
-            .value;
-
-    test('true exactly at the start instant (inclusive)', () {
-      expect(season().isCurrentAt(_start), isTrue);
-    });
-
-    test('true strictly between start and end', () {
-      expect(season().isCurrentAt(_start.add(const Duration(days: 1))), isTrue);
-    });
-
-    test('false exactly at the end instant (exclusive)', () {
-      expect(season().isCurrentAt(_end), isFalse);
-    });
-
-    test('false before the start instant', () {
-      expect(
-        season().isCurrentAt(_start.subtract(const Duration(seconds: 1))),
-        isFalse,
-      );
-    });
-
-    test('false after the end instant', () {
-      expect(season().isCurrentAt(_end.add(const Duration(days: 1))), isFalse);
-    });
-  });
 }

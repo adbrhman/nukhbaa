@@ -1594,12 +1594,6 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   Future<Result<CompetitionSeason>> findSeason(SeasonId id) => _unwired();
 
   @override
-  Future<Result<CompetitionSeason?>> findCurrentSeason({
-    required CompetitionId competitionId,
-    required DateTime nowUtc,
-  }) => _unwired();
-
-  @override
   Future<Result<void>> saveRound(Round round) => _unwired();
 
   @override
