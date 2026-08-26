@@ -663,8 +663,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminAddMatchButton => 'تسجيل المباراة وإضافتها للجولة';
 
   @override
-  String adminAddMatchSuccess(String home, String away, int sequence) {
-    return 'تمت إضافة $home ضد $away إلى الجولة $sequence.';
+  String adminAddMatchSuccess(String home, String away) {
+    return 'تمت إضافة $home ضد $away إلى الموسم.';
   }
 
   @override

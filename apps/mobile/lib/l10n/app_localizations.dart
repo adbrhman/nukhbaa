@@ -1233,8 +1233,8 @@ abstract class AppLocalizations {
   /// No description provided for @adminAddMatchSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Added {home} vs {away} to round {sequence}.'**
-  String adminAddMatchSuccess(String home, String away, int sequence);
+  /// **'Added {home} vs {away} to the season.'**
+  String adminAddMatchSuccess(String home, String away);
 
   /// No description provided for @adminSelectRoundFirst.
   ///

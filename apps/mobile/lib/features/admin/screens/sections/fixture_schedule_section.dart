@@ -185,7 +185,6 @@ class _FixtureScheduleSectionState
                   message: l10n.adminAddMatchSuccess(
                     state.value.fixture.homeTeam,
                     state.value.fixture.awayTeam,
-                    state.value.roundSequence,
                   ),
                 ),
               const SizedBox(height: AppSpacing.md),

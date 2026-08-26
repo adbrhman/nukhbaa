@@ -657,8 +657,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAddMatchButton => 'Register match and add to round';
 
   @override
-  String adminAddMatchSuccess(String home, String away, int sequence) {
-    return 'Added $home vs $away to round $sequence.';
+  String adminAddMatchSuccess(String home, String away) {
+    return 'Added $home vs $away to the season.';
   }
 
   @override

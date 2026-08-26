@@ -420,7 +420,7 @@
     }
   },
   "adminAddMatchButton": "Register match and add to round",
-  "adminAddMatchSuccess": "Added {home} vs {away} to round {sequence}.",
+  "adminAddMatchSuccess": "Added {home} vs {away} to the season.",
   "@adminAddMatchSuccess": {
     "placeholders": {
       "home": {
@@ -428,9 +428,6 @@
       },
       "away": {
         "type": "String"
-      },
-      "sequence": {
-        "type": "int"
       }
     }
   },

@@ -195,7 +195,7 @@
   "adminFixtureIncompleteDataLabel": "مباراة غير مكتملة البيانات",
   "adminRoundOptionLabel": "الجولة {sequence} — {status}",
   "adminAddMatchButton": "تسجيل المباراة وإضافتها للجولة",
-  "adminAddMatchSuccess": "تمت إضافة {home} ضد {away} إلى الجولة {sequence}.",
+  "adminAddMatchSuccess": "تمت إضافة {home} ضد {away} إلى الموسم.",
   "adminSelectRoundFirst": "اختر الجولة أولاً.",
   "adminExistingFixturesSectionTitle": "مباريات هذه الجولة",
   "adminRemoveFixtureTooltip": "حذف هذه المباراة من الجولة",
