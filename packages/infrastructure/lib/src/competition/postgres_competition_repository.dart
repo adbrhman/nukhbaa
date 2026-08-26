@@ -19,13 +19,16 @@ import 'package:shared/shared.dart';
 ///
 /// Error mapping (the port's general contract):
 /// * A storage-only integrity conflict the application could not pre-empt — a
-///   unique violation (`23505`), a foreign-key violation (`23503`), or a
+///   unique violation (`23505`), a foreign-key violation (`23503`), a
 ///   check/trigger rejection (`23514`, e.g. the ruleset-freeze or lifecycle
-///   backstop) — is surfaced as [ErrorKind.invariant] with the *domain* code the
-///   use-case expects (e.g. `competition.already_joined`), decided by the
-///   violated constraint. This is the "database is the last line of defence"
-///   axiom made visible: the DB catches what slipped past the app, and the
-///   adapter translates it back into a business-rule conflict.
+///   backstop), or an exclusion violation (`23P01`, the `seasons_no_overlap`
+///   backstop against two overlapping seasons of the same competition,
+///   Phase 7.7 step 3) — is surfaced as [ErrorKind.invariant] with the
+///   *domain* code the use-case expects (e.g. `competition.already_joined`),
+///   decided by the violated constraint. This is the "database is the last
+///   line of defence" axiom made visible: the DB catches what slipped past
+///   the app, and the adapter translates it back into a business-rule
+///   conflict.
 /// * A genuinely transient/infrastructure failure stays [ErrorKind.transient]
 ///   (retryable), exactly as [PostgresConnection.query] classified it.
 /// * A missing aggregate that a command referenced is an [ErrorKind.invariant]
@@ -192,6 +195,12 @@ VALUES (@id, @competition_id, @label, @start_at, @end_at)
         'seasons_competition_id_fkey' => const AppError.invariant(
           'competition.not_found',
           'Competition not found',
+        ),
+        // Exclusion violation (Phase 7.7 step 3): this season's window
+        // overlaps an existing season of the same competition.
+        'seasons_no_overlap' => const AppError.invariant(
+          'competition.season_overlap',
+          'Season overlaps with an existing season for this competition',
         ),
         _ => null,
       },
@@ -988,8 +997,9 @@ WHERE season_id = @season_id AND user_id = @user_id
     }
     final code = cause.code;
     // 23505 unique_violation, 23503 foreign_key_violation,
-    // 23514 check_violation (our freeze/lifecycle triggers raise this).
-    const integrityCodes = {'23505', '23503', '23514'};
+    // 23514 check_violation (our freeze/lifecycle triggers raise this),
+    // 23P01 exclusion_violation (seasons_no_overlap, Phase 7.7 step 3).
+    const integrityCodes = {'23505', '23503', '23514', '23P01'};
     if (code == null || !integrityCodes.contains(code)) {
       return error;
     }
