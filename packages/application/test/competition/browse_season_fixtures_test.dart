@@ -21,11 +21,11 @@ SeasonFixture _link({
   required int order,
 }) =>
     (SeasonFixture.create(
-          seasonId: SeasonId(seasonId),
-          fixture: FixtureRef(fixtureId),
-          displayOrder: order,
-        )
-        as Ok<SeasonFixture>)
+              seasonId: SeasonId(seasonId),
+              fixture: FixtureRef(fixtureId),
+              displayOrder: order,
+            )
+            as Ok<SeasonFixture>)
         .value;
 
 void main() {
@@ -152,22 +152,19 @@ void main() {
     );
   });
 
-  test(
-    'a transient fixture-prediction-repository failure is propagated '
-    'unchanged',
-    () async {
-      fixturePredictions.failNextWith(
-        const AppError.transient('db.unavailable', 'connection reset'),
-      );
+  test('a transient fixture-prediction-repository failure is propagated '
+      'unchanged', () async {
+    fixturePredictions.failNextWith(
+      const AppError.transient('db.unavailable', 'connection reset'),
+    );
 
-      final r = await useCase.call(
-        principal: userPrincipal(_user),
-        seasonId: _season,
-      );
+    final r = await useCase.call(
+      principal: userPrincipal(_user),
+      seasonId: _season,
+    );
 
-      final err = (r as Err<List<SeasonFixtureCard>>).error;
-      expect(err.kind, ErrorKind.transient);
-      expect(err.code, 'db.unavailable');
-    },
-  );
+    final err = (r as Err<List<SeasonFixtureCard>>).error;
+    expect(err.kind, ErrorKind.transient);
+    expect(err.code, 'db.unavailable');
+  });
 }

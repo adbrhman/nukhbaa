@@ -21,7 +21,7 @@ void main() {
         'group_member_joined',
       );
       expect(NotificationKind.reactionReceived.wireValue, 'reaction_received');
-    expect(NotificationKind.fixtureScored.wireValue, 'fixture_scored');
+      expect(NotificationKind.fixtureScored.wireValue, 'fixture_scored');
     });
 
     test('tryParse round-trips every kind', () {

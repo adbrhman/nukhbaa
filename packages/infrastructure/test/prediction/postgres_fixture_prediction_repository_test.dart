@@ -219,24 +219,27 @@ void main() {
       expect(connection.parameters.single['display_order'], 2);
     });
 
-    test('linkFixtureToSeason passes a transient error through verbatim', () async {
-      const error = AppError.transient('boom', 'db down');
-      final repo = PostgresFixturePredictionRepository(
-        _FakeConnection([const Result.err(error)]),
-      );
-      final link =
-          (SeasonFixture.create(
-                    seasonId: const SeasonId(_seasonId),
-                    fixture: const FixtureRef(_fixtureA),
-                    displayOrder: 0,
-                  )
-                  as Ok<SeasonFixture>)
-              .value;
+    test(
+      'linkFixtureToSeason passes a transient error through verbatim',
+      () async {
+        const error = AppError.transient('boom', 'db down');
+        final repo = PostgresFixturePredictionRepository(
+          _FakeConnection([const Result.err(error)]),
+        );
+        final link =
+            (SeasonFixture.create(
+                      seasonId: const SeasonId(_seasonId),
+                      fixture: const FixtureRef(_fixtureA),
+                      displayOrder: 0,
+                    )
+                    as Ok<SeasonFixture>)
+                .value;
 
-      final result = await repo.linkFixtureToSeason(link);
+        final result = await repo.linkFixtureToSeason(link);
 
-      expect((result as Err<void>).error.code, 'boom');
-    });
+        expect((result as Err<void>).error.code, 'boom');
+      },
+    );
 
     test('countDoublesOnDay maps the count column', () async {
       final repo = PostgresFixturePredictionRepository(

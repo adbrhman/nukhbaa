@@ -150,9 +150,7 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
       Ok<FixturePredictionDto>(:final value) => FixtureSubmissionSucceeded(
         value,
       ),
-      Err<FixturePredictionDto>(:final error) => FixtureSubmissionFailed(
-        error,
-      ),
+      Err<FixturePredictionDto>(:final error) => FixtureSubmissionFailed(error),
     };
   }
 

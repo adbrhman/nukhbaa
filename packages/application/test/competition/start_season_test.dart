@@ -73,7 +73,10 @@ void main() {
       year: 2026,
       month: 8,
     );
-    expect((result as Err<CompetitionSeason>).error.kind, ErrorKind.authorization);
+    expect(
+      (result as Err<CompetitionSeason>).error.kind,
+      ErrorKind.authorization,
+    );
   });
 
   test('a malformed competition id is a validation error', () async {
@@ -83,7 +86,10 @@ void main() {
       year: 2026,
       month: 8,
     );
-    expect((result as Err<CompetitionSeason>).error.code, 'competition.competition_id_malformed');
+    expect(
+      (result as Err<CompetitionSeason>).error.code,
+      'competition.competition_id_malformed',
+    );
   });
 
   test('a missing competition is invariant not_found', () async {
@@ -106,7 +112,10 @@ void main() {
       year: 2026,
       month: 13,
     );
-    expect((result as Err<CompetitionSeason>).error.code, 'competition.season_month_invalid');
+    expect(
+      (result as Err<CompetitionSeason>).error.code,
+      'competition.season_month_invalid',
+    );
   });
 
   test('an out-of-range year is rejected', () async {
@@ -117,6 +126,9 @@ void main() {
       year: 1999,
       month: 8,
     );
-    expect((result as Err<CompetitionSeason>).error.code, 'competition.season_year_invalid');
+    expect(
+      (result as Err<CompetitionSeason>).error.code,
+      'competition.season_year_invalid',
+    );
   });
 }

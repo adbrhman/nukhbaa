@@ -303,73 +303,67 @@ void main() {
     });
   });
 
-  group(
-    'CompetitionApi.browseSeasonFixtures (GET /seasons/{id}/fixtures)',
-    () {
-      test(
-        '200 -> Ok(List<SeasonFixtureCardDto>) at the fixtures path',
-        () async {
-          const f0 = SeasonFixtureCardDto(
-            seasonId: 's',
-            fixtureId: 'f-a',
-            homeTeam: 'Al Hilal',
-            awayTeam: 'Al Nassr',
-            kickoffAt: '2026-08-15T18:00:00.000Z',
-          );
-          const f1 = SeasonFixtureCardDto(
-            seasonId: 's',
-            fixtureId: 'f-b',
-            homeTeam: null,
-            awayTeam: null,
-            kickoffAt: null,
-          );
-          final ctx = buildTransport(
-            (_) async => okJson([f0.toJson(), f1.toJson()]),
-          );
-
-          final result = await CompetitionApi(
-            ctx.transport,
-          ).browseSeasonFixtures('s');
-
-          expect(
-            result,
-            const Result<List<SeasonFixtureCardDto>>.ok([f0, f1]),
-          );
-          expect(ctx.captured.single.url.path, '/seasons/s/fixtures');
-        },
-      );
-
-      test('an absent season is a legitimate empty array (no oracle)', () async {
-        final ctx = buildTransport((_) async => okJson(<Object>[]));
-
-        final result = await CompetitionApi(
-          ctx.transport,
-        ).browseSeasonFixtures('gone');
-
-        expect((result as Ok<List<SeasonFixtureCardDto>>).value, isEmpty);
-      });
-
-      test('503 -> Err(transient) retryable', () async {
+  group('CompetitionApi.browseSeasonFixtures (GET /seasons/{id}/fixtures)', () {
+    test(
+      '200 -> Ok(List<SeasonFixtureCardDto>) at the fixtures path',
+      () async {
+        const f0 = SeasonFixtureCardDto(
+          seasonId: 's',
+          fixtureId: 'f-a',
+          homeTeam: 'Al Hilal',
+          awayTeam: 'Al Nassr',
+          kickoffAt: '2026-08-15T18:00:00.000Z',
+        );
+        const f1 = SeasonFixtureCardDto(
+          seasonId: 's',
+          fixtureId: 'f-b',
+          homeTeam: null,
+          awayTeam: null,
+          kickoffAt: null,
+        );
         final ctx = buildTransport(
-          (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+          (_) async => okJson([f0.toJson(), f1.toJson()]),
         );
 
         final result = await CompetitionApi(
           ctx.transport,
         ).browseSeasonFixtures('s');
 
-        expect(
-          (result as Err<List<SeasonFixtureCardDto>>).error.isRetryable,
-          isTrue,
-        );
-      });
-    },
-  );
+        expect(result, const Result<List<SeasonFixtureCardDto>>.ok([f0, f1]));
+        expect(ctx.captured.single.url.path, '/seasons/s/fixtures');
+      },
+    );
 
-  group(
-    'CompetitionApi.linkFixtureToSeason (POST /seasons/{id}/fixtures)',
-    () {
-      test('201 -> Ok(SeasonFixtureDto), posts fixture_id/display_order', () async {
+    test('an absent season is a legitimate empty array (no oracle)', () async {
+      final ctx = buildTransport((_) async => okJson(<Object>[]));
+
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).browseSeasonFixtures('gone');
+
+      expect((result as Ok<List<SeasonFixtureCardDto>>).value, isEmpty);
+    });
+
+    test('503 -> Err(transient) retryable', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+      );
+
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).browseSeasonFixtures('s');
+
+      expect(
+        (result as Err<List<SeasonFixtureCardDto>>).error.isRetryable,
+        isTrue,
+      );
+    });
+  });
+
+  group('CompetitionApi.linkFixtureToSeason (POST /seasons/{id}/fixtures)', () {
+    test(
+      '201 -> Ok(SeasonFixtureDto), posts fixture_id/display_order',
+      () async {
         const dto = SeasonFixtureDto(
           seasonId: 's',
           fixtureId: 'f-a',
@@ -377,11 +371,9 @@ void main() {
         );
         final ctx = buildTransport((_) async => okJson(dto.toJson()));
 
-        final result = await CompetitionApi(ctx.transport).linkFixtureToSeason(
-          seasonId: 's',
-          fixtureId: 'f-a',
-          displayOrder: 2,
-        );
+        final result = await CompetitionApi(
+          ctx.transport,
+        ).linkFixtureToSeason(seasonId: 's', fixtureId: 'f-a', displayOrder: 2);
 
         expect(result, const Result<SeasonFixtureDto>.ok(dto));
         expect(ctx.captured.single.method, 'POST');
@@ -390,52 +382,43 @@ void main() {
             jsonDecode(ctx.captured.single.body) as Map<String, Object?>;
         expect(sent['fixture_id'], 'f-a');
         expect(sent['display_order'], 2);
-      });
+      },
+    );
 
-      test(
-        '409 competition.season_fixture_already_linked -> Err(invariant)',
-        () async {
-          final ctx = buildTransport(
-            (_) async => errorEnvelope(
-              409,
-              'competition.season_fixture_already_linked',
-              'Already linked.',
-            ),
-          );
-
-          final result = await CompetitionApi(
-            ctx.transport,
-          ).linkFixtureToSeason(
-            seasonId: 's',
-            fixtureId: 'f-a',
-            displayOrder: 0,
-          );
-
-          expect(
-            (result as Err<SeasonFixtureDto>).error.kind,
-            ErrorKind.invariant,
-          );
-        },
-      );
-
-      test('503 -> Err(transient) retryable', () async {
+    test(
+      '409 competition.season_fixture_already_linked -> Err(invariant)',
+      () async {
         final ctx = buildTransport(
-          (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+          (_) async => errorEnvelope(
+            409,
+            'competition.season_fixture_already_linked',
+            'Already linked.',
+          ),
         );
 
-        final result = await CompetitionApi(ctx.transport).linkFixtureToSeason(
-          seasonId: 's',
-          fixtureId: 'f-a',
-          displayOrder: 0,
-        );
+        final result = await CompetitionApi(
+          ctx.transport,
+        ).linkFixtureToSeason(seasonId: 's', fixtureId: 'f-a', displayOrder: 0);
 
         expect(
-          (result as Err<SeasonFixtureDto>).error.isRetryable,
-          isTrue,
+          (result as Err<SeasonFixtureDto>).error.kind,
+          ErrorKind.invariant,
         );
-      });
-    },
-  );
+      },
+    );
+
+    test('503 -> Err(transient) retryable', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
+      );
+
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).linkFixtureToSeason(seasonId: 's', fixtureId: 'f-a', displayOrder: 0);
+
+      expect((result as Err<SeasonFixtureDto>).error.isRetryable, isTrue);
+    });
+  });
 
   group('CompetitionApi.getMatchesFeed (GET /feed/matches)', () {
     test('200 array -> Ok(List<MatchFeedItemDto>)', () async {

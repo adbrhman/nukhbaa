@@ -81,8 +81,10 @@ class FixturePredictionScreen extends ConsumerWidget {
             key: const Key('fixturePrediction.list'),
             padding: const EdgeInsets.all(16),
             itemCount: list.length,
-            itemBuilder: (context, index) =>
-                _FixturePredictionCard(seasonId: seasonId, fixture: list[index]),
+            itemBuilder: (context, index) => _FixturePredictionCard(
+              seasonId: seasonId,
+              fixture: list[index],
+            ),
           );
         },
       ),
@@ -234,7 +236,9 @@ class _FixturePredictionCardState
             children: <Widget>[
               Expanded(
                 child: TextField(
-                  key: Key('fixturePrediction.home.${widget.fixture.fixtureId}'),
+                  key: Key(
+                    'fixturePrediction.home.${widget.fixture.fixtureId}',
+                  ),
                   controller: _home,
                   enabled: enabled,
                   keyboardType: TextInputType.number,
@@ -248,7 +252,9 @@ class _FixturePredictionCardState
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
-                  key: Key('fixturePrediction.away.${widget.fixture.fixtureId}'),
+                  key: Key(
+                    'fixturePrediction.away.${widget.fixture.fixtureId}',
+                  ),
                   controller: _away,
                   enabled: enabled,
                   keyboardType: TextInputType.number,
@@ -263,7 +269,9 @@ class _FixturePredictionCardState
           Row(
             children: <Widget>[
               Checkbox(
-                key: Key('fixturePrediction.double.${widget.fixture.fixtureId}'),
+                key: Key(
+                  'fixturePrediction.double.${widget.fixture.fixtureId}',
+                ),
                 value: _isDouble,
                 onChanged: enabled
                     ? (v) => setState(() => _isDouble = v ?? false)
@@ -275,7 +283,9 @@ class _FixturePredictionCardState
               ),
               const Spacer(),
               FilledButton(
-                key: Key('fixturePrediction.submit.${widget.fixture.fixtureId}'),
+                key: Key(
+                  'fixturePrediction.submit.${widget.fixture.fixtureId}',
+                ),
                 onPressed: enabled ? _submit : null,
                 child: inFlight
                     ? const SizedBox(

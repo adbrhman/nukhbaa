@@ -18,6 +18,7 @@ export 'src/identity/auth_config.dart';
 export 'src/identity/jwks_client.dart';
 export 'src/identity/postgres_user_directory.dart';
 export 'src/identity/supabase_auth_client.dart';
+
 /// (postgres). Nothing depends on this package except the composition root
 /// The infrastructure layer: concrete adapters implementing application ports.
 export 'src/identity/supabase_auth_gateway.dart';

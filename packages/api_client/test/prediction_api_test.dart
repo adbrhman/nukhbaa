@@ -106,142 +106,127 @@ void main() {
     });
   });
 
-  group(
-    'PredictionApi.submitFixturePrediction '
-    '(POST /seasons/{id}/fixtures/{fixtureId}/prediction)',
-    () {
-      const storedFixturePrediction = FixturePredictionDto(
-        id: 'fp-1',
-        participantId: 'part-1',
+  group('PredictionApi.submitFixturePrediction '
+      '(POST /seasons/{id}/fixtures/{fixtureId}/prediction)', () {
+    const storedFixturePrediction = FixturePredictionDto(
+      id: 'fp-1',
+      participantId: 'part-1',
+      fixtureId: 'f-a',
+      submittedAt: '2026-08-01T10:00:00Z',
+      homeGoals: 2,
+      awayGoals: 1,
+    );
+
+    test('200 -> Ok; posts a FixturePredictionCommand body, is_double '
+        'default false', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(storedFixturePrediction.toJson()),
+        token: 'jwt',
+      );
+
+      final result = await PredictionApi(ctx.transport).submitFixturePrediction(
+        seasonId: 's-1',
         fixtureId: 'f-a',
-        submittedAt: '2026-08-01T10:00:00Z',
         homeGoals: 2,
         awayGoals: 1,
       );
 
-      test(
-        '200 -> Ok; posts a FixturePredictionCommand body, is_double '
-        'default false',
-        () async {
-          final ctx = buildTransport(
-            (_) async => okJson(storedFixturePrediction.toJson()),
-            token: 'jwt',
-          );
-
-          final result = await PredictionApi(
-            ctx.transport,
-          ).submitFixturePrediction(
-            seasonId: 's-1',
-            fixtureId: 'f-a',
-            homeGoals: 2,
-            awayGoals: 1,
-          );
-
-          expect(
-            result,
-            const Result<FixturePredictionDto>.ok(storedFixturePrediction),
-          );
-
-          final req = ctx.captured.single;
-          expect(req.method, 'POST');
-          expect(req.url.path, '/seasons/s-1/fixtures/f-a/prediction');
-          expect(req.headers['authorization'], 'Bearer jwt');
-
-          final sent = jsonDecode(req.body) as Map<String, Object?>;
-          expect(sent, {
-            'schema_version': 1,
-            'home_goals': 2,
-            'away_goals': 1,
-            'is_double': false,
-          });
-        },
+      expect(
+        result,
+        const Result<FixturePredictionDto>.ok(storedFixturePrediction),
       );
 
-      test('is_double: true is sent verbatim when passed', () async {
-        final ctx = buildTransport(
-          (_) async => okJson(storedFixturePrediction.toJson()),
-        );
+      final req = ctx.captured.single;
+      expect(req.method, 'POST');
+      expect(req.url.path, '/seasons/s-1/fixtures/f-a/prediction');
+      expect(req.headers['authorization'], 'Bearer jwt');
 
-        await PredictionApi(ctx.transport).submitFixturePrediction(
-          seasonId: 's-1',
-          fixtureId: 'f-a',
-          homeGoals: 2,
-          awayGoals: 1,
-          isDouble: true,
-        );
-
-        final sent =
-            jsonDecode(ctx.captured.single.body) as Map<String, Object?>;
-        expect(sent['is_double'], isTrue);
+      final sent = jsonDecode(req.body) as Map<String, Object?>;
+      expect(sent, {
+        'schema_version': 1,
+        'home_goals': 2,
+        'away_goals': 1,
+        'is_double': false,
       });
+    });
 
-      test('400 malformed body -> Err(validation)', () async {
-        final ctx = buildTransport(
-          (_) async => errorEnvelope(
-            400,
-            'request.field_missing',
-            'Field "home_goals" is required.',
-          ),
-        );
+    test('is_double: true is sent verbatim when passed', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(storedFixturePrediction.toJson()),
+      );
 
-        final result = await PredictionApi(
-          ctx.transport,
-        ).submitFixturePrediction(
-          seasonId: 's-1',
-          fixtureId: 'f-a',
-          homeGoals: 0,
-          awayGoals: 0,
-        );
+      await PredictionApi(ctx.transport).submitFixturePrediction(
+        seasonId: 's-1',
+        fixtureId: 'f-a',
+        homeGoals: 2,
+        awayGoals: 1,
+        isDouble: true,
+      );
 
-        expect(
-          (result as Err<FixturePredictionDto>).error.kind,
-          ErrorKind.validation,
-        );
-      });
+      final sent = jsonDecode(ctx.captured.single.body) as Map<String, Object?>;
+      expect(sent['is_double'], isTrue);
+    });
 
-      test('409 daily-double cap -> Err(invariant)', () async {
-        final ctx = buildTransport(
-          (_) async => errorEnvelope(
-            409,
-            'prediction.daily_double_limit',
-            'Only one double per day.',
-          ),
-        );
+    test('400 malformed body -> Err(validation)', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(
+          400,
+          'request.field_missing',
+          'Field "home_goals" is required.',
+        ),
+      );
 
-        final result = await PredictionApi(
-          ctx.transport,
-        ).submitFixturePrediction(
-          seasonId: 's-1',
-          fixtureId: 'f-a',
-          homeGoals: 1,
-          awayGoals: 0,
-          isDouble: true,
-        );
+      final result = await PredictionApi(ctx.transport).submitFixturePrediction(
+        seasonId: 's-1',
+        fixtureId: 'f-a',
+        homeGoals: 0,
+        awayGoals: 0,
+      );
 
-        final err = (result as Err<FixturePredictionDto>).error;
-        expect(err.kind, ErrorKind.invariant);
-        expect(err.code, 'prediction.daily_double_limit');
-      });
+      expect(
+        (result as Err<FixturePredictionDto>).error.kind,
+        ErrorKind.validation,
+      );
+    });
 
-      test('network failure -> Err(transient) network_unreachable', () async {
-        final ctx = buildTransport((_) async => throw Exception('timeout'));
+    test('409 daily-double cap -> Err(invariant)', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(
+          409,
+          'prediction.daily_double_limit',
+          'Only one double per day.',
+        ),
+      );
 
-        final result = await PredictionApi(
-          ctx.transport,
-        ).submitFixturePrediction(
-          seasonId: 's-1',
-          fixtureId: 'f-a',
-          homeGoals: 1,
-          awayGoals: 1,
-        );
+      final result = await PredictionApi(ctx.transport).submitFixturePrediction(
+        seasonId: 's-1',
+        fixtureId: 'f-a',
+        homeGoals: 1,
+        awayGoals: 0,
+        isDouble: true,
+      );
 
-        expect(
-          (result as Err<FixturePredictionDto>).error.code,
-          apiErrorNetworkUnreachable,
-        );
-      });
-    },
-  );
+      final err = (result as Err<FixturePredictionDto>).error;
+      expect(err.kind, ErrorKind.invariant);
+      expect(err.code, 'prediction.daily_double_limit');
+    });
+
+    test('network failure -> Err(transient) network_unreachable', () async {
+      final ctx = buildTransport((_) async => throw Exception('timeout'));
+
+      final result = await PredictionApi(ctx.transport).submitFixturePrediction(
+        seasonId: 's-1',
+        fixtureId: 'f-a',
+        homeGoals: 1,
+        awayGoals: 1,
+      );
+
+      expect(
+        (result as Err<FixturePredictionDto>).error.code,
+        apiErrorNetworkUnreachable,
+      );
+    });
+  });
 
   group('PredictionApi.getMyPrediction (GET /rounds/{id}/predictions)', () {
     test('200 -> Ok(PredictionDto)', () async {

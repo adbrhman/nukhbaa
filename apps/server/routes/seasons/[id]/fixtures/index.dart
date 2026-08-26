@@ -50,9 +50,7 @@ Future<Response> _list(RequestContext context, String id) async {
 
   return switch (result) {
     Ok<List<SeasonFixtureCard>>(:final value) => Response.json(
-      body: [
-        for (final card in value) seasonFixtureCardToDto(card).toJson(),
-      ],
+      body: [for (final card in value) seasonFixtureCardToDto(card).toJson()],
     ),
     Err<List<SeasonFixtureCard>>(:final error) => errorResponse(error),
   };

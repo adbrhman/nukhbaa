@@ -426,10 +426,7 @@ class RoundReportController extends _$RoundReportController {
 
 /// نتيجة دمج تسجيل المباراة وربطها بالجولة — نجاح فقط إذا نجحت العمليتان معاً.
 class AddMatchResult {
-  const AddMatchResult({
-    required this.fixture,
-    required this.link,
-  });
+  const AddMatchResult({required this.fixture, required this.link});
 
   final FixtureScheduleDto fixture;
   final SeasonFixtureDto link;
@@ -486,9 +483,7 @@ class AddMatchController extends _$AddMatchController {
     }
     final link = (linkResult as Ok<SeasonFixtureDto>).value;
 
-    state = AsyncValue.data(
-      AddMatchResult(fixture: fixture, link: link),
-    );
+    state = AsyncValue.data(AddMatchResult(fixture: fixture, link: link));
 
     // حدّث قائمة مباريات الموسم حتى يُحسب displayOrder التالي تلقائياً.
     ref.invalidate(seasonFixturesProvider(seasonId));

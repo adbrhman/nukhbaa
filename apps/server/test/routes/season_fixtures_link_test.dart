@@ -134,30 +134,27 @@ void main() {
       },
     );
 
-    test(
-      'a duplicate link is 409 with code '
-      'competition.season_fixture_already_linked',
-      () async {
-        final setup = rootWith();
-        final first = wireContext(
-          root: setup.root,
-          principal: adminPrincipal(),
-          body: {'fixture_id': fixtureId, 'display_order': 0},
-        );
-        await fixtures_route.onRequest(first, seasonId);
+    test('a duplicate link is 409 with code '
+        'competition.season_fixture_already_linked', () async {
+      final setup = rootWith();
+      final first = wireContext(
+        root: setup.root,
+        principal: adminPrincipal(),
+        body: {'fixture_id': fixtureId, 'display_order': 0},
+      );
+      await fixtures_route.onRequest(first, seasonId);
 
-        final second = wireContext(
-          root: setup.root,
-          principal: adminPrincipal(),
-          body: {'fixture_id': fixtureId, 'display_order': 1},
-        );
-        final response = await fixtures_route.onRequest(second, seasonId);
+      final second = wireContext(
+        root: setup.root,
+        principal: adminPrincipal(),
+        body: {'fixture_id': fixtureId, 'display_order': 1},
+      );
+      final response = await fixtures_route.onRequest(second, seasonId);
 
-        expect(response.statusCode, HttpStatus.conflict);
-        final body = await decodeBody(response);
-        expect(body['code'], 'competition.season_fixture_already_linked');
-      },
-    );
+      expect(response.statusCode, HttpStatus.conflict);
+      final body = await decodeBody(response);
+      expect(body['code'], 'competition.season_fixture_already_linked');
+    });
 
     test('an unsupported method (DELETE) is 405', () async {
       final setup = rootWith();

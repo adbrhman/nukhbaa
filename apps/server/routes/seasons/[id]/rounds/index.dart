@@ -50,4 +50,3 @@ Future<Response> _list(RequestContext context, String id) async {
     Err<List<Round>>(:final error) => errorResponse(error),
   };
 }
-

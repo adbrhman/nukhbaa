@@ -14,14 +14,14 @@ const _fixtureId = '44444444-4444-4444-4444-444444444444';
 
 CompetitionSeason _season() =>
     (CompetitionSeason.create(
-          id: const SeasonId(_seasonId),
-          competitionId: const CompetitionId(_competitionId),
-          label: 'August',
-          startAt: DateTime.utc(2026, 8, 1),
-          endAt: DateTime.utc(2026, 9, 1),
-        )
-        as Ok<CompetitionSeason>)
-    .value;
+              id: const SeasonId(_seasonId),
+              competitionId: const CompetitionId(_competitionId),
+              label: 'August',
+              startAt: DateTime.utc(2026, 8, 1),
+              endAt: DateTime.utc(2026, 9, 1),
+            )
+            as Ok<CompetitionSeason>)
+        .value;
 
 void main() {
   late FakeCompetitionRepository competitionRepo;

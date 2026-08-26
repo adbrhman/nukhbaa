@@ -2,7 +2,6 @@
 /// per-fixture prediction flow (Axiom 4 Amendment).
 library;
 
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/fixture_prediction/fixture_prediction_providers.dart';
 import 'package:shared/shared.dart';
@@ -30,25 +29,28 @@ const List<Map<String, Object?>> _twoFixtures = <Map<String, Object?>>[
 
 void main() {
   group('seasonFixturesProvider', () {
-    test('an OK list -> the exact fixtures, requesting GET /seasons/{id}/fixtures', () async {
-      final harness = buildPredictionHarness(
-        (_) async => okJsonList(_twoFixtures),
-      );
-      addTearDown(harness.dispose);
+    test(
+      'an OK list -> the exact fixtures, requesting GET /seasons/{id}/fixtures',
+      () async {
+        final harness = buildPredictionHarness(
+          (_) async => okJsonList(_twoFixtures),
+        );
+        addTearDown(harness.dispose);
 
-      final result = await harness.container.read(
-        seasonFixturesProvider('s-1').future,
-      );
+        final result = await harness.container.read(
+          seasonFixturesProvider('s-1').future,
+        );
 
-      expect(result, hasLength(2));
-      expect(result.first.fixtureId, 'f-a');
-      expect(result.last.homeTeam, isNull);
+        expect(result, hasLength(2));
+        expect(result.first.fixtureId, 'f-a');
+        expect(result.last.homeTeam, isNull);
 
-      expect(harness.captured, hasLength(1));
-      final request = harness.captured.single.request;
-      expect(request.method, 'GET');
-      expect(request.url.path, '/seasons/s-1/fixtures');
-    });
+        expect(harness.captured, hasLength(1));
+        final request = harness.captured.single.request;
+        expect(request.method, 'GET');
+        expect(request.url.path, '/seasons/s-1/fixtures');
+      },
+    );
 
     test('an empty list is a legitimate Ok(<empty>), not an error', () async {
       final harness = buildPredictionHarness(
@@ -72,11 +74,7 @@ void main() {
       await expectLater(
         harness.container.read(seasonFixturesProvider('s-1').future),
         throwsA(
-          isA<AppError>().having(
-            (e) => e.kind,
-            'kind',
-            ErrorKind.transient,
-          ),
+          isA<AppError>().having((e) => e.kind, 'kind', ErrorKind.transient),
         ),
       );
     });

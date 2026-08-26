@@ -18,7 +18,8 @@ void main() {
       repo = InMemoryCompetitionRepository();
       if (withCompetition) {
         repo.competitions[kCompetitionId] = Competition.fromStored(
-          id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value,
+          id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
+              .value,
           name: 'Comp',
           format: FormatType.footballScoreline,
           visibility: CompetitionVisibility.public,

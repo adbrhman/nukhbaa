@@ -62,7 +62,6 @@ Future<SeasonLeaderboardDto> seasonLeaderboard(Ref ref, String seasonId) async {
   return _unwrap(await api.seasonLeaderboard(seasonId));
 }
 
-
 /// `GET /seasons/{id}/fixture-leaderboard` — a season's live, per-fixture
 /// standings (Axiom 4 Amendment sibling of [seasonLeaderboard]).
 ///

@@ -43,38 +43,35 @@ void main() {
   });
 
   group('FixturePredictionController.submit — success', () {
-    test(
-      'a valid submit -> InFlight then Succeeded, POSTing the exact command '
-      'body to /seasons/{id}/fixtures/{fixtureId}/prediction',
-      () async {
-        final harness = buildPredictionHarness(
-          (_) async => okJsonObject(_stored.toJson()),
-        );
-        addTearDown(harness.dispose);
+    test('a valid submit -> InFlight then Succeeded, POSTing the exact command '
+        'body to /seasons/{id}/fixtures/{fixtureId}/prediction', () async {
+      final harness = buildPredictionHarness(
+        (_) async => okJsonObject(_stored.toJson()),
+      );
+      addTearDown(harness.dispose);
 
-        await _controller(
-          harness,
-        ).submit(homeGoals: 2, awayGoals: 1, isDouble: true);
+      await _controller(
+        harness,
+      ).submit(homeGoals: 2, awayGoals: 1, isDouble: true);
 
-        final state = _stateOf(harness);
-        expect(state, isA<FixtureSubmissionSucceeded>());
-        expect((state as FixtureSubmissionSucceeded).prediction, _stored);
+      final state = _stateOf(harness);
+      expect(state, isA<FixtureSubmissionSucceeded>());
+      expect((state as FixtureSubmissionSucceeded).prediction, _stored);
 
-        expect(harness.captured, hasLength(1));
-        final request = harness.captured.single.request;
-        expect(request.method, 'POST');
-        expect(
-          request.url.path,
-          '/seasons/${_key.seasonId}/fixtures/${_key.fixtureId}/prediction',
-        );
-        final body = FixturePredictionCommandDto.fromJson(
-          (jsonDecode(request.body) as Map).cast<String, Object?>(),
-        );
-        expect(body.homeGoals, 2);
-        expect(body.awayGoals, 1);
-        expect(body.isDouble, isTrue);
-      },
-    );
+      expect(harness.captured, hasLength(1));
+      final request = harness.captured.single.request;
+      expect(request.method, 'POST');
+      expect(
+        request.url.path,
+        '/seasons/${_key.seasonId}/fixtures/${_key.fixtureId}/prediction',
+      );
+      final body = FixturePredictionCommandDto.fromJson(
+        (jsonDecode(request.body) as Map).cast<String, Object?>(),
+      );
+      expect(body.homeGoals, 2);
+      expect(body.awayGoals, 1);
+      expect(body.isDouble, isTrue);
+    });
   });
 
   group('FixturePredictionController.submit — auto-join retry', () {
@@ -97,13 +94,15 @@ void main() {
           }
           if (request.method == 'POST' &&
               request.url.path == '/seasons/${_key.seasonId}/participants') {
-            return okJsonObject(const ParticipantDto(
-              id: 'part-1',
-              seasonId: 's-1',
-              userId: 'u-1',
-              status: 'active',
-              joinedAt: '2026-08-25T09:00:00.000Z',
-            ).toJson());
+            return okJsonObject(
+              const ParticipantDto(
+                id: 'part-1',
+                seasonId: 's-1',
+                userId: 'u-1',
+                status: 'active',
+                joinedAt: '2026-08-25T09:00:00.000Z',
+              ).toJson(),
+            );
           }
           return errorEnvelope(404, 'not_found', 'unexpected request');
         });
@@ -113,29 +112,44 @@ void main() {
 
         final state = _stateOf(harness);
         expect(state, isA<FixtureSubmissionSucceeded>());
-        expect(submitCalls, 2, reason: 'submit, join, then retry the SAME submit');
+        expect(
+          submitCalls,
+          2,
+          reason: 'submit, join, then retry the SAME submit',
+        );
       },
     );
 
-    test('join itself failing surfaces the join error, not the original', () async {
-      final harness = buildPredictionHarness((request) async {
-        if (request.method == 'POST' && request.url.path.endsWith('/prediction')) {
-          return errorEnvelope(409, 'prediction.not_a_participant', 'join first');
-        }
-        if (request.method == 'POST' &&
-            request.url.path == '/seasons/${_key.seasonId}/participants') {
-          return errorEnvelope(403, 'competition.join_closed', 'closed');
-        }
-        return errorEnvelope(404, 'not_found', 'unexpected request');
-      });
-      addTearDown(harness.dispose);
+    test(
+      'join itself failing surfaces the join error, not the original',
+      () async {
+        final harness = buildPredictionHarness((request) async {
+          if (request.method == 'POST' &&
+              request.url.path.endsWith('/prediction')) {
+            return errorEnvelope(
+              409,
+              'prediction.not_a_participant',
+              'join first',
+            );
+          }
+          if (request.method == 'POST' &&
+              request.url.path == '/seasons/${_key.seasonId}/participants') {
+            return errorEnvelope(403, 'competition.join_closed', 'closed');
+          }
+          return errorEnvelope(404, 'not_found', 'unexpected request');
+        });
+        addTearDown(harness.dispose);
 
-      await _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+        await _controller(harness).submit(homeGoals: 1, awayGoals: 0);
 
-      final state = _stateOf(harness);
-      expect(state, isA<FixtureSubmissionFailed>());
-      expect((state as FixtureSubmissionFailed).error.code, 'competition.join_closed');
-    });
+        final state = _stateOf(harness);
+        expect(state, isA<FixtureSubmissionFailed>());
+        expect(
+          (state as FixtureSubmissionFailed).error.code,
+          'competition.join_closed',
+        );
+      },
+    );
   });
 
   group('FixturePredictionController.submit — failure', () {
@@ -175,19 +189,22 @@ void main() {
   });
 
   group('FixturePredictionController.submit — double-submit guard', () {
-    test('a second submit while one is in flight is ignored (one request)', () async {
-      final harness = buildPredictionHarness((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return okJsonObject(_stored.toJson());
-      });
-      addTearDown(harness.dispose);
+    test(
+      'a second submit while one is in flight is ignored (one request)',
+      () async {
+        final harness = buildPredictionHarness((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          return okJsonObject(_stored.toJson());
+        });
+        addTearDown(harness.dispose);
 
-      final first = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
-      final second = _controller(harness).submit(homeGoals: 9, awayGoals: 9);
-      await Future.wait([first, second]);
+        final first = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+        final second = _controller(harness).submit(homeGoals: 9, awayGoals: 9);
+        await Future.wait([first, second]);
 
-      expect(harness.captured, hasLength(1));
-    });
+        expect(harness.captured, hasLength(1));
+      },
+    );
   });
 
   group('FixturePredictionController.reset', () {
