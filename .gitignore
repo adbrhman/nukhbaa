@@ -1,38 +1,39 @@
-# Dart/Flutter
-.dart_tool/
-.packages
-build/
-coverage/
-*.g.dart.lock
-.fvm/flutter_sdk
 
+!.env.example
+# Dart/Flutter
+# Env & secrets (Security ADR s7: never commit the service role)
+# IDE / OS
+# Melos / pub workspaces: local dependency link files are generated and must
 # Riverpod / build_runner generated glue (apps/mobile). Machine-produced by
 # `dart run build_runner build`; regenerated on the build machine, never
 # hand-maintained (and excluded from analysis via apps/mobile/analysis_options.yaml).
-*.g.dart
-
-# Melos / pub workspaces: local dependency link files are generated and must
 # never be committed (Melos migration guide).
-pubspec_overrides.yaml
-
-# Env & secrets (Security ADR s7: never commit the service role)
-.env
-.env.*
-!.env.example
-
-# IDE / OS
-.idea/
-.vscode/
+# نسخ احتياطية محلية مؤقتة (لا تُرفع للريبو)
+*.bak_*
+*.g.dart
+*.g.dart.lock
 *.iml
-.DS_Store
-docker-build.log
+*.jks
 *.log
 --list
---list
-apps/mobile/android/
+.DS_Store
 .admin_dropdowns_backup_*/
-*.bak_*
-*.jks
-keystore_b64.txt
+.dart_tool/
+.env
+.env.*
+.format-fix-backup-*/
+.fvm/flutter_sdk
+.idea/
+.packages
+.step-*-backup-*/
+.step-*-fix-backup-*/
+.vscode/
 android_backup_*/
+apply_7_*.sh
+apps/mobile/android/
+build/
+coverage/
+docker-build.log
+keystore_b64.txt
 nukhbaa-current.zip
+pubspec_overrides.yaml
