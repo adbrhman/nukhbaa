@@ -8,13 +8,13 @@ import 'package:shared/shared.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../competition/competition_providers.dart';
 import '../../../competition/team_registry.dart';
+import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
-/// جدولة المباريات — اختيار المسابقة/الموسم/الجولة ثم إضافة مباراة.
+/// جدولة المباريات — اختيار المسابقة/الموسم ثم إضافة مباراة.
 class FixtureScheduleSection extends ConsumerStatefulWidget {
   const FixtureScheduleSection({super.key});
 
@@ -34,8 +34,6 @@ class _FixtureScheduleSectionState
   String? _competitionId;
   String? _competitionName;
   String? _seasonId;
-  String? _roundId;
-  int? _roundSequence;
 
   static final List<String> _teamOptions = <String>[
     ...kEplTeams.keys,
@@ -75,18 +73,18 @@ class _FixtureScheduleSectionState
     final bool inFlight = state is AsyncLoading<AddMatchResult>;
 
     int nextDisplayOrder = 0;
-    if (_roundId != null) {
-      final AsyncValue<List<RoundFixtureCardDto>> fixturesState = ref.watch(
-        roundFixturesProvider(_roundId!),
+    if (_seasonId != null) {
+      final AsyncValue<List<SeasonFixtureCardDto>> fixturesState = ref.watch(
+        seasonFixturesProvider(_seasonId!),
       );
-      if (fixturesState is AsyncData<List<RoundFixtureCardDto>>) {
+      if (fixturesState is AsyncData<List<SeasonFixtureCardDto>>) {
         nextDisplayOrder = fixturesState.value.length;
       }
     }
 
     final bool canSubmit =
         !inFlight &&
-        _roundId != null &&
+        _seasonId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
         _kickoffLocal != null;
@@ -112,8 +110,6 @@ class _FixtureScheduleSectionState
                   _competitionId = competition.id;
                   _competitionName = competition.name;
                   _seasonId = null;
-                  _roundId = null;
-                  _roundSequence = null;
                   _homeTeamController.clear();
                   _awayTeamController.clear();
                 }),
@@ -126,21 +122,6 @@ class _FixtureScheduleSectionState
                   selectedId: _seasonId,
                   onSelected: (String seasonId) => setState(() {
                     _seasonId = seasonId;
-                    _roundId = null;
-                    _roundSequence = null;
-                  }),
-                ),
-              ],
-              if (_seasonId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                RoundPickerField(
-                  keyPrefix: 'admin.fixtures',
-                  seasonId: _seasonId!,
-                  enabled: !inFlight,
-                  selectedId: _roundId,
-                  onSelected: (RoundDto round) => setState(() {
-                    _roundId = round.id;
-                    _roundSequence = round.sequence;
                   }),
                 ),
               ],
@@ -230,13 +211,11 @@ class _FixtureScheduleSectionState
   }
 
   void _addMatch(int displayOrder) {
-    final roundId = _roundId;
-    final sequence = _roundSequence;
+    final seasonId = _seasonId;
     final homeTeam = _homeTeamController.text.trim();
     final awayTeam = _awayTeamController.text.trim();
     final kickoff = _kickoffLocal;
-    if (roundId == null ||
-        sequence == null ||
+    if (seasonId == null ||
         homeTeam.isEmpty ||
         awayTeam.isEmpty ||
         kickoff == null) {
@@ -245,8 +224,7 @@ class _FixtureScheduleSectionState
     ref
         .read(addMatchControllerProvider.notifier)
         .submit(
-          roundId: roundId,
-          roundSequence: sequence,
+          seasonId: seasonId,
           homeTeam: homeTeam,
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),

@@ -26,6 +26,7 @@ import 'package:shared/shared.dart';
 import '../../core/providers.dart';
 import 'round_report.dart';
 import '../competition/competition_providers.dart';
+import '../fixture_prediction/fixture_prediction_providers.dart';
 
 part 'admin_providers.g.dart';
 
@@ -428,12 +429,10 @@ class AddMatchResult {
   const AddMatchResult({
     required this.fixture,
     required this.link,
-    required this.roundSequence,
   });
 
   final FixtureScheduleDto fixture;
-  final RoundFixtureDto link;
-  final int roundSequence;
+  final SeasonFixtureDto link;
 }
 
 /// يدمج `registerFixtureSchedule` ثم `linkFixtureToRound` في أمر واحد ذرّي من
@@ -451,11 +450,11 @@ class AddMatchController extends _$AddMatchController {
   @override
   AsyncValue<AddMatchResult>? build() => null;
 
-  /// يسجّل مباراة جديدة ثم يربطها بـ [roundId] عند [displayOrder].
-  /// [roundSequence] يُستخدم فقط لرسالة النجاح الودّية.
+  /// يسجّل مباراة جديدة ثم يربطها بـ [seasonId] عند [displayOrder]
+  /// (Phase 7.4 — Competition → Season → Fixture، بلا Round، Axiom 4
+  /// Amendment).
   Future<void> submit({
-    required String roundId,
-    required int roundSequence,
+    required String seasonId,
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
@@ -475,28 +474,23 @@ class AddMatchController extends _$AddMatchController {
     }
     final fixture = (registerResult as Ok<FixtureScheduleDto>).value;
 
-    // (2) ربط المباراة بالجولة — لا نعلن النجاح إلا بعد نجاح هذه الخطوة.
-    final linkResult = await _competitionApi.linkFixtureToRound(
-      roundId: roundId,
+    // (2) ربط المباراة بالموسم — لا نعلن النجاح إلا بعد نجاح هذه الخطوة.
+    final linkResult = await _competitionApi.linkFixtureToSeason(
+      seasonId: seasonId,
       fixtureId: fixture.fixtureId,
       displayOrder: displayOrder,
     );
-    if (linkResult is Err<RoundFixtureDto>) {
+    if (linkResult is Err<SeasonFixtureDto>) {
       state = AsyncValue.error(linkResult.error, StackTrace.current);
       return;
     }
-    final link = (linkResult as Ok<RoundFixtureDto>).value;
+    final link = (linkResult as Ok<SeasonFixtureDto>).value;
 
     state = AsyncValue.data(
-      AddMatchResult(
-        fixture: fixture,
-        link: link,
-        roundSequence: roundSequence,
-      ),
+      AddMatchResult(fixture: fixture, link: link),
     );
 
-    // حدّث قوائم مباريات الجولة حتى يُحسب displayOrder التالي تلقائياً.
-    ref.invalidate(roundFixturesProvider(roundId));
-    ref.invalidate(roundDetailProvider(roundId));
+    // حدّث قائمة مباريات الموسم حتى يُحسب displayOrder التالي تلقائياً.
+    ref.invalidate(seasonFixturesProvider(seasonId));
   }
 }
