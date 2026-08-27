@@ -50,12 +50,12 @@ void _enrolMember(FakeCompetitionRepository competition) {
 
 SeasonFixture _link({String fixture = _fixture}) =>
     (SeasonFixture.create(
-          seasonId: (SeasonId.tryParse(_season) as Ok<SeasonId>).value,
-          fixture: (FixtureRef.tryParse(fixture) as Ok<FixtureRef>).value,
-          displayOrder: 0,
-        )
-        as Ok<SeasonFixture>)
-    .value;
+              seasonId: (SeasonId.tryParse(_season) as Ok<SeasonId>).value,
+              fixture: (FixtureRef.tryParse(fixture) as Ok<FixtureRef>).value,
+              displayOrder: 0,
+            )
+            as Ok<SeasonFixture>)
+        .value;
 
 void main() {
   group('GetFixtureScores — authorization / membership', () {
@@ -119,7 +119,8 @@ void main() {
       final h = _harness();
       _enrolMember(h.competition);
       h.predictions.seedSeasonFixture(_link());
-      final fixtureRef = (FixtureRef.tryParse(_fixture) as Ok<FixtureRef>).value;
+      final fixtureRef =
+          (FixtureRef.tryParse(_fixture) as Ok<FixtureRef>).value;
       await h.scores.saveFixtureScores([
         ParticipantFixtureScore.fromStored(
           fixture: fixtureRef,

@@ -4,6 +4,7 @@
 /// implements them (that is Infrastructure's job) — Application ADR, Section 5.
 library;
 
+export 'src/admin/admin_list_fixture_predictions.dart';
 export 'src/admin/admin_list_round_predictions.dart';
 export 'src/admin/audit_recorder.dart';
 export 'src/admin/list_audit_log.dart';

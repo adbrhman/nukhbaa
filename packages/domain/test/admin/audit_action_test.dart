@@ -27,6 +27,7 @@ void main() {
         'round_locked',
         'fixture_linked_to_round',
         'round_predictions_viewed',
+        'fixture_predictions_viewed',
       });
     });
   });

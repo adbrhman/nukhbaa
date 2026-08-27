@@ -32,20 +32,16 @@ void main() {
 
   SeasonFixture link() =>
       (SeasonFixture.create(
-            seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
-            fixture:
-                (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
-            displayOrder: 0,
-          )
-          as Ok<SeasonFixture>)
-      .value;
+                seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
+                fixture:
+                    (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+                displayOrder: 0,
+              )
+              as Ok<SeasonFixture>)
+          .value;
 
   ({CompositionRoot root, _InMemoryFixtureScoreRepository scores})
-  scoresRootFor({
-    bool joined = true,
-    bool linked = true,
-    bool scored = true,
-  }) {
+  scoresRootFor({bool joined = true, bool linked = true, bool scored = true}) {
     final compRepo = InMemoryCompetitionRepository();
     if (joined) {
       compRepo.participants.add(participant());
@@ -230,8 +226,7 @@ final class _InMemoryFixturePredictionRepository
 
 /// A minimal in-memory [FixtureScoreRepository] for these route tests only.
 /// Never throws.
-final class _InMemoryFixtureScoreRepository
-    implements FixtureScoreRepository {
+final class _InMemoryFixtureScoreRepository implements FixtureScoreRepository {
   final Map<String, ParticipantFixtureScore> _byKey = {};
 
   void seed({
@@ -268,8 +263,10 @@ final class _InMemoryFixtureScoreRepository
   @override
   Future<Result<List<ParticipantFixtureScore>>> listByFixture(
     FixtureRef fixture,
-  ) async =>
-      Result.ok([for (final s in _byKey.values) if (s.fixture == fixture) s]);
+  ) async => Result.ok([
+    for (final s in _byKey.values)
+      if (s.fixture == fixture) s,
+  ]);
 
   @override
   Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
@@ -277,7 +274,8 @@ final class _InMemoryFixtureScoreRepository
   ) async {
     final wanted = {for (final f in fixtures) f.value};
     return Result.ok([
-      for (final s in _byKey.values) if (wanted.contains(s.fixture.value)) s,
+      for (final s in _byKey.values)
+        if (wanted.contains(s.fixture.value)) s,
     ]);
   }
 }

@@ -87,6 +87,7 @@ final class CompositionRoot {
     required this.viewParticipantLedger,
     required this.adminGetParticipantDisplayNames,
     required this.adminListRoundPredictions,
+    required this.adminListFixturePredictions,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -187,6 +188,7 @@ final class CompositionRoot {
     ViewParticipantLedger? viewParticipantLedger,
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
     AdminListRoundPredictions? adminListRoundPredictions,
+    AdminListFixturePredictions? adminListFixturePredictions,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -248,7 +250,7 @@ final class CompositionRoot {
            getSeasonLeaderboard ?? _absentGetSeasonLeaderboard(),
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
-           getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
+       getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
        getRoundLeaderboard =
            getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -286,6 +288,8 @@ final class CompositionRoot {
            viewParticipantLedger ?? _absentViewParticipantLedger(),
        adminListRoundPredictions =
            adminListRoundPredictions ?? _absentAdminListRoundPredictions(),
+       adminListFixturePredictions =
+           adminListFixturePredictions ?? _absentAdminListFixturePredictions(),
        _connection = null,
        _jwksClient = null;
 
@@ -575,10 +579,10 @@ final class CompositionRoot {
   /// test that reaches this path fails loudly instead of silently touching
   /// a real database — mirrors [_absentGetSeasonFixtureLeaderboard].
   static GetFixtureScores _absentGetFixtureScores() => GetFixtureScores(
-        competitionRepository: _unwiredCompetitionRepository,
-        fixturePredictionRepository: _unwiredFixturePredictionRepository,
-        fixtureScoreRepository: _unwiredFixtureScoreRepository,
-      );
+    competitionRepository: _unwiredCompetitionRepository,
+    fixturePredictionRepository: _unwiredFixturePredictionRepository,
+    fixtureScoreRepository: _unwiredFixtureScoreRepository,
+  );
 
   /// Backs the "absent" [GetRoundLeaderboard]: throws so a test that reaches
   /// an unwired round-leaderboard slice fails loudly instead of touching a
@@ -771,11 +775,16 @@ final class CompositionRoot {
         ledgerRepository: _unwiredLedgerRepository,
         auditRecorder: _absentAuditRecorder(),
       );
-
   static AdminListRoundPredictions _absentAdminListRoundPredictions() =>
       AdminListRoundPredictions(
         competitionRepository: _unwiredCompetitionRepository,
         predictionRepository: _unwiredPredictionRepository,
+        auditRecorder: _absentAuditRecorder(),
+      );
+
+  static AdminListFixturePredictions _absentAdminListFixturePredictions() =>
+      AdminListFixturePredictions(
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
         auditRecorder: _absentAuditRecorder(),
       );
 
@@ -1082,6 +1091,11 @@ final class CompositionRoot {
   /// one scored round, itself audited (admin-only — mirrors
   /// [viewParticipantLedger]'s no-silent-exemption rule).
   final AdminListRoundPredictions adminListRoundPredictions;
+
+  /// The admin fixture-report bulk read: every participant's raw prediction
+  /// for one fixture, itself audited (admin-only — mirrors
+  /// [adminListRoundPredictions], but carries no fixture-status gate).
+  final AdminListFixturePredictions adminListFixturePredictions;
 
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
@@ -1525,6 +1539,11 @@ final class CompositionRoot {
       adminListRoundPredictions: AdminListRoundPredictions(
         competitionRepository: competitionRepository, // already built
         predictionRepository: predictionRepository, // already built
+        auditRecorder: auditRecorder,
+      ),
+      adminListFixturePredictions: AdminListFixturePredictions(
+        fixturePredictionRepository:
+            fixturePredictionRepository, // already built
         auditRecorder: auditRecorder,
       ),
     );

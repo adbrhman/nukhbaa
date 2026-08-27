@@ -66,7 +66,12 @@ enum AuditAction {
   /// An admin viewed every participant's raw predictions for a scored round
   /// (the round-report bulk read; narrow to one round, itself audited —
   /// mirrors [participantLedgerViewed]'s no-silent-exemption rule).
-  roundPredictionsViewed;
+  roundPredictionsViewed,
+
+  /// An admin viewed every participant's raw predictions for a fixture (the
+  /// fixture-report bulk read; narrow to one fixture, itself audited —
+  /// mirrors [roundPredictionsViewed], but carries no fixture-status gate).
+  fixturePredictionsViewed;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -83,6 +88,7 @@ enum AuditAction {
     AuditAction.roundLocked => 'round_locked',
     AuditAction.fixtureLinkedToRound => 'fixture_linked_to_round',
     AuditAction.roundPredictionsViewed => 'round_predictions_viewed',
+    AuditAction.fixturePredictionsViewed => 'fixture_predictions_viewed',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a
