@@ -33,6 +33,7 @@ final class CompositionRoot {
     required this.getRound,
     required this.listCompetitions,
     required this.listCompetitionSeasons,
+    required this.getCurrentSeason,
     required this.listSeasonRounds,
     required this.browseRoundFixtures,
     required this.browseSeasonFixtures,
@@ -131,6 +132,7 @@ final class CompositionRoot {
     GetRound? getRound,
     ListCompetitions? listCompetitions,
     ListCompetitionSeasons? listCompetitionSeasons,
+    GetCurrentSeason? getCurrentSeason,
     ListSeasonRounds? listSeasonRounds,
     BrowseRoundFixtures? browseRoundFixtures,
     BrowseSeasonFixtures? browseSeasonFixtures,
@@ -202,6 +204,7 @@ final class CompositionRoot {
        listCompetitions = listCompetitions ?? _absentListCompetitions(),
        listCompetitionSeasons =
            listCompetitionSeasons ?? _absentListCompetitionSeasons(),
+       getCurrentSeason = getCurrentSeason ?? _absentGetCurrentSeason(),
        listSeasonRounds = listSeasonRounds ?? _absentListSeasonRounds(),
        browseRoundFixtures =
            browseRoundFixtures ?? _absentBrowseRoundFixtures(),
@@ -366,6 +369,11 @@ final class CompositionRoot {
 
   static ListCompetitionSeasons _absentListCompetitionSeasons() =>
       ListCompetitionSeasons(repository: _unwiredCompetitionRepository);
+
+  static GetCurrentSeason _absentGetCurrentSeason() => GetCurrentSeason(
+    repository: _unwiredCompetitionRepository,
+    clock: _unwiredClock,
+  );
 
   static ListSeasonRounds _absentListSeasonRounds() =>
       ListSeasonRounds(repository: _unwiredCompetitionRepository);
@@ -819,6 +827,12 @@ final class CompositionRoot {
   /// AD-2). The domain has no "current/active season" concept, so a multi-season
   /// competition must be browsed season-by-season. Read-only, no side effect.
   final ListCompetitionSeasons listCompetitionSeasons;
+
+  /// Resolves the single "current" monthly season of a competition (any
+  /// authenticated user; 7.7 step 4). Computed fresh from `start_at`/`end_at`
+  /// against "now" -- never a stored/persisted flag. Absent for the current
+  /// month is a legitimate `null`, never an error.
+  final GetCurrentSeason getCurrentSeason;
 
   /// Lists a season's rounds in sequence order (any authenticated user; the
   /// browse navigation step competition → season → round — BLOCKER FA-1).
@@ -1283,6 +1297,10 @@ final class CompositionRoot {
       listCompetitions: ListCompetitions(repository: competitionRepository),
       listCompetitionSeasons: ListCompetitionSeasons(
         repository: competitionRepository,
+      ),
+      getCurrentSeason: GetCurrentSeason(
+        repository: competitionRepository,
+        clock: clock,
       ),
       listSeasonRounds: ListSeasonRounds(repository: competitionRepository),
       browseRoundFixtures: BrowseRoundFixtures(
