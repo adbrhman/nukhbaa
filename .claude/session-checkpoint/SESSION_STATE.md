@@ -1,36 +1,38 @@
-# نقطة توقف — بعد 7.10 الجزئي (commit 3e8f3ef)
+# نقطة توقف — بعد 7.4.8 (نجاح كامل)، 7.5 معلّقة (NOT REPRODUCED)
 
-## آخر ما أُنجز
-- **7.8** ✅ commit 566eedd — حذف RoundOpenController/RoundLockController + openRound/lockRound + OpenRoundRequestDto من الموبايل/contracts.
-- **7.9** ✅ commit 982ea8f — حذف roundLeaderboard الميت من الموبايل، استرجاع adminRoundOptionLabel (كانت محذوفة خطأً)، حذف KPI يتيم.
-- **7.10 (جزئي)** ✅ commit 3e8f3ef — حذف CompetitionApi.getRoundReport (بلا مستهلك) و RoundReportSummaryController بالكامل (بلا مستهلك؛ فقط RoundReportController الفعلي — يدمج adminGetRoundScores + adminListRoundPredictions — مستخدَم من results_scoring_section.dart).
+## آخر commit مدفوع
+`ed6c9dc` (origin/main، HEAD)
 
-## اكتشاف حاسم يُلغي افتراض خريطة الاعتماديات الأصلية (Phase 7.1)
-خريطة "الملفات المرشحة للحذف لاحقًا" (القسم 12 من التحليل الأصلي) افترضت أن كامل طبقة Round (server routes + application use-cases + domain) هي Legacy قابلة للحذف الكامل في 7.10. **هذا غير صحيح فعليًا.** الفحص بالـgrep الآن يُظهر أن معظم دوال Round في competition_api.dart لا تزال مستهلَكة من شاشات حية فعلية:
-- listSeasonRounds, getRound, browseRoundFixtures → competition_providers.dart (تصفح)
-- linkFixtureToRound, removeFixtureFromRound → admin_providers.dart (إدارة ربط المباريات بالجولات، لا تزال جزءًا من تدفق الإدارة الحالي عبر admin_pickers.dart / fixture_schedule_section.dart)
-- scoreRound → results_scoring_section.dart (تسجيل النقاط)
-- postRoundToLedger → admin_providers.dart (الليدجر)
-- getRoundScores → round_scores_providers.dart (تاريخ النقاط)
-- adminGetRoundScores + adminListRoundPredictions (AdminApi) → RoundReportController (تقرير الجولة الفعلي في results_scoring_section.dart)
+## الحالة المؤكَّدة
+- **7.4 (كامل، 7.4.1→7.4.8)** ✅ — Season-based Fixture Administration منجزة بالكامل.
+  commits: 25ca325 (7.4.3+7.4.4), eef4f8d (7.4.5), 8fa6d9b (7.4.6), 6852278+09c7efd (7.4.7).
+  7.4.8 Full Verification نُفِّذت ونجحت بالكامل: format-check✅ analyze✅ import-lint✅ test(8 حزم)✅ test-mobile 107/107✅.
+- **7.5 — score_fixture doubling bug: NOT REPRODUCED / NOT CONFIRMED.**
+  تحقيق كامل عبر git log/show لكل كوميت يذكر "doubl" في كامل تاريخ الريبو + كامل تاريخ score_fixture.dart وscoring.dart منذ إنشائهما (949ed69) — لم يُعثر على أي reproduction، test فاشل تاريخيًا، أو تشخيص موثّق يربط doubling بمنطق ScoreFixture تحديدًا. البند غير مغلق كـfixed ولا كـwontfix — معلَّق بانتظار reproduction فعلي جديد إن ظهر. **لم يُلمس أي كود متعلق بـScoreFixture.**
+- **ملاحظة معمارية مستقلة (ليست 7.5، لا تُخلط بأي مرحلة حالية):**
+  PUT /fixtures/{id}/result يشغّل تلقائيًا Round-path (ScoreRound→ledger.point_entries) بينما POST /fixtures/{id}/score هو Fixture-path يدوي منفصل (ScoreFixture→ledger.fixture_point_entries). لفكستشر مرتبطة بـRound وSeason معًا، هذا خطر ازدواج ائتمان معماري كامن (لا استعلام حالي يجمع الاثنين فعليًا). تحتاج معالجة لاحقًا ضمن انتقال النظام لـSeason/Fixture — بلا إصلاح مقترح بعد.
 
-فقط دالتان كانتا كودًا ميتًا حقيقيًا: getRoundReport (CompetitionApi) و RoundReportSummaryController — تم حذفهما.
+## الترتيب الرسمي المعتمد (لم يتغيّر)
+7.4 ✅ → **7.5 (معلّقة، غير مؤكدة)** → 7.6 notification test → 7.7 FixturePredictionScreen → 7.8 ✅(سابقًا) → 7.9 ✅(سابقًا) → 7.10 (جزئي) → 7.11 → 7.12
 
-## الخلاصة/القرار المطلوب قبل أي حذف إضافي في 7.10
-**"Legacy Round cleanup الكامل" كما صيغت في الخطة الأصلية لم تعد قابلة للتنفيذ كما هي.** إدارة المباريات (ربط Fixture بـRound عبر admin_pickers.dart) والتسجيل والنقاط والليدجر لا تزال تعتمد معماريًا على Round بشكل حي وحقيقي في تجربة الإدارة الحالية — وهذا يطابق فعليًا ما ورد في القسم 5 من التحليل الأصلي (fixture_schedule_section.dart لا يزال مربوطًا بـRound) لكنه يتناقض مع افتراض القسم 12/11 بأن هذا الربط "Legacy" جاهز للحذف.
-القرار المطلوب من المستخدم في الجلسة القادمة: إما (أ) الانتقال أولًا لإعادة تصميم إدارة المباريات لتصبح مرتبطة بالموسم مباشرة بدل Round (بند 11.3 من التحليل الأصلي: fixture_schedule_section.dart redesign) — وعندها فقط يصبح حذف طبقة Round ممكنًا فعليًا، أو (ب) الإبقاء على النظامين المتوازيين معًا وإغلاق 7.10 كمهمة "تنظيف الكود الميت المعزول فقط" (وهو ما أُنجز بالفعل الآن).
+## تعارض تسمية مهم
+track منفصل من commits (8b5ad4c, 681f604, 64cbda5, e0e5ca3, c0120f1, ed6c9dc) نُفِّذ باسم "7.7" خطأً (current-season endpoint، منجز ومدفوع). 7.7 الرسمية = FixturePredictionScreen، لم تبدأ بعد.
 
-## الاختبارات
-- flutter analyze: نظيف
-- flutter test: 107/107 ناجح
+## القرار المعماري المثبَّت (النظام المستهدف)
+Monthly Competition → Season → Fixtures → Predictions → Daily Doubles → Results & Scoring → Leaderboards
+ممنوع: مسار مسابقات متعددة للمستخدم العادي، items.first لتحديد "الحالية"، إعادة CompetitionListScreen القديمة. يسري على كل مرحلة قادمة وعلى Admin Panel المستقبلية.
 
-## دروس منهجية (تراكمية من الجلسات السابقة)
-- استخدم `flutter pub run build_runner build` وليس `dart run build_runner build`.
-- بعد أي حذف من ARB: flutter gen-l10n ثم build_runner فورًا، وإلا تختفي الأخطاء الحقيقية عن flutter analyze.
-- قبل حذف أي دالة/كلاس "يبدو Round-legacy": ابحث بأسماء الدوال الفعلية (grep دقيق)، ليس بأنماط عامة — نمط عام قد يرجع فارغًا خطأً بينما الدالة مستخدمة فعليًا باسم مختلف (مثال: AdminApi.adminGetRoundReport مقابل CompetitionApi.getRoundReport).
-- ملفات *.g.dart مستثناة من git (.gitignore) — طبيعي ألا تظهر في git status.
+## Comprehensive Admin Panel — Phase مستقلة بعد 7.12 فقط (لا تُبنى الآن، ولا تُخلط بـ7.5/7.6/7.7)
+Dashboard, Monthly Competitions, Fixtures, Predictions, Daily Doubles, Results & Scoring, Leaderboards, Users, Competitions, Teams, Social, Notifications, Reports & Analytics, Audit Logs, System Health, Roles & Permissions, Settings.
 
-## القرارات المؤجَّلة (لم تُمس، من الجلسات السابقة)
-- score_round.dart / RulesetSnapshot المجمَّد — خارج النطاق، بند تصميم منفصل.
-- score_fixture doubling bug — بند إصلاح مستقل يحجب Phase 7.7.
-- notification_kind_test.dart — تحديث بسيط لعدد enum values (4 بدل 3).
+## دروس منهجية متراكمة
+1. flutter pub run build_runner build وليس dart run build_runner build.
+2. بعد حذف من ARB: flutter gen-l10n ثم build_runner فورًا.
+3. قبل حذف أي دالة/كلاس يبدو Legacy: grep بالاسم الفعلي الدقيق.
+4. ملفات *.g.dart مستثناة من git، طبيعي.
+5. heredoc إلزامي للصق متعدد الأسطر في Termux؛ تحقّق فورًا بـ ls -la + wc -l + md5sum.
+6. الريبو الحقيقي: ~/nukhbaa-backup-1787537565 فقط.
+7. الملفات المنزَّلة من المتصفح على Termux تصل إلى /sdcard/Download/، تحقّق بـmd5sum عند التكرار.
+8. Response.json(body: null) في dart_frog ينتج نصًا فارغًا لا 'null' الحرفية.
+9. melos run verify هو المرجع الرسمي المطابق لـCI حرفيًا.
+10. لا تفترض حالة الكود من zip قديم — تحقّق دائمًا عبر أوامر حية على الجهاز أولًا.

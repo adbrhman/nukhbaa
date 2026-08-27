@@ -17,8 +17,7 @@ void main() {
     CompositionRoot rootWith({required DateTime now}) {
       repo = InMemoryCompetitionRepository();
       repo.competitions[kCompetitionId] = Competition.fromStored(
-        id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
-            .value,
+        id: (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value,
         name: 'Comp',
         format: FormatType.footballScoreline,
         visibility: CompetitionVisibility.public,
@@ -37,8 +36,7 @@ void main() {
       repo.seasons[kSeasonId] = CompetitionSeason.fromStored(
         id: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
         competitionId:
-            (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>)
-                .value,
+            (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value,
         label: '08/2026',
         startAt: DateTime.utc(2026, 8),
         endAt: DateTime.utc(2026, 9),

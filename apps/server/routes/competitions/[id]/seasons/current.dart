@@ -35,13 +35,14 @@ Future<Response> _current(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<CompetitionSeason?>(:final value) => value == null
-        ? Response(
-            statusCode: HttpStatus.ok,
-            body: 'null',
-            headers: const {'content-type': 'application/json'},
-          )
-        : Response.json(body: seasonToDto(value).toJson()),
+    Ok<CompetitionSeason?>(:final value) =>
+      value == null
+          ? Response(
+              statusCode: HttpStatus.ok,
+              body: 'null',
+              headers: const {'content-type': 'application/json'},
+            )
+          : Response.json(body: seasonToDto(value).toJson()),
     Err<CompetitionSeason?>(:final error) => errorResponse(error),
   };
 }

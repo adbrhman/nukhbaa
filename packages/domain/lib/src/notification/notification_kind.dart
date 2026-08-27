@@ -10,7 +10,7 @@ import 'package:shared/shared.dart';
 /// tokens, not presentation. An unknown token from storage or the wire is a
 /// validation failure, never silently coerced.
 ///
-/// The three kinds map one-to-one to the ratified trigger events (Notifications
+/// The four kinds map one-to-one to the ratified trigger events (Notifications
 /// decision #1); extending the set is a forward-only schema + enum change.
 enum NotificationKind {
   /// A round the recipient participates in was scored (its results were
