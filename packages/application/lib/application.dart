@@ -91,6 +91,7 @@ export 'src/prediction/submit_prediction.dart';
 export 'src/scoring/admin_get_participant_display_names.dart';
 export 'src/scoring/admin_get_round_report.dart';
 export 'src/scoring/admin_get_round_scores.dart';
+export 'src/scoring/get_fixture_scores.dart';
 export 'src/scoring/get_round_report.dart';
 export 'src/scoring/get_round_scores.dart';
 export 'src/scoring/ports/fixture_result_repository.dart';

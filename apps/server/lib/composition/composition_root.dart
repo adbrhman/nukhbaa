@@ -58,6 +58,7 @@ final class CompositionRoot {
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
     required this.getSeasonFixtureLeaderboard,
+    required this.getFixtureScores,
     required this.getRoundLeaderboard,
     required this.getHallOfFame,
     required this.createGroup,
@@ -157,6 +158,7 @@ final class CompositionRoot {
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
+    GetFixtureScores? getFixtureScores,
     GetRoundLeaderboard? getRoundLeaderboard,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
@@ -246,6 +248,7 @@ final class CompositionRoot {
            getSeasonLeaderboard ?? _absentGetSeasonLeaderboard(),
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
+           getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
        getRoundLeaderboard =
            getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -563,6 +566,15 @@ final class CompositionRoot {
   /// touching a real database — mirrors [_absentGetSeasonLeaderboard].
   static GetSeasonFixtureLeaderboard _absentGetSeasonFixtureLeaderboard() =>
       GetSeasonFixtureLeaderboard(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        fixtureScoreRepository: _unwiredFixtureScoreRepository,
+      );
+
+  /// Backs the "absent" [GetFixtureScores]'s repositories: throws so a
+  /// test that reaches this path fails loudly instead of silently touching
+  /// a real database — mirrors [_absentGetSeasonFixtureLeaderboard].
+  static GetFixtureScores _absentGetFixtureScores() => GetFixtureScores(
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
@@ -943,6 +955,7 @@ final class CompositionRoot {
   /// per-fixture score for the season, live/partial by construction — never
   /// gated on the season being finished; season-membership gated only).
   final GetSeasonFixtureLeaderboard getSeasonFixtureLeaderboard;
+  final GetFixtureScores getFixtureScores;
 
   /// Reads a round's ranked standings — its round leaderboard (a read-side
   /// projection over that round's already-computed scores; gated identically
@@ -1409,6 +1422,11 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
       ),
       getSeasonFixtureLeaderboard: GetSeasonFixtureLeaderboard(
+        competitionRepository: competitionRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        fixtureScoreRepository: fixtureScoreRepository,
+      ),
+      getFixtureScores: GetFixtureScores(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
