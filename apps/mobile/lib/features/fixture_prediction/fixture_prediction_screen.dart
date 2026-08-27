@@ -22,6 +22,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../leaderboards/season_leaderboard_screen.dart';
 import 'fixture_prediction_controller.dart';
 import 'fixture_prediction_providers.dart';
 import 'fixture_prediction_submission.dart';
@@ -29,10 +30,17 @@ import 'fixture_prediction_submission.dart';
 /// The fixture-list/predict screen for a single season.
 class FixturePredictionScreen extends ConsumerWidget {
   /// Creates the fixture prediction screen for [seasonId].
-  const FixturePredictionScreen({required this.seasonId, super.key});
+  const FixturePredictionScreen({
+    required this.seasonId,
+    required this.seasonLabel,
+    super.key,
+  });
 
   /// The season whose linked fixtures are browsed and predicted.
   final String seasonId;
+
+  /// The season's display label (for the leaderboard app-bar action).
+  final String seasonLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,6 +57,21 @@ class FixturePredictionScreen extends ConsumerWidget {
           l10n.fixturePredictionTitle,
           key: const Key('fixturePrediction.title'),
         ),
+        actions: <Widget>[
+          IconButton(
+            key: const Key('fixturePrediction.viewLeaderboard'),
+            tooltip: l10n.viewLeaderboardTooltip,
+            icon: const Icon(Icons.leaderboard_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SeasonLeaderboardScreen(
+                  seasonId: seasonId,
+                  seasonLabel: seasonLabel,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: fixtures.when(
         skipLoadingOnRefresh: false,

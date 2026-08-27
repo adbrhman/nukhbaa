@@ -5,12 +5,12 @@
 /// [AsyncListView]. A competition with no seasons (or one that does not exist —
 /// the browse read reveals no existence oracle) is a *legitimate* empty list,
 /// shown as an empty affordance rather than an error. Selecting a season pushes
-/// the round list ([SeasonRoundsScreen]).
+/// the fixture-prediction screen ([FixturePredictionScreen]).
 ///
 /// A competition with **exactly one** season is a common case today (a single
 /// "2026/27" season per competition) and forcing the user through an
 /// intermediate list of one is pure friction. In that case this screen
-/// auto-advances straight into [SeasonRoundsScreen] via [Navigator.pushReplacement]
+/// auto-advances straight into [FixturePredictionScreen] via [Navigator.pushReplacement]
 /// — replacing itself in the stack so "back" from the rounds screen returns to
 /// the competition list, not to a seasons screen the user never meaningfully
 /// saw. Multiple seasons still render as a normal, tappable list.
@@ -21,8 +21,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../fixture_prediction/fixture_prediction_screen.dart';
 import 'competition_providers.dart';
-import 'season_rounds_screen.dart';
 import 'widgets/async_list_view.dart';
 
 /// The season-list screen for a single competition.
@@ -61,7 +61,7 @@ class _CompetitionSeasonsScreenState
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => SeasonRoundsScreen(
+          builder: (_) => FixturePredictionScreen(
             seasonId: season.id,
             seasonLabel: season.label,
           ),
@@ -92,7 +92,7 @@ class _CompetitionSeasonsScreenState
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => SeasonRoundsScreen(
+              builder: (_) => FixturePredictionScreen(
                 seasonId: season.id,
                 seasonLabel: season.label,
               ),

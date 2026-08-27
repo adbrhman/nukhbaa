@@ -57,7 +57,10 @@ class SeasonRoundsScreen extends ConsumerWidget {
             icon: const Icon(Icons.sports_soccer_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => FixturePredictionScreen(seasonId: seasonId),
+                builder: (_) => FixturePredictionScreen(
+                  seasonId: seasonId,
+                  seasonLabel: seasonLabel,
+                ),
               ),
             ),
           ),
