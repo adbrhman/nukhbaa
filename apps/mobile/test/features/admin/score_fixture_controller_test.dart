@@ -50,10 +50,7 @@ void main() {
       );
       addTearDown(harness.dispose);
 
-      expect(
-        harness.container.read(scoreFixtureControllerProvider),
-        isNull,
-      );
+      expect(harness.container.read(scoreFixtureControllerProvider), isNull);
       expect(harness.captured, isEmpty);
     });
 
@@ -175,11 +172,8 @@ void main() {
 
     test('409 fixture_not_scored -> AsyncError(invariant)', () async {
       final harness = buildAdminHarness(
-        (_) async => errorEnvelope(
-          409,
-          'ledger.fixture_not_scored',
-          'score it first',
-        ),
+        (_) async =>
+            errorEnvelope(409, 'ledger.fixture_not_scored', 'score it first'),
       );
       addTearDown(harness.dispose);
 
@@ -198,32 +192,29 @@ void main() {
       expect(error.code, 'ledger.fixture_not_scored');
     });
 
-    test(
-      'idempotent replay -> AsyncData with empty appendedEntries',
-      () async {
-        const emptyReplay = PostFixtureToLedgerResponseDto(
-          fixtureId: 'f-1',
-          appendedEntries: <FixturePointEntryDto>[],
-        );
-        final harness = buildAdminHarness(
-          (_) async => okJsonObject(emptyReplay.toJson()),
-        );
-        addTearDown(harness.dispose);
+    test('idempotent replay -> AsyncData with empty appendedEntries', () async {
+      const emptyReplay = PostFixtureToLedgerResponseDto(
+        fixtureId: 'f-1',
+        appendedEntries: <FixturePointEntryDto>[],
+      );
+      final harness = buildAdminHarness(
+        (_) async => okJsonObject(emptyReplay.toJson()),
+      );
+      addTearDown(harness.dispose);
 
-        await harness.container
-            .read(postFixtureToLedgerControllerProvider.notifier)
-            .post('f-1');
+      await harness.container
+          .read(postFixtureToLedgerControllerProvider.notifier)
+          .post('f-1');
 
-        final state = harness.container.read(
-          postFixtureToLedgerControllerProvider,
-        );
-        expect(
-          (state! as AsyncData<PostFixtureToLedgerResponseDto>)
-              .value
-              .appendedEntries,
-          isEmpty,
-        );
-      },
-    );
+      final state = harness.container.read(
+        postFixtureToLedgerControllerProvider,
+      );
+      expect(
+        (state! as AsyncData<PostFixtureToLedgerResponseDto>)
+            .value
+            .appendedEntries,
+        isEmpty,
+      );
+    });
   });
 }
