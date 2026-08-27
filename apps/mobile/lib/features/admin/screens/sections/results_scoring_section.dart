@@ -60,6 +60,18 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         .record(fixtureId: f, homeGoals: h, awayGoals: a);
   }
 
+  void _scoreFixture() {
+    final f = _fixtureId;
+    if (f == null) return;
+    ref.read(scoreFixtureControllerProvider.notifier).score(f);
+  }
+
+  void _postFixtureToLedger() {
+    final f = _fixtureId;
+    if (f == null) return;
+    ref.read(postFixtureToLedgerControllerProvider.notifier).post(f);
+  }
+
   void _scoreRound() {
     final r = _roundId;
     if (r == null) return;
@@ -86,6 +98,10 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     final scoreState = ref.watch(scoreRoundControllerProvider);
     final lookupState = ref.watch(roundScoresLookupControllerProvider);
     final reportState = ref.watch(roundReportControllerProvider);
+    final scoreFixtureState = ref.watch(scoreFixtureControllerProvider);
+    final postFixtureLedgerState = ref.watch(
+      postFixtureToLedgerControllerProvider,
+    );
     final resultInFlight = resultState is AsyncLoading;
     final scoreInFlight = scoreState is AsyncLoading;
     final lookupInFlight = lookupState is AsyncLoading;
@@ -93,6 +109,10 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
 
     final bool canRecord = !resultInFlight && _fixtureId != null;
     final bool canScore = _roundId != null;
+    final bool canScoreFixture =
+        _fixtureId != null && scoreFixtureState is! AsyncLoading;
+    final bool canPostFixtureLedger =
+        _fixtureId != null && postFixtureLedgerState is! AsyncLoading;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -196,6 +216,42 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 icon: Icons.scoreboard_rounded,
                 loading: resultInFlight,
                 onPressed: canRecord ? _recordResult : null,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (scoreFixtureState is AsyncError)
+                AdminErrorBanner(
+                  message: ErrorPresenter.message(
+                    scoreFixtureState!.error as AppError,
+                  ),
+                ),
+              if (postFixtureLedgerState is AsyncError)
+                AdminErrorBanner(
+                  message: ErrorPresenter.message(
+                    postFixtureLedgerState!.error as AppError,
+                  ),
+                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: AdminPrimaryButton(
+                      label: l10n.adminScoreFixtureButton,
+                      icon: Icons.calculate_rounded,
+                      loading: scoreFixtureState is AsyncLoading,
+                      onPressed: canScoreFixture ? _scoreFixture : null,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AdminSecondaryButton(
+                      label: l10n.adminPostFixtureLedgerButton,
+                      icon: Icons.receipt_long_rounded,
+                      loading: postFixtureLedgerState is AsyncLoading,
+                      onPressed: canPostFixtureLedger
+                          ? _postFixtureToLedger
+                          : null,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

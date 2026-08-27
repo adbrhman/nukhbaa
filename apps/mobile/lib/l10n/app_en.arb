@@ -346,6 +346,8 @@
   "adminHomeGoalsLabel": "Home goals",
   "adminAwayGoalsLabel": "Away goals",
   "adminRecordResultButton": "Record result",
+  "adminScoreFixtureButton": "Score fixture",
+  "adminPostFixtureLedgerButton": "Post to ledger",
   "adminScoreRoundSectionTitle": "Score round",
   "adminScoreRoundButton": "Score round",
   "adminPostToLedgerButton": "Post to ledger",

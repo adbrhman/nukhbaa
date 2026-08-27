@@ -936,6 +936,18 @@ abstract class AppLocalizations {
   /// **'Record result'**
   String get adminRecordResultButton;
 
+  /// No description provided for @adminScoreFixtureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Score fixture'**
+  String get adminScoreFixtureButton;
+
+  /// No description provided for @adminPostFixtureLedgerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Post to ledger'**
+  String get adminPostFixtureLedgerButton;
+
   /// No description provided for @adminScoreRoundSectionTitle.
   ///
   /// In en, this message translates to:

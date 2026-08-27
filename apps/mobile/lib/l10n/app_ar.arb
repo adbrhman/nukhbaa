@@ -139,6 +139,8 @@
   "adminHomeGoalsLabel": "أهداف المضيف",
   "adminAwayGoalsLabel": "أهداف الضيف",
   "adminRecordResultButton": "تسجيل النتيجة",
+  "adminScoreFixtureButton": "احتساب المباراة",
+  "adminPostFixtureLedgerButton": "ترحيل إلى السجل",
   "adminScoreRoundSectionTitle": "احتساب نقاط الجولة",
   "adminScoreRoundButton": "احتساب الجولة",
   "adminPostToLedgerButton": "ترحيل النقاط للسجل",

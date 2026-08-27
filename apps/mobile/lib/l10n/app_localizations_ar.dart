@@ -499,6 +499,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRecordResultButton => 'تسجيل النتيجة';
 
   @override
+  String get adminScoreFixtureButton => 'احتساب المباراة';
+
+  @override
+  String get adminPostFixtureLedgerButton => 'ترحيل إلى السجل';
+
+  @override
   String get adminScoreRoundSectionTitle => 'احتساب نقاط الجولة';
 
   @override

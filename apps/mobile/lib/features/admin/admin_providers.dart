@@ -351,6 +351,56 @@ class PostRoundToLedgerController extends _$PostRoundToLedgerController {
   }
 }
 
+/// Owns the score-fixture command (`POST /fixtures/{id}/score`, command
+/// intent `ScoreFixture`) over [CompetitionApi]. The per-fixture sibling of
+/// [ScoreRoundController].
+@riverpod
+class ScoreFixtureController extends _$ScoreFixtureController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<FixtureScoresDto>? build() => null;
+
+  /// Scores every prediction recorded for [fixtureId].
+  Future<void> score(String fixtureId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.scoreFixture(fixtureId);
+    state = switch (result) {
+      Ok<FixtureScoresDto>(:final value) => AsyncValue.data(value),
+      Err<FixtureScoresDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
+/// Owns the post-fixture-to-ledger command (`POST /fixtures/{id}/ledger`,
+/// command intent `PostFixtureToLedger`) over [CompetitionApi]. The
+/// per-fixture sibling of [PostRoundToLedgerController].
+@riverpod
+class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
+  CompetitionApi get _api => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<PostFixtureToLedgerResponseDto>? build() => null;
+
+  /// Posts fixture [fixtureId]'s already-computed scores to the ledger.
+  Future<void> post(String fixtureId) async {
+    state = const AsyncValue.loading();
+    final result = await _api.postFixtureToLedger(fixtureId);
+    state = switch (result) {
+      Ok<PostFixtureToLedgerResponseDto>(:final value) => AsyncValue.data(
+        value,
+      ),
+      Err<PostFixtureToLedgerResponseDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
 /// Owns the round-scores lookup (`GET /rounds/{id}/scores`, query intent
 /// `GetRoundScores`) over `CompetitionApi`. Modelled as a controller (rather
 /// than a `FutureProvider`) for the same reason as

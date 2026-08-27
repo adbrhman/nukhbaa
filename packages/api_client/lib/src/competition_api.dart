@@ -265,6 +265,36 @@ final class CompetitionApi {
     );
   }
 
+  /// `POST /fixtures/{id}/score` — scores every prediction recorded for the
+  /// fixture (command intent `ScoreFixture`; Axiom 4 Amendment — the
+  /// per-fixture sibling of [scoreRound]). No request body — points are
+  /// computed server-side (Axioms 2/5). Admin-only, enforced inside the
+  /// server use-case. Idempotent: re-scoring recomputes the same
+  /// deterministic result (upsert on `(fixture_id, participant_id)`).
+  Future<Result<FixtureScoresDto>> scoreFixture(String fixtureId) {
+    return _transport.postObject<FixtureScoresDto>(
+      '/fixtures/$fixtureId/score',
+      body: const {},
+      parse: FixtureScoresDto.fromJson,
+    );
+  }
+
+  /// `POST /fixtures/{id}/ledger` — posts a **scored** fixture to the
+  /// append-only Ledger (command intent `PostFixtureToLedger`; the
+  /// per-fixture sibling of [postRoundToLedger]). No request body.
+  /// Admin-only, enforced inside the server use-case. Idempotent:
+  /// re-posting an already-posted fixture appends nothing new
+  /// (`appended_entries` empty).
+  Future<Result<PostFixtureToLedgerResponseDto>> postFixtureToLedger(
+    String fixtureId,
+  ) {
+    return _transport.postObject<PostFixtureToLedgerResponseDto>(
+      '/fixtures/$fixtureId/ledger',
+      body: const {},
+      parse: PostFixtureToLedgerResponseDto.fromJson,
+    );
+  }
+
   /// `GET /rounds/{id}/scores` — reads every participant's computed score for
   /// a **scored** round (query intent `GetRoundScores`). A not-yet-scored
   /// round is refused `409 scoring.round_not_scored`; a non-participant is
