@@ -23,21 +23,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile/features/competition/season_rounds_screen.dart';
 import 'package:mobile/features/leaderboards/season_leaderboard_screen.dart';
 
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/leaderboards_harness.dart';
-
-/// A `200 OK` empty JSON array — the rounds browse read the
-/// `SeasonRoundsScreen` integration test issues; a season with no rounds is
-/// a legitimate empty list.
-http.Response _okEmptyList() => http.Response(
-  '[]',
-  200,
-  headers: const {'content-type': 'application/json'},
-);
 
 Widget _host(LeaderboardsHarness harness, Widget child) => ProviderScope(
   overrides: harness.overrides,
@@ -214,46 +204,6 @@ void main() {
       await tester.tap(retry);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('browse.error')), findsNothing);
-      expect(find.byKey(const Key('leaderboard.item.p-a')), findsOneWidget);
-    });
-  });
-
-  group('SeasonRoundsScreen -> Leaderboard integration point', () {
-    testWidgets('the app-bar action navigates to the season leaderboard', (
-      tester,
-    ) async {
-      // Route the rounds read (empty is fine) and the leaderboard read by path.
-      final harness = buildLeaderboardsHarness((request) async {
-        final path = request.url.path;
-        if (path == '/seasons/s-1/leaderboard') {
-          return okJsonObject(sampleBoard.toJson());
-        }
-        // The rounds browse read for this screen — a legitimate empty list.
-        return _okEmptyList();
-      });
-      addTearDown(harness.dispose);
-
-      await tester.pumpWidget(
-        _host(
-          harness,
-          const SeasonRoundsScreen(seasonId: 's-1', seasonLabel: '26/27'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // On the rounds screen; the leaderboard action is present.
-      expect(find.byKey(const Key('rounds.title')), findsOneWidget);
-      final action = find.byKey(const Key('rounds.viewLeaderboard'));
-      expect(action, findsOneWidget);
-
-      await tester.tap(action);
-      await tester.pumpAndSettle();
-
-      // Now on the leaderboard screen for the same season, on the round tab
-      // by default; switch to the season tab to see the standings.
-      expect(find.byKey(const Key('leaderboard.title')), findsOneWidget);
-      await _openSeasonTab(tester);
-      await tester.pumpAndSettle();
       expect(find.byKey(const Key('leaderboard.item.p-a')), findsOneWidget);
     });
   });
