@@ -29,6 +29,12 @@ import 'package:shared/shared.dart';
 ///     [FixturePredictionCommandDto]: predicted scoreline + optional
 ///     `is_double`; the participant is resolved server-side, never sent by
 ///     the client).
+///   * `GET /me/fixture-predictions` (own aggregated fixture-prediction
+///     history, every fixture + season) -> `List<FixturePredictionDto>`
+///     (`routes/me/fixture-predictions.dart`; the per-fixture sibling of the
+///     `/me/predictions` read above). Always the caller's own predictions; a
+///     caller who has never predicted a fixture gets a legitimate empty
+///     array.
 ///
 /// The whole `/rounds` subtree is behind `bearerAuth`. Every method returns a
 /// typed [Result] and never throws. This is the ONLY prediction write path a
@@ -126,6 +132,20 @@ final class PredictionApi {
     return _transport.getList<PredictionDto>(
       '/me/predictions',
       parseElement: PredictionDto.fromJson,
+    );
+  }
+
+  /// `GET /me/fixture-predictions` — the caller's own aggregated
+  /// fixture-prediction history: every per-fixture prediction they have ever
+  /// submitted, across every fixture and every season (Axiom 4 Amendment; the
+  /// per-fixture sibling of [myPredictions]), newest submission first.
+  ///
+  /// An empty list means the caller has never submitted a fixture prediction
+  /// — a legitimate result, never an error.
+  Future<Result<List<FixturePredictionDto>>> myFixturePredictions() {
+    return _transport.getList<FixturePredictionDto>(
+      '/me/fixture-predictions',
+      parseElement: FixturePredictionDto.fromJson,
     );
   }
 }

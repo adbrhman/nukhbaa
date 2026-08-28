@@ -26,19 +26,25 @@ class PredictionHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<PredictionDto>> history = ref.watch(
-      myPredictionsProvider,
+    final AsyncValue<List<PredictionHistoryEntry>> history = ref.watch(
+      predictionHistoryProvider,
     );
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.myPredictions, key: const Key('history.title')),
       ),
-      body: AsyncListView<PredictionDto>(
+      body: AsyncListView<PredictionHistoryEntry>(
         value: history,
         emptyMessage: l10n.predictionHistoryEmpty,
-        onRetry: () => ref.invalidate(myPredictionsProvider),
-        itemBuilder: (context, prediction) =>
-            _PredictionCard(prediction: prediction),
+        onRetry: () => ref.invalidate(predictionHistoryProvider),
+        itemBuilder: (context, entry) => switch (entry) {
+          RoundPredictionEntry(:final prediction) => _PredictionCard(
+            prediction: prediction,
+          ),
+          FixturePredictionEntry(:final prediction) => _FixturePredictionCard(
+            prediction: prediction,
+          ),
+        },
       ),
     );
   }
@@ -113,6 +119,65 @@ class _PredictionCard extends ConsumerWidget {
                   grade: gradeByFixtureId[score.fixtureId],
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A single historical **per-fixture** forecast (Axiom 4 Amendment; the
+/// per-fixture sibling of [_PredictionCard]).
+///
+/// Unlike [_PredictionCard], there is no known season/round context to
+/// resolve team names from here — [FixturePredictionDto] carries only the
+/// fixture id — so the score line always falls back to the raw fixture id
+/// (the same fallback [_ScoreLine] already renders while its round-fixtures
+/// read is loading or unresolved). There is also no grade badge yet: the
+/// per-fixture score read (`GetFixtureScores`) has no `api_client` method
+/// wired up yet (a separate, already-documented gap), so this card cannot
+/// show ✅/❌/🔥 the way [_PredictionCard] can once its round is scored.
+class _FixturePredictionCard extends StatelessWidget {
+  const _FixturePredictionCard({required this.prediction});
+  final FixturePredictionDto prediction;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Card(
+      key: Key('history.item.${prediction.id}'),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              prediction.submittedAt,
+              key: Key('history.submittedAt.${prediction.id}'),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: _ScoreLine(
+                key: Key(
+                  'history.score.${prediction.id}.${prediction.fixtureId}',
+                ),
+                score: FixtureScoreDto(
+                  fixtureId: prediction.fixtureId,
+                  homeGoals: prediction.homeGoals,
+                  awayGoals: prediction.awayGoals,
+                  isDouble: prediction.isDouble,
+                ),
+                fixture: null,
+              ),
+            ),
           ],
         ),
       ),

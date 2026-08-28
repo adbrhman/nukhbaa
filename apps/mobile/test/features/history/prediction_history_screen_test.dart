@@ -96,5 +96,49 @@ void main() {
       expect(find.textContaining('f-a:'), findsOneWidget);
       expect(find.textContaining('f-b:'), findsOneWidget);
     });
+
+    testWidgets(
+      'merges fixture predictions alongside round predictions, newest first',
+      (tester) async {
+        final harness = buildPredictionHarness((request) async {
+          final path = request.url.path;
+          if (request.method == 'GET' && path == '/me/predictions') {
+            return okJsonList([storedPrediction.toJson()]);
+          }
+          if (request.method == 'GET' && path == '/me/fixture-predictions') {
+            return okJsonList([storedFixturePrediction.toJson()]);
+          }
+          if (request.method == 'GET' && path == '/rounds/r-1/fixtures') {
+            return okJsonList([fixtureA.toJson(), fixtureB.toJson()]);
+          }
+          return okJsonList(<Object>[]);
+        });
+        addTearDown(harness.dispose);
+
+        await tester.pumpWidget(
+          _host(harness, const PredictionHistoryScreen()),
+        );
+        await tester.pumpAndSettle();
+
+        // Both entries render as separate cards.
+        expect(find.byKey(const Key('history.item.p-1')), findsOneWidget);
+        expect(find.byKey(const Key('history.item.fp-1')), findsOneWidget);
+
+        // storedFixturePrediction (2026-08-02) was submitted after
+        // storedPrediction (2026-08-01), so its card comes first in the list.
+        final finder = find.byType(Card);
+        final int roundIndex = tester.widgetList(finder).toList().indexWhere(
+          (w) => (w.key as ValueKey<String>).value == 'history.item.p-1',
+        );
+        final int fixtureIndex = tester.widgetList(finder).toList().indexWhere(
+          (w) => (w.key as ValueKey<String>).value == 'history.item.fp-1',
+        );
+        expect(fixtureIndex, lessThan(roundIndex));
+
+        // The fixture prediction has no known team names (no season/round
+        // context), so it falls back to the raw fixture id.
+        expect(find.textContaining('f-c'), findsOneWidget);
+      },
+    );
   });
 }

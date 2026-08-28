@@ -293,4 +293,48 @@ void main() {
       expect(err.code, 'prediction.round_not_locked');
     });
   });
+
+  group('PredictionApi.myFixturePredictions (GET /me/fixture-predictions)', () {
+    const storedFixturePrediction = FixturePredictionDto(
+      id: 'fp-1',
+      participantId: 'part-1',
+      fixtureId: 'f-c',
+      submittedAt: '2026-08-02T10:00:00Z',
+      homeGoals: 3,
+      awayGoals: 3,
+    );
+
+    test('200 -> Ok(List<FixturePredictionDto>)', () async {
+      final ctx = buildTransport(
+        (_) async => okJson([storedFixturePrediction.toJson()]),
+      );
+
+      final result = await PredictionApi(ctx.transport).myFixturePredictions();
+
+      expect(
+        result,
+        const Result<List<FixturePredictionDto>>.ok([storedFixturePrediction]),
+      );
+      expect(ctx.captured.single.url.path, '/me/fixture-predictions');
+    });
+
+    test('never predicted a fixture -> Ok(<empty>)', () async {
+      final ctx = buildTransport((_) async => okJson(<Object>[]));
+
+      final result = await PredictionApi(ctx.transport).myFixturePredictions();
+
+      expect((result as Ok<List<FixturePredictionDto>>).value, isEmpty);
+    });
+
+    test('network failure -> Err(transient) network_unreachable', () async {
+      final ctx = buildTransport((_) async => throw Exception('timeout'));
+
+      final result = await PredictionApi(ctx.transport).myFixturePredictions();
+
+      expect(
+        (result as Err<List<FixturePredictionDto>>).error.code,
+        apiErrorNetworkUnreachable,
+      );
+    });
+  });
 }

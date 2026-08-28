@@ -211,3 +211,15 @@ const PredictionDto storedPrediction = PredictionDto(
     FixtureScoreDto(fixtureId: 'f-b', homeGoals: 0, awayGoals: 0),
   ],
 );
+
+/// A stored per-fixture prediction (Axiom 4 Amendment; the per-fixture
+/// sibling of [storedPrediction]) — submitted more recently, so it sorts
+/// first in the merged history.
+const FixturePredictionDto storedFixturePrediction = FixturePredictionDto(
+  id: 'fp-1',
+  participantId: 'part-1',
+  fixtureId: 'f-c',
+  submittedAt: '2026-08-02T10:00:00.000Z',
+  homeGoals: 3,
+  awayGoals: 3,
+);
