@@ -24,6 +24,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
+import 'fixture_report.dart';
 import 'round_report.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
@@ -470,6 +471,52 @@ class RoundReportController extends _$RoundReportController {
     final predictions = (predictionsResult as Ok<List<PredictionDto>>).value;
     state = AsyncValue.data(
       buildRoundReport(scores: scores, rawPredictions: predictions),
+    );
+  }
+}
+
+/// Owns the fixture-report bulk read: fetches `GET /admin/fixtures/{id}/scores`
+/// and `GET /admin/fixtures/{id}/predictions` (both `AdminApi`, the second
+/// itself audited) concurrently — admin-only, no season-participation gate
+/// (mirrors [RoundReportController]; the per-fixture sibling, added so an
+/// admin can review any fixture's predictions/scores regardless of the
+/// admin's own season membership, for investigating user complaints).
+/// Modelled as a controller for the same reason as [RoundReportController].
+@riverpod
+class FixtureReportController extends _$FixtureReportController {
+  AdminApi get _adminApi => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<List<FixtureReportRow>>? build() => null;
+
+  /// Loads the report for [fixtureId]. [reason] is an optional justification
+  /// recorded on the raw-predictions audit entry.
+  ///
+  /// Both calls run concurrently; either failing surfaces its error and skips
+  /// the merge (same all-or-nothing rationale as [RoundReportController]).
+  Future<void> load(String fixtureId, {String? reason}) async {
+    state = const AsyncValue.loading();
+    final results = await (
+      _adminApi.adminGetFixtureScores(fixtureId),
+      _adminApi.adminListFixturePredictions(fixtureId, reason: reason),
+    ).wait;
+    final scoresResult = results.$1;
+    final predictionsResult = results.$2;
+
+    if (scoresResult is Err<FixtureScoresDto>) {
+      state = AsyncValue.error(scoresResult.error, StackTrace.current);
+      return;
+    }
+    if (predictionsResult is Err<List<FixturePredictionDto>>) {
+      state = AsyncValue.error(predictionsResult.error, StackTrace.current);
+      return;
+    }
+
+    final scores = (scoresResult as Ok<FixtureScoresDto>).value;
+    final predictions =
+        (predictionsResult as Ok<List<FixturePredictionDto>>).value;
+    state = AsyncValue.data(
+      buildFixtureReport(scores: scores, rawPredictions: predictions),
     );
   }
 }

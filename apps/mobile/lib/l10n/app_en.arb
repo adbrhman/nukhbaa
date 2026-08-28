@@ -362,6 +362,8 @@
   "adminRoundReportCopiedMessage": "Copied — share it on WhatsApp",
   "adminRoundReportEmpty": "No participants in this round",
   "adminRoundReportSectionEmpty": "No report for this round yet",
+  "adminViewFixtureReportButton": "View fixture report",
+  "adminFixtureReportSectionEmpty": "No report for this fixture yet",
   "myGroups": "My Groups",
   "myGroupsEmpty": "You haven't joined any group yet.",
   "groupRoleOwner": "Owner",

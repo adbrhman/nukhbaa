@@ -1032,6 +1032,18 @@ abstract class AppLocalizations {
   /// **'No report for this round yet'**
   String get adminRoundReportSectionEmpty;
 
+  /// No description provided for @adminViewFixtureReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View fixture report'**
+  String get adminViewFixtureReportButton;
+
+  /// No description provided for @adminFixtureReportSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No report for this fixture yet'**
+  String get adminFixtureReportSectionEmpty;
+
   /// No description provided for @myGroups.
   ///
   /// In en, this message translates to:

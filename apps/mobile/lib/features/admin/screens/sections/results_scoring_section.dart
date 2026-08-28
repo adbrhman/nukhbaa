@@ -10,6 +10,7 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
+import '../../fixture_report.dart';
 import '../../round_report.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
@@ -72,6 +73,12 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     ref.read(postFixtureToLedgerControllerProvider.notifier).post(f);
   }
 
+  void _loadFixtureReport() {
+    final f = _fixtureId;
+    if (f == null) return;
+    ref.read(fixtureReportControllerProvider.notifier).load(f);
+  }
+
   void _scoreRound() {
     final r = _roundId;
     if (r == null) return;
@@ -102,10 +109,12 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     final postFixtureLedgerState = ref.watch(
       postFixtureToLedgerControllerProvider,
     );
+    final fixtureReportState = ref.watch(fixtureReportControllerProvider);
     final resultInFlight = resultState is AsyncLoading;
     final scoreInFlight = scoreState is AsyncLoading;
     final lookupInFlight = lookupState is AsyncLoading;
     final reportInFlight = reportState is AsyncLoading;
+    final fixtureReportInFlight = fixtureReportState is AsyncLoading;
 
     final bool canRecord = !resultInFlight && _fixtureId != null;
     final bool canScore = _roundId != null;
@@ -253,9 +262,49 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.md),
+              if (fixtureReportState is AsyncError)
+                AdminErrorBanner(
+                  message: ErrorPresenter.message(
+                    fixtureReportState!.error as AppError,
+                  ),
+                ),
+              if (fixtureReportState is AsyncError)
+                const SizedBox(height: AppSpacing.sm),
+              AdminSecondaryButton(
+                label: l10n.adminViewFixtureReportButton,
+                icon: Icons.table_chart_rounded,
+                loading: fixtureReportInFlight,
+                onPressed: fixtureReportInFlight || _fixtureId == null
+                    ? null
+                    : _loadFixtureReport,
+              ),
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
+        if (fixtureReportState is AsyncData<List<FixtureReportRow>>)
+          Builder(
+            builder: (context) {
+              final rows = fixtureReportState.value;
+              if (rows.isEmpty) {
+                return AdminCard(
+                  child: AdminEmptyState(
+                    icon: Icons.table_chart_rounded,
+                    title: l10n.adminFixtureReportSectionEmpty,
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final row in rows) ...[
+                    _FixtureReportRowCard(row: row),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ],
+              );
+            },
+          ),
         const SizedBox(height: AppSpacing.xl),
         AdminSectionHeader(
           title: l10n.adminScoreRoundSectionTitle,
@@ -572,6 +621,101 @@ class _ReportCellChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '(${cell.points})',
+            style: context.text.labelSmall?.copyWith(color: t.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FixtureReportRowCard extends StatelessWidget {
+  const _FixtureReportRowCard({required this.row});
+
+  final FixtureReportRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final rankColor = switch (row.rank) {
+      1 => t.gold,
+      2 => t.silver,
+      3 => t.bronze,
+      _ => t.primary,
+    };
+    final (gradeColor, gradeLabel) = switch (row.grade) {
+      'exact_scoreline' => (t.gold, 'نتيجة مطابقة'),
+      'correct_outcome' => (t.primary, 'نتيجة صحيحة'),
+      'incorrect' => (t.error, 'خاطئ'),
+      'missed' => (t.textMuted, 'لم يشارك'),
+      'pending' => (t.textSecondary, 'بانتظار النتيجة'),
+      _ => (t.textMuted, row.grade),
+    };
+    final scoreText = row.hasRawScore
+        ? '${row.homeGoals}-${row.awayGoals}'
+        : '—';
+
+    return AdminCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: rankColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${row.rank}',
+              style: context.text.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: rankColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              row.participantId,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodyLarge?.copyWith(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          if (row.isDouble) ...[
+            Icon(Icons.star_rounded, size: 14, color: t.gold),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            scoreText,
+            style: context.text.bodyMedium?.copyWith(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            width: 1,
+            height: 14,
+            color: gradeColor.withValues(alpha: 0.3),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            gradeLabel,
+            style: context.text.labelSmall?.copyWith(
+              color: gradeColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '(${row.points})',
             style: context.text.labelSmall?.copyWith(color: t.textSecondary),
           ),
         ],

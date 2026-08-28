@@ -547,6 +547,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRoundReportSectionEmpty => 'لا يوجد تقرير لهذه الجولة بعد';
 
   @override
+  String get adminViewFixtureReportButton => 'عرض تقرير المباراة';
+
+  @override
+  String get adminFixtureReportSectionEmpty =>
+      'لا يوجد تقرير لهذه المباراة بعد';
+
+  @override
   String get myGroups => 'مجموعاتي';
 
   @override

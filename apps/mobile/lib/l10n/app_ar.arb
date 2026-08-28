@@ -155,6 +155,8 @@
   "adminRoundReportCopiedMessage": "تم النسخ، شاركه عبر واتساب",
   "adminRoundReportEmpty": "لا يوجد مشاركون بهذه الجولة",
   "adminRoundReportSectionEmpty": "لا يوجد تقرير لهذه الجولة بعد",
+  "adminViewFixtureReportButton": "عرض تقرير المباراة",
+  "adminFixtureReportSectionEmpty": "لا يوجد تقرير لهذه المباراة بعد",
   "myGroups": "مجموعاتي",
   "myGroupsEmpty": "لم تنضم إلى أي مجموعة بعد.",
   "groupRoleOwner": "مالك",

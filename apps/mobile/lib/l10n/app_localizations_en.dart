@@ -542,6 +542,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRoundReportSectionEmpty => 'No report for this round yet';
 
   @override
+  String get adminViewFixtureReportButton => 'View fixture report';
+
+  @override
+  String get adminFixtureReportSectionEmpty => 'No report for this fixture yet';
+
+  @override
   String get myGroups => 'My Groups';
 
   @override
