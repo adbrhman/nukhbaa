@@ -1,0 +1,1 @@
+- [21:13] إصلاح: إضافة حقل seasonId اختياري إلى FixturePredictionView | ملف: packages/application/lib/src/prediction/fixture_prediction_view.dart | اختبار: نجح
