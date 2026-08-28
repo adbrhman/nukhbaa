@@ -406,6 +406,12 @@ ORDER BY submitted_at ASC, id ASC
   // user_id (not a single participant_id) to span every season the user has
   // ever played — mirrors PostgresPredictionRepository._selectByUserSql.
   // Ordered newest-first (history), then by id for a stable tie-break.
+  //
+  // Also selects `c.season_id` (from `participants`, the permanent N:1 owner
+  // of a prediction's season — not the M:N `competition.season_fixtures`
+  // link, which answers a different question) to populate
+  // `FixturePredictionView.seasonId`. Every other repository method leaves
+  // that field null; only this query's row shape carries the column.
   static const String _selectByUserSql = '''
 SELECT fp.id             AS id,
        fp.fixture_id     AS fixture_id,
@@ -413,7 +419,8 @@ SELECT fp.id             AS id,
        fp.home_goals     AS home_goals,
        fp.away_goals     AS away_goals,
        fp.is_double      AS is_double,
-       fp.submitted_at   AS submitted_at
+       fp.submitted_at   AS submitted_at,
+       c.season_id       AS season_id
 FROM prediction.fixture_predictions fp
 JOIN competition.participants c ON c.id = fp.participant_id
 WHERE c.user_id = @user_id
@@ -428,8 +435,51 @@ ORDER BY fp.submitted_at DESC, fp.id ASC
     );
     return switch (result) {
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
-      Ok<List<Map<String, dynamic>>>(:final value) => _mapList(value),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapListWithSeason(value),
     };
+  }
+
+  // listByUser's row shape carries `season_id` (see the query above); every
+  // other query in this repository does not select that column, so this
+  // mapping is kept separate from the shared `_mapList` rather than adding a
+  // conditional branch to it.
+  Result<List<FixturePredictionView>> _mapListWithSeason(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final views = <FixturePredictionView>[];
+    for (final row in rows) {
+      final mapped = _mapOne(row);
+      if (mapped is Err<FixturePredictionView?>) {
+        return Result.err(mapped.error);
+      }
+      final view = (mapped as Ok<FixturePredictionView?>).value;
+      if (view == null) {
+        continue;
+      }
+      final rawSeasonId = row['season_id'];
+      SeasonId? seasonId;
+      if (rawSeasonId != null) {
+        final seasonIdResult = SeasonId.tryParse(rawSeasonId.toString());
+        if (seasonIdResult is Err<SeasonId>) {
+          return Result.err(
+            _corrupt(
+              'fixture_predictions',
+              'season_id',
+              seasonIdResult.error.message,
+            ),
+          );
+        }
+        seasonId = (seasonIdResult as Ok<SeasonId>).value;
+      }
+      views.add(
+        FixturePredictionView(
+          prediction: view.prediction,
+          submittedAt: view.submittedAt,
+          seasonId: seasonId,
+        ),
+      );
+    }
+    return Result.ok(List<FixturePredictionView>.unmodifiable(views));
   }
 
   // --------------------------------------------------------------------------
