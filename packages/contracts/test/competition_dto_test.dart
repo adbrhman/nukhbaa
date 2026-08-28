@@ -125,4 +125,57 @@ void main() {
       expect(decoded.hashCode, dto.hashCode);
     });
   });
+
+  group('ActiveSeasonDto', () {
+    test('round-trips through JSON', () {
+      const dto = ActiveSeasonDto(
+        competitionId: '11111111-1111-1111-1111-111111111111',
+        competitionName: 'Premier Predictions',
+        seasonId: '22222222-2222-2222-2222-222222222222',
+        seasonLabel: 'August 2026',
+        startAt: '2026-08-01T00:00:00.000Z',
+        endAt: '2026-09-01T00:00:00.000Z',
+      );
+      final decoded = ActiveSeasonDto.fromJson(dto.toJson());
+      expect(decoded, dto);
+      expect(decoded.hashCode, dto.hashCode);
+      expect(decoded.schemaVersion, ActiveSeasonDto.currentSchemaVersion);
+    });
+
+    test('defaults schema_version to 1 when absent (back-compat)', () {
+      final decoded = ActiveSeasonDto.fromJson(const {
+        'competition_id': 'c',
+        'competition_name': 'n',
+        'season_id': 's',
+        'season_label': 'l',
+        'start_at': '2026-08-01T00:00:00.000Z',
+        'end_at': '2026-09-01T00:00:00.000Z',
+      });
+      expect(decoded.schemaVersion, 1);
+    });
+
+    test('toJson uses snake_case wire keys', () {
+      const dto = ActiveSeasonDto(
+        competitionId: 'c',
+        competitionName: 'n',
+        seasonId: 's',
+        seasonLabel: 'l',
+        startAt: '2026-08-01T00:00:00.000Z',
+        endAt: '2026-09-01T00:00:00.000Z',
+      );
+      final json = dto.toJson();
+      expect(
+        json.keys,
+        containsAll(const [
+          'schema_version',
+          'competition_id',
+          'competition_name',
+          'season_id',
+          'season_label',
+          'start_at',
+          'end_at',
+        ]),
+      );
+    });
+  });
 }

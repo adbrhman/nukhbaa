@@ -730,3 +730,95 @@ final class LinkFixtureToRoundRequestDto {
   @override
   int get hashCode => Object.hash(fixtureId, displayOrder, schemaVersion);
 }
+
+/// One season the caller is an **active** participant in, right now, joined
+/// with its owning competition's display facts (the wire shape of
+/// `ParticipantSeasonFeedEntry` — `GET /me/active-seasons`). The client fans
+/// out to the existing `SeasonFixtureDto`-backed `GET /seasons/{id}/fixtures`
+/// read per season this returns; it never carries fixtures itself.
+final class ActiveSeasonDto {
+  /// Creates an active-season feed entry DTO.
+  const ActiveSeasonDto({
+    required this.competitionId,
+    required this.competitionName,
+    required this.seasonId,
+    required this.seasonLabel,
+    required this.startAt,
+    required this.endAt,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads.
+  factory ActiveSeasonDto.fromJson(Map<String, Object?> json) {
+    return ActiveSeasonDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      competitionId: json['competition_id']! as String,
+      competitionName: json['competition_name']! as String,
+      seasonId: json['season_id']! as String,
+      seasonLabel: json['season_label']! as String,
+      startAt: json['start_at']! as String,
+      endAt: json['end_at']! as String,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning competition's id (UUID string).
+  final String competitionId;
+
+  /// The owning competition's display name.
+  final String competitionName;
+
+  /// The season's id (UUID string) -- the key the client uses to fetch its
+  /// fixtures via `GET /seasons/{id}/fixtures`.
+  final String seasonId;
+
+  /// The season's display label.
+  final String seasonLabel;
+
+  /// The season's calendar window opening instant, as an ISO-8601 UTC string
+  /// (inclusive).
+  final String startAt;
+
+  /// The season's calendar window closing instant, as an ISO-8601 UTC string
+  /// (exclusive).
+  final String endAt;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'competition_id': competitionId,
+    'competition_name': competitionName,
+    'season_id': seasonId,
+    'season_label': seasonLabel,
+    'start_at': startAt,
+    'end_at': endAt,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is ActiveSeasonDto &&
+      other.competitionId == competitionId &&
+      other.competitionName == competitionName &&
+      other.seasonId == seasonId &&
+      other.seasonLabel == seasonLabel &&
+      other.startAt == startAt &&
+      other.endAt == endAt &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    competitionId,
+    competitionName,
+    seasonId,
+    seasonLabel,
+    startAt,
+    endAt,
+    schemaVersion,
+  );
+}
