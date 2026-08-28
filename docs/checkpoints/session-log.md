@@ -1,2 +1,3 @@
 - [21:13] إصلاح: إضافة حقل seasonId اختياري إلى FixturePredictionView | ملف: packages/application/lib/src/prediction/fixture_prediction_view.dart | اختبار: نجح
 - [$(date +%H:%M)] إصلاح: إضافة عمود season_id لاستعلام listByUser وتمريره إلى FixturePredictionView | ملف: packages/infrastructure/lib/src/prediction/postgres_fixture_prediction_repository.dart | اختبار: ${TEST_STATUS}
+- [22:14] إصلاح: إضافة حقل seasonId اختياري إلى FixturePredictionDto ورفع schemaVersion إلى 2 | ملف: packages/contracts/lib/src/fixture_prediction_dto.dart | اختبار: نجح

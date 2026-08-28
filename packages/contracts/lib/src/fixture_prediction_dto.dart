@@ -93,6 +93,7 @@ final class FixturePredictionDto {
     required this.homeGoals,
     required this.awayGoals,
     this.isDouble = false,
+    this.seasonId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -108,11 +109,15 @@ final class FixturePredictionDto {
       homeGoals: json['home_goals']! as int,
       awayGoals: json['away_goals']! as int,
       isDouble: (json['is_double'] as bool?) ?? false,
+      seasonId: json['season_id'] as String?,
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 for the optional
+  /// [seasonId] field; `fromJson` still defaults a legacy (v1) or absent
+  /// `schema_version` to 1, and a missing `season_id` decodes as `null`, so
+  /// older payloads keep decoding.
+  static const int currentSchemaVersion = 2;
 
   /// The prediction id (UUID string).
   final String id;
@@ -135,10 +140,17 @@ final class FixturePredictionDto {
   /// Whether this fixture is the caller's double for the UTC day.
   final bool isDouble;
 
+  /// The season this prediction belongs to (UUID string), derived
+  /// server-side from `participant_id -> competition.participants.season_id`
+  /// — populated only by the `GET /me/fixture-predictions` read path; null
+  /// elsewhere.
+  final String? seasonId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
-  /// Serializes to a JSON-encodable map.
+  /// Serializes to a JSON-encodable map. [seasonId] is omitted when null so
+  /// the payload stays minimal on paths that don't populate it.
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'id': id,
@@ -148,6 +160,7 @@ final class FixturePredictionDto {
     'home_goals': homeGoals,
     'away_goals': awayGoals,
     'is_double': isDouble,
+    if (seasonId != null) 'season_id': seasonId,
   };
 
   @override
@@ -160,6 +173,7 @@ final class FixturePredictionDto {
       other.homeGoals == homeGoals &&
       other.awayGoals == awayGoals &&
       other.isDouble == isDouble &&
+      other.seasonId == seasonId &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -171,6 +185,7 @@ final class FixturePredictionDto {
     homeGoals,
     awayGoals,
     isDouble,
+    seasonId,
     schemaVersion,
   );
 }
