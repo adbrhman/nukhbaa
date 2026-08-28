@@ -82,6 +82,7 @@ export 'src/platform/ports/build_info_repository.dart';
 export 'src/platform/ports/health_repository.dart';
 export 'src/prediction/fixture_prediction_view.dart';
 export 'src/prediction/get_my_prediction.dart';
+export 'src/prediction/list_my_fixture_predictions.dart';
 export 'src/prediction/list_my_predictions.dart';
 export 'src/prediction/list_round_predictions.dart';
 export 'src/prediction/ports/fixture_prediction_repository.dart';

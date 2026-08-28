@@ -74,4 +74,14 @@ abstract interface class FixturePredictionRepository {
   /// aggregates over (Axiom 4 Amendment). A season with no linked fixtures
   /// (or one that does not exist) yields `Ok(<empty list>)`.
   Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId);
+
+  /// Lists every fixture prediction [userId] has ever submitted, across every
+  /// fixture and every season they have participated in — the per-fixture
+  /// sibling of [PredictionRepository.listByUser] — ordered by submission
+  /// instant descending (newest first) then prediction id for a stable read.
+  ///
+  /// Always visible to the user for their OWN predictions regardless of
+  /// fixture lock status — a user may always see their own submitted
+  /// forecasts; nothing here reveals another participant's prediction.
+  Future<Result<List<FixturePredictionView>>> listByUser(UserId userId);
 }

@@ -21,6 +21,11 @@ final class FakeFixturePredictionRepository
   /// stored doubles by the UTC calendar day of their fixture's kickoff.
   final Map<String, DateTime> _kickoffByFixture = {};
 
+  /// keyed by participantId → owning userId, so [listByUser] can filter
+  /// stored predictions by owner the way the real adapter's
+  /// `participants.user_id` join does — mirrors FakePredictionRepository.
+  final Map<String, String> _participantOwner = {};
+
   AppError? _scriptedFailure;
 
   /// Scripts the *next* call to fail with [error], then clears the script.
@@ -47,6 +52,12 @@ final class FakeFixturePredictionRepository
         prediction,
         submittedAt,
       );
+
+  /// Records which user owns [participantId], so [listByUser] can filter
+  /// stored predictions the way the real adapter's `participants.user_id`
+  /// join does.
+  void seedParticipantOwner(ParticipantId participantId, UserId userId) =>
+      _participantOwner[participantId.value] = userId.value;
 
   int get count => _byKey.length;
 
@@ -181,6 +192,31 @@ final class FakeFixturePredictionRepository
         if (link.seasonId == seasonId) link,
     ]..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
     return Result.ok([for (final link in links) link.fixture]);
+  }
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final out =
+        <_Stored>[
+          for (final s in _byKey.values)
+            if (_participantOwner[s.prediction.participantId.value] ==
+                userId.value)
+              s,
+        ]..sort((a, b) {
+          final byTime = b.submittedAt.compareTo(a.submittedAt);
+          return byTime != 0
+              ? byTime
+              : a.prediction.id.value.compareTo(b.prediction.id.value);
+        });
+    return Result.ok([
+      for (final s in out)
+        FixturePredictionView(
+          prediction: s.prediction,
+          submittedAt: s.submittedAt,
+        ),
+    ]);
   }
 }
 

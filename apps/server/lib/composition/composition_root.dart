@@ -88,6 +88,7 @@ final class CompositionRoot {
     required this.adminGetParticipantDisplayNames,
     required this.adminListRoundPredictions,
     required this.adminListFixturePredictions,
+    required this.listMyFixturePredictions,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -189,6 +190,7 @@ final class CompositionRoot {
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
     AdminListRoundPredictions? adminListRoundPredictions,
     AdminListFixturePredictions? adminListFixturePredictions,
+    ListMyFixturePredictions? listMyFixturePredictions,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -290,6 +292,8 @@ final class CompositionRoot {
            adminListRoundPredictions ?? _absentAdminListRoundPredictions(),
        adminListFixturePredictions =
            adminListFixturePredictions ?? _absentAdminListFixturePredictions(),
+       listMyFixturePredictions =
+           listMyFixturePredictions ?? _absentListMyFixturePredictions(),
        _connection = null,
        _jwksClient = null;
 
@@ -788,6 +792,11 @@ final class CompositionRoot {
         auditRecorder: _absentAuditRecorder(),
       );
 
+  static ListMyFixturePredictions _absentListMyFixturePredictions() =>
+      ListMyFixturePredictions(
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+      );
+
   /// The Postgres connection owned by a production root. Null for roots built
   /// via [CompositionRoot.forTesting], which own no infrastructure.
   final PostgresConnection? _connection;
@@ -1096,6 +1105,12 @@ final class CompositionRoot {
   /// for one fixture, itself audited (admin-only — mirrors
   /// [adminListRoundPredictions], but carries no fixture-status gate).
   final AdminListFixturePredictions adminListFixturePredictions;
+
+  /// Lists the caller's own aggregated fixture-prediction history — every
+  /// per-fixture prediction they have ever submitted, across every fixture
+  /// and season, newest first. Always the caller's own forecasts; no
+  /// season-membership gate (mirrors [listMyPredictions]).
+  final ListMyFixturePredictions listMyFixturePredictions;
 
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
@@ -1546,6 +1561,10 @@ final class CompositionRoot {
             fixturePredictionRepository, // already built
         auditRecorder: auditRecorder,
       ),
+      listMyFixturePredictions: ListMyFixturePredictions(
+        fixturePredictionRepository:
+            fixturePredictionRepository, // already built
+      ),
     );
   }
 
@@ -1818,6 +1837,10 @@ final class _UnwiredFixturePredictionRepository
 
   @override
   Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) =>
+      _unwired();
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) =>
       _unwired();
 }
 

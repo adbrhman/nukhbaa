@@ -396,6 +396,43 @@ ORDER BY submitted_at ASC, id ASC
   }
 
   // --------------------------------------------------------------------------
+  // listByUser — the caller's own aggregated fixture-prediction history
+  // (every fixture, every season the user has ever participated in) — the
+  // per-fixture sibling of PostgresPredictionRepository.listByUser.
+  // --------------------------------------------------------------------------
+
+  // A user holds a DIFFERENT competition.participants row per season
+  // (Database ADR §1), so this joins fixture_predictions -> participants on
+  // user_id (not a single participant_id) to span every season the user has
+  // ever played — mirrors PostgresPredictionRepository._selectByUserSql.
+  // Ordered newest-first (history), then by id for a stable tie-break.
+  static const String _selectByUserSql = '''
+SELECT fp.id             AS id,
+       fp.fixture_id     AS fixture_id,
+       fp.participant_id AS participant_id,
+       fp.home_goals     AS home_goals,
+       fp.away_goals     AS away_goals,
+       fp.is_double      AS is_double,
+       fp.submitted_at   AS submitted_at
+FROM prediction.fixture_predictions fp
+JOIN competition.participants c ON c.id = fp.participant_id
+WHERE c.user_id = @user_id
+ORDER BY fp.submitted_at DESC, fp.id ASC
+''';
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) async {
+    final result = await _connection.query(
+      _selectByUserSql,
+      parameters: {'user_id': userId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapList(value),
+    };
+  }
+
+  // --------------------------------------------------------------------------
   // Shared helpers (mirror PostgresPredictionRepository)
   // --------------------------------------------------------------------------
 

@@ -410,6 +410,11 @@ final class _InMemoryFixturePredictionRepository
         if (link.seasonId == seasonId) link.fixture,
     ]);
   }
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByUser(
+    UserId userId,
+  ) async => const Result.ok([]);
 }
 
 /// A minimal in-memory [FixtureScoreRepository] for these route tests only.

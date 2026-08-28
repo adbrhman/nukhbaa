@@ -238,4 +238,8 @@ final class _InMemoryFixturePredictionRepository
   @override
   Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) =>
       throw UnimplementedError('not exercised by this route test file');
+
+  @override
+  Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) =>
+      throw UnimplementedError('not exercised by this route test file');
 }

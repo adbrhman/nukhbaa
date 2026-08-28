@@ -10,6 +10,7 @@ const _seasonId = '22222222-2222-2222-2222-222222222222';
 const _participantId = '33333333-3333-3333-3333-333333333333';
 const _fixtureA = '44444444-4444-4444-4444-444444444444';
 const _fixtureB = '55555555-5555-5555-5555-555555555555';
+const _userId = '88888888-8888-8888-8888-888888888888';
 
 /// Fake [PostgresConnection] replaying a scripted queue of [Result]s (one per
 /// `query`) — same double used by `postgres_prediction_repository_test.dart`.
@@ -288,6 +289,49 @@ void main() {
         expect((result as Ok<List<FixturePredictionView>>).value, hasLength(2));
       },
     );
+
+    test('listByUser sends the joined query bound to user_id', () async {
+      final connection = _FakeConnection([
+        Result.ok([
+          _row(participantId: _participantId, fixtureId: _fixtureA),
+        ]),
+      ]);
+      final repo = PostgresFixturePredictionRepository(connection);
+      final result = await repo.listByUser(const UserId(_userId));
+
+      expect(result, isA<Ok<List<FixturePredictionView>>>());
+      expect((result as Ok<List<FixturePredictionView>>).value, hasLength(1));
+      expect(connection.sqls.single, contains('c.user_id = @user_id'));
+      expect(connection.sqls.single, contains('JOIN competition.participants'));
+      expect(connection.parameters.single, {'user_id': _userId});
+    });
+
+    test('listByUser maps every returned row', () async {
+      final repo = PostgresFixturePredictionRepository(
+        _FakeConnection([
+          Result.ok([
+            _row(participantId: _participantId, fixtureId: _fixtureA),
+            _row(
+              id: '99999999-9999-9999-9999-999999999999',
+              participantId: _participantId,
+              fixtureId: _fixtureB,
+            ),
+          ]),
+        ]),
+      );
+      final result = await repo.listByUser(const UserId(_userId));
+      expect(result, isA<Ok<List<FixturePredictionView>>>());
+      expect((result as Ok<List<FixturePredictionView>>).value, hasLength(2));
+    });
+
+    test('listByUser returns an empty list when the user has never predicted', () async {
+      final repo = PostgresFixturePredictionRepository(
+        _FakeConnection([const Result.ok(<Map<String, dynamic>>[])]),
+      );
+      final result = await repo.listByUser(const UserId(_userId));
+      expect(result, isA<Ok<List<FixturePredictionView>>>());
+      expect((result as Ok<List<FixturePredictionView>>).value, isEmpty);
+    });
 
     test(
       'a corrupt row (non-integer home_goals) surfaces as row_corrupt',
