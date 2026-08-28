@@ -306,6 +306,22 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /seasons/{id}/fixtures/{fixtureId}/scores` — reads every
+  /// participant's computed score for a fixture (query intent
+  /// `GetFixtureScores`; Axiom 4 Amendment — the per-fixture sibling of
+  /// [getRoundScores]). Gate is season membership only (Option-3, same
+  /// philosophy as [scoreFixture]): an unscored fixture is a legitimate
+  /// `Ok(<empty list>)`, never a `409` like the round-scoped read.
+  Future<Result<FixtureScoresDto>> getFixtureScores({
+    required String seasonId,
+    required String fixtureId,
+  }) {
+    return _transport.getObject<FixtureScoresDto>(
+      '/seasons/$seasonId/fixtures/$fixtureId/scores',
+      parse: FixtureScoresDto.fromJson,
+    );
+  }
+
   /// `DELETE /rounds/{id}/fixtures/{fixtureId}` — removes the fixture from
   /// the round (command intent `RemoveFixtureFromRound`; the correction
   /// counterpart of [linkFixtureToRound] for a duplicate/mistaken link).
