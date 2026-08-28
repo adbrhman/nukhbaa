@@ -11,7 +11,9 @@ import 'package:contracts/contracts.dart';
 /// No points, score, or competitive-record value is ever included; those are
 /// produced server-side by `ScoreFixture` and never part of this read model.
 /// `submitted_at` is the exact instant the repository stamped (carried on the
-/// view), never fabricated at the edge.
+/// view), never fabricated at the edge. `season_id` is included only when
+/// [FixturePredictionView.seasonId] was populated by the repository query
+/// (currently `listByUser` only); otherwise omitted from the wire payload.
 Map<String, Object?> fixturePredictionViewToJson(FixturePredictionView view) {
   final prediction = view.prediction;
   return FixturePredictionDto(
@@ -22,5 +24,6 @@ Map<String, Object?> fixturePredictionViewToJson(FixturePredictionView view) {
     homeGoals: prediction.homeGoals,
     awayGoals: prediction.awayGoals,
     isDouble: prediction.isDouble,
+    seasonId: view.seasonId?.value,
   ).toJson();
 }
