@@ -407,4 +407,53 @@ base class FakeCompetitionRepository implements CompetitionRepository {
     }.toList()..sort((a, b) => a.value.compareTo(b.value));
     return Result.ok(roundIds);
   }
+
+  // ---------------------------------------------------------------------------
+  // Participant-scoped season feed (isolated read layer): real in-memory read
+  // over the same backing stores, mirroring the Postgres adapter's
+  // join/filter/order semantics.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Result<List<ParticipantSeasonFeedEntry>>>
+  listActiveParticipantSeasons({
+    required UserId userId,
+    required DateTime nowUtc,
+  }) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final entries =
+        [
+          for (final p in _participants.values)
+            if (p.userId.value == userId.value &&
+                p.status == ParticipantStatus.active)
+              if (_seasons[p.seasonId.value] case final season?)
+                if (season.isCurrentAt(nowUtc))
+                  if (_competitions[season.competitionId.value]
+                      case final competition?)
+                    (competition: competition, season: season),
+        ]..sort((a, b) {
+          final byName = a.competition.name.compareTo(b.competition.name);
+          if (byName != 0) return byName;
+          final byCompetitionId = a.competition.id.value.compareTo(
+            b.competition.id.value,
+          );
+          if (byCompetitionId != 0) return byCompetitionId;
+          final byLabel = a.season.label.compareTo(b.season.label);
+          return byLabel != 0
+              ? byLabel
+              : a.season.id.value.compareTo(b.season.id.value);
+        });
+    return Result.ok([
+      for (final e in entries)
+        ParticipantSeasonFeedEntry(
+          competitionId: e.competition.id,
+          competitionName: e.competition.name,
+          seasonId: e.season.id,
+          seasonLabel: e.season.label,
+          startAt: e.season.startAt,
+          endAt: e.season.endAt,
+        ),
+    ]);
+  }
 }

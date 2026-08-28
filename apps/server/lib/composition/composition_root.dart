@@ -1750,6 +1750,13 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   @override
   Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) =>
       _unwired();
+
+  @override
+  Future<Result<List<ParticipantSeasonFeedEntry>>>
+  listActiveParticipantSeasons({
+    required UserId userId,
+    required DateTime nowUtc,
+  }) => _unwired();
 }
 
 /// Backs an "absent" ruleset-dependent use-case's ruleset provider.

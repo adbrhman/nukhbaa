@@ -200,4 +200,27 @@ abstract interface class CompetitionRepository {
   /// id for a stable, deterministic result. A fixture linked to no round
   /// yields `Ok(<empty list>)`, never an error.
   Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture);
+
+  // ---------------------------------------------------------------------------
+  // Participant-scoped season feed (isolated read layer — first step toward
+  // a "my seasons" mobile read; the client fans out to the existing
+  // `listSeasonRounds`-analogue `BrowseSeasonFixtures` read per season it
+  // returns). Additive, read-only; no use-case/route/mobile wiring lands with
+  // this method.
+  // ---------------------------------------------------------------------------
+
+  /// Lists every season [userId] is an **active** ([ParticipantStatus.active])
+  /// participant in, whose calendar window currently covers [nowUtc]
+  /// ([CompetitionSeason.isCurrentAt]), joined with the owning competition's
+  /// display name — the row shape a "my seasons" feed needs in one query.
+  ///
+  /// Ordered by competition name (then id, tie-break), then season label
+  /// (then id) — mirrors [listOpenRoundsFeed]'s grouping/order contract. A
+  /// user with no active participation currently covered by any season's
+  /// window yields `Ok(<empty list>)`, never an error — a legitimate "not in
+  /// any season right now" outcome (e.g. a brand-new user who has not yet
+  /// made a first prediction, since `FixturePredictionController` auto-joins
+  /// only on that first successful submission).
+  Future<Result<List<ParticipantSeasonFeedEntry>>>
+  listActiveParticipantSeasons({required UserId userId, required DateTime nowUtc});
 }

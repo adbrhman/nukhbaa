@@ -20,6 +20,7 @@ export 'src/competition/format_type.dart';
 export 'src/competition/open_round_feed_entry.dart';
 export 'src/competition/participant.dart';
 export 'src/competition/participant_id.dart';
+export 'src/competition/participant_season_feed_entry.dart';
 export 'src/competition/participant_status.dart';
 export 'src/competition/round.dart';
 export 'src/competition/round_fixture.dart';

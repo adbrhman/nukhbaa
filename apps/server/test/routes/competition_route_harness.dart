@@ -338,6 +338,47 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
         });
     return Result.ok(matched);
   }
+
+  @override
+  Future<Result<List<ParticipantSeasonFeedEntry>>>
+  listActiveParticipantSeasons({
+    required UserId userId,
+    required DateTime nowUtc,
+  }) async {
+    final entries =
+        [
+          for (final p in participants)
+            if (p.userId.value == userId.value &&
+                p.status == ParticipantStatus.active)
+              if (seasons[p.seasonId.value] case final season?)
+                if (season.isCurrentAt(nowUtc))
+                  if (competitions[season.competitionId.value]
+                      case final competition?)
+                    (competition: competition, season: season),
+        ]..sort((a, b) {
+          final byName = a.competition.name.compareTo(b.competition.name);
+          if (byName != 0) return byName;
+          final byCompetitionId = a.competition.id.value.compareTo(
+            b.competition.id.value,
+          );
+          if (byCompetitionId != 0) return byCompetitionId;
+          final byLabel = a.season.label.compareTo(b.season.label);
+          return byLabel != 0
+              ? byLabel
+              : a.season.id.value.compareTo(b.season.id.value);
+        });
+    return Result.ok([
+      for (final e in entries)
+        ParticipantSeasonFeedEntry(
+          competitionId: e.competition.id,
+          competitionName: e.competition.name,
+          seasonId: e.season.id,
+          seasonLabel: e.season.label,
+          startAt: e.season.startAt,
+          endAt: e.season.endAt,
+        ),
+    ]);
+  }
 }
 
 /// A minimal in-memory [PredictionRepository] for the prediction route tests.

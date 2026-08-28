@@ -645,4 +645,90 @@ void main() {
       expect(err.code, 'db.query_failed');
     });
   });
+
+  group('listActiveParticipantSeasons', () {
+    test(
+      'maps every row to a ParticipantSeasonFeedEntry and binds user_id + now',
+      () async {
+        final now = DateTime.utc(2026, 8, 15);
+        final conn = _rows([
+          {
+            'competition_id': _competitionId,
+            'competition_name': 'Premier League',
+            'season_id': _seasonId,
+            'season_label': '08/2026',
+            'start_at': DateTime.utc(2026, 8, 1),
+            'end_at': DateTime.utc(2026, 9, 1),
+          },
+        ]);
+        final repo = PostgresCompetitionRepository(conn);
+
+        final result = await repo.listActiveParticipantSeasons(
+          userId: _uId,
+          nowUtc: now,
+        );
+
+        final list = (result as Ok<List<ParticipantSeasonFeedEntry>>).value;
+        expect(list, hasLength(1));
+        expect(list.single.competitionId.value, _competitionId);
+        expect(list.single.competitionName, 'Premier League');
+        expect(list.single.seasonId.value, _seasonId);
+        expect(list.single.seasonLabel, '08/2026');
+        expect(conn.lastParameters, {'user_id': _userId, 'now': now});
+      },
+    );
+
+    test(
+      'no active participation covered by any season now is Ok(<empty list>)',
+      () async {
+        final repo = PostgresCompetitionRepository(_rows(const []));
+
+        final result = await repo.listActiveParticipantSeasons(
+          userId: _uId,
+          nowUtc: DateTime.utc(2026, 8, 15),
+        );
+
+        expect(
+          (result as Ok<List<ParticipantSeasonFeedEntry>>).value,
+          isEmpty,
+        );
+      },
+    );
+
+    test('a corrupt season_label maps to transient row_corrupt', () async {
+      final conn = _rows([
+        {
+          'competition_id': _competitionId,
+          'competition_name': 'Premier League',
+          'season_id': _seasonId,
+          'season_label': 42, // not a string
+          'start_at': DateTime.utc(2026, 8, 1),
+          'end_at': DateTime.utc(2026, 9, 1),
+        },
+      ]);
+      final repo = PostgresCompetitionRepository(conn);
+
+      final result = await repo.listActiveParticipantSeasons(
+        userId: _uId,
+        nowUtc: DateTime.utc(2026, 8, 15),
+      );
+
+      final err = (result as Err<List<ParticipantSeasonFeedEntry>>).error;
+      expect(err.kind, ErrorKind.transient);
+      expect(err.code, 'competition.row_corrupt');
+    });
+
+    test('a transient query error is propagated verbatim', () async {
+      final repo = PostgresCompetitionRepository(_fails());
+
+      final result = await repo.listActiveParticipantSeasons(
+        userId: _uId,
+        nowUtc: DateTime.utc(2026, 8, 15),
+      );
+
+      final err = (result as Err<List<ParticipantSeasonFeedEntry>>).error;
+      expect(err.kind, ErrorKind.transient);
+      expect(err.code, 'db.query_failed');
+    });
+  });
 }

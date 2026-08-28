@@ -933,6 +933,100 @@ WHERE season_id = @season_id AND user_id = @user_id
   }
 
   // --------------------------------------------------------------------------
+  // Participant-scoped season feed (isolated read layer)
+  // --------------------------------------------------------------------------
+
+  static const String _listActiveParticipantSeasonsSql = '''
+SELECT c.id AS competition_id, c.name AS competition_name,
+       s.id AS season_id, s.label AS season_label,
+       s.start_at, s.end_at
+FROM competition.participants p
+JOIN competition.seasons s ON s.id = p.season_id
+JOIN competition.competitions c ON c.id = s.competition_id
+WHERE p.user_id = @user_id
+  AND p.status = 'active'::competition.participant_status
+  AND s.start_at <= @now
+  AND s.end_at > @now
+ORDER BY c.name ASC, c.id ASC, s.label ASC, s.id ASC
+''';
+
+  @override
+  Future<Result<List<ParticipantSeasonFeedEntry>>>
+  listActiveParticipantSeasons({
+    required UserId userId,
+    required DateTime nowUtc,
+  }) async {
+    final result = await _connection.query(
+      _listActiveParticipantSeasonsSql,
+      parameters: {'user_id': userId.value, 'now': nowUtc},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapAll(
+        value,
+        _mapParticipantSeasonFeedEntry,
+      ),
+    };
+  }
+
+  Result<ParticipantSeasonFeedEntry> _mapParticipantSeasonFeedEntry(
+    Map<String, dynamic> row,
+  ) {
+    final competitionIdResult = CompetitionId.tryParse(
+      row['competition_id']?.toString(),
+    );
+    final seasonIdResult = SeasonId.tryParse(row['season_id']?.toString());
+    final competitionName = row['competition_name'];
+    final seasonLabel = row['season_label'];
+    final startAt = _readUtcTimestamp(row['start_at']);
+    final endAt = _readUtcTimestamp(row['end_at']);
+
+    if (competitionIdResult is Err<CompetitionId>) {
+      return Result.err(
+        _corrupt(
+          'participants',
+          'competition_id',
+          competitionIdResult.error.message,
+        ),
+      );
+    }
+    if (seasonIdResult is Err<SeasonId>) {
+      return Result.err(
+        _corrupt('participants', 'season_id', seasonIdResult.error.message),
+      );
+    }
+    if (competitionName is! String) {
+      return Result.err(
+        _corrupt('participants', 'competition_name', 'not a string'),
+      );
+    }
+    if (seasonLabel is! String) {
+      return Result.err(
+        _corrupt('participants', 'season_label', 'not a string'),
+      );
+    }
+    if (startAt == null) {
+      return Result.err(
+        _corrupt('participants', 'start_at', 'not a timestamp'),
+      );
+    }
+    if (endAt == null) {
+      return Result.err(_corrupt('participants', 'end_at', 'not a timestamp'));
+    }
+
+    return Result.ok(
+      ParticipantSeasonFeedEntry(
+        competitionId: (competitionIdResult as Ok<CompetitionId>).value,
+        competitionName: competitionName,
+        seasonId: (seasonIdResult as Ok<SeasonId>).value,
+        seasonLabel: seasonLabel,
+        startAt: startAt,
+        endAt: endAt,
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
   // Shared helpers
   // --------------------------------------------------------------------------
 
