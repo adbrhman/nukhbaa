@@ -292,9 +292,7 @@ void main() {
 
     test('listByUser sends the joined query bound to user_id', () async {
       final connection = _FakeConnection([
-        Result.ok([
-          _row(participantId: _participantId, fixtureId: _fixtureA),
-        ]),
+        Result.ok([_row(participantId: _participantId, fixtureId: _fixtureA)]),
       ]);
       final repo = PostgresFixturePredictionRepository(connection);
       final result = await repo.listByUser(const UserId(_userId));
@@ -324,14 +322,17 @@ void main() {
       expect((result as Ok<List<FixturePredictionView>>).value, hasLength(2));
     });
 
-    test('listByUser returns an empty list when the user has never predicted', () async {
-      final repo = PostgresFixturePredictionRepository(
-        _FakeConnection([const Result.ok(<Map<String, dynamic>>[])]),
-      );
-      final result = await repo.listByUser(const UserId(_userId));
-      expect(result, isA<Ok<List<FixturePredictionView>>>());
-      expect((result as Ok<List<FixturePredictionView>>).value, isEmpty);
-    });
+    test(
+      'listByUser returns an empty list when the user has never predicted',
+      () async {
+        final repo = PostgresFixturePredictionRepository(
+          _FakeConnection([const Result.ok(<Map<String, dynamic>>[])]),
+        );
+        final result = await repo.listByUser(const UserId(_userId));
+        expect(result, isA<Ok<List<FixturePredictionView>>>());
+        expect((result as Ok<List<FixturePredictionView>>).value, isEmpty);
+      },
+    );
 
     test(
       'a corrupt row (non-integer home_goals) surfaces as row_corrupt',

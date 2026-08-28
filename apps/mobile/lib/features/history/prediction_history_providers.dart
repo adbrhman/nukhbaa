@@ -81,10 +81,7 @@ final class FixturePredictionEntry implements PredictionHistoryEntry {
 @riverpod
 Future<List<PredictionHistoryEntry>> predictionHistory(Ref ref) async {
   final api = ref.watch(predictionApiProvider);
-  final results = await (
-    api.myPredictions(),
-    api.myFixturePredictions(),
-  ).wait;
+  final results = await (api.myPredictions(), api.myFixturePredictions()).wait;
   final rounds = _unwrap(results.$1);
   final fixtures = _unwrap(results.$2);
   final entries = <PredictionHistoryEntry>[

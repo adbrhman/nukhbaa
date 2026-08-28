@@ -43,43 +43,36 @@ void main() {
     );
   });
 
-  test(
-    'lists every fixture prediction owned by the caller across fixtures, '
-    'newest first',
-    () async {
-      fixturePredictions
-        ..seedParticipantOwner(
-          const ParticipantId(_participantId),
-          const UserId(_userId),
-        )
-        ..seedParticipantOwner(
-          const ParticipantId(_otherFixtureParticipantId),
-          const UserId(_userId),
-        )
-        // Seed out of time order; expect newest (latest submittedAt) first.
-        ..seedPrediction(
-          _prediction(_predictionId, _fixtureA, _participantId),
-          _early,
-        )
-        ..seedPrediction(
-          _prediction(
-            _otherPredictionId,
-            _fixtureB,
-            _otherFixtureParticipantId,
-          ),
-          _late,
-        );
+  test('lists every fixture prediction owned by the caller across fixtures, '
+      'newest first', () async {
+    fixturePredictions
+      ..seedParticipantOwner(
+        const ParticipantId(_participantId),
+        const UserId(_userId),
+      )
+      ..seedParticipantOwner(
+        const ParticipantId(_otherFixtureParticipantId),
+        const UserId(_userId),
+      )
+      // Seed out of time order; expect newest (latest submittedAt) first.
+      ..seedPrediction(
+        _prediction(_predictionId, _fixtureA, _participantId),
+        _early,
+      )
+      ..seedPrediction(
+        _prediction(_otherPredictionId, _fixtureB, _otherFixtureParticipantId),
+        _late,
+      );
 
-      final result = await useCase(principal: userPrincipal(_userId));
+    final result = await useCase(principal: userPrincipal(_userId));
 
-      final list = (result as Ok<List<FixturePredictionView>>).value;
-      expect(list, hasLength(2));
-      expect(list.first.prediction.id, const PredictionId(_otherPredictionId));
-      expect(list.first.submittedAt, _late);
-      expect(list.last.prediction.id, const PredictionId(_predictionId));
-      expect(list.last.submittedAt, _early);
-    },
-  );
+    final list = (result as Ok<List<FixturePredictionView>>).value;
+    expect(list, hasLength(2));
+    expect(list.first.prediction.id, const PredictionId(_otherPredictionId));
+    expect(list.first.submittedAt, _late);
+    expect(list.last.prediction.id, const PredictionId(_predictionId));
+    expect(list.last.submittedAt, _early);
+  });
 
   test(
     "excludes another user's fixture predictions even when present",

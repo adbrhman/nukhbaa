@@ -127,12 +127,18 @@ void main() {
         // storedFixturePrediction (2026-08-02) was submitted after
         // storedPrediction (2026-08-01), so its card comes first in the list.
         final finder = find.byType(Card);
-        final int roundIndex = tester.widgetList(finder).toList().indexWhere(
-          (w) => (w.key as ValueKey<String>).value == 'history.item.p-1',
-        );
-        final int fixtureIndex = tester.widgetList(finder).toList().indexWhere(
-          (w) => (w.key as ValueKey<String>).value == 'history.item.fp-1',
-        );
+        final int roundIndex = tester
+            .widgetList(finder)
+            .toList()
+            .indexWhere(
+              (w) => (w.key as ValueKey<String>).value == 'history.item.p-1',
+            );
+        final int fixtureIndex = tester
+            .widgetList(finder)
+            .toList()
+            .indexWhere(
+              (w) => (w.key as ValueKey<String>).value == 'history.item.fp-1',
+            );
         expect(fixtureIndex, lessThan(roundIndex));
 
         // The fixture prediction has no known team names (no season/round
