@@ -59,6 +59,7 @@ final class CompositionRoot {
     required this.getSeasonLeaderboard,
     required this.getSeasonFixtureLeaderboard,
     required this.getFixtureScores,
+    required this.adminGetFixtureScores,
     required this.getRoundLeaderboard,
     required this.getHallOfFame,
     required this.createGroup,
@@ -161,6 +162,7 @@ final class CompositionRoot {
     GetSeasonLeaderboard? getSeasonLeaderboard,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
     GetFixtureScores? getFixtureScores,
+    AdminGetFixtureScores? adminGetFixtureScores,
     GetRoundLeaderboard? getRoundLeaderboard,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
@@ -253,6 +255,8 @@ final class CompositionRoot {
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
        getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
+       adminGetFixtureScores =
+           adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getRoundLeaderboard =
            getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -587,6 +591,14 @@ final class CompositionRoot {
     fixturePredictionRepository: _unwiredFixturePredictionRepository,
     fixtureScoreRepository: _unwiredFixtureScoreRepository,
   );
+
+  /// Backs the "absent" [AdminGetFixtureScores]: throws so a test that
+  /// reaches this admin-bypass path fails loudly instead of silently
+  /// touching a real database — mirrors [_absentAdminGetRoundScores].
+  static AdminGetFixtureScores _absentAdminGetFixtureScores() =>
+      AdminGetFixtureScores(
+        fixtureScoreRepository: _unwiredFixtureScoreRepository,
+      );
 
   /// Backs the "absent" [GetRoundLeaderboard]: throws so a test that reaches
   /// an unwired round-leaderboard slice fails loudly instead of touching a
@@ -974,6 +986,12 @@ final class CompositionRoot {
   /// gated on the season being finished; season-membership gated only).
   final GetSeasonFixtureLeaderboard getSeasonFixtureLeaderboard;
   final GetFixtureScores getFixtureScores;
+
+  /// Admin fixture-scores read — same shape as [getFixtureScores] but
+  /// without the participant-of-season gate (added so an admin can
+  /// investigate a user's complaint on any fixture regardless of the
+  /// admin's own season membership).
+  final AdminGetFixtureScores adminGetFixtureScores;
 
   /// Reads a round's ranked standings — its round leaderboard (a read-side
   /// projection over that round's already-computed scores; gated identically
@@ -1458,6 +1476,9 @@ final class CompositionRoot {
       getFixtureScores: GetFixtureScores(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
+        fixtureScoreRepository: fixtureScoreRepository,
+      ),
+      adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
       ),
       getRoundLeaderboard: GetRoundLeaderboard(

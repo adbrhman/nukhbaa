@@ -130,4 +130,33 @@ final class AdminApi {
       parse: RoundReportDto.fromJson,
     );
   }
+
+  /// `GET /admin/fixtures/{fixtureId}/scores` — the admin fixture-scores
+  /// read: every participant's computed score for a single fixture,
+  /// regardless of the admin's own season membership (mirrors
+  /// [adminGetRoundScores]; the per-fixture sibling, added for admin
+  /// investigation of a user's complaint on any fixture).
+  Future<Result<FixtureScoresDto>> adminGetFixtureScores(String fixtureId) {
+    return _transport.getObject<FixtureScoresDto>(
+      '/admin/fixtures/$fixtureId/scores',
+      parse: FixtureScoresDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/fixtures/{fixtureId}/predictions` — every participant's raw
+  /// predicted scoreline for a fixture, regardless of season membership
+  /// (mirrors [adminListRoundPredictions]; the per-fixture sibling).
+  /// [reason] is an optional justification recorded on the (mandatory)
+  /// audit entry for this read; the read itself is always audited
+  /// server-side regardless of whether one is supplied.
+  Future<Result<List<FixturePredictionDto>>> adminListFixturePredictions(
+    String fixtureId, {
+    String? reason,
+  }) {
+    return _transport.getList<FixturePredictionDto>(
+      '/admin/fixtures/$fixtureId/predictions',
+      query: reason == null ? null : {'reason': reason},
+      parseElement: FixturePredictionDto.fromJson,
+    );
+  }
 }

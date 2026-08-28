@@ -5,3 +5,4 @@
 - [22:29] إصلاح: إضافة CompetitionApi.getFixtureScores(seasonId, fixtureId) | ملف: packages/api_client/lib/src/competition_api.dart | اختبار: نجح
 - [22:53] إصلاح: إضافة fixtureScoresProvider (GET /seasons/{id}/fixtures/{fixtureId}/scores) | ملف: apps/mobile/lib/features/history/fixture_scores_providers.dart | اختبار: نجح
 - [22:58] إصلاح: دمج badge الدرجة (fixtureScoresProvider) في _FixturePredictionCard | ملف: apps/mobile/lib/features/history/prediction_history_screen.dart | اختبار: نجح
+- [00:21] إصلاح: AdminGetFixtureScores + مسار /admin/fixtures/{id}/scores + adminGetFixtureScores/adminListFixturePredictions في AdminApi | ملفات: packages/application/lib/src/scoring/admin_get_fixture_scores.dart, packages/application/lib/application.dart, apps/server/lib/composition/composition_root.dart, apps/server/routes/admin/fixtures/[id]/scores/index.dart, packages/api_client/lib/src/admin_api.dart | اختبار: نجح
