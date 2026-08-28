@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
+import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
 import 'round_scores_providers.dart';
 
@@ -133,17 +134,33 @@ class _PredictionCard extends ConsumerWidget {
 /// resolve team names from here — [FixturePredictionDto] carries only the
 /// fixture id — so the score line always falls back to the raw fixture id
 /// (the same fallback [_ScoreLine] already renders while its round-fixtures
-/// read is loading or unresolved). There is also no grade badge yet: the
-/// per-fixture score read (`GetFixtureScores`) has no `api_client` method
-/// wired up yet (a separate, already-documented gap), so this card cannot
-/// show ✅/❌/🔥 the way [_PredictionCard] can once its round is scored.
-class _FixturePredictionCard extends StatelessWidget {
+/// read is loading or unresolved). The grade badge (✅/❌/🔥), when
+/// shown, comes from [fixtureScoresProvider] — only queried when
+/// [FixturePredictionDto.seasonId] is populated (currently true only for
+/// predictions read via `GET /me/fixture-predictions`, i.e. this screen). A
+/// `null` seasonId, a still-loading read, or any read error all degrade the
+/// same way: no badge, never a broken card — mirroring how
+/// [_PredictionCard] already tolerates an unresolved
+/// `roundFixturesProvider`/`roundScoresProvider`.
+class _FixturePredictionCard extends ConsumerWidget {
   const _FixturePredictionCard({required this.prediction});
   final FixturePredictionDto prediction;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
+    final String? seasonId = prediction.seasonId;
+    final AsyncValue<FixtureScoresDto>? scoresAsync = seasonId == null
+        ? null
+        : ref.watch(fixtureScoresProvider(seasonId, prediction.fixtureId));
+    String? grade;
+    for (final ParticipantFixtureScoreDto s
+        in scoresAsync?.value?.scores ?? const []) {
+      if (s.participantId == prediction.participantId) {
+        grade = s.grade;
+        break;
+      }
+    }
     return Card(
       key: Key('history.item.${prediction.id}'),
       margin: const EdgeInsets.symmetric(
@@ -176,6 +193,7 @@ class _FixturePredictionCard extends StatelessWidget {
                   isDouble: prediction.isDouble,
                 ),
                 fixture: null,
+                grade: grade,
               ),
             ),
           ],

@@ -4,3 +4,4 @@
 - [22:23] إصلاح: تمرير seasonId من FixturePredictionView إلى FixturePredictionDto في fixturePredictionViewToJson | ملف: apps/server/lib/http/fixture_prediction_dto_mapper.dart | اختبار: نجح
 - [22:29] إصلاح: إضافة CompetitionApi.getFixtureScores(seasonId, fixtureId) | ملف: packages/api_client/lib/src/competition_api.dart | اختبار: نجح
 - [22:53] إصلاح: إضافة fixtureScoresProvider (GET /seasons/{id}/fixtures/{fixtureId}/scores) | ملف: apps/mobile/lib/features/history/fixture_scores_providers.dart | اختبار: نجح
+- [22:58] إصلاح: دمج badge الدرجة (fixtureScoresProvider) في _FixturePredictionCard | ملف: apps/mobile/lib/features/history/prediction_history_screen.dart | اختبار: نجح
