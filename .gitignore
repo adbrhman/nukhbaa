@@ -37,3 +37,7 @@ docker-build.log
 keystore_b64.txt
 nukhbaa-current.zip
 pubspec_overrides.yaml
+# سكربتات جلسات مؤقتة (توليد/تطبيق تلقائي) — لا تُتبَّع في git
+run_*.sh
+apply_*.sh
+fix_*.sh
