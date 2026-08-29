@@ -39,6 +39,7 @@ final class CompositionRoot {
     required this.browseSeasonFixtures,
     required this.linkFixtureToSeason,
     required this.listMatchesFeed,
+    required this.listCurrentMonthFixtures,
     required this.submitPrediction,
     required this.submitFixturePrediction,
     required this.getMyPrediction,
@@ -143,6 +144,7 @@ final class CompositionRoot {
     BrowseSeasonFixtures? browseSeasonFixtures,
     LinkFixtureToSeason? linkFixtureToSeason,
     ListMatchesFeed? listMatchesFeed,
+    ListCurrentMonthFixtures? listCurrentMonthFixtures,
     SubmitPrediction? submitPrediction,
     SubmitFixturePrediction? submitFixturePrediction,
     GetMyPrediction? getMyPrediction,
@@ -223,6 +225,8 @@ final class CompositionRoot {
        linkFixtureToSeason =
            linkFixtureToSeason ?? _absentLinkFixtureToSeason(),
        listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
+       listCurrentMonthFixtures =
+           listCurrentMonthFixtures ?? _absentListCurrentMonthFixtures(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
        submitFixturePrediction =
            submitFixturePrediction ?? _absentSubmitFixturePrediction(),
@@ -419,6 +423,14 @@ final class CompositionRoot {
     competitionRepository: _unwiredCompetitionRepository,
     fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
   );
+
+  static ListCurrentMonthFixtures _absentListCurrentMonthFixtures() =>
+      ListCurrentMonthFixtures(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+        clock: _unwiredClock,
+      );
 
   /// A single throwing repository backing every "absent" prediction use-case,
   /// so a test that reaches an unwired prediction slice fails loudly instead of
@@ -917,6 +929,12 @@ final class CompositionRoot {
   /// user). Read-only, no side effect.
   final ListMatchesFeed listMatchesFeed;
 
+  /// The current-month fixture feed: every public competition's current
+  /// (calendar-month) season, fixtures flattened into one ordered list --
+  /// the Monthly Competitions home read (project-context.md section 9).
+  /// Read-only, no side effect.
+  final ListCurrentMonthFixtures listCurrentMonthFixtures;
+
   /// Submits (or idempotently amends) the caller's prediction for a round.
   final SubmitPrediction submitPrediction;
 
@@ -1393,6 +1411,12 @@ final class CompositionRoot {
       listMatchesFeed: ListMatchesFeed(
         competitionRepository: competitionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
+      ),
+      listCurrentMonthFixtures: ListCurrentMonthFixtures(
+        competitionRepository: competitionRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+        clock: clock,
       ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
