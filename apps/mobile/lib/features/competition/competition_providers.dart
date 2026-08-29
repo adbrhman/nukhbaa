@@ -115,3 +115,15 @@ Future<List<RoundFixtureCardDto>> roundFixtures(Ref ref, String roundId) async {
   final api = ref.watch(competitionApiProvider);
   return _unwrap(await api.browseRoundFixtures(roundId));
 }
+
+/// `GET /me/active-seasons` -- every season the caller is an **active**
+/// participant in, right now (query intent `ListMyActiveSeasons`; Axiom 4
+/// Amendment). The participant-scoped "my seasons" read: the UI fans out
+/// per season to [seasonFixturesProvider]/`browseSeasonFixtures`. No active
+/// participation right now resolves to a legitimate empty list (e.g. a
+/// brand-new user who has not yet made a first prediction), never an error.
+@riverpod
+Future<List<ActiveSeasonDto>> activeSeasons(Ref ref) async {
+  final api = ref.watch(competitionApiProvider);
+  return _unwrap(await api.myActiveSeasons());
+}

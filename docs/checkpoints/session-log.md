@@ -14,3 +14,4 @@
 - [03:40] إصلاح: إزالة unused import (package:application/application.dart) من apps/server/routes/me/active-seasons.dart بعد فشل analyze | اختبار: نجح (247)
 - [03:40] إصلاح: إنشاء مسار GET /me/active-seasons (يفوّض لـListMyActiveSeasons الموصولة مسبقًا) | ملف: apps/server/routes/me/active-seasons.dart | اختبار: نجح
 - [04:00] إصلاح: إضافة CompetitionApi.myActiveSeasons() (GET /me/active-seasons) | ملف: packages/api_client/lib/src/competition_api.dart | اختبار: نجح
+- [10:55] إصلاح: إضافة activeSeasons provider (GET /me/active-seasons) | ملف: apps/mobile/lib/features/competition/competition_providers.dart | اختبار: نجح
