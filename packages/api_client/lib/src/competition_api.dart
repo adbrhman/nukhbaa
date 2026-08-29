@@ -367,4 +367,19 @@ final class CompetitionApi {
       parse: SeasonDto.fromJson,
     );
   }
+
+  /// `GET /feed/current-month-fixtures` -- every public competition's
+  /// current-month fixtures, flattened into one ordered list, in a single
+  /// request (server-side aggregate read; query intent
+  /// `ListCurrentMonthFixtures`, Monthly Competitions transition).
+  ///
+  /// No public competitions, none with a season currently covering "now",
+  /// or none of those seasons having a linked fixture are all legitimate
+  /// `Ok(<empty list>)` (no existence oracle).
+  Future<Result<List<CurrentMonthFixtureItemDto>>> getCurrentMonthFixtures() {
+    return _transport.getList<CurrentMonthFixtureItemDto>(
+      '/feed/current-month-fixtures',
+      parseElement: CurrentMonthFixtureItemDto.fromJson,
+    );
+  }
 }
