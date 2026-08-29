@@ -32,3 +32,4 @@
 - [19:01] إصلاح: تحويل StartSeasonController إلى family(competitionId) + نصوص ARB لزر بدء الموسم | ملف: apps/mobile/lib/features/admin/admin_providers.dart, apps/mobile/lib/l10n/app_ar.arb, apps/mobile/lib/l10n/app_en.arb | اختبار: نجح
 - [19:22] إصلاح: ربط زر بدء موسم لكل صف مسابقة (يستهلك startSeasonControllerProvider family) | ملف: apps/mobile/lib/features/admin/screens/sections/admin_monthly_competitions_section.dart | اختبار: نجح
 - 20:29 — أضيف CurrentMonthFixtureItemDto إلى competition_dto.dart (البند 4، خطوة 1/6: DTO)
+- 20:30 — أضيف currentMonthFixtureEntryToDto إلى competition_dto_mapper.dart (البند 4، خطوة 2/6: mapper)

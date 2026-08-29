@@ -135,3 +135,20 @@ ActiveSeasonDto activeSeasonToDto(ParticipantSeasonFeedEntry entry) {
     endAt: entry.endAt.toIso8601String(),
   );
 }
+
+/// Projects a [CurrentMonthFixtureEntry] onto its wire shape
+/// [CurrentMonthFixtureItemDto] (`GET /feed/current-month-fixtures`, the
+/// current-month aggregate read -- Monthly Competitions transition,
+/// project-context.md section 9). Reuses [seasonFixtureCardToDto] verbatim
+/// for the nested fixture card so it never drifts from
+/// `GET /seasons/{id}/fixtures`.
+CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
+  CurrentMonthFixtureEntry entry,
+) {
+  return CurrentMonthFixtureItemDto(
+    competitionId: entry.competitionId.value,
+    competitionName: entry.competitionName,
+    seasonLabel: entry.seasonLabel,
+    fixture: seasonFixtureCardToDto(entry.fixture),
+  );
+}
