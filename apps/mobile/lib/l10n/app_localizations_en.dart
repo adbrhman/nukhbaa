@@ -534,6 +534,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get adminStartSeasonButton => 'Start season';
+
+  @override
+  String adminStartSeasonSuccess(String label) {
+    return 'Started season $label';
+  }
+
+  @override
   String get adminSeasonIdLabel => 'Season ID';
 
   @override

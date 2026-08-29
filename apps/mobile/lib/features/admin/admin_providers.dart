@@ -628,22 +628,25 @@ class CreateCompetitionController extends _$CreateCompetitionController {
 
 /// Owns the start-season command (`POST /competitions/{id}/seasons`,
 /// command intent `StartSeason`; Section 9 -- Monthly Competitions) over
-/// [AdminApi]. Modelled as a controller for the same reason as
-/// [CreateCompetitionController]. On success it invalidates
-/// [competitionSeasonsProvider] and [currentSeasonProvider] for the same
-/// competition so both "previous months" and "current month" reflect the
-/// new season immediately.
+/// [AdminApi]. Family-scoped by [competitionId] (Section 9 UI wiring,
+/// 2026-08-29): the monthly-competitions admin screen shows one "Start
+/// Season" action per competition row, so each competition needs its own
+/// independent loading/success/error state. A single shared instance (as
+/// used by [CreateCompetitionController], which backs exactly one
+/// on-screen form) would let one row's in-flight/result state leak into
+/// another row's. On success it invalidates [competitionSeasonsProvider]
+/// and [currentSeasonProvider] for the same competition so both "previous
+/// months" and "current month" reflect the new season immediately.
 @riverpod
 class StartSeasonController extends _$StartSeasonController {
   AdminApi get _api => ref.read(adminApiProvider);
 
   @override
-  AsyncValue<SeasonDto>? build() => null;
+  AsyncValue<SeasonDto>? build(String competitionId) => null;
 
-  /// Starts the calendar-month season under [competitionId] for
-  /// [year]/[month] (1-12).
+  /// Starts the calendar-month season for [year]/[month] (1-12) under
+  /// this controller's [competitionId].
   Future<void> start({
-    required String competitionId,
     required int year,
     required int month,
   }) async {

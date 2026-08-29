@@ -151,6 +151,8 @@
   "adminVisibilityPrivateLabel": "خاصة",
   "adminCreateCompetitionButton": "إنشاء",
   "adminCreateCompetitionSuccess": "تم إنشاء المسابقة \"{name}\"",
+  "adminStartSeasonButton": "بدء موسم",
+  "adminStartSeasonSuccess": "بدأ موسم {label}",
   "adminSeasonIdLabel": "معرّف الموسم",
   "adminLinkFixtureSectionTitle": "ربط مباراة بجولة",
   "adminRoundIdLabel": "معرّف الجولة",

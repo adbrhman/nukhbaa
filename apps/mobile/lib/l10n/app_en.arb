@@ -366,6 +366,16 @@
       }
     }
   },
+  "adminStartSeasonButton": "Start season",
+  "adminStartSeasonSuccess": "Started season {label}",
+  "@adminStartSeasonSuccess": {
+    "description": "Confirmation line after successfully starting a season for a competition.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "adminSeasonIdLabel": "Season ID",
   "adminLinkFixtureSectionTitle": "Link a fixture to a round",
   "adminRoundIdLabel": "Round ID",

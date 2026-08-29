@@ -538,6 +538,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get adminStartSeasonButton => 'بدء موسم';
+
+  @override
+  String adminStartSeasonSuccess(String label) {
+    return 'بدأ موسم $label';
+  }
+
+  @override
   String get adminSeasonIdLabel => 'معرّف الموسم';
 
   @override

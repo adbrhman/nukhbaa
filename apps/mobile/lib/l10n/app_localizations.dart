@@ -1008,6 +1008,18 @@ abstract class AppLocalizations {
   /// **'Created competition \"{name}\"'**
   String adminCreateCompetitionSuccess(String name);
 
+  /// No description provided for @adminStartSeasonButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start season'**
+  String get adminStartSeasonButton;
+
+  /// Confirmation line after successfully starting a season for a competition.
+  ///
+  /// In en, this message translates to:
+  /// **'Started season {label}'**
+  String adminStartSeasonSuccess(String label);
+
   /// No description provided for @adminSeasonIdLabel.
   ///
   /// In en, this message translates to:
