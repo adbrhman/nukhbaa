@@ -28,6 +28,7 @@ export 'src/competition/link_fixture_to_round.dart';
 export 'src/competition/link_fixture_to_season.dart';
 export 'src/competition/list_competition_seasons.dart';
 export 'src/competition/list_competitions.dart';
+export 'src/competition/list_current_month_fixtures.dart';
 export 'src/competition/list_matches_feed.dart';
 export 'src/competition/list_my_active_seasons.dart';
 export 'src/competition/list_season_rounds.dart';
