@@ -966,6 +966,48 @@ abstract class AppLocalizations {
   /// **'No active season this month'**
   String get adminMonthlyCompetitionsNoActiveSeason;
 
+  /// No description provided for @adminCreateCompetitionSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create competition'**
+  String get adminCreateCompetitionSectionTitle;
+
+  /// No description provided for @adminCompetitionNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition name'**
+  String get adminCompetitionNameLabel;
+
+  /// No description provided for @adminVisibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get adminVisibilityLabel;
+
+  /// No description provided for @adminVisibilityPublicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get adminVisibilityPublicLabel;
+
+  /// No description provided for @adminVisibilityPrivateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get adminVisibilityPrivateLabel;
+
+  /// No description provided for @adminCreateCompetitionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get adminCreateCompetitionButton;
+
+  /// Confirmation line after successfully creating a competition.
+  ///
+  /// In en, this message translates to:
+  /// **'Created competition \"{name}\"'**
+  String adminCreateCompetitionSuccess(String name);
+
   /// No description provided for @adminSeasonIdLabel.
   ///
   /// In en, this message translates to:

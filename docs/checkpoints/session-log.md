@@ -27,3 +27,5 @@
 - [$(date +%H:%M)] إصلاح: CreateCompetitionController + StartSeasonController في admin_providers.dart | ملف: apps/mobile/lib/features/admin/admin_providers.dart | اختبار: نجح
 - [16:56] إصلاح: قسم أدمن المسابقات الشهرية (عرض قراءة فقط: القائمة + الموسم الحالي لكل مسابقة) | ملف: apps/mobile/lib/features/admin/screens/sections/admin_monthly_competitions_section.dart, admin_shell.dart, app_ar.arb, app_en.arb | اختبار: فشل
 - [16:58] إصلاح: قسم أدمن المسابقات الشهرية (عرض قراءة فقط: القائمة + الموسم الحالي لكل مسابقة) | ملف: apps/mobile/lib/features/admin/screens/sections/admin_monthly_competitions_section.dart, admin_shell.dart, app_ar.arb, app_en.arb | اختبار: نجح
+- [17:13] إصلاح: نموذج إنشاء مسابقة (CreateCompetitionController) في قسم المسابقات الشهرية | ملف: apps/mobile/lib/features/admin/screens/sections/admin_monthly_competitions_section.dart, app_ar.arb, app_en.arb | اختبار: فشل
+- [17:21] إصلاح: نموذج إنشاء مسابقة (CreateCompetitionController) في قسم المسابقات الشهرية | ملف: apps/mobile/lib/features/admin/screens/sections/admin_monthly_competitions_section.dart, app_ar.arb, app_en.arb | اختبار: نجح

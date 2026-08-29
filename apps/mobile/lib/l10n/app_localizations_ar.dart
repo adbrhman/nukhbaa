@@ -515,6 +515,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminMonthlyCompetitionsNoActiveSeason => 'لا موسم نشط هذا الشهر';
 
   @override
+  String get adminCreateCompetitionSectionTitle => 'إنشاء مسابقة';
+
+  @override
+  String get adminCompetitionNameLabel => 'اسم المسابقة';
+
+  @override
+  String get adminVisibilityLabel => 'الظهور';
+
+  @override
+  String get adminVisibilityPublicLabel => 'عامة';
+
+  @override
+  String get adminVisibilityPrivateLabel => 'خاصة';
+
+  @override
+  String get adminCreateCompetitionButton => 'إنشاء';
+
+  @override
+  String adminCreateCompetitionSuccess(String name) {
+    return 'تم إنشاء المسابقة \"$name\"';
+  }
+
+  @override
   String get adminSeasonIdLabel => 'معرّف الموسم';
 
   @override

@@ -351,6 +351,21 @@
   "adminSectionComingSoon": "This section is under development — it will be enabled in a later batch.",
   "adminMonthlyCompetitionsEmpty": "No public competitions yet.",
   "adminMonthlyCompetitionsNoActiveSeason": "No active season this month",
+  "adminCreateCompetitionSectionTitle": "Create competition",
+  "adminCompetitionNameLabel": "Competition name",
+  "adminVisibilityLabel": "Visibility",
+  "adminVisibilityPublicLabel": "Public",
+  "adminVisibilityPrivateLabel": "Private",
+  "adminCreateCompetitionButton": "Create",
+  "adminCreateCompetitionSuccess": "Created competition \"{name}\"",
+  "@adminCreateCompetitionSuccess": {
+    "description": "Confirmation line after successfully creating a competition.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminSeasonIdLabel": "Season ID",
   "adminLinkFixtureSectionTitle": "Link a fixture to a round",
   "adminRoundIdLabel": "Round ID",

@@ -511,6 +511,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'No active season this month';
 
   @override
+  String get adminCreateCompetitionSectionTitle => 'Create competition';
+
+  @override
+  String get adminCompetitionNameLabel => 'Competition name';
+
+  @override
+  String get adminVisibilityLabel => 'Visibility';
+
+  @override
+  String get adminVisibilityPublicLabel => 'Public';
+
+  @override
+  String get adminVisibilityPrivateLabel => 'Private';
+
+  @override
+  String get adminCreateCompetitionButton => 'Create';
+
+  @override
+  String adminCreateCompetitionSuccess(String name) {
+    return 'Created competition \"$name\"';
+  }
+
+  @override
   String get adminSeasonIdLabel => 'Season ID';
 
   @override

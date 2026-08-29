@@ -10,6 +10,7 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/competition_providers.dart';
+import '../../admin_providers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 /// قسم "المسابقات الشهرية" في لوحة الأدمن (خطة قسم 9).
@@ -17,7 +18,8 @@ import '../../widgets/admin_ui_kit.dart';
 /// الدفعة الأولى: عرض قراءة فقط — قائمة المسابقات العامة
 /// (`competitionListProvider`) وحالة الموسم الحالي لكل واحدة
 /// (`currentSeasonProvider`، `GET /competitions/{id}/seasons/current`).
-/// لا Create ولا Start Season بعد — تُضافان في دفعات لاحقة منفصلة.
+/// الدفعة الثانية (هذه): نموذج إنشاء مسابقة (`CreateCompetitionController`).
+/// Start Season لكل مسابقة لا يزال غير مربوط — يُضاف في دفعة لاحقة منفصلة.
 class AdminMonthlyCompetitionsSection extends ConsumerWidget {
   const AdminMonthlyCompetitionsSection({super.key});
 
@@ -57,7 +59,112 @@ class AdminMonthlyCompetitionsSection extends ConsumerWidget {
             child: Center(child: CircularProgressIndicator()),
           ),
         },
+        const SizedBox(height: AppSpacing.lg),
+        const _CreateCompetitionForm(),
       ],
+    );
+  }
+}
+
+/// نموذج إنشاء مسابقة جديدة (`CreateCompetition`، `POST /competitions`).
+///
+/// `format` ثابت على `football_scoreline` — القيمة الوحيدة الموجودة في
+/// [FormatType] حاليًا (لا اختيار في الواجهة له إلى أن يُضاف تنسيق آخر).
+class _CreateCompetitionForm extends ConsumerStatefulWidget {
+  const _CreateCompetitionForm();
+
+  @override
+  ConsumerState<_CreateCompetitionForm> createState() =>
+      _CreateCompetitionFormState();
+}
+
+class _CreateCompetitionFormState
+    extends ConsumerState<_CreateCompetitionForm> {
+  final TextEditingController _nameController = TextEditingController();
+  String _visibility = 'public';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final String name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    ref
+        .read(createCompetitionControllerProvider.notifier)
+        .create(
+          name: name,
+          format: 'football_scoreline',
+          visibility: _visibility,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AsyncValue<CompetitionDto>? state = ref.watch(
+      createCompetitionControllerProvider,
+    );
+    final bool inFlight = state is AsyncLoading<CompetitionDto>;
+
+    return AdminCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AdminSectionHeader(title: l10n.adminCreateCompetitionSectionTitle),
+          AdminTextField(
+            key: const Key('admin.monthlyCompetitions.nameField'),
+            controller: _nameController,
+            hint: l10n.adminCompetitionNameLabel,
+            enabled: !inFlight,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String>(
+            key: const Key('admin.monthlyCompetitions.visibilityField'),
+            initialValue: _visibility,
+            decoration: InputDecoration(labelText: l10n.adminVisibilityLabel),
+            items: [
+              DropdownMenuItem(
+                value: 'public',
+                child: Text(l10n.adminVisibilityPublicLabel),
+              ),
+              DropdownMenuItem(
+                value: 'private',
+                child: Text(l10n.adminVisibilityPrivateLabel),
+              ),
+            ],
+            onChanged: inFlight
+                ? null
+                : (String? value) {
+                    if (value != null) setState(() => _visibility = value);
+                  },
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (state is AsyncError<CompetitionDto>)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: AdminErrorBanner(
+                message: ErrorPresenter.message(state.error as AppError),
+              ),
+            ),
+          if (state is AsyncData<CompetitionDto>)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Text(
+                l10n.adminCreateCompetitionSuccess(state.value.name),
+                key: const Key('admin.monthlyCompetitions.createSuccess'),
+              ),
+            ),
+          AdminPrimaryButton(
+            key: const Key('admin.monthlyCompetitions.createButton'),
+            label: l10n.adminCreateCompetitionButton,
+            loading: inFlight,
+            onPressed: inFlight ? null : _submit,
+          ),
+        ],
+      ),
     );
   }
 }
