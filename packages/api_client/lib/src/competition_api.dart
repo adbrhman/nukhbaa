@@ -352,4 +352,19 @@ final class CompetitionApi {
       parseElement: ActiveSeasonDto.fromJson,
     );
   }
+
+  /// `GET /competitions/{id}/seasons/current` -- resolves the single
+  /// "current" monthly season of the competition, computed fresh against
+  /// "now" server-side (query intent `GetCurrentSeason`; never stored).
+  ///
+  /// A month with no season yet created by the admin is a legitimate
+  /// `Ok(null)`, never an error -- the same "no existence oracle"
+  /// philosophy as [listCompetitionSeasons] (which returns `[]`, never
+  /// `404`), not the "owned resource" philosophy of a `404`-returning read.
+  Future<Result<SeasonDto?>> getCurrentSeason(String competitionId) {
+    return _transport.getNullableObject<SeasonDto>(
+      '/competitions/$competitionId/seasons/current',
+      parse: SeasonDto.fromJson,
+    );
+  }
 }

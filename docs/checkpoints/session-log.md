@@ -22,3 +22,4 @@
 - [14:25] إصلاح: admin_shell_test.dart scrollUntilVisible بدل ensureVisible لعنصر settings غير المبني (Drawer كسول) | ملف: apps/mobile/test/features/admin/admin_shell_test.dart | اختبار: نجح
 - [14:54] إصلاح: ApiTransport.getNullableObject<T> (يدعم استجابة GET بجسم JSON null حرفي، تمهيداً لعميل GetCurrentSeason) | ملف: packages/api_client/lib/src/api_transport.dart | اختبار: نجح
 - [14:57] إصلاح: توسعة .gitignore لتغطية السكربتات المرقّمة (01_، 02_...) + إخراج 01_add_get_nullable_object.sh من التتبّع | ملف: .gitignore | اختبار: لا ينطبق (تعديل .gitignore فقط، بلا كود Dart)
+- [$(date +%H:%M)] إصلاح: CompetitionApi.getCurrentSeason(competitionId) + اختبارات | ملف: packages/api_client/lib/src/competition_api.dart, packages/api_client/test/competition_api_test.dart | اختبار: نجح
