@@ -339,4 +339,17 @@ final class CompetitionApi {
       parse: (json) => json['removed']! as bool,
     );
   }
+
+  /// `GET /me/active-seasons` -- every season the caller is an **active**
+  /// participant in, right now (query intent `ListMyActiveSeasons`; Axiom 4
+  /// Amendment). The participant-scoped "my seasons" read the client fans
+  /// out from, one call per season, to [browseSeasonFixtures]. No active
+  /// participation right now is a legitimate `Ok(<empty list>)`, never an
+  /// error (e.g. a brand-new user who has not yet made a first prediction).
+  Future<Result<List<ActiveSeasonDto>>> myActiveSeasons() {
+    return _transport.getList<ActiveSeasonDto>(
+      '/me/active-seasons',
+      parseElement: ActiveSeasonDto.fromJson,
+    );
+  }
 }
