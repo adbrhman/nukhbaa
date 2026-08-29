@@ -127,3 +127,16 @@ Future<List<ActiveSeasonDto>> activeSeasons(Ref ref) async {
   final api = ref.watch(competitionApiProvider);
   return _unwrap(await api.myActiveSeasons());
 }
+
+/// `GET /competitions/{id}/seasons/current` -- resolves the single
+/// "current" monthly season of [competitionId], computed fresh against
+/// "now" server-side (query intent `GetCurrentSeason`; never stored --
+/// Section 9, Monthly Competitions). A month with no season yet created by
+/// the admin resolves to a legitimate `null` (the same "no existence
+/// oracle" philosophy as [competitionSeasonsProvider], not a "not found"
+/// error).
+@riverpod
+Future<SeasonDto?> currentSeason(Ref ref, String competitionId) async {
+  final api = ref.watch(competitionApiProvider);
+  return _unwrap(await api.getCurrentSeason(competitionId));
+}
