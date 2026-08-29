@@ -36,3 +36,4 @@
 - 20:31 — ربط ListCurrentMonthFixtures في composition_root.dart (البند 4، خطوة 3/6: wiring)
 - 20:32 — أضيف route جديد GET /feed/current-month-fixtures (البند 4، خطوة 4/6)
 - 20:35 — أضيف CompetitionApi.getCurrentMonthFixtures() (البند 4، خطوة 5/6: api_client)
+- 20:35 — أضيف اختبار route لـ GET /feed/current-month-fixtures (البند 4، خطوة 6/6: مكتمل)
