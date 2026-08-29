@@ -169,7 +169,13 @@ class _CreateCompetitionFormState
   }
 }
 
-/// صف مسابقة واحدة + حالة موسمها الحالي (شهر تقويمي).
+/// صف مسابقة واحدة + حالة موسمها الحالي (شهر تقويمي) + زر بدء موسم جديد.
+///
+/// `StartSeasonController` (Section 9 -- Monthly Competitions) هو family
+/// حسب `competitionId`: كل صف يملك حالة loading/success/error مستقلة تمامًا
+/// عن بقية الصفوف. الزر يظهر فقط عندما تأكَّد فعليًا (`AsyncData` بقيمة
+/// null) أنه لا يوجد موسم نشط -- لا يظهر أثناء التحميل أو عند الخطأ، تجنبًا
+/// لمحاولة بدء موسم متداخل يرفضها الـbackend (قيد `seasons_no_overlap`).
 class _CompetitionCurrentSeasonRow extends ConsumerWidget {
   const _CompetitionCurrentSeasonRow({required this.competition});
 
@@ -182,8 +188,14 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
     final AsyncValue<SeasonDto?> seasonState = ref.watch(
       currentSeasonProvider(competition.id),
     );
+    final AsyncValue<SeasonDto>? startState = ref.watch(
+      startSeasonControllerProvider(competition.id),
+    );
+    final bool starting = startState is AsyncLoading<SeasonDto>;
+    final bool noActiveSeasonConfirmed =
+        seasonState is AsyncData<SeasonDto?> && seasonState.value == null;
 
-    final Widget trailing = switch (seasonState) {
+    final Widget statusWidget = switch (seasonState) {
       AsyncData<SeasonDto?>(value: final SeasonDto season?) => Text(
         season.label,
         style: context.text.labelMedium?.copyWith(
@@ -203,11 +215,57 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
       ),
     };
 
-    return AdminListRow(
-      leadingIcon: Icons.emoji_events_outlined,
-      leadingColor: t.primary,
-      title: competition.name,
-      trailing: trailing,
+    final Widget trailing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        statusWidget,
+        if (noActiveSeasonConfirmed) ...[
+          const SizedBox(width: AppSpacing.sm),
+          AdminSecondaryButton(
+            key: Key(
+              'admin.monthlyCompetitions.startSeasonButton.${competition.id}',
+            ),
+            label: l10n.adminStartSeasonButton,
+            loading: starting,
+            onPressed: starting
+                ? null
+                : () {
+                    final DateTime now = DateTime.now().toUtc();
+                    ref
+                        .read(
+                          startSeasonControllerProvider(
+                            competition.id,
+                          ).notifier,
+                        )
+                        .start(year: now.year, month: now.month);
+                  },
+          ),
+        ],
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AdminListRow(
+          leadingIcon: Icons.emoji_events_outlined,
+          leadingColor: t.primary,
+          title: competition.name,
+          trailing: trailing,
+        ),
+        if (startState is AsyncError<SeasonDto>)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: AdminErrorBanner(
+              message: ErrorPresenter.message(startState.error as AppError),
+            ),
+          ),
+      ],
     );
   }
 }
