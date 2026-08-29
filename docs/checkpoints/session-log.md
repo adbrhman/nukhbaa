@@ -18,3 +18,5 @@
 - [11:19] إصلاح: شاشة MyActiveSeasonsScreen + مفتاحا ARB + زر account.myActiveSeasons (لا CTA لتصفح المسابقات بعد -- لا شاشة مستوى-1 موجودة، مؤجل) | ملف: apps/mobile/lib/features/competition/my_active_seasons_screen.dart +apps/mobile/lib/features/auth/account_screen.dart + app_ar.arb + app_en.arb | اختبار: نجح
 - [13:19] إصلاح: إضافة ListCurrentMonthFixtures use-case (تجميع فكسچرات كل مسابقة عامة لموسمها الحالي، Monthly Competitions §9) | ملف: packages/application/lib/src/competition/list_current_month_fixtures.dart + export application.dart | اختبار: نجح (344)
 - [$(date +%H:%M)] إصلاح: إضافة createCompetition/startSeason إلى admin_api.dart | ملف: packages/api_client/lib/src/admin_api.dart | اختبار: نجح
+- [14:22] إصلاح: تصحيح فشل اختبارات AdminShell (Material للشريط الجانبي + ensureVisible قبل tap) | ملف: apps/mobile/lib/features/admin/admin_shell.dart, apps/mobile/test/features/admin/admin_shell_test.dart | اختبار: فشل
+- [14:25] إصلاح: admin_shell_test.dart scrollUntilVisible بدل ensureVisible لعنصر settings غير المبني (Drawer كسول) | ملف: apps/mobile/test/features/admin/admin_shell_test.dart | اختبار: نجح
