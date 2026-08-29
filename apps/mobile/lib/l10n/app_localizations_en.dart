@@ -548,6 +548,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminFixtureReportSectionEmpty => 'No report for this fixture yet';
 
   @override
+  String get myActiveSeasons => 'My Active Seasons';
+
+  @override
+  String get myActiveSeasonsEmpty => 'You have no active seasons right now.';
+
+  @override
   String get myGroups => 'My Groups';
 
   @override

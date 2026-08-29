@@ -364,6 +364,8 @@
   "adminRoundReportSectionEmpty": "No report for this round yet",
   "adminViewFixtureReportButton": "View fixture report",
   "adminFixtureReportSectionEmpty": "No report for this fixture yet",
+  "myActiveSeasons": "My Active Seasons",
+  "myActiveSeasonsEmpty": "You have no active seasons right now.",
   "myGroups": "My Groups",
   "myGroupsEmpty": "You haven't joined any group yet.",
   "groupRoleOwner": "Owner",

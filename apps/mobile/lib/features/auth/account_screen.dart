@@ -15,6 +15,7 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
+import '../competition/my_active_seasons_screen.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/my_groups_screen.dart';
 import '../groups/join_group_screen.dart';
@@ -167,6 +168,18 @@ class AccountScreen extends ConsumerWidget {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const PredictionHistoryScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
+                    key: const Key('account.myActiveSeasons'),
+                    label: l10n.myActiveSeasons,
+                    icon: Icons.calendar_month_outlined,
+                    variant: AppButtonVariant.secondary,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MyActiveSeasonsScreen(),
                       ),
                     ),
                   ),

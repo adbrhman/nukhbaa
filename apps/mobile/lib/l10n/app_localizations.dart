@@ -1044,6 +1044,18 @@ abstract class AppLocalizations {
   /// **'No report for this fixture yet'**
   String get adminFixtureReportSectionEmpty;
 
+  /// No description provided for @myActiveSeasons.
+  ///
+  /// In en, this message translates to:
+  /// **'My Active Seasons'**
+  String get myActiveSeasons;
+
+  /// No description provided for @myActiveSeasonsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no active seasons right now.'**
+  String get myActiveSeasonsEmpty;
+
   /// No description provided for @myGroups.
   ///
   /// In en, this message translates to:

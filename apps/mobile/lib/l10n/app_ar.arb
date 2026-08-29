@@ -157,6 +157,8 @@
   "adminRoundReportSectionEmpty": "لا يوجد تقرير لهذه الجولة بعد",
   "adminViewFixtureReportButton": "عرض تقرير المباراة",
   "adminFixtureReportSectionEmpty": "لا يوجد تقرير لهذه المباراة بعد",
+  "myActiveSeasons": "مواسمي النشطة",
+  "myActiveSeasonsEmpty": "لا مواسم نشطة لك حاليًا.",
   "myGroups": "مجموعاتي",
   "myGroupsEmpty": "لم تنضم إلى أي مجموعة بعد.",
   "groupRoleOwner": "مالك",

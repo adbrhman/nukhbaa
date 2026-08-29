@@ -554,6 +554,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد تقرير لهذه المباراة بعد';
 
   @override
+  String get myActiveSeasons => 'مواسمي النشطة';
+
+  @override
+  String get myActiveSeasonsEmpty => 'لا مواسم نشطة لك حاليًا.';
+
+  @override
   String get myGroups => 'مجموعاتي';
 
   @override
