@@ -24,3 +24,4 @@
 - [14:57] إصلاح: توسعة .gitignore لتغطية السكربتات المرقّمة (01_، 02_...) + إخراج 01_add_get_nullable_object.sh من التتبّع | ملف: .gitignore | اختبار: لا ينطبق (تعديل .gitignore فقط، بلا كود Dart)
 - [$(date +%H:%M)] إصلاح: CompetitionApi.getCurrentSeason(competitionId) + اختبارات | ملف: packages/api_client/lib/src/competition_api.dart, packages/api_client/test/competition_api_test.dart | اختبار: نجح
 - [$(date +%H:%M)] إصلاح: currentSeasonProvider(competitionId) في competition_providers.dart + اختبارات | ملف: apps/mobile/lib/features/competition/competition_providers.dart, apps/mobile/test/features/competition/competition_providers_test.dart | اختبار: نجح
+- [$(date +%H:%M)] إصلاح: CreateCompetitionController + StartSeasonController في admin_providers.dart | ملف: apps/mobile/lib/features/admin/admin_providers.dart | اختبار: نجح

@@ -586,3 +586,83 @@ class AddMatchController extends _$AddMatchController {
     ref.invalidate(seasonFixturesProvider(seasonId));
   }
 }
+
+/// Owns the create-competition command (`POST /competitions`, command
+/// intent `CreateCompetition`; Section 9 -- Monthly Competitions) over
+/// [AdminApi]. Modelled as a controller for the same reason as
+/// [UserSanctionController]: a one-shot admin command, not a passive view
+/// an admin screen loads on entry. On success it invalidates
+/// [competitionListProvider] so the new competition appears in every
+/// picker/catalogue read immediately.
+@riverpod
+class CreateCompetitionController extends _$CreateCompetitionController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<CompetitionDto>? build() => null;
+
+  /// Creates a competition named [name] with [format]/[visibility].
+  Future<void> create({
+    required String name,
+    required String format,
+    required String visibility,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.createCompetition(
+      name: name,
+      format: format,
+      visibility: visibility,
+    );
+    state = switch (result) {
+      Ok<CompetitionDto>(:final value) => AsyncValue.data(value),
+      Err<CompetitionDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+    if (state is AsyncData<CompetitionDto>) {
+      ref.invalidate(competitionListProvider);
+    }
+  }
+}
+
+/// Owns the start-season command (`POST /competitions/{id}/seasons`,
+/// command intent `StartSeason`; Section 9 -- Monthly Competitions) over
+/// [AdminApi]. Modelled as a controller for the same reason as
+/// [CreateCompetitionController]. On success it invalidates
+/// [competitionSeasonsProvider] and [currentSeasonProvider] for the same
+/// competition so both "previous months" and "current month" reflect the
+/// new season immediately.
+@riverpod
+class StartSeasonController extends _$StartSeasonController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<SeasonDto>? build() => null;
+
+  /// Starts the calendar-month season under [competitionId] for
+  /// [year]/[month] (1-12).
+  Future<void> start({
+    required String competitionId,
+    required int year,
+    required int month,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _api.startSeason(
+      competitionId: competitionId,
+      year: year,
+      month: month,
+    );
+    state = switch (result) {
+      Ok<SeasonDto>(:final value) => AsyncValue.data(value),
+      Err<SeasonDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+    if (state is AsyncData<SeasonDto>) {
+      ref.invalidate(competitionSeasonsProvider(competitionId));
+      ref.invalidate(currentSeasonProvider(competitionId));
+    }
+  }
+}
