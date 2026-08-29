@@ -822,3 +822,79 @@ final class ActiveSeasonDto {
     schemaVersion,
   );
 }
+
+/// One card in the unified **current-month** fixture feed
+/// (`GET /feed/current-month-fixtures` -- the server-side aggregate read
+/// flattening every public competition's current-month fixtures into one
+/// list; query intent `ListCurrentMonthFixtures`, Monthly Competitions
+/// transition, project-context.md section 9). Reuses [SeasonFixtureCardDto]
+/// verbatim so the per-fixture fields never drift from
+/// `GET /seasons/{id}/fixtures`.
+final class CurrentMonthFixtureItemDto {
+  /// Creates a current-month-fixture feed item DTO.
+  const CurrentMonthFixtureItemDto({
+    required this.competitionId,
+    required this.competitionName,
+    required this.seasonLabel,
+    required this.fixture,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory CurrentMonthFixtureItemDto.fromJson(Map<String, Object?> json) {
+    return CurrentMonthFixtureItemDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      competitionId: json['competition_id']! as String,
+      competitionName: json['competition_name']! as String,
+      seasonLabel: json['season_label']! as String,
+      fixture: SeasonFixtureCardDto.fromJson(
+        (json['fixture']! as Map<Object?, Object?>).cast<String, Object?>(),
+      ),
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning competition's id (UUID string).
+  final String competitionId;
+
+  /// The owning competition's display name.
+  final String competitionName;
+
+  /// The current season's display label (e.g. "08/2026").
+  final String seasonLabel;
+
+  /// The fixture card (team names + kickoff, nullable per Axiom 3).
+  final SeasonFixtureCardDto fixture;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'competition_id': competitionId,
+    'competition_name': competitionName,
+    'season_label': seasonLabel,
+    'fixture': fixture.toJson(),
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is CurrentMonthFixtureItemDto &&
+      other.competitionId == competitionId &&
+      other.competitionName == competitionName &&
+      other.seasonLabel == seasonLabel &&
+      other.fixture == fixture &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    competitionId,
+    competitionName,
+    seasonLabel,
+    fixture,
+    schemaVersion,
+  );
+}
