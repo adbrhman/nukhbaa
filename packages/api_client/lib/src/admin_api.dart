@@ -159,4 +159,41 @@ final class AdminApi {
       parseElement: FixturePredictionDto.fromJson,
     );
   }
+
+  /// `POST /competitions` — creates a competition (command intent
+  /// `CreateCompetition`). The route sits outside `/admin/*` (Next-Task
+  /// brief), but is admin-authorized entirely inside the use-case, so it is
+  /// exposed here alongside every other admin-only client method for
+  /// discoverability (Monthly Competitions transition, project-context.md
+  /// §9).
+  Future<Result<CompetitionDto>> createCompetition({
+    required String name,
+    required String format,
+    required String visibility,
+  }) {
+    return _transport.postObject<CompetitionDto>(
+      '/competitions',
+      body: {'name': name, 'format': format, 'visibility': visibility},
+      parse: CompetitionDto.fromJson,
+    );
+  }
+
+  /// `POST /competitions/{competitionId}/seasons` — starts the
+  /// calendar-month season under [competitionId] (command intent
+  /// `StartSeason`, Phase 7.2). [year]/[month] name the target calendar
+  /// month (month is 1-12); the server computes `start_at`/`end_at` and the
+  /// `MM/YYYY` label itself — this client never supplies them directly.
+  /// Admin-authorized inside the use-case, same placement rationale as
+  /// [createCompetition].
+  Future<Result<SeasonDto>> startSeason({
+    required String competitionId,
+    required int year,
+    required int month,
+  }) {
+    return _transport.postObject<SeasonDto>(
+      '/competitions/$competitionId/seasons',
+      body: {'year': year, 'month': month},
+      parse: SeasonDto.fromJson,
+    );
+  }
 }
