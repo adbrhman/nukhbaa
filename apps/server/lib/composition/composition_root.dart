@@ -90,6 +90,7 @@ final class CompositionRoot {
     required this.adminListRoundPredictions,
     required this.adminListFixturePredictions,
     required this.listMyFixturePredictions,
+    required this.listMyActiveSeasons,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -193,6 +194,7 @@ final class CompositionRoot {
     AdminListRoundPredictions? adminListRoundPredictions,
     AdminListFixturePredictions? adminListFixturePredictions,
     ListMyFixturePredictions? listMyFixturePredictions,
+    ListMyActiveSeasons? listMyActiveSeasons,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -298,6 +300,8 @@ final class CompositionRoot {
            adminListFixturePredictions ?? _absentAdminListFixturePredictions(),
        listMyFixturePredictions =
            listMyFixturePredictions ?? _absentListMyFixturePredictions(),
+       listMyActiveSeasons =
+           listMyActiveSeasons ?? _absentListMyActiveSeasons(),
        _connection = null,
        _jwksClient = null;
 
@@ -809,6 +813,12 @@ final class CompositionRoot {
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
       );
 
+  static ListMyActiveSeasons _absentListMyActiveSeasons() =>
+      ListMyActiveSeasons(
+        competitionRepository: _unwiredCompetitionRepository,
+        clock: _unwiredClock,
+      );
+
   /// The Postgres connection owned by a production root. Null for roots built
   /// via [CompositionRoot.forTesting], which own no infrastructure.
   final PostgresConnection? _connection;
@@ -1129,6 +1139,11 @@ final class CompositionRoot {
   /// and season, newest first. Always the caller's own forecasts; no
   /// season-membership gate (mirrors [listMyPredictions]).
   final ListMyFixturePredictions listMyFixturePredictions;
+
+  /// Lists every season [principal] is an active participant in right now
+  /// (participant-scoped analogue of [listMyFixturePredictions]; the client
+  /// fans out per season to [browseSeasonFixtures]).
+  final ListMyActiveSeasons listMyActiveSeasons;
 
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
@@ -1585,6 +1600,10 @@ final class CompositionRoot {
       listMyFixturePredictions: ListMyFixturePredictions(
         fixturePredictionRepository:
             fixturePredictionRepository, // already built
+      ),
+      listMyActiveSeasons: ListMyActiveSeasons(
+        competitionRepository: competitionRepository,
+        clock: clock,
       ),
     );
   }

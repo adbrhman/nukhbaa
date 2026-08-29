@@ -11,3 +11,5 @@
 - [02:42] إصلاح: ListMyActiveSeasons use-case + تصدير + اختبارات (طبقة application) | ملف: packages/application/lib/src/competition/list_my_active_seasons.dart | اختبار: نجح
 - [02:53] إصلاح: ActiveSeasonDto + اختبارات (طبقة contracts) | ملف: packages/contracts/lib/src/competition_dto.dart | اختبار: نجح
 - [03:10] إصلاح: إضافة activeSeasonToDto (mapper) لتحويل ParticipantSeasonFeedEntry إلى ActiveSeasonDto | ملف: apps/server/lib/http/competition_dto_mapper.dart | اختبار: نجح
+- [03:40] إصلاح: إزالة unused import (package:application/application.dart) من apps/server/routes/me/active-seasons.dart بعد فشل analyze | اختبار: نجح (247)
+- [03:40] إصلاح: إنشاء مسار GET /me/active-seasons (يفوّض لـListMyActiveSeasons الموصولة مسبقًا) | ملف: apps/server/routes/me/active-seasons.dart | اختبار: نجح
