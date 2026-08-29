@@ -20,3 +20,4 @@
 - [$(date +%H:%M)] إصلاح: إضافة createCompetition/startSeason إلى admin_api.dart | ملف: packages/api_client/lib/src/admin_api.dart | اختبار: نجح
 - [14:22] إصلاح: تصحيح فشل اختبارات AdminShell (Material للشريط الجانبي + ensureVisible قبل tap) | ملف: apps/mobile/lib/features/admin/admin_shell.dart, apps/mobile/test/features/admin/admin_shell_test.dart | اختبار: فشل
 - [14:25] إصلاح: admin_shell_test.dart scrollUntilVisible بدل ensureVisible لعنصر settings غير المبني (Drawer كسول) | ملف: apps/mobile/test/features/admin/admin_shell_test.dart | اختبار: نجح
+- [14:54] إصلاح: ApiTransport.getNullableObject<T> (يدعم استجابة GET بجسم JSON null حرفي، تمهيداً لعميل GetCurrentSeason) | ملف: packages/api_client/lib/src/api_transport.dart | اختبار: نجح

@@ -89,6 +89,26 @@ final class ApiTransport {
     );
   }
 
+  /// Performs `GET [path]` (with optional [query]) and decodes a JSON body
+  /// that is either an **object** (via [parse]) or a literal JSON `null` —
+  /// for reads with no existence oracle where "nothing yet" is a legitimate
+  /// `Ok(null)` rather than a `404` (e.g.
+  /// `GET /competitions/{id}/seasons/current`, which returns `null` when no
+  /// season currently covers "now" — the same philosophy as [getList]
+  /// returning `[]`, not the "owned resource" philosophy of a `404`).
+  Future<Result<T?>> getNullableObject<T>(
+    String path, {
+    Map<String, String>? query,
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T?>(
+      method: 'GET',
+      path: path,
+      query: query,
+      decode: (body) => _decodeNullableObject(body, parse),
+    );
+  }
+
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **array**
   /// body, mapping each element object via [parseElement].
   Future<Result<List<T>>> getList<T>(
@@ -245,6 +265,26 @@ final class ApiTransport {
         return Result.err(
           malformedResponse(
             'expected a JSON object, got ${decoded.runtimeType}',
+          ),
+        );
+      }
+      return Result.ok(parse(decoded.cast<String, Object?>()));
+    } on Object catch (cause) {
+      return Result.err(malformedResponse(cause));
+    }
+  }
+
+  static Result<T?> _decodeNullableObject<T>(
+    String body,
+    T Function(Map<String, Object?> json) parse,
+  ) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded == null) return const Result.ok(null);
+      if (decoded is! Map) {
+        return Result.err(
+          malformedResponse(
+            'expected a JSON object or null, got ${decoded.runtimeType}',
           ),
         );
       }
