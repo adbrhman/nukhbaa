@@ -119,3 +119,19 @@ MatchFeedItemDto matchFeedEntryToDto(MatchFeedEntry entry) {
     fixture: roundFixtureCardToDto(entry.fixture),
   );
 }
+
+/// Projects a [ParticipantSeasonFeedEntry] onto its wire shape
+/// [ActiveSeasonDto] (`GET /me/active-seasons`, the participant-scoped "my
+/// active seasons" read -- docs/project-context.md, Axiom 4 Amendment). The
+/// client fans out per season to the existing [BrowseSeasonFixtures] read
+/// (`GET /seasons/{id}/fixtures`), unchanged by this projection.
+ActiveSeasonDto activeSeasonToDto(ParticipantSeasonFeedEntry entry) {
+  return ActiveSeasonDto(
+    competitionId: entry.competitionId.value,
+    competitionName: entry.competitionName,
+    seasonId: entry.seasonId.value,
+    seasonLabel: entry.seasonLabel,
+    startAt: entry.startAt.toIso8601String(),
+    endAt: entry.endAt.toIso8601String(),
+  );
+}
