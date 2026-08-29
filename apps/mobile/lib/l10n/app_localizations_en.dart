@@ -504,6 +504,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This section is under development — it will be enabled in a later batch.';
 
   @override
+  String get adminMonthlyCompetitionsEmpty => 'No public competitions yet.';
+
+  @override
+  String get adminMonthlyCompetitionsNoActiveSeason =>
+      'No active season this month';
+
+  @override
   String get adminSeasonIdLabel => 'Season ID';
 
   @override

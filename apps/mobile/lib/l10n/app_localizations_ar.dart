@@ -509,6 +509,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذا القسم قيد التطوير — سيُفعَّل في دفعة لاحقة.';
 
   @override
+  String get adminMonthlyCompetitionsEmpty => 'لا مسابقات عامة بعد.';
+
+  @override
+  String get adminMonthlyCompetitionsNoActiveSeason => 'لا موسم نشط هذا الشهر';
+
+  @override
   String get adminSeasonIdLabel => 'معرّف الموسم';
 
   @override

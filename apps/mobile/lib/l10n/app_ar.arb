@@ -142,6 +142,8 @@
   "adminRolesPermissionsTab": "الأدوار والصلاحيات",
   "adminSettingsTab": "الإعدادات",
   "adminSectionComingSoon": "هذا القسم قيد التطوير — سيُفعَّل في دفعة لاحقة.",
+  "adminMonthlyCompetitionsEmpty": "لا مسابقات عامة بعد.",
+  "adminMonthlyCompetitionsNoActiveSeason": "لا موسم نشط هذا الشهر",
   "adminSeasonIdLabel": "معرّف الموسم",
   "adminLinkFixtureSectionTitle": "ربط مباراة بجولة",
   "adminRoundIdLabel": "معرّف الجولة",

@@ -11,6 +11,7 @@ import 'screens/sections/admin_coming_soon_section.dart';
 import 'screens/sections/admin_dashboard_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
+import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/results_scoring_section.dart';
 import 'screens/sections/user_sanction_section.dart';
@@ -101,6 +102,7 @@ class AdminShell extends StatelessWidget {
   Widget _bodyFor(AdminSection section, AppLocalizations l10n) {
     return switch (section) {
       AdminSection.dashboard => const AdminDashboardSection(),
+      AdminSection.monthlyCompetitions => const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.users => const UserSanctionSection(),
       AdminSection.ledger => const LedgerLookupSection(),

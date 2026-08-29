@@ -349,6 +349,8 @@
   "adminRolesPermissionsTab": "Roles & Permissions",
   "adminSettingsTab": "Settings",
   "adminSectionComingSoon": "This section is under development — it will be enabled in a later batch.",
+  "adminMonthlyCompetitionsEmpty": "No public competitions yet.",
+  "adminMonthlyCompetitionsNoActiveSeason": "No active season this month",
   "adminSeasonIdLabel": "Season ID",
   "adminLinkFixtureSectionTitle": "Link a fixture to a round",
   "adminRoundIdLabel": "Round ID",

@@ -954,6 +954,18 @@ abstract class AppLocalizations {
   /// **'This section is under development — it will be enabled in a later batch.'**
   String get adminSectionComingSoon;
 
+  /// No description provided for @adminMonthlyCompetitionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No public competitions yet.'**
+  String get adminMonthlyCompetitionsEmpty;
+
+  /// No description provided for @adminMonthlyCompetitionsNoActiveSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'No active season this month'**
+  String get adminMonthlyCompetitionsNoActiveSeason;
+
   /// No description provided for @adminSeasonIdLabel.
   ///
   /// In en, this message translates to:
