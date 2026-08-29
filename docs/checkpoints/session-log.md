@@ -34,3 +34,4 @@
 - 20:29 — أضيف CurrentMonthFixtureItemDto إلى competition_dto.dart (البند 4، خطوة 1/6: DTO)
 - 20:30 — أضيف currentMonthFixtureEntryToDto إلى competition_dto_mapper.dart (البند 4، خطوة 2/6: mapper)
 - 20:31 — ربط ListCurrentMonthFixtures في composition_root.dart (البند 4، خطوة 3/6: wiring)
+- 20:32 — أضيف route جديد GET /feed/current-month-fixtures (البند 4، خطوة 4/6)
