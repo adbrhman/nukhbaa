@@ -122,23 +122,11 @@ final class PredictionApi {
     );
   }
 
-  /// `GET /me/predictions` — the caller's own aggregated prediction history:
-  /// every prediction they have ever submitted, across every round and every
-  /// season, newest submission first.
-  ///
-  /// An empty list means the caller has never submitted a prediction — a
-  /// legitimate result, never an error.
-  Future<Result<List<PredictionDto>>> myPredictions() {
-    return _transport.getList<PredictionDto>(
-      '/me/predictions',
-      parseElement: PredictionDto.fromJson,
-    );
-  }
-
   /// `GET /me/fixture-predictions` — the caller's own aggregated
   /// fixture-prediction history: every per-fixture prediction they have ever
   /// submitted, across every fixture and every season (Axiom 4 Amendment; the
-  /// per-fixture sibling of [myPredictions]), newest submission first.
+  /// per-fixture sibling of the retired `myPredictions` round-level
+  /// endpoint), newest submission first.
   ///
   /// An empty list means the caller has never submitted a fixture prediction
   /// — a legitimate result, never an error.
