@@ -48,6 +48,11 @@ fix_*.sh
 apply_*.py
 fix_*.py
 step*.py
+revert_*.py
 phase*.sh
 run_part1_verify*.sh
 *.tar.gz
+
+# ملفات Flutter/pub المولَّدة (خارج .dart_tool/)
+.flutter-plugins-dependencies
+.flutter-plugins
