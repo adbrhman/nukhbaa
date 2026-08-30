@@ -65,3 +65,4 @@
 - [01:05] إصلاح: إسقاط مسار Round من شاشة سجل التوقعات (01/02) - حذف myPredictions/RoundPredictionEntry/roundFixturesProvider/roundScoresProvider، الشاشة تعرض FixturePredictionDto فقط | ملف: apps/mobile/lib/features/history/prediction_history_providers.dart, prediction_history_screen.dart, apps/mobile/test/features/history/prediction_history_screen_test.dart | اختبار: فشل
 - [01:07] إصلاح: تصحيح اختبار فاشل في prediction_history_screen_test.dart (توقع نص "3 - 3" منفصل بدل السطر المدمج الفعلي "f-c: 3 - 3") | ملف: apps/mobile/test/features/history/prediction_history_screen_test.dart | اختبار: نجح
 - [01:19] إصلاح: حذف myPredictions() من PredictionApi (طبقة api_client، خطوة 1/متعددة — لا مستدعٍ لها في الموبايل/الحزم) | ملف: packages/api_client/lib/src/prediction_api.dart | اختبار: نجح
+- [01:21] إصلاح: حذف راوت GET /me/predictions من السيرفر (بلا اختبار مخصص، بلا مستهلك بعد حذف myPredictions من api_client) | ملف: apps/server/routes/me/predictions.dart | اختبار: نجح
