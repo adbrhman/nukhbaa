@@ -43,7 +43,6 @@ final class CompositionRoot {
     required this.submitFixturePrediction,
     required this.getMyPrediction,
     required this.listRoundPredictions,
-    required this.listMyPredictions,
     required this.recordFixtureResult,
     required this.registerFixtureSchedule,
     required this.correctFixtureSchedule,
@@ -147,7 +146,6 @@ final class CompositionRoot {
     SubmitFixturePrediction? submitFixturePrediction,
     GetMyPrediction? getMyPrediction,
     ListRoundPredictions? listRoundPredictions,
-    ListMyPredictions? listMyPredictions,
     RecordFixtureResult? recordFixtureResult,
     RegisterFixtureSchedule? registerFixtureSchedule,
     CorrectFixtureSchedule? correctFixtureSchedule,
@@ -230,7 +228,6 @@ final class CompositionRoot {
        getMyPrediction = getMyPrediction ?? _absentGetMyPrediction(),
        listRoundPredictions =
            listRoundPredictions ?? _absentListRoundPredictions(),
-       listMyPredictions = listMyPredictions ?? _absentListMyPredictions(),
        recordFixtureResult =
            recordFixtureResult ?? _absentRecordFixtureResult(),
        registerFixtureSchedule =
@@ -448,9 +445,6 @@ final class CompositionRoot {
         predictionRepository: _unwiredPredictionRepository,
         competitionRepository: _unwiredCompetitionRepository,
       );
-
-  static ListMyPredictions _absentListMyPredictions() =>
-      ListMyPredictions(predictionRepository: _unwiredPredictionRepository);
 
   /// Backs the "absent" fixture-prediction use-case, so a test that reaches
   /// an unwired Axiom-4-Amendment prediction slice fails loudly instead of
@@ -933,11 +927,6 @@ final class CompositionRoot {
   /// Lists every participant's prediction for a locked round (visibility-gated).
   final ListRoundPredictions listRoundPredictions;
 
-  /// Lists the caller's own aggregated prediction history — every prediction
-  /// they have ever submitted, across every round and season, newest first.
-  /// Always the caller's own forecasts; no round-lock or membership gate.
-  final ListMyPredictions listMyPredictions;
-
   /// Records the actual result of a fixture (admin-only ingestion; the Axiom-3
   /// football seam).
   final RecordFixtureResult recordFixtureResult;
@@ -1140,7 +1129,7 @@ final class CompositionRoot {
   /// Lists the caller's own aggregated fixture-prediction history — every
   /// per-fixture prediction they have ever submitted, across every fixture
   /// and season, newest first. Always the caller's own forecasts; no
-  /// season-membership gate (mirrors [listMyPredictions]).
+  /// season-membership gate.
   final ListMyFixturePredictions listMyFixturePredictions;
 
   /// Lists every season [principal] is an active participant in right now
@@ -1420,9 +1409,6 @@ final class CompositionRoot {
       listRoundPredictions: ListRoundPredictions(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
-      ),
-      listMyPredictions: ListMyPredictions(
-        predictionRepository: predictionRepository,
       ),
       recordFixtureResult: RecordFixtureResult(
         resultRepository: fixtureResultRepository,
