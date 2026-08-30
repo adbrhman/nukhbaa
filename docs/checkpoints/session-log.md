@@ -46,3 +46,4 @@
 - [04:25] حذف: features/matches (matches_feed_screen.dart, matches_feed_providers.dart, current_month_fixtures_providers.dart المكرر) وmatch_card.dart — يتيمة بالكامل بعد البند 5 | اختبار: يُملأ يدويًا
 - [15:02] تصحيح: أُعيد تنفيذ تنظيف فوضى جذر المستودع من المكان الصحيح (المحاولة السابقة طُبِّقت خطأً داخل apps/mobile) | ملفات: جذر المستودع + .gitignore | اختبار: لا ينطبق
 - [15:12] إصلاح: استبدال ملفات checkpoint القديمة المضلِّلة (SESSION_STATE.md, CHANGES.md, RESUME_PROMPT.md, docs/next-task.md) بإشعارات توقف تشير للمصدر الحالي + حذف session-checkpoint-latest.zip | ملفات: .claude/session-checkpoint/*, docs/next-task.md | اختبار: لا ينطبق (توثيق فقط)
+- [15:17] إصلاح: تحديث docs/ota-signing-blocker.md من P0 معلَّق إلى محلول جزئيًا (خطوات 1-3 من الحل مؤكَّدة مؤتمتة في CI + الأسرار الأربعة مؤكَّدة موجودة عبر gh secret list؛ خطوة 4 apksigner verify لم تُؤتمَت بعد) | ملفات: docs/ota-signing-blocker.md | اختبار: لا ينطبق (توثيق فقط)
