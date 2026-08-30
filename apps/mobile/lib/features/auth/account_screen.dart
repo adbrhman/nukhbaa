@@ -20,8 +20,8 @@ import '../groups/create_group_screen.dart';
 import '../groups/my_groups_screen.dart';
 import '../groups/join_group_screen.dart';
 import '../hall_of_fame/hall_of_fame_screen.dart';
+import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../history/prediction_history_screen.dart';
-import '../matches/matches_feed_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'session_controller.dart';
@@ -143,7 +143,7 @@ class AccountScreen extends ConsumerWidget {
                     icon: Icons.sports_soccer,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const MatchesFeedScreen(),
+                        builder: (_) => const CurrentMonthFixturesScreen(),
                       ),
                     ),
                   ),
