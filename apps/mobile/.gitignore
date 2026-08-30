@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# امتدادات .py المكافئة لسكربتات الجلسات المؤقتة أعلاه (كانت مفقودة)
+apply_*.py
+fix_*.py
+step*.py
+phase*.sh
+run_part1_verify*.sh
+*.tar.gz
