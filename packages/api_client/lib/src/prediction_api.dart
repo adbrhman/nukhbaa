@@ -5,12 +5,6 @@ import 'package:shared/shared.dart';
 /// Typed client for the Prediction surface of `apps/server`.
 ///
 /// Wraps exactly the prediction routes that exist today, verbatim:
-///   * `POST /rounds/{id}/predictions`     (submit/amend) -> [PredictionDto]
-///     (`routes/rounds/[id]/predictions/index.dart`, POST branch). The body is
-///     a [SubmitPredictionCommandDto] carrying ONLY the predicted scorelines;
-///     the participant is resolved server-side from the verified principal,
-///     never sent by the client (Security ADR §2 / Axioms 2/5). No points are
-///     ever sent or received.
 ///   * `GET /rounds/{id}/predictions`       (mine)  -> [PredictionDto]
 ///     (same file, GET branch). A joined-but-not-yet-predicted caller (or a
 ///     non-participant) yields `404 prediction.not_found`.
@@ -25,7 +19,7 @@ import 'package:shared/shared.dart';
 ///     never predicted gets a legitimate empty array.
 ///   * `POST /seasons/{id}/fixtures/{fixtureId}/prediction` (submit/amend a
 ///     single fixture) -> [FixturePredictionDto] (Axiom 4 Amendment; the
-///     per-fixture sibling of the round-based submit above — the body is
+///     per-fixture sibling of the retired round-based submission — the body is
 ///     [FixturePredictionCommandDto]: predicted scoreline + optional
 ///     `is_double`; the participant is resolved server-side, never sent by
 ///     the client).
@@ -46,31 +40,10 @@ final class PredictionApi {
 
   final ApiTransport _transport;
 
-  /// `POST /rounds/{id}/predictions` — submit or idempotently amend the
-  /// caller's prediction for [roundId].
-  ///
-  /// [fixtureScores] are the predicted scorelines (one per fixture in the
-  /// round). Returns the stored [PredictionDto] on `200`. Business failures
-  /// surface with their stable codes, e.g.:
-  ///   * incomplete forecast / malformed body -> `Err(validation)` (`400`);
-  ///   * round locked / not a participant      -> `Err(invariant)` /
-  ///     `Err(authorization)` per the server's mapping (`409` / `401`).
-  Future<Result<PredictionDto>> submitPrediction({
-    required String roundId,
-    required List<FixtureScoreDto> fixtureScores,
-  }) {
-    final command = SubmitPredictionCommandDto(fixtureScores: fixtureScores);
-    return _transport.postObject<PredictionDto>(
-      '/rounds/$roundId/predictions',
-      body: command.toJson(),
-      parse: PredictionDto.fromJson,
-    );
-  }
-
   /// `POST /seasons/{id}/fixtures/{fixtureId}/prediction` — submit or
   /// idempotently amend the caller's prediction for a single [fixtureId]
   /// within season [seasonId] (Axiom 4 Amendment; the per-fixture sibling of
-  /// [submitPrediction]).
+  /// the retired round-based `submitPrediction`).
   ///
   /// [isDouble] defaults to `false`, matching the server's optional-field
   /// default. Returns the stored [FixturePredictionDto] on `200`. Business
