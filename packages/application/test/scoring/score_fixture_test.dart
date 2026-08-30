@@ -96,17 +96,15 @@ void main() {
       expect(list.single.points, 0);
     });
 
-    test('rejects scoring a fixture with no predictions', () async {
+    test('a fixture with no predictions scores an empty list, not an error',
+        () async {
       final result = await useCase(
         principal: adminPrincipal('admin-1'),
         fixtureId: fixtureId,
       );
 
-      expect(result, isA<Err<List<ParticipantFixtureScore>>>());
-      expect(
-        (result as Err<List<ParticipantFixtureScore>>).error.code,
-        'scoring.fixture_has_no_predictions',
-      );
+      expect(result, isA<Ok<List<ParticipantFixtureScore>>>());
+      expect((result as Ok<List<ParticipantFixtureScore>>).value, isEmpty);
     });
 
     test('rejects a non-admin caller', () async {

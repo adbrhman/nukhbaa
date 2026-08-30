@@ -24,8 +24,9 @@ import 'package:shared/shared.dart';
 /// Idempotent: re-scoring an already-scored fixture recomputes the same
 /// deterministic result and re-persists it in place, never duplicating rows.
 /// Returns the computed [FixtureScoresDto] (`200`); a fixture with no
-/// predictions surfaces as `409` `scoring.fixture_has_no_predictions` via the
-/// shared error envelope.
+/// predictions yet is a legitimate `200` with an empty `scores` array
+/// (Option-3 live/partial philosophy, matching `POST /rounds/{id}/score`),
+/// not an error.
 ///
 /// The `/fixtures` subtree is already behind `bearerAuth`
 /// (`routes/fixtures/_middleware.dart`), which provides the verified

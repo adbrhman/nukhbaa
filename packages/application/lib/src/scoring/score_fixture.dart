@@ -100,14 +100,10 @@ final class ScoreFixture {
     }
     final predictions =
         (predictionsResult as Ok<List<FixturePredictionView>>).value;
-    if (predictions.isEmpty) {
-      return const Result.err(
-        AppError.invariant(
-          'scoring.fixture_has_no_predictions',
-          'No predictions have been submitted for this fixture yet',
-        ),
-      );
-    }
+    // No hard gate on an empty list (Option-3 live/partial philosophy,
+    // matching ScoreRound): a fixture nobody has predicted yet simply has
+    // nothing to score, not an error — mirrors ScoreRound's tolerance of a
+    // round with zero submitted predictions.
 
     final fixtureScores = <ParticipantFixtureScore>[];
     for (final view in predictions) {

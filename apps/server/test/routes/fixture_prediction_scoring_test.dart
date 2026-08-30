@@ -253,15 +253,17 @@ void main() {
       expect(response.statusCode, isNot(HttpStatus.ok));
     });
 
-    test('rejects a fixture with no predictions', () async {
+    test('a fixture with no predictions returns 200 with an empty list',
+        () async {
       final setup = scoreRootFor(withPrediction: false);
       final response = await score_route.onRequest(
         wireContext(root: setup.root, principal: adminPrincipal()),
         kFixtureId,
       );
 
+      expect(response.statusCode, HttpStatus.ok);
       final body = await decodeBody(response);
-      expect(body['code'], 'scoring.fixture_has_no_predictions');
+      expect(body['scores'], isEmpty);
     });
 
     test('405s on a non-POST method', () async {
