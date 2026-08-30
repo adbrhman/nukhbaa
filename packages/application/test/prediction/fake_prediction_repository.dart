@@ -21,10 +21,6 @@ final class FakePredictionRepository implements PredictionRepository {
   /// keyed by roundId → ordered links.
   final Map<String, List<RoundFixture>> _roundFixtures = {};
 
-  /// keyed by participantId → owning userId, so [listByUser] can filter
-  /// stored predictions by owner the way the real adapter's join does.
-  final Map<String, String> _participantOwner = {};
-
   AppError? _scriptedFailure;
 
   /// When set, the *next* [save] call reports the unique-violation
@@ -63,12 +59,6 @@ final class FakePredictionRepository implements PredictionRepository {
         prediction,
         submittedAt,
       );
-
-  /// Records which user owns [participantId], so [listByUser] can filter
-  /// stored predictions the way the real adapter's `participants.user_id`
-  /// join does.
-  void seedParticipantOwner(ParticipantId participantId, UserId userId) =>
-      _participantOwner[participantId.value] = userId.value;
 
   int get count => _byKey.length;
 
@@ -149,28 +139,6 @@ final class FakePredictionRepository implements PredictionRepository {
             if (s.prediction.roundId == roundId) s,
         ]..sort((a, b) {
           final byTime = a.submittedAt.compareTo(b.submittedAt);
-          return byTime != 0
-              ? byTime
-              : a.prediction.id.value.compareTo(b.prediction.id.value);
-        });
-    return Result.ok([
-      for (final s in out)
-        PredictionView(prediction: s.prediction, submittedAt: s.submittedAt),
-    ]);
-  }
-
-  @override
-  Future<Result<List<PredictionView>>> listByUser(UserId userId) async {
-    final f = _takeFailure();
-    if (f != null) return Result.err(f);
-    final out =
-        <_Stored>[
-          for (final s in _byKey.values)
-            if (_participantOwner[s.prediction.participantId.value] ==
-                userId.value)
-              s,
-        ]..sort((a, b) {
-          final byTime = b.submittedAt.compareTo(a.submittedAt);
           return byTime != 0
               ? byTime
               : a.prediction.id.value.compareTo(b.prediction.id.value);

@@ -344,10 +344,6 @@ final class InMemoryPredictionRepository implements PredictionRepository {
   /// submission instant the repository stamped.
   final Map<String, PredictionView> _byRoundParticipant = {};
 
-  /// keyed by participantId → owning userId, so [listByUser] can filter
-  /// stored predictions by owner the way the real adapter's join does.
-  final Map<String, String> participantOwner = {};
-
   static String _key(RoundId roundId, ParticipantId participantId) =>
       '${roundId.value}|${participantId.value}';
 
@@ -403,23 +399,6 @@ final class InMemoryPredictionRepository implements PredictionRepository {
             if (view.prediction.roundId.value == roundId.value) view,
         ]..sort((a, b) {
           final byInstant = a.submittedAt.compareTo(b.submittedAt);
-          return byInstant != 0
-              ? byInstant
-              : a.prediction.id.value.compareTo(b.prediction.id.value);
-        });
-    return Result.ok(views);
-  }
-
-  @override
-  Future<Result<List<PredictionView>>> listByUser(UserId userId) async {
-    final views =
-        [
-          for (final view in _byRoundParticipant.values)
-            if (participantOwner[view.prediction.participantId.value] ==
-                userId.value)
-              view,
-        ]..sort((a, b) {
-          final byInstant = b.submittedAt.compareTo(a.submittedAt);
           return byInstant != 0
               ? byInstant
               : a.prediction.id.value.compareTo(b.prediction.id.value);

@@ -66,17 +66,6 @@ abstract interface class PredictionRepository {
   /// faithfully.
   Future<Result<List<PredictionView>>> listByRound(RoundId roundId);
 
-  /// Lists every prediction [userId] has ever submitted, across every round
-  /// and every season they have participated in — the caller's own
-  /// **aggregated prediction history** — ordered by submission instant
-  /// descending (newest first) then prediction id for a stable read.
-  ///
-  /// Unlike [listByRound] (locked-round-only, any participant of the season),
-  /// this is always visible to the user for their OWN predictions regardless
-  /// of round status — a user may always see their own submitted forecasts;
-  /// nothing here reveals another participant's prediction.
-  Future<Result<List<PredictionView>>> listByUser(UserId userId);
-
   /// Returns the set of fixtures currently linked to [roundId] (the round's
   /// `RoundFixture` composition), ordered by `displayOrder`.
   ///

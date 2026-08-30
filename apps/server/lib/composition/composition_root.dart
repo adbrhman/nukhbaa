@@ -1810,9 +1810,6 @@ final class _UnwiredPredictionRepository implements PredictionRepository {
       _unwired();
 
   @override
-  Future<Result<List<PredictionView>>> listByUser(UserId userId) => _unwired();
-
-  @override
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId) =>
       _unwired();
 }

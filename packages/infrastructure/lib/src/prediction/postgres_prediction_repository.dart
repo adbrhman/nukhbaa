@@ -437,46 +437,6 @@ ORDER BY p.submitted_at ASC, p.id ASC, s.display_order ASC
   }
 
   // --------------------------------------------------------------------------
-  // listByUser — the caller's own aggregated prediction history (every round,
-  // every season they have ever participated in)
-  // --------------------------------------------------------------------------
-
-  // A user holds a DIFFERENT competition.participants row per season (Database
-  // ADR §1), so this joins predictions -> participants on user_id (not a
-  // single participant_id) to span every season the user has ever played.
-  // Ordered newest-first (history), then by id for a stable tie-break, then by
-  // the child score's display_order so each forecast rebuilds in its stored
-  // order — mirrors _selectByRoundSql's two-level ordering scheme.
-  static const String _selectByUserSql = '''
-SELECT p.id            AS prediction_id,
-       p.round_id       AS round_id,
-       p.participant_id AS participant_id,
-       p.submitted_at   AS submitted_at,
-       s.fixture_id     AS fixture_id,
-       s.home_goals     AS home_goals,
-       s.away_goals     AS away_goals,
-       s.is_double      AS is_double,
-       s.display_order  AS display_order
-FROM prediction.predictions p
-JOIN prediction.prediction_scores s ON s.prediction_id = p.id
-JOIN competition.participants c ON c.id = p.participant_id
-WHERE c.user_id = @user_id
-ORDER BY p.submitted_at DESC, p.id ASC, s.display_order ASC
-''';
-
-  @override
-  Future<Result<List<PredictionView>>> listByUser(UserId userId) async {
-    final result = await _connection.query(
-      _selectByUserSql,
-      parameters: {'user_id': userId.value},
-    );
-    return switch (result) {
-      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
-      Ok<List<Map<String, dynamic>>>(:final value) => _mapPredictionList(value),
-    };
-  }
-
-  // --------------------------------------------------------------------------
   // listRoundFixtures — read-only projection of the Competition-owned link
   // --------------------------------------------------------------------------
 
