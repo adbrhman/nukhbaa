@@ -8,9 +8,9 @@ import 'package:shared/shared.dart';
 /// history** — every per-fixture prediction [principal] has ever submitted,
 /// across every fixture and every season they have participated in
 /// (docs/project-context.md, Axiom 4 Amendment; the per-fixture sibling of
-/// [ListMyPredictions], kept separate for the same reason
-/// [FixturePredictionRepository] is its own port rather than merged into
-/// [PredictionRepository]).
+/// the retired round-level `ListMyPredictions` use-case, kept separate for
+/// the same reason [FixturePredictionRepository] is its own port rather than
+/// merged into [PredictionRepository]).
 ///
 /// **Visibility:** always the caller's OWN predictions, regardless of fixture
 /// status — a user may always see their own submitted forecasts. There is no

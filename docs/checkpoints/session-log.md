@@ -67,3 +67,4 @@
 - [01:19] إصلاح: حذف myPredictions() من PredictionApi (طبقة api_client، خطوة 1/متعددة — لا مستدعٍ لها في الموبايل/الحزم) | ملف: packages/api_client/lib/src/prediction_api.dart | اختبار: نجح
 - [01:21] إصلاح: حذف راوت GET /me/predictions من السيرفر (بلا اختبار مخصص، بلا مستهلك بعد حذف myPredictions من api_client) | ملف: apps/server/routes/me/predictions.dart | اختبار: نجح
 - [01:23] إصلاح: فك ربط ListMyPredictions من composition_root.dart (7 مواضع: constructors + defaults + field + wiring)، بعد حذف الراوت وطبقة api_client | ملف: apps/server/lib/composition/composition_root.dart | اختبار: نجح
+- [01:25] إصلاح: حذف use-case ListMyPredictions من طبقة application (بلا اختبار مخصص، بلا مستدعٍ بعد فك ربطه من composition_root) | ملف: packages/application/lib/src/prediction/list_my_predictions.dart, packages/application/lib/application.dart, packages/application/lib/src/prediction/list_my_fixture_predictions.dart | اختبار: نجح
