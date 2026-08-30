@@ -47,9 +47,10 @@ void main() {
 
         expect(find.byKey(const Key('history.item.fp-1')), findsOneWidget);
         // storedFixturePrediction has no known team names (no round
-        // context), so it falls back to the raw fixture id.
-        expect(find.textContaining('f-c'), findsOneWidget);
-        expect(find.text('3 - 3'), findsOneWidget);
+        // context), so it falls back to the combined raw-id score line
+        // ('{fixtureId}: {homeGoals} - {awayGoals}', app_en.arb /
+        // app_ar.arb) instead of the crest-based _ScorePill.
+        expect(find.text('f-c: 3 - 3'), findsOneWidget);
       },
     );
 
