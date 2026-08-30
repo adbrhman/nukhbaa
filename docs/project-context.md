@@ -70,6 +70,24 @@ Do not read any other doc file unless explicitly requested._
   server routes -> mobile). Do not assume completion elsewhere in this
   document until this note is removed/updated.
 
+##### Decisions — 2026-08-30 (post Phase 2 close)
+
+- **Dual scoring-path risk (`PUT /fixtures/{id}/result` auto-triggering the
+  legacy `ScoreRound` path in parallel with the manual
+  `POST /fixtures/{id}/score` -> `ScoreFixture` path):** decision is to
+  **defer**, not fix now. No current read joins `point_entries` and
+  `fixture_point_entries`, so the risk is latent, not active, and `Round`
+  is still live in 9+ non-test files — decoupling now would risk breaking
+  Round before its real removal is scheduled. **Binding condition:** the
+  real Round deletion (7.10) MUST NOT begin until `PUT /fixtures/{id}/result`
+  no longer auto-triggers `ScoreRound`.
+- **Work that jumped the locked Phase 7 order** (admin monthly-competitions
+  section, `ListMyActiveSeasons`/`MyActiveSeasonsScreen`,
+  `ListCurrentMonthFixtures`/`CurrentMonthFixturesScreen`): **ratified as an
+  official extension of 7.10.x**, not frozen/rolled back. It does not touch
+  the `Round` layer, ships with tests, and reverting it would discard
+  correct, already-verified work for no architectural benefit.
+
 ### Core Architecture (ADR 0002)
 Layered, event-driven, strict integrity boundary:
 ```
