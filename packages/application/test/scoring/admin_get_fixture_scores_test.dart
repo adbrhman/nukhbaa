@@ -50,35 +50,31 @@ void main() {
     },
   );
 
-  test(
-    'an admin reads scores regardless of the admin having no season '
-    'membership of their own',
-    () async {
-      final fixtureRef =
-          (FixtureRef.tryParse(_fixtureId) as Ok<FixtureRef>).value;
-      await scores.saveFixtureScores([
-        ParticipantFixtureScore.fromStored(
+  test('an admin reads scores regardless of the admin having no season '
+      'membership of their own', () async {
+    final fixtureRef =
+        (FixtureRef.tryParse(_fixtureId) as Ok<FixtureRef>).value;
+    await scores.saveFixtureScores([
+      ParticipantFixtureScore.fromStored(
+        fixture: fixtureRef,
+        participantId:
+            (ParticipantId.tryParse(_participant) as Ok<ParticipantId>).value,
+        rulesetVersion: 1,
+        result: FixtureScoreResult(
           fixture: fixtureRef,
-          participantId:
-              (ParticipantId.tryParse(_participant) as Ok<ParticipantId>)
-                  .value,
-          rulesetVersion: 1,
-          result: FixtureScoreResult(
-            fixture: fixtureRef,
-            grade: FixtureScoreGrade.exactScoreline,
-            points: 3,
-          ),
+          grade: FixtureScoreGrade.exactScoreline,
+          points: 3,
         ),
-      ]);
+      ),
+    ]);
 
-      final result = await useCase(
-        principal: principal(userId: adminUuid),
-        fixtureId: _fixtureId,
-      );
+    final result = await useCase(
+      principal: principal(userId: adminUuid),
+      fixtureId: _fixtureId,
+    );
 
-      final list = (result as Ok<List<ParticipantFixtureScore>>).value;
-      expect(list, hasLength(1));
-      expect(list.single.points, 3);
-    },
-  );
+    final list = (result as Ok<List<ParticipantFixtureScore>>).value;
+    expect(list, hasLength(1));
+    expect(list.single.points, 3);
+  });
 }

@@ -239,7 +239,10 @@ class _CurrentMonthFixtureCardState
                   'currentMonthFixtures.viewLeaderboard.${_fixture.fixtureId}',
                 ),
                 tooltip: l10n.viewLeaderboardTooltip,
-                icon: Icon(Icons.leaderboard_outlined, color: tokens.textSecondary),
+                icon: Icon(
+                  Icons.leaderboard_outlined,
+                  color: tokens.textSecondary,
+                ),
                 iconSize: 18,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),

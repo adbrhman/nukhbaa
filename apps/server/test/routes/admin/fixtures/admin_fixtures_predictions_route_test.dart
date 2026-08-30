@@ -102,8 +102,7 @@ void main() {
       expect(body, isEmpty);
     });
 
-    test('the read is audited exactly once, attributed to the admin',
-        () async {
+    test('the read is audited exactly once, attributed to the admin', () async {
       final setup = rootFor();
 
       await predictionsFor(setup.root, adminPrincipal());
@@ -115,8 +114,7 @@ void main() {
       expect(entry.targetRef, kFixtureId);
     });
 
-    test('passes an optional ?reason= through to the audit record',
-        () async {
+    test('passes an optional ?reason= through to the audit record', () async {
       final setup = rootFor();
 
       await predictionsFor(
