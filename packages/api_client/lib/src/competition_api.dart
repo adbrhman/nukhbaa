@@ -36,11 +36,10 @@ import 'package:shared/shared.dart';
 ///     absent season is a legitimate empty array — no existence oracle)
 ///
 /// All routes are behind `bearerAuth`. The browse reads above are pure (no
-/// side effect); [openRound], [linkFixtureToRound], [recordFixtureResult],
-/// [scoreRound] below are admin-only commands (authorization enforced
-/// server-side inside the use-case, never by this client). [getRoundScores]
-/// is a participant-gated read. Every method returns a typed [Result] and
-/// never throws.
+/// side effect); [linkFixtureToRound] and [recordFixtureResult] below are
+/// admin-only commands (authorization enforced server-side inside the
+/// use-case, never by this client). Every method returns a typed [Result]
+/// and never throws.
 final class CompetitionApi {
   /// Creates the Competition client over the shared [ApiTransport].
   const CompetitionApi(this._transport);
@@ -216,43 +215,9 @@ final class CompetitionApi {
     );
   }
 
-  /// `POST /rounds/{id}/score` — scores every prediction in the round
-  /// (command intent `ScoreRound`). No request body — points are computed
-  /// server-side from the round's frozen ruleset; the client never posts
-  /// points (Axioms 2/5). Admin-only, enforced inside the server use-case.
-  /// Idempotent: re-scoring an already-`scored` round recomputes the same
-  /// deterministic result.
-  Future<Result<RoundScoresDto>> scoreRound(String roundId) {
-    return _transport.postObject<RoundScoresDto>(
-      '/rounds/$roundId/score',
-      body: const {},
-      parse: RoundScoresDto.fromJson,
-    );
-  }
-
-  /// `POST /rounds/{id}/ledger` — posts a **scored** round to the
-  /// append-only Ledger (command intent `PostRoundToLedger`). No request
-  /// body — the amounts are copied server-side from the round's already-
-  /// persisted `RoundScore`s (Axioms 2/5). Admin-only, enforced inside the
-  /// server use-case. A not-yet-scored round is refused
-  /// `409 ledger.round_not_scored`. Idempotent: re-posting an
-  /// already-posted round appends nothing new (`appended_entries` empty).
-  /// This is the Scoring -> Leaderboard seam: the Hall of Fame and season
-  /// standings read exclusively from the ledger, never from round_scores
-  /// directly.
-  Future<Result<PostRoundToLedgerResponseDto>> postRoundToLedger(
-    String roundId,
-  ) {
-    return _transport.postObject<PostRoundToLedgerResponseDto>(
-      '/rounds/$roundId/ledger',
-      body: const {},
-      parse: PostRoundToLedgerResponseDto.fromJson,
-    );
-  }
-
   /// `POST /fixtures/{id}/score` — scores every prediction recorded for the
   /// fixture (command intent `ScoreFixture`; Axiom 4 Amendment — the
-  /// per-fixture sibling of [scoreRound]). No request body — points are
+  /// per-fixture sibling of the retired round-level `scoreRound`). No request body — points are
   /// computed server-side (Axioms 2/5). Admin-only, enforced inside the
   /// server use-case. Idempotent: re-scoring recomputes the same
   /// deterministic result (upsert on `(fixture_id, participant_id)`).
@@ -266,7 +231,7 @@ final class CompetitionApi {
 
   /// `POST /fixtures/{id}/ledger` — posts a **scored** fixture to the
   /// append-only Ledger (command intent `PostFixtureToLedger`; the
-  /// per-fixture sibling of [postRoundToLedger]). No request body.
+  /// per-fixture sibling of the retired round-level `postRoundToLedger`). No request body.
   /// Admin-only, enforced inside the server use-case. Idempotent:
   /// re-posting an already-posted fixture appends nothing new
   /// (`appended_entries` empty).
@@ -280,21 +245,10 @@ final class CompetitionApi {
     );
   }
 
-  /// `GET /rounds/{id}/scores` — reads every participant's computed score for
-  /// a **scored** round (query intent `GetRoundScores`). A not-yet-scored
-  /// round is refused `409 scoring.round_not_scored`; a non-participant is
-  /// refused `401 scoring.not_a_participant` (server-enforced).
-  Future<Result<RoundScoresDto>> getRoundScores(String roundId) {
-    return _transport.getObject<RoundScoresDto>(
-      '/rounds/$roundId/scores',
-      parse: RoundScoresDto.fromJson,
-    );
-  }
-
   /// `GET /seasons/{id}/fixtures/{fixtureId}/scores` — reads every
   /// participant's computed score for a fixture (query intent
   /// `GetFixtureScores`; Axiom 4 Amendment — the per-fixture sibling of
-  /// [getRoundScores]). Gate is season membership only (Option-3, same
+  /// the retired round-level `getRoundScores`). Gate is season membership only (Option-3, same
   /// philosophy as [scoreFixture]): an unscored fixture is a legitimate
   /// `Ok(<empty list>)`, never a `409` like the round-scoped read.
   Future<Result<FixtureScoresDto>> getFixtureScores({
@@ -304,24 +258,6 @@ final class CompetitionApi {
     return _transport.getObject<FixtureScoresDto>(
       '/seasons/$seasonId/fixtures/$fixtureId/scores',
       parse: FixtureScoresDto.fromJson,
-    );
-  }
-
-  /// `DELETE /rounds/{id}/fixtures/{fixtureId}` — removes the fixture from
-  /// the round (command intent `RemoveFixtureFromRound`; the correction
-  /// counterpart of [linkFixtureToRound] for a duplicate/mistaken link).
-  /// Admin-only, enforced inside the server use-case. Refused when the round
-  /// is no longer open, or when the fixture already carries a recorded
-  /// result (`competition.fixture_result_already_recorded`). Idempotent:
-  /// removing an already-absent link still returns `Ok` with `removed:
-  /// false`.
-  Future<Result<bool>> removeFixtureFromRound({
-    required String roundId,
-    required String fixtureId,
-  }) {
-    return _transport.deleteObject<bool>(
-      '/rounds/$roundId/fixtures/$fixtureId',
-      parse: (json) => json['removed']! as bool,
     );
   }
 

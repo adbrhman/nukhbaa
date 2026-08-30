@@ -99,30 +99,6 @@ final class AdminApi {
     );
   }
 
-  /// `GET /admin/rounds/{roundId}/predictions` — the round-report bulk read:
-  /// every participant's raw predicted scorelines for a **scored** round.
-  /// [reason] is an optional justification recorded on the (mandatory) audit
-  /// entry for this read; the read itself is always audited server-side
-  /// regardless of whether one is supplied.
-  Future<Result<List<PredictionDto>>> adminListRoundPredictions(
-    String roundId, {
-    String? reason,
-  }) {
-    return _transport.getList<PredictionDto>(
-      '/admin/rounds/$roundId/predictions',
-      query: reason == null ? null : {'reason': reason},
-      parseElement: PredictionDto.fromJson,
-    );
-  }
-
-  /// `GET /admin/rounds/{roundId}/scores` — بلا شرط مشاركة الموسم.
-  Future<Result<RoundScoresDto>> adminGetRoundScores(String roundId) {
-    return _transport.getObject<RoundScoresDto>(
-      '/admin/rounds/$roundId/scores',
-      parse: RoundScoresDto.fromJson,
-    );
-  }
-
   /// `GET /admin/rounds/{roundId}/report` — بلا شرط مشاركة الموسم.
   Future<Result<RoundReportDto>> adminGetRoundReport(String roundId) {
     return _transport.getObject<RoundReportDto>(
@@ -133,9 +109,9 @@ final class AdminApi {
 
   /// `GET /admin/fixtures/{fixtureId}/scores` — the admin fixture-scores
   /// read: every participant's computed score for a single fixture,
-  /// regardless of the admin's own season membership (mirrors
-  /// [adminGetRoundScores]; the per-fixture sibling, added for admin
-  /// investigation of a user's complaint on any fixture).
+  /// regardless of the admin's own season membership (the per-fixture
+  /// sibling of the retired round-level `adminGetRoundScores`, added for
+  /// admin investigation of a user's complaint on any fixture).
   Future<Result<FixtureScoresDto>> adminGetFixtureScores(String fixtureId) {
     return _transport.getObject<FixtureScoresDto>(
       '/admin/fixtures/$fixtureId/scores',
@@ -145,7 +121,8 @@ final class AdminApi {
 
   /// `GET /admin/fixtures/{fixtureId}/predictions` — every participant's raw
   /// predicted scoreline for a fixture, regardless of season membership
-  /// (mirrors [adminListRoundPredictions]; the per-fixture sibling).
+  /// (the per-fixture sibling of the retired round-level
+  /// `adminListRoundPredictions`).
   /// [reason] is an optional justification recorded on the (mandatory)
   /// audit entry for this read; the read itself is always audited
   /// server-side regardless of whether one is supplied.
