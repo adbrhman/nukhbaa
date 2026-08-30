@@ -26,7 +26,9 @@ import 'package:shared/shared.dart';
 /// only; no points, no round, no participant. Returns the stored
 /// [FixtureResultDto] (`200`); a scoreline outside the accepted range surfaces
 /// as `400` `scoring.result_out_of_range`/`scoring.result_negative` via the
-/// shared error envelope.
+/// shared error envelope. As a side effect this also runs `ScoreFixture` and
+/// `ScoreRoundsForFixture` (Option C, 2026-08-30 decision) so both scoring
+/// paths stay current; a failure in either surfaces via the same envelope.
 ///
 /// The `/fixtures` subtree is already behind `bearerAuth`
 /// (`routes/fixtures/_middleware.dart`), which provides the verified
@@ -72,18 +74,28 @@ Future<Response> onRequest(RequestContext context, String id) async {
   };
 }
 
-/// After a result is recorded, immediately re-scores every round this
-/// fixture belongs to (Phase: احتساب فوري — live/partial scoring), so the
-/// leaderboard/report an admin looks at next is already current. A failure in
-/// the fan-out re-score is a genuine, caller-visible error (never silently
-/// swallowed) — but it is reported as a distinct step from the already-
-/// successful result recording, which is not rolled back.
+/// After a result is recorded, immediately scores the fixture itself
+/// (`ScoreFixture` — Option C, docs/project-context.md 2026-08-30: unifies
+/// the dual scoring path instead of leaving `PUT .../result` to drive only
+/// the legacy Round fan-out) and re-scores every round this fixture belongs
+/// to (Phase: احتساب فوري — live/partial scoring), so the leaderboard/report
+/// an admin looks at next is already current either way. A failure in either
+/// step is a genuine, caller-visible error (never silently swallowed) — but
+/// it is reported as a distinct step from the already-successful result
+/// recording, which is not rolled back.
 Future<Response> _respondAndRescore({
   required CompositionRoot root,
   required AuthenticatedUser principal,
   required String fixtureId,
   required FixtureResult value,
 }) async {
+  final fixtureScored = await root.scoreFixture(
+    principal: principal,
+    fixtureId: fixtureId,
+  );
+  if (fixtureScored is Err<List<ParticipantFixtureScore>>) {
+    return errorResponse(fixtureScored.error);
+  }
   final rescored = await root.scoreRoundsForFixture(
     principal: principal,
     fixtureId: fixtureId,
