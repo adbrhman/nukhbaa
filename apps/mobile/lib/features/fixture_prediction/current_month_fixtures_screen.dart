@@ -24,6 +24,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../leaderboards/season_leaderboard_screen.dart';
 import 'current_month_fixtures_providers.dart';
 import 'fixture_prediction_controller.dart';
 import 'fixture_prediction_submission.dart';
@@ -218,14 +219,40 @@ class _CurrentMonthFixtureCardState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            widget.item.competitionName,
-            key: Key('currentMonthFixtures.competition.${_fixture.fixtureId}'),
-            style: TextStyle(
-              color: tokens.textSecondary,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  widget.item.competitionName,
+                  key: Key(
+                    'currentMonthFixtures.competition.${_fixture.fixtureId}',
+                  ),
+                  style: TextStyle(
+                    color: tokens.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              IconButton(
+                key: Key(
+                  'currentMonthFixtures.viewLeaderboard.${_fixture.fixtureId}',
+                ),
+                tooltip: l10n.viewLeaderboardTooltip,
+                icon: Icon(Icons.leaderboard_outlined, color: tokens.textSecondary),
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SeasonLeaderboardScreen(
+                      seasonId: _fixture.seasonId,
+                      seasonLabel: widget.item.seasonLabel,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
