@@ -646,10 +646,7 @@ class StartSeasonController extends _$StartSeasonController {
 
   /// Starts the calendar-month season for [year]/[month] (1-12) under
   /// this controller's [competitionId].
-  Future<void> start({
-    required int year,
-    required int month,
-  }) async {
+  Future<void> start({required int year, required int month}) async {
     state = const AsyncValue.loading();
     final result = await _api.startSeason(
       competitionId: competitionId,

@@ -41,3 +41,4 @@
 - 03:20 — أضيف اختبار currentMonthFixturesProvider (3 حالات) (البند 5، خطوة 2/4، اختبار: نجح)
 - 03:21 — أضيف CurrentMonthFixturesScreen (شاشة مباريات الشهر الحالي الموحّدة، بلا منتقي) (البند 5، خطوة 3/4، اختبار: نجح)
 - 03:22 — ربط زر account.matches بـ CurrentMonthFixturesScreen بدل MatchesFeedScreen (البند 5، خطوة 4/4، مكتمل، اختبار: نجح)
+- 03:35 — حذف export مكرر لـ admin_get_fixture_scores.dart في application.dart (إصلاح خارج نطاق البند 5، اختبار: نجح)

@@ -68,33 +68,30 @@ void main() {
     );
   });
 
-  test(
-    'lists every season the caller is an active participant in, whose '
-    'window covers "now"',
-    () async {
-      repo
-        ..seedCompetition(_competition(id: _competitionA, name: 'Alpha'))
-        ..seedSeason(
-          _season(
-            id: _seasonA,
-            competitionId: _competitionA,
-            startAt: DateTime.utc(2026, 8),
-            endAt: DateTime.utc(2026, 9),
-          ),
-        )
-        ..seedParticipant(
-          _participant(id: _participantA, seasonId: _seasonA, userId: _user),
-        );
+  test('lists every season the caller is an active participant in, whose '
+      'window covers "now"', () async {
+    repo
+      ..seedCompetition(_competition(id: _competitionA, name: 'Alpha'))
+      ..seedSeason(
+        _season(
+          id: _seasonA,
+          competitionId: _competitionA,
+          startAt: DateTime.utc(2026, 8),
+          endAt: DateTime.utc(2026, 9),
+        ),
+      )
+      ..seedParticipant(
+        _participant(id: _participantA, seasonId: _seasonA, userId: _user),
+      );
 
-      final result = await useCase(principal: userPrincipal(_user));
+    final result = await useCase(principal: userPrincipal(_user));
 
-      final list = (result as Ok<List<ParticipantSeasonFeedEntry>>).value;
-      expect(list, hasLength(1));
-      expect(list.single.seasonId, const SeasonId(_seasonA));
-      expect(list.single.competitionId, const CompetitionId(_competitionA));
-      expect(list.single.competitionName, 'Alpha');
-    },
-  );
+    final list = (result as Ok<List<ParticipantSeasonFeedEntry>>).value;
+    expect(list, hasLength(1));
+    expect(list.single.seasonId, const SeasonId(_seasonA));
+    expect(list.single.competitionId, const CompetitionId(_competitionA));
+    expect(list.single.competitionName, 'Alpha');
+  });
 
   test("excludes another user's participation even when present", () async {
     repo
@@ -172,46 +169,43 @@ void main() {
     },
   );
 
-  test(
-    'orders by competition name, then season label, matching the '
-    'repository contract',
-    () async {
-      repo
-        ..seedCompetition(_competition(id: _competitionB, name: 'Zeta'))
-        ..seedCompetition(_competition(id: _competitionA, name: 'Alpha'))
-        ..seedSeason(
-          _season(
-            id: _seasonB,
-            competitionId: _competitionB,
-            startAt: DateTime.utc(2026, 8),
-            endAt: DateTime.utc(2026, 9),
-            label: 'August',
-          ),
-        )
-        ..seedSeason(
-          _season(
-            id: _seasonA,
-            competitionId: _competitionA,
-            startAt: DateTime.utc(2026, 8),
-            endAt: DateTime.utc(2026, 9),
-            label: 'August',
-          ),
-        )
-        ..seedParticipant(
-          _participant(id: _participantB, seasonId: _seasonB, userId: _user),
-        )
-        ..seedParticipant(
-          _participant(id: _participantA, seasonId: _seasonA, userId: _user),
-        );
+  test('orders by competition name, then season label, matching the '
+      'repository contract', () async {
+    repo
+      ..seedCompetition(_competition(id: _competitionB, name: 'Zeta'))
+      ..seedCompetition(_competition(id: _competitionA, name: 'Alpha'))
+      ..seedSeason(
+        _season(
+          id: _seasonB,
+          competitionId: _competitionB,
+          startAt: DateTime.utc(2026, 8),
+          endAt: DateTime.utc(2026, 9),
+          label: 'August',
+        ),
+      )
+      ..seedSeason(
+        _season(
+          id: _seasonA,
+          competitionId: _competitionA,
+          startAt: DateTime.utc(2026, 8),
+          endAt: DateTime.utc(2026, 9),
+          label: 'August',
+        ),
+      )
+      ..seedParticipant(
+        _participant(id: _participantB, seasonId: _seasonB, userId: _user),
+      )
+      ..seedParticipant(
+        _participant(id: _participantA, seasonId: _seasonA, userId: _user),
+      );
 
-      final result = await useCase(principal: userPrincipal(_user));
+    final result = await useCase(principal: userPrincipal(_user));
 
-      final list = (result as Ok<List<ParticipantSeasonFeedEntry>>).value;
-      expect(list, hasLength(2));
-      expect(list.first.competitionName, 'Alpha');
-      expect(list.last.competitionName, 'Zeta');
-    },
-  );
+    final list = (result as Ok<List<ParticipantSeasonFeedEntry>>).value;
+    expect(list, hasLength(2));
+    expect(list.first.competitionName, 'Alpha');
+    expect(list.last.competitionName, 'Zeta');
+  });
 
   test('a caller in no active season right now gets an empty list', () async {
     final result = await useCase(principal: userPrincipal(_user));

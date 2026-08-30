@@ -166,9 +166,7 @@ final class _InMemoryFixturePredictionRepository
   }
 
   @override
-  Future<Result<List<FixtureRef>>> listSeasonFixtures(
-    SeasonId seasonId,
-  ) async {
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) async {
     return Result.ok(
       List<FixtureRef>.unmodifiable(_bySeasonId[seasonId.value] ?? const []),
     );

@@ -207,7 +207,11 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
         l10n.adminMonthlyCompetitionsNoActiveSeason,
         style: context.text.labelSmall?.copyWith(color: t.textMuted),
       ),
-      AsyncError() => Icon(Icons.error_outline_rounded, color: t.error, size: 18),
+      AsyncError() => Icon(
+        Icons.error_outline_rounded,
+        color: t.error,
+        size: 18,
+      ),
       _ => const SizedBox(
         width: 14,
         height: 14,

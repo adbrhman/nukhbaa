@@ -47,8 +47,6 @@ Future<Response> onRequest(RequestContext context) async {
     Ok<List<ParticipantSeasonFeedEntry>>(:final value) => Response.json(
       body: [for (final entry in value) activeSeasonToDto(entry).toJson()],
     ),
-    Err<List<ParticipantSeasonFeedEntry>>(:final error) => errorResponse(
-      error,
-    ),
+    Err<List<ParticipantSeasonFeedEntry>>(:final error) => errorResponse(error),
   };
 }

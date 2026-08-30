@@ -688,10 +688,7 @@ void main() {
           nowUtc: DateTime.utc(2026, 8, 15),
         );
 
-        expect(
-          (result as Ok<List<ParticipantSeasonFeedEntry>>).value,
-          isEmpty,
-        );
+        expect((result as Ok<List<ParticipantSeasonFeedEntry>>).value, isEmpty);
       },
     );
 

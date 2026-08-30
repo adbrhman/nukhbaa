@@ -7,12 +7,12 @@ import 'package:mobile/features/admin/admin_hub_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 Widget _host() => const ProviderScope(
-      child: MaterialApp(
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: AdminHubScreen(),
-      ),
-    );
+  child: MaterialApp(
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: AdminHubScreen(),
+  ),
+);
 
 void main() {
   group('AdminHubScreen navigation', () {
@@ -30,8 +30,7 @@ void main() {
         expect(find.byKey(const Key('admin.hub.drawer')), findsNothing);
         expect(find.text(l10n.adminDashboardTab), findsWidgets);
 
-        final Finder teamsTile =
-            find.byKey(const Key('admin.shell.nav.teams'));
+        final Finder teamsTile = find.byKey(const Key('admin.shell.nav.teams'));
         await tester.ensureVisible(teamsTile);
         await tester.pumpAndSettle();
         await tester.tap(teamsTile);
@@ -64,8 +63,9 @@ void main() {
         // الكسول إلا بعد التمرير الفعلي إليه؛ ensureVisible لا يكفي لأنه
         // يتطلب أن يكون العنصر مبنيًا مسبقًا. scrollUntilVisible يُمرِّر
         // تدريجيًا حتى يظهر العنصر فعليًا في الشجرة.
-        final Finder settingsTile =
-            find.byKey(const Key('admin.shell.nav.settings'));
+        final Finder settingsTile = find.byKey(
+          const Key('admin.shell.nav.settings'),
+        );
         final Finder navScrollable = find.descendant(
           of: find.byKey(const Key('admin.shell.navList')),
           matching: find.byType(Scrollable),

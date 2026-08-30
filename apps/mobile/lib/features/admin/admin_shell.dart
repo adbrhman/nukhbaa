@@ -90,11 +90,7 @@ class AdminNavList extends StatelessWidget {
 /// جانبياً دائماً بجانب المحتوى؛ على الجوال يعرض المحتوى فقط — التنقّل
 /// عبر Drawer يديره [AdminHubScreen] (المالك الوحيد لحالة `selected`).
 class AdminShell extends StatelessWidget {
-  const AdminShell({
-    super.key,
-    required this.selected,
-    required this.onSelect,
-  });
+  const AdminShell({super.key, required this.selected, required this.onSelect});
 
   final AdminSection selected;
   final ValueChanged<AdminSection> onSelect;
@@ -102,7 +98,8 @@ class AdminShell extends StatelessWidget {
   Widget _bodyFor(AdminSection section, AppLocalizations l10n) {
     return switch (section) {
       AdminSection.dashboard => const AdminDashboardSection(),
-      AdminSection.monthlyCompetitions => const AdminMonthlyCompetitionsSection(),
+      AdminSection.monthlyCompetitions =>
+        const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.users => const UserSanctionSection(),
       AdminSection.ledger => const LedgerLookupSection(),

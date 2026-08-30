@@ -42,9 +42,7 @@ part 'current_month_fixtures_providers.g.dart';
 /// `Ok(<empty list>)` (no existence oracle); any other failure is rethrown as
 /// the typed [AppError].
 @riverpod
-Future<List<CurrentMonthFixtureItemDto>> currentMonthFixtures(
-  Ref ref,
-) async {
+Future<List<CurrentMonthFixtureItemDto>> currentMonthFixtures(Ref ref) async {
   final api = ref.watch(competitionApiProvider);
   final result = await api.getCurrentMonthFixtures();
   return switch (result) {

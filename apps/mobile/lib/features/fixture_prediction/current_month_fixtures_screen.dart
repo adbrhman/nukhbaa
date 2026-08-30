@@ -220,9 +220,7 @@ class _CurrentMonthFixtureCardState
         children: <Widget>[
           Text(
             widget.item.competitionName,
-            key: Key(
-              'currentMonthFixtures.competition.${_fixture.fixtureId}',
-            ),
+            key: Key('currentMonthFixtures.competition.${_fixture.fixtureId}'),
             style: TextStyle(
               color: tokens.textSecondary,
               fontWeight: FontWeight.w600,
@@ -280,9 +278,7 @@ class _CurrentMonthFixtureCardState
           Row(
             children: <Widget>[
               Checkbox(
-                key: Key(
-                  'currentMonthFixtures.double.${_fixture.fixtureId}',
-                ),
+                key: Key('currentMonthFixtures.double.${_fixture.fixtureId}'),
                 value: _isDouble,
                 onChanged: enabled
                     ? (v) => setState(() => _isDouble = v ?? false)
@@ -294,9 +290,7 @@ class _CurrentMonthFixtureCardState
               ),
               const Spacer(),
               FilledButton(
-                key: Key(
-                  'currentMonthFixtures.submit.${_fixture.fixtureId}',
-                ),
+                key: Key('currentMonthFixtures.submit.${_fixture.fixtureId}'),
                 onPressed: enabled ? _submit : null,
                 child: inFlight
                     ? const SizedBox(
@@ -310,9 +304,7 @@ class _CurrentMonthFixtureCardState
           ),
           if (submission is FixtureSubmissionSucceeded)
             Padding(
-              key: Key(
-                'currentMonthFixtures.success.${_fixture.fixtureId}',
-              ),
+              key: Key('currentMonthFixtures.success.${_fixture.fixtureId}'),
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 l10n.fixturePredictionSavedMessage,
@@ -321,9 +313,7 @@ class _CurrentMonthFixtureCardState
             ),
           if (submission is FixtureSubmissionFailed)
             Padding(
-              key: Key(
-                'currentMonthFixtures.failure.${_fixture.fixtureId}',
-              ),
+              key: Key('currentMonthFixtures.failure.${_fixture.fixtureId}'),
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 ErrorPresenter.message(submission.error),

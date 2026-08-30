@@ -222,5 +222,8 @@ abstract interface class CompetitionRepository {
   /// made a first prediction, since `FixturePredictionController` auto-joins
   /// only on that first successful submission).
   Future<Result<List<ParticipantSeasonFeedEntry>>>
-  listActiveParticipantSeasons({required UserId userId, required DateTime nowUtc});
+  listActiveParticipantSeasons({
+    required UserId userId,
+    required DateTime nowUtc,
+  });
 }

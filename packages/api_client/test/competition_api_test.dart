@@ -464,62 +464,56 @@ void main() {
     });
   });
 
-  group(
-    'CompetitionApi.getCurrentSeason '
-    '(GET /competitions/{id}/seasons/current)',
-    () {
-      test('200 -> Ok(SeasonDto) at the current path', () async {
-        final dto = SeasonDto(
-          id: 's-1',
-          competitionId: 'c-1',
-          label: '08/2026',
-          startAt: DateTime.utc(2026, 8, 1),
-          endAt: DateTime.utc(2026, 9, 1),
+  group('CompetitionApi.getCurrentSeason '
+      '(GET /competitions/{id}/seasons/current)', () {
+    test('200 -> Ok(SeasonDto) at the current path', () async {
+      final dto = SeasonDto(
+        id: 's-1',
+        competitionId: 'c-1',
+        label: '08/2026',
+        startAt: DateTime.utc(2026, 8, 1),
+        endAt: DateTime.utc(2026, 9, 1),
+      );
+      final ctx = buildTransport((_) async => okJson(dto.toJson()));
+
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).getCurrentSeason('c-1');
+
+      expect(result, Result<SeasonDto?>.ok(dto));
+      expect(ctx.captured.single.url.path, '/competitions/c-1/seasons/current');
+      expect(ctx.captured.single.method, 'GET');
+    });
+
+    test(
+      'a literal JSON null body -> Ok(null), no season covers now',
+      () async {
+        final ctx = buildTransport(
+          (_) async => http.Response(
+            'null',
+            200,
+            headers: const {'content-type': 'application/json'},
+          ),
         );
-        final ctx = buildTransport((_) async => okJson(dto.toJson()));
 
         final result = await CompetitionApi(
           ctx.transport,
         ).getCurrentSeason('c-1');
 
-        expect(result, Result<SeasonDto?>.ok(dto));
-        expect(
-          ctx.captured.single.url.path,
-          '/competitions/c-1/seasons/current',
-        );
-        expect(ctx.captured.single.method, 'GET');
-      });
+        expect((result as Ok<SeasonDto?>).value, isNull);
+      },
+    );
 
-      test(
-        'a literal JSON null body -> Ok(null), no season covers now',
-        () async {
-          final ctx = buildTransport(
-            (_) async => http.Response(
-              'null',
-              200,
-              headers: const {'content-type': 'application/json'},
-            ),
-          );
-
-          final result = await CompetitionApi(
-            ctx.transport,
-          ).getCurrentSeason('c-1');
-
-          expect((result as Ok<SeasonDto?>).value, isNull);
-        },
+    test('503 -> Err(transient) retryable', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
       );
 
-      test('503 -> Err(transient) retryable', () async {
-        final ctx = buildTransport(
-          (_) async => errorEnvelope(503, 'transient.upstream', 'Retry.'),
-        );
+      final result = await CompetitionApi(
+        ctx.transport,
+      ).getCurrentSeason('c-1');
 
-        final result = await CompetitionApi(
-          ctx.transport,
-        ).getCurrentSeason('c-1');
-
-        expect((result as Err<SeasonDto?>).error.isRetryable, isTrue);
-      });
-    },
-  );
+      expect((result as Err<SeasonDto?>).error.isRetryable, isTrue);
+    });
+  });
 }

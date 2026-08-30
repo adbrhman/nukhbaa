@@ -331,56 +331,53 @@ void main() {
   // -------------------------------------------------------------------------
   // currentSeasonProvider -- GET /competitions/{id}/seasons/current
   // -------------------------------------------------------------------------
-  group(
-    'currentSeasonProvider (GET /competitions/{id}/seasons/current)',
-    () {
-      test('success -> the current season at the id path', () async {
-        final harness = buildCompetitionHarness(
-          (_) async => okJsonObject(sampleSeason.toJson()),
-        );
-        addTearDown(harness.dispose);
+  group('currentSeasonProvider (GET /competitions/{id}/seasons/current)', () {
+    test('success -> the current season at the id path', () async {
+      final harness = buildCompetitionHarness(
+        (_) async => okJsonObject(sampleSeason.toJson()),
+      );
+      addTearDown(harness.dispose);
 
-        final season = await harness.container.read(
-          currentSeasonProvider('c-1').future,
-        );
+      final season = await harness.container.read(
+        currentSeasonProvider('c-1').future,
+      );
 
-        expect(season, sampleSeason);
-        expect(
-          harness.captured.single.request.url.path,
-          '/competitions/c-1/seasons/current',
-        );
-      });
+      expect(season, sampleSeason);
+      expect(
+        harness.captured.single.request.url.path,
+        '/competitions/c-1/seasons/current',
+      );
+    });
 
-      test('no season covers now -> a legitimate null, NOT an error', () async {
-        final harness = buildCompetitionHarness(
-          (_) async => http.Response(
-            'null',
-            200,
-            headers: const {'content-type': 'application/json'},
-          ),
-        );
-        addTearDown(harness.dispose);
+    test('no season covers now -> a legitimate null, NOT an error', () async {
+      final harness = buildCompetitionHarness(
+        (_) async => http.Response(
+          'null',
+          200,
+          headers: const {'content-type': 'application/json'},
+        ),
+      );
+      addTearDown(harness.dispose);
 
-        final season = await harness.container.read(
-          currentSeasonProvider('c-1').future,
-        );
+      final season = await harness.container.read(
+        currentSeasonProvider('c-1').future,
+      );
 
-        expect(season, isNull);
-      });
+      expect(season, isNull);
+    });
 
-      test('transport failure -> throws a typed transient AppError', () async {
-        final harness = buildCompetitionHarness(
-          (_) async => throw Exception('offline'),
-        );
-        addTearDown(harness.dispose);
+    test('transport failure -> throws a typed transient AppError', () async {
+      final harness = buildCompetitionHarness(
+        (_) async => throw Exception('offline'),
+      );
+      addTearDown(harness.dispose);
 
-        await expectLater(
-          harness.container.read(currentSeasonProvider('c-1').future),
-          throwsA(
-            isA<AppError>().having((e) => e.kind, 'kind', ErrorKind.transient),
-          ),
-        );
-      });
-    },
-  );
+      await expectLater(
+        harness.container.read(currentSeasonProvider('c-1').future),
+        throwsA(
+          isA<AppError>().having((e) => e.kind, 'kind', ErrorKind.transient),
+        ),
+      );
+    });
+  });
 }

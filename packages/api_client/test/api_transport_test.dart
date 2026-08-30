@@ -208,20 +208,16 @@ void main() {
       expect((result as Ok<CompetitionDto?>).value, isNull);
     });
 
-    test(
-      'a non-object, non-null body is a malformed-response error',
-      () async {
-        final ctx = buildTransport((_) async => okJson(<Object?>[1, 2]));
+    test('a non-object, non-null body is a malformed-response error', () async {
+      final ctx = buildTransport((_) async => okJson(<Object?>[1, 2]));
 
-        final result = await ctx.transport
-            .getNullableObject<CompetitionDto>(
-              '/competitions/c',
-              parse: CompetitionDto.fromJson,
-            );
+      final result = await ctx.transport.getNullableObject<CompetitionDto>(
+        '/competitions/c',
+        parse: CompetitionDto.fromJson,
+      );
 
-        final err = (result as Err<CompetitionDto?>).error;
-        expect(err.code, apiErrorMalformedResponse);
-      },
-    );
+      final err = (result as Err<CompetitionDto?>).error;
+      expect(err.code, apiErrorMalformedResponse);
+    });
   });
 }
