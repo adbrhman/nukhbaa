@@ -17,7 +17,6 @@ export 'src/competition/fixture_lock.dart';
 export 'src/competition/fixture_ref.dart';
 export 'src/competition/fixture_schedule.dart';
 export 'src/competition/format_type.dart';
-export 'src/competition/open_round_feed_entry.dart';
 export 'src/competition/participant.dart';
 export 'src/competition/participant_id.dart';
 export 'src/competition/participant_season_feed_entry.dart';

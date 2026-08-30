@@ -38,7 +38,6 @@ final class CompositionRoot {
     required this.browseRoundFixtures,
     required this.browseSeasonFixtures,
     required this.linkFixtureToSeason,
-    required this.listMatchesFeed,
     required this.listCurrentMonthFixtures,
     required this.submitPrediction,
     required this.submitFixturePrediction,
@@ -143,7 +142,6 @@ final class CompositionRoot {
     BrowseRoundFixtures? browseRoundFixtures,
     BrowseSeasonFixtures? browseSeasonFixtures,
     LinkFixtureToSeason? linkFixtureToSeason,
-    ListMatchesFeed? listMatchesFeed,
     ListCurrentMonthFixtures? listCurrentMonthFixtures,
     SubmitPrediction? submitPrediction,
     SubmitFixturePrediction? submitFixturePrediction,
@@ -224,7 +222,6 @@ final class CompositionRoot {
            browseSeasonFixtures ?? _absentBrowseSeasonFixtures(),
        linkFixtureToSeason =
            linkFixtureToSeason ?? _absentLinkFixtureToSeason(),
-       listMatchesFeed = listMatchesFeed ?? _absentListMatchesFeed(),
        listCurrentMonthFixtures =
            listCurrentMonthFixtures ?? _absentListCurrentMonthFixtures(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
@@ -418,11 +415,6 @@ final class CompositionRoot {
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
       );
-
-  static ListMatchesFeed _absentListMatchesFeed() => ListMatchesFeed(
-    competitionRepository: _unwiredCompetitionRepository,
-    fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
-  );
 
   static ListCurrentMonthFixtures _absentListCurrentMonthFixtures() =>
       ListCurrentMonthFixtures(
@@ -922,13 +914,6 @@ final class CompositionRoot {
   /// the per-fixture sibling of [linkFixtureToRound]).
   final LinkFixtureToSeason linkFixtureToSeason;
 
-  /// The unified matches feed: every open round's fixture(s) across every
-  /// public competition, flattened into one ordered list, in three batched
-  /// database reads (server-side aggregate read replacing the client-side
-  /// competition -> season -> round -> fixtures drill-down; any authenticated
-  /// user). Read-only, no side effect.
-  final ListMatchesFeed listMatchesFeed;
-
   /// The current-month fixture feed: every public competition's current
   /// (calendar-month) season, fixtures flattened into one ordered list --
   /// the Monthly Competitions home read (project-context.md section 9).
@@ -1408,10 +1393,6 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
       ),
-      listMatchesFeed: ListMatchesFeed(
-        competitionRepository: competitionRepository,
-        fixtureScheduleRepository: fixtureScheduleRepository,
-      ),
       listCurrentMonthFixtures: ListCurrentMonthFixtures(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
@@ -1781,14 +1762,6 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   @override
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId) =>
       _unwired();
-
-  @override
-  Future<Result<List<OpenRoundFeedEntry>>> listOpenRoundsFeed() => _unwired();
-
-  @override
-  Future<Result<List<RoundFixture>>> listFixturesForRounds(
-    List<RoundId> roundIds,
-  ) => _unwired();
 
   @override
   Future<Result<List<RoundId>>> listRoundsByFixture(FixtureRef fixture) =>

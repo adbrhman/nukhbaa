@@ -283,62 +283,6 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
     return Result.ok(roundIds);
   }
 
-  // Matches-feed aggregate read (BLOCKER perf, 2026-08-17): real in-memory
-  // reads over this harness's own store, mirroring the Postgres adapter's
-  // join/filter/order semantics — NOT stubs/throws.
-
-  @override
-  Future<Result<List<OpenRoundFeedEntry>>> listOpenRoundsFeed() async {
-    final entries =
-        [
-          for (final r in rounds.values)
-            if (r.status == RoundStatus.open)
-              if (seasons[r.seasonId.value] case final season?)
-                if (competitions[season.competitionId.value]
-                    case final competition?)
-                  if (competition.visibility == CompetitionVisibility.public)
-                    (competition: competition, round: r),
-        ]..sort((a, b) {
-          final byName = a.competition.name.compareTo(b.competition.name);
-          if (byName != 0) return byName;
-          final byCompetitionId = a.competition.id.value.compareTo(
-            b.competition.id.value,
-          );
-          if (byCompetitionId != 0) return byCompetitionId;
-          return a.round.sequence.compareTo(b.round.sequence);
-        });
-    return Result.ok([
-      for (final e in entries)
-        OpenRoundFeedEntry(
-          competitionId: e.competition.id,
-          competitionName: e.competition.name,
-          roundId: e.round.id,
-          rulesetVersion: e.round.ruleset.rulesetVersion,
-        ),
-    ]);
-  }
-
-  @override
-  Future<Result<List<RoundFixture>>> listFixturesForRounds(
-    List<RoundId> roundIds,
-  ) async {
-    if (roundIds.isEmpty) return const Result.ok(<RoundFixture>[]);
-    final wanted = {for (final id in roundIds) id.value};
-    final matched =
-        [
-          for (final link in links)
-            if (wanted.contains(link.roundId.value)) link,
-        ]..sort((a, b) {
-          final byRound = a.roundId.value.compareTo(b.roundId.value);
-          if (byRound != 0) return byRound;
-          final byOrder = a.displayOrder.compareTo(b.displayOrder);
-          return byOrder != 0
-              ? byOrder
-              : a.fixture.value.compareTo(b.fixture.value);
-        });
-    return Result.ok(matched);
-  }
-
   @override
   Future<Result<List<ParticipantSeasonFeedEntry>>>
   listActiveParticipantSeasons({

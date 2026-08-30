@@ -107,19 +107,6 @@ SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
   );
 }
 
-/// Projects a [MatchFeedEntry] onto its wire shape [MatchFeedItemDto]
-/// (`GET /feed/matches`, the server-side aggregate read). Reuses
-/// [roundFixtureCardToDto]'s nested projection verbatim so a fixture's shape
-/// never drifts between the single-round and aggregate reads.
-MatchFeedItemDto matchFeedEntryToDto(MatchFeedEntry entry) {
-  return MatchFeedItemDto(
-    competitionName: entry.competitionName,
-    roundId: entry.roundId.value,
-    rulesetVersion: entry.rulesetVersion,
-    fixture: roundFixtureCardToDto(entry.fixture),
-  );
-}
-
 /// Projects a [ParticipantSeasonFeedEntry] onto its wire shape
 /// [ActiveSeasonDto] (`GET /me/active-seasons`, the participant-scoped "my
 /// active seasons" read -- docs/project-context.md, Axiom 4 Amendment). The

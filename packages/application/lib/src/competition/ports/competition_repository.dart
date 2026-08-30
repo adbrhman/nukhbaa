@@ -158,36 +158,6 @@ abstract interface class CompetitionRepository {
   Future<Result<List<RoundFixture>>> listRoundFixtures(RoundId roundId);
 
   // ---------------------------------------------------------------------------
-  // Matches-feed aggregate read (server-side fan-in — replaces the client-side
-  // competition → season → round → fixtures drill-down that issued one HTTP
-  // round-trip per open round). Both methods below are additive, read-only
-  // batch reads over the already-migrated `competition.*` tables: no new
-  // domain rule, no side effect, same total/never-throws contract as every
-  // other browse read above.
-  // ---------------------------------------------------------------------------
-
-  /// Lists every **open** round of every **public** competition, each joined
-  /// with its owning competition's display name — the first of the two
-  /// queries backing `GET /feed/matches` (the second is
-  /// [listFixturesForRounds]). Ordered by competition name (then id, for a
-  /// stable tie-break), then by the round's 1-based [Round.sequence] within
-  /// that competition — the same grouping/order the former client-side walk
-  /// produced. An empty platform-wide result is a legitimate
-  /// `Ok(<empty list>)`, never an error.
-  Future<Result<List<OpenRoundFeedEntry>>> listOpenRoundsFeed();
-
-  /// Lists the fixtures linked to every round in [roundIds], in one batched
-  /// read — the round-scoped analogue of
-  /// [FixtureScheduleRepository.findByFixtures]'s batching, applied to
-  /// `round_fixtures` so the feed never issues one query per round. Ordered by
-  /// [RoundFixture.roundId] (grouping), then [RoundFixture.displayOrder]
-  /// (matchday order within each round). An empty [roundIds] list — or a set
-  /// of rounds with no linked fixtures — yields `Ok(<empty list>)`.
-  Future<Result<List<RoundFixture>>> listFixturesForRounds(
-    List<RoundId> roundIds,
-  );
-
-  // ---------------------------------------------------------------------------
   // Live/partial scoring (Phase: احتساب فوري) — resolves every round a given
   // fixture belongs to, so recording that fixture's actual result can
   // immediately re-score each of those rounds rather than waiting for the
