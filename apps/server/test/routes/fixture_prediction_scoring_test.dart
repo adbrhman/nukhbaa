@@ -253,18 +253,20 @@ void main() {
       expect(response.statusCode, isNot(HttpStatus.ok));
     });
 
-    test('a fixture with no predictions returns 200 with an empty list',
-        () async {
-      final setup = scoreRootFor(withPrediction: false);
-      final response = await score_route.onRequest(
-        wireContext(root: setup.root, principal: adminPrincipal()),
-        kFixtureId,
-      );
+    test(
+      'a fixture with no predictions returns 200 with an empty list',
+      () async {
+        final setup = scoreRootFor(withPrediction: false);
+        final response = await score_route.onRequest(
+          wireContext(root: setup.root, principal: adminPrincipal()),
+          kFixtureId,
+        );
 
-      expect(response.statusCode, HttpStatus.ok);
-      final body = await decodeBody(response);
-      expect(body['scores'], isEmpty);
-    });
+        expect(response.statusCode, HttpStatus.ok);
+        final body = await decodeBody(response);
+        expect(body['scores'], isEmpty);
+      },
+    );
 
     test('405s on a non-POST method', () async {
       final setup = scoreRootFor();
