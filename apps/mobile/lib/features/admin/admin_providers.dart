@@ -196,78 +196,6 @@ class FixtureScheduleController extends _$FixtureScheduleController {
   }
 }
 
-/// Owns the link-fixture-to-round command (`POST /rounds/{id}/fixtures`,
-/// command intent `LinkFixtureToRound`; Axiom 3) over `CompetitionApi`.
-/// Modelled as a controller for the same reason as [RoundOpenController].
-@riverpod
-class RoundFixtureLinkController extends _$RoundFixtureLinkController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
-
-  @override
-  AsyncValue<RoundFixtureDto>? build() => null;
-
-  /// Links [fixtureId] into [roundId] at [displayOrder] (0-based).
-  Future<void> link({
-    required String roundId,
-    required String fixtureId,
-    required int displayOrder,
-  }) async {
-    state = const AsyncValue.loading();
-    final result = await _api.linkFixtureToRound(
-      roundId: roundId,
-      fixtureId: fixtureId,
-      displayOrder: displayOrder,
-    );
-    state = switch (result) {
-      Ok<RoundFixtureDto>(:final value) => AsyncValue.data(value),
-      Err<RoundFixtureDto>(:final error) => AsyncValue.error(
-        error,
-        StackTrace.current,
-      ),
-    };
-    if (state is AsyncData<RoundFixtureDto>) {
-      ref.invalidate(roundFixturesProvider(roundId));
-      ref.invalidate(roundDetailProvider(roundId));
-    }
-  }
-}
-
-/// Owns the remove-fixture-from-round command
-/// (`DELETE /rounds/{id}/fixtures/{fixtureId}`, command intent
-/// `RemoveFixtureFromRound` — the correction counterpart of
-/// [RoundFixtureLinkController] for a duplicate/mistaken link) over
-/// `CompetitionApi`. Modelled as a controller for the same reason as
-/// [RoundOpenController].
-@riverpod
-class RemoveFixtureController extends _$RemoveFixtureController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
-
-  @override
-  AsyncValue<bool>? build() => null;
-
-  /// Removes [fixtureId] from [roundId]. Refused (server-side) when the
-  /// round is no longer open or the fixture already carries a recorded
-  /// result (`competition.fixture_result_already_recorded`).
-  Future<void> remove({
-    required String roundId,
-    required String fixtureId,
-  }) async {
-    state = const AsyncValue.loading();
-    final result = await _api.removeFixtureFromRound(
-      roundId: roundId,
-      fixtureId: fixtureId,
-    );
-    state = switch (result) {
-      Ok<bool>(:final value) => AsyncValue.data(value),
-      Err<bool>(:final error) => AsyncValue.error(error, StackTrace.current),
-    };
-    if (state is AsyncData<bool>) {
-      ref.invalidate(roundFixturesProvider(roundId));
-      ref.invalidate(roundDetailProvider(roundId));
-    }
-  }
-}
-
 /// Owns the record-fixture-result command (`PUT /fixtures/{id}/result`,
 /// command intent `RecordFixtureResult`; Axiom 3) over `CompetitionApi`.
 /// Modelled as a controller for the same reason as [RoundOpenController].
@@ -325,33 +253,6 @@ class ScoreRoundController extends _$ScoreRoundController {
   }
 }
 
-/// Owns the post-round-to-ledger command (`POST /rounds/{id}/ledger`,
-/// command intent `PostRoundToLedger`) over `CompetitionApi`. Modelled as a
-/// controller for the same reason as [ScoreRoundController]. This is the
-/// required step after [ScoreRoundController] and before a participant's
-/// points appear in the Hall of Fame / season leaderboard: those read
-/// exclusively from the ledger, never from round_scores directly.
-@riverpod
-class PostRoundToLedgerController extends _$PostRoundToLedgerController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
-
-  @override
-  AsyncValue<PostRoundToLedgerResponseDto>? build() => null;
-
-  /// Posts round [roundId]'s already-computed scores to the ledger.
-  Future<void> post(String roundId) async {
-    state = const AsyncValue.loading();
-    final result = await _api.postRoundToLedger(roundId);
-    state = switch (result) {
-      Ok<PostRoundToLedgerResponseDto>(:final value) => AsyncValue.data(value),
-      Err<PostRoundToLedgerResponseDto>(:final error) => AsyncValue.error(
-        error,
-        StackTrace.current,
-      ),
-    };
-  }
-}
-
 /// Owns the score-fixture command (`POST /fixtures/{id}/score`, command
 /// intent `ScoreFixture`) over [CompetitionApi]. The per-fixture sibling of
 /// [ScoreRoundController].
@@ -377,8 +278,7 @@ class ScoreFixtureController extends _$ScoreFixtureController {
 }
 
 /// Owns the post-fixture-to-ledger command (`POST /fixtures/{id}/ledger`,
-/// command intent `PostFixtureToLedger`) over [CompetitionApi]. The
-/// per-fixture sibling of [PostRoundToLedgerController].
+/// command intent `PostFixtureToLedger`) over [CompetitionApi].
 @riverpod
 class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
   CompetitionApi get _api => ref.read(competitionApiProvider);
