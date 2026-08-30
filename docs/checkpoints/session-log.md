@@ -71,3 +71,4 @@
 - [01:30] إصلاح: تقاعد PredictionRepository.listByUser (بوابة Round القديمة) كاملة — الواجهة + Postgres + Fake + عقبتا composition_root/harness، بعد أن أصبح ListMyPredictions محذوفًا | ملف: 5 ملفات (ports/prediction_repository.dart, postgres_prediction_repository.dart, fake_prediction_repository.dart, composition_root.dart, competition_route_harness.dart) | اختبار: نجح
 - [01:33] تحقق: تشغيل شامل لاختبارات application/infrastructure/server بعد سلسلة حذف myPredictions/ListMyPredictions/listByUser (5 سكربتات) | ملف: — | اختبار: فشل
 - [01:36] تحقق: تشغيل شامل لاختبارات application/infrastructure/server عبر flutter test (بعد فشل dart test بسبب resolution: workspace) — بعد سلسلة حذف myPredictions/ListMyPredictions/listByUser | ملف: — | اختبار: نجح
+- [01:41] تحقق: تشغيل شامل لاختبارات application/infrastructure/server (flutter test --reporter=failures-only) بعد سلسلة حذف myPredictions/ListMyPredictions/listByUser | ملف: — | اختبار: نجح
