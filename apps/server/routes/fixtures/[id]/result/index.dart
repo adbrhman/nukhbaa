@@ -26,9 +26,11 @@ import 'package:shared/shared.dart';
 /// only; no points, no round, no participant. Returns the stored
 /// [FixtureResultDto] (`200`); a scoreline outside the accepted range surfaces
 /// as `400` `scoring.result_out_of_range`/`scoring.result_negative` via the
-/// shared error envelope. As a side effect this also runs `ScoreFixture` and
-/// `ScoreRoundsForFixture` (Option C, 2026-08-30 decision) so both scoring
-/// paths stay current; a failure in either surfaces via the same envelope.
+/// shared error envelope. As a side effect this also runs `ScoreFixture`
+/// (Phase: احتساب فوري) so the fixture-level score is already current; a
+/// failure there surfaces via the same envelope. The legacy `ScoreRound`
+/// fan-out was removed here (2026-08-30 — binding condition satisfied: no
+/// open/locked round depends on it any more; see docs/project-context.md).
 ///
 /// The `/fixtures` subtree is already behind `bearerAuth`
 /// (`routes/fixtures/_middleware.dart`), which provides the verified
@@ -64,7 +66,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<FixtureResult>(:final value) => await _respondAndRescore(
+    Ok<FixtureResult>(:final value) => await _respondAndScoreFixture(
       root: root,
       principal: principal,
       fixtureId: id,
@@ -75,15 +77,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
 }
 
 /// After a result is recorded, immediately scores the fixture itself
-/// (`ScoreFixture` — Option C, docs/project-context.md 2026-08-30: unifies
-/// the dual scoring path instead of leaving `PUT .../result` to drive only
-/// the legacy Round fan-out) and re-scores every round this fixture belongs
-/// to (Phase: احتساب فوري — live/partial scoring), so the leaderboard/report
-/// an admin looks at next is already current either way. A failure in either
-/// step is a genuine, caller-visible error (never silently swallowed) — but
+/// (`ScoreFixture`, Phase: احتساب فوري — live/partial scoring), so the
+/// leaderboard/report an admin looks at next is already current. A failure
+/// here is a genuine, caller-visible error (never silently swallowed) — but
 /// it is reported as a distinct step from the already-successful result
 /// recording, which is not rolled back.
-Future<Response> _respondAndRescore({
+Future<Response> _respondAndScoreFixture({
   required CompositionRoot root,
   required AuthenticatedUser principal,
   required String fixtureId,
@@ -95,13 +94,6 @@ Future<Response> _respondAndRescore({
   );
   if (fixtureScored is Err<List<ParticipantFixtureScore>>) {
     return errorResponse(fixtureScored.error);
-  }
-  final rescored = await root.scoreRoundsForFixture(
-    principal: principal,
-    fixtureId: fixtureId,
-  );
-  if (rescored is Err<List<RoundScore>>) {
-    return errorResponse(rescored.error);
   }
   return Response.json(
     body: FixtureResultDto(

@@ -115,33 +115,19 @@ void main() {
     ({CompositionRoot root, InMemoryFixtureResultRepository results})
     rootFor() {
       final results = InMemoryFixtureResultRepository();
-      // No rounds/links are seeded, so `scoreRoundsForFixture` resolves an
-      // empty round list for `kFixtureId` and does nothing — these tests
-      // exercise result recording only, not the live re-score fan-out (that
-      // has its own coverage below).
-      final comp = InMemoryCompetitionRepository();
       final root = CompositionRoot.forTesting(
         recordFixtureResult: RecordFixtureResult(
           resultRepository: results,
           clock: FixedClock(_at),
         ),
         // No fixture-level predictions are seeded either, so `ScoreFixture`
-        // (Option C fan-out) resolves an empty list and scores nothing —
-        // same "result recording only" scope as `scoreRoundsForFixture` above.
+        // (Phase: احتساب فوري) resolves an empty list and scores nothing —
+        // these tests exercise result recording only.
         scoreFixture: ScoreFixture(
           fixturePredictionRepository: _InMemoryFixturePredictionRepository(),
           resultRepository: results,
           scoreRepository: _InMemoryFixtureScoreRepository(),
           rulesetProvider: const ConfiguredRulesetProvider(),
-        ),
-        scoreRoundsForFixture: ScoreRoundsForFixture(
-          competitionRepository: comp,
-          scoreRound: ScoreRound(
-            competitionRepository: comp,
-            predictionRepository: InMemoryPredictionRepository(),
-            resultRepository: results,
-            scoreRepository: InMemoryScoreRepository(),
-          ),
         ),
       );
       return (root: root, results: results);
@@ -269,46 +255,27 @@ void main() {
       expect(response.statusCode, HttpStatus.methodNotAllowed);
     });
 
-    test('recording a result immediately re-scores every round the fixture '
-        'belongs to (Phase: احتساب فوري — live/partial scoring)', () async {
+    test('recording a result immediately also scores the fixture itself '
+        '(Phase: احتساب فوري)', () async {
       final results = InMemoryFixtureResultRepository();
-      final comp = InMemoryCompetitionRepository()
-        ..rounds[kRoundId] = roundIn(RoundStatus.open)
-        ..links.add(link(kFixtureId, 0))
-        ..participants.add(participant(kParticipantId, kUserId));
-      final preds = InMemoryPredictionRepository()
-        ..roundFixtures.addAll([link(kFixtureId, 0)]);
-      await preds.save(
-        prediction(
-          id: kPredictionId,
-          participantId: kParticipantId,
-          scores: [(kFixtureId, 2, 1)],
-        ),
-        _at,
-      );
-      final scores = InMemoryScoreRepository();
+      final fixturePreds = _InMemoryFixturePredictionRepository()
+        ..seed(
+          fixtureId: kFixtureId2,
+          participantId: kOtherParticipantId,
+          homeGoals: 2,
+          awayGoals: 1,
+        );
+      final fixtureScores = _InMemoryFixtureScoreRepository();
       final root = CompositionRoot.forTesting(
         recordFixtureResult: RecordFixtureResult(
           resultRepository: results,
           clock: FixedClock(_at),
         ),
-        // No fixture-level predictions seeded here either — this test's
-        // focus is the Round fan-out; the Option C fixture-level fan-out has
-        // its own dedicated coverage below.
         scoreFixture: ScoreFixture(
-          fixturePredictionRepository: _InMemoryFixturePredictionRepository(),
+          fixturePredictionRepository: fixturePreds,
           resultRepository: results,
-          scoreRepository: _InMemoryFixtureScoreRepository(),
+          scoreRepository: fixtureScores,
           rulesetProvider: const ConfiguredRulesetProvider(),
-        ),
-        scoreRoundsForFixture: ScoreRoundsForFixture(
-          competitionRepository: comp,
-          scoreRound: ScoreRound(
-            competitionRepository: comp,
-            predictionRepository: preds,
-            resultRepository: results,
-            scoreRepository: scores,
-          ),
         ),
       );
 
@@ -319,67 +286,15 @@ void main() {
           method: HttpMethod.put,
           body: const {'home_goals': 2, 'away_goals': 1},
         ),
-        kFixtureId,
+        kFixtureId2,
       );
 
       expect(response.statusCode, HttpStatus.ok);
-      // The open round was live-scored as a side effect — one row, exact
-      // scoreline (2-1 predicted, 2-1 actual) = 3 points, no lock needed.
-      expect(scores.count, 1);
+      // Exact scoreline (2-1 predicted, 2-1 actual) = one fixture-level
+      // score row, proving `ScoreFixture` ran as a side effect of
+      // recording the result.
+      expect(fixtureScores.count, 1);
     });
-
-    test(
-      'recording a result immediately also scores the fixture itself '
-      '(Option C, 2026-08-30 — unifies with POST /fixtures/{id}/score)',
-      () async {
-        final results = InMemoryFixtureResultRepository();
-        final fixturePreds = _InMemoryFixturePredictionRepository()
-          ..seed(
-            fixtureId: kFixtureId2,
-            participantId: kOtherParticipantId,
-            homeGoals: 2,
-            awayGoals: 1,
-          );
-        final fixtureScores = _InMemoryFixtureScoreRepository();
-        final root = CompositionRoot.forTesting(
-          recordFixtureResult: RecordFixtureResult(
-            resultRepository: results,
-            clock: FixedClock(_at),
-          ),
-          scoreFixture: ScoreFixture(
-            fixturePredictionRepository: fixturePreds,
-            resultRepository: results,
-            scoreRepository: fixtureScores,
-            rulesetProvider: const ConfiguredRulesetProvider(),
-          ),
-          scoreRoundsForFixture: ScoreRoundsForFixture(
-            competitionRepository: InMemoryCompetitionRepository(),
-            scoreRound: ScoreRound(
-              competitionRepository: InMemoryCompetitionRepository(),
-              predictionRepository: InMemoryPredictionRepository(),
-              resultRepository: results,
-              scoreRepository: InMemoryScoreRepository(),
-            ),
-          ),
-        );
-
-        final response = await result_route.onRequest(
-          wireContext(
-            root: root,
-            principal: adminPrincipal(),
-            method: HttpMethod.put,
-            body: const {'home_goals': 2, 'away_goals': 1},
-          ),
-          kFixtureId2,
-        );
-
-        expect(response.statusCode, HttpStatus.ok);
-        // Exact scoreline (2-1 predicted, 2-1 actual) = one fixture-level
-        // score row, proving `ScoreFixture` ran as a side effect of
-        // recording the result — not just `scoreRoundsForFixture`.
-        expect(fixtureScores.count, 1);
-      },
-    );
   });
 
   // ---------------------------------------------------------------------------

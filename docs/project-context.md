@@ -81,6 +81,17 @@ Do not read any other doc file unless explicitly requested._
   Round before its real removal is scheduled. **Binding condition:** the
   real Round deletion (7.10) MUST NOT begin until `PUT /fixtures/{id}/result`
   no longer auto-triggers `ScoreRound`.
+- **Dual scoring-path risk — RESOLVED (2026-08-30, same-day follow-up):**
+  Option C first added `ScoreFixture` to `PUT /fixtures/{id}/result`
+  alongside the legacy `ScoreRoundsForFixture` call (both ran, in parallel).
+  With every `open`/`locked` round subsequently cleared (fresh Monthly
+  Competitions relaunch — no legacy round data retained), the binding
+  condition above is now literally satisfied: the `ScoreRoundsForFixture`
+  call was removed from `PUT /fixtures/{id}/result` (route + its tests
+  only). `ScoreRoundsForFixture`/`ScoreRound` and their
+  `composition_root.dart` wiring are left in place, now with zero route
+  consumers — same transitional pattern as `round_report.dart`. **7.10
+  (real Round deletion) may proceed.**
 - **Work that jumped the locked Phase 7 order** (admin monthly-competitions
   section, `ListMyActiveSeasons`/`MyActiveSeasonsScreen`,
   `ListCurrentMonthFixtures`/`CurrentMonthFixturesScreen`): **ratified as an
