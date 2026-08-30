@@ -9,13 +9,12 @@
 /// single-participant ledger support-read (all three over `AdminApi`),
 /// fixture-identity register/correct (over `FixtureScheduleApi` —
 /// `POST /fixtures` / `PUT /fixtures/{id}`, the fixture-IDENTITY seam, Axiom
-/// 3), round administration — open a round + link a fixture into it, and
-/// results/scoring administration — record a fixture's actual result, score
-/// a round, and look up a scored round's results (all over `CompetitionApi`
-/// — `POST /seasons/{id}/rounds` / `POST /rounds/{id}/fixtures` /
-/// `PUT /fixtures/{id}/result` / `POST /rounds/{id}/score` /
-/// `GET /rounds/{id}/scores`). Ledger-post administration is a separate
-/// follow-up slice, mirroring how Groups was phased in this project.
+/// 3), round administration — link a fixture into a round, and
+/// results/scoring administration — record a fixture's actual result (all
+/// over `CompetitionApi` — `POST /seasons/{id}/rounds` /
+/// `POST /rounds/{id}/fixtures` / `PUT /fixtures/{id}/result`). Ledger-post
+/// administration is a separate follow-up slice, mirroring how Groups was
+/// phased in this project.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -25,7 +24,6 @@ import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
 import 'fixture_report.dart';
-import 'round_report.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
 
@@ -198,7 +196,8 @@ class FixtureScheduleController extends _$FixtureScheduleController {
 
 /// Owns the record-fixture-result command (`PUT /fixtures/{id}/result`,
 /// command intent `RecordFixtureResult`; Axiom 3) over `CompetitionApi`.
-/// Modelled as a controller for the same reason as [RoundOpenController].
+/// Modelled as a controller rather than a `FutureProvider` because it is an
+/// admin-triggered write, not a passive view a screen loads on entry.
 @riverpod
 class RecordFixtureResultController extends _$RecordFixtureResultController {
   CompetitionApi get _api => ref.read(competitionApiProvider);
@@ -228,34 +227,9 @@ class RecordFixtureResultController extends _$RecordFixtureResultController {
   }
 }
 
-/// Owns the score-round command (`POST /rounds/{id}/score`, command intent
-/// `ScoreRound`) over `CompetitionApi`. Modelled as a controller for the same
-/// reason as [RoundOpenController]. No request body — points are computed
-/// server-side (Axioms 2/5).
-@riverpod
-class ScoreRoundController extends _$ScoreRoundController {
-  CompetitionApi get _api => ref.read(competitionApiProvider);
-
-  @override
-  AsyncValue<RoundScoresDto>? build() => null;
-
-  /// Scores every prediction in [roundId].
-  Future<void> score(String roundId) async {
-    state = const AsyncValue.loading();
-    final result = await _api.scoreRound(roundId);
-    state = switch (result) {
-      Ok<RoundScoresDto>(:final value) => AsyncValue.data(value),
-      Err<RoundScoresDto>(:final error) => AsyncValue.error(
-        error,
-        StackTrace.current,
-      ),
-    };
-  }
-}
-
 /// Owns the score-fixture command (`POST /fixtures/{id}/score`, command
 /// intent `ScoreFixture`) over [CompetitionApi]. The per-fixture sibling of
-/// [ScoreRoundController].
+/// the retired round-level `ScoreRoundController`.
 @riverpod
 class ScoreFixtureController extends _$ScoreFixtureController {
   CompetitionApi get _api => ref.read(competitionApiProvider);
@@ -302,86 +276,15 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
   }
 }
 
-/// Owns the round-scores lookup (`GET /rounds/{id}/scores`, query intent
-/// `GetRoundScores`) over `CompetitionApi`. Modelled as a controller (rather
-/// than a `FutureProvider`) for the same reason as
-/// [AdminLedgerLookupController]: an admin explicitly triggers this read, it
-/// is not a passive view a screen loads on entry.
-@riverpod
-class RoundScoresLookupController extends _$RoundScoresLookupController {
-  AdminApi get _api => ref.read(adminApiProvider);
-
-  @override
-  AsyncValue<RoundScoresDto>? build() => null;
-
-  /// Looks up [roundId]'s computed scores.
-  Future<void> lookup(String roundId) async {
-    state = const AsyncValue.loading();
-    final result = await _api.adminGetRoundScores(roundId);
-    state = switch (result) {
-      Ok<RoundScoresDto>(:final value) => AsyncValue.data(value),
-      Err<RoundScoresDto>(:final error) => AsyncValue.error(
-        error,
-        StackTrace.current,
-      ),
-    };
-  }
-}
-
-/// Owns the round-report bulk read: fetches `GET /rounds/{id}/scores`
-/// (`CompetitionApi`) and `GET /admin/rounds/{id}/predictions` (`AdminApi`,
-/// itself audited) concurrently for a **scored** round, then merges them via
-/// [buildRoundReport] into a ranked, per-fixture breakdown. Modelled as a
-/// controller (rather than a `FutureProvider`) for the same reason as
-/// [RoundScoresLookupController]: an admin explicitly triggers the report, it
-/// is not a passive view a screen loads on entry — and the raw-predictions
-/// half is itself an audited cross-user read that must not fire silently.
-@riverpod
-class RoundReportController extends _$RoundReportController {
-  AdminApi get _adminApi => ref.read(adminApiProvider);
-
-  @override
-  AsyncValue<List<RoundReportRow>>? build() => null;
-
-  /// Loads the report for the scored round [roundId]. [reason] is an
-  /// optional justification recorded on the raw-predictions audit entry.
-  ///
-  /// Both calls run concurrently; either failing surfaces its error and skips
-  /// the merge (a round-report is all-or-nothing — a half-merged report with
-  /// missing raw scores or missing grades would mislead the admin).
-  Future<void> load(String roundId, {String? reason}) async {
-    state = const AsyncValue.loading();
-    final results = await (
-      _adminApi.adminGetRoundScores(roundId),
-      _adminApi.adminListRoundPredictions(roundId, reason: reason),
-    ).wait;
-    final scoresResult = results.$1;
-    final predictionsResult = results.$2;
-
-    if (scoresResult is Err<RoundScoresDto>) {
-      state = AsyncValue.error(scoresResult.error, StackTrace.current);
-      return;
-    }
-    if (predictionsResult is Err<List<PredictionDto>>) {
-      state = AsyncValue.error(predictionsResult.error, StackTrace.current);
-      return;
-    }
-
-    final scores = (scoresResult as Ok<RoundScoresDto>).value;
-    final predictions = (predictionsResult as Ok<List<PredictionDto>>).value;
-    state = AsyncValue.data(
-      buildRoundReport(scores: scores, rawPredictions: predictions),
-    );
-  }
-}
-
 /// Owns the fixture-report bulk read: fetches `GET /admin/fixtures/{id}/scores`
 /// and `GET /admin/fixtures/{id}/predictions` (both `AdminApi`, the second
 /// itself audited) concurrently — admin-only, no season-participation gate
-/// (mirrors [RoundReportController]; the per-fixture sibling, added so an
-/// admin can review any fixture's predictions/scores regardless of the
-/// admin's own season membership, for investigating user complaints).
-/// Modelled as a controller for the same reason as [RoundReportController].
+/// (the per-fixture sibling of the retired round-level
+/// `RoundReportController`, added so an admin can review any fixture's
+/// predictions/scores regardless of the admin's own season membership, for
+/// investigating user complaints). Modelled as a controller rather than a
+/// `FutureProvider` because an admin explicitly triggers the report, it is
+/// not a passive view a screen loads on entry.
 @riverpod
 class FixtureReportController extends _$FixtureReportController {
   AdminApi get _adminApi => ref.read(adminApiProvider);
@@ -393,7 +296,8 @@ class FixtureReportController extends _$FixtureReportController {
   /// recorded on the raw-predictions audit entry.
   ///
   /// Both calls run concurrently; either failing surfaces its error and skips
-  /// the merge (same all-or-nothing rationale as [RoundReportController]).
+  /// the merge (same all-or-nothing rationale as the retired
+  /// `RoundReportController`).
   Future<void> load(String fixtureId, {String? reason}) async {
     state = const AsyncValue.loading();
     final results = await (

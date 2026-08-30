@@ -9,7 +9,7 @@ import 'package:contracts/contracts.dart';
 /// (ties keep the server's stable participant-id order, never re-sorted by
 /// name — there is no display name guaranteed on this wire shape).
 ///
-/// The per-fixture sibling of `RoundReportRow` (`round_report.dart`) — one
+/// The per-fixture sibling of the retired `RoundReportRow` — one
 /// fixture means one grade/points pair per participant, so there is no
 /// per-fixture cell list to wrap (unlike the round report's `cells`).
 final class FixtureReportRow {
@@ -46,7 +46,7 @@ final class FixtureReportRow {
 /// Merges a scored fixture's [scores] (grades + points) with the admin's raw
 /// [rawPredictions] (predicted scorelines) into a ranked [FixtureReportRow]
 /// list, sorted by points descending. The per-fixture sibling of
-/// `buildRoundReport` (`round_report.dart`).
+/// the retired `buildRoundReport`.
 List<FixtureReportRow> buildFixtureReport({
   required FixtureScoresDto scores,
   required List<FixturePredictionDto> rawPredictions,

@@ -1,6 +1,6 @@
 /// Unit tests for [ScoreFixtureController] and [PostFixtureToLedgerController]
-/// (Phase 7.10.x Step 2) — the per-fixture siblings of `ScoreRoundController`
-/// / `PostRoundToLedgerController`.
+/// (Phase 7.10.x Step 2) — the per-fixture siblings of the retired
+/// `ScoreRoundController` / `PostRoundToLedgerController`.
 library;
 
 import 'dart:convert';
