@@ -6,142 +6,55 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
-import '../competition/competition_providers.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
-import 'round_scores_providers.dart';
 
-/// The caller's own aggregated prediction history — every prediction they
-/// have ever submitted, across every round and season, newest first.
+/// The caller's own aggregated prediction history — every per-fixture
+/// prediction they have ever submitted, across every fixture and season,
+/// newest first. The retired round-scoped history (`GET /me/predictions`)
+/// is no longer shown here (docs/project-context.md, "Legacy `Round`
+/// predictions in `prediction_history_screen.dart`" — the app has not
+/// launched yet, so there was no external history to preserve).
 ///
-/// Shows each historical forecast (its fixture scorelines and submission
-/// time). Win/loss status is intentionally NOT shown here: that requires
-/// cross-referencing each fixture's recorded result
-/// (`GET /rounds/{id}/scores`) per round, which is a separate, heavier read
-/// this screen does not perform — a future pass can enrich each row with it.
+/// Shows each historical forecast (its fixture scoreline and submission
+/// time), plus a correctness badge (✅/❌/🔥) once [fixtureScoresProvider]
+/// resolves a grade for it.
 class PredictionHistoryScreen extends ConsumerWidget {
   const PredictionHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<PredictionHistoryEntry>> history = ref.watch(
-      predictionHistoryProvider,
+    final AsyncValue<List<FixturePredictionDto>> history = ref.watch(
+      myFixturePredictionsProvider,
     );
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.myPredictions, key: const Key('history.title')),
       ),
-      body: AsyncListView<PredictionHistoryEntry>(
+      body: AsyncListView<FixturePredictionDto>(
         value: history,
         emptyMessage: l10n.predictionHistoryEmpty,
-        onRetry: () => ref.invalidate(predictionHistoryProvider),
-        itemBuilder: (context, entry) => switch (entry) {
-          RoundPredictionEntry(:final prediction) => _PredictionCard(
-            prediction: prediction,
-          ),
-          FixturePredictionEntry(:final prediction) => _FixturePredictionCard(
-            prediction: prediction,
-          ),
-        },
+        onRetry: () => ref.invalidate(myFixturePredictionsProvider),
+        itemBuilder: (context, prediction) =>
+            _FixturePredictionCard(prediction: prediction),
       ),
     );
   }
 }
 
-/// A single historical forecast. Resolves its fixtures' team identity via
-/// `roundFixturesProvider(prediction.roundId)`, so a score line renders as
-/// "Home 2 - 1 Away"
-/// (with crests) instead of the opaque fixture id. A fixture that cannot be
-/// resolved (the round read is still loading, failed, or the fixture is no
-/// longer linked) falls back to the raw id — the card never hides a score
-/// line just because its team identity is unavailable.
-class _PredictionCard extends ConsumerWidget {
-  const _PredictionCard({required this.prediction});
-  final PredictionDto prediction;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppTokens tokens = context.tokens;
-    final AsyncValue<List<RoundFixtureCardDto>> fixtures = ref.watch(
-      roundFixturesProvider(prediction.roundId),
-    );
-    // Best-effort lookup map: while [fixtures] is loading or failed, every
-    // score line simply falls back to its raw fixture id (see
-    // [_ScoreLine.build]) rather than blocking or erroring the whole card.
-    final Map<String, RoundFixtureCardDto> byFixtureId =
-        <String, RoundFixtureCardDto>{
-          for (final RoundFixtureCardDto fixture in fixtures.value ?? const [])
-            fixture.fixtureId: fixture,
-        };
-    final AsyncValue<RoundScoresDto?> roundScoresAsync = ref.watch(
-      roundScoresProvider(prediction.roundId),
-    );
-    RoundScoreDto? myScore;
-    for (final RoundScoreDto s in roundScoresAsync.value?.scores ?? const []) {
-      if (s.participantId == prediction.participantId) {
-        myScore = s;
-        break;
-      }
-    }
-    final Map<String, String> gradeByFixtureId = <String, String>{
-      for (final FixtureScoreResultDto r in myScore?.fixtureResults ?? const [])
-        r.fixtureId: r.grade,
-    };
-
-    return Card(
-      key: Key('history.item.${prediction.id}'),
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              prediction.submittedAt,
-              key: Key('history.submittedAt.${prediction.id}'),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final FixtureScoreDto score in prediction.fixtureScores)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: _ScoreLine(
-                  key: Key('history.score.${prediction.id}.${score.fixtureId}'),
-                  score: score,
-                  fixture: byFixtureId[score.fixtureId],
-                  grade: gradeByFixtureId[score.fixtureId],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A single historical **per-fixture** forecast (Axiom 4 Amendment; the
-/// per-fixture sibling of [_PredictionCard]).
+/// A single historical per-fixture forecast (Axiom 4 Amendment).
 ///
-/// Unlike [_PredictionCard], there is no known season/round context to
-/// resolve team names from here — [FixturePredictionDto] carries only the
-/// fixture id — so the score line always falls back to the raw fixture id
-/// (the same fallback [_ScoreLine] already renders while its round-fixtures
-/// read is loading or unresolved). The grade badge (✅/❌/🔥), when
-/// shown, comes from [fixtureScoresProvider] — only queried when
-/// [FixturePredictionDto.seasonId] is populated (currently true only for
-/// predictions read via `GET /me/fixture-predictions`, i.e. this screen). A
-/// `null` seasonId, a still-loading read, or any read error all degrade the
-/// same way: no badge, never a broken card — mirroring how
-/// [_PredictionCard] already tolerates an unresolved
-/// `roundFixturesProvider`/`roundScoresProvider`.
+/// There is no season/round context to resolve team names from here —
+/// [FixturePredictionDto] carries only the fixture id — so the score line
+/// always falls back to the raw fixture id (the same fallback [_ScoreLine]
+/// renders whenever it isn't given a resolved [RoundFixtureCardDto]). The
+/// grade badge (✅/❌/🔥), when shown, comes from [fixtureScoresProvider] —
+/// only queried when [FixturePredictionDto.seasonId] is populated. A `null`
+/// seasonId, a still-loading read, or any read error all degrade the same
+/// way: no badge, never a broken card.
 class _FixturePredictionCard extends ConsumerWidget {
   const _FixturePredictionCard({required this.prediction});
   final FixturePredictionDto prediction;
