@@ -1,8 +1,8 @@
 /// The fixture-prediction **submit** controller — a hand-written
 /// (non-generator) Riverpod family notifier that owns the
 /// [FixtureSubmissionState] lifecycle for a single `(seasonId, fixtureId)`
-/// pair (Axiom 4 Amendment — the per-fixture sibling of
-/// `prediction_controller.dart`'s `PredictionController`).
+/// pair (Axiom 4 Amendment — the per-fixture successor of the retired
+/// round-level submit controller).
 ///
 /// ## Why no `@riverpod` codegen here
 /// See `fixture_prediction_providers.dart`'s file doc: this slice was
@@ -84,8 +84,8 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
 
   /// The `(seasonId, fixtureId)` pair this controller instance owns
   /// (Riverpod 3.x removed `FamilyNotifier`; the family argument is now a
-  /// plain constructor parameter — see `PredictionController` for the same
-  /// pattern already used elsewhere in this app).
+  /// plain constructor parameter, matching the pattern used elsewhere in
+  /// this app).
   final FixturePredictionKey arg;
 
   PredictionApi get _api => ref.read(predictionApiProvider);

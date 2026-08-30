@@ -52,8 +52,8 @@ class PredictionHistoryScreen extends ConsumerWidget {
 }
 
 /// A single historical forecast. Resolves its fixtures' team identity via
-/// `roundFixturesProvider(prediction.roundId)` — the same read
-/// `RoundFixturesScreen` uses — so a score line renders as "Home 2 - 1 Away"
+/// `roundFixturesProvider(prediction.roundId)`, so a score line renders as
+/// "Home 2 - 1 Away"
 /// (with crests) instead of the opaque fixture id. A fixture that cannot be
 /// resolved (the round read is still loading, failed, or the fixture is no
 /// longer linked) falls back to the raw id — the card never hides a score
