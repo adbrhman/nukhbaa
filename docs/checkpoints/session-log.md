@@ -39,3 +39,4 @@
 - 20:35 — أضيف اختبار route لـ GET /feed/current-month-fixtures (البند 4، خطوة 6/6: مكتمل)
 - [01:12] إصلاح: إضافة currentMonthFixturesProvider (البند 5 خطوة 1/4) | ملف: apps/mobile/lib/features/fixture_prediction/current_month_fixtures_providers.dart | اختبار: نجح
 - 03:20 — أضيف اختبار currentMonthFixturesProvider (3 حالات) (البند 5، خطوة 2/4، اختبار: نجح)
+- 03:21 — أضيف CurrentMonthFixturesScreen (شاشة مباريات الشهر الحالي الموحّدة، بلا منتقي) (البند 5، خطوة 3/4، اختبار: نجح)
