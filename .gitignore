@@ -43,3 +43,11 @@ apply_*.sh
 fix_*.sh
 01_admin_fixture_review_backend.sh
 [0-9][0-9]_*.sh
+
+# امتدادات .py المكافئة لسكربتات الجلسات المؤقتة أعلاه (كانت مفقودة)
+apply_*.py
+fix_*.py
+step*.py
+phase*.sh
+run_part1_verify*.sh
+*.tar.gz

@@ -44,3 +44,4 @@
 - 03:35 — حذف export مكرر لـ admin_get_fixture_scores.dart في application.dart (إصلاح خارج نطاق البند 5، اختبار: نجح)
 - [04:18] إصلاح: زر عرض اللوحة لكل مباراة في CurrentMonthFixturesScreen — البند 6 | ملف: apps/mobile/lib/features/fixture_prediction/current_month_fixtures_screen.dart | اختبار: يُملأ يدويًا
 - [04:25] حذف: features/matches (matches_feed_screen.dart, matches_feed_providers.dart, current_month_fixtures_providers.dart المكرر) وmatch_card.dart — يتيمة بالكامل بعد البند 5 | اختبار: يُملأ يدويًا
+- [15:02] تصحيح: أُعيد تنفيذ تنظيف فوضى جذر المستودع من المكان الصحيح (المحاولة السابقة طُبِّقت خطأً داخل apps/mobile) | ملفات: جذر المستودع + .gitignore | اختبار: لا ينطبق
