@@ -98,6 +98,17 @@ Do not read any other doc file unless explicitly requested._
   official extension of 7.10.x**, not frozen/rolled back. It does not touch
   the `Round` layer, ships with tests, and reverting it would discard
   correct, already-verified work for no architectural benefit.
+- **Legacy `Round` predictions in `prediction_history_screen.dart` —
+  RESOLVED (2026-08-31):** the app has not launched yet (roadmap is still
+  at the pre-launch Build Verification gate, ADR 0008), so there are no
+  external users whose history must be preserved. Decision: **drop the
+  Round-based prediction history from the screen entirely** — no data
+  migration, no permanent dual display. This removes the last live
+  consumer blocking full `Round` layer deletion. Next: strip
+  `myPredictions` / `getRoundScores` / `roundFixturesProvider` /
+  `RoundPredictionEntry` out of `prediction_history_screen.dart` and its
+  providers (the screen keeps only `FixturePredictionDto`), then delete
+  the resulting orphaned Round symbols.
 
 ### Core Architecture (ADR 0002)
 Layered, event-driven, strict integrity boundary:
