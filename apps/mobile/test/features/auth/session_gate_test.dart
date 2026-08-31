@@ -1,10 +1,10 @@
 /// Widget tests for the Auth UI wired through the real [SessionGate] +
-/// [SignInScreen] + [AccountScreen], over the [buildAuthHarness] fakes.
+/// [SignInScreen] + [NukhbaaShell], over the [buildAuthHarness] fakes.
 ///
 /// Covers the user-visible outcomes of the four §4 scenarios: a saved session
-/// restores straight to the account screen; a signed-out user sees the sign-in
-/// form, signs in successfully and lands on the account screen; bad credentials
-/// keep them on the form with an error banner; and a lost connection shows the
+/// restores into the navigation shell; a signed-out user sees the sign-in form,
+/// signs in successfully and can open the account tab; bad credentials keep
+/// them on the form with an error banner; and a lost connection shows the
 /// (retryable) transient message.
 library;
 
@@ -25,11 +25,19 @@ Widget _appUnder(AuthHarness harness) => ProviderScope(
   ),
 );
 
-/// The default `flutter_test` surface is 800×600 logical px — too short for
+/// Opens the account tab in the authenticated navigation shell.
+Future<void> _openAccountTab(WidgetTester tester) async {
+  final accountTab = find.text('الحساب');
+  expect(accountTab, findsOneWidget);
+  await tester.tap(accountTab);
+  await tester.pumpAndSettle();
+}
+
+/// The default flutter_test surface is 800×600 logical px — too short for
 /// the auth form (header + card + two labeled fields + two buttons), which
-/// pushes `signIn.submit` below the render tree bounds and makes `tap()`
-/// silently miss it. Every test that taps a widget inside [SignInScreen] or
-/// [AccountScreen] must run against a realistic phone-sized surface instead.
+/// pushes signIn.submit below the render tree bounds and makes tap()
+/// silently miss it. Every test that taps a widget inside SignInScreen or
+/// NukhbaaProfilePage must run against a realistic phone-sized surface.
 void _authTest(
   String description,
   Future<void> Function(WidgetTester tester) body,
@@ -44,7 +52,7 @@ void _authTest(
 }
 
 void main() {
-  _authTest('restored valid session lands on the account screen', (
+  _authTest('restored valid session opens the account tab', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -58,13 +66,14 @@ void main() {
     expect(find.byKey(const Key('session.splash')), findsOneWidget);
 
     await tester.pumpAndSettle();
+    await _openAccountTab(tester);
 
     expect(find.byKey(const Key('account.title')), findsOneWidget);
     expect(find.byKey(const Key('account.userId')), findsOneWidget);
     expect(find.text('u-1'), findsOneWidget);
   });
 
-  _authTest('no token -> sign-in form; successful sign-in -> account screen', (
+  _authTest('no token -> sign-in form; successful sign-in -> account tab', (
     tester,
   ) async {
     final harness = buildAuthHarness((request) async {
@@ -90,6 +99,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('signIn.submit')));
     await tester.pumpAndSettle();
+    await _openAccountTab(tester);
 
     expect(find.byKey(const Key('account.title')), findsOneWidget);
     expect(find.text('u-1'), findsOneWidget);
@@ -158,7 +168,7 @@ void main() {
     expect(find.textContaining('check your connection'), findsOneWidget);
   });
 
-  _authTest('sign-out from the account screen returns to the sign-in form', (
+  _authTest('sign-out from the account tab returns to the sign-in form', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -169,6 +179,7 @@ void main() {
 
     await tester.pumpWidget(_appUnder(harness));
     await tester.pumpAndSettle();
+    await _openAccountTab(tester);
     expect(find.byKey(const Key('account.title')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('account.signOut')));
