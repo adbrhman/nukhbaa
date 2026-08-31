@@ -293,14 +293,21 @@ class _MonthlyCompetitionLogoCatalog extends StatelessWidget {
             style: context.text.bodySmall?.copyWith(color: t.textSecondary),
           ),
           const SizedBox(height: AppSpacing.md),
-          for (final MonthlyCompetitionLogoGroup group in kMonthlyCompetitionLogoGroups) ...[
-            Text(group.name + '  •  ' + group.season, style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+          for (final MonthlyCompetitionLogoGroup group
+              in kMonthlyCompetitionLogoGroups) ...[
+            Text(
+              group.name + '  •  ' + group.season,
+              style: context.text.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                for (final String slug in group.slugs) _MonthlyTeamLogoTile(slug: slug),
+                for (final String slug in group.slugs)
+                  _MonthlyTeamLogoTile(slug: slug),
               ],
             ),
             if (group != kMonthlyCompetitionLogoGroups.last)
@@ -338,11 +345,18 @@ class _MonthlyTeamLogoTile extends StatelessWidget {
             child: Image.asset(
               'assets/team_logos/' + slug + '.png',
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Icon(Icons.shield_outlined, color: context.tokens.textMuted),
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.shield_outlined, color: context.tokens.textMuted),
             ),
           ),
           const SizedBox(height: 4),
-          Text(teamLogoLabel(slug), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: context.text.labelSmall),
+          Text(
+            teamLogoLabel(slug),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: context.text.labelSmall,
+          ),
         ],
       ),
     );
