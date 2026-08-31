@@ -112,6 +112,117 @@ final class FakeLedgerRepository implements LedgerRepository {
   }
 }
 
+/// A complete in-memory [FixtureLedgerRepository] for use-case tests.
+///
+/// Reproduces the observable contract the Postgres adapter must honour:
+/// * **append-only** — there is no mutate/delete surface, and an appended
+///   entry is never edited in place;
+/// * **idempotent** on the natural dedupe key `(participant_id, fixture_id,
+///   entry_kind)` for a deduped kind ([EntryKind.isDedupedPerFixture]) — a
+///   second append of the same key is *skipped*, never duplicated, and is
+///   omitted from the returned "actually appended" subset (so a replay
+///   reports nothing new);
+/// * **atomic** — the batch is staged then committed in one shot, so a
+///   scripted failure leaves the store untouched;
+/// * **stream order** — [listEntries] and [findByFixture] return
+///   occurred-at ascending, then entry id, matching the port's documented
+///   order.
+///
+/// It never throws.
+final class FakeFixtureLedgerRepository implements FixtureLedgerRepository {
+  /// All appended entries, keyed by their own id (append-only; entries are
+  /// only ever inserted, never replaced or removed).
+  final Map<String, FixturePointEntry> _byId = {};
+
+  /// The set of occupied dedupe keys for deduped kinds, so a re-post is
+  /// skipped.
+  final Set<String> _dedupeKeys = {};
+
+  AppError? _scriptedFailure;
+
+  /// Scripts the *next* call to fail with [error], then clears the script.
+  void failNextWith(AppError error) => _scriptedFailure = error;
+
+  AppError? _takeFailure() {
+    final f = _scriptedFailure;
+    _scriptedFailure = null;
+    return f;
+  }
+
+  static String _dedupeKey(FixturePointEntry e) =>
+      '${e.participantId.value}|${e.fixture.value}|${e.kind.wireValue}';
+
+  /// How many entries are stored in total (proves idempotent re-post appends
+  /// no second crediting row).
+  int get count => _byId.length;
+
+  @override
+  Future<Result<List<FixturePointEntry>>> appendEntries(
+    List<FixturePointEntry> entries,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+
+    // Stage first (atomic all-or-nothing): decide which entries are new,
+    // then commit the whole batch in one shot.
+    final toAppend = <FixturePointEntry>[];
+    final stagedKeys = <String>{};
+    for (final e in entries) {
+      if (e.kind.isDedupedPerFixture) {
+        final key = _dedupeKey(e);
+        // Skip a key already present, or a duplicate within this same batch.
+        if (_dedupeKeys.contains(key) || stagedKeys.contains(key)) {
+          continue;
+        }
+        stagedKeys.add(key);
+      }
+      toAppend.add(e);
+    }
+
+    for (final e in toAppend) {
+      _byId[e.id.value] = e;
+      if (e.kind.isDedupedPerFixture) {
+        _dedupeKeys.add(_dedupeKey(e));
+      }
+    }
+    return Result.ok(List<FixturePointEntry>.unmodifiable(toAppend));
+  }
+
+  @override
+  Future<Result<List<FixturePointEntry>>> listEntries(
+    ParticipantId participantId,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final out =
+        <FixturePointEntry>[
+          for (final e in _byId.values)
+            if (e.participantId == participantId) e,
+        ]..sort((a, b) {
+          final byTime = a.occurredAt.compareTo(b.occurredAt);
+          return byTime != 0 ? byTime : a.id.value.compareTo(b.id.value);
+        });
+    return Result.ok(out);
+  }
+
+  @override
+  Future<Result<List<FixturePointEntry>>> findByFixture(
+    FixtureRef fixture,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final out =
+        <FixturePointEntry>[
+          for (final e in _byId.values)
+            if (e.fixture == fixture) e,
+        ]..sort((a, b) {
+          final byTime = a.occurredAt.compareTo(b.occurredAt);
+          return byTime != 0 ? byTime : a.id.value.compareTo(b.id.value);
+        });
+    return Result.ok(out);
+  }
+}
+
 /// A complete in-memory [ParticipantReader] for use-case tests.
 ///
 /// Resolves a participant by its own id, returning `Ok(null)` when unknown. It
