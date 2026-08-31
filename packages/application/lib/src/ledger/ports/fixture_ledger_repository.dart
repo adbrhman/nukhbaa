@@ -38,4 +38,11 @@ abstract interface class FixtureLedgerRepository {
   Future<Result<List<FixturePointEntry>>> listEntries(
     ParticipantId participantId,
   );
+
+  /// Lists every [FixturePointEntry] posted for [fixture], across every
+  /// participant, in stream order (occurred-at ascending, then entry id for a
+  /// stable tie-break). Used to detect an already-posted credit so a re-post
+  /// after a result correction can compute a compensating
+  /// [EntryKind.correction] instead of silently skipping (Axiom 4/5/6).
+  Future<Result<List<FixturePointEntry>>> findByFixture(FixtureRef fixture);
 }

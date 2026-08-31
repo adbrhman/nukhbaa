@@ -90,6 +90,27 @@ ORDER BY occurred_at ASC, id ASC
     };
   }
 
+  static const String _selectByFixtureSql = '''
+SELECT id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at
+FROM ledger.fixture_point_entries
+WHERE fixture_id = @fixture_id
+ORDER BY occurred_at ASC, id ASC
+''';
+
+  @override
+  Future<Result<List<FixturePointEntry>>> findByFixture(
+    FixtureRef fixture,
+  ) async {
+    final result = await _connection.query(
+      _selectByFixtureSql,
+      parameters: {'fixture_id': fixture.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapEntries(value),
+    };
+  }
+
   Result<List<FixturePointEntry>> _mapEntries(List<Map<String, dynamic>> rows) {
     final entries = <FixturePointEntry>[];
     for (final row in rows) {
