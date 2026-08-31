@@ -34,6 +34,75 @@ T _unwrap<T>(Result<T> result) => switch (result) {
   Err<T>(:final error) => throw error,
 };
 
+/// The live data used by the Admin Control Center.
+///
+/// This is deliberately composed from the existing typed APIs. The dashboard
+/// never owns a second repository, cache, or database and it does not invent
+/// totals when the current API only exposes a bounded admin page.
+final class AdminDashboardSnapshot {
+  const AdminDashboardSnapshot({
+    required this.users,
+    required this.auditLog,
+    required this.competitions,
+    required this.currentMonthFixtures,
+  });
+
+  final UserListDto users;
+  final AuditLogDto auditLog;
+  final List<CompetitionDto> competitions;
+  final List<CurrentMonthFixtureItemDto> currentMonthFixtures;
+
+  int get activeUsers =>
+      users.users.where((user) => user.status == 'active').length;
+
+  int get suspendedUsers =>
+      users.users.where((user) => user.status == 'suspended').length;
+
+  int get todayFixtures {
+    final now = DateTime.now();
+    return currentMonthFixtures.where((item) {
+      final kickoff = DateTime.tryParse(item.fixture.kickoffAt ?? '');
+      if (kickoff == null) return false;
+      final local = kickoff.toLocal();
+      return local.year == now.year &&
+          local.month == now.month &&
+          local.day == now.day;
+    }).length;
+  }
+
+  int get upcomingFixtures {
+    final now = DateTime.now();
+    return currentMonthFixtures.where((item) {
+      final kickoff = DateTime.tryParse(item.fixture.kickoffAt ?? '');
+      return kickoff != null && kickoff.isAfter(now.toUtc());
+    }).length;
+  }
+}
+
+/// Reads the real sources needed by the overview in parallel.
+///
+/// The users endpoint is intentionally requested with its server-side maximum
+/// page size. Until a count/pagination contract exists, the UI labels this
+/// value as a bounded admin view rather than pretending it is a global total.
+@riverpod
+Future<AdminDashboardSnapshot> adminDashboard(Ref ref) async {
+  final adminApi = ref.watch(adminApiProvider);
+  final competitionApi = ref.watch(competitionApiProvider);
+  final results = await (
+    adminApi.listUsers(limit: 50),
+    adminApi.listAuditLog(limit: 10),
+    competitionApi.listCompetitions(),
+    competitionApi.getCurrentMonthFixtures(),
+  ).wait;
+
+  return AdminDashboardSnapshot(
+    users: _unwrap(results.$1),
+    auditLog: _unwrap(results.$2),
+    competitions: _unwrap(results.$3),
+    currentMonthFixtures: _unwrap(results.$4),
+  );
+}
+
 /// `GET /admin/audit` — the append-only audit trail, newest first.
 @riverpod
 Future<AuditLogDto> auditLog(Ref ref) async {
