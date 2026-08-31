@@ -157,7 +157,8 @@ class _DashboardContent extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      'المصادر متصلة الآن • ${snapshot.auditLog.entries.length} إجراءات حديثة محمّلة',
+                      'المصادر متصلة الآن • '
+                      '${snapshot.auditLog.entries.length} إجراءات حديثة محمّلة',
                       style: context.text.bodySmall?.copyWith(
                         color: t.textSecondary,
                       ),
@@ -213,7 +214,11 @@ class _DashboardContent extends StatelessWidget {
             children: [
               Expanded(child: _QuickActions(onNavigate: onNavigate)),
               const SizedBox(width: AppSpacing.md),
-              Expanded(child: _RecentActivity(entries: snapshot.auditLog.entries)),
+              Expanded(
+                child: _RecentActivity(
+                  entries: snapshot.auditLog.entries,
+                ),
+              ),
             ],
           )
         else ...[
@@ -299,9 +304,17 @@ class _QuickActions extends StatelessWidget {
     const actions = <(String, IconData, AdminSection)>[
       ('إضافة مباراة', Icons.add_circle_outline_rounded, AdminSection.fixtures),
       ('تسجيل نتيجة', Icons.scoreboard_outlined, AdminSection.resultsScoring),
-      ('إنشاء مسابقة', Icons.emoji_events_outlined, AdminSection.monthlyCompetitions),
+      (
+        'إنشاء مسابقة',
+        Icons.emoji_events_outlined,
+        AdminSection.monthlyCompetitions,
+      ),
       ('إدارة المستخدمين', Icons.person_search_outlined, AdminSection.users),
-      ('سجل النقاط', Icons.account_balance_wallet_outlined, AdminSection.ledger),
+      (
+        'سجل النقاط',
+        Icons.account_balance_wallet_outlined,
+        AdminSection.ledger,
+      ),
       ('سجل التدقيق', Icons.receipt_long_outlined, AdminSection.audit),
     ];
 
@@ -423,7 +436,8 @@ class _FixturePreview extends StatelessWidget {
                   leadingIcon: Icons.sports_soccer_rounded,
                   leadingColor: t.primary,
                   title:
-                      '${item.fixture.homeTeam ?? 'غير محدد'} × ${item.fixture.awayTeam ?? 'غير محدد'}',
+                      '${item.fixture.homeTeam ?? 'غير محدد'} × '
+                      '${item.fixture.awayTeam ?? 'غير محدد'}',
                   trailing: Text(
                     item.fixture.kickoffAt ?? 'موعد غير محدد',
                     style: context.text.labelSmall?.copyWith(
