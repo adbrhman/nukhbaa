@@ -30,7 +30,7 @@ return ThemeData(
 useMaterial3: true,
 brightness: Brightness.dark,
 scaffoldBackgroundColor: NukhbaaColors.background,
-fontFamily: 'Tajawal',
+fontFamily: 'IBMPlexSansArabic',
 colorScheme: const ColorScheme.dark(
 primary: NukhbaaColors.purple,
 secondary: NukhbaaColors.gold,
@@ -76,8 +76,12 @@ List<Widget> get pages => [
 
 @override
 Widget build(BuildContext context) {
-return Scaffold(
-extendBody: true,
+return Directionality(
+  textDirection: TextDirection.rtl,
+  child: Theme(
+    data: nukhbaaTheme(),
+    child: Scaffold(
+      extendBody: true,
 body: IndexedStack(
 index: currentIndex,
 children: pages,
@@ -88,6 +92,8 @@ onChanged: (index) {
 setState(() => currentIndex = index);
 },
 ),
+    ),
+  ),
 );
 }
 }
