@@ -56,3 +56,5 @@ run_part1_verify*.sh
 # ملفات Flutter/pub المولَّدة (خارج .dart_tool/)
 .flutter-plugins-dependencies
 .flutter-plugins
+__pycache__/
+*.pyc
