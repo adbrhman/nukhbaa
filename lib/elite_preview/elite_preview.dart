@@ -137,7 +137,12 @@ class BottomNav extends StatelessWidget {
                   ),
                 ),
               ),
-              item(3, Icons.emoji_events_outlined, Icons.emoji_events_rounded, 'المتصدرون'),
+              item(
+                3,
+                Icons.emoji_events_outlined,
+                Icons.emoji_events_rounded,
+                'المتصدرون',
+              ),
               item(
                 4,
                 Icons.person_outline_rounded,
