@@ -7,7 +7,7 @@
 /// switches on the [SessionController]'s [SessionState]:
 ///   * still resolving a persisted token at boot (loading / [SessionUnknown])
 ///     → a splash;
-///   * [SessionAuthenticated] → the [AccountScreen] (home), carrying the
+///   * [SessionAuthenticated] → the Nukhbaa navigation shell, carrying the
 ///     verified principal;
 ///   * every other state (unauthenticated / authenticating / failed) → the
 ///     [SignInScreen], which itself renders progress and any typed failure.
@@ -20,7 +20,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'account_screen.dart';
+import 'nukhbaa_shell.dart';
 import 'session_controller.dart';
 import 'session_state.dart';
 import 'sign_in_screen.dart';
@@ -44,7 +44,7 @@ class SessionGate extends ConsumerWidget {
     final session = asyncSession.value ?? const SessionUnauthenticated();
     return switch (session) {
       SessionUnknown() => const _Splash(),
-      SessionAuthenticated(:final user) => AccountScreen(user: user),
+      SessionAuthenticated(:final user) => NukhbaaShell(user: user),
       SessionUnauthenticated() ||
       SessionAuthenticating() ||
       SessionFailed() => const SignInScreen(),
