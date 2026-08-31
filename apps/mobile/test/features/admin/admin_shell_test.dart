@@ -20,11 +20,11 @@ Widget _host() => ProviderScope(
     ),
   ],
   child: const MaterialApp(
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      home: AdminHubScreen(),
-    ),
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: AdminHubScreen(),
   ),
+);
 
 void main() {
   group('AdminHubScreen navigation', () {
