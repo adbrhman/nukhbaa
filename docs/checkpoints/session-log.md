@@ -78,3 +78,4 @@
 - [02:53] حذف: 6 دوال عميل يتيمة صفرية الاستهلاك في كل المستودع (CompetitionApi.scoreRound/postRoundToLedger/getRoundScores/removeFixtureFromRound + AdminApi.adminGetRoundScores/adminListRoundPredictions) + تصحيح مرجعين توثيقيين متدليين لكل منها + حذف [openRound] المتدلي من التعليق العلوي | ملف: competition_api.dart, admin_api.dart | اختبار: نجح
 - 03:06 fix: حذف adminGetRoundReport من admin_api.dart (دالة عميل ميتة، صفر مستهلك موبايل)
 - 03:43 feat(matches-ui): 01 — إضافة KickoffCountdown widget معزول + مفتاح ترجمة kickoffCountdownDays (بداية إعادة تصميم شاشة المباريات)
+- 03:55 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard كاملة (مدمجة/موسّعة + شعارات + 1X2 + Stepper + شريحة الدبل)
