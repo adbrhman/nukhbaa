@@ -51,6 +51,9 @@
   "createGroup": "Create a group",
   "joinGroup": "Join a group",
   "adminDashboard": "Admin dashboard",
+  "homePerformanceSection": "Performance & Predictions",
+  "homeAdminSection": "Admin",
+  "homeMatchesSubtitle": "Predict this month's fixtures",
   "hallOfFameEmpty": "Nobody has earned any points yet.",
   "hallOfFameSeasonsPlayed": "{count, plural, =0{No seasons played} =1{1 season played} other{{count} seasons played}}",
   "@hallOfFameSeasonsPlayed": {

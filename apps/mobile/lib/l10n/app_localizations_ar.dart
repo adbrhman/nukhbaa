@@ -154,6 +154,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminDashboard => 'لوحة تحكم المشرف';
 
   @override
+  String get homePerformanceSection => 'الأداء والتوقعات';
+
+  @override
+  String get homeAdminSection => 'الإدارة';
+
+  @override
+  String get homeMatchesSubtitle => 'توقّع نتائج مباريات الشهر الحالي';
+
+  @override
   String get hallOfFameEmpty => 'لم يحصل أحد على أي نقاط بعد.';
 
   @override

@@ -155,6 +155,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminDashboard => 'Admin dashboard';
 
   @override
+  String get homePerformanceSection => 'Performance & Predictions';
+
+  @override
+  String get homeAdminSection => 'Admin';
+
+  @override
+  String get homeMatchesSubtitle => 'Predict this month\'s fixtures';
+
+  @override
   String get hallOfFameEmpty => 'Nobody has earned any points yet.';
 
   @override

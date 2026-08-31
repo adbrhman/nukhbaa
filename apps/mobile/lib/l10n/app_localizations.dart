@@ -386,6 +386,24 @@ abstract class AppLocalizations {
   /// **'Admin dashboard'**
   String get adminDashboard;
 
+  /// No description provided for @homePerformanceSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance & Predictions'**
+  String get homePerformanceSection;
+
+  /// No description provided for @homeAdminSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get homeAdminSection;
+
+  /// No description provided for @homeMatchesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict this month\'s fixtures'**
+  String get homeMatchesSubtitle;
+
   /// No description provided for @hallOfFameEmpty.
   ///
   /// In en, this message translates to:
