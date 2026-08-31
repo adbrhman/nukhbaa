@@ -131,7 +131,7 @@ class SeasonPickerField extends ConsumerWidget {
             ? selectedId
             : null;
         return DropdownButtonFormField<String>(
-          key: const Key('admin.fixtures.seasonField'),
+          key: Key('admin.fixtures.seasonField.$competitionId'),
           initialValue: value,
           decoration: InputDecoration(
             labelText: l10n.adminSelectSeasonLabel,
