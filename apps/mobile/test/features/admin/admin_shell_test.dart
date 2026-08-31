@@ -43,7 +43,15 @@ void main() {
         expect(find.text(l10n.adminDashboardTab), findsWidgets);
 
         final Finder teamsTile = find.byKey(const Key('admin.shell.nav.teams'));
-        await tester.ensureVisible(teamsTile);
+        final Finder navScrollable = find.descendant(
+          of: find.byKey(const Key('admin.shell.navList')),
+          matching: find.byType(Scrollable),
+        );
+        await tester.scrollUntilVisible(
+          teamsTile,
+          200,
+          scrollable: navScrollable,
+        );
         await tester.pumpAndSettle();
         await tester.tap(teamsTile);
         await tester.pumpAndSettle();
