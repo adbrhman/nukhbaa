@@ -2,6 +2,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../admin/admin_hub_screen.dart';
 import 'session_controller.dart';
 
 class NukhbaaColors {
@@ -244,8 +245,11 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: Row(
+          children: [
           Text(
             title,
             style: const TextStyle(
@@ -1690,6 +1694,17 @@ class NukhbaaProfilePage extends StatelessWidget {
           const SizedBox(height: 25),
           const _ProfileStats(),
           const SizedBox(height: 20),
+          if (user.role == 'admin')
+            _profileItem(
+              Icons.admin_panel_settings_outlined,
+              'لوحة تحكم المشرف',
+              itemKey: const Key('account.adminDashboard'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminHubScreen(),
+                ),
+              ),
+            ),
           _profileItem(Icons.emoji_events_outlined, 'إنجازاتي'),
           _profileItem(Icons.groups_outlined, 'مجموعاتي'),
           _profileItem(Icons.history_rounded, 'سجل التوقعات'),
@@ -1700,8 +1715,14 @@ class NukhbaaProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _profileItem(IconData icon, String title) {
+  Widget _profileItem(
+    IconData icon,
+    String title, {
+    Key? itemKey,
+    VoidCallback? onTap,
+  }) {
     return Container(
+      key: itemKey,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -1720,7 +1741,8 @@ class NukhbaaProfilePage extends StatelessWidget {
             ),
           ),
           const Icon(Icons.chevron_left_rounded, color: NukhbaaColors.muted),
-        ],
+          ],
+        ),
       ),
     );
   }
