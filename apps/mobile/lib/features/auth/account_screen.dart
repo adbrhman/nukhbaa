@@ -26,6 +26,14 @@ import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'session_controller.dart';
 
+/// The signed-in user's home hub — a card-based dashboard replacing the flat
+/// button list. Every destination below already existed as a plain
+/// [AppButton] target; this is a visual restyle only (same providers, same
+/// navigation, same `account.*` keys), not a new architecture or data
+/// source. No success-rate/points/rank stats are shown here: the server
+/// exposes no cross-season aggregate for those (leaderboards are strictly
+/// per-season, Axiom 2/5 — `leaderboards_providers.dart`), so nothing is
+/// fabricated on the client.
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({required this.user, super.key});
   final AuthenticatedUserDto user;
@@ -86,26 +94,17 @@ class AccountScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    l10n.signedIn,
-                    key: const Key('account.title'),
-                    style: text.headlineSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _DisplayNameRow(
+                  _ProfileHeader(
                     displayName: user.displayName,
                     tokens: tokens,
                     text: text,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
                   // Raw identity fields (id/role/status/email) are debug-only
-                  // diagnostics, never production UI (next-task.md #1) - kept
-                  // behind kDebugMode instead of deleted so the team can still
+                  // diagnostics, never production UI - kept behind
+                  // kDebugMode instead of deleted so the team can still
                   // inspect the signed-in principal while developing/testing.
                   if (kDebugMode) ...[
+                    const SizedBox(height: AppSpacing.lg),
                     _Field(
                       label: l10n.userId,
                       value: user.userId,
@@ -137,96 +136,147 @@ class AccountScreen extends ConsumerWidget {
                       ),
                   ],
                   const SizedBox(height: AppSpacing.xl),
-                  AppButton(
-                    key: const Key('account.matches'),
-                    label: l10n.matchesTitle,
-                    icon: Icons.sports_soccer,
-                    onPressed: () => Navigator.of(context).push(
+                  _MatchesCtaCard(
+                    itemKey: const Key('account.matches'),
+                    title: l10n.matchesTitle,
+                    subtitle: l10n.homeMatchesSubtitle,
+                    tokens: tokens,
+                    text: text,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const CurrentMonthFixturesScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.hallOfFame'),
-                    label: l10n.hallOfFame,
-                    icon: Icons.workspace_premium_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const HallOfFameScreen(),
-                      ),
-                    ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _SectionHeader(
+                    title: l10n.homePerformanceSection,
+                    tokens: tokens,
+                    text: text,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.myPredictions'),
-                    label: l10n.myPredictions,
-                    icon: Icons.history_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PredictionHistoryScreen(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _HomeActionCard(
+                          itemKey: const Key('account.myPredictions'),
+                          icon: Icons.history_outlined,
+                          label: l10n.myPredictions,
+                          tokens: tokens,
+                          text: text,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const PredictionHistoryScreen(),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: _HomeActionCard(
+                          itemKey: const Key('account.hallOfFame'),
+                          icon: Icons.workspace_premium_outlined,
+                          label: l10n.hallOfFame,
+                          tokens: tokens,
+                          text: text,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const HallOfFameScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _SectionHeader(
+                    title: l10n.myActiveSeasons,
+                    tokens: tokens,
+                    text: text,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.myActiveSeasons'),
-                    label: l10n.myActiveSeasons,
+                  _HomeListCard(
+                    itemKey: const Key('account.myActiveSeasons'),
                     icon: Icons.calendar_month_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
+                    label: l10n.myActiveSeasons,
+                    tokens: tokens,
+                    text: text,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const MyActiveSeasonsScreen(),
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _SectionHeader(
+                    title: l10n.myGroups,
+                    tokens: tokens,
+                    text: text,
+                  ),
                   const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.myGroups'),
-                    label: l10n.myGroups,
+                  _HomeListCard(
+                    itemKey: const Key('account.myGroups'),
                     icon: Icons.groups_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
+                    label: l10n.myGroups,
+                    tokens: tokens,
+                    text: text,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const MyGroupsScreen(),
                       ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.createGroup'),
-                    label: l10n.createGroup,
-                    icon: Icons.group_add_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const CreateGroupScreen(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _HomeActionCard(
+                          itemKey: const Key('account.createGroup'),
+                          icon: Icons.group_add_outlined,
+                          label: l10n.createGroup,
+                          tokens: tokens,
+                          text: text,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const CreateGroupScreen(),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    key: const Key('account.joinGroup'),
-                    label: l10n.joinGroup,
-                    icon: Icons.group_outlined,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const JoinGroupScreen(),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: _HomeActionCard(
+                          itemKey: const Key('account.joinGroup'),
+                          icon: Icons.group_outlined,
+                          label: l10n.joinGroup,
+                          tokens: tokens,
+                          text: text,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const JoinGroupScreen(),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                   if (user.role == 'admin') ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _SectionHeader(
+                      title: l10n.homeAdminSection,
+                      tokens: tokens,
+                      text: text,
+                    ),
                     const SizedBox(height: AppSpacing.md),
-                    AppButton(
-                      key: const Key('account.adminDashboard'),
-                      label: l10n.adminDashboard,
+                    _HomeListCard(
+                      itemKey: const Key('account.adminDashboard'),
                       icon: Icons.admin_panel_settings_outlined,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: () => Navigator.of(context).push(
+                      label: l10n.adminDashboard,
+                      tokens: tokens,
+                      text: text,
+                      onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const AdminHubScreen(),
                         ),
@@ -243,8 +293,10 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-class _DisplayNameRow extends StatelessWidget {
-  const _DisplayNameRow({
+/// Avatar (first letter of [displayName]) + name + edit affordance, replacing
+/// the old plain-text `_DisplayNameRow`. Same edit dialog/behavior as before.
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
     required this.displayName,
     required this.tokens,
     required this.text,
@@ -257,6 +309,10 @@ class _DisplayNameRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final String trimmed = displayName.trim();
+    final String initial = trimmed.isEmpty
+        ? '?'
+        : trimmed.substring(0, 1).toUpperCase();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -270,6 +326,23 @@ class _DisplayNameRow extends StatelessWidget {
       ),
       child: Row(
         children: [
+          Container(
+            width: AppSizes.avatarSm,
+            height: AppSizes.avatarSm,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: tokens.primaryGradient,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              initial,
+              style: text.titleLarge?.copyWith(
+                color: tokens.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               displayName,
@@ -291,6 +364,253 @@ class _DisplayNameRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A section title above a group of home cards.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.tokens,
+    required this.text,
+  });
+
+  final String title;
+  final AppTokens tokens;
+  final TextTheme text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: text.titleSmall?.copyWith(
+        color: tokens.textSecondary,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+/// The big primary call-to-action card ("المباريات") — full-width, gradient.
+class _MatchesCtaCard extends StatelessWidget {
+  const _MatchesCtaCard({
+    required this.itemKey,
+    required this.title,
+    required this.subtitle,
+    required this.tokens,
+    required this.text,
+    required this.onTap,
+  });
+
+  final Key itemKey;
+  final String title;
+  final String subtitle;
+  final AppTokens tokens;
+  final TextTheme text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: itemKey,
+      color: Colors.transparent,
+      borderRadius: AppRadius.brLg,
+      child: InkWell(
+        borderRadius: AppRadius.brLg,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            gradient: tokens.primaryGradient,
+            borderRadius: AppRadius.brLg,
+            boxShadow: tokens.shadowMd,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: AppSizes.avatarSm,
+                height: AppSizes.avatarSm,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.onPrimary.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.sports_soccer,
+                  color: tokens.onPrimary,
+                  size: AppSizes.iconLg,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: text.titleMedium?.copyWith(
+                        color: tokens.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      subtitle,
+                      style: text.bodySmall?.copyWith(
+                        color: tokens.onPrimary.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_left,
+                color: tokens.onPrimary.withValues(alpha: 0.85),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One square-ish tappable card used two-per-row (predictions/hall of fame,
+/// create/join group).
+class _HomeActionCard extends StatelessWidget {
+  const _HomeActionCard({
+    required this.itemKey,
+    required this.icon,
+    required this.label,
+    required this.tokens,
+    required this.text,
+    required this.onTap,
+  });
+
+  final Key itemKey;
+  final IconData icon;
+  final String label;
+  final AppTokens tokens;
+  final TextTheme text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: itemKey,
+      color: Colors.transparent,
+      borderRadius: AppRadius.brMd,
+      child: InkWell(
+        borderRadius: AppRadius.brMd,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: tokens.surfaceElevated,
+            borderRadius: AppRadius.brMd,
+            border: Border.all(color: tokens.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: AppSizes.avatarSm,
+                height: AppSizes.avatarSm,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.surfaceHigh,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: tokens.primary, size: AppSizes.iconMd),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text.bodyMedium?.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One full-width tappable row card (active seasons / groups / admin).
+class _HomeListCard extends StatelessWidget {
+  const _HomeListCard({
+    required this.itemKey,
+    required this.icon,
+    required this.label,
+    required this.tokens,
+    required this.text,
+    required this.onTap,
+  });
+
+  final Key itemKey;
+  final IconData icon;
+  final String label;
+  final AppTokens tokens;
+  final TextTheme text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: itemKey,
+      color: Colors.transparent,
+      borderRadius: AppRadius.brMd,
+      child: InkWell(
+        borderRadius: AppRadius.brMd,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: tokens.surfaceElevated,
+            borderRadius: AppRadius.brMd,
+            border: Border.all(color: tokens.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: AppSizes.avatarSm,
+                height: AppSizes.avatarSm,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.surfaceHigh,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: tokens.primary, size: AppSizes.iconMd),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  label,
+                  style: text.bodyMedium?.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_left, color: tokens.textMuted),
+            ],
+          ),
+        ),
       ),
     );
   }
