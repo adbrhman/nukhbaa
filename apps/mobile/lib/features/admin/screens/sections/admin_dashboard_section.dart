@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_breakpoints.dart';
 import '../../../../core/design/app_spacing.dart';
