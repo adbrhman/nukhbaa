@@ -296,7 +296,7 @@ class _MonthlyCompetitionLogoCatalog extends StatelessWidget {
           for (final MonthlyCompetitionLogoGroup group
               in kMonthlyCompetitionLogoGroups) ...[
             Text(
-              group.name + '  •  ' + group.season,
+              '${group.name}  •  ${group.season}',
               style: context.text.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
