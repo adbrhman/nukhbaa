@@ -81,3 +81,4 @@
 - 03:55 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard كاملة (مدمجة/موسّعة + شعارات + 1X2 + Stepper + شريحة الدبل)
 - 05:12 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard كاملة (مدمجة/موسّعة+شعارات+steppers+1X2)
 - 05:20 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard (مدمجة/موسّعة + شعارات + 1/X/2 + Stepper رقمي + شارة الدبل + حالة تم التوقع/النتيجة) + إصلاح فجوة gen-l10n من 01 + 9 مفاتيح ترجمة
+- 06:02 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard (مدمجة/موسّعة + شعارات + 1/X/2 + Stepper رقمي + شارة الدبل + حالة تم التوقع/النتيجة) + إصلاح فجوة gen-l10n من 01 + 9 مفاتيح ترجمة

@@ -400,6 +400,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get fixtureCardExpandTooltip => 'Expand to predict';
+
+  @override
+  String get fixtureCardCollapseTooltip => 'Collapse';
+
+  @override
+  String get predictionQuickFillHomeWinTooltip => 'Quick-fill: home win';
+
+  @override
+  String get predictionQuickFillDrawTooltip => 'Quick-fill: draw';
+
+  @override
+  String get predictionQuickFillAwayWinTooltip => 'Quick-fill: away win';
+
+  @override
+  String get scoreStepperDecreaseTooltip => 'Decrease';
+
+  @override
+  String get scoreStepperIncreaseTooltip => 'Increase';
+
+  @override
+  String predictionYourForecastScoreLine(int homeGoals, int awayGoals) {
+    return 'Your forecast: $homeGoals - $awayGoals';
+  }
+
+  @override
+  String get predictionPendingResultLabel => 'Result pending';
+
+  @override
   String get adminAuditLogTab => 'Audit Log';
 
   @override

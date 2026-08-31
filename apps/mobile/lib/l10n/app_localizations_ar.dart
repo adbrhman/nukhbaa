@@ -405,6 +405,35 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get fixtureCardExpandTooltip => 'توسيع للتوقع';
+
+  @override
+  String get fixtureCardCollapseTooltip => 'طي';
+
+  @override
+  String get predictionQuickFillHomeWinTooltip => 'تعبئة سريعة: فوز المضيف';
+
+  @override
+  String get predictionQuickFillDrawTooltip => 'تعبئة سريعة: تعادل';
+
+  @override
+  String get predictionQuickFillAwayWinTooltip => 'تعبئة سريعة: فوز الضيف';
+
+  @override
+  String get scoreStepperDecreaseTooltip => 'إنقاص';
+
+  @override
+  String get scoreStepperIncreaseTooltip => 'زيادة';
+
+  @override
+  String predictionYourForecastScoreLine(int homeGoals, int awayGoals) {
+    return 'توقعك: $homeGoals - $awayGoals';
+  }
+
+  @override
+  String get predictionPendingResultLabel => 'بانتظار النتيجة';
+
+  @override
   String get adminAuditLogTab => 'سجل التدقيق';
 
   @override

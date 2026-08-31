@@ -309,6 +309,50 @@
       }
     }
   },
+  "fixtureCardExpandTooltip": "Expand to predict",
+  "@fixtureCardExpandTooltip": {
+    "description": "Tooltip on a collapsed fixture card, inviting the user to tap it open to enter a prediction."
+  },
+  "fixtureCardCollapseTooltip": "Collapse",
+  "@fixtureCardCollapseTooltip": {
+    "description": "Tooltip on an expanded fixture card, inviting the user to tap it closed."
+  },
+  "predictionQuickFillHomeWinTooltip": "Quick-fill: home win",
+  "@predictionQuickFillHomeWinTooltip": {
+    "description": "Tooltip on the \"1\" quick-fill button that fills the score steppers with a home win."
+  },
+  "predictionQuickFillDrawTooltip": "Quick-fill: draw",
+  "@predictionQuickFillDrawTooltip": {
+    "description": "Tooltip on the \"X\" quick-fill button that fills the score steppers with a draw."
+  },
+  "predictionQuickFillAwayWinTooltip": "Quick-fill: away win",
+  "@predictionQuickFillAwayWinTooltip": {
+    "description": "Tooltip on the \"2\" quick-fill button that fills the score steppers with an away win."
+  },
+  "scoreStepperDecreaseTooltip": "Decrease",
+  "@scoreStepperDecreaseTooltip": {
+    "description": "Tooltip on a score stepper's decrement control."
+  },
+  "scoreStepperIncreaseTooltip": "Increase",
+  "@scoreStepperIncreaseTooltip": {
+    "description": "Tooltip on a score stepper's increment control."
+  },
+  "predictionYourForecastScoreLine": "Your forecast: {homeGoals} - {awayGoals}",
+  "@predictionYourForecastScoreLine": {
+    "description": "Shows the caller's own stored prediction for a fixture on the current-month fixture card.",
+    "placeholders": {
+      "homeGoals": {
+        "type": "int"
+      },
+      "awayGoals": {
+        "type": "int"
+      }
+    }
+  },
+  "predictionPendingResultLabel": "Result pending",
+  "@predictionPendingResultLabel": {
+    "description": "Shown next to the caller's own forecast on a fixture that has not been scored yet."
+  },
   "@predictionNoOpenFixturesMessage": {
     "description": "Shown instead of the form when every fixture in the round has already locked."
   },

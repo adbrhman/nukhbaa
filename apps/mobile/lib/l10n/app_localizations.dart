@@ -750,6 +750,60 @@ abstract class AppLocalizations {
   /// **'in {days}d'**
   String kickoffCountdownDays(int days);
 
+  /// Tooltip on a collapsed fixture card, inviting the user to tap it open to enter a prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand to predict'**
+  String get fixtureCardExpandTooltip;
+
+  /// Tooltip on an expanded fixture card, inviting the user to tap it closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get fixtureCardCollapseTooltip;
+
+  /// Tooltip on the "1" quick-fill button that fills the score steppers with a home win.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick-fill: home win'**
+  String get predictionQuickFillHomeWinTooltip;
+
+  /// Tooltip on the "X" quick-fill button that fills the score steppers with a draw.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick-fill: draw'**
+  String get predictionQuickFillDrawTooltip;
+
+  /// Tooltip on the "2" quick-fill button that fills the score steppers with an away win.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick-fill: away win'**
+  String get predictionQuickFillAwayWinTooltip;
+
+  /// Tooltip on a score stepper's decrement control.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get scoreStepperDecreaseTooltip;
+
+  /// Tooltip on a score stepper's increment control.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get scoreStepperIncreaseTooltip;
+
+  /// Shows the caller's own stored prediction for a fixture on the current-month fixture card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your forecast: {homeGoals} - {awayGoals}'**
+  String predictionYourForecastScoreLine(int homeGoals, int awayGoals);
+
+  /// Shown next to the caller's own forecast on a fixture that has not been scored yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Result pending'**
+  String get predictionPendingResultLabel;
+
   /// No description provided for @adminAuditLogTab.
   ///
   /// In en, this message translates to:
