@@ -215,9 +215,7 @@ class _DashboardContent extends StatelessWidget {
               Expanded(child: _QuickActions(onNavigate: onNavigate)),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: _RecentActivity(
-                  entries: snapshot.auditLog.entries,
-                ),
+                child: _RecentActivity(entries: snapshot.auditLog.entries),
               ),
             ],
           )
@@ -393,10 +391,7 @@ class _RecentActivity extends StatelessWidget {
 }
 
 class _FixturePreview extends StatelessWidget {
-  const _FixturePreview({
-    required this.fixtures,
-    required this.onNavigate,
-  });
+  const _FixturePreview({required this.fixtures, required this.onNavigate});
 
   final List<CurrentMonthFixtureItemDto> fixtures;
   final VoidCallback onNavigate;

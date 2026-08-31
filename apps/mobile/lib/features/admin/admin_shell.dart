@@ -40,10 +40,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
 }
 
 const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
-  (
-    title: 'نظرة عامة',
-    sections: [AdminSection.dashboard],
-  ),
+  (title: 'نظرة عامة', sections: [AdminSection.dashboard]),
   (
     title: 'المسابقات والمباريات',
     sections: [
