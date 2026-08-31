@@ -343,7 +343,7 @@ class _MonthlyTeamLogoTile extends StatelessWidget {
               border: Border.all(color: context.tokens.border),
             ),
             child: Image.asset(
-              'assets/team_logos/' + slug + '.png',
+              'assets/team_logos/$slug.png',
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
                   Icon(Icons.shield_outlined, color: context.tokens.textMuted),
