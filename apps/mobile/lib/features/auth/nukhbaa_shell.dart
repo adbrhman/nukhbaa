@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../admin/admin_hub_screen.dart';
+import '../admin/admin_hub_screen.dart';
 import 'session_controller.dart';
 
 class NukhbaaColors {
@@ -245,11 +246,8 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(15),
-        onTap: onTap,
-        child: Row(
-          children: [
+      child: Row(
+        children: [
           Text(
             title,
             style: const TextStyle(
@@ -1700,9 +1698,7 @@ class NukhbaaProfilePage extends StatelessWidget {
               'لوحة تحكم المشرف',
               itemKey: const Key('account.adminDashboard'),
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const AdminHubScreen(),
-                ),
+                MaterialPageRoute<void>(builder: (_) => const AdminHubScreen()),
               ),
             ),
           _profileItem(Icons.emoji_events_outlined, 'إنجازاتي'),
@@ -1730,17 +1726,20 @@ class NukhbaaProfilePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: NukhbaaColors.border),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: NukhbaaColors.purpleLight),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: Row(
+          children: [
+            Icon(icon, color: NukhbaaColors.purpleLight),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_left_rounded, color: NukhbaaColors.muted),
+            const Icon(Icons.chevron_left_rounded, color: NukhbaaColors.muted),
           ],
         ),
       ),
