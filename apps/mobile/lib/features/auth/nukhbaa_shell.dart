@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../admin/admin_hub_screen.dart';
-import '../admin/admin_hub_screen.dart';
+import '../competition/team_logo_assets.dart';
 import 'session_controller.dart';
 
 class NukhbaaColors {
@@ -287,6 +287,7 @@ class TeamLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? assetPath = teamLogoAssetPath(name);
     return Container(
       width: 52,
       height: 52,
@@ -296,7 +297,14 @@ class TeamLogo extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: NukhbaaColors.border),
       ),
-      child: Icon(icon, color: Colors.white, size: 30),
+      child: assetPath == null
+          ? Icon(icon, color: Colors.white, size: 30)
+          : Image.asset(
+              assetPath,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(icon, color: Colors.white, size: 30),
+            ),
     );
   }
 }
@@ -1692,15 +1700,22 @@ class NukhbaaProfilePage extends StatelessWidget {
           const SizedBox(height: 25),
           const _ProfileStats(),
           const SizedBox(height: 20),
-          if (user.role == 'admin')
-            _profileItem(
-              Icons.admin_panel_settings_outlined,
-              'لوحة تحكم المشرف',
-              itemKey: const Key('account.adminDashboard'),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const AdminHubScreen()),
-              ),
-            ),
+          _profileItem(
+            Icons.admin_panel_settings_outlined,
+            'لوحة تحكم المشرف',
+            itemKey: const Key('account.adminDashboard'),
+            onTap: user.role == 'admin'
+                ? () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminHubScreen(),
+                    ),
+                  )
+                : () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('هذه اللوحة متاحة للمشرفين فقط'),
+                    ),
+                  ),
+          ),
           _profileItem(Icons.emoji_events_outlined, 'إنجازاتي'),
           _profileItem(Icons.groups_outlined, 'مجموعاتي'),
           _profileItem(Icons.history_rounded, 'سجل التوقعات'),

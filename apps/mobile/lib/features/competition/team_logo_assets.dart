@@ -1,0 +1,173 @@
+library;
+
+/// Local crest catalog for the monthly competitions supplied with the app.
+class MonthlyCompetitionLogoGroup {
+  const MonthlyCompetitionLogoGroup({required this.name, required this.season, required this.slugs});
+
+  final String name;
+  final String season;
+  final List<String> slugs;
+}
+
+const List<MonthlyCompetitionLogoGroup> kMonthlyCompetitionLogoGroups = <MonthlyCompetitionLogoGroup>[ 
+  MonthlyCompetitionLogoGroup(name: 'الدوري الإنجليزي الممتاز', season: '2026-27', slugs: <String>['arsenal', 'aston-villa', 'bournemouth', 'brentford', 'brighton', 'chelsea', 'coventry-city', 'crystal-palace', 'everton', 'fulham', 'hull-city', 'ipswich', 'leeds-united', 'liverpool', 'manchester-city', 'manchester-united', 'newcastle', 'nottingham-forest', 'sunderland', 'tottenham' ]),
+  MonthlyCompetitionLogoGroup(name: 'الدوري الألماني', season: '2026-27', slugs: <String>['augsburg', 'bayer-leverkusen', 'bayern-munchen', 'borussia-dortmund', 'borussia-monchengladbach', 'eintracht-frankfurt', 'freiburg', 'hamburger-sv', 'hoffenheim', 'koln', 'mainz-05', 'paderborn', 'rb-leipzig', 'schalke-04', 'sv-elversberg', 'union-berlin', 'vfb-stuttgart', 'werder-bremen' ]),
+  MonthlyCompetitionLogoGroup(name: 'الدوري الإسباني', season: '2026-27', slugs: <String>['athletic-club', 'atletico-madrid', 'barcelona', 'celta', 'deportivo', 'deportivo-la-coruna', 'elche', 'espanyol', 'getafe', 'levante', 'malaga', 'osasuna', 'racing', 'rayo-vallecano', 'real-betis', 'real-madrid', 'real-sociedad', 'sevilla', 'valencia', 'villarreal' ]),
+  MonthlyCompetitionLogoGroup(name: 'دوري أبطال أوروبا', season: '2025-26', slugs: <String>['paris-saint-germain', 'bayern-munchen', 'real-madrid', 'liverpool', 'inter', 'manchester-city', 'arsenal', 'barcelona', 'atletico-madrid', 'borussia-dortmund', 'roma', 'sporting-cp', 'aston-villa', 'fc-porto', 'manchester-united', 'club-brugge', 'real-betis', 'psv', 'feyenoord', 'lille', 'bodo-glimt', 'napoli', 'rb-leipzig', 'villarreal', 'fenerbahce', 'shakhtar', 'galatasaray', 'slavia-praha', 's-bratislava', 'vfb-stuttgart', 'aek-athens', 'lask', 'como-1907', 'rc-lens', 'viking', 'sabah' ]),
+  MonthlyCompetitionLogoGroup(name: 'الدوري الأوروبي', season: '2025-26', slugs: <String>['milan', 'juventus', 'bayer-leverkusen', 'hoffenheim', 'real-sociedad', 'celta', 'marseille', 'rennes', 'bournemouth', 'sunderland', 'crystal-palace', 'az-alkmaar', 'torreense', 'union-saint-gilloise', 'sparta-praha', 'olympiacos', 'sturm-graz', 'celtic', 'hapoel-beer-sheva', 'nec-nijmegen', 'levski', 'dinamo-zagreb', 'celje', 'lyon', 'ararat-armenia', 'jagiellonia', 'omonoia', 'viktoria-plzen', 'lillestrom', 'salzburg', 'besiktas', 'lech-poznan', 'benfica', 'ofi', 'ferencvaros', 'anderlecht' ]),
+];
+
+final Map<String, String> _arabicTeamLogoAliases = <String, String>{
+  'أرسنال': 'arsenal',
+  'ليفربول': 'liverpool',
+  'مانشستر سيتي': 'manchester-city',
+  'مانشستر يونايتد': 'manchester-united',
+  'أستون فيلا': 'aston-villa',
+  'ريال مدريد': 'real-madrid',
+  'برشلونة': 'barcelona',
+  'أتلتيكو مدريد': 'atletico-madrid',
+  'بايرن ميونخ': 'bayern-munchen',
+  'بوروسيا دورتموند': 'borussia-dortmund',
+  'باريس سان جيرمان': 'paris-saint-germain',
+  'ميلان': 'milan',
+  'يوفنتوس': 'juventus',
+};
+
+String? teamLogoAssetPath(String? teamName) {
+  if (teamName == null || teamName.trim().isEmpty) return null;
+  final String trimmed = teamName.trim();
+  final String? aliased = _arabicTeamLogoAliases[trimmed];
+  final String slug = aliased ?? _slugifyTeamName(trimmed);
+  if (slug.isEmpty || !_monthlyLogoSlugs.contains(slug)) return null;
+  return 'assets/team_logos/' + slug + '.png';
+}
+
+String teamLogoLabel(String slug) => slug.split('-').map((word) => word.isEmpty ? word : word[0].toUpperCase() + word.substring(1)).join(' ');
+
+String _slugifyTeamName(String name) {
+  final String normalized = name.toLowerCase().replaceAll(RegExp("['’` ]"), '').replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+  final String slug = normalized.replaceAll(RegExp(r'-+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
+  const Map<String, String> aliases = <String, String>{
+    'ipswich-town': 'ipswich',
+    'bayern-munich': 'bayern-munchen',
+    'porto': 'fc-porto',
+    'slovan-bratislava': 's-bratislava',
+    'bratislava': 's-bratislava',
+    'psv-eindhoven': 'psv',
+    'sporting-lisbon': 'sporting-cp',
+    'inter-milan': 'inter',
+  };
+  return aliases[slug] ?? slug;
+}
+
+const Set<String> _monthlyLogoSlugs = <String>{
+  'arsenal',
+  'aston-villa',
+  'bournemouth',
+  'brentford',
+  'brighton',
+  'chelsea',
+  'coventry-city',
+  'crystal-palace',
+  'everton',
+  'fulham',
+  'hull-city',
+  'ipswich',
+  'leeds-united',
+  'liverpool',
+  'manchester-city',
+  'manchester-united',
+  'newcastle',
+  'nottingham-forest',
+  'sunderland',
+  'tottenham',
+  'augsburg',
+  'bayer-leverkusen',
+  'bayern-munchen',
+  'borussia-dortmund',
+  'borussia-monchengladbach',
+  'eintracht-frankfurt',
+  'freiburg',
+  'hamburger-sv',
+  'hoffenheim',
+  'koln',
+  'mainz-05',
+  'paderborn',
+  'rb-leipzig',
+  'schalke-04',
+  'sv-elversberg',
+  'union-berlin',
+  'vfb-stuttgart',
+  'werder-bremen',
+  'athletic-club',
+  'atletico-madrid',
+  'barcelona',
+  'celta',
+  'deportivo',
+  'deportivo-la-coruna',
+  'elche',
+  'espanyol',
+  'getafe',
+  'levante',
+  'malaga',
+  'osasuna',
+  'racing',
+  'rayo-vallecano',
+  'real-betis',
+  'real-madrid',
+  'real-sociedad',
+  'sevilla',
+  'valencia',
+  'villarreal',
+  'paris-saint-germain',
+  'inter',
+  'roma',
+  'sporting-cp',
+  'fc-porto',
+  'club-brugge',
+  'psv',
+  'feyenoord',
+  'lille',
+  'bodo-glimt',
+  'napoli',
+  'fenerbahce',
+  'shakhtar',
+  'galatasaray',
+  'slavia-praha',
+  's-bratislava',
+  'aek-athens',
+  'lask',
+  'como-1907',
+  'rc-lens',
+  'viking',
+  'sabah',
+  'milan',
+  'juventus',
+  'marseille',
+  'rennes',
+  'az-alkmaar',
+  'torreense',
+  'union-saint-gilloise',
+  'sparta-praha',
+  'olympiacos',
+  'sturm-graz',
+  'celtic',
+  'hapoel-beer-sheva',
+  'nec-nijmegen',
+  'levski',
+  'dinamo-zagreb',
+  'celje',
+  'lyon',
+  'ararat-armenia',
+  'jagiellonia',
+  'omonoia',
+  'viktoria-plzen',
+  'lillestrom',
+  'salzburg',
+  'besiktas',
+  'lech-poznan',
+  'benfica',
+  'ofi',
+  'ferencvaros',
+  'anderlecht',
+};
