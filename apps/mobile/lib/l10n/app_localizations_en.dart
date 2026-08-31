@@ -395,6 +395,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchesEmpty => 'No open matches right now.';
 
   @override
+  String kickoffCountdownDays(int days) {
+    return 'in ${days}d';
+  }
+
+  @override
   String get adminAuditLogTab => 'Audit Log';
 
   @override

@@ -744,6 +744,12 @@ abstract class AppLocalizations {
   /// **'No open matches right now.'**
   String get matchesEmpty;
 
+  /// Countdown label for a fixture kicking off more than a day from now.
+  ///
+  /// In en, this message translates to:
+  /// **'in {days}d'**
+  String kickoffCountdownDays(int days);
+
   /// No description provided for @adminAuditLogTab.
   ///
   /// In en, this message translates to:

@@ -79,3 +79,4 @@
 - 03:06 fix: حذف adminGetRoundReport من admin_api.dart (دالة عميل ميتة، صفر مستهلك موبايل)
 - 03:43 feat(matches-ui): 01 — إضافة KickoffCountdown widget معزول + مفتاح ترجمة kickoffCountdownDays (بداية إعادة تصميم شاشة المباريات)
 - 03:55 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard كاملة (مدمجة/موسّعة + شعارات + 1X2 + Stepper + شريحة الدبل)
+- 05:12 feat(matches-ui): 02 — إعادة بناء _CurrentMonthFixtureCard كاملة (مدمجة/موسّعة+شعارات+steppers+1X2)

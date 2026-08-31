@@ -400,6 +400,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get matchesEmpty => 'لا توجد مباريات مفتوحة حالياً.';
 
   @override
+  String kickoffCountdownDays(int days) {
+    return 'خلال $days يوم';
+  }
+
+  @override
   String get adminAuditLogTab => 'سجل التدقيق';
 
   @override
