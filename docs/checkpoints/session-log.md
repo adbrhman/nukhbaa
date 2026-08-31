@@ -76,3 +76,4 @@
 - [02:23] إصلاح: إعادة توليد admin_providers.g.dart عبر build_runner لمزامنته مع حذف ScoreRoundController/RoundScoresLookupController/RoundReportController | ملف: apps/mobile/lib/features/admin/admin_providers.g.dart | اختبار: نجح (+96 all tests passed)
 - [02:40] حذف: PredictionApi.submitPrediction (0 مستهلك في كامل المستودع خارج مسار الجولة في السيرفر) + مجموعة اختباراتها + تصحيح مرجعين توثيقيين متدليين | ملف: prediction_api.dart, prediction_api_test.dart | اختبار: نجح
 - [02:53] حذف: 6 دوال عميل يتيمة صفرية الاستهلاك في كل المستودع (CompetitionApi.scoreRound/postRoundToLedger/getRoundScores/removeFixtureFromRound + AdminApi.adminGetRoundScores/adminListRoundPredictions) + تصحيح مرجعين توثيقيين متدليين لكل منها + حذف [openRound] المتدلي من التعليق العلوي | ملف: competition_api.dart, admin_api.dart | اختبار: نجح
+- 03:06 fix: حذف adminGetRoundReport من admin_api.dart (دالة عميل ميتة، صفر مستهلك موبايل)

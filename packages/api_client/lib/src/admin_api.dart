@@ -99,14 +99,6 @@ final class AdminApi {
     );
   }
 
-  /// `GET /admin/rounds/{roundId}/report` — بلا شرط مشاركة الموسم.
-  Future<Result<RoundReportDto>> adminGetRoundReport(String roundId) {
-    return _transport.getObject<RoundReportDto>(
-      '/admin/rounds/$roundId/report',
-      parse: RoundReportDto.fromJson,
-    );
-  }
-
   /// `GET /admin/fixtures/{fixtureId}/scores` — the admin fixture-scores
   /// read: every participant's computed score for a single fixture,
   /// regardless of the admin's own season membership (the per-fixture
