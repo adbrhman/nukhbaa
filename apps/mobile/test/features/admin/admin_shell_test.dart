@@ -3,16 +3,28 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:contracts/contracts.dart';
 import 'package:mobile/features/admin/admin_hub_screen.dart';
+import 'package:mobile/features/admin/admin_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
-Widget _host() => const ProviderScope(
-  child: MaterialApp(
-    supportedLocales: AppLocalizations.supportedLocales,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    home: AdminHubScreen(),
+Widget _host() => ProviderScope(
+  overrides: [
+    adminDashboardProvider.overrideWith(
+      (ref) async => const AdminDashboardSnapshot(
+        users: UserListDto(users: []),
+        auditLog: AuditLogDto(entries: []),
+        competitions: [],
+        currentMonthFixtures: [],
+      ),
+    ),
+  ],
+  child: const MaterialApp(
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: AdminHubScreen(),
+    ),
   ),
-);
 
 void main() {
   group('AdminHubScreen navigation', () {
