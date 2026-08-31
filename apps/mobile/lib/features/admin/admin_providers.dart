@@ -26,6 +26,7 @@ import '../../core/providers.dart';
 import 'fixture_report.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
 
 part 'admin_providers.g.dart';
 
@@ -457,6 +458,7 @@ class AddMatchController extends _$AddMatchController {
 
     // حدّث قائمة مباريات الموسم حتى يُحسب displayOrder التالي تلقائياً.
     ref.invalidate(seasonFixturesProvider(seasonId));
+    ref.invalidate(currentMonthFixturesProvider);
   }
 }
 
