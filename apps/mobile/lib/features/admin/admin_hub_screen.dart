@@ -35,7 +35,7 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
     return Scaffold(
       key: const Key('admin.hub.scaffold'),
       backgroundColor: t.background,
-      appBar: AppBar(title: Text(l10n.adminDashboard)),
+      appBar: AppBar(title: Text(adminSectionLabel(_selected, l10n))),
       drawer: isMobile
           ? Drawer(
               key: const Key('admin.hub.drawer'),
