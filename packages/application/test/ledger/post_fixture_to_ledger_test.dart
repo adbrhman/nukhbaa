@@ -25,16 +25,16 @@ ParticipantFixtureScore fixtureScore({
   int rulesetVersion = 1,
 }) =>
     (ParticipantFixtureScore.fromGraded(
-          fixture: const FixtureRef(_fixture),
-          participantId: ParticipantId(participantId),
-          rulesetVersion: rulesetVersion,
-          result: FixtureScoreResult(
-            fixture: const FixtureRef(_fixture),
-            grade: grade,
-            points: points,
-          ),
-        )
-        as Ok<ParticipantFixtureScore>)
+              fixture: const FixtureRef(_fixture),
+              participantId: ParticipantId(participantId),
+              rulesetVersion: rulesetVersion,
+              result: FixtureScoreResult(
+                fixture: const FixtureRef(_fixture),
+                grade: grade,
+                points: points,
+              ),
+            )
+            as Ok<ParticipantFixtureScore>)
         .value;
 
 void main() {

@@ -2135,9 +2135,8 @@ final class _UnwiredFixtureLedgerRepository implements FixtureLedgerRepository {
   ) => _unwired();
 
   @override
-  Future<Result<List<FixturePointEntry>>> findByFixture(
-    FixtureRef fixture,
-  ) => _unwired();
+  Future<Result<List<FixturePointEntry>>> findByFixture(FixtureRef fixture) =>
+      _unwired();
 }
 
 /// Backs every "absent" fixture-social use-case's port (Axiom 4 Amendment):
