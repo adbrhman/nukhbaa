@@ -1,10 +1,10 @@
 /// Widget tests for the Auth UI wired through the real [SessionGate] +
-/// [SignInScreen] + [NukhbaaShell], over the [buildAuthHarness] fakes.
+/// [SignInScreen] + [AccountScreen], over the [buildAuthHarness] fakes.
 ///
 /// Covers the user-visible outcomes of the four §4 scenarios: a saved session
-/// restores into the navigation shell; a signed-out user sees the sign-in form,
-/// signs in successfully and can open the account tab; bad credentials keep
-/// them on the form with an error banner; and a lost connection shows the
+/// restores straight to the account screen; a signed-out user sees the sign-in
+/// form, signs in successfully and lands on the account screen; bad credentials
+/// keep them on the form with an error banner; and a lost connection shows the
 /// (retryable) transient message.
 library;
 
@@ -33,11 +33,11 @@ Future<void> _openAccountTab(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// The default flutter_test surface is 800×600 logical px — too short for
+/// The default `flutter_test` surface is 800×600 logical px — too short for
 /// the auth form (header + card + two labeled fields + two buttons), which
-/// pushes signIn.submit below the render tree bounds and makes tap()
-/// silently miss it. Every test that taps a widget inside SignInScreen or
-/// NukhbaaProfilePage must run against a realistic phone-sized surface.
+/// pushes `signIn.submit` below the render tree bounds and makes `tap()`
+/// silently miss it. Every test that taps a widget inside [SignInScreen] or
+/// [AccountScreen] must run against a realistic phone-sized surface instead.
 void _authTest(
   String description,
   Future<void> Function(WidgetTester tester) body,
@@ -52,7 +52,7 @@ void _authTest(
 }
 
 void main() {
-  _authTest('restored valid session opens the account tab', (
+  _authTest('restored valid session lands on the account screen', (
     tester,
   ) async {
     final harness = buildAuthHarness(
@@ -73,7 +73,7 @@ void main() {
     expect(find.text('u-1'), findsOneWidget);
   });
 
-  _authTest('no token -> sign-in form; successful sign-in -> account tab', (
+  _authTest('no token -> sign-in form; successful sign-in -> account screen', (
     tester,
   ) async {
     final harness = buildAuthHarness((request) async {
@@ -168,7 +168,7 @@ void main() {
     expect(find.textContaining('check your connection'), findsOneWidget);
   });
 
-  _authTest('sign-out from the account tab returns to the sign-in form', (
+  _authTest('sign-out from the account screen returns to the sign-in form', (
     tester,
   ) async {
     final harness = buildAuthHarness(
