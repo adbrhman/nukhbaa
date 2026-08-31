@@ -21,6 +21,7 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    - "lib/elite_preview/**"
 
 linter:
   rules:

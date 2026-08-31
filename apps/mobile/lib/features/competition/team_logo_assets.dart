@@ -199,7 +199,7 @@ String? teamLogoAssetPath(String? teamName) {
   final String? aliased = _arabicTeamLogoAliases[trimmed];
   final String slug = aliased ?? _slugifyTeamName(trimmed);
   if (slug.isEmpty || !_monthlyLogoSlugs.contains(slug)) return null;
-  return 'assets/team_logos/' + slug + '.png';
+  return 'assets/team_logos/$slug.png';
 }
 
 String teamLogoLabel(String slug) => slug

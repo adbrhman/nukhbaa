@@ -1639,7 +1639,7 @@ class NukhbaaProfilePage extends StatelessWidget {
         children: [
           const _PageTitle(
             title: 'الحساب',
-            titleKey: const Key('account.title'),
+            titleKey: Key('account.title'),
             leftIcon: Icons.settings_outlined,
             rightIcon: Icons.more_horiz_rounded,
           ),
