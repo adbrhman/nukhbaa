@@ -107,6 +107,7 @@
   "submitFixturePredictionButton": "إرسال",
   "matchesTitle": "المباريات",
   "matchesEmpty": "لا توجد مباريات مفتوحة حالياً.",
+  "kickoffCountdownDays": "خلال {days} يوم",
   "adminAuditLogTab": "سجل التدقيق",
   "adminUsersTab": "المستخدمون",
   "adminLedgerLookupTab": "البحث في السجل المالي",

@@ -300,6 +300,15 @@
   },
   "matchesTitle": "Matches",
   "matchesEmpty": "No open matches right now.",
+  "kickoffCountdownDays": "in {days}d",
+  "@kickoffCountdownDays": {
+    "description": "Countdown label for a fixture kicking off more than a day from now.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "@predictionNoOpenFixturesMessage": {
     "description": "Shown instead of the form when every fixture in the round has already locked."
   },
