@@ -6,6 +6,7 @@ import '../admin/admin_hub_screen.dart';
 import '../competition/team_logo_assets.dart';
 import 'session_controller.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
+import '../history/prediction_history_screen.dart';
 
 class NukhbaaColors {
   static const background = Color(0xFF08070D);
@@ -66,7 +67,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   List<Widget> get pages => [
     const NukhbaaHomePage(),
     const CurrentMonthFixturesScreen(),
-    const NukhbaaPredictionsPage(),
+    const PredictionHistoryScreen(),
     const NukhbaaLeaderboardPage(),
     NukhbaaProfilePage(
       user: widget.user,
