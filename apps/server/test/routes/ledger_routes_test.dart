@@ -40,28 +40,6 @@ void main() {
 
   final roundId = (RoundId.tryParse(kRoundId) as Ok<RoundId>).value;
 
-  Round roundIn(RoundStatus status) => Round.fromStored(
-    id: roundId,
-    seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
-    sequence: 1,
-    predictionDeadline: DateTime.utc(2026, 8, 1, 12),
-    status: status,
-    ruleset:
-        (RulesetSnapshot.create(
-                  payload: const {
-                    'format': 'football_scoreline',
-                    'points': {
-                      'exact_scoreline': 3,
-                      'correct_outcome': 1,
-                      'incorrect': 0,
-                    },
-                  },
-                  rulesetVersion: 1,
-                )
-                as Ok<RulesetSnapshot>)
-            .value,
-  );
-
   Participant participant(String id, String userId) => Participant.fromStored(
     id: (ParticipantId.tryParse(id) as Ok<ParticipantId>).value,
     seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
@@ -69,25 +47,6 @@ void main() {
     status: ParticipantStatus.active,
     joinedAt: DateTime.utc(2026, 7, 1),
   );
-
-  /// A stored score for [participantId] totalling [total] points over a single
-  /// exact-scoreline fixture (the fixture breakdown is irrelevant to the ledger
-  /// — the ledger consumes only totalPoints).
-  RoundScore storedScore(String participantId, int total) =>
-      RoundScore.fromStored(
-        roundId: roundId,
-        participantId:
-            (ParticipantId.tryParse(participantId) as Ok<ParticipantId>).value,
-        rulesetVersion: 1,
-        totalPoints: total,
-        fixtureResults: [
-          FixtureScoreResult(
-            fixture: (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
-            grade: FixtureScoreGrade.exactScoreline,
-            points: total,
-          ),
-        ],
-      );
 
   // ---------------------------------------------------------------------------
   // ---------------------------------------------------------------------------

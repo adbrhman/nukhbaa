@@ -30,9 +30,7 @@ void main() {
   // A second fixture and participant beyond the harness canon, so multi-fixture
   // / multi-participant paths are covered.
   const kFixtureId2 = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
-  const kParticipantId = '99999999-9999-9999-9999-999999999999';
   const kOtherParticipantId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-  const kPredictionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
   final roundId = (RoundId.tryParse(kRoundId) as Ok<RoundId>).value;
 
@@ -53,58 +51,6 @@ void main() {
               )
               as Ok<RulesetSnapshot>)
           .value;
-
-  Round roundIn(RoundStatus status) => Round.fromStored(
-    id: roundId,
-    seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
-    sequence: 1,
-    predictionDeadline: DateTime.utc(2026, 8, 1, 12),
-    status: status,
-    ruleset: snapshot(),
-  );
-
-  Participant participant(String id, String userId) => Participant.fromStored(
-    id: (ParticipantId.tryParse(id) as Ok<ParticipantId>).value,
-    seasonId: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
-    userId: (UserId.tryParse(userId) as Ok<UserId>).value,
-    status: ParticipantStatus.active,
-    joinedAt: DateTime.utc(2026, 7, 1),
-  );
-
-  RoundFixture link(String fixtureId, int order) => RoundFixture.fromStored(
-    roundId: roundId,
-    fixture: (FixtureRef.tryParse(fixtureId) as Ok<FixtureRef>).value,
-    displayOrder: order,
-  );
-
-  FixtureResult actualResult(String fixtureId, int home, int away) =>
-      FixtureResult.fromStored(
-        fixture: (FixtureRef.tryParse(fixtureId) as Ok<FixtureRef>).value,
-        homeGoals: home,
-        awayGoals: away,
-      );
-
-  Prediction prediction({
-    required String id,
-    required String participantId,
-    required List<(String fixtureId, int home, int away)> scores,
-  }) => Prediction.fromStored(
-    id: (PredictionId.tryParse(id) as Ok<PredictionId>).value,
-    roundId: roundId,
-    participantId:
-        (ParticipantId.tryParse(participantId) as Ok<ParticipantId>).value,
-    scores: [
-      for (final (fixtureId, home, away) in scores)
-        (FixtureScorePrediction.create(
-                  fixture:
-                      (FixtureRef.tryParse(fixtureId) as Ok<FixtureRef>).value,
-                  homeGoals: home,
-                  awayGoals: away,
-                )
-                as Ok<FixtureScorePrediction>)
-            .value,
-    ],
-  );
 
   // ---------------------------------------------------------------------------
   // PUT /fixtures/{id}/result — RecordFixtureResult (admin-only ingestion)
