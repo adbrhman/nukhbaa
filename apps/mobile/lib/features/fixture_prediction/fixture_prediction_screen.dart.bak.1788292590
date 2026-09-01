@@ -16,13 +16,14 @@
 /// self-contained (see current_month_fixtures_screen.dart's _ScorePill
 /// doc) — not a new pattern.
 ///
-/// Pre-fill from an already-submitted prediction and the "your forecast"
-/// badge/grade reuse the exact same reads CurrentMonthFixturesScreen
-/// already uses — a linear scan over [myFixturePredictionsProvider]'s
-/// full history matched by fixture id, then (only if a prediction was
-/// found) [fixtureScoresProvider] matched by participant id for the
-/// grade/points. No new endpoint, no new provider — see this file's
-/// `_findMyPrediction` doc.
+/// Pre-fill from an already-submitted prediction is deliberately not
+/// wired up yet: [_CenterStatus] and the expanded "your forecast" badge
+/// below are built to accept a real prediction/grade, but this screen
+/// always passes null for both right now, so only the locked/upcoming
+/// branches ever show. That data wiring (matching
+/// CurrentMonthFixturesScreen's myFixturePredictionsProvider scan) is
+/// the very next change, tracked separately so this commit stays a pure
+/// visual alignment.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -40,8 +41,6 @@ import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
-import '../history/fixture_scores_providers.dart';
-import '../history/prediction_history_providers.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
 import 'fixture_prediction_controller.dart';
 import 'fixture_prediction_providers.dart';
@@ -208,7 +207,6 @@ class _FixturePredictionCardState
   int _homeGoals = 0;
   int _awayGoals = 0;
   bool _isDouble = false;
-  bool _prefilledFromPrediction = false;
 
   bool get _isLocked {
     final kickoff = widget.fixture.kickoffAt;
@@ -220,20 +218,6 @@ class _FixturePredictionCardState
 
   FixturePredictionKey get _key =>
       (seasonId: widget.seasonId, fixtureId: widget.fixture.fixtureId);
-
-  /// The caller's own prediction for this fixture, if any — a linear scan
-  /// over [myFixturePredictionsProvider]'s full history, matched by
-  /// fixture id. Identical idiom to
-  /// current_month_fixtures_screen.dart's _CurrentMonthFixtureCardState
-  /// (same doc there), duplicated per this file's self-contained-feature
-  /// convention rather than shared.
-  FixturePredictionDto? _findMyPrediction(List<FixturePredictionDto>? all) {
-    if (all == null) return null;
-    for (final FixturePredictionDto p in all) {
-      if (p.fixtureId == widget.fixture.fixtureId) return p;
-    }
-    return null;
-  }
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
@@ -271,59 +255,8 @@ class _FixturePredictionCardState
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
     final submission = ref.watch(fixturePredictionControllerProvider(_key));
-
-    // Keep "your forecast" status fresh right after a successful submit —
-    // without this, the badge below would only reflect the new prediction
-    // after myFixturePredictionsProvider's next unrelated refresh. Same
-    // fix as current_month_fixtures_screen.dart's identical ref.listen.
-    ref.listen<FixtureSubmissionState>(
-      fixturePredictionControllerProvider(_key),
-      (previous, next) {
-        if (next is FixtureSubmissionSucceeded) {
-          ref.invalidate(myFixturePredictionsProvider);
-        }
-      },
-    );
-
     final inFlight = submission is FixtureSubmissionInFlight;
     final locked = _isLocked;
-
-    // Reuse-only reads (no new architecture): "تم التوقع" comes from
-    // matching this fixture in myFixturePredictionsProvider; "نتيجة/شارة"
-    // comes from fixtureScoresProvider, matched by participantId — exactly
-    // as current_month_fixtures_screen.dart already does.
-    final myPredictionsAsync = ref.watch(myFixturePredictionsProvider);
-    final FixturePredictionDto? myPrediction = _findMyPrediction(
-      myPredictionsAsync.value,
-    );
-
-    final AsyncValue<FixtureScoresDto>? scoresAsync = myPrediction == null
-        ? null
-        : ref.watch(
-            fixtureScoresProvider(widget.seasonId, widget.fixture.fixtureId),
-          );
-    String? myGrade;
-    int? myPoints;
-    if (myPrediction != null) {
-      for (final ParticipantFixtureScoreDto s
-          in scoresAsync?.value?.scores ?? const []) {
-        if (s.participantId == myPrediction.participantId) {
-          myGrade = s.grade;
-          myPoints = s.points;
-          break;
-        }
-      }
-    }
-
-    // One-time prefill from an existing prediction — guarded so it never
-    // clobbers an edit already in progress once the async read resolves.
-    if (!_prefilledFromPrediction && myPrediction != null) {
-      _homeGoals = myPrediction.homeGoals;
-      _awayGoals = myPrediction.awayGoals;
-      _isDouble = myPrediction.isDouble;
-      _prefilledFromPrediction = true;
-    }
-
     final enabled = !inFlight && !locked;
     final fixtureId = widget.fixture.fixtureId;
 
@@ -369,8 +302,11 @@ class _FixturePredictionCardState
                             child: _CenterStatus(
                               locked: locked,
                               kickoffAt: widget.fixture.kickoffAt,
-                              myPrediction: myPrediction,
-                              grade: myGrade,
+                              // Not wired up yet — next commit adds the
+                              // myFixturePredictionsProvider scan that
+                              // feeds these two (see file doc).
+                              myPrediction: null,
+                              grade: null,
                             ),
                           ),
                           Expanded(
@@ -413,9 +349,6 @@ class _FixturePredictionCardState
                 tokens: tokens,
                 enabled: enabled,
                 inFlight: inFlight,
-                myPrediction: myPrediction,
-                grade: myGrade,
-                points: myPoints,
                 submission: submission,
                 fixtureId: fixtureId,
               ),
@@ -436,52 +369,12 @@ class _FixturePredictionCardState
     required AppTokens tokens,
     required bool enabled,
     required bool inFlight,
-    required FixturePredictionDto? myPrediction,
-    required String? grade,
-    required int? points,
     required FixtureSubmissionState submission,
     required String fixtureId,
   }) {
-    final bool isGraded =
-        grade == 'exact_scoreline' ||
-        grade == 'correct_outcome' ||
-        grade == 'incorrect';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (myPrediction != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: <Widget>[
-                AppBadge(
-                  label: l10n.predictionYourForecastScoreLine(
-                    myPrediction.homeGoals,
-                    myPrediction.awayGoals,
-                  ),
-                  tone: isGraded ? AppBadgeTone.neutral : AppBadgeTone.muted,
-                  icon: isGraded ? null : Icons.hourglass_bottom,
-                ),
-                if (isGraded && points != null)
-                  AppBadge(
-                    label: l10n.pointsAbbreviated(points),
-                    tone: grade == 'incorrect'
-                        ? AppBadgeTone.muted
-                        : AppBadgeTone.success,
-                    icon: grade == 'exact_scoreline' ? Icons.star : null,
-                  )
-                else if (!isGraded)
-                  AppBadge(
-                    label: l10n.predictionPendingResultLabel,
-                    tone: AppBadgeTone.muted,
-                  ),
-              ],
-            ),
-          ),
         _QuickFillRow(
           homeGoals: _homeGoals,
           awayGoals: _awayGoals,
@@ -638,10 +531,10 @@ class _TeamHeader extends StatelessWidget {
 /// The compact status slot between the two [_TeamHeader]s in the collapsed
 /// row. Duplicated from current_month_fixtures_screen.dart's
 /// _CenterStatus with the same four-branch precedence (graded >
-/// predicted > locked > upcoming). [myPrediction]/[grade] are fed from
-/// the same myFixturePredictionsProvider/fixtureScoresProvider reads as
-/// that screen (see _FixturePredictionCardState.build), so all four
-/// branches are reachable here too.
+/// predicted > locked > upcoming), so the very next commit only has to
+/// start passing real [myPrediction]/[grade] values — no widget rewrite.
+/// On this screen, today, [myPrediction] and [grade] are always null, so
+/// only the locked/upcoming branches are reachable.
 class _CenterStatus extends StatelessWidget {
   const _CenterStatus({
     required this.locked,
