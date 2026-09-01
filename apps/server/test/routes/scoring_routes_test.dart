@@ -32,25 +32,6 @@ void main() {
   const kFixtureId2 = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
   const kOtherParticipantId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
-  final roundId = (RoundId.tryParse(kRoundId) as Ok<RoundId>).value;
-
-  /// The exact `football_scoreline` payload the production
-  /// `ConfiguredRulesetProvider` freezes at open time — the one
-  /// [ScoringRuleset.fromSnapshot] parses. exact=3 / outcome=1 / incorrect=0.
-  RulesetSnapshot snapshot() =>
-      (RulesetSnapshot.create(
-                payload: const {
-                  'format': 'football_scoreline',
-                  'points': {
-                    'exact_scoreline': 3,
-                    'correct_outcome': 1,
-                    'incorrect': 0,
-                  },
-                },
-                rulesetVersion: 1,
-              )
-              as Ok<RulesetSnapshot>)
-          .value;
 
   // ---------------------------------------------------------------------------
   // PUT /fixtures/{id}/result — RecordFixtureResult (admin-only ingestion)

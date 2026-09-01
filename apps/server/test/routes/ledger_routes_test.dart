@@ -36,7 +36,6 @@ void main() {
   // credits it builds (one per scored participant).
   const kEntryId1 = 'e1111111-1111-1111-1111-111111111111';
   const kEntryId2 = 'e2222222-2222-2222-2222-222222222222';
-  const kFixtureId = '66666666-6666-6666-6666-666666666666';
 
   final roundId = (RoundId.tryParse(kRoundId) as Ok<RoundId>).value;
 
