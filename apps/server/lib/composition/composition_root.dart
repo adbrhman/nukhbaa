@@ -439,8 +439,6 @@ final class CompositionRoot {
   static final FixtureResultRepository _unwiredFixtureResultRepository =
       _UnwiredFixtureResultRepository();
 
-  static final ScoreRepository _unwiredScoreRepository =
-      _UnwiredScoreRepository();
 
   static RecordFixtureResult _absentRecordFixtureResult() =>
       RecordFixtureResult(
@@ -1105,11 +1103,9 @@ final class CompositionRoot {
     // the pure domain scoring service; points are written server-side only
     // (Axioms 2/5). GetRoundScores gates the read to a scored round.
     final fixtureResultRepository = PostgresFixtureResultRepository(connection);
-    final scoreRepository = PostgresScoreRepository(connection);
 
     // Axiom 4 Amendment: the per-fixture Scoring context, its own
-    // Postgres-backed repository (kept separate, same reasoning as
-    // scoreRepository above).
+    // Postgres-backed repository.
     final fixtureScoreRepository = PostgresFixtureScoreRepository(connection);
 
     final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
@@ -1751,19 +1747,6 @@ final class _UnwiredFixtureScheduleRepository
   Future<Result<List<FixtureSchedule>>> findByFixtures(
     List<FixtureRef> fixtures,
   ) => _unwired();
-}
-
-/// Backs every "absent" scoring use-case's score port: any method throws so a
-/// test that reaches an unwired scoring slice fails loudly.
-final class _UnwiredScoreRepository implements ScoreRepository {
-  static Never _unwired() =>
-      throw StateError('A scoring use-case was not wired into this root');
-
-  @override
-  Future<Result<void>> saveRoundScores(List<RoundScore> scores) => _unwired();
-
-  @override
-  Future<Result<List<RoundScore>>> listByRound(RoundId roundId) => _unwired();
 }
 
 /// Backs the "absent" fixture-scoring use-case's port (Axiom 4 Amendment): any
