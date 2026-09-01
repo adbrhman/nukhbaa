@@ -32,7 +32,6 @@ void main() {
   const kFixtureId2 = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
   const kOtherParticipantId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
-
   // ---------------------------------------------------------------------------
   // PUT /fixtures/{id}/result — RecordFixtureResult (admin-only ingestion)
   // ---------------------------------------------------------------------------

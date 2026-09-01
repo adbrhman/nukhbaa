@@ -439,7 +439,6 @@ final class CompositionRoot {
   static final FixtureResultRepository _unwiredFixtureResultRepository =
       _UnwiredFixtureResultRepository();
 
-
   static RecordFixtureResult _absentRecordFixtureResult() =>
       RecordFixtureResult(
         resultRepository: _unwiredFixtureResultRepository,
