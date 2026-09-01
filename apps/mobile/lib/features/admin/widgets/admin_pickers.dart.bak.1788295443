@@ -8,7 +8,6 @@ import 'package:shared/shared.dart';
 import '../../../core/error/error_presenter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_providers.dart';
-import '../../fixture_prediction/fixture_prediction_providers.dart';
 
 /// The competition dropdown: reads the public catalogue
 /// (`GET /competitions`, via `competitionListProvider`) and lets the admin
@@ -312,93 +311,6 @@ class FixturePickerField extends ConsumerWidget {
   }
 
   String _fixtureLabel(RoundFixtureCardDto fixture, AppLocalizations l10n) {
-    final String? home = fixture.homeTeam;
-    final String? away = fixture.awayTeam;
-    if (home == null || away == null) {
-      return l10n.adminFixtureIncompleteDataLabel;
-    }
-    return '$home × $away';
-  }
-}
-
-/// قائمة المباراة المنسدلة (الموسم ← المباراة مباشرة، بلا Round — Axiom 4
-/// Amendment). تعرض الفريقين — أو تنويهاً عند نقص بيانات الهوية — وتُخرج
-/// fixtureId فقط، بلا إدخال UUID يدوي. [keyPrefix] يُميّز مفاتيح الودجت بين
-/// الأقسام المختلفة التي تستخدم هذا المنتقي.
-class SeasonFixturePickerField extends ConsumerWidget {
-  const SeasonFixturePickerField({
-    super.key,
-    required this.keyPrefix,
-    required this.seasonId,
-    required this.enabled,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final String keyPrefix;
-  final String seasonId;
-  final bool enabled;
-  final String? selectedId;
-  final ValueChanged<SeasonFixtureCardDto> onSelected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final AsyncValue<List<SeasonFixtureCardDto>> fixtures = ref.watch(
-      seasonFixturesProvider(seasonId),
-    );
-    return fixtures.when(
-      loading: () => const LinearProgressIndicator(),
-      error: (Object error, StackTrace _) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.adminSelectFixtureLabel,
-          border: const OutlineInputBorder(),
-        ),
-        child: Text(ErrorPresenter.message(error as AppError)),
-      ),
-      data: (List<SeasonFixtureCardDto> list) {
-        if (list.isEmpty) {
-          return InputDecorator(
-            decoration: InputDecoration(
-              labelText: l10n.adminSelectFixtureLabel,
-              border: const OutlineInputBorder(),
-            ),
-            child: Text(l10n.adminNoFixturesHint),
-          );
-        }
-        final String? value = list.any((f) => f.fixtureId == selectedId)
-            ? selectedId
-            : null;
-        return DropdownButtonFormField<String>(
-          key: Key('$keyPrefix.fixtureField'),
-          initialValue: value,
-          decoration: InputDecoration(
-            labelText: l10n.adminSelectFixtureLabel,
-            border: const OutlineInputBorder(),
-          ),
-          items: <DropdownMenuItem<String>>[
-            for (final SeasonFixtureCardDto fixture in list)
-              DropdownMenuItem<String>(
-                key: Key('$keyPrefix.fixtureField.${fixture.fixtureId}'),
-                value: fixture.fixtureId,
-                child: Text(_fixtureLabel(fixture, l10n)),
-              ),
-          ],
-          onChanged: !enabled
-              ? null
-              : (String? id) {
-                  if (id == null) return;
-                  final SeasonFixtureCardDto fixture = list.firstWhere(
-                    (f) => f.fixtureId == id,
-                  );
-                  onSelected(fixture);
-                },
-        );
-      },
-    );
-  }
-
-  String _fixtureLabel(SeasonFixtureCardDto fixture, AppLocalizations l10n) {
     final String? home = fixture.homeTeam;
     final String? away = fixture.awayTeam;
     if (home == null || away == null) {
