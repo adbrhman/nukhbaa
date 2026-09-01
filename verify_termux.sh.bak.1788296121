@@ -42,7 +42,7 @@ dart format --output=none --set-exit-if-changed .
 
 echo "==> [7/7] Import-lint (حدود Clean Architecture) ثم كل الاختبارات (melos)"
 dart run tooling/import_lint/bin/import_lint.dart
-dart run melos run test
+dart run --no-pub melos run test
 
 echo ""
 echo "✅ التحقق اكتمل بنجاح — مطابق لخطوات build-verification.yml."
