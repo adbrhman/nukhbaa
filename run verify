@@ -1,0 +1,590 @@
+[1mdiff --cc docs/checkpoints/session-log.md[m
+[1mindex d3a313a,4fd170d..0000000[m
+[1m--- a/docs/checkpoints/session-log.md[m
+[1m+++ b/docs/checkpoints/session-log.md[m
+[36m@@@ -97,7 -97,6 +97,10 @@@[m
+  - [03:35] إصلاح: تبويب "توقعاتي" في NukhbaaShell (index 2) كان يعرض NukhbaaPredictionsPage (mockup ثابت بمباراة وهمية واحدة) بدل الشاشة الحقيقية المربوطة بـ myFixturePredictionsProvider — استُبدل بـ PredictionHistoryScreen | ملف: apps/mobile/lib/features/auth/nukhbaa_shell.dart | اختبار: بانتظار تشغيل المستخدم الفعلي[m
+  - [22:55] إصلاح: محاذاة تصميمية لـ FixturePredictionScreen مع بطاقة CurrentMonthFixturesScreen (شعارات + 1X2 + Stepper رقمي + شارة Double + عد تنازلي + توسيع/طي)؛ الملف مكرَّر محليًا وليس مشتركًا (اتفاقية self-contained feature file). الجزء (ب) prefill التوقع الموجود مسبقًا متروك عمدًا للسكربت التالي (myPrediction/grade يُمرَّران null الآن). | ملف: apps/mobile/lib/features/fixture_prediction/fixture_prediction_screen.dart (348→917 سطر) | اختبار: نجح (flutter analyze: No issues found)[m
+  - [22:56] إصلاح: تفعيل التعبئة المسبقة + شارة "توقعك"/الدرجة/النقاط في FixturePredictionScreen (البند ب) — يستهلك myFixturePredictionsProvider (مطابقة لفيكستشر) وfixtureScoresProvider(seasonId, fixtureId) (مطابقة لـparticipantId)، بنفس نمط CurrentMonthFixturesScreen حرفيًا (لا endpoint جديد، لا provider جديد)؛ ref.listen يُبطل myFixturePredictionsProvider بعد نجاح الإرسال لتحديث الشارة فورًا | ملف: apps/mobile/lib/features/fixture_prediction/fixture_prediction_screen.dart (917→1024 سطر) | اختبار: نجح (flutter analyze: No issues found)[m
+[32m +<<<<<<< HEAD[m
+[32m++<<<<<<< HEAD[m
+[32m++=======[m
+[32m++>>>>>>> chore/monthly-fixture-preflight-20260901[m
+  - [23:44] إصلاح: إضافة SeasonFixturePickerField (اختيار موسم←مباراة مباشرة، بلا Round) في admin_pickers.dart — الخطوة 1/2 من 7.10 (فصل تدفق تسجيل نتيجة المباراة في Admin عن Round قبل حذف طبقة Round). لا استهلاك بعد — RoundPickerField/FixturePickerField القديمان يبقيان كما هما مؤقتاً. | ملف: apps/mobile/lib/features/admin/widgets/admin_pickers.dart (321→409 سطر) | اختبار: نجح (flutter analyze: No issues found)[m
+  - [23:47] إصلاح: نموذج تسجيل نتيجة المباراة (results_scoring_section.dart) يختار المباراة الآن عبر (المسابقة←الموسم←المباراة) مباشرة باستخدام SeasonFixturePickerField، بدل (المسابقة←الموسم←الجولة←المباراة) عبر RoundPickerField/FixturePickerField — الخطوة 2/2 من 7.10 (فصل تدفق تسجيل النتيجة في Admin عن Round). حُذف _resultRoundId من الحالة المحلية. recordFixtureResult نفسه لم يتغيّر (كان مستقلاً عن Round أصلاً). RoundPickerField/FixturePickerField(roundId-based) في admin_pickers.dart أصبحا الآن ميتَين بلا مستهلك — تُركا للحذف اللاحق ضمن التنظيف الشامل لطبقة Round. | ملف: apps/mobile/lib/features/admin/screens/sections/results_scoring_section.dart | اختبار: نجح (flutter analyze: No issues found)[m
+  - [23:55] إصلاح: verify_termux.sh السطر 45 كان يستخدم `dart run --no-pub melos run test` — `--no-pub` لم تعد مدعومة في dart run بالإصدار الحالي، ما كان يُفشل خطوة الاختبارات دومًا. صار السطر `dart run melos run test`. ملاحظة منفصلة (غير مُصلَحة هنا): هذا السطر يشغّل `melos run test` فقط، الذي يستثني حزمة mobile عمداً (packageFilters.ignore) — أي أن verify_termux.sh لا يُشغّل flutter test لتطبيق mobile أصلاً؛ اختبارات mobile (بما فيها اليوم) تحتاج تشغيلاً منفصلاً بـ `cd apps/mobile && flutter test` أو `dart run melos run test-mobile` إن رغب المستخدم بإدراجها لاحقاً. | ملف: verify_termux.sh | اختبار: bash -n نظيف (لم يُشغَّل verify_termux.sh كاملاً هنا، شغّله يدويًا للتأكد)[m
+[36m@@@ -115,5 -114,4 +118,9 @@@[m
+  - [02:09] تحقق: melos run verify شامل بعد استعادة fakes.dart وإصلاح format (e9b9bb6, d8533c4) | اختبار: نجح بالكامل[m
+  - [03:38] 15_add_apksigner_verify.py: أُدرجت خطوة Verify release signing (apksigner) في build-verification.yml بعد Build APK split-per-abi[m
+  - [$(date +%H:%M)] إصلاح: حذف RoundPickerField/FixturePickerField الميتين من admin_pickers.dart (غير مستخدمين خارج الملف بعد هجرة results_scoring_section.dart لـSeasonFixturePickerField)، تصحيح adminNoFixturesHint->adminNoSeasonFixturesHint، حذف 4 مفاتيح ARB يتيمة | ملف: apps/mobile/lib/features/admin/widgets/admin_pickers.dart + l10n | اختبار: نجح[m
+[32m++<<<<<<< HEAD[m
+[32m +=======[m
+[32m +>>>>>>> origin/main[m
+[32m++=======[m
+[32m+ - [07:48] إصلاح: إزالة علامات تعارض git غير محلولة (HEAD/origin main) كانت مدموجة داخل session-log.md على main؛ أُبقي على محتوى HEAD لأن جانب origin/main كان فارغاً؛ نسخة احتياطية محلية .bak محفوظة | ملف: docs/checkpoints/session-log.md | اختبار: grep تأكيدي أعلاه[m
+[32m++>>>>>>> chore/monthly-fixture-preflight-20260901[m
+[1mdiff --git a/apps/mobile/lib/features/admin/widgets/admin_pickers.dart b/apps/mobile/lib/features/admin/widgets/admin_pickers.dart[m
+[1mindex ba1f962..577f4f5 100644[m
+[1m--- a/apps/mobile/lib/features/admin/widgets/admin_pickers.dart[m
+[1m+++ b/apps/mobile/lib/features/admin/widgets/admin_pickers.dart[m
+[36m@@ -9,6 +9,7 @@[m [mimport '../../../core/error/error_presenter.dart';[m
+ import '../../../l10n/app_localizations.dart';[m
+ import '../../competition/competition_providers.dart';[m
+ import '../../fixture_prediction/fixture_prediction_providers.dart';[m
+[32m+[m[32mimport '../../fixture_prediction/fixture_prediction_providers.dart';[m
+ [m
+ /// The competition dropdown: reads the public catalogue[m
+ /// (`GET /competitions`, via `competitionListProvider`) and lets the admin[m
+[1mdiff --git a/apps/mobile/lib/features/auth/nukhbaa_shell.dart b/apps/mobile/lib/features/auth/nukhbaa_shell.dart[m
+[1mindex 145e275..a75bdae 100644[m
+[1m--- a/apps/mobile/lib/features/auth/nukhbaa_shell.dart[m
+[1m+++ b/apps/mobile/lib/features/auth/nukhbaa_shell.dart[m
+[36m@@ -175,10 +175,10 @@[m [mclass NukhbaaBottomNav extends StatelessWidget {[m
+                 ),[m
+               ),[m
+               _item([m
+[31m-                icon: Icons.bolt_outlined,[m
+[31m-                activeIcon: Icons.bolt_rounded,[m
+[31m-                label: 'توقعاتي',[m
+[31m-                index: 2,[m
+[32m+[m[32m                icon: Icons.leaderboard_outlined,[m
+[32m+[m[32m                activeIcon: Icons.leaderboard_rounded,[m
+[32m+[m[32m                label: 'المتصدرون',[m
+[32m+[m[32m                index: 3,[m
+               ),[m
+               _item([m
+                 icon: Icons.person_outline_rounded,[m
+[36m@@ -823,70 +823,6 @@[m [mclass _CompetitionPreview extends StatelessWidget {[m
+   }[m
+ }[m
+ [m
+[31m-/* -------------------------------------------------------------------------- */[m
+[31m-// Matches[m
+[31m-/* -------------------------------------------------------------------------- */[m
+[31m-[m
+[31m-class NukhbaaMatchesPage extends StatelessWidget {[m
+[31m-  const NukhbaaMatchesPage({super.key});[m
+[31m-[m
+[31m-  @override[m
+[31m-  Widget build(BuildContext context) {[m
+[31m-    return SafeArea([m
+[31m-      child: CustomScrollView([m
+[31m-        physics: const BouncingScrollPhysics(),[m
+[31m-        slivers: [[m
+[31m-          SliverPadding([m
+[31m-            padding: const EdgeInsets.fromLTRB(20, 15, 20, 110),[m
+[31m-            sliver: SliverList([m
+[31m-              delegate: SliverChildListDelegate([[m
+[31m-                const _PageTitle([m
+[31m-                  title: 'المباريات',[m
+[31m-                  leftIcon: Icons.filter_alt_outlined,[m
+[31m-                  rightIcon: Icons.calendar_today_outlined,[m
+[31m-                ),[m
+[31m-                const SizedBox(height: 18),[m
+[31m-                const _DateTabs(),[m
+[31m-                const SizedBox(height: 18),[m
+[31m-                const SectionHeader(title: 'الدوري الإنجليزي الممتاز'),[m
+[31m-                const MatchCard([m
+[31m-                  competition: 'الدوري الإنجليزي الممتاز',[m
+[31m-                  home: 'أرسنال',[m
+[31m-                  away: 'ليفربول',[m
+[31m-                  time: '20:30',[m
+[31m-                  homeProbability: 45,[m
+[31m-                  drawProbability: 28,[m
+[31m-                  awayProbability: 27,[m
+[31m-                ),[m
+[31m-                const SizedBox(height: 12),[m
+[31m-                const MatchCard([m
+[31m-                  competition: 'الدوري الإنجليزي الممتاز',[m
+[31m-                  home: 'مانشستر سيتي',[m
+[31m-                  away: 'تشيلسي',[m
+[31m-                  time: '23:00',[m
+[31m-                  homeProbability: 50,[m
+[31m-                  drawProbability: 25,[m
+[31m-                  awayProbability: 25,[m
+[31m-                ),[m
+[31m-                const SizedBox(height: 18),[m
+[31m-                const SectionHeader(title: 'الدوري الإسباني'),[m
+[31m-                const MatchCard([m
+[31m-                  competition: 'الدوري الإسباني',[m
+[31m-                  home: 'ريال مدريد',[m
+[31m-                  away: 'برشلونة',[m
+[31m-                  time: '18:15',[m
+[31m-                  homeProbability: 40,[m
+[31m-                  drawProbability: 30,[m
+[31m-                  awayProbability: 30,[m
+[31m-                ),[m
+[31m-              ]),[m
+[31m-            ),[m
+[31m-          ),[m
+[31m-        ],[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-}[m
+ [m
+ class _PageTitle extends StatelessWidget {[m
+   final String title;[m
+[36m@@ -919,462 +855,6 @@[m [mclass _PageTitle extends StatelessWidget {[m
+   }[m
+ }[m
+ [m
+[31m-class _DateTabs extends StatelessWidget {[m
+[31m-  const _DateTabs();[m
+[31m-[m
+[31m-  @override[m
+[31m-  Widget build(BuildContext context) {[m
+[31m-    return Container([m
+[31m-      padding: const EdgeInsets.all(4),[m
+[31m-      decoration: BoxDecoration([m
+[31m-        color: NukhbaaColors.surface,[m
+[31m-        borderRadius: BorderRadius.circular(14),[m
+[31m-      ),[m
+[31m-      child: Row([m
+[31m-        children: [[m
+[31m-          _tab('لاحقًا', false),[m
+[31m-          _tab('غدًا', false),[m
+[31m-          _tab('اليوم', true),[m
+[31m-        ],[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _tab(String text, bool active) {[m
+[31m-    return Expanded([m
+[31m-      child: Container([m
+[31m-        padding: const EdgeInsets.symmetric(vertical: 11),[m
+[31m-        decoration: BoxDecoration([m
+[31m-          color: active ? NukhbaaColors.purple : Colors.transparent,[m
+[31m-          borderRadius: BorderRadius.circular(10),[m
+[31m-        ),[m
+[31m-        child: Text([m
+[31m-          text,[m
+[31m-          textAlign: TextAlign.center,[m
+[31m-          style: TextStyle([m
+[31m-            color: active ? Colors.white : NukhbaaColors.secondary,[m
+[31m-            fontSize: 12,[m
+[31m-            fontWeight: FontWeight.w800,[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-}[m
+[31m-[m
+[31m-/* -------------------------------------------------------------------------- */[m
+[31m-// Prediction[m
+[31m-/* -------------------------------------------------------------------------- */[m
+[31m-[m
+[31m-class NukhbaaPredictionsPage extends StatefulWidget {[m
+[31m-  const NukhbaaPredictionsPage({super.key});[m
+[31m-[m
+[31m-  @override[m
+[31m-  State<NukhbaaPredictionsPage> createState() => _NukhbaaPredictionsPageState();[m
+[31m-}[m
+[31m-[m
+[31m-class _NukhbaaPredictionsPageState extends State<NukhbaaPredictionsPage> {[m
+[31m-  int homeScore = 2;[m
+[31m-  int awayScore = 1;[m
+[31m-  double confidence = .76;[m
+[31m-  String result = '1';[m
+[31m-  bool doublePrediction = false;[m
+[31m-[m
+[31m-  @override[m
+[31m-  Widget build(BuildContext context) {[m
+[31m-    return SafeArea([m
+[31m-      child: ListView([m
+[31m-        padding: const EdgeInsets.fromLTRB(20, 15, 20, 110),[m
+[31m-        physics: const BouncingScrollPhysics(),[m
+[31m-        children: [[m
+[31m-          const _PageTitle([m
+[31m-            title: 'توقع النتيجة',[m
+[31m-            leftIcon: Icons.arrow_back_rounded,[m
+[31m-            rightIcon: Icons.info_outline_rounded,[m
+[31m-          ),[m
+[31m-          const SizedBox(height: 24),[m
+[31m-          _matchHero(),[m
+[31m-          const SizedBox(height: 24),[m
+[31m-          const Text([m
+[31m-            'اختر النتيجة المتوقعة',[m
+[31m-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),[m
+[31m-          ),[m
+[31m-          const SizedBox(height: 14),[m
+[31m-          _scorePicker(),[m
+[31m-          const SizedBox(height: 24),[m
+[31m-          const Text([m
+[31m-            'النتيجة أو الغالبية',[m
+[31m-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),[m
+[31m-          ),[m
+[31m-          const SizedBox(height: 12),[m
+[31m-          _resultPicker(),[m
+[31m-          const SizedBox(height: 24),[m
+[31m-          _confidence(),[m
+[31m-          const SizedBox(height: 22),[m
+[31m-          _doubleOption(),[m
+[31m-          const SizedBox(height: 18),[m
+[31m-          _submitButton(),[m
+[31m-        ],[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _matchHero() {[m
+[31m-    return Container([m
+[31m-      padding: const EdgeInsets.all(20),[m
+[31m-      decoration: BoxDecoration([m
+[31m-        color: NukhbaaColors.surface,[m
+[31m-        borderRadius: BorderRadius.circular(22),[m
+[31m-        border: Border.all(color: NukhbaaColors.border),[m
+[31m-      ),[m
+[31m-      child: Column([m
+[31m-        children: [[m
+[31m-          const Text([m
+[31m-            'الدوري الإنجليزي الممتاز',[m
+[31m-            style: TextStyle([m
+[31m-              color: NukhbaaColors.secondary,[m
+[31m-              fontSize: 12,[m
+[31m-              fontWeight: FontWeight.w700,[m
+[31m-            ),[m
+[31m-          ),[m
+[31m-          const SizedBox(height: 20),[m
+[31m-          Row([m
+[31m-            children: [[m
+[31m-              Expanded([m
+[31m-                child: Column([m
+[31m-                  children: const [[m
+[31m-                    TeamLogo(name: 'ليفربول', icon: Icons.shield_rounded),[m
+[31m-                    SizedBox(height: 8),[m
+[31m-                    Text([m
+[31m-                      'ليفربول',[m
+[31m-                      style: TextStyle(fontWeight: FontWeight.w800),[m
+[31m-                    ),[m
+[31m-                  ],[m
+[31m-                ),[m
+[31m-              ),[m
+[31m-              const Column([m
+[31m-                children: [[m
+[31m-                  Text([m
+[31m-                    '20:30',[m
+[31m-                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),[m
+[31m-                  ),[m
+[31m-                  SizedBox(height: 4),[m
+[31m-                  Text([m
+[31m-                    'اليوم',[m
+[31m-                    style: TextStyle([m
+[31m-                      color: NukhbaaColors.secondary,[m
+[31m-                      fontSize: 11,[m
+[31m-                    ),[m
+[31m-                  ),[m
+[31m-                ],[m
+[31m-              ),[m
+[31m-              Expanded([m
+[31m-                child: Column([m
+[31m-                  children: const [[m
+[31m-                    TeamLogo(name: 'أرسنال', icon: Icons.shield_rounded),[m
+[31m-                    SizedBox(height: 8),[m
+[31m-                    Text([m
+[31m-                      'أرسنال',[m
+[31m-                      style: TextStyle(fontWeight: FontWeight.w800),[m
+[31m-                    ),[m
+[31m-                  ],[m
+[31m-                ),[m
+[31m-              ),[m
+[31m-            ],[m
+[31m-          ),[m
+[31m-        ],[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _scorePicker() {[m
+[31m-    return Row([m
+[31m-      children: [[m
+[31m-        Expanded([m
+[31m-          child: _scoreControl([m
+[31m-            value: homeScore,[m
+[31m-            onMinus: () {[m
+[31m-              if (homeScore > 0) {[m
+[31m-                setState(() => homeScore--);[m
+[31m-              }[m
+[31m-            },[m
+[31m-            onPlus: () {[m
+[31m-              if (homeScore < 20) {[m
+[31m-                setState(() => homeScore++);[m
+[31m-              }[m
+[31m-            },[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-        const Padding([m
+[31m-          padding: EdgeInsets.symmetric(horizontal: 14),[m
+[31m-          child: Text([m
+[31m-            ':',[m
+[31m-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-        Expanded([m
+[31m-          child: _scoreControl([m
+[31m-            value: awayScore,[m
+[31m-            onMinus: () {[m
+[31m-              if (awayScore > 0) {[m
+[31m-                setState(() => awayScore--);[m
+[31m-              }[m
+[31m-            },[m
+[31m-            onPlus: () {[m
+[31m-              if (awayScore < 20) {[m
+[31m-                setState(() => awayScore++);[m
+[31m-              }[m
+[31m-            },[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-      ],[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _scoreControl({[m
+[31m-    required int value,[m
+[31m-    required VoidCallback onMinus,[m
+[31m-    required VoidCallback onPlus,[m
+[31m-  }) {[m
+[31m-    return Container([m
+[31m-      height: 72,[m
+[31m-      decoration: BoxDecoration([m
+[31m-        color: NukhbaaColors.surface2,[m
+[31m-        borderRadius: BorderRadius.circular(16),[m
+[31m-        border: Border.all(color: NukhbaaColors.purple.withValues(alpha: .45)),[m
+[31m-      ),[m
+[31m-      child: Row([m
+[31m-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,[m
+[31m-        children: [[m
+[31m-          _circleButton(Icons.remove_rounded, onMinus),[m
+[31m-          Text([m
+[31m-            '$value',[m
+[31m-            style: const TextStyle([m
+[31m-              color: NukhbaaColors.purpleLight,[m
+[31m-              fontSize: 27,[m
+[31m-              fontWeight: FontWeight.w900,[m
+[31m-            ),[m
+[31m-          ),[m
+[31m-          _circleButton(Icons.add_rounded, onPlus),[m
+[31m-        ],[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _circleButton(IconData icon, VoidCallback callback) {[m
+[31m-    return GestureDetector([m
+[31m-      onTap: callback,[m
+[31m-      child: Container([m
+[31m-        width: 30,[m
+[31m-        height: 30,[m
+[31m-        decoration: const BoxDecoration([m
+[31m-          color: NukhbaaColors.surface3,[m
+[31m-          shape: BoxShape.circle,[m
+[31m-        ),[m
+[31m-        child: Icon(icon, size: 17, color: NukhbaaColors.secondary),[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _resultPicker() {[m
+[31m-    return Row([m
+[31m-      children: [[m
+[31m-        _result('1', 'فوز أرسنال'),[m
+[31m-        const SizedBox(width: 8),[m
+[31m-        _result('X', 'تعادل'),[m
+[31m-        const SizedBox(width: 8),[m
+[31m-        _result('2', 'فوز ليفربول'),[m
+[31m-      ],[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _result(String value, String title) {[m
+[31m-    final selected = result == value;[m
+[31m-[m
+[31m-    return Expanded([m
+[31m-      child: GestureDetector([m
+[31m-        onTap: () => setState(() => result = value),[m
+[31m-        child: AnimatedContainer([m
+[31m-          duration: const Duration(milliseconds: 180),[m
+[31m-          padding: const EdgeInsets.symmetric(vertical: 14),[m
+[31m-          decoration: BoxDecoration([m
+[31m-            color: selected ? NukhbaaColors.purple : NukhbaaColors.surface,[m
+[31m-            borderRadius: BorderRadius.circular(14),[m
+[31m-            border: Border.all([m
+[31m-              color: selected[m
+[31m-                  ? NukhbaaColors.purpleLight[m
+[31m-                  : NukhbaaColors.border,[m
+[31m-            ),[m
+[31m-          ),[m
+[31m-          child: Column([m
+[31m-            children: [[m
+[31m-              Text([m
+[31m-                value,[m
+[31m-                style: const TextStyle([m
+[31m-                  fontSize: 19,[m
+[31m-                  fontWeight: FontWeight.w900,[m
+[31m-                ),[m
+[31m-              ),[m
+[31m-              const SizedBox(height: 4),[m
+[31m-              Text([m
+[31m-                title,[m
+[31m-                textAlign: TextAlign.center,[m
+[31m-                style: TextStyle([m
+[31m-                  color: selected ? Colors.white70 : NukhbaaColors.secondary,[m
+[31m-                  fontSize: 9,[m
+[31m-                ),[m
+[31m-              ),[m
+[31m-            ],[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _confidence() {[m
+[31m-    return Column([m
+[31m-      crossAxisAlignment: CrossAxisAlignment.start,[m
+[31m-      children: [[m
+[31m-        Row([m
+[31m-          children: [[m
+[31m-            const Text([m
+[31m-              'مستوى ثقتك',[m
+[31m-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),[m
+[31m-            ),[m
+[31m-            const Spacer(),[m
+[31m-            Text([m
+[31m-              '${(confidence * 100).round()}%',[m
+[31m-              style: const TextStyle([m
+[31m-                color: NukhbaaColors.purpleLight,[m
+[31m-                fontWeight: FontWeight.w900,[m
+[31m-              ),[m
+[31m-            ),[m
+[31m-          ],[m
+[31m-        ),[m
+[31m-        const SizedBox(height: 5),[m
+[31m-        const Row([m
+[31m-          children: [[m
+[31m-            Text([m
+[31m-              'منخفضة',[m
+[31m-              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),[m
+[31m-            ),[m
+[31m-            Spacer(),[m
+[31m-            Text([m
+[31m-              'متوسطة',[m
+[31m-              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),[m
+[31m-            ),[m
+[31m-            Spacer(),[m
+[31m-            Text([m
+[31m-              'عالية',[m
+[31m-              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),[m
+[31m-            ),[m
+[31m-          ],[m
+[31m-        ),[m
+[31m-        Slider([m
+[31m-          value: confidence,[m
+[31m-          onChanged: (value) {[m
+[31m-            setState(() => confidence = value);[m
+[31m-          },[m
+[31m-        ),[m
+[31m-        Text([m
+[31m-          'ثقتك: ${confidence >= .7[m
+[31m-              ? 'عالية'[m
+[31m-              : confidence >= .4[m
+[31m-              ? 'متوسطة'[m
+[31m-              : 'منخفضة'}',[m
+[31m-          style: const TextStyle(color: NukhbaaColors.secondary, fontSize: 11),[m
+[31m-        ),[m
+[31m-      ],[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _doubleOption() {[m
+[31m-    return GestureDetector([m
+[31m-      onTap: () {[m
+[31m-        setState(() => doublePrediction = !doublePrediction);[m
+[31m-      },[m
+[31m-      child: Container([m
+[31m-        padding: const EdgeInsets.all(15),[m
+[31m-        decoration: BoxDecoration([m
+[31m-          color: doublePrediction[m
+[31m-              ? NukhbaaColors.gold.withValues(alpha: .08)[m
+[31m-              : NukhbaaColors.surface,[m
+[31m-          borderRadius: BorderRadius.circular(16),[m
+[31m-          border: Border.all([m
+[31m-            color: doublePrediction ? NukhbaaColors.gold : NukhbaaColors.border,[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-        child: Row([m
+[31m-          children: [[m
+[31m-            Container([m
+[31m-              width: 40,[m
+[31m-              height: 40,[m
+[31m-              decoration: BoxDecoration([m
+[31m-                color: NukhbaaColors.gold.withValues(alpha: .12),[m
+[31m-                shape: BoxShape.circle,[m
+[31m-              ),[m
+[31m-              child: const Icon(Icons.close_rounded, color: NukhbaaColors.gold),[m
+[31m-            ),[m
+[31m-            const SizedBox(width: 12),[m
+[31m-            const Expanded([m
+[31m-              child: Column([m
+[31m-                crossAxisAlignment: CrossAxisAlignment.start,[m
+[31m-                children: [[m
+[31m-                  Text([m
+[31m-                    'الدبل ×2',[m
+[31m-                    style: TextStyle([m
+[31m-                      color: NukhbaaColors.gold,[m
+[31m-                      fontWeight: FontWeight.w900,[m
+[31m-                    ),[m
+[31m-                  ),[m
+[31m-                  SizedBox(height: 3),[m
+[31m-                  Text([m
+[31m-                    'ضاعف نقاطك إذا كان توقعك صحيحًا',[m
+[31m-                    style: TextStyle([m
+[31m-                      color: NukhbaaColors.secondary,[m
+[31m-                      fontSize: 10,[m
+[31m-                    ),[m
+[31m-                  ),[m
+[31m-                ],[m
+[31m-              ),[m
+[31m-            ),[m
+[31m-            Icon([m
+[31m-              doublePrediction[m
+[31m-                  ? Icons.check_circle_rounded[m
+[31m-                  : Icons.radio_button_unchecked_rounded,[m
+[31m-              color: doublePrediction[m
+[31m-                  ? NukhbaaColors.gold[m
+[31m-                  : NukhbaaColors.muted,[m
+[31m-            ),[m
+[31m-          ],[m
+[31m-        ),[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-[m
+[31m-  Widget _submitButton() {[m
+[31m-    return SizedBox([m
+[31m-      height: 56,[m
+[31m-      child: ElevatedButton.icon([m
+[31m-        onPressed: () {},[m
+[31m-        icon: const Icon(Icons.bolt_rounded),[m
+[31m-        label: const Text([m
+[31m-          'تأكيد التوقع',[m
+[31m-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),[m
+[31m-        ),[m
+[31m-        style: ElevatedButton.styleFrom([m
+[31m-          backgroundColor: NukhbaaColors.purple,[m
+[31m-          foregroundColor: Colors.white,[m
+[31m-          elevation: 0,[m
+[31m-          shape: RoundedRectangleBorder([m
+[31m-            borderRadius: BorderRadius.circular(17),[m
+[31m-          ),[m
+[31m-        ),[m
+[31m-      ),[m
+[31m-    );[m
+[31m-  }[m
+[31m-}[m
+[31m-[m
+ /* -------------------------------------------------------------------------- */[m
+ // Leaderboard[m
+ /* -------------------------------------------------------------------------- */[m

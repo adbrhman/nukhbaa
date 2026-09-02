@@ -175,10 +175,10 @@ class NukhbaaBottomNav extends StatelessWidget {
                 ),
               ),
               _item(
-                icon: Icons.leaderboard_outlined,
-                activeIcon: Icons.leaderboard_rounded,
-                label: 'المتصدرون',
-                index: 3,
+                icon: Icons.bolt_outlined,
+                activeIcon: Icons.bolt_rounded,
+                label: 'توقعاتي',
+                index: 2,
               ),
               _item(
                 icon: Icons.person_outline_rounded,
@@ -823,6 +823,70 @@ class _CompetitionPreview extends StatelessWidget {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+// Matches
+/* -------------------------------------------------------------------------- */
+
+class NukhbaaMatchesPage extends StatelessWidget {
+  const NukhbaaMatchesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 15, 20, 110),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const _PageTitle(
+                  title: 'المباريات',
+                  leftIcon: Icons.filter_alt_outlined,
+                  rightIcon: Icons.calendar_today_outlined,
+                ),
+                const SizedBox(height: 18),
+                const _DateTabs(),
+                const SizedBox(height: 18),
+                const SectionHeader(title: 'الدوري الإنجليزي الممتاز'),
+                const MatchCard(
+                  competition: 'الدوري الإنجليزي الممتاز',
+                  home: 'أرسنال',
+                  away: 'ليفربول',
+                  time: '20:30',
+                  homeProbability: 45,
+                  drawProbability: 28,
+                  awayProbability: 27,
+                ),
+                const SizedBox(height: 12),
+                const MatchCard(
+                  competition: 'الدوري الإنجليزي الممتاز',
+                  home: 'مانشستر سيتي',
+                  away: 'تشيلسي',
+                  time: '23:00',
+                  homeProbability: 50,
+                  drawProbability: 25,
+                  awayProbability: 25,
+                ),
+                const SizedBox(height: 18),
+                const SectionHeader(title: 'الدوري الإسباني'),
+                const MatchCard(
+                  competition: 'الدوري الإسباني',
+                  home: 'ريال مدريد',
+                  away: 'برشلونة',
+                  time: '18:15',
+                  homeProbability: 40,
+                  drawProbability: 30,
+                  awayProbability: 30,
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _PageTitle extends StatelessWidget {
   final String title;
@@ -851,6 +915,462 @@ class _PageTitle extends StatelessWidget {
         const Spacer(),
         Icon(rightIcon, color: NukhbaaColors.secondary),
       ],
+    );
+  }
+}
+
+class _DateTabs extends StatelessWidget {
+  const _DateTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: NukhbaaColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _tab('لاحقًا', false),
+          _tab('غدًا', false),
+          _tab('اليوم', true),
+        ],
+      ),
+    );
+  }
+
+  Widget _tab(String text, bool active) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: active ? NukhbaaColors.purple : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: active ? Colors.white : NukhbaaColors.secondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+// Prediction
+/* -------------------------------------------------------------------------- */
+
+class NukhbaaPredictionsPage extends StatefulWidget {
+  const NukhbaaPredictionsPage({super.key});
+
+  @override
+  State<NukhbaaPredictionsPage> createState() => _NukhbaaPredictionsPageState();
+}
+
+class _NukhbaaPredictionsPageState extends State<NukhbaaPredictionsPage> {
+  int homeScore = 2;
+  int awayScore = 1;
+  double confidence = .76;
+  String result = '1';
+  bool doublePrediction = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 15, 20, 110),
+        physics: const BouncingScrollPhysics(),
+        children: [
+          const _PageTitle(
+            title: 'توقع النتيجة',
+            leftIcon: Icons.arrow_back_rounded,
+            rightIcon: Icons.info_outline_rounded,
+          ),
+          const SizedBox(height: 24),
+          _matchHero(),
+          const SizedBox(height: 24),
+          const Text(
+            'اختر النتيجة المتوقعة',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 14),
+          _scorePicker(),
+          const SizedBox(height: 24),
+          const Text(
+            'النتيجة أو الغالبية',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 12),
+          _resultPicker(),
+          const SizedBox(height: 24),
+          _confidence(),
+          const SizedBox(height: 22),
+          _doubleOption(),
+          const SizedBox(height: 18),
+          _submitButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _matchHero() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: NukhbaaColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: NukhbaaColors.border),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'الدوري الإنجليزي الممتاز',
+            style: TextStyle(
+              color: NukhbaaColors.secondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: const [
+                    TeamLogo(name: 'ليفربول', icon: Icons.shield_rounded),
+                    SizedBox(height: 8),
+                    Text(
+                      'ليفربول',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+              const Column(
+                children: [
+                  Text(
+                    '20:30',
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'اليوم',
+                    style: TextStyle(
+                      color: NukhbaaColors.secondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: Column(
+                  children: const [
+                    TeamLogo(name: 'أرسنال', icon: Icons.shield_rounded),
+                    SizedBox(height: 8),
+                    Text(
+                      'أرسنال',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _scorePicker() {
+    return Row(
+      children: [
+        Expanded(
+          child: _scoreControl(
+            value: homeScore,
+            onMinus: () {
+              if (homeScore > 0) {
+                setState(() => homeScore--);
+              }
+            },
+            onPlus: () {
+              if (homeScore < 20) {
+                setState(() => homeScore++);
+              }
+            },
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            ':',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
+          ),
+        ),
+        Expanded(
+          child: _scoreControl(
+            value: awayScore,
+            onMinus: () {
+              if (awayScore > 0) {
+                setState(() => awayScore--);
+              }
+            },
+            onPlus: () {
+              if (awayScore < 20) {
+                setState(() => awayScore++);
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _scoreControl({
+    required int value,
+    required VoidCallback onMinus,
+    required VoidCallback onPlus,
+  }) {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        color: NukhbaaColors.surface2,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: NukhbaaColors.purple.withValues(alpha: .45)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _circleButton(Icons.remove_rounded, onMinus),
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: NukhbaaColors.purpleLight,
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          _circleButton(Icons.add_rounded, onPlus),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleButton(IconData icon, VoidCallback callback) {
+    return GestureDetector(
+      onTap: callback,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: const BoxDecoration(
+          color: NukhbaaColors.surface3,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 17, color: NukhbaaColors.secondary),
+      ),
+    );
+  }
+
+  Widget _resultPicker() {
+    return Row(
+      children: [
+        _result('1', 'فوز أرسنال'),
+        const SizedBox(width: 8),
+        _result('X', 'تعادل'),
+        const SizedBox(width: 8),
+        _result('2', 'فوز ليفربول'),
+      ],
+    );
+  }
+
+  Widget _result(String value, String title) {
+    final selected = result == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => result = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? NukhbaaColors.purple : NukhbaaColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? NukhbaaColors.purpleLight
+                  : NukhbaaColors.border,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: selected ? Colors.white70 : NukhbaaColors.secondary,
+                  fontSize: 9,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _confidence() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'مستوى ثقتك',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const Spacer(),
+            Text(
+              '${(confidence * 100).round()}%',
+              style: const TextStyle(
+                color: NukhbaaColors.purpleLight,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        const Row(
+          children: [
+            Text(
+              'منخفضة',
+              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),
+            ),
+            Spacer(),
+            Text(
+              'متوسطة',
+              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),
+            ),
+            Spacer(),
+            Text(
+              'عالية',
+              style: TextStyle(color: NukhbaaColors.muted, fontSize: 10),
+            ),
+          ],
+        ),
+        Slider(
+          value: confidence,
+          onChanged: (value) {
+            setState(() => confidence = value);
+          },
+        ),
+        Text(
+          'ثقتك: ${confidence >= .7
+              ? 'عالية'
+              : confidence >= .4
+              ? 'متوسطة'
+              : 'منخفضة'}',
+          style: const TextStyle(color: NukhbaaColors.secondary, fontSize: 11),
+        ),
+      ],
+    );
+  }
+
+  Widget _doubleOption() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => doublePrediction = !doublePrediction);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: doublePrediction
+              ? NukhbaaColors.gold.withValues(alpha: .08)
+              : NukhbaaColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: doublePrediction ? NukhbaaColors.gold : NukhbaaColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: NukhbaaColors.gold.withValues(alpha: .12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded, color: NukhbaaColors.gold),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'الدبل ×2',
+                    style: TextStyle(
+                      color: NukhbaaColors.gold,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'ضاعف نقاطك إذا كان توقعك صحيحًا',
+                    style: TextStyle(
+                      color: NukhbaaColors.secondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              doublePrediction
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              color: doublePrediction
+                  ? NukhbaaColors.gold
+                  : NukhbaaColors.muted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _submitButton() {
+    return SizedBox(
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: () {},
+        icon: const Icon(Icons.bolt_rounded),
+        label: const Text(
+          'تأكيد التوقع',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: NukhbaaColors.purple,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
+          ),
+        ),
+      ),
     );
   }
 }
