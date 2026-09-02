@@ -2,7 +2,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// Dark palette — ELITE OBSIDIAN V1.0 design system (violet action + gold
+/// Dark palette — AZURE OBSIDIAN design system (blue action + gold
 /// achievement, on an Obsidian dark foundation).
 abstract final class AppColors {
   static const Color background = Color(0xFF07050D);
@@ -11,9 +11,9 @@ abstract final class AppColors {
   static const Color surfaceElevated = Color(0xFF1D1730);
   static const Color surfaceHigh = Color(0xFF241C3A);
 
-  static const Color primary = Color(0xFF7C3AED);
-  static const Color primaryDark = Color(0xFF5B21B6);
-  static const Color primaryLight = Color(0xFF8B5CF6);
+  static const Color primary = Color(0xFF2563EB);
+  static const Color primaryDark = Color(0xFF1D4ED8);
+  static const Color primaryLight = Color(0xFF60A5FA);
 
   static const Color gold = Color(0xFFF5C451);
   static const Color goldDark = Color(0xFFB8860B);
