@@ -1,18 +1,13 @@
-# ✅ محلول جزئيًا (كان P0) — آخر تأكيد 2026-08-30
+# ✅ محلول بالكامل (كان P0) — آخر تأكيد 2026-09-02
 
-**الخطوات 1-3 من "الحل المطلوب" أدناه مؤتمتة بالكامل فعليًا** في
+**الخطوات 1-4 من "الحل المطلوب" أدناه مؤتمتة بالكامل فعليًا** في
 `.github/workflows/build-verification.yml` (خطوات "Decode release keystore"،
-"Write key.properties"، وحقن `signingConfigs.release` في
-`android/app/build.gradle(.kts)` عبر سكربت Python مضمَّن). الأسرار الأربعة
-المطلوبة (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) مؤكَّدة موجودة على الريبو
-(`gh secret list`، 2026-08-30).
-
-**لم يُنجَز بعد**: الخطوة 4 (التحقق الآلي بـ`apksigner verify --print-certs`
-من أن بصمة SHA-256 للشهادة ثابتة بين الإصدارات) — **غير موجودة في CI حاليًا**.
-هذا يعني أن التوقيع يُطبَّق بثبات نظريًا (نفس keystore/alias في كل تشغيل)، لكن
-لا يوجد تحقق آلي يفشل الـbuild لو تغيّرت البصمة بالخطأ (مثلًا سرّ اتُبدل خطأً).
-موصى به كخطوة CI إضافية مستقبلية، وليس عاجلًا طالما الأسرار لم تتغير.
+"Write key.properties"، حقن `signingConfigs.release` في
+`android/app/build.gradle(.kts)`، وخطوة "Verify release signing (apksigner)"
+~السطور 362-378 التي تحسب SHA-256 الفعلي لكل APK موقَّع وتقارنه بالسرّ
+وتُفشل الـCI عند أي اختلاف). الأسرار الخمسة المطلوبة (`ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`,
+`ANDROID_CERT_SHA256`) مؤكَّدة موجودة على الريبو (`gh secret list`، 2026-09-02).
 
 ---
 

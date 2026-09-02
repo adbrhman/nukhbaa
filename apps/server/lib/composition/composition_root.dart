@@ -46,20 +46,12 @@ final class CompositionRoot {
     required this.recordFixtureResult,
     required this.registerFixtureSchedule,
     required this.correctFixtureSchedule,
-    required this.scoreRound,
     required this.scoreFixture,
-    required this.scoreRoundsForFixture,
-    required this.getRoundScores,
-    required this.getRoundReport,
-    required this.adminGetRoundScores,
-    required this.adminGetRoundReport,
-    required this.postRoundToLedger,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
     required this.getSeasonFixtureLeaderboard,
     required this.getFixtureScores,
     required this.adminGetFixtureScores,
-    required this.getRoundLeaderboard,
     required this.getHallOfFame,
     required this.createGroup,
     required this.getGroup,
@@ -149,20 +141,12 @@ final class CompositionRoot {
     RecordFixtureResult? recordFixtureResult,
     RegisterFixtureSchedule? registerFixtureSchedule,
     CorrectFixtureSchedule? correctFixtureSchedule,
-    ScoreRound? scoreRound,
     ScoreFixture? scoreFixture,
-    ScoreRoundsForFixture? scoreRoundsForFixture,
-    GetRoundScores? getRoundScores,
-    GetRoundReport? getRoundReport,
-    AdminGetRoundScores? adminGetRoundScores,
-    AdminGetRoundReport? adminGetRoundReport,
-    PostRoundToLedger? postRoundToLedger,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
     GetFixtureScores? getFixtureScores,
     AdminGetFixtureScores? adminGetFixtureScores,
-    GetRoundLeaderboard? getRoundLeaderboard,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
     GetGroup? getGroup,
@@ -234,20 +218,10 @@ final class CompositionRoot {
            registerFixtureSchedule ?? _absentRegisterFixtureSchedule(),
        correctFixtureSchedule =
            correctFixtureSchedule ?? _absentCorrectFixtureSchedule(),
-       scoreRound = scoreRound ?? _absentScoreRound(),
        scoreFixture = scoreFixture ?? _absentScoreFixture(),
-       scoreRoundsForFixture =
-           scoreRoundsForFixture ?? _absentScoreRoundsForFixture(),
-       getRoundScores = getRoundScores ?? _absentGetRoundScores(),
-       getRoundReport = getRoundReport ?? _absentGetRoundReport(),
-       adminGetRoundScores =
-           adminGetRoundScores ?? _absentAdminGetRoundScores(),
-       adminGetRoundReport =
-           adminGetRoundReport ?? _absentAdminGetRoundReport(),
        adminGetParticipantDisplayNames =
            adminGetParticipantDisplayNames ??
            _absentAdminGetParticipantDisplayNames(),
-       postRoundToLedger = postRoundToLedger ?? _absentPostRoundToLedger(),
        readParticipantLedger =
            readParticipantLedger ?? _absentReadParticipantLedger(),
        getSeasonLeaderboard =
@@ -257,8 +231,6 @@ final class CompositionRoot {
        getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
-       getRoundLeaderboard =
-           getRoundLeaderboard ?? _absentGetRoundLeaderboard(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        createGroup = createGroup ?? _absentCreateGroup(),
        getGroup = getGroup ?? _absentGetGroup(),
@@ -467,9 +439,6 @@ final class CompositionRoot {
   static final FixtureResultRepository _unwiredFixtureResultRepository =
       _UnwiredFixtureResultRepository();
 
-  static final ScoreRepository _unwiredScoreRepository =
-      _UnwiredScoreRepository();
-
   static RecordFixtureResult _absentRecordFixtureResult() =>
       RecordFixtureResult(
         resultRepository: _unwiredFixtureResultRepository,
@@ -488,19 +457,6 @@ final class CompositionRoot {
   static CorrectFixtureSchedule _absentCorrectFixtureSchedule() =>
       CorrectFixtureSchedule(_unwiredFixtureScheduleRepository);
 
-  static ScoreRound _absentScoreRound() => ScoreRound(
-    competitionRepository: _unwiredCompetitionRepository,
-    predictionRepository: _unwiredPredictionRepository,
-    resultRepository: _unwiredFixtureResultRepository,
-    scoreRepository: _unwiredScoreRepository,
-  );
-
-  static ScoreRoundsForFixture _absentScoreRoundsForFixture() =>
-      ScoreRoundsForFixture(
-        competitionRepository: _unwiredCompetitionRepository,
-        scoreRound: _absentScoreRound(),
-      );
-
   /// Backs the "absent" fixture-scoring use-case, so a test that reaches an
   /// unwired Axiom-4-Amendment scoring slice fails loudly instead of touching
   /// a real database.
@@ -514,32 +470,6 @@ final class CompositionRoot {
     rulesetProvider: _unwiredRulesetProvider,
   );
 
-  static GetRoundScores _absentGetRoundScores() => GetRoundScores(
-    competitionRepository: _unwiredCompetitionRepository,
-    scoreRepository: _unwiredScoreRepository,
-  );
-
-  /// Backs the "absent" [GetRoundReport]: throws so a test that reaches an
-  /// unwired report slice fails loudly instead of touching a real database.
-  /// Shares the same throwing collaborators as the "absent" [GetRoundScores]
-  /// (it gates and reads identically).
-  static GetRoundReport _absentGetRoundReport() => GetRoundReport(
-    competitionRepository: _unwiredCompetitionRepository,
-    scoreRepository: _unwiredScoreRepository,
-  );
-
-  static AdminGetRoundScores _absentAdminGetRoundScores() =>
-      AdminGetRoundScores(
-        competitionRepository: _unwiredCompetitionRepository,
-        scoreRepository: _unwiredScoreRepository,
-      );
-
-  static AdminGetRoundReport _absentAdminGetRoundReport() =>
-      AdminGetRoundReport(
-        competitionRepository: _unwiredCompetitionRepository,
-        scoreRepository: _unwiredScoreRepository,
-      );
-
   /// Throwing ledger repositories backing every "absent" ledger use-case, so a
   /// test that reaches an unwired ledger slice fails loudly instead of touching
   /// a real database.
@@ -548,14 +478,6 @@ final class CompositionRoot {
 
   static final ParticipantReader _unwiredParticipantReader =
       _UnwiredParticipantReader();
-
-  static PostRoundToLedger _absentPostRoundToLedger() => PostRoundToLedger(
-    competitionRepository: _unwiredCompetitionRepository,
-    scoreRepository: _unwiredScoreRepository,
-    ledgerRepository: _unwiredLedgerRepository,
-    idGenerator: _unwiredIdGenerator,
-    clock: _unwiredClock,
-  );
 
   static ReadParticipantLedger _absentReadParticipantLedger() =>
       ReadParticipantLedger(
@@ -596,20 +518,10 @@ final class CompositionRoot {
 
   /// Backs the "absent" [AdminGetFixtureScores]: throws so a test that
   /// reaches this admin-bypass path fails loudly instead of silently
-  /// touching a real database — mirrors [_absentAdminGetRoundScores].
+  /// touching a real database — mirrors _absentAdminGetRoundScores.
   static AdminGetFixtureScores _absentAdminGetFixtureScores() =>
       AdminGetFixtureScores(
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
-      );
-
-  /// Backs the "absent" [GetRoundLeaderboard]: throws so a test that reaches
-  /// an unwired round-leaderboard slice fails loudly instead of touching a
-  /// real database. Shares the same throwing collaborators as the "absent"
-  /// [GetRoundScores] (it gates and reads identically).
-  static GetRoundLeaderboard _absentGetRoundLeaderboard() =>
-      GetRoundLeaderboard(
-        competitionRepository: _unwiredCompetitionRepository,
-        scoreRepository: _unwiredScoreRepository,
       );
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
@@ -935,43 +847,17 @@ final class CompositionRoot {
 
   final CorrectFixtureSchedule correctFixtureSchedule;
 
-  /// Scores every prediction in a locked round (admin-only command; the points
-  /// are computed and written server-side — Axioms 2/5).
-  final ScoreRound scoreRound;
-
   /// Scores every prediction recorded for a single fixture (Axiom 4
   /// Amendment; "ScoreFixture replaces ScoreRound" — per-fixture sibling of
-  /// [scoreRound], admin-only, computed and written server-side).
+  /// scoreRound, admin-only, computed and written server-side).
   final ScoreFixture scoreFixture;
 
-  /// Re-scores every round a fixture belongs to (Phase: احتساب فوري —
-  /// live/partial scoring); the fan-out `RecordFixtureResult` triggers so a
-  /// round's scores update immediately as results come in.
-  final ScoreRoundsForFixture scoreRoundsForFixture;
-
-  /// Reads every participant's score for a scored round (visibility-gated).
-  final GetRoundScores getRoundScores;
-
-  /// Reads a round's aggregated report (correct/incorrect counts + points)
-  /// — same visibility gate as [getRoundScores] (Task 5).
-  final GetRoundReport getRoundReport;
-
-  /// Admin round-scores/report reads — same shape as [getRoundScores] /
-  /// [getRoundReport] but without the participant-of-season gate.
-  final AdminGetRoundScores adminGetRoundScores;
-  final AdminGetRoundReport adminGetRoundReport;
-
-  /// Posts a scored round to the append-only Ledger (admin-only command; the
-  /// point amounts are copied server-side from the frozen scores — Axioms 2/5;
-  /// idempotent on the natural dedupe key — Axiom 4).
   final AdminGetParticipantDisplayNames adminGetParticipantDisplayNames;
 
   static AdminGetParticipantDisplayNames
   _absentAdminGetParticipantDisplayNames() => AdminGetParticipantDisplayNames(
     participantReader: _unwiredParticipantReader,
   );
-
-  final PostRoundToLedger postRoundToLedger;
 
   /// Reads a participant's projected balance / append-only entry stream
   /// (self-read only — a caller sees only a participant they own).
@@ -994,11 +880,6 @@ final class CompositionRoot {
   /// investigate a user's complaint on any fixture regardless of the
   /// admin's own season membership).
   final AdminGetFixtureScores adminGetFixtureScores;
-
-  /// Reads a round's ranked standings — its round leaderboard (a read-side
-  /// projection over that round's already-computed scores; gated identically
-  /// to [getRoundScores] — a scored round, season-membership only).
-  final GetRoundLeaderboard getRoundLeaderboard;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -1056,7 +937,7 @@ final class CompositionRoot {
 
   /// Posts a scored fixture to the append-only Ledger (Axiom 4 Amendment;
   /// admin-only, enforced inside the use-case — the per-fixture sibling of
-  /// [postRoundToLedger]).
+  /// postRoundToLedger).
   final PostFixtureToLedger postFixtureToLedger;
 
   /// Reacts (or changes a reaction) to a fixture-result within a group
@@ -1221,11 +1102,9 @@ final class CompositionRoot {
     // the pure domain scoring service; points are written server-side only
     // (Axioms 2/5). GetRoundScores gates the read to a scored round.
     final fixtureResultRepository = PostgresFixtureResultRepository(connection);
-    final scoreRepository = PostgresScoreRepository(connection);
 
     // Axiom 4 Amendment: the per-fixture Scoring context, its own
-    // Postgres-backed repository (kept separate, same reasoning as
-    // scoreRepository above).
+    // Postgres-backed repository.
     final fixtureScoreRepository = PostgresFixtureScoreRepository(connection);
 
     final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
@@ -1419,52 +1298,14 @@ final class CompositionRoot {
         idGenerator: idGenerator,
       ),
       correctFixtureSchedule: CorrectFixtureSchedule(fixtureScheduleRepository),
-      scoreRound: ScoreRound(
-        competitionRepository: competitionRepository,
-        predictionRepository: predictionRepository,
-        resultRepository: fixtureResultRepository,
-        scoreRepository: scoreRepository,
-      ),
       scoreFixture: ScoreFixture(
         fixturePredictionRepository: fixturePredictionRepository,
         resultRepository: fixtureResultRepository,
         scoreRepository: fixtureScoreRepository,
         rulesetProvider: rulesetProvider,
       ),
-      scoreRoundsForFixture: ScoreRoundsForFixture(
-        competitionRepository: competitionRepository,
-        scoreRound: ScoreRound(
-          competitionRepository: competitionRepository,
-          predictionRepository: predictionRepository,
-          resultRepository: fixtureResultRepository,
-          scoreRepository: scoreRepository,
-        ),
-      ),
-      getRoundScores: GetRoundScores(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
-      ),
-      getRoundReport: GetRoundReport(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
-      ),
-      adminGetRoundScores: AdminGetRoundScores(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
-      ),
-      adminGetRoundReport: AdminGetRoundReport(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
-      ),
       adminGetParticipantDisplayNames: AdminGetParticipantDisplayNames(
         participantReader: participantReader,
-      ),
-      postRoundToLedger: PostRoundToLedger(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
-        ledgerRepository: ledgerRepository,
-        idGenerator: idGenerator,
-        clock: clock,
       ),
       readParticipantLedger: ReadParticipantLedger(
         participantReader: participantReader,
@@ -1486,10 +1327,6 @@ final class CompositionRoot {
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
-      ),
-      getRoundLeaderboard: GetRoundLeaderboard(
-        competitionRepository: competitionRepository,
-        scoreRepository: scoreRepository,
       ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
@@ -1909,19 +1746,6 @@ final class _UnwiredFixtureScheduleRepository
   Future<Result<List<FixtureSchedule>>> findByFixtures(
     List<FixtureRef> fixtures,
   ) => _unwired();
-}
-
-/// Backs every "absent" scoring use-case's score port: any method throws so a
-/// test that reaches an unwired scoring slice fails loudly.
-final class _UnwiredScoreRepository implements ScoreRepository {
-  static Never _unwired() =>
-      throw StateError('A scoring use-case was not wired into this root');
-
-  @override
-  Future<Result<void>> saveRoundScores(List<RoundScore> scores) => _unwired();
-
-  @override
-  Future<Result<List<RoundScore>>> listByRound(RoundId roundId) => _unwired();
 }
 
 /// Backs the "absent" fixture-scoring use-case's port (Axiom 4 Amendment): any

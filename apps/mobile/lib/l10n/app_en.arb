@@ -505,23 +505,10 @@
   "notificationsMarkAsRead": "Mark as read",
   "adminAddMatchSectionTitle": "Register a match and add it to a round",
   "adminSelectSeasonLabel": "Select season",
-  "adminSelectRoundLabel": "Select round",
   "adminNoSeasonsHint": "This competition has no seasons.",
-  "adminNoRoundsHint": "This season has no rounds. Open a round first in the Rounds tab.",
   "adminSelectFixtureLabel": "Select fixture",
-  "adminNoFixturesHint": "This round has no fixtures.",
+  "adminNoSeasonFixturesHint": "This season has no fixtures.",
   "adminFixtureIncompleteDataLabel": "Fixture with incomplete data",
-  "adminRoundOptionLabel": "Round {sequence} — {status}",
-  "@adminRoundOptionLabel": {
-    "placeholders": {
-      "sequence": {
-        "type": "int"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "adminAddMatchButton": "Register match and add to round",
   "adminAddMatchSuccess": "Added {home} vs {away} to the season.",
   "@adminAddMatchSuccess": {

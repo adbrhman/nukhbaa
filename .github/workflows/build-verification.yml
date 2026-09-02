@@ -361,6 +361,24 @@ jobs:
           echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\"}" > /tmp/dart_defines.json
           flutter build apk --split-per-abi --dart-define-from-file=/tmp/dart_defines.json --release
 
+      - name: Verify release signing (apksigner)
+        working-directory: apps/mobile
+        env:
+          EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          test -n "${EXPECTED_SHA256:-}" || { echo "::error::ANDROID_CERT_SHA256 secret not set"; exit 1; }
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          AS="$BT/apksigner"
+          test -x "$AS" || { echo "::error::apksigner not found under $BT"; exit 1; }
+          EXP=$(echo "$EXPECTED_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            "$AS" verify --print-certs "$apk"
+            ACT=$("$AS" verify --print-certs "$apk" | grep 'certificate SHA-256 digest' | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
+            [ "$ACT" = "$EXP" ] || { echo "::error::signature mismatch for $apk: got $ACT expected $EXP"; exit 1; }
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: nukhba-android-apk

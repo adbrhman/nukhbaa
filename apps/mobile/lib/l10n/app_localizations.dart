@@ -1446,23 +1446,11 @@ abstract class AppLocalizations {
   /// **'Select season'**
   String get adminSelectSeasonLabel;
 
-  /// No description provided for @adminSelectRoundLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select round'**
-  String get adminSelectRoundLabel;
-
   /// No description provided for @adminNoSeasonsHint.
   ///
   /// In en, this message translates to:
   /// **'This competition has no seasons.'**
   String get adminNoSeasonsHint;
-
-  /// No description provided for @adminNoRoundsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'This season has no rounds. Open a round first in the Rounds tab.'**
-  String get adminNoRoundsHint;
 
   /// No description provided for @adminSelectFixtureLabel.
   ///
@@ -1470,23 +1458,17 @@ abstract class AppLocalizations {
   /// **'Select fixture'**
   String get adminSelectFixtureLabel;
 
-  /// No description provided for @adminNoFixturesHint.
+  /// No description provided for @adminNoSeasonFixturesHint.
   ///
   /// In en, this message translates to:
-  /// **'This round has no fixtures.'**
-  String get adminNoFixturesHint;
+  /// **'This season has no fixtures.'**
+  String get adminNoSeasonFixturesHint;
 
   /// No description provided for @adminFixtureIncompleteDataLabel.
   ///
   /// In en, this message translates to:
   /// **'Fixture with incomplete data'**
   String get adminFixtureIncompleteDataLabel;
-
-  /// No description provided for @adminRoundOptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Round {sequence} — {status}'**
-  String adminRoundOptionLabel(int sequence, String status);
 
   /// No description provided for @adminAddMatchButton.
   ///

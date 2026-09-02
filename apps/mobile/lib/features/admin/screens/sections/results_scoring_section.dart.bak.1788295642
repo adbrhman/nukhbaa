@@ -17,9 +17,9 @@ import '../../widgets/admin_ui_kit.dart';
 /// النتائج والاحتساب — تسجيل نتيجة مباراة، احتساب المباراة، ترحيلها
 /// للسجل، وتقرير المباراة التفصيلي.
 ///
-/// معرّف المباراة يُختار من قوائم منسدلة (المسابقة ← الموسم ← المباراة)،
-/// وليس بإدخال UUID يدوي — مطابقةً لنمط `FixtureScheduleSection` (Axiom 4
-/// Amendment: بلا Round — راجع 7.10 في docs/project-context.md).
+/// معرّف المباراة يُختار من قوائم منسدلة (المسابقة ← الموسم ← الجولة ←
+/// المباراة)، وليس بإدخال UUID يدوي — مطابقةً لنمط
+/// `RoundAdministrationSection`/`FixtureScheduleSection`.
 class ResultsScoringSection extends ConsumerStatefulWidget {
   const ResultsScoringSection({super.key});
 
@@ -35,6 +35,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   // نطاق اختيار المباراة (لتسجيل النتيجة).
   String? _resultCompetitionId;
   String? _resultSeasonId;
+  String? _resultRoundId;
   String? _fixtureId;
 
   @override
@@ -95,7 +96,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
       children: [
         AdminSectionHeader(
           title: l10n.adminRecordResultSectionTitle,
-          subtitle: 'اختر المسابقة والموسم ثم المباراة وسجّل نتيجتها',
+          subtitle: 'اختر المسابقة والموسم والجولة ثم المباراة وسجّل نتيجتها',
         ),
         AdminCard(
           child: Column(
@@ -110,6 +111,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 onSelected: (CompetitionDto competition) => setState(() {
                   _resultCompetitionId = competition.id;
                   _resultSeasonId = null;
+                  _resultRoundId = null;
                   _fixtureId = null;
                 }),
               ),
@@ -121,18 +123,32 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   selectedId: _resultSeasonId,
                   onSelected: (String seasonId) => setState(() {
                     _resultSeasonId = seasonId;
+                    _resultRoundId = null;
                     _fixtureId = null;
                   }),
                 ),
               ],
               if (_resultSeasonId != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                SeasonFixturePickerField(
+                RoundPickerField(
                   keyPrefix: 'admin.results.record',
                   seasonId: _resultSeasonId!,
                   enabled: !resultInFlight,
+                  selectedId: _resultRoundId,
+                  onSelected: (RoundDto round) => setState(() {
+                    _resultRoundId = round.id;
+                    _fixtureId = null;
+                  }),
+                ),
+              ],
+              if (_resultRoundId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                FixturePickerField(
+                  keyPrefix: 'admin.results.record',
+                  roundId: _resultRoundId!,
+                  enabled: !resultInFlight,
                   selectedId: _fixtureId,
-                  onSelected: (SeasonFixtureCardDto fixture) => setState(() {
+                  onSelected: (RoundFixtureCardDto fixture) => setState(() {
                     _fixtureId = fixture.fixtureId;
                   }),
                 ),
