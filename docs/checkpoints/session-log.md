@@ -112,3 +112,4 @@
 - [02:05] إصلاح: dart format على composition_root.dart وscoring_routes_test.dart (اختلاف تنسيق ناتج عن تعديلات str_replace المباشرة في سكربتي 05/06 وسكربتي 02/03) — اكتُشف عبر melos run verify → format-check؛ dart analyze لا يكشف اختلاف التنسيق (فراغات/أسطر)، شرط عبور format-check منفصل ولا يُغني عنه | ملف: apps/server/lib/composition/composition_root.dart، apps/server/test/routes/scoring_routes_test.dart | اختبار: نجح (dart format: لا تغييرات متبقية)
 - [02:06] تحقق: melos run verify شامل بعد استعادة fakes.dart وإصلاح format (e9b9bb6, d8533c4) | اختبار: فشل — راجع الأخطاء أعلاه
 - [02:09] تحقق: melos run verify شامل بعد استعادة fakes.dart وإصلاح format (e9b9bb6, d8533c4) | اختبار: نجح بالكامل
+- [03:38] 15_add_apksigner_verify.py: أُدرجت خطوة Verify release signing (apksigner) في build-verification.yml بعد Build APK split-per-abi
