@@ -22,6 +22,8 @@ import '../groups/join_group_screen.dart';
 import '../hall_of_fame/hall_of_fame_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../history/prediction_history_screen.dart';
+import '../ledger/ledger_screen.dart';
+import '../history/prediction_history_providers.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'session_controller.dart';
@@ -227,6 +229,19 @@ class AccountScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                   const SizedBox(height: AppSpacing.md),
+                   _HomeListCard(
+                     itemKey: const Key('account.ledger'),
+                     icon: Icons.account_balance_wallet_outlined,
+                     label: 'سجل نقاطي',
+                     tokens: tokens,
+                     text: text,
+                     onTap: () => Navigator.of(context).push(
+                       MaterialPageRoute<void>(
+                         builder: (_) => const _MyLedgerRoute(),
+                       ),
+                     ),
+                   ),
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -710,6 +725,59 @@ class _ChangeDisplayNameDialogState
           onPressed: _submitting ? null : _submit,
         ),
       ],
+    );
+  }
+}
+
+/// Resolves the participant id from the user's own prediction projection before
+/// opening the ledger. A user id is not a participant id: participation is
+/// season-scoped, so passing [AuthenticatedUserDto.userId] here would produce
+/// a misleading ownership error from the server.
+class _MyLedgerRoute extends ConsumerWidget {
+  const _MyLedgerRoute();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final predictions = ref.watch(myFixturePredictionsProvider);
+    return predictions.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stackTrace) => _LedgerUnavailable(
+        message: 'تعذر تحديد مشارك حسابك.',
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return const _LedgerUnavailable(
+            message: 'سيظهر سجل نقاطك بعد تسجيل أول توقع.',
+          );
+        }
+        return LedgerScreen(participantId: items.first.participantId);
+      },
+    );
+  }
+}
+
+class _LedgerUnavailable extends StatelessWidget {
+  const _LedgerUnavailable({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Scaffold(
+      appBar: AppBar(title: const Text('سجل نقاطي')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
+      ),
     );
   }
 }
