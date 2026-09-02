@@ -114,3 +114,4 @@
 - [02:09] تحقق: melos run verify شامل بعد استعادة fakes.dart وإصلاح format (e9b9bb6, d8533c4) | اختبار: نجح بالكامل
 - [03:38] 15_add_apksigner_verify.py: أُدرجت خطوة Verify release signing (apksigner) في build-verification.yml بعد Build APK split-per-abi
 - [$(date +%H:%M)] إصلاح: حذف RoundPickerField/FixturePickerField الميتين من admin_pickers.dart (غير مستخدمين خارج الملف بعد هجرة results_scoring_section.dart لـSeasonFixturePickerField)، تصحيح adminNoFixturesHint->adminNoSeasonFixturesHint، حذف 4 مفاتيح ARB يتيمة | ملف: apps/mobile/lib/features/admin/widgets/admin_pickers.dart + l10n | اختبار: نجح
+- [20:29] إصلاح: إزالة علامات تعارض الدمج غير المحلولة من session-log.md مع إبقاء إدخالات HEAD كاملة؛ تم التحقق من عدم بقاء أي conflict markers | ملف: docs/checkpoints/session-log.md | اختبار: تحقق نصي ناجح
