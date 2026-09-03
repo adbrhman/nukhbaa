@@ -434,6 +434,30 @@ abstract class AppLocalizations {
   /// **'No one has joined this season yet.'**
   String get seasonLeaderboardEmpty;
 
+  /// No description provided for @leaderboardsScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboards'**
+  String get leaderboardsScreenTitle;
+
+  /// No description provided for @leaderboardsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load active seasons.'**
+  String get leaderboardsLoadFailed;
+
+  /// No description provided for @leaderboardsJoinSeasonPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Join a season to see your standings here.'**
+  String get leaderboardsJoinSeasonPrompt;
+
+  /// No description provided for @leaderboardsSeasonEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No results recorded for this season yet.'**
+  String get leaderboardsSeasonEmpty;
+
   /// Number of prediction entries counted toward a participant's leaderboard score.
   ///
   /// In en, this message translates to:
@@ -481,6 +505,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No members of this group have joined the season yet.'**
   String get groupLeaderboardEmpty;
+
+  /// No description provided for @groupLeaderboardSelectSeasonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a season'**
+  String get groupLeaderboardSelectSeasonTitle;
+
+  /// No description provided for @groupLeaderboardNoActiveSeasons.
+  ///
+  /// In en, this message translates to:
+  /// **'No active season right now.'**
+  String get groupLeaderboardNoActiveSeasons;
 
   /// No description provided for @competitions.
   ///
@@ -1386,6 +1422,12 @@ abstract class AppLocalizations {
   /// **'My Points'**
   String get ledgerTitle;
 
+  /// No description provided for @myLedgerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My points ledger'**
+  String get myLedgerLabel;
+
   /// No description provided for @ledgerEmpty.
   ///
   /// In en, this message translates to:
@@ -1481,6 +1523,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added {home} vs {away} to the season.'**
   String adminAddMatchSuccess(String home, String away);
+
+  /// No description provided for @adminCorrectFixtureSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct a registered fixture'**
+  String get adminCorrectFixtureSectionTitle;
+
+  /// No description provided for @adminCorrectFixtureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a registered fixture to fix a mistyped team name or kickoff time, before its round is linked or locked.'**
+  String get adminCorrectFixtureSubtitle;
+
+  /// No description provided for @adminCorrectFixtureSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {home} vs {away}.'**
+  String adminCorrectFixtureSuccess(String home, String away);
+
+  /// No description provided for @adminPredictionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a competition, season and fixture to see every prediction recorded for it, scored or not.'**
+  String get adminPredictionsSubtitle;
+
+  /// No description provided for @adminLoadPredictionsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Show predictions'**
+  String get adminLoadPredictionsButton;
+
+  /// No description provided for @adminPredictionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No predictions recorded for this fixture yet.'**
+  String get adminPredictionsEmpty;
+
+  /// No description provided for @adminPredictionSubmittedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted {submittedAt}'**
+  String adminPredictionSubmittedAtLabel(String submittedAt);
 
   /// No description provided for @adminSelectRoundFirst.
   ///

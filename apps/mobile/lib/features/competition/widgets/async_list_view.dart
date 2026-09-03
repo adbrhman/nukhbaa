@@ -20,7 +20,9 @@ import 'package:shared/shared.dart';
 
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
+import '../../../core/design/app_tokens.dart';
 import '../../../core/error/error_presenter.dart';
+import '../../../core/ui/app_skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Renders an [AsyncValue] holding a `List<T>` as one of loading / error /
@@ -114,11 +116,19 @@ class _Loading extends StatelessWidget {
   const _Loading();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => const Padding(
     key: Key('browse.loading'),
-    child: Padding(
-      padding: EdgeInsets.all(AppSpacing.xxl),
-      child: CircularProgressIndicator(),
+    padding: EdgeInsets.symmetric(
+      horizontal: AppSpacing.lg,
+      vertical: AppSpacing.sm,
+    ),
+    child: Column(
+      children: <Widget>[
+        AppSkeletonListTile(),
+        AppSkeletonListTile(),
+        AppSkeletonListTile(),
+        AppSkeletonListTile(),
+      ],
     ),
   );
 }
@@ -130,7 +140,7 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final AppTokens tokens = context.tokens;
     return Center(
       key: const Key('browse.empty'),
       child: Padding(
@@ -141,14 +151,14 @@ class _EmptyView extends StatelessWidget {
             Icon(
               Icons.inbox_outlined,
               size: AppSizes.iconState,
-              color: scheme.outline,
+              color: tokens.textMuted,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               key: const Key('browse.empty.message'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurfaceVariant),
+              style: TextStyle(color: tokens.textSecondary),
             ),
           ],
         ),
@@ -175,7 +185,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final AppTokens tokens = context.tokens;
     final appError = _appError;
     return Center(
       key: const Key('browse.error'),
@@ -187,14 +197,14 @@ class _ErrorView extends StatelessWidget {
             Icon(
               Icons.error_outline,
               size: AppSizes.iconState,
-              color: scheme.error,
+              color: tokens.error,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               ErrorPresenter.message(appError),
               key: const Key('browse.error.message'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurface),
+              style: TextStyle(color: tokens.textPrimary),
             ),
             if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
               const SizedBox(height: AppSpacing.lg),

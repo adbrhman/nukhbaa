@@ -190,6 +190,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonLeaderboardEmpty => 'No one has joined this season yet.';
 
   @override
+  String get leaderboardsScreenTitle => 'Leaderboards';
+
+  @override
+  String get leaderboardsLoadFailed => 'Couldn\'t load active seasons.';
+
+  @override
+  String get leaderboardsJoinSeasonPrompt =>
+      'Join a season to see your standings here.';
+
+  @override
+  String get leaderboardsSeasonEmpty =>
+      'No results recorded for this season yet.';
+
+  @override
   String leaderboardEntriesCounted(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -232,6 +246,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupLeaderboardEmpty =>
       'No members of this group have joined the season yet.';
+
+  @override
+  String get groupLeaderboardSelectSeasonTitle => 'Select a season';
+
+  @override
+  String get groupLeaderboardNoActiveSeasons => 'No active season right now.';
 
   @override
   String get competitions => 'Competitions';
@@ -739,6 +759,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ledgerTitle => 'My Points';
 
   @override
+  String get myLedgerLabel => 'My points ledger';
+
+  @override
   String get ledgerEmpty => 'No points movements yet.';
 
   @override
@@ -789,6 +812,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String adminAddMatchSuccess(String home, String away) {
     return 'Added $home vs $away to the season.';
+  }
+
+  @override
+  String get adminCorrectFixtureSectionTitle => 'Correct a registered fixture';
+
+  @override
+  String get adminCorrectFixtureSubtitle =>
+      'Pick a registered fixture to fix a mistyped team name or kickoff time, before its round is linked or locked.';
+
+  @override
+  String adminCorrectFixtureSuccess(String home, String away) {
+    return 'Updated $home vs $away.';
+  }
+
+  @override
+  String get adminPredictionsSubtitle =>
+      'Pick a competition, season and fixture to see every prediction recorded for it, scored or not.';
+
+  @override
+  String get adminLoadPredictionsButton => 'Show predictions';
+
+  @override
+  String get adminPredictionsEmpty =>
+      'No predictions recorded for this fixture yet.';
+
+  @override
+  String adminPredictionSubmittedAtLabel(String submittedAt) {
+    return 'Submitted $submittedAt';
   }
 
   @override

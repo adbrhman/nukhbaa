@@ -35,20 +35,34 @@ class _FixtureScheduleSectionState
   String? _competitionName;
   String? _seasonId;
 
+  // نطاق اختيار المباراة (لتصحيح بياناتها).
+  final TextEditingController _correctHomeTeamController =
+      TextEditingController();
+  final TextEditingController _correctAwayTeamController =
+      TextEditingController();
+  final FocusNode _correctHomeTeamFocusNode = FocusNode();
+  final FocusNode _correctAwayTeamFocusNode = FocusNode();
+  DateTime? _correctKickoffLocal;
+
+  String? _correctCompetitionId;
+  String? _correctCompetitionName;
+  String? _correctSeasonId;
+  String? _correctFixtureId;
+
   static final List<String> _teamOptions = <String>[
     ...kEplTeams.keys,
     ...kSaudiTeams.keys,
   ]..sort();
 
-  List<String> get _scopedTeamOptions {
-    final String name = _competitionName ?? '';
+  List<String> _scopedTeamOptions(String? competitionName) {
+    final String name = competitionName ?? '';
     if (name.contains('إنجليز')) return kEplTeams.keys.toList()..sort();
     if (name.contains('سعود')) return kSaudiTeams.keys.toList()..sort();
     return _teamOptions;
   }
 
-  Iterable<String> _filterTeams(String query) {
-    final List<String> options = _scopedTeamOptions;
+  Iterable<String> _filterTeams(String query, {String? competitionName}) {
+    final List<String> options = _scopedTeamOptions(competitionName);
     final String trimmed = query.trim();
     if (trimmed.isEmpty) return options;
     final String needle = trimmed.toLowerCase();
@@ -61,6 +75,10 @@ class _FixtureScheduleSectionState
     _awayTeamController.dispose();
     _homeTeamFocusNode.dispose();
     _awayTeamFocusNode.dispose();
+    _correctHomeTeamController.dispose();
+    _correctAwayTeamController.dispose();
+    _correctHomeTeamFocusNode.dispose();
+    _correctAwayTeamFocusNode.dispose();
     super.dispose();
   }
 
@@ -88,6 +106,19 @@ class _FixtureScheduleSectionState
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
         _kickoffLocal != null;
+
+    final AsyncValue<FixtureScheduleDto>? correctState = ref.watch(
+      fixtureScheduleControllerProvider,
+    );
+    final bool correctInFlight =
+        correctState is AsyncLoading<FixtureScheduleDto>;
+    final bool canSubmitCorrection =
+        !correctInFlight &&
+        _correctSeasonId != null &&
+        _correctFixtureId != null &&
+        _correctHomeTeamController.text.trim().isNotEmpty &&
+        _correctAwayTeamController.text.trim().isNotEmpty &&
+        _correctKickoffLocal != null;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -132,7 +163,8 @@ class _FixtureScheduleSectionState
                 focusNode: _homeTeamFocusNode,
                 label: l10n.adminHomeTeamLabel,
                 enabled: !inFlight,
-                optionsBuilder: _filterTeams,
+                optionsBuilder: (q) =>
+                    _filterTeams(q, competitionName: _competitionName),
                 onChanged: () => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -142,7 +174,8 @@ class _FixtureScheduleSectionState
                 focusNode: _awayTeamFocusNode,
                 label: l10n.adminAwayTeamLabel,
                 enabled: !inFlight,
-                optionsBuilder: _filterTeams,
+                optionsBuilder: (q) =>
+                    _filterTeams(q, competitionName: _competitionName),
                 onChanged: () => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -175,6 +208,122 @@ class _FixtureScheduleSectionState
                 icon: Icons.sports_soccer_rounded,
                 loading: inFlight,
                 onPressed: canSubmit ? () => _addMatch(nextDisplayOrder) : null,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        AdminSectionHeader(
+          title: l10n.adminCorrectFixtureSectionTitle,
+          subtitle: l10n.adminCorrectFixtureSubtitle,
+        ),
+        AdminCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CompetitionPickerField(
+                key: const Key('admin.fixtures.correct.competitionField'),
+                fieldKey: const Key(
+                  'admin.fixtures.correct.competitionField.field',
+                ),
+                label: l10n.adminSelectCompetitionLabel,
+                enabled: !correctInFlight,
+                selectedId: _correctCompetitionId,
+                onSelected: (CompetitionDto competition) => setState(() {
+                  _correctCompetitionId = competition.id;
+                  _correctCompetitionName = competition.name;
+                  _correctSeasonId = null;
+                  _correctFixtureId = null;
+                  _correctHomeTeamController.clear();
+                  _correctAwayTeamController.clear();
+                  _correctKickoffLocal = null;
+                }),
+              ),
+              if (_correctCompetitionId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SeasonPickerField(
+                  competitionId: _correctCompetitionId!,
+                  enabled: !correctInFlight,
+                  selectedId: _correctSeasonId,
+                  onSelected: (String seasonId) => setState(() {
+                    _correctSeasonId = seasonId;
+                    _correctFixtureId = null;
+                  }),
+                ),
+              ],
+              if (_correctSeasonId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SeasonFixturePickerField(
+                  keyPrefix: 'admin.fixtures.correct',
+                  seasonId: _correctSeasonId!,
+                  enabled: !correctInFlight,
+                  selectedId: _correctFixtureId,
+                  onSelected: (SeasonFixtureCardDto fixture) => setState(() {
+                    _correctFixtureId = fixture.fixtureId;
+                    _correctHomeTeamController.text = fixture.homeTeam ?? '';
+                    _correctAwayTeamController.text = fixture.awayTeam ?? '';
+                    _correctKickoffLocal = DateTime.tryParse(
+                      fixture.kickoffAt ?? '',
+                    )?.toLocal();
+                  }),
+                ),
+              ],
+              if (_correctFixtureId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                _TeamPickerField(
+                  fieldKey: const Key('admin.fixtures.correct.homeTeamField'),
+                  controller: _correctHomeTeamController,
+                  focusNode: _correctHomeTeamFocusNode,
+                  label: l10n.adminHomeTeamLabel,
+                  enabled: !correctInFlight,
+                  optionsBuilder: (q) =>
+                      _filterTeams(q, competitionName: _correctCompetitionName),
+                  onChanged: () => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _TeamPickerField(
+                  fieldKey: const Key('admin.fixtures.correct.awayTeamField'),
+                  controller: _correctAwayTeamController,
+                  focusNode: _correctAwayTeamFocusNode,
+                  label: l10n.adminAwayTeamLabel,
+                  enabled: !correctInFlight,
+                  optionsBuilder: (q) =>
+                      _filterTeams(q, competitionName: _correctCompetitionName),
+                  onChanged: () => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AdminSecondaryButton(
+                  key: const Key('admin.fixtures.correct.kickoffPicker'),
+                  label: _correctKickoffLocal == null
+                      ? l10n.adminPickKickoffButton
+                      : _formatKickoff(_correctKickoffLocal!),
+                  icon: Icons.event_outlined,
+                  onPressed: correctInFlight ? null : _pickCorrectKickoff,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              if (correctState is AsyncError<FixtureScheduleDto>)
+                AdminErrorBanner(
+                  key: const Key('admin.fixtures.correct.error'),
+                  message: ErrorPresenter.message(
+                    correctState.error as AppError,
+                  ),
+                ),
+              if (correctState is AsyncData<FixtureScheduleDto>)
+                AdminSuccessBanner(
+                  key: const Key('admin.fixtures.correct.result'),
+                  message: l10n.adminCorrectFixtureSuccess(
+                    correctState.value.homeTeam,
+                    correctState.value.awayTeam,
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.md),
+              AdminPrimaryButton(
+                key: const Key('admin.fixtures.correct.submit'),
+                label: l10n.adminCorrectFixtureButton,
+                icon: Icons.edit_calendar_rounded,
+                loading: correctInFlight,
+                onPressed: canSubmitCorrection ? _correctFixture : null,
               ),
             ],
           ),
@@ -229,6 +378,57 @@ class _FixtureScheduleSectionState
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
+        );
+  }
+
+  Future<void> _pickCorrectKickoff() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _correctKickoffLocal ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _correctKickoffLocal == null
+          ? TimeOfDay.fromDateTime(now)
+          : TimeOfDay.fromDateTime(_correctKickoffLocal!),
+    );
+    if (time == null) return;
+    setState(() {
+      _correctKickoffLocal = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  void _correctFixture() {
+    final fixtureId = _correctFixtureId;
+    final seasonId = _correctSeasonId;
+    final homeTeam = _correctHomeTeamController.text.trim();
+    final awayTeam = _correctAwayTeamController.text.trim();
+    final kickoff = _correctKickoffLocal;
+    if (fixtureId == null ||
+        seasonId == null ||
+        homeTeam.isEmpty ||
+        awayTeam.isEmpty ||
+        kickoff == null) {
+      return;
+    }
+    ref
+        .read(fixtureScheduleControllerProvider.notifier)
+        .correct(
+          fixtureId: fixtureId,
+          seasonId: seasonId,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          kickoffAt: kickoff.toUtc().toIso8601String(),
         );
   }
 

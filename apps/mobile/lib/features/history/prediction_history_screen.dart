@@ -234,4 +234,3 @@ class _TeamMini extends StatelessWidget {
     return Row(children: children);
   }
 }
-

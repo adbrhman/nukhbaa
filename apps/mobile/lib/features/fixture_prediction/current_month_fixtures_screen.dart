@@ -690,7 +690,7 @@ class _CenterStatus extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-           ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
+          ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
           Text(_badge ?? '', style: const TextStyle(fontSize: 12)),
         ],
@@ -700,7 +700,7 @@ class _CenterStatus extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-           ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
+          ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
           Text(
             l10n.predictionPendingResultLabel,
@@ -734,7 +734,6 @@ class _CenterStatus extends StatelessWidget {
     return KickoffCountdown(kickoffAt: kickoffAt);
   }
 }
-
 
 /// The 1/X/2 quick-fill row (spec: "أزرار 1/X/2 (تعبئة)"). The highlighted
 /// button is *derived* from [homeGoals]/[awayGoals] rather than tracked as

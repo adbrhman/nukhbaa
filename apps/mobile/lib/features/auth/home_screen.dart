@@ -65,9 +65,9 @@ class HomeScreen extends ConsumerWidget {
                 'مرحبًا، $name',
                 key: const Key('home.welcome'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -81,11 +81,7 @@ class HomeScreen extends ConsumerWidget {
                 onOpenMatches: onOpenMatches,
               ),
               const SizedBox(height: 24),
-              _SectionHeader(
-                title: 'وصول سريع',
-                action: null,
-                onAction: null,
-              ),
+              _SectionHeader(title: 'وصول سريع', action: null, onAction: null),
               const SizedBox(height: 10),
               _QuickActions(
                 onOpenMatches: onOpenMatches,
@@ -156,10 +152,10 @@ class _HomeHeader extends StatelessWidget {
         Text(
           'NUKHBAA',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
         const Spacer(),
         IconButton(
@@ -213,15 +209,13 @@ class _OverviewCard extends StatelessWidget {
                 child: Text(
                   'لوحة النخبة',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: tokens.onPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: tokens.onPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               StreakChip(
-                label: seasonCount == null
-                    ? '...'
-                    : '$seasonCount موسم نشط',
+                label: seasonCount == null ? '...' : '$seasonCount موسم نشط',
               ),
             ],
           ),
@@ -360,9 +354,9 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const Spacer(),
         if (action != null)

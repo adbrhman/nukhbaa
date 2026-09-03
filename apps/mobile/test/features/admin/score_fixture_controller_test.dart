@@ -64,7 +64,7 @@ void main() {
 
         await harness.container
             .read(scoreFixtureControllerProvider.notifier)
-            .score('f-1');
+            .score('f-1', 's-1');
 
         final state = harness.container.read(scoreFixtureControllerProvider);
         expect(state, isA<AsyncData<FixtureScoresDto>>());
@@ -93,7 +93,7 @@ void main() {
 
       await harness.container
           .read(scoreFixtureControllerProvider.notifier)
-          .score('f-1');
+          .score('f-1', 's-1');
 
       final state = harness.container.read(scoreFixtureControllerProvider);
       expect(state, isA<AsyncError<FixtureScoresDto>>());
@@ -113,8 +113,8 @@ void main() {
       final notifier = harness.container.read(
         scoreFixtureControllerProvider.notifier,
       );
-      await notifier.score('f-1');
-      await notifier.score('f-1');
+      await notifier.score('f-1', 's-1');
+      await notifier.score('f-1', 's-1');
 
       expect(calls, 2);
       expect(
@@ -148,7 +148,7 @@ void main() {
 
         await harness.container
             .read(postFixtureToLedgerControllerProvider.notifier)
-            .post('f-1');
+            .post('f-1', 's-1');
 
         final state = harness.container.read(
           postFixtureToLedgerControllerProvider,
@@ -179,7 +179,7 @@ void main() {
 
       await harness.container
           .read(postFixtureToLedgerControllerProvider.notifier)
-          .post('f-1');
+          .post('f-1', 's-1');
 
       final state = harness.container.read(
         postFixtureToLedgerControllerProvider,
@@ -204,7 +204,7 @@ void main() {
 
       await harness.container
           .read(postFixtureToLedgerControllerProvider.notifier)
-          .post('f-1');
+          .post('f-1', 's-1');
 
       final state = harness.container.read(
         postFixtureToLedgerControllerProvider,

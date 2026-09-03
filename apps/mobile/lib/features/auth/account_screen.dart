@@ -235,7 +235,7 @@ class AccountScreen extends ConsumerWidget {
                   _HomeListCard(
                     itemKey: const Key('account.ledger'),
                     icon: Icons.account_balance_wallet_outlined,
-                    label: 'سجل نقاطي',
+                    label: l10n.myLedgerLabel,
                     tokens: tokens,
                     text: text,
                     onTap: () => Navigator.of(context).push(
@@ -245,39 +245,41 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.createGroup'),
-                          icon: Icons.group_add_outlined,
-                          label: l10n.createGroup,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const CreateGroupScreen(),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _HomeActionCard(
+                            itemKey: const Key('account.createGroup'),
+                            icon: Icons.group_add_outlined,
+                            label: l10n.createGroup,
+                            tokens: tokens,
+                            text: text,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const CreateGroupScreen(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.joinGroup'),
-                          icon: Icons.group_outlined,
-                          label: l10n.joinGroup,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const JoinGroupScreen(),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _HomeActionCard(
+                            itemKey: const Key('account.joinGroup'),
+                            icon: Icons.group_outlined,
+                            label: l10n.joinGroup,
+                            tokens: tokens,
+                            text: text,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const JoinGroupScreen(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   if (user.role == 'admin') ...[
                     const SizedBox(height: AppSpacing.xl),

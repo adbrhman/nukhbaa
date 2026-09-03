@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/rank_badge.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'leaderboards_providers.dart';
@@ -18,18 +19,19 @@ class LeaderboardsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
+    final l10n = AppLocalizations.of(context);
     final seasons = ref.watch(activeSeasonsProvider);
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
-        title: const Text('المتصدرون'),
+        title: Text(l10n.leaderboardsScreenTitle),
         backgroundColor: tokens.background,
       ),
       body: seasons.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Text(
-            'تعذر تحميل المواسم النشطة.',
+            l10n.leaderboardsLoadFailed,
             style: TextStyle(color: tokens.textSecondary),
           ),
         ),
@@ -39,7 +41,7 @@ class LeaderboardsScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Text(
-                  'انضم إلى موسم لتظهر ترتيباتك هنا.',
+                  l10n.leaderboardsJoinSeasonPrompt,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: tokens.textSecondary),
                 ),
@@ -66,9 +68,8 @@ class LeaderboardsScreen extends ConsumerWidget {
                   child: TabBarView(
                     children: items
                         .map(
-                          (season) => _SeasonLeaderboard(
-                            seasonId: season.seasonId,
-                          ),
+                          (season) =>
+                              _SeasonLeaderboard(seasonId: season.seasonId),
                         )
                         .toList(),
                   ),
@@ -89,10 +90,11 @@ class _SeasonLeaderboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final standings = ref.watch(seasonLeaderboardProvider(seasonId));
     return AsyncListView<LeaderboardEntryDto>(
       value: standings.whenData((board) => board.entries),
-      emptyMessage: 'لا توجد نتائج مسجلة لهذا الموسم بعد.',
+      emptyMessage: l10n.leaderboardsSeasonEmpty,
       onRetry: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
       itemBuilder: (context, entry) => ListTile(
         key: Key('leaderboards.item.${entry.participantId}'),
@@ -101,9 +103,9 @@ class _SeasonLeaderboard extends ConsumerWidget {
           entry.participantId,
           style: TextStyle(color: context.tokens.textPrimary),
         ),
-        subtitle: Text('${entry.entryCount} مشاركة'),
+        subtitle: Text(l10n.leaderboardEntriesCounted(entry.entryCount)),
         trailing: Text(
-          '${entry.totalPoints}',
+          l10n.pointsAbbreviated(entry.totalPoints),
           style: TextStyle(
             color: context.tokens.primary,
             fontWeight: FontWeight.w800,

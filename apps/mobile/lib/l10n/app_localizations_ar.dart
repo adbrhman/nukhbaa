@@ -192,6 +192,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get seasonLeaderboardEmpty => 'لم ينضم أحد لهذا الموسم بعد.';
 
   @override
+  String get leaderboardsScreenTitle => 'المتصدرون';
+
+  @override
+  String get leaderboardsLoadFailed => 'تعذر تحميل المواسم النشطة.';
+
+  @override
+  String get leaderboardsJoinSeasonPrompt =>
+      'انضم إلى موسم لتظهر ترتيباتك هنا.';
+
+  @override
+  String get leaderboardsSeasonEmpty => 'لا توجد نتائج مسجلة لهذا الموسم بعد.';
+
+  @override
   String leaderboardEntriesCounted(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -240,6 +253,12 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get groupLeaderboardEmpty =>
       'لم ينضم أي عضو من هذه المجموعة للموسم بعد.';
+
+  @override
+  String get groupLeaderboardSelectSeasonTitle => 'اختر الموسم';
+
+  @override
+  String get groupLeaderboardNoActiveSeasons => 'لا يوجد موسم نشط حاليًا.';
 
   @override
   String get competitions => 'المسابقات';
@@ -746,6 +765,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ledgerTitle => 'نقاطي';
 
   @override
+  String get myLedgerLabel => 'سجل نقاطي';
+
+  @override
   String get ledgerEmpty => 'لا توجد حركات نقاط بعد.';
 
   @override
@@ -795,6 +817,34 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String adminAddMatchSuccess(String home, String away) {
     return 'تمت إضافة $home ضد $away إلى الموسم.';
+  }
+
+  @override
+  String get adminCorrectFixtureSectionTitle => 'تصحيح بيانات مباراة مسجّلة';
+
+  @override
+  String get adminCorrectFixtureSubtitle =>
+      'اختر مباراة مسجّلة لتصحيح اسم فريق أو موعد الانطلاق، قبل ربط الجولة أو قفلها.';
+
+  @override
+  String adminCorrectFixtureSuccess(String home, String away) {
+    return 'تم تحديث $home ضد $away.';
+  }
+
+  @override
+  String get adminPredictionsSubtitle =>
+      'اختر المسابقة والموسم ثم المباراة لعرض كل التوقعات المسجّلة لها، قبل الاحتساب أو بعده.';
+
+  @override
+  String get adminLoadPredictionsButton => 'عرض التوقعات';
+
+  @override
+  String get adminPredictionsEmpty =>
+      'لا توجد توقعات مسجّلة لهذه المباراة بعد.';
+
+  @override
+  String adminPredictionSubmittedAtLabel(String submittedAt) {
+    return 'أُرسل في $submittedAt';
   }
 
   @override

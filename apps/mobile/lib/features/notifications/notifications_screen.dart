@@ -19,6 +19,7 @@ class NotificationsScreen extends ConsumerWidget {
       myNotificationsProvider,
     );
     return Scaffold(
+      backgroundColor: context.tokens.background,
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context).notifications,

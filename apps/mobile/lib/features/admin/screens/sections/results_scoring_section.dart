@@ -46,24 +46,27 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
 
   void _recordResult() {
     final f = _fixtureId;
+    final s = _resultSeasonId;
     final h = int.tryParse(_homeGoals.text.trim());
     final a = int.tryParse(_awayGoals.text.trim());
-    if (f == null || h == null || a == null) return;
+    if (f == null || s == null || h == null || a == null) return;
     ref
         .read(recordFixtureResultControllerProvider.notifier)
-        .record(fixtureId: f, homeGoals: h, awayGoals: a);
+        .record(fixtureId: f, seasonId: s, homeGoals: h, awayGoals: a);
   }
 
   void _scoreFixture() {
     final f = _fixtureId;
-    if (f == null) return;
-    ref.read(scoreFixtureControllerProvider.notifier).score(f);
+    final s = _resultSeasonId;
+    if (f == null || s == null) return;
+    ref.read(scoreFixtureControllerProvider.notifier).score(f, s);
   }
 
   void _postFixtureToLedger() {
     final f = _fixtureId;
-    if (f == null) return;
-    ref.read(postFixtureToLedgerControllerProvider.notifier).post(f);
+    final s = _resultSeasonId;
+    if (f == null || s == null) return;
+    ref.read(postFixtureToLedgerControllerProvider.notifier).post(f, s);
   }
 
   void _loadFixtureReport() {

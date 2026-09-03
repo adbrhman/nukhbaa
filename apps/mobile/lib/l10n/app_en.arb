@@ -75,6 +75,10 @@
     }
   },
   "seasonLeaderboardEmpty": "No one has joined this season yet.",
+  "leaderboardsScreenTitle": "Leaderboards",
+  "leaderboardsLoadFailed": "Couldn't load active seasons.",
+  "leaderboardsJoinSeasonPrompt": "Join a season to see your standings here.",
+  "leaderboardsSeasonEmpty": "No results recorded for this season yet.",
   "leaderboardEntriesCounted": "{count, plural, =0{No entries counted} =1{1 entry counted} other{{count} entries counted}}",
   "@leaderboardEntriesCounted": {
     "description": "Number of prediction entries counted toward a participant's leaderboard score.",
@@ -99,6 +103,8 @@
   "selectRoundLabel": "Select round",
   "roundKingLabel": "Round king",
   "groupLeaderboardEmpty": "No members of this group have joined the season yet.",
+  "groupLeaderboardSelectSeasonTitle": "Select a season",
+  "groupLeaderboardNoActiveSeasons": "No active season right now.",
   "competitions": "Competitions",
   "competitionsEmpty": "There are no competitions to browse yet.",
   "visibilityPublic": "Public",
@@ -487,6 +493,7 @@
   "inviteCodeCopiedMessage": "Invite code copied",
   "doneButton": "Done",
   "ledgerTitle": "My Points",
+  "myLedgerLabel": "My points ledger",
   "ledgerEmpty": "No points movements yet.",
   "ledgerEntryCount": "{count} movements counted",
   "@ledgerEntryCount": {
@@ -512,6 +519,30 @@
   "adminAddMatchButton": "Register match and add to round",
   "adminAddMatchSuccess": "Added {home} vs {away} to the season.",
   "@adminAddMatchSuccess": {
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCorrectFixtureSectionTitle": "Correct a registered fixture",
+  "adminCorrectFixtureSubtitle": "Pick a registered fixture to fix a mistyped team name or kickoff time, before its round is linked or locked.",
+  "adminCorrectFixtureSuccess": "Updated {home} vs {away}.",
+  "adminPredictionsSubtitle": "Pick a competition, season and fixture to see every prediction recorded for it, scored or not.",
+  "adminLoadPredictionsButton": "Show predictions",
+  "adminPredictionsEmpty": "No predictions recorded for this fixture yet.",
+  "adminPredictionSubmittedAtLabel": "Submitted {submittedAt}",
+  "@adminPredictionSubmittedAtLabel": {
+    "placeholders": {
+      "submittedAt": {
+        "type": "String"
+      }
+    }
+  },
+  "@adminCorrectFixtureSuccess": {
     "placeholders": {
       "home": {
         "type": "String"

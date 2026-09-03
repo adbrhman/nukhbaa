@@ -96,7 +96,7 @@ class _SeasonLeaderboardRow extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('leaderboard.item.${entry.participantId}'),
-       leading: RankBadge(rank: entry.rank),
+      leading: RankBadge(rank: entry.rank),
       title: Text(
         entry.participantId,
         key: Key('leaderboard.participant.${entry.participantId}'),
@@ -149,7 +149,7 @@ class _FixtureLeaderboardRow extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('leaderboard.fixture.item.${entry.participantId}'),
-       leading: RankBadge(rank: entry.rank),
+      leading: RankBadge(rank: entry.rank),
       title: Text(
         entry.participantId,
         key: Key('leaderboard.fixture.participant.${entry.participantId}'),
@@ -163,4 +163,3 @@ class _FixtureLeaderboardRow extends StatelessWidget {
     );
   }
 }
-

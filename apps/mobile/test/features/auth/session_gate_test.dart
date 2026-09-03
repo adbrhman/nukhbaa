@@ -27,7 +27,7 @@ Widget _appUnder(AuthHarness harness) => ProviderScope(
 
 /// Opens the account tab in the authenticated navigation shell.
 Future<void> _openAccountTab(WidgetTester tester) async {
-  final accountTab = find.text('الحساب');
+  final accountTab = find.byKey(const Key('nav.item.account'));
   expect(accountTab, findsOneWidget);
   await tester.tap(accountTab);
   await tester.pumpAndSettle();

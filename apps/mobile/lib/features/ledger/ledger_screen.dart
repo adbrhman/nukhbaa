@@ -25,6 +25,7 @@ class LedgerScreen extends ConsumerWidget {
       participantEntriesProvider(participantId),
     );
     return Scaffold(
+      backgroundColor: context.tokens.background,
       appBar: AppBar(
         title: Text(l10n.ledgerTitle, key: const Key('ledger.title')),
       ),

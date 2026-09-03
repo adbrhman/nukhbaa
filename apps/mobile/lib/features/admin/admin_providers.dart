@@ -27,6 +27,9 @@ import 'fixture_report.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../hall_of_fame/hall_of_fame_providers.dart';
+import '../history/prediction_history_providers.dart';
+import '../leaderboards/leaderboards_providers.dart';
 
 part 'admin_providers.g.dart';
 
@@ -203,13 +206,47 @@ class AdminLedgerLookupController extends _$AdminLedgerLookupController {
   }
 }
 
+/// Owns the admin raw-predictions browse read
+/// (`GET /admin/fixtures/{fixtureId}/predictions`) — every participant's
+/// predicted scoreline for one fixture, regardless of the admin's own season
+/// membership and independent of whether the fixture has been scored yet
+/// (unlike [FixtureReportController], which additionally requires
+/// `adminGetFixtureScores` to have succeeded). Modelled as a controller
+/// (rather than a `FutureProvider`) for the same reason as
+/// [AdminLedgerLookupController]: the read is itself an audited action an
+/// admin explicitly triggers, not a passive view a screen loads on entry.
+@riverpod
+class AdminFixturePredictionsController
+    extends _$AdminFixturePredictionsController {
+  AdminApi get _api => ref.read(adminApiProvider);
+
+  @override
+  AsyncValue<List<FixturePredictionDto>>? build() => null;
+
+  /// Loads every raw prediction recorded for [fixtureId]. [reason] is an
+  /// optional justification recorded on the mandatory audit entry.
+  Future<void> load(String fixtureId, {String? reason}) async {
+    state = const AsyncValue.loading();
+    final result = await _api.adminListFixturePredictions(
+      fixtureId,
+      reason: reason,
+    );
+    state = switch (result) {
+      Ok<List<FixturePredictionDto>>(:final value) => AsyncValue.data(value),
+      Err<List<FixturePredictionDto>>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+  }
+}
+
 /// Owns the fixture-identity register/correct commands
 /// (`POST /fixtures` / `PUT /fixtures/{id}`) — the fixture-IDENTITY seam
 /// (Axiom 3; Next-Task decision 2026-07-11, option (a)). Modelled as a
 /// controller, not a `FutureProvider`, for the same reason as
 /// [UserSanctionController]: a one-shot admin command, not a passive view an
-/// admin screen loads on entry. No other provider reads a fixture's schedule
-/// today, so a success here has nothing to invalidate.
+/// admin screen loads on entry.
 @riverpod
 class FixtureScheduleController extends _$FixtureScheduleController {
   FixtureScheduleApi get _api => ref.read(fixtureScheduleApiProvider);
@@ -237,8 +274,12 @@ class FixtureScheduleController extends _$FixtureScheduleController {
 
   /// Corrects an already-registered fixture's identity by [fixtureId] (a
   /// mistyped team name or kickoff time, before the round is linked/locked).
+  /// [seasonId] is the season it's currently linked into, so every screen
+  /// browsing that season's fixtures (and the current-month list) refreshes
+  /// with the corrected identity immediately.
   Future<void> correct({
     required String fixtureId,
+    required String seasonId,
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
@@ -251,6 +292,10 @@ class FixtureScheduleController extends _$FixtureScheduleController {
       kickoffAt: kickoffAt,
     );
     _apply(result);
+    if (state is AsyncData<FixtureScheduleDto>) {
+      ref.invalidate(seasonFixturesProvider(seasonId));
+      ref.invalidate(currentMonthFixturesProvider);
+    }
   }
 
   void _apply(Result<FixtureScheduleDto> result) {
@@ -275,9 +320,12 @@ class RecordFixtureResultController extends _$RecordFixtureResultController {
   @override
   AsyncValue<FixtureResultDto>? build() => null;
 
-  /// Records fixture [fixtureId]'s actual final score.
+  /// Records fixture [fixtureId]'s actual final score, under [seasonId] so
+  /// every screen showing that season's fixtures (current-month list, home
+  /// summary, in-season fixture list) refreshes with the new score.
   Future<void> record({
     required String fixtureId,
+    required String seasonId,
     required int homeGoals,
     required int awayGoals,
   }) async {
@@ -294,6 +342,10 @@ class RecordFixtureResultController extends _$RecordFixtureResultController {
         StackTrace.current,
       ),
     };
+    if (state is AsyncData<FixtureResultDto>) {
+      ref.invalidate(currentMonthFixturesProvider);
+      ref.invalidate(seasonFixturesProvider(seasonId));
+    }
   }
 }
 
@@ -307,8 +359,10 @@ class ScoreFixtureController extends _$ScoreFixtureController {
   @override
   AsyncValue<FixtureScoresDto>? build() => null;
 
-  /// Scores every prediction recorded for [fixtureId].
-  Future<void> score(String fixtureId) async {
+  /// Scores every prediction recorded for [fixtureId], under [seasonId] so
+  /// prediction history (per-user grades/points) and both the season and
+  /// live fixture leaderboards refresh with the new scores immediately.
+  Future<void> score(String fixtureId, String seasonId) async {
     state = const AsyncValue.loading();
     final result = await _api.scoreFixture(fixtureId);
     state = switch (result) {
@@ -318,6 +372,11 @@ class ScoreFixtureController extends _$ScoreFixtureController {
         StackTrace.current,
       ),
     };
+    if (state is AsyncData<FixtureScoresDto>) {
+      ref.invalidate(myFixturePredictionsProvider);
+      ref.invalidate(seasonLeaderboardProvider(seasonId));
+      ref.invalidate(fixtureLeaderboardProvider(seasonId));
+    }
   }
 }
 
@@ -330,8 +389,10 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
   @override
   AsyncValue<PostFixtureToLedgerResponseDto>? build() => null;
 
-  /// Posts fixture [fixtureId]'s already-computed scores to the ledger.
-  Future<void> post(String fixtureId) async {
+  /// Posts fixture [fixtureId]'s already-computed scores to the ledger,
+  /// under [seasonId] so the season/fixture leaderboards and the hall of
+  /// fame reflect the posted points immediately.
+  Future<void> post(String fixtureId, String seasonId) async {
     state = const AsyncValue.loading();
     final result = await _api.postFixtureToLedger(fixtureId);
     state = switch (result) {
@@ -343,6 +404,11 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
         StackTrace.current,
       ),
     };
+    if (state is AsyncData<PostFixtureToLedgerResponseDto>) {
+      ref.invalidate(seasonLeaderboardProvider(seasonId));
+      ref.invalidate(fixtureLeaderboardProvider(seasonId));
+      ref.invalidate(hallOfFameProvider);
+    }
   }
 }
 

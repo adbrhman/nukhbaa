@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import 'admin_sections.dart';
 import 'screens/sections/admin_coming_soon_section.dart';
 import 'screens/sections/admin_dashboard_section.dart';
+import 'screens/sections/admin_predictions_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
@@ -163,6 +164,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.ledger => const LedgerLookupSection(),
       AdminSection.fixtures => const FixtureScheduleSection(),
       AdminSection.resultsScoring => const ResultsScoringSection(),
+      AdminSection.predictions => const AdminPredictionsSection(),
       _ => AdminComingSoonSection(title: adminSectionLabel(section, l10n)),
     };
   }
