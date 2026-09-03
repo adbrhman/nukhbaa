@@ -129,3 +129,4 @@
 - [تصحيح] السطر السابق (TeamLogo) غير دقيق: فشل replace_once على current_month_fixtures_screen.dart (0 تطابق)، فتوقف السكربت هناك. المُنفَّذ فعليًا فقط: إنشاء core/ui/team_logo.dart (غير مُستخدَم بعد). الشاشات الثلاث لم تُعدَّل. 04:59
 - [ui-fix-02] current_month_fixtures_screen.dart: تحقّقتُ من الملف الفعلي (السكربت الأصلي افترض استيرادًا خاطئًا لـscore_pill.dart غير موجود فيه، وهذا سبب فشل 01). أُضيف import team_logo.dart، واستُبدل crest بـTeamLogo. لم يُختبر flutter analyze محليًا بعد. 05:08
 - [ui-fix-03] fixture_prediction_screen.dart: تحقّقتُ من imports/_TeamHeader الفعليين (طابقا افتراض 01 الأصلي بلا فروقات). أُضيف import team_logo.dart، واستُبدل crest بـTeamLogo. لم يُختبر flutter analyze محليًا بعد. 05:13
+- [ui-fix-verify] flutter analyze --fatal-warnings نظيف بعد دمج TeamLogo في الملفات الأربعة (01-04). لا أخطاء import_lint، لا تحذيرات. جاهز للمراجعة قبل push. 05:17

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/ui/team_logo.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -211,31 +212,11 @@ class _TeamMini extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     final TeamBrand? brand = lookupTeam(name);
     final String display = teamDisplayName(name);
-    final Widget crest = ClipOval(
-      child: brand == null
-          ? Container(
-              width: _crestSize,
-              height: _crestSize,
-              color: tokens.surfaceHigh,
-            )
-          : Image.network(
-              brand.logoUrl,
-              width: _crestSize,
-              height: _crestSize,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: _crestSize,
-                height: _crestSize,
-                color: brand.c1,
-              ),
-              loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : Container(
-                      width: _crestSize,
-                      height: _crestSize,
-                      color: tokens.surfaceHigh,
-                    ),
-            ),
+    final Widget crest = TeamLogo(
+      displayName: display,
+      crestUrl: brand?.logoUrl,
+      brandColor: brand?.c1,
+      size: _crestSize,
     );
     final Text label = Text(
       display,
