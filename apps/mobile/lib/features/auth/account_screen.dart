@@ -245,63 +245,65 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.createGroup'),
-                          icon: Icons.group_add_outlined,
-                          label: l10n.createGroup,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const CreateGroupScreen(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.joinGroup'),
-                          icon: Icons.group_outlined,
-                          label: l10n.joinGroup,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const JoinGroupScreen(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  IntrinsicHeight(
+                    child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          Expanded(
+                                            child: _HomeActionCard(
+                                              itemKey: const Key('account.createGroup'),
+                                              icon: Icons.group_add_outlined,
+                                              label: l10n.createGroup,
+                                              tokens: tokens,
+                                              text: text,
+                                              onTap: () => Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) => const CreateGroupScreen(),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: AppSpacing.md),
+                                          Expanded(
+                                            child: _HomeActionCard(
+                                              itemKey: const Key('account.joinGroup'),
+                                              icon: Icons.group_outlined,
+                                              label: l10n.joinGroup,
+                                              tokens: tokens,
+                                              text: text,
+                                              onTap: () => Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) => const JoinGroupScreen(),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (user.role == 'admin') ...[
+                                        const SizedBox(height: AppSpacing.xl),
+                                        _SectionHeader(
+                                          title: l10n.homeAdminSection,
+                                          tokens: tokens,
+                                          text: text,
+                                        ),
+                                        const SizedBox(height: AppSpacing.md),
+                                        _HomeListCard(
+                                          itemKey: const Key('account.adminDashboard'),
+                                          icon: Icons.admin_panel_settings_outlined,
+                                          label: l10n.adminDashboard,
+                                          tokens: tokens,
+                                          text: text,
+                                          onTap: () => Navigator.of(context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) => const AdminHubScreen(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  )
                   ),
-                  if (user.role == 'admin') ...[
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionHeader(
-                      title: l10n.homeAdminSection,
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeListCard(
-                      itemKey: const Key('account.adminDashboard'),
-                      icon: Icons.admin_panel_settings_outlined,
-                      label: l10n.adminDashboard,
-                      tokens: tokens,
-                      text: text,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AdminHubScreen(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
             ),
           ),
         ),
