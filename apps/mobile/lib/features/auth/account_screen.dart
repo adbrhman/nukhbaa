@@ -50,7 +50,7 @@ class AccountScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        title: Text(l10n.appTitle, key: const Key('account.title')),
         actions: [
           IconButton(
             key: const Key('account.notifications'),
@@ -157,39 +157,41 @@ class AccountScreen extends ConsumerWidget {
                     text: text,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.myPredictions'),
-                          icon: Icons.history_outlined,
-                          label: l10n.myPredictions,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const PredictionHistoryScreen(),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _HomeActionCard(
+                            itemKey: const Key('account.myPredictions'),
+                            icon: Icons.history_outlined,
+                            label: l10n.myPredictions,
+                            tokens: tokens,
+                            text: text,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const PredictionHistoryScreen(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: _HomeActionCard(
-                          itemKey: const Key('account.hallOfFame'),
-                          icon: Icons.workspace_premium_outlined,
-                          label: l10n.hallOfFame,
-                          tokens: tokens,
-                          text: text,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const HallOfFameScreen(),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _HomeActionCard(
+                            itemKey: const Key('account.hallOfFame'),
+                            icon: Icons.workspace_premium_outlined,
+                            label: l10n.hallOfFame,
+                            tokens: tokens,
+                            text: text,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const HallOfFameScreen(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   _SectionHeader(
@@ -229,19 +231,19 @@ class AccountScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                   const SizedBox(height: AppSpacing.md),
-                   _HomeListCard(
-                     itemKey: const Key('account.ledger'),
-                     icon: Icons.account_balance_wallet_outlined,
-                     label: 'سجل نقاطي',
-                     tokens: tokens,
-                     text: text,
-                     onTap: () => Navigator.of(context).push(
-                       MaterialPageRoute<void>(
-                         builder: (_) => const _MyLedgerRoute(),
-                       ),
-                     ),
-                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  _HomeListCard(
+                    itemKey: const Key('account.ledger'),
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'سجل نقاطي',
+                    tokens: tokens,
+                    text: text,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const _MyLedgerRoute(),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -740,12 +742,10 @@ class _MyLedgerRoute extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final predictions = ref.watch(myFixturePredictionsProvider);
     return predictions.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stackTrace) => _LedgerUnavailable(
-        message: 'تعذر تحديد مشارك حسابك.',
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stackTrace) =>
+          _LedgerUnavailable(message: 'تعذر تحديد مشارك حسابك.'),
       data: (items) {
         if (items.isEmpty) {
           return const _LedgerUnavailable(

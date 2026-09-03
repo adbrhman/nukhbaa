@@ -26,18 +26,18 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   int currentIndex = 0;
 
   List<Widget> get pages => <Widget>[
-        HomeScreen(
-          user: widget.user,
-          onOpenMatches: () => setState(() => currentIndex = 1),
-          onOpenPredictions: () => setState(() => currentIndex = 2),
-          onOpenLeaderboards: () => setState(() => currentIndex = 3),
-          onOpenAccount: () => setState(() => currentIndex = 4),
-        ),
-        const CurrentMonthFixturesScreen(),
-        const PredictionHistoryScreen(),
-        const LeaderboardsScreen(),
-        AccountScreen(user: widget.user),
-      ];
+    HomeScreen(
+      user: widget.user,
+      onOpenMatches: () => setState(() => currentIndex = 1),
+      onOpenPredictions: () => setState(() => currentIndex = 2),
+      onOpenLeaderboards: () => setState(() => currentIndex = 3),
+      onOpenAccount: () => setState(() => currentIndex = 4),
+    ),
+    const CurrentMonthFixturesScreen(),
+    const PredictionHistoryScreen(),
+    const LeaderboardsScreen(),
+    AccountScreen(user: widget.user),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +82,7 @@ class NukhbaaBottomNav extends StatelessWidget {
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home_rounded,
                 label: 'الرئيسية',
+                navKey: const Key('nav.item.home'),
                 destination: 0,
               ),
               _item(
@@ -89,6 +90,7 @@ class NukhbaaBottomNav extends StatelessWidget {
                 icon: Icons.sports_soccer_outlined,
                 activeIcon: Icons.sports_soccer,
                 label: 'المباريات',
+                navKey: const Key('nav.item.fixtures'),
                 destination: 1,
               ),
               _item(
@@ -96,6 +98,7 @@ class NukhbaaBottomNav extends StatelessWidget {
                 icon: Icons.bolt_outlined,
                 activeIcon: Icons.bolt_rounded,
                 label: 'توقعاتي',
+                navKey: const Key('nav.item.predictions'),
                 destination: 2,
               ),
               _item(
@@ -103,6 +106,7 @@ class NukhbaaBottomNav extends StatelessWidget {
                 icon: Icons.leaderboard_outlined,
                 activeIcon: Icons.leaderboard_rounded,
                 label: 'المتصدرون',
+                navKey: const Key('nav.item.leaders'),
                 destination: 3,
               ),
               _item(
@@ -110,6 +114,7 @@ class NukhbaaBottomNav extends StatelessWidget {
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
                 label: 'الحساب',
+                navKey: const Key('nav.item.account'),
                 destination: 4,
               ),
             ],
@@ -125,12 +130,14 @@ class NukhbaaBottomNav extends StatelessWidget {
     required IconData activeIcon,
     required String label,
     required int destination,
+    required Key navKey,
   }) {
     final tokens = context.tokens;
     final active = index == destination;
     final color = active ? tokens.primaryLight : tokens.textSecondary;
     return Expanded(
       child: InkWell(
+        key: navKey,
         onTap: () => onChanged(destination),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
