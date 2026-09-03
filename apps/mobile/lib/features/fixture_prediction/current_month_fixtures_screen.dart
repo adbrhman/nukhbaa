@@ -29,6 +29,7 @@ import '../../core/design/app_stroke.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/team_logo.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
 import '../history/fixture_scores_providers.dart';
@@ -603,31 +604,11 @@ class _TeamHeader extends StatelessWidget {
     final tokens = context.tokens;
     final TeamBrand? brand = lookupTeam(name);
     final String display = teamDisplayName(name);
-    final Widget crest = ClipOval(
-      child: brand == null
-          ? Container(
-              width: _crestSize,
-              height: _crestSize,
-              color: tokens.surfaceHigh,
-            )
-          : Image.network(
-              brand.logoUrl,
-              width: _crestSize,
-              height: _crestSize,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: _crestSize,
-                height: _crestSize,
-                color: brand.c1,
-              ),
-              loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : Container(
-                      width: _crestSize,
-                      height: _crestSize,
-                      color: tokens.surfaceHigh,
-                    ),
-            ),
+    final Widget crest = TeamLogo(
+      displayName: display,
+      crestUrl: brand?.logoUrl,
+      brandColor: brand?.c1,
+      size: _crestSize,
     );
     final Text label = Text(
       display,
