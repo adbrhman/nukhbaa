@@ -193,16 +193,8 @@ class _OverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final fixtureCount = fixtures.when(
-      data: (items) => items.length,
-      error: (_, _) => null,
-      loading: () => null,
-    );
-    final seasonCount = seasons.when(
-      data: (items) => items.length,
-      error: (_, _) => null,
-      loading: () => null,
-    );
+    final fixtureCount = fixtures.value?.length;
+    final seasonCount = seasons.value?.length;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(

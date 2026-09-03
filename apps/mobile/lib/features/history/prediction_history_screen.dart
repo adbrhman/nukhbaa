@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
+import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -183,7 +184,7 @@ class _ScoreLine extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _ScorePill(home: score.homeGoals, away: score.awayGoals),
+              ScorePill(home: score.homeGoals, away: score.awayGoals),
               if (badge != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
@@ -234,31 +235,3 @@ class _TeamMini extends StatelessWidget {
   }
 }
 
-/// The centered "2 - 1" pill between the two [_TeamMini]s.
-class _ScorePill extends StatelessWidget {
-  const _ScorePill({required this.home, required this.away});
-
-  final int home;
-  final int away;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens tokens = context.tokens;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: tokens.border),
-      ),
-      child: Text(
-        '$home - $away',
-        style: TextStyle(
-          color: tokens.textPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-      ),
-    );
-  }
-}

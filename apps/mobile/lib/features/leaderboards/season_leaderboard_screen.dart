@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_tokens.dart';
+import '../../core/ui/rank_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'leaderboards_providers.dart';
@@ -95,7 +96,7 @@ class _SeasonLeaderboardRow extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('leaderboard.item.${entry.participantId}'),
-      leading: _RankBadge(rank: entry.rank),
+       leading: RankBadge(rank: entry.rank),
       title: Text(
         entry.participantId,
         key: Key('leaderboard.participant.${entry.participantId}'),
@@ -148,7 +149,7 @@ class _FixtureLeaderboardRow extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     return ListTile(
       key: Key('leaderboard.fixture.item.${entry.participantId}'),
-      leading: _RankBadge(rank: entry.rank),
+       leading: RankBadge(rank: entry.rank),
       title: Text(
         entry.participantId,
         key: Key('leaderboard.fixture.participant.${entry.participantId}'),
@@ -163,29 +164,3 @@ class _FixtureLeaderboardRow extends StatelessWidget {
   }
 }
 
-/// The leading rank indicator shared by both tabs: the top three ranks show a
-/// medal, every other rank shows its plain number, exactly as before this
-/// screen grew badges.
-class _RankBadge extends StatelessWidget {
-  const _RankBadge({required this.rank});
-
-  final int rank;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens tokens = context.tokens;
-    final String? medal = switch (rank) {
-      1 => '🥇',
-      2 => '🥈',
-      3 => '🥉',
-      _ => null,
-    };
-    if (medal != null) {
-      return CircleAvatar(
-        backgroundColor: tokens.gold.withValues(alpha: 0.16),
-        child: Text(medal, style: const TextStyle(fontSize: 18)),
-      );
-    }
-    return CircleAvatar(child: Text('$rank'));
-  }
-}

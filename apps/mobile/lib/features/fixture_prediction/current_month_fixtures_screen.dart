@@ -30,6 +30,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
 import '../../core/ui/team_logo.dart';
+import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
 import '../history/fixture_scores_providers.dart';
@@ -689,7 +690,7 @@ class _CenterStatus extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          _ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
+           ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
           Text(_badge ?? '', style: const TextStyle(fontSize: 12)),
         ],
@@ -699,7 +700,7 @@ class _CenterStatus extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          _ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
+           ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
           Text(
             l10n.predictionPendingResultLabel,
@@ -734,41 +735,6 @@ class _CenterStatus extends StatelessWidget {
   }
 }
 
-/// The centered "H - A" pill — identical presentation to
-/// `prediction_history_screen.dart`'s private `_ScorePill`, duplicated
-/// locally (each feature file stays self-contained, per this codebase's
-/// existing convention — e.g. `_isLocked` is likewise duplicated verbatim
-/// rather than shared) rather than sharing a widget across features.
-class _ScorePill extends StatelessWidget {
-  const _ScorePill({required this.home, required this.away});
-
-  final int home;
-  final int away;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brSm,
-        border: Border.all(color: tokens.border),
-      ),
-      child: Text(
-        '$home - $away',
-        style: TextStyle(
-          color: tokens.textPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-      ),
-    );
-  }
-}
 
 /// The 1/X/2 quick-fill row (spec: "أزرار 1/X/2 (تعبئة)"). The highlighted
 /// button is *derived* from [homeGoals]/[awayGoals] rather than tracked as
