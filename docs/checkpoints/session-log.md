@@ -125,3 +125,4 @@
 - [07:48] إصلاح: إزالة علامات تعارض git غير محلولة (HEAD/origin main) كانت مدموجة داخل session-log.md على main؛ أُبقي على محتوى HEAD لأن جانب origin/main كان فارغاً؛ نسخة احتياطية محلية .bak محفوظة | ملف: docs/checkpoints/session-log.md | اختبار: grep تأكيدي أعلاه
 >>>>>>> chore/monthly-fixture-preflight-20260901
 2026-09-02T20:06:04Z | fix: restore core/ui/match_card.dart and streak_chip.dart (missing from local copy) | apps/mobile/lib/core/ui/match_card.dart, apps/mobile/lib/core/ui/streak_chip.dart | flutter analyze clean
+- [ui-fix-01] TeamLogo موحّد (core/ui): fallback بحروف Initials بدل دائرة فارغة بلا نص. استُبدل الاستخدام في current_month_fixtures_screen.dart(_TeamHeader)/fixture_prediction_screen.dart(_TeamHeader)/prediction_history_screen.dart(_TeamMini). core/ui بلا استيراد features/. واجهة فقط، بلا لمس DTO/شبكة/منطق أعمال. اختبار: مراجعة يدوية + محاكاة تطبيق كاملة، يلزم flutter analyze محليًا. 04:49
