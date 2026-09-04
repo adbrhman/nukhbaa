@@ -29,14 +29,18 @@ values (
 )
 on conflict (id) do nothing;
 
-insert into competition.seasons (id, competition_id, label)
+insert into competition.seasons (id, competition_id, label, start_at, end_at)
 values (
   '252dbdbf-fa77-4a46-a60e-bb2565fdd888',
   '496e8eae-0be2-4065-b15a-dd53b577c323',
-  '2026/27'
+  '2026/27',
+  (date_trunc('month', now() at time zone 'utc') at time zone 'utc'),
+  (date_trunc('month', now() at time zone 'utc') at time zone 'utc') + interval '1 month'
 )
 on conflict (id) do update
   set label = excluded.label,
+      start_at = excluded.start_at,
+      end_at = excluded.end_at,
       updated_at = now();
 
 do $$

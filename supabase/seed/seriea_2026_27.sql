@@ -32,14 +32,18 @@ on conflict (id) do update
       visibility = excluded.visibility,
       updated_at = now();
 
-insert into competition.seasons (id, competition_id, label)
+insert into competition.seasons (id, competition_id, label, start_at, end_at)
 values (
   '22222222-2222-4222-8222-000000000006',
   '11111111-1111-4111-8111-000000000006',
-  '2026/27'
+  '2026/27',
+  (date_trunc('month', now() at time zone 'utc') at time zone 'utc'),
+  (date_trunc('month', now() at time zone 'utc') at time zone 'utc') + interval '1 month'
 )
 on conflict (id) do update
   set label = excluded.label,
+      start_at = excluded.start_at,
+      end_at = excluded.end_at,
       updated_at = now();
 
 do $$
