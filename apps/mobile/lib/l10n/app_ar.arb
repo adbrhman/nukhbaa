@@ -107,6 +107,7 @@
   "submitPredictionButton": "إرسال التوقع",
   "predictionDoubleLabel": "الدبل",
   "predictionMakeItDoubleLabel": "×2 اختَرها دبل",
+  "accountDarkModeLabel": "الوضع الداكن",
   "predictionFixtureLockedLabel": "بدأت المباراة",
   "predictionDoubleHint": "اختر مباراة واحدة كدبل قبل الإرسال.",
   "predictionIncompleteHint": "أدخل نتيجة كل مباراة مفتوحة قبل الإرسال.",

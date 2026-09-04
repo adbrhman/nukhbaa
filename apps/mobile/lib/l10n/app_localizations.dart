@@ -744,6 +744,12 @@ abstract class AppLocalizations {
   /// **'Make it double ×2'**
   String get predictionMakeItDoubleLabel;
 
+  /// Label on the account screen's dark-mode SwitchListTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get accountDarkModeLabel;
+
   /// Small label under a fixture that has already kicked off and can no longer be edited.
   ///
   /// In en, this message translates to:

@@ -282,6 +282,10 @@
   "@predictionMakeItDoubleLabel": {
     "description": "Label on the FotMob-style match card's double toggle button (both unselected and selected states)."
   },
+  "accountDarkModeLabel": "Dark mode",
+  "@accountDarkModeLabel": {
+    "description": "Label on the account screen's dark-mode SwitchListTile."
+  },
   "predictionFixtureLockedLabel": "Started",
   "@predictionFixtureLockedLabel": {
     "description": "Small label under a fixture that has already kicked off and can no longer be edited."

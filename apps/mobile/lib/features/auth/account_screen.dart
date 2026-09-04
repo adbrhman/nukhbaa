@@ -26,6 +26,7 @@ import '../ledger/ledger_screen.dart';
 import '../history/prediction_history_providers.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
+import '../../core/theme/theme_controller.dart';
 import 'session_controller.dart';
 
 /// The signed-in user's home hub — a card-based dashboard replacing the flat
@@ -104,6 +105,8 @@ class AccountScreen extends ConsumerWidget {
                       tokens: tokens,
                       text: text,
                     ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _DarkModeToggle(),
                     // Raw identity fields (id/role/status/email) are debug-only
                     // diagnostics, never production UI - kept behind
                     // kDebugMode instead of deleted so the team can still
@@ -388,6 +391,41 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The one dark/light toggle for the whole app (§8) — reuses
+/// [themeControllerProvider] verbatim, no new state mechanism. [ThemeMode]
+/// is tri-valued (`system`/`light`/`dark`) but a [SwitchListTile] is binary,
+/// so `system` reads as off (light) and [ThemeController.toggle] (already
+/// binary light↔dark) drives the switch.
+class _DarkModeToggle extends ConsumerWidget {
+  const _DarkModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppTokens tokens = context.tokens;
+    final ThemeMode mode = ref.watch(themeControllerProvider);
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: AppRadius.brMd,
+        border: Border.all(color: tokens.border),
+      ),
+      child: SwitchListTile(
+        key: const Key('account.darkModeToggle'),
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+        activeThumbColor: tokens.primary,
+        title: Text(
+          l10n.accountDarkModeLabel,
+          style: TextStyle(color: tokens.textPrimary),
+        ),
+        value: mode == ThemeMode.dark,
+        onChanged: (_) => ref.read(themeControllerProvider.notifier).toggle(),
       ),
     );
   }
