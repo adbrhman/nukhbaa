@@ -139,3 +139,5 @@
 2026-09-04T11:59:08Z — 02_fix_no_default_pick: شاشة المباريات كانت تُظهر X مُحدّدة تلقائيًا (_homeGoals/_awayGoals تبدآن بـ0 والتحديد مشتق من home==away) وتسمح بحفظ توقّع 0-0 لم يختره المستخدم؛ صار الاختيار nullable وزر الحفظ معطّلًا حتى اختيار 1/X/2، وحُذف debugPrint المؤقت من شريحة الدبل — apps/mobile/lib/features/fixture_prediction/current_month_fixtures_screen.dart
 
 2026-09-04T11:59:15Z — 02b_fix_no_default_pick_season_screen: تطبيق إصلاح 02 نفسه على البطاقة المكرّرة في الشاشة الموسمية (اختيار nullable، حفظ معطّل بلا اختيار، حذف debugPrint) — apps/mobile/lib/features/fixture_prediction/fixture_prediction_screen.dart
+
+2026-09-04T11:59:24Z — 03_fix_scoring_success_banners: زرّا احتساب المباراة والترحيل إلى السجل كانا يعرضان AdminErrorBanner فقط بلا أي تغذية راجعة عند النجاح؛ أُضيف AdminSuccessBanner لكلٍّ منهما (عدد التوقعات المحتسبة / عدد القيود المضافة، وصفر يعني ترحيلًا مسبقًا) — apps/mobile/lib/features/admin/screens/sections/results_scoring_section.dart

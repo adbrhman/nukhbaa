@@ -188,12 +188,27 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                     scoreFixtureState!.error as AppError,
                   ),
                 ),
+              if (scoreFixtureState is AsyncData<FixtureScoresDto>)
+                AdminSuccessBanner(
+                  message:
+                      'تم الاحتساب — عدد التوقعات المحتسبة: '
+                      '${scoreFixtureState.value.scores.length}',
+                ),
               if (postFixtureLedgerState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
                     postFixtureLedgerState!.error as AppError,
                   ),
                 ),
+              if (postFixtureLedgerState
+                  is AsyncData<PostFixtureToLedgerResponseDto>)
+                AdminSuccessBanner(
+                  message:
+                      'تم الترحيل — قيود جديدة: '
+                      '${postFixtureLedgerState.value.appendedEntries.length} '
+                      '(صفر يعني أنّ المباراة مُرحّلة مسبقًا)',
+                ),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
