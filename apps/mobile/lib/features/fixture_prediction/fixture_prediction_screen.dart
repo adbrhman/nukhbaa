@@ -250,7 +250,16 @@ class _FixturePredictionCardState
     });
   }
 
-  void _toggleDouble() => setState(() => _isDouble = !_isDouble);
+  void _toggleDouble() {
+    // TEMPORARY debug instrumentation — see current_month_fixtures_screen
+    // .dart's identical note.
+    debugPrint(
+      '[DoubleChip] tap received, fixtureId=${widget.fixture.fixtureId}, '
+      '_isDouble before=$_isDouble',
+    );
+    setState(() => _isDouble = !_isDouble);
+    debugPrint('[DoubleChip] _isDouble after=$_isDouble');
+  }
 
   void _submit() {
     ref
@@ -799,29 +808,60 @@ class _DoubleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final Color fg = selected ? tokens.gold : tokens.textSecondary;
+    final Color bg = selected
+        ? tokens.gold.withValues(alpha: 0.16)
+        : tokens.surfaceElevated;
+    final Color border = selected ? tokens.gold : tokens.border;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: Key('fixturePrediction.double.$fixtureId'),
-          borderRadius: BorderRadius.circular(AppSizes.pillRadius),
-          onTap: enabled ? onTap : null,
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: AppSizes.minTouchTarget,
-              minWidth: AppSizes.minTouchTarget,
+      // Plain GestureDetector with opaque hit-test behavior instead of
+      // InkWell/Material — rules out any InkWell-specific hit-testing
+      // quirk while debugging the reported "double chip doesn't respond"
+      // issue; also gives the selected state an unmistakable
+      // tint+border+bold treatment (matching _QuickFillButton's
+      // convention) instead of relying on AppBadge's subtler tone swap.
+      child: GestureDetector(
+        key: Key('fixturePrediction.double.$fixtureId'),
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? onTap : null,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.minTouchTarget,
+            minWidth: AppSizes.minTouchTarget,
+          ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppSizes.pillRadius),
+            border: Border.all(
+              color: border,
+              width: selected ? AppStroke.selected : AppStroke.regular,
             ),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            child: AppBadge(
-              label: '×2 ${l10n.predictionDoubleLabel}',
-              tone: selected ? AppBadgeTone.gold : AppBadgeTone.muted,
-              icon: selected ? Icons.check_circle : Icons.circle_outlined,
-            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                size: AppSizes.iconInline,
+                color: fg,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                '×2 ${l10n.predictionDoubleLabel}',
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
       ),

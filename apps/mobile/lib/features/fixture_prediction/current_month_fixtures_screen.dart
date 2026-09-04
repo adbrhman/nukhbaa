@@ -230,7 +230,20 @@ class _CurrentMonthFixtureCardState
     });
   }
 
-  void _toggleDouble() => setState(() => _isDouble = !_isDouble);
+  void _toggleDouble() {
+    // TEMPORARY debug instrumentation — remove once the tap-registration
+    // issue reported on this control is confirmed fixed. Prints both
+    // before and after the flip so a missing "before" line in `flutter
+    // logs`/console isolates "tap never reached onTap" from a state/paint
+    // issue (in which case both lines print but the badge never visibly
+    // changes).
+    debugPrint(
+      '[DoubleChip] tap received, fixtureId=${_fixture.fixtureId}, '
+      '_isDouble before=$_isDouble',
+    );
+    setState(() => _isDouble = !_isDouble);
+    debugPrint('[DoubleChip] _isDouble after=$_isDouble');
+  }
 
   void _submit() {
     ref
@@ -795,29 +808,60 @@ class _DoubleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final Color fg = selected ? tokens.gold : tokens.textSecondary;
+    final Color bg = selected
+        ? tokens.gold.withValues(alpha: 0.16)
+        : tokens.surfaceElevated;
+    final Color border = selected ? tokens.gold : tokens.border;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: Key('currentMonthFixtures.double.$fixtureId'),
-          borderRadius: BorderRadius.circular(AppSizes.pillRadius),
-          onTap: enabled ? onTap : null,
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: AppSizes.minTouchTarget,
-              minWidth: AppSizes.minTouchTarget,
+      // Plain GestureDetector with opaque hit-test behavior instead of
+      // InkWell/Material — rules out any InkWell-specific hit-testing
+      // quirk while debugging the reported "double chip doesn't respond"
+      // issue; also gives the selected state an unmistakable
+      // tint+border+bold treatment (matching _QuickFillButton's
+      // convention) instead of relying on AppBadge's subtler tone swap.
+      child: GestureDetector(
+        key: Key('currentMonthFixtures.double.$fixtureId'),
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? onTap : null,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.minTouchTarget,
+            minWidth: AppSizes.minTouchTarget,
+          ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppSizes.pillRadius),
+            border: Border.all(
+              color: border,
+              width: selected ? AppStroke.selected : AppStroke.regular,
             ),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            child: AppBadge(
-              label: '×2 ${l10n.predictionDoubleLabel}',
-              tone: selected ? AppBadgeTone.gold : AppBadgeTone.muted,
-              icon: selected ? Icons.check_circle : Icons.circle_outlined,
-            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                size: AppSizes.iconInline,
+                color: fg,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                '×2 ${l10n.predictionDoubleLabel}',
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
       ),
