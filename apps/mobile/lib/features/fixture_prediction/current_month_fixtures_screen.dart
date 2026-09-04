@@ -188,8 +188,8 @@ class _CurrentMonthFixtureCard extends ConsumerStatefulWidget {
 
 class _CurrentMonthFixtureCardState
     extends ConsumerState<_CurrentMonthFixtureCard> {
-  int _homeGoals = 0;
-  int _awayGoals = 0;
+  int? _homeGoals;
+  int? _awayGoals;
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
 
@@ -231,28 +231,16 @@ class _CurrentMonthFixtureCardState
   }
 
   void _toggleDouble() {
-    // TEMPORARY debug instrumentation — remove once the tap-registration
-    // issue reported on this control is confirmed fixed. Prints both
-    // before and after the flip so a missing "before" line in `flutter
-    // logs`/console isolates "tap never reached onTap" from a state/paint
-    // issue (in which case both lines print but the badge never visibly
-    // changes).
-    debugPrint(
-      '[DoubleChip] tap received, fixtureId=${_fixture.fixtureId}, '
-      '_isDouble before=$_isDouble',
-    );
     setState(() => _isDouble = !_isDouble);
-    debugPrint('[DoubleChip] _isDouble after=$_isDouble');
   }
 
   void _submit() {
+    final int? home = _homeGoals;
+    final int? away = _awayGoals;
+    if (home == null || away == null) return;
     ref
         .read(fixturePredictionControllerProvider(_key).notifier)
-        .submit(
-          homeGoals: _homeGoals,
-          awayGoals: _awayGoals,
-          isDouble: _isDouble,
-        );
+        .submit(homeGoals: home, awayGoals: away, isDouble: _isDouble);
   }
 
   @override
@@ -315,6 +303,7 @@ class _CurrentMonthFixtureCardState
     }
 
     final enabled = !inFlight && !locked;
+    final bool hasPick = _homeGoals != null && _awayGoals != null;
     final fixtureId = _fixture.fixtureId;
     final bool isGraded =
         myGrade == 'exact_scoreline' ||
@@ -454,7 +443,7 @@ class _CurrentMonthFixtureCardState
                   const Spacer(),
                   FilledButton(
                     key: Key('currentMonthFixtures.submit.$fixtureId'),
-                    onPressed: enabled ? _submit : null,
+                    onPressed: enabled && hasPick ? _submit : null,
                     child: inFlight
                         ? const SizedBox(
                             width: AppSizes.progressSm,
@@ -668,8 +657,8 @@ class _QuickFillRow extends StatelessWidget {
     required this.fixtureId,
   });
 
-  final int homeGoals;
-  final int awayGoals;
+  final int? homeGoals;
+  final int? awayGoals;
   final bool enabled;
   final void Function(int home, int away) onSelect;
   final String fixtureId;
@@ -677,9 +666,12 @@ class _QuickFillRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bool isHomeWin = homeGoals > awayGoals;
-    final bool isDraw = homeGoals == awayGoals;
-    final bool isAwayWin = homeGoals < awayGoals;
+    final int? home = homeGoals;
+    final int? away = awayGoals;
+    final bool picked = home != null && away != null;
+    final bool isHomeWin = picked && home > away;
+    final bool isDraw = picked && home == away;
+    final bool isAwayWin = picked && home < away;
     return Row(
       children: <Widget>[
         Expanded(
