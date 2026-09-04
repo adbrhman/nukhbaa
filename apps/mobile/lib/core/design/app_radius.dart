@@ -10,6 +10,7 @@ abstract final class AppRadius {
   static const double xl = 24;
   static const double xxl = 32;
   static const double card = 16;
+  static const double cardLarge = 24;
   static const double button = 12;
 
   static const BorderRadius brXs = BorderRadius.all(Radius.circular(xs));
@@ -19,6 +20,13 @@ abstract final class AppRadius {
   static const BorderRadius brXl = BorderRadius.all(Radius.circular(xl));
   static const BorderRadius brXxl = BorderRadius.all(Radius.circular(xxl));
   static const BorderRadius brCard = BorderRadius.all(Radius.circular(card));
+
+  /// Larger card radius for a more pronounced, premium card treatment
+  /// (e.g. the FotMob-style match card) — [card] (16) is under the 20px
+  /// floor that style calls for.
+  static const BorderRadius brCardLarge = BorderRadius.all(
+    Radius.circular(cardLarge),
+  );
   static const BorderRadius brButton = BorderRadius.all(
     Radius.circular(button),
   );

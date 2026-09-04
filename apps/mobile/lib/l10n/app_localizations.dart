@@ -738,6 +738,12 @@ abstract class AppLocalizations {
   /// **'Double'**
   String get predictionDoubleLabel;
 
+  /// Label on the FotMob-style match card's double toggle button (both unselected and selected states).
+  ///
+  /// In en, this message translates to:
+  /// **'Make it double ×2'**
+  String get predictionMakeItDoubleLabel;
+
   /// Small label under a fixture that has already kicked off and can no longer be edited.
   ///
   /// In en, this message translates to:

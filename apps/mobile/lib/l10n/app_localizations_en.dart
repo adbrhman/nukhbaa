@@ -389,6 +389,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get predictionDoubleLabel => 'Double';
 
   @override
+  String get predictionMakeItDoubleLabel => 'Make it double ×2';
+
+  @override
   String get predictionFixtureLockedLabel => 'Started';
 
   @override

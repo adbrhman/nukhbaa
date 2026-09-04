@@ -36,4 +36,11 @@ abstract final class AppOpacity {
 
   /// Alpha used for a status container's border.
   static const double statusBorder = 0.28;
+
+  /// Tint of a brand color washed into a card background gradient (e.g. the
+  /// home/away team-color wash on a match card).
+  static const double tint = 0.18;
+
+  /// Alpha of a brand-color ambient glow/shadow behind a card.
+  static const double glow = 0.22;
 }

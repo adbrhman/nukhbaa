@@ -395,6 +395,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get predictionDoubleLabel => 'الدبل';
 
   @override
+  String get predictionMakeItDoubleLabel => '×2 اختَرها دبل';
+
+  @override
   String get predictionFixtureLockedLabel => 'بدأت المباراة';
 
   @override
