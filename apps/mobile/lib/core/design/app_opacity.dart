@@ -43,9 +43,4 @@ abstract final class AppOpacity {
 
   /// Alpha of a brand-color ambient glow/shadow behind a card.
   static const double glow = 0.22;
-
-  /// Alpha of the small brand-color glow directly behind one team crest
-  /// (distinct from the wider ambient card [glow] — a tighter, subtler
-  /// halo scoped to the logo itself).
-  static const double crestGlow = 0.14;
 }

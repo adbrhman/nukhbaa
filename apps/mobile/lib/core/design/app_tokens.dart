@@ -21,8 +21,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.bronze,
     required this.error,
     required this.errorContainer,
-    required this.success,
-    required this.successContainer,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
@@ -51,8 +49,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color bronze;
   final Color error;
   final Color errorContainer;
-  final Color success;
-  final Color successContainer;
   final Color textPrimary;
   final Color textSecondary;
   final Color textMuted;
@@ -83,8 +79,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
     bronze: AppColors.bronze,
     error: AppColors.error,
     errorContainer: AppColors.errorContainer,
-    success: AppColors.success,
-    successContainer: AppColors.successContainer,
     textPrimary: AppColors.textPrimary,
     textSecondary: AppColors.textSecondary,
     textMuted: AppColors.textMuted,
@@ -128,8 +122,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
     bronze: AppColorsLight.bronze,
     error: AppColorsLight.error,
     errorContainer: AppColorsLight.errorContainer,
-    success: AppColorsLight.success,
-    successContainer: AppColorsLight.successContainer,
     textPrimary: AppColorsLight.textPrimary,
     textSecondary: AppColorsLight.textSecondary,
     textMuted: AppColorsLight.textMuted,
@@ -174,8 +166,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? bronze,
     Color? error,
     Color? errorContainer,
-    Color? success,
-    Color? successContainer,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
@@ -204,8 +194,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
       bronze: bronze ?? this.bronze,
       error: error ?? this.error,
       errorContainer: errorContainer ?? this.errorContainer,
-      success: success ?? this.success,
-      successContainer: successContainer ?? this.successContainer,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
@@ -243,12 +231,6 @@ class AppTokens extends ThemeExtension<AppTokens> {
       bronze: Color.lerp(bronze, other.bronze, t)!,
       error: Color.lerp(error, other.error, t)!,
       errorContainer: Color.lerp(errorContainer, other.errorContainer, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      successContainer: Color.lerp(
-        successContainer,
-        other.successContainer,
-        t,
-      )!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
