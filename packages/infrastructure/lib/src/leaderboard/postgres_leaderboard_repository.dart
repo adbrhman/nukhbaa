@@ -41,7 +41,7 @@ final class PostgresLeaderboardRepository implements LeaderboardRepository {
   // The order here is unspecified on purpose (the domain sorts + ranks); we do
   // not ORDER BY in SQL so the ranking rule lives in exactly one place.
   static const String _selectSeasonStandingsSql = '''
-SELECT participant_id, total_points, entry_count, joined_at
+SELECT participant_id, display_name, total_points, entry_count, joined_at
 FROM leaderboard.season_standings
 WHERE season_id = @season_id
 ''';
@@ -106,6 +106,7 @@ LIMIT @limit
     final participantIdResult = ParticipantId.tryParse(
       row['participant_id']?.toString(),
     );
+    final displayName = row['display_name']?.toString();
     final totalPoints = _readInt(row['total_points']);
     final entryCount = _readInt(row['entry_count']);
     final joinedAt = _readUtcTimestamp(row['joined_at']);
@@ -117,6 +118,11 @@ LIMIT @limit
           'participant_id',
           participantIdResult.error.message,
         ),
+      );
+    }
+    if (displayName == null || displayName.isEmpty) {
+      return Result.err(
+        _corrupt('season_standings', 'display_name', 'null or empty'),
       );
     }
     if (totalPoints == null) {
@@ -141,6 +147,7 @@ LIMIT @limit
     // leak a raw invariant/validation out of a read path.
     final projected = LeaderboardEntry.projected(
       participantId: (participantIdResult as Ok<ParticipantId>).value,
+      displayName: displayName,
       totalPoints: totalPoints,
       entryCount: entryCount,
       joinedAt: joinedAt,

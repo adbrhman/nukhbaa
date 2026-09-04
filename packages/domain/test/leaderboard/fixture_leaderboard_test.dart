@@ -24,7 +24,11 @@ void main() {
     test(
       'empty scores yields an empty board (legitimate live/partial state)',
       () {
-        final result = FixtureLeaderboard.rank(seasonId: seasonId, scores: []);
+        final result = FixtureLeaderboard.rank(
+          seasonId: seasonId,
+          scores: [],
+          displayNames: const {},
+        );
         expect(result, isA<Ok<FixtureLeaderboard>>());
         final board = (result as Ok<FixtureLeaderboard>).value;
         expect(board.entries, isEmpty);
@@ -48,6 +52,11 @@ void main() {
       final result = FixtureLeaderboard.rank(
         seasonId: seasonId,
         scores: scores,
+        displayNames: const {
+          'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb': 'Player B',
+          'dddddddd-dddd-dddd-dddd-dddddddddddd': 'Player D',
+          'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee': 'Player E',
+        },
       );
       final board = (result as Ok<FixtureLeaderboard>).value;
       expect(board.entries, hasLength(1));
@@ -74,6 +83,10 @@ void main() {
         final result = FixtureLeaderboard.rank(
           seasonId: seasonId,
           scores: scores,
+          displayNames: const {
+            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb': 'Player B',
+            'dddddddd-dddd-dddd-dddd-dddddddddddd': 'Player D',
+          },
         );
         final board = (result as Ok<FixtureLeaderboard>).value;
         expect(board.entries, hasLength(2));
@@ -104,6 +117,11 @@ void main() {
       final result = FixtureLeaderboard.rank(
         seasonId: seasonId,
         scores: scores,
+        displayNames: const {
+          'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb': 'Player B',
+          'dddddddd-dddd-dddd-dddd-dddddddddddd': 'Player D',
+          'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee': 'Player E',
+        },
       );
       final board = (result as Ok<FixtureLeaderboard>).value;
       expect(board.entries[0].rank, 1);

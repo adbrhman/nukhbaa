@@ -48,6 +48,7 @@ void main() {
                 participantId:
                     (ParticipantId.tryParse(participantId) as Ok<ParticipantId>)
                         .value,
+                displayName: 'Player $participantId',
                 totalPoints: total,
                 entryCount: count,
                 joinedAt: joinedAt,

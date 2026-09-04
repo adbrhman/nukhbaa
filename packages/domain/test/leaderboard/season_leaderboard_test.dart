@@ -19,6 +19,7 @@ LeaderboardEntry _entry(
 }) {
   final result = LeaderboardEntry.projected(
     participantId: ParticipantId(participant),
+    displayName: 'Player $participant',
     totalPoints: totalPoints,
     entryCount: entryCount,
     joinedAt: joinedAt ?? DateTime.utc(2026, 7, 1, 9),

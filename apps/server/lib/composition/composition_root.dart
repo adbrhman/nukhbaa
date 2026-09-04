@@ -513,6 +513,7 @@ final class CompositionRoot {
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
+        participantReader: _unwiredParticipantReader,
       );
 
   /// Backs the "absent" [GetFixtureScores]'s repositories: throws so a
@@ -1338,6 +1339,7 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
+        participantReader: participantReader, // already built (Ledger slice)
       ),
       getFixtureScores: GetFixtureScores(
         competitionRepository: competitionRepository,

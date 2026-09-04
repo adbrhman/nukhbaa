@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 const _entry = LeaderboardEntryDto(
   rank: 1,
   participantId: '44444444-4444-4444-4444-444444444444',
+  displayName: 'Player One',
   totalPoints: 12,
   entryCount: 3,
 );
@@ -14,18 +15,21 @@ const _board = SeasonLeaderboardDto(
     LeaderboardEntryDto(
       rank: 1,
       participantId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      displayName: 'Alice',
       totalPoints: 12,
       entryCount: 3,
     ),
     LeaderboardEntryDto(
       rank: 1,
       participantId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      displayName: 'Bob',
       totalPoints: 12,
       entryCount: 2,
     ),
     LeaderboardEntryDto(
       rank: 3,
       participantId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      displayName: 'Carol',
       totalPoints: 5,
       entryCount: 1,
     ),
@@ -58,6 +62,7 @@ void main() {
       const negative = LeaderboardEntryDto(
         rank: 4,
         participantId: '44444444-4444-4444-4444-444444444444',
+        displayName: 'Player One',
         totalPoints: -3,
         entryCount: 2,
       );

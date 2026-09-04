@@ -96,6 +96,7 @@ void main() {
       rank: 1,
       participantId: '44444444-4444-4444-4444-444444444444',
       userId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      displayName: 'Bob',
       totalPoints: 12,
       entryCount: 3,
     );
@@ -131,6 +132,7 @@ void main() {
         rank: 2,
         participantId: '55555555-5555-5555-5555-555555555555',
         userId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        displayName: 'Carol',
         totalPoints: 5,
         entryCount: 1,
       );

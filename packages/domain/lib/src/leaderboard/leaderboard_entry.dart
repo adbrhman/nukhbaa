@@ -30,6 +30,7 @@ import 'package:shared/shared.dart';
 final class LeaderboardEntry {
   const LeaderboardEntry._({
     required this.participantId,
+    required this.displayName,
     required this.totalPoints,
     required this.entryCount,
     required this.joinedAt,
@@ -53,6 +54,7 @@ final class LeaderboardEntry {
   /// projects `totalPoints == 0`, `entryCount == 0`.
   static Result<LeaderboardEntry> projected({
     required ParticipantId participantId,
+    required String displayName,
     required int totalPoints,
     required int entryCount,
     required DateTime joinedAt,
@@ -76,6 +78,7 @@ final class LeaderboardEntry {
     return Result.ok(
       LeaderboardEntry._(
         participantId: participantId,
+        displayName: displayName,
         totalPoints: totalPoints,
         entryCount: entryCount,
         joinedAt: joinedAt,
@@ -89,6 +92,11 @@ final class LeaderboardEntry {
 
   /// The participant this line belongs to (by id).
   final ParticipantId participantId;
+
+  /// The platform-owned display name of the user behind this participant
+  /// (`identity.users.display_name` — never null/empty once a user row
+  /// exists), so the leaderboard shows a real name instead of a raw id.
+  final String displayName;
 
   /// The signed SUM of the participant's ledger `amount`s — equals their
   /// `LedgerBalance.balance` (corrections already netted in — Axiom 5).
@@ -125,6 +133,7 @@ final class LeaderboardEntry {
     return Result.ok(
       LeaderboardEntry._(
         participantId: participantId,
+        displayName: displayName,
         totalPoints: totalPoints,
         entryCount: entryCount,
         joinedAt: joinedAt,
@@ -137,14 +146,21 @@ final class LeaderboardEntry {
   bool operator ==(Object other) =>
       other is LeaderboardEntry &&
       other.participantId == participantId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
       other.joinedAt == joinedAt &&
       other.rank == rank;
 
   @override
-  int get hashCode =>
-      Object.hash(participantId, totalPoints, entryCount, joinedAt, rank);
+  int get hashCode => Object.hash(
+    participantId,
+    displayName,
+    totalPoints,
+    entryCount,
+    joinedAt,
+    rank,
+  );
 
   @override
   String toString() =>

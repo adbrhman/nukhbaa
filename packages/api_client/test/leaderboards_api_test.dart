@@ -16,12 +16,14 @@ void main() {
             LeaderboardEntryDto(
               rank: 1,
               participantId: 'p-a',
+              displayName: 'Alice',
               totalPoints: 12,
               entryCount: 3,
             ),
             LeaderboardEntryDto(
               rank: 2,
               participantId: 'p-b',
+              displayName: 'Bob',
               totalPoints: 7,
               entryCount: 3,
             ),

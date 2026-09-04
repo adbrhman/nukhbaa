@@ -123,12 +123,14 @@ const SeasonLeaderboardDto sampleBoard = SeasonLeaderboardDto(
     LeaderboardEntryDto(
       rank: 1,
       participantId: 'p-a',
+      displayName: 'Alice',
       totalPoints: 12,
       entryCount: 3,
     ),
     LeaderboardEntryDto(
       rank: 2,
       participantId: 'p-b',
+      displayName: 'Bob',
       totalPoints: 7,
       entryCount: 3,
     ),
@@ -150,12 +152,14 @@ const FixtureLeaderboardDto sampleFixtureBoard = FixtureLeaderboardDto(
     FixtureLeaderboardEntryDto(
       rank: 1,
       participantId: 'p-a',
+      displayName: 'Alice',
       totalPoints: 9,
       fixturesScored: 3,
     ),
     FixtureLeaderboardEntryDto(
       rank: 2,
       participantId: 'p-b',
+      displayName: 'Bob',
       totalPoints: 4,
       fixturesScored: 3,
     ),

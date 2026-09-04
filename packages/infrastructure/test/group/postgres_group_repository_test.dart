@@ -166,12 +166,14 @@ Map<String, dynamic> _membershipRow({
 Map<String, dynamic> _standingRow({
   String participant = _participantId,
   String user = _memberId,
+  Object? displayName = 'Player One',
   Object totalPoints = 4,
   Object entryCount = 1,
   Object joinedAt = '2026-07-02T00:00:00.000Z',
 }) => {
   'participant_id': participant,
   'user_id': user,
+  'display_name': displayName,
   'total_points': totalPoints,
   'entry_count': entryCount,
   'joined_at': joinedAt,
@@ -540,6 +542,7 @@ void main() {
           first.entry.participantId,
           (ParticipantId.tryParse(_participantId) as Ok<ParticipantId>).value,
         );
+        expect(first.entry.displayName, 'Player One');
         expect(first.entry.totalPoints, 7);
         expect(first.entry.entryCount, 2);
         expect(first.entry.joinedAt.isUtc, isTrue);
@@ -624,6 +627,22 @@ void main() {
     test('maps a corrupt participant id to a transient row_corrupt', () async {
       final repo = PostgresGroupRepository(
         _rows([_standingRow(participant: 'not-a-uuid')]),
+      );
+
+      final result = await repo.groupSeasonStandings(
+        groupId: _gId,
+        seasonId: _sId,
+      );
+
+      expect(
+        (result as Err<List<GroupStandingEntry>>).error.code,
+        'group.row_corrupt',
+      );
+    });
+
+    test('maps a null/empty display_name to a transient row_corrupt', () async {
+      final repo = PostgresGroupRepository(
+        _rows([_standingRow(displayName: null)]),
       );
 
       final result = await repo.groupSeasonStandings(

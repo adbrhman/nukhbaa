@@ -312,6 +312,7 @@ GroupStandingEntry standing({
   entry:
       (LeaderboardEntry.projected(
                 participantId: ParticipantId(participantId),
+                displayName: 'Player $userId',
                 totalPoints: totalPoints,
                 entryCount: entryCount,
                 joinedAt: joinedAt ?? DateTime.utc(2026, 7, 1, 9),

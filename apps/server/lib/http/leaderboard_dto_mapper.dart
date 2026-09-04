@@ -20,6 +20,7 @@ LeaderboardEntryDto leaderboardEntryToDto(LeaderboardEntry entry) {
   return LeaderboardEntryDto(
     rank: entry.rank,
     participantId: entry.participantId.value,
+    displayName: entry.displayName,
     totalPoints: entry.totalPoints,
     entryCount: entry.entryCount,
   );
@@ -107,6 +108,7 @@ FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
   return FixtureLeaderboardEntryDto(
     rank: entry.rank,
     participantId: entry.participantId.value,
+    displayName: entry.displayName,
     totalPoints: entry.totalPoints,
     fixturesScored: entry.fixturesScored,
   );

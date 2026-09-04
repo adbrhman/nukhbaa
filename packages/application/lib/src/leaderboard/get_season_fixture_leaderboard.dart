@@ -1,5 +1,6 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/ledger/ports/participant_reader.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_score_repository.dart';
 import 'package:domain/domain.dart';
@@ -32,13 +33,16 @@ final class GetSeasonFixtureLeaderboard {
     required CompetitionRepository competitionRepository,
     required FixturePredictionRepository fixturePredictionRepository,
     required FixtureScoreRepository fixtureScoreRepository,
+    required ParticipantReader participantReader,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
-       _fixtureScores = fixtureScoreRepository;
+       _fixtureScores = fixtureScoreRepository,
+       _participants = participantReader;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScoreRepository _fixtureScores;
+  final ParticipantReader _participants;
 
   /// Returns the live `FixtureLeaderboard` for [seasonId], visible to
   /// [principal] as a member of that season.
@@ -88,6 +92,23 @@ final class GetSeasonFixtureLeaderboard {
     }
     final scores = (scoresResult as Ok<List<ParticipantFixtureScore>>).value;
 
-    return FixtureLeaderboard.rank(seasonId: sId, scores: scores);
+    // Resolve each scored participant's display name so the board shows a
+    // real name instead of a raw id (mirrors the season-standings VIEW's
+    // identity.users join, without a VIEW to join through here since this
+    // board is aggregated in-memory from live fixture scores).
+    final participantIds = <ParticipantId>{
+      for (final score in scores) score.participantId,
+    }.toList(growable: false);
+    final namesResult = await _participants.findDisplayNames(participantIds);
+    if (namesResult is Err<Map<String, String>>) {
+      return Result.err(namesResult.error);
+    }
+    final displayNames = (namesResult as Ok<Map<String, String>>).value;
+
+    return FixtureLeaderboard.rank(
+      seasonId: sId,
+      scores: scores,
+      displayNames: displayNames,
+    );
   }
 }

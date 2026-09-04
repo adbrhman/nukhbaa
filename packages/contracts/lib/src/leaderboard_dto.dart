@@ -28,18 +28,23 @@ final class LeaderboardEntryDto {
   const LeaderboardEntryDto({
     required this.rank,
     required this.participantId,
+    required this.displayName,
     required this.totalPoints,
     required this.entryCount,
     this.schemaVersion = currentSchemaVersion,
   });
 
   /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
-  /// payloads that predate the field.
+  /// payloads that predate the field. [displayName] falls back to
+  /// [participantId] for a legacy payload that predates the field, so an
+  /// older cached response still renders something rather than a null crash.
   factory LeaderboardEntryDto.fromJson(Map<String, Object?> json) {
+    final participantId = json['participant_id']! as String;
     return LeaderboardEntryDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       rank: json['rank']! as int,
-      participantId: json['participant_id']! as String,
+      participantId: participantId,
+      displayName: (json['display_name'] as String?) ?? participantId,
       totalPoints: json['total_points']! as int,
       entryCount: json['entry_count']! as int,
     );
@@ -54,6 +59,9 @@ final class LeaderboardEntryDto {
 
   /// The owning participant id (UUID string).
   final String participantId;
+
+  /// The platform-owned display name of the user behind this participant.
+  final String displayName;
 
   /// The signed point total — the server projection over the participant's
   /// append-only ledger stream (equals their balance; may be negative if a
@@ -71,6 +79,7 @@ final class LeaderboardEntryDto {
     'schema_version': schemaVersion,
     'rank': rank,
     'participant_id': participantId,
+    'display_name': displayName,
     'total_points': totalPoints,
     'entry_count': entryCount,
   };
@@ -80,13 +89,20 @@ final class LeaderboardEntryDto {
       other is LeaderboardEntryDto &&
       other.rank == rank &&
       other.participantId == participantId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(rank, participantId, totalPoints, entryCount, schemaVersion);
+  int get hashCode => Object.hash(
+    rank,
+    participantId,
+    displayName,
+    totalPoints,
+    entryCount,
+    schemaVersion,
+  );
 }
 
 /// The wire shape of a season's ranked standings (read projection of the domain
@@ -480,18 +496,23 @@ final class FixtureLeaderboardEntryDto {
   const FixtureLeaderboardEntryDto({
     required this.rank,
     required this.participantId,
+    required this.displayName,
     required this.totalPoints,
     required this.fixturesScored,
     this.schemaVersion = currentSchemaVersion,
   });
 
   /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
-  /// payloads that predate the field.
+  /// payloads that predate the field. [displayName] falls back to
+  /// [participantId] for a legacy payload that predates the field, so an
+  /// older cached response still renders something rather than a null crash.
   factory FixtureLeaderboardEntryDto.fromJson(Map<String, Object?> json) {
+    final participantId = json['participant_id']! as String;
     return FixtureLeaderboardEntryDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       rank: json['rank']! as int,
-      participantId: json['participant_id']! as String,
+      participantId: participantId,
+      displayName: (json['display_name'] as String?) ?? participantId,
       totalPoints: json['total_points']! as int,
       fixturesScored: json['fixtures_scored']! as int,
     );
@@ -506,6 +527,9 @@ final class FixtureLeaderboardEntryDto {
 
   /// The owning participant id (UUID string).
   final String participantId;
+
+  /// The platform-owned display name of the user behind this participant.
+  final String displayName;
 
   /// The running point total summed from every fixture score so far.
   final int totalPoints;
@@ -522,6 +546,7 @@ final class FixtureLeaderboardEntryDto {
     'schema_version': schemaVersion,
     'rank': rank,
     'participant_id': participantId,
+    'display_name': displayName,
     'total_points': totalPoints,
     'fixtures_scored': fixturesScored,
   };
@@ -531,6 +556,7 @@ final class FixtureLeaderboardEntryDto {
       other is FixtureLeaderboardEntryDto &&
       other.rank == rank &&
       other.participantId == participantId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.fixturesScored == fixturesScored &&
       other.schemaVersion == schemaVersion;
@@ -539,6 +565,7 @@ final class FixtureLeaderboardEntryDto {
   int get hashCode => Object.hash(
     rank,
     participantId,
+    displayName,
     totalPoints,
     fixturesScored,
     schemaVersion,

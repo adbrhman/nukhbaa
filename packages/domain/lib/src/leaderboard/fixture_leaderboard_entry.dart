@@ -25,6 +25,7 @@ import 'package:shared/shared.dart';
 final class FixtureLeaderboardEntry {
   const FixtureLeaderboardEntry._({
     required this.participantId,
+    required this.displayName,
     required this.totalPoints,
     required this.fixturesScored,
     required this.rank,
@@ -37,11 +38,13 @@ final class FixtureLeaderboardEntry {
   /// `FixtureLeaderboard.rank`.
   factory FixtureLeaderboardEntry.aggregate({
     required ParticipantId participantId,
+    required String displayName,
     required int totalPoints,
     required int fixturesScored,
   }) {
     return FixtureLeaderboardEntry._(
       participantId: participantId,
+      displayName: displayName,
       totalPoints: totalPoints,
       fixturesScored: fixturesScored,
       rank: _unassignedRank,
@@ -53,6 +56,11 @@ final class FixtureLeaderboardEntry {
 
   /// The participant this line belongs to (by id).
   final ParticipantId participantId;
+
+  /// The platform-owned display name of the user behind this participant
+  /// (`identity.users.display_name`), so the leaderboard shows a real name
+  /// instead of a raw id.
+  final String displayName;
 
   /// The running total of every fixture score this participant has been
   /// awarded so far this season (never recomputed here).
@@ -88,6 +96,7 @@ final class FixtureLeaderboardEntry {
     return Result.ok(
       FixtureLeaderboardEntry._(
         participantId: participantId,
+        displayName: displayName,
         totalPoints: totalPoints,
         fixturesScored: fixturesScored,
         rank: assignedRank,
@@ -99,13 +108,19 @@ final class FixtureLeaderboardEntry {
   bool operator ==(Object other) =>
       other is FixtureLeaderboardEntry &&
       other.participantId == participantId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.fixturesScored == fixturesScored &&
       other.rank == rank;
 
   @override
-  int get hashCode =>
-      Object.hash(participantId, totalPoints, fixturesScored, rank);
+  int get hashCode => Object.hash(
+    participantId,
+    displayName,
+    totalPoints,
+    fixturesScored,
+    rank,
+  );
 
   @override
   String toString() =>

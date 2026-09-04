@@ -62,7 +62,7 @@ class _GroupLeaderboardRow extends StatelessWidget {
         ),
       ),
       title: Text(
-        entry.userId,
+        entry.displayName,
         key: Key('groupLeaderboard.user.${entry.participantId}'),
         style: TextStyle(color: tokens.textPrimary),
       ),

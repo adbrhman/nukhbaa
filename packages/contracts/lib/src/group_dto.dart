@@ -391,19 +391,24 @@ final class GroupLeaderboardEntryDto {
     required this.rank,
     required this.participantId,
     required this.userId,
+    required this.displayName,
     required this.totalPoints,
     required this.entryCount,
     this.schemaVersion = currentSchemaVersion,
   });
 
   /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
-  /// payloads that predate the field.
+  /// payloads that predate the field. [displayName] falls back to [userId]
+  /// for a legacy payload that predates the field, so an older cached
+  /// response still renders something rather than a null crash.
   factory GroupLeaderboardEntryDto.fromJson(Map<String, Object?> json) {
+    final userId = json['user_id']! as String;
     return GroupLeaderboardEntryDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       rank: json['rank']! as int,
       participantId: json['participant_id']! as String,
-      userId: json['user_id']! as String,
+      userId: userId,
+      displayName: (json['display_name'] as String?) ?? userId,
       totalPoints: json['total_points']! as int,
       entryCount: json['entry_count']! as int,
     );
@@ -422,6 +427,9 @@ final class GroupLeaderboardEntryDto {
   /// season participant (the group filters by user, not participant).
   final String userId;
 
+  /// The platform-owned display name of the user behind this entry.
+  final String displayName;
+
   /// The signed point total (server projection; equals the participant's ledger
   /// balance for the season — Axiom 5).
   final int totalPoints;
@@ -438,6 +446,7 @@ final class GroupLeaderboardEntryDto {
     'rank': rank,
     'participant_id': participantId,
     'user_id': userId,
+    'display_name': displayName,
     'total_points': totalPoints,
     'entry_count': entryCount,
   };
@@ -448,6 +457,7 @@ final class GroupLeaderboardEntryDto {
       other.rank == rank &&
       other.participantId == participantId &&
       other.userId == userId &&
+      other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
       other.schemaVersion == schemaVersion;
@@ -457,6 +467,7 @@ final class GroupLeaderboardEntryDto {
     rank,
     participantId,
     userId,
+    displayName,
     totalPoints,
     entryCount,
     schemaVersion,

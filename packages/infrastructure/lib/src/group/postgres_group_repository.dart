@@ -282,6 +282,7 @@ ORDER BY gm.joined_at DESC, g.id ASC
 SELECT
   s.participant_id AS participant_id,
   p.user_id        AS user_id,
+  s.display_name   AS display_name,
   s.total_points   AS total_points,
   s.entry_count    AS entry_count,
   s.joined_at      AS joined_at
@@ -487,6 +488,7 @@ WHERE s.season_id = @season_id
       final participantIdResult = ParticipantId.tryParse(
         row['participant_id']?.toString(),
       );
+      final displayName = row['display_name']?.toString();
       final totalPoints = _readInt(row['total_points']);
       final entryCount = _readInt(row['entry_count']);
       final joinedAt = _readUtcTimestamp(row['joined_at']);
@@ -503,6 +505,11 @@ WHERE s.season_id = @season_id
             'participant_id',
             participantIdResult.error.message,
           ),
+        );
+      }
+      if (displayName == null || displayName.isEmpty) {
+        return Result.err(
+          _corrupt('season_standings', 'display_name', 'null or empty'),
         );
       }
       if (totalPoints == null) {
@@ -523,6 +530,7 @@ WHERE s.season_id = @season_id
 
       final projected = LeaderboardEntry.projected(
         participantId: (participantIdResult as Ok<ParticipantId>).value,
+        displayName: displayName,
         totalPoints: totalPoints,
         entryCount: entryCount,
         joinedAt: joinedAt,

@@ -98,7 +98,7 @@ class _SeasonLeaderboardRow extends StatelessWidget {
       key: Key('leaderboard.item.${entry.participantId}'),
       leading: RankBadge(rank: entry.rank),
       title: Text(
-        entry.participantId,
+        entry.displayName,
         key: Key('leaderboard.participant.${entry.participantId}'),
         style: TextStyle(color: tokens.textPrimary),
       ),
@@ -151,7 +151,7 @@ class _FixtureLeaderboardRow extends StatelessWidget {
       key: Key('leaderboard.fixture.item.${entry.participantId}'),
       leading: RankBadge(rank: entry.rank),
       title: Text(
-        entry.participantId,
+        entry.displayName,
         key: Key('leaderboard.fixture.participant.${entry.participantId}'),
         style: TextStyle(color: tokens.textPrimary),
       ),

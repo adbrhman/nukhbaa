@@ -42,6 +42,7 @@ final class FixtureLeaderboard {
   static Result<FixtureLeaderboard> rank({
     required SeasonId seasonId,
     required List<ParticipantFixtureScore> scores,
+    required Map<String, String> displayNames,
   }) {
     final totals = <String, int>{};
     final counts = <String, int>{};
@@ -59,6 +60,11 @@ final class FixtureLeaderboard {
       for (final key in totals.keys)
         FixtureLeaderboardEntry.aggregate(
           participantId: byId[key]!,
+          // A participant somehow missing a resolved name (never expected —
+          // every participant has a backing user row) still renders instead
+          // of throwing (Application ADR §2: total, no exception escapes a
+          // query path).
+          displayName: displayNames[key] ?? '?',
           totalPoints: totals[key]!,
           fixturesScored: counts[key]!,
         ),

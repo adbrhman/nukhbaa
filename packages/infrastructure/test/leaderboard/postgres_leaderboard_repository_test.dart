@@ -73,11 +73,13 @@ SeasonId get _sId => (SeasonId.tryParse(_seasonId) as Ok<SeasonId>).value;
 
 Map<String, dynamic> _standingRow({
   String participant = _participantId,
+  Object? displayName = 'Player One',
   Object totalPoints = 4,
   Object entryCount = 1,
   Object joinedAt = '2026-07-01T00:00:00.000Z',
 }) => {
   'participant_id': participant,
+  'display_name': displayName,
   'total_points': totalPoints,
   'entry_count': entryCount,
   'joined_at': joinedAt,
@@ -109,6 +111,7 @@ void main() {
 
       final first = entries.first;
       expect(first.participantId, const ParticipantId(_participantId));
+      expect(first.displayName, 'Player One');
       expect(first.totalPoints, 7);
       expect(first.entryCount, 2);
       expect(first.joinedAt.isUtc, isTrue);
@@ -160,6 +163,18 @@ void main() {
         (result as Err<List<LeaderboardEntry>>).error.kind,
         ErrorKind.transient,
       );
+    });
+
+    test('maps a null/empty display_name to a transient row_corrupt', () async {
+      final repo = PostgresLeaderboardRepository(
+        _rows([_standingRow(displayName: null)]),
+      );
+
+      final result = await repo.seasonStandings(_sId);
+
+      final error = (result as Err<List<LeaderboardEntry>>).error;
+      expect(error.kind, ErrorKind.transient);
+      expect(error.code, 'leaderboard.row_corrupt');
     });
 
     test('maps a corrupt participant id to a transient row_corrupt', () async {

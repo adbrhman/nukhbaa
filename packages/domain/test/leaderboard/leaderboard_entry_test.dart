@@ -11,6 +11,7 @@ LeaderboardEntry _ok({
 }) {
   final result = LeaderboardEntry.projected(
     participantId: const ParticipantId(_participant),
+    displayName: 'Player One',
     totalPoints: totalPoints,
     entryCount: entryCount,
     joinedAt: joinedAt ?? DateTime.utc(2026, 7, 1, 9),
@@ -46,6 +47,7 @@ void main() {
     test('rejects a negative entry count', () {
       final result = LeaderboardEntry.projected(
         participantId: const ParticipantId(_participant),
+        displayName: 'Player One',
         totalPoints: 5,
         entryCount: -1,
         joinedAt: DateTime.utc(2026),
@@ -58,6 +60,7 @@ void main() {
     test('rejects a non-UTC joinedAt', () {
       final result = LeaderboardEntry.projected(
         participantId: const ParticipantId(_participant),
+        displayName: 'Player One',
         totalPoints: 5,
         entryCount: 1,
         joinedAt: DateTime(2026, 7, 1, 9), // local, not UTC

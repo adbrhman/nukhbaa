@@ -97,6 +97,7 @@ GroupLeaderboardEntryDto rankedStandingToDto(RankedGroupStanding standing) {
     rank: standing.entry.rank,
     participantId: standing.entry.participantId.value,
     userId: standing.userId.value,
+    displayName: standing.entry.displayName,
     totalPoints: standing.entry.totalPoints,
     entryCount: standing.entry.entryCount,
   );

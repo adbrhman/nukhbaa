@@ -62,12 +62,14 @@ final class FakeLeaderboardRepository implements LeaderboardRepository {
 /// Builds an unranked projection entry (as the adapter would produce it).
 LeaderboardEntry boardEntry({
   required String participantId,
+  String? displayName,
   required int totalPoints,
   int entryCount = 1,
   DateTime? joinedAt,
 }) =>
     (LeaderboardEntry.projected(
               participantId: ParticipantId(participantId),
+              displayName: displayName ?? 'Player $participantId',
               totalPoints: totalPoints,
               entryCount: entryCount,
               joinedAt: joinedAt ?? DateTime.utc(2026, 7, 1, 9),
