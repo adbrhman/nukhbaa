@@ -24,7 +24,8 @@ final class PostgresFixtureLedgerRepository implements FixtureLedgerRepository {
 INSERT INTO ledger.fixture_point_entries
   (id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at)
 VALUES
-  (@id, @participant_id, @fixture_id, @entry_kind, @amount, @source_ref, @occurred_at)
+  (@id, @participant_id, @fixture_id, @entry_kind::ledger.entry_kind,
+   @amount, @source_ref, @occurred_at)
 ON CONFLICT ON CONSTRAINT fixture_point_entries_fixture_score_uniq DO NOTHING
 RETURNING id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at
 ''';

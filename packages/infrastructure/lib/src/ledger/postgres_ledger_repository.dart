@@ -56,7 +56,8 @@ final class PostgresLedgerRepository implements LedgerRepository {
 INSERT INTO ledger.point_entries
   (id, participant_id, round_id, entry_kind, amount, source_ref, occurred_at)
 VALUES
-  (@id, @participant_id, @round_id, @entry_kind, @amount, @source_ref, @occurred_at)
+  (@id, @participant_id, @round_id, @entry_kind::ledger.entry_kind,
+   @amount, @source_ref, @occurred_at)
 ON CONFLICT ON CONSTRAINT point_entries_round_score_uniq DO NOTHING
 RETURNING id, participant_id, round_id, entry_kind, amount, source_ref, occurred_at
 ''';
