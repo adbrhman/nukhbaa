@@ -5,16 +5,15 @@
 /// doc).
 ///
 /// Card design is intentionally kept at parity with
-/// CurrentMonthFixturesScreen's _CurrentMonthFixtureCard (crests,
-/// 1/X/2 quick-fill, numeric steppers, "double" chip, live kickoff
-/// countdown) for visual consistency between the two entry points onto the
-/// same underlying submit slice
-/// ([fixturePredictionControllerProvider]/FixtureSubmissionState, keyed
-/// by the same (seasonId, fixtureId) pair). The shared private widgets
-/// are duplicated here rather than imported from that screen — matching
-/// this codebase's existing convention of keeping each feature file
-/// self-contained (see current_month_fixtures_screen.dart's _ScorePill
-/// doc) — not a new pattern.
+/// CurrentMonthFixturesScreen's _CurrentMonthFixtureCard (crests, 1/X/2
+/// outcome buttons, "double" chip, live kickoff countdown, always-visible
+/// submit — no expand/collapse step, no numeric score input) for visual
+/// consistency between the two entry points onto the same underlying submit
+/// slice ([fixturePredictionControllerProvider]/FixtureSubmissionState,
+/// keyed by the same (seasonId, fixtureId) pair). The shared private
+/// widgets are duplicated here rather than imported from that screen —
+/// matching this codebase's existing convention of keeping each feature
+/// file self-contained — not a new pattern.
 ///
 /// Pre-fill from an already-submitted prediction and the "your forecast"
 /// badge/grade reuse the exact same reads CurrentMonthFixturesScreen
@@ -30,7 +29,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../core/design/app_motion.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -187,12 +185,18 @@ class _FixturePredictionError extends StatelessWidget {
   }
 }
 
-/// One fixture's own editable, expandable card: crests + team names, a
-/// compact center status slot, and — once expanded — a 1/X/2 quick-fill
-/// row, numeric steppers, a "double" chip, and its own submit button. This
-/// fixture's submit lifecycle is entirely independent of every other card
-/// on screen (fixturePredictionControllerProvider is a family keyed per
-/// fixture).
+/// One fixture's own editable card: crests + team names, a compact center
+/// status slot, and — always visible when the fixture isn't locked — the
+/// 1/X/2 outcome buttons, a "double" chip, and its own submit button. No
+/// expand/collapse step: the submit affordance must always be reachable
+/// without a hidden gesture. This fixture's submit lifecycle is entirely
+/// independent of every other card on screen
+/// (fixturePredictionControllerProvider is a family keyed per fixture).
+///
+/// Only the *outcome* (home win / draw / away win) is collected — not an
+/// exact scoreline — via [_applyQuickFill], which still writes a concrete
+/// `(1,0)`/`(0,0)`/`(0,1)` pair so the existing submit contract needs no
+/// change.
 class _FixturePredictionCard extends ConsumerStatefulWidget {
   const _FixturePredictionCard({required this.seasonId, required this.fixture});
 
@@ -206,7 +210,6 @@ class _FixturePredictionCard extends ConsumerStatefulWidget {
 
 class _FixturePredictionCardState
     extends ConsumerState<_FixturePredictionCard> {
-  bool _expanded = false;
   int _homeGoals = 0;
   int _awayGoals = 0;
   bool _isDouble = false;
@@ -237,8 +240,9 @@ class _FixturePredictionCardState
     return null;
   }
 
-  void _toggleExpanded() => setState(() => _expanded = !_expanded);
-
+  /// The only way to set an outcome (spec: "أزرار الاختيار 1/X/2 فقط، بلا
+  /// مربعات نتيجة رقمية") — still writes a concrete goal pair so the
+  /// existing submit contract needs no change.
   void _applyQuickFill(int home, int away) {
     setState(() {
       _homeGoals = home;
@@ -246,17 +250,7 @@ class _FixturePredictionCardState
     });
   }
 
-  void _incrementHome() => setState(() => _homeGoals++);
-
-  void _decrementHome() => setState(() {
-    if (_homeGoals > 0) _homeGoals--;
-  });
-
-  void _incrementAway() => setState(() => _awayGoals++);
-
-  void _decrementAway() => setState(() {
-    if (_awayGoals > 0) _awayGoals--;
-  });
+  void _toggleDouble() => setState(() => _isDouble = !_isDouble);
 
   void _submit() {
     ref
@@ -328,6 +322,10 @@ class _FixturePredictionCardState
 
     final enabled = !inFlight && !locked;
     final fixtureId = widget.fixture.fixtureId;
+    final bool isGraded =
+        myGrade == 'exact_scoreline' ||
+        myGrade == 'correct_outcome' ||
+        myGrade == 'incorrect';
 
     return Container(
       key: Key('fixturePrediction.fixture.$fixtureId'),
@@ -338,241 +336,137 @@ class _FixturePredictionCardState
         borderRadius: AppRadius.brCard,
         border: Border.all(color: tokens.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              key: Key('fixturePrediction.toggle.$fixtureId'),
-              borderRadius: AppRadius.brCard,
-              onTap: _toggleExpanded,
-              child: Tooltip(
-                message: _expanded
-                    ? l10n.fixtureCardCollapseTooltip
-                    : l10n.fixtureCardExpandTooltip,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: _TeamHeader(
-                              name: widget.fixture.homeTeam,
-                              teamId: widget.fixture.homeTeamId,
-                              alignEnd: false,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                            ),
-                            child: _CenterStatus(
-                              locked: locked,
-                              kickoffAt: widget.fixture.kickoffAt,
-                              myPrediction: myPrediction,
-                              grade: myGrade,
-                            ),
-                          ),
-                          Expanded(
-                            child: _TeamHeader(
-                              name: widget.fixture.awayTeam,
-                              teamId: widget.fixture.awayTeamId,
-                              alignEnd: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Center(
-                        child: AnimatedRotation(
-                          turns: _expanded ? 0.5 : 0,
-                          duration: AppMotion.fast,
-                          child: Icon(
-                            Icons.expand_more,
-                            size: AppSizes.iconSm,
-                            color: tokens.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.lg,
-              ),
-              child: _buildExpandedPanel(
-                l10n: l10n,
-                tokens: tokens,
-                enabled: enabled,
-                inFlight: inFlight,
-                myPrediction: myPrediction,
-                grade: myGrade,
-                points: myPoints,
-                submission: submission,
-                fixtureId: fixtureId,
-              ),
-            ),
-            crossFadeState: _expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: AppMotion.standard,
-            sizeCurve: AppMotion.standardCurve,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpandedPanel({
-    required AppLocalizations l10n,
-    required AppTokens tokens,
-    required bool enabled,
-    required bool inFlight,
-    required FixturePredictionDto? myPrediction,
-    required String? grade,
-    required int? points,
-    required FixtureSubmissionState submission,
-    required String fixtureId,
-  }) {
-    final bool isGraded =
-        grade == 'exact_scoreline' ||
-        grade == 'correct_outcome' ||
-        grade == 'incorrect';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (myPrediction != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
               children: <Widget>[
-                AppBadge(
-                  label: l10n.predictionYourForecastScoreLine(
-                    myPrediction.homeGoals,
-                    myPrediction.awayGoals,
+                Expanded(
+                  child: _TeamHeader(
+                    name: widget.fixture.homeTeam,
+                    teamId: widget.fixture.homeTeamId,
+                    alignEnd: false,
                   ),
-                  tone: isGraded ? AppBadgeTone.neutral : AppBadgeTone.muted,
-                  icon: isGraded ? null : Icons.hourglass_bottom,
                 ),
-                if (isGraded && points != null)
-                  AppBadge(
-                    label: l10n.pointsAbbreviated(points),
-                    tone: grade == 'incorrect'
-                        ? AppBadgeTone.muted
-                        : AppBadgeTone.success,
-                    icon: grade == 'exact_scoreline' ? Icons.star : null,
-                  )
-                else if (!isGraded)
-                  AppBadge(
-                    label: l10n.predictionPendingResultLabel,
-                    tone: AppBadgeTone.muted,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
                   ),
+                  child: _CenterStatus(
+                    locked: locked,
+                    kickoffAt: widget.fixture.kickoffAt,
+                    myPrediction: myPrediction,
+                    grade: myGrade,
+                  ),
+                ),
+                Expanded(
+                  child: _TeamHeader(
+                    name: widget.fixture.awayTeam,
+                    teamId: widget.fixture.awayTeamId,
+                    alignEnd: true,
+                  ),
+                ),
               ],
             ),
-          ),
-        _QuickFillRow(
-          homeGoals: _homeGoals,
-          awayGoals: _awayGoals,
-          enabled: enabled,
-          onSelect: _applyQuickFill,
-          fixtureId: fixtureId,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _ScoreStepper(
-                value: _homeGoals,
-                enabled: enabled,
-                onIncrement: _incrementHome,
-                onDecrement: _decrementHome,
-                fixtureId: fixtureId,
-                side: 'home',
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              child: Text('—', style: TextStyle(color: tokens.textSecondary)),
-            ),
-            Expanded(
-              child: _ScoreStepper(
-                value: _awayGoals,
-                enabled: enabled,
-                onIncrement: _incrementAway,
-                onDecrement: _decrementAway,
-                fixtureId: fixtureId,
-                side: 'away',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: <Widget>[
-            _DoubleChip(
-              selected: _isDouble,
-              enabled: enabled,
-              onTap: () => setState(() => _isDouble = !_isDouble),
-              fixtureId: fixtureId,
-            ),
-            const Spacer(),
-            FilledButton(
-              key: Key('fixturePrediction.submit.$fixtureId'),
-              onPressed: enabled ? _submit : null,
-              child: inFlight
-                  ? const SizedBox(
-                      width: AppSizes.progressSm,
-                      height: AppSizes.progressSm,
-                      child: CircularProgressIndicator(
-                        strokeWidth: AppSizes.progressStroke,
+            if (myPrediction != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: <Widget>[
+                    AppBadge(
+                      label: l10n.predictionYourForecastScoreLine(
+                        myPrediction.homeGoals,
+                        myPrediction.awayGoals,
                       ),
-                    )
-                  : Text(l10n.submitFixturePredictionButton),
-            ),
+                      tone: isGraded
+                          ? AppBadgeTone.neutral
+                          : AppBadgeTone.muted,
+                      icon: isGraded ? null : Icons.hourglass_bottom,
+                    ),
+                    if (isGraded && myPoints != null)
+                      AppBadge(
+                        label: l10n.pointsAbbreviated(myPoints),
+                        tone: myGrade == 'incorrect'
+                            ? AppBadgeTone.muted
+                            : AppBadgeTone.success,
+                        icon: myGrade == 'exact_scoreline' ? Icons.star : null,
+                      )
+                    else if (!isGraded)
+                      AppBadge(
+                        label: l10n.predictionPendingResultLabel,
+                        tone: AppBadgeTone.muted,
+                      ),
+                  ],
+                ),
+              ),
+            if (!locked) ...<Widget>[
+              const SizedBox(height: AppSpacing.md),
+              _QuickFillRow(
+                homeGoals: _homeGoals,
+                awayGoals: _awayGoals,
+                enabled: enabled,
+                onSelect: _applyQuickFill,
+                fixtureId: fixtureId,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: <Widget>[
+                  _DoubleChip(
+                    selected: _isDouble,
+                    enabled: enabled,
+                    onTap: _toggleDouble,
+                    fixtureId: fixtureId,
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    key: Key('fixturePrediction.submit.$fixtureId'),
+                    onPressed: enabled ? _submit : null,
+                    child: inFlight
+                        ? const SizedBox(
+                            width: AppSizes.progressSm,
+                            height: AppSizes.progressSm,
+                            child: CircularProgressIndicator(
+                              strokeWidth: AppSizes.progressStroke,
+                            ),
+                          )
+                        : Text(l10n.submitFixturePredictionButton),
+                  ),
+                ],
+              ),
+              if (submission is FixtureSubmissionSucceeded)
+                Padding(
+                  key: Key('fixturePrediction.success.$fixtureId'),
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(
+                    l10n.fixturePredictionSavedMessage,
+                    style: TextStyle(color: tokens.primary, fontSize: 12),
+                  ),
+                ),
+              if (submission is FixtureSubmissionFailed)
+                Padding(
+                  key: Key('fixturePrediction.failure.$fixtureId'),
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(
+                    ErrorPresenter.message(submission.error),
+                    key: Key('fixturePrediction.failure.message.$fixtureId'),
+                    style: TextStyle(color: tokens.error, fontSize: 12),
+                  ),
+                ),
+            ],
           ],
         ),
-        if (submission is FixtureSubmissionSucceeded)
-          Padding(
-            key: Key('fixturePrediction.success.$fixtureId'),
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: Text(
-              l10n.fixturePredictionSavedMessage,
-              style: TextStyle(color: tokens.primary, fontSize: 12),
-            ),
-          ),
-        if (submission is FixtureSubmissionFailed)
-          Padding(
-            key: Key('fixturePrediction.failure.$fixtureId'),
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: Text(
-              ErrorPresenter.message(submission.error),
-              key: Key('fixturePrediction.failure.message.$fixtureId'),
-              style: TextStyle(color: tokens.error, fontSize: 12),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
 
-/// One side's crest + display name, used in the collapsed row. Duplicated
-/// from current_month_fixtures_screen.dart's _TeamHeader (same
+/// One side's crest + display name. Duplicated from
+/// current_month_fixtures_screen.dart's _TeamHeader (same
 /// self-contained-feature-file convention — see this file's doc), including
 /// its [resolveTeamIdentity] resolution (model-backed team catalog first,
 /// name-based `team_registry.dart` fallback otherwise).
@@ -631,13 +525,13 @@ class _TeamHeader extends ConsumerWidget {
   }
 }
 
-/// The compact status slot between the two [_TeamHeader]s in the collapsed
-/// row. Duplicated from current_month_fixtures_screen.dart's
-/// _CenterStatus with the same four-branch precedence (graded >
-/// predicted > locked > upcoming). [myPrediction]/[grade] are fed from
-/// the same myFixturePredictionsProvider/fixtureScoresProvider reads as
-/// that screen (see _FixturePredictionCardState.build), so all four
-/// branches are reachable here too.
+/// The compact status slot between the two [_TeamHeader]s. Duplicated from
+/// current_month_fixtures_screen.dart's _CenterStatus with the same
+/// four-branch precedence (graded > predicted > locked > upcoming).
+/// [myPrediction]/[grade] are fed from the same
+/// myFixturePredictionsProvider/fixtureScoresProvider reads as that screen
+/// (see _FixturePredictionCardState.build), so all four branches are
+/// reachable here too.
 class _CenterStatus extends StatelessWidget {
   const _CenterStatus({
     required this.locked,
@@ -724,7 +618,7 @@ class _CenterStatus extends StatelessWidget {
 }
 
 /// The centered "H - A" pill. Duplicated from
-/// current_month_fixtures_screen.dart's _ScorePill (same
+/// current_month_fixtures_screen.dart's equivalent (same
 /// self-contained-feature-file convention).
 class _ScorePill extends StatelessWidget {
   const _ScorePill({required this.home, required this.away});
@@ -757,7 +651,8 @@ class _ScorePill extends StatelessWidget {
   }
 }
 
-/// The 1/X/2 quick-fill row. Duplicated from
+/// The 1/X/2 outcome row (spec: "أزرار الاختيار 1/X/2 فقط") — the only way
+/// to set a prediction now. Duplicated from
 /// current_month_fixtures_screen.dart's _QuickFillRow — the highlighted
 /// button is derived from [homeGoals]/[awayGoals], never tracked as its
 /// own selection.
@@ -883,100 +778,11 @@ class _QuickFillButton extends StatelessWidget {
   }
 }
 
-/// A numeric stepper for one side's predicted goals. Duplicated from
-/// current_month_fixtures_screen.dart's _ScoreStepper. Refuses to go
-/// below zero locally only so the decrement button can't produce a value
-/// the domain never accepts (the server remains the sole validator).
-class _ScoreStepper extends StatelessWidget {
-  const _ScoreStepper({
-    required this.value,
-    required this.enabled,
-    required this.onIncrement,
-    required this.onDecrement,
-    required this.fixtureId,
-    required this.side,
-  });
-
-  final int value;
-  final bool enabled;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
-  final String fixtureId;
-  final String side;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        _StepperButton(
-          key: Key('fixturePrediction.$side.decrement.$fixtureId'),
-          icon: Icons.remove,
-          tooltip: l10n.scoreStepperDecreaseTooltip,
-          onTap: enabled && value > 0 ? onDecrement : null,
-        ),
-        SizedBox(
-          width: AppSizes.minTouchTarget,
-          child: Text(
-            '$value',
-            key: Key('fixturePrediction.$side.value.$fixtureId'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-            ),
-          ),
-        ),
-        _StepperButton(
-          key: Key('fixturePrediction.$side.increment.$fixtureId'),
-          icon: Icons.add,
-          tooltip: l10n.scoreStepperIncreaseTooltip,
-          onTap: enabled ? onIncrement : null,
-        ),
-      ],
-    );
-  }
-}
-
-/// One +/- control. Duplicated from
-/// current_month_fixtures_screen.dart's _StepperButton, sized to
-/// [AppSizes.minTouchTarget] on both axes.
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    super.key,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onTap,
-      icon: Icon(icon),
-      iconSize: AppSizes.iconMd,
-      color: tokens.textPrimary,
-      disabledColor: tokens.textMuted,
-      constraints: const BoxConstraints(
-        minWidth: AppSizes.minTouchTarget,
-        minHeight: AppSizes.minTouchTarget,
-      ),
-    );
-  }
-}
-
 /// The "double" toggle. Duplicated from
-/// current_month_fixtures_screen.dart's _DoubleChip, wrapping the
-/// existing [AppBadge] component instead of a bare [Checkbox].
+/// current_month_fixtures_screen.dart's _DoubleChip, wrapping the existing
+/// [AppBadge] component instead of a bare [Checkbox]. The tap target spans
+/// a fixed minimum width (not just the content's own width) so a near-miss
+/// tap next to the badge still registers.
 class _DoubleChip extends StatelessWidget {
   const _DoubleChip({
     required this.selected,
@@ -1004,9 +810,13 @@ class _DoubleChip extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(
               minHeight: AppSizes.minTouchTarget,
+              minWidth: AppSizes.minTouchTarget,
             ),
             alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
             child: AppBadge(
               label: '×2 ${l10n.predictionDoubleLabel}',
               tone: selected ? AppBadgeTone.gold : AppBadgeTone.muted,
