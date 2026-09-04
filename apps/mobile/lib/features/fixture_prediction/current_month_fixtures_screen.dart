@@ -62,42 +62,46 @@ class CurrentMonthFixturesScreen extends ConsumerWidget {
           key: const Key('currentMonthFixtures.title'),
         ),
       ),
-      body: feed.when(
-        skipLoadingOnRefresh: false,
-        loading: () => const Center(
-          key: Key('currentMonthFixtures.loading'),
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: CircularProgressIndicator(),
+      body: SafeArea(
+        bottom: true,
+        top: false,
+        child: feed.when(
+          skipLoadingOnRefresh: false,
+          loading: () => const Center(
+            key: Key('currentMonthFixtures.loading'),
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(),
+            ),
           ),
-        ),
-        error: (error, _) => _CurrentMonthFixturesError(
-          error: error,
-          onRetry: () => ref.invalidate(currentMonthFixturesProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return Center(
-              key: const Key('currentMonthFixtures.empty'),
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  l10n.matchesEmpty,
-                  key: const Key('currentMonthFixtures.empty.message'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: tokens.textSecondary),
+          error: (error, _) => _CurrentMonthFixturesError(
+            error: error,
+            onRetry: () => ref.invalidate(currentMonthFixturesProvider),
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return Center(
+                key: const Key('currentMonthFixtures.empty'),
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    l10n.matchesEmpty,
+                    key: const Key('currentMonthFixtures.empty.message'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: tokens.textSecondary),
+                  ),
                 ),
-              ),
+              );
+            }
+            return ListView.builder(
+              key: const Key('currentMonthFixtures.list'),
+              padding: const EdgeInsets.all(16),
+              itemCount: items.length,
+              itemBuilder: (context, index) =>
+                  _CurrentMonthFixtureCard(item: items[index]),
             );
-          }
-          return ListView.builder(
-            key: const Key('currentMonthFixtures.list'),
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            itemBuilder: (context, index) =>
-                _CurrentMonthFixtureCard(item: items[index]),
-          );
-        },
+          },
+        ),
       ),
     );
   }
