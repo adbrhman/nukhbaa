@@ -812,9 +812,9 @@ class _ScoreStepper extends StatelessWidget {
   final String fixtureId;
   final String side;
 
-  static const double _width = 76;
-  static const double _height = 104;
-  static const double _zoneHeight = 34;
+  static const double _width = 68;
+  static const double _height = 92;
+  static const double _zoneHeight = 28;
 
   @override
   Widget build(BuildContext context) {
@@ -857,7 +857,7 @@ class _ScoreStepper extends StatelessWidget {
                 value?.toString() ?? '?',
                 key: Key('currentMonthFixtures.$side.value.$fixtureId'),
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: value == null ? tokens.textMuted : tokens.textPrimary,
                 ),
