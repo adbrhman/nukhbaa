@@ -137,3 +137,5 @@
 2026-09-04T11:59:00Z — 01_fix_leaderboards_screen: المتصدرون كان يعرض participantId ونقاطًا صفرية لأن الشاشة تقرأ seasonLeaderboardProvider (VIEW فوق ledger.point_entries عبر round_id) بينما النقاط تُكتب في ledger.fixture_point_entries؛ استُبدلت القراءة بـfixtureLeaderboardProvider وعُرض displayName وfixturesScored — apps/mobile/lib/features/leaderboards/leaderboards_screen.dart
 
 2026-09-04T11:59:08Z — 02_fix_no_default_pick: شاشة المباريات كانت تُظهر X مُحدّدة تلقائيًا (_homeGoals/_awayGoals تبدآن بـ0 والتحديد مشتق من home==away) وتسمح بحفظ توقّع 0-0 لم يختره المستخدم؛ صار الاختيار nullable وزر الحفظ معطّلًا حتى اختيار 1/X/2، وحُذف debugPrint المؤقت من شريحة الدبل — apps/mobile/lib/features/fixture_prediction/current_month_fixtures_screen.dart
+
+2026-09-04T11:59:15Z — 02b_fix_no_default_pick_season_screen: تطبيق إصلاح 02 نفسه على البطاقة المكرّرة في الشاشة الموسمية (اختيار nullable، حفظ معطّل بلا اختيار، حذف debugPrint) — apps/mobile/lib/features/fixture_prediction/fixture_prediction_screen.dart

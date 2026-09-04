@@ -210,8 +210,8 @@ class _FixturePredictionCard extends ConsumerStatefulWidget {
 
 class _FixturePredictionCardState
     extends ConsumerState<_FixturePredictionCard> {
-  int _homeGoals = 0;
-  int _awayGoals = 0;
+  int? _homeGoals;
+  int? _awayGoals;
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
 
@@ -251,24 +251,16 @@ class _FixturePredictionCardState
   }
 
   void _toggleDouble() {
-    // TEMPORARY debug instrumentation — see current_month_fixtures_screen
-    // .dart's identical note.
-    debugPrint(
-      '[DoubleChip] tap received, fixtureId=${widget.fixture.fixtureId}, '
-      '_isDouble before=$_isDouble',
-    );
     setState(() => _isDouble = !_isDouble);
-    debugPrint('[DoubleChip] _isDouble after=$_isDouble');
   }
 
   void _submit() {
+    final int? home = _homeGoals;
+    final int? away = _awayGoals;
+    if (home == null || away == null) return;
     ref
         .read(fixturePredictionControllerProvider(_key).notifier)
-        .submit(
-          homeGoals: _homeGoals,
-          awayGoals: _awayGoals,
-          isDouble: _isDouble,
-        );
+        .submit(homeGoals: home, awayGoals: away, isDouble: _isDouble);
   }
 
   @override
@@ -330,6 +322,7 @@ class _FixturePredictionCardState
     }
 
     final enabled = !inFlight && !locked;
+    final bool hasPick = _homeGoals != null && _awayGoals != null;
     final fixtureId = widget.fixture.fixtureId;
     final bool isGraded =
         myGrade == 'exact_scoreline' ||
@@ -434,7 +427,7 @@ class _FixturePredictionCardState
                   const Spacer(),
                   FilledButton(
                     key: Key('fixturePrediction.submit.$fixtureId'),
-                    onPressed: enabled ? _submit : null,
+                    onPressed: enabled && hasPick ? _submit : null,
                     child: inFlight
                         ? const SizedBox(
                             width: AppSizes.progressSm,
@@ -674,8 +667,8 @@ class _QuickFillRow extends StatelessWidget {
     required this.fixtureId,
   });
 
-  final int homeGoals;
-  final int awayGoals;
+  final int? homeGoals;
+  final int? awayGoals;
   final bool enabled;
   final void Function(int home, int away) onSelect;
   final String fixtureId;
@@ -683,9 +676,12 @@ class _QuickFillRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bool isHomeWin = homeGoals > awayGoals;
-    final bool isDraw = homeGoals == awayGoals;
-    final bool isAwayWin = homeGoals < awayGoals;
+    final int? home = homeGoals;
+    final int? away = awayGoals;
+    final bool picked = home != null && away != null;
+    final bool isHomeWin = picked && home > away;
+    final bool isDraw = picked && home == away;
+    final bool isAwayWin = picked && home < away;
     return Row(
       children: <Widget>[
         Expanded(
