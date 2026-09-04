@@ -83,226 +83,231 @@ class AccountScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(gradient: tokens.backgroundGradient),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppSizes.maxAccountWidth,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ProfileHeader(
-                    displayName: user.displayName,
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  // Raw identity fields (id/role/status/email) are debug-only
-                  // diagnostics, never production UI - kept behind
-                  // kDebugMode instead of deleted so the team can still
-                  // inspect the signed-in principal while developing/testing.
-                  if (kDebugMode) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    _Field(
-                      label: l10n.userId,
-                      value: user.userId,
-                      valueKey: const Key('account.userId'),
+      body: SafeArea(
+        bottom: true,
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(gradient: tokens.backgroundGradient),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppSizes.maxAccountWidth,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ProfileHeader(
+                      displayName: user.displayName,
                       tokens: tokens,
                       text: text,
                     ),
-                    _Field(
-                      label: l10n.role,
-                      value: user.role,
-                      valueKey: const Key('account.role'),
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    _Field(
-                      label: l10n.status,
-                      value: user.status,
-                      valueKey: const Key('account.status'),
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    if (user.email != null)
+                    // Raw identity fields (id/role/status/email) are debug-only
+                    // diagnostics, never production UI - kept behind
+                    // kDebugMode instead of deleted so the team can still
+                    // inspect the signed-in principal while developing/testing.
+                    if (kDebugMode) ...[
+                      const SizedBox(height: AppSpacing.lg),
                       _Field(
-                        label: l10n.email,
-                        value: user.email!,
-                        valueKey: const Key('account.email'),
+                        label: l10n.userId,
+                        value: user.userId,
+                        valueKey: const Key('account.userId'),
                         tokens: tokens,
                         text: text,
                       ),
-                  ],
-                  const SizedBox(height: AppSpacing.xl),
-                  _MatchesCtaCard(
-                    itemKey: const Key('account.matches'),
-                    title: l10n.matchesTitle,
-                    subtitle: l10n.homeMatchesSubtitle,
-                    tokens: tokens,
-                    text: text,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const CurrentMonthFixturesScreen(),
+                      _Field(
+                        label: l10n.role,
+                        value: user.role,
+                        valueKey: const Key('account.role'),
+                        tokens: tokens,
+                        text: text,
+                      ),
+                      _Field(
+                        label: l10n.status,
+                        value: user.status,
+                        valueKey: const Key('account.status'),
+                        tokens: tokens,
+                        text: text,
+                      ),
+                      if (user.email != null)
+                        _Field(
+                          label: l10n.email,
+                          value: user.email!,
+                          valueKey: const Key('account.email'),
+                          tokens: tokens,
+                          text: text,
+                        ),
+                    ],
+                    const SizedBox(height: AppSpacing.xl),
+                    _MatchesCtaCard(
+                      itemKey: const Key('account.matches'),
+                      title: l10n.matchesTitle,
+                      subtitle: l10n.homeMatchesSubtitle,
+                      tokens: tokens,
+                      text: text,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const CurrentMonthFixturesScreen(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _SectionHeader(
-                    title: l10n.homePerformanceSection,
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _HomeActionCard(
-                            itemKey: const Key('account.myPredictions'),
-                            icon: Icons.history_outlined,
-                            label: l10n.myPredictions,
-                            tokens: tokens,
-                            text: text,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const PredictionHistoryScreen(),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _HomeActionCard(
-                            itemKey: const Key('account.hallOfFame'),
-                            icon: Icons.workspace_premium_outlined,
-                            label: l10n.hallOfFame,
-                            tokens: tokens,
-                            text: text,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const HallOfFameScreen(),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _SectionHeader(
-                    title: l10n.myActiveSeasons,
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _HomeListCard(
-                    itemKey: const Key('account.myActiveSeasons'),
-                    icon: Icons.calendar_month_outlined,
-                    label: l10n.myActiveSeasons,
-                    tokens: tokens,
-                    text: text,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MyActiveSeasonsScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _SectionHeader(
-                    title: l10n.myGroups,
-                    tokens: tokens,
-                    text: text,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _HomeListCard(
-                    itemKey: const Key('account.myGroups'),
-                    icon: Icons.groups_outlined,
-                    label: l10n.myGroups,
-                    tokens: tokens,
-                    text: text,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MyGroupsScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _HomeListCard(
-                    itemKey: const Key('account.ledger'),
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: l10n.myLedgerLabel,
-                    tokens: tokens,
-                    text: text,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const _MyLedgerRoute(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _HomeActionCard(
-                            itemKey: const Key('account.createGroup'),
-                            icon: Icons.group_add_outlined,
-                            label: l10n.createGroup,
-                            tokens: tokens,
-                            text: text,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const CreateGroupScreen(),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _HomeActionCard(
-                            itemKey: const Key('account.joinGroup'),
-                            icon: Icons.group_outlined,
-                            label: l10n.joinGroup,
-                            tokens: tokens,
-                            text: text,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const JoinGroupScreen(),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (user.role == 'admin') ...[
                     const SizedBox(height: AppSpacing.xl),
                     _SectionHeader(
-                      title: l10n.homeAdminSection,
+                      title: l10n.homePerformanceSection,
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _HomeActionCard(
+                              itemKey: const Key('account.myPredictions'),
+                              icon: Icons.history_outlined,
+                              label: l10n.myPredictions,
+                              tokens: tokens,
+                              text: text,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const PredictionHistoryScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _HomeActionCard(
+                              itemKey: const Key('account.hallOfFame'),
+                              icon: Icons.workspace_premium_outlined,
+                              label: l10n.hallOfFame,
+                              tokens: tokens,
+                              text: text,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const HallOfFameScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _SectionHeader(
+                      title: l10n.myActiveSeasons,
                       tokens: tokens,
                       text: text,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _HomeListCard(
-                      itemKey: const Key('account.adminDashboard'),
-                      icon: Icons.admin_panel_settings_outlined,
-                      label: l10n.adminDashboard,
+                      itemKey: const Key('account.myActiveSeasons'),
+                      icon: Icons.calendar_month_outlined,
+                      label: l10n.myActiveSeasons,
                       tokens: tokens,
                       text: text,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const AdminHubScreen(),
+                          builder: (_) => const MyActiveSeasonsScreen(),
                         ),
                       ),
                     ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _SectionHeader(
+                      title: l10n.myGroups,
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _HomeListCard(
+                      itemKey: const Key('account.myGroups'),
+                      icon: Icons.groups_outlined,
+                      label: l10n.myGroups,
+                      tokens: tokens,
+                      text: text,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MyGroupsScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _HomeListCard(
+                      itemKey: const Key('account.ledger'),
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: l10n.myLedgerLabel,
+                      tokens: tokens,
+                      text: text,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const _MyLedgerRoute(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _HomeActionCard(
+                              itemKey: const Key('account.createGroup'),
+                              icon: Icons.group_add_outlined,
+                              label: l10n.createGroup,
+                              tokens: tokens,
+                              text: text,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const CreateGroupScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _HomeActionCard(
+                              itemKey: const Key('account.joinGroup'),
+                              icon: Icons.group_outlined,
+                              label: l10n.joinGroup,
+                              tokens: tokens,
+                              text: text,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const JoinGroupScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (user.role == 'admin') ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      _SectionHeader(
+                        title: l10n.homeAdminSection,
+                        tokens: tokens,
+                        text: text,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _HomeListCard(
+                        itemKey: const Key('account.adminDashboard'),
+                        icon: Icons.admin_panel_settings_outlined,
+                        label: l10n.adminDashboard,
+                        tokens: tokens,
+                        text: text,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AdminHubScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
