@@ -712,7 +712,9 @@ class _ConfirmBadge extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: confirmed ? tokens.primary : tokens.surface,
+          color: confirmed
+              ? tokens.primary
+              : tokens.textPrimary.withValues(alpha: 0.10),
           border: confirmed
               ? null
               : Border.all(
@@ -723,7 +725,7 @@ class _ConfirmBadge extends StatelessWidget {
         child: Icon(
           Icons.check_rounded,
           size: 16,
-          color: confirmed ? tokens.onPrimary : tokens.textMuted,
+          color: confirmed ? tokens.onPrimary : tokens.textSecondary,
         ),
       ),
     );

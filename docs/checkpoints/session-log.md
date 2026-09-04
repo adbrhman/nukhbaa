@@ -153,3 +153,5 @@
 2026-09-04T19:44:48Z — 05_compact_footer_badges: الصفّ السفلي للبطاقة صار شارتين صغيرتين عند الطرفين (×2 دبل يمينًا، ✓ إرسال يسارًا) والوسط فارغ، مطابقةً لموضع شارتَي «ف» في المرجع، بدل صفّ يملأ العرض. الارتفاع 36px دون AppSizes.minTouchTarget — مطلب بصري صريح من صاحب المشروع، مسجَّل كانحراف مقصود لا سهو — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
 
 2026-09-04T19:49:23Z — 06_smaller_score_steppers: مربّعات إدخال النتيجة صُغِّرت — 76×104 إلى 68×92، ومنطقتا +/− من 34 إلى 28، والرقم من 22pt إلى 20pt. منطقة اللمس صارت 28px أي دون AppSizes.minTouchTarget — مطلب بصري صريح من صاحب المشروع، مسجَّل كانحراف مقصود — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
+
+2026-09-04T19:55:45Z — 07_confirm_badge_contrast: شارة الصح بين العدّادين كانت تُقرأ دائرة سوداء قبل التأكيد لأن تعبئتها tokens.surface (نفس داكن البطاقة) وأيقونتها tokens.textMuted؛ صارت التعبئة textPrimary@0.10 والأيقونة textSecondary على نمط العدّادات وزر الدبل غير المفعّل. الحالة المؤكَّدة (primary/onPrimary) دون تغيير — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
