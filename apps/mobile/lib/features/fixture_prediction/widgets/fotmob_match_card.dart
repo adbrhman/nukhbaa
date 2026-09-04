@@ -326,9 +326,13 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
               ),
             if (showEditableControls) ...<Widget>[
               const SizedBox(height: AppSpacing.md),
+              // Two compact controls, not a full-width row — the submit
+              // check stays at the RTL leading (visual left) edge and the
+              // double toggle at the trailing (visual right) edge, with the
+              // Spacer leaving everything else on the card untouched.
               Row(
                 children: <Widget>[
-                  Expanded(
+                  Flexible(
                     child: _DoubleGlowButton(
                       selected: _isDouble,
                       enabled: enabled,
@@ -336,7 +340,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       fixtureId: fixtureId,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
+                  const Spacer(),
                   _SubmitButton(
                     key: Key('currentMonthFixtures.submit.$fixtureId'),
                     enabled: enabled && hasPick,
@@ -517,7 +521,11 @@ class _CompetitionLogo extends StatelessWidget {
 /// One side's crest + name — a plain presentational widget: identity is
 /// resolved once by the parent card (which already watches
 /// [teamCatalogProvider] for the shared gradient/glow calculation), not
-/// re-resolved per side.
+/// re-resolved per side. The crest itself sits on a small brand-color glow
+/// (a soft halo scoped to the logo, distinct from the card's wider ambient
+/// glow) — only drawn when a real brand color was resolved, never a guess;
+/// the logo's own size/position are untouched, the glow is purely an extra
+/// layer behind it.
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
@@ -529,17 +537,41 @@ class _TeamColumn extends StatelessWidget {
   final String? crestUrl;
   final Color? brandColor;
 
+  static const double _glowSize = AppSizes.iconXl + AppSpacing.lg;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        TeamLogo(
-          displayName: displayName,
-          crestUrl: crestUrl,
-          brandColor: brandColor,
-          size: AppSizes.iconXl,
+        Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            if (brandColor != null)
+              Container(
+                width: _glowSize,
+                height: _glowSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: brandColor!.withValues(
+                        alpha: AppOpacity.crestGlow,
+                      ),
+                      blurRadius: 14,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            TeamLogo(
+              displayName: displayName,
+              crestUrl: crestUrl,
+              brandColor: brandColor,
+              size: AppSizes.iconXl,
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -802,12 +834,14 @@ class _StepperZone extends StatelessWidget {
   }
 }
 
-/// The "make it double" toggle. Unselected: transparent fill, a gold
-/// outline, gold text/icon. Selected: a gold→bronze gradient fill, a
-/// stronger gold outline, an ambient gold glow, and the filled bolt icon.
-/// The state is never color-alone — the icon and border width both change
-/// with it too (accessibility). Reuses the same key the prior chip design
-/// used (`currentMonthFixtures.double.$fixtureId`) — same control, restyled.
+/// The "make it double" toggle — a compact pill (not a full-width bar):
+/// unselected is a muted surface fill with a gold icon/border accent,
+/// selected is a gold→bronze gradient fill with an ambient gold glow and
+/// the filled bolt icon. The state is never color-alone — the icon and
+/// border width both change with it too (accessibility). Reuses the same
+/// key the prior chip design used (`currentMonthFixtures.double.$fixtureId`)
+/// — same control, restyled smaller so it no longer competes for width with
+/// the submit control.
 class _DoubleGlowButton extends StatelessWidget {
   const _DoubleGlowButton({
     required this.selected,
@@ -842,13 +876,14 @@ class _DoubleGlowButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: AppMotion.fast,
             height: _height,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
               gradient: selected
                   ? LinearGradient(colors: <Color>[tokens.gold, tokens.bronze])
                   : null,
-              color: selected ? null : Colors.transparent,
+              color: selected ? null : tokens.surfaceElevated,
               border: Border.all(
                 color: selected
                     ? tokens.gold
@@ -871,7 +906,7 @@ class _DoubleGlowButton extends StatelessWidget {
               children: <Widget>[
                 Icon(
                   selected ? Icons.bolt_rounded : Icons.bolt_outlined,
-                  size: AppSizes.iconMd,
+                  size: AppSizes.iconSm,
                   color: selected ? tokens.onPrimary : tokens.gold,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -882,7 +917,7 @@ class _DoubleGlowButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: 12,
                       color: selected ? tokens.onPrimary : tokens.gold,
                     ),
                   ),
@@ -896,8 +931,10 @@ class _DoubleGlowButton extends StatelessWidget {
   }
 }
 
-/// The compact submit control (56×48) — icon-only, so it carries an
-/// explicit [Tooltip]/semantic label instead of visible text.
+/// The compact submit control — a small circular success-green check,
+/// sized to the accessible minimum touch target even though its visible
+/// footprint is tighter than the old full-width bar. Icon-only, so it
+/// carries an explicit [Tooltip]/semantic label instead of visible text.
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({
     required this.enabled,
@@ -918,13 +955,13 @@ class _SubmitButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: SizedBox(
-        width: 56,
-        height: 48,
+        width: AppSizes.minTouchTarget,
+        height: AppSizes.minTouchTarget,
         child: Material(
-          color: enabled ? tokens.primary : tokens.surfaceElevated,
-          borderRadius: AppRadius.brButton,
+          shape: const CircleBorder(),
+          color: enabled ? tokens.successContainer : tokens.surfaceElevated,
           child: InkWell(
-            borderRadius: AppRadius.brButton,
+            customBorder: const CircleBorder(),
             onTap: enabled ? onTap : null,
             child: Center(
               child: inFlight
@@ -933,12 +970,12 @@ class _SubmitButton extends StatelessWidget {
                       height: AppSizes.progressSm,
                       child: CircularProgressIndicator(
                         strokeWidth: AppSizes.progressStroke,
-                        color: tokens.onPrimary,
+                        color: tokens.success,
                       ),
                     )
                   : Icon(
                       Icons.check_rounded,
-                      color: enabled ? tokens.onPrimary : tokens.textMuted,
+                      color: enabled ? tokens.success : tokens.textMuted,
                     ),
             ),
           ),
