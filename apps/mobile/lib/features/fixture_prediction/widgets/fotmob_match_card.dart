@@ -368,15 +368,13 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: <Widget>[
-                      Expanded(
-                        child: _DoubleGlowButton(
-                          selected: _isDouble,
-                          enabled: enabled,
-                          onTap: _toggleDouble,
-                          fixtureId: fixtureId,
-                        ),
+                      _DoubleGlowButton(
+                        selected: _isDouble,
+                        enabled: enabled,
+                        onTap: _toggleDouble,
+                        fixtureId: fixtureId,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      const Spacer(),
                       _SubmitButton(
                         key: Key('currentMonthFixtures.submit.$fixtureId'),
                         enabled: enabled && hasPick,
@@ -943,7 +941,7 @@ class _DoubleGlowButton extends StatelessWidget {
   final VoidCallback onTap;
   final String fixtureId;
 
-  static const double _height = 44;
+  static const double _height = 36;
 
   @override
   Widget build(BuildContext context) {
@@ -964,7 +962,7 @@ class _DoubleGlowButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: AppMotion.fast,
             height: _height,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
@@ -1038,8 +1036,8 @@ class _SubmitButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
 
-  static const double _width = 48;
-  static const double _height = 44;
+  static const double _width = 44;
+  static const double _height = 36;
 
   @override
   Widget build(BuildContext context) {
@@ -1069,6 +1067,7 @@ class _SubmitButton extends StatelessWidget {
                     )
                   : Icon(
                       Icons.check_rounded,
+                      size: AppSizes.iconSm,
                       color: enabled ? tokens.onPrimary : tokens.textMuted,
                     ),
             ),
