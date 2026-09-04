@@ -108,6 +108,7 @@
   "predictionDoubleLabel": "الدبل",
   "predictionMakeItDoubleLabel": "×2 اختَرها دبل",
   "accountDarkModeLabel": "الوضع الداكن",
+  "predictionScorePickedLabel": "تم اختيار النتيجة",
   "predictionFixtureLockedLabel": "بدأت المباراة",
   "predictionDoubleHint": "اختر مباراة واحدة كدبل قبل الإرسال.",
   "predictionIncompleteHint": "أدخل نتيجة كل مباراة مفتوحة قبل الإرسال.",

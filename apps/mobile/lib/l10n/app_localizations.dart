@@ -750,6 +750,12 @@ abstract class AppLocalizations {
   /// **'Dark mode'**
   String get accountDarkModeLabel;
 
+  /// Semantic label on the small checkmark badge between the FotMob-style match card's two score steppers, shown once both sides have a value.
+  ///
+  /// In en, this message translates to:
+  /// **'Score picked'**
+  String get predictionScorePickedLabel;
+
   /// Small label under a fixture that has already kicked off and can no longer be edited.
   ///
   /// In en, this message translates to:

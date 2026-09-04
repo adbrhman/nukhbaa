@@ -401,6 +401,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountDarkModeLabel => 'الوضع الداكن';
 
   @override
+  String get predictionScorePickedLabel => 'تم اختيار النتيجة';
+
+  @override
   String get predictionFixtureLockedLabel => 'بدأت المباراة';
 
   @override

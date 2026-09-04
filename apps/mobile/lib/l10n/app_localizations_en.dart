@@ -395,6 +395,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDarkModeLabel => 'Dark mode';
 
   @override
+  String get predictionScorePickedLabel => 'Score picked';
+
+  @override
   String get predictionFixtureLockedLabel => 'Started';
 
   @override

@@ -234,6 +234,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final bool showEditableControls = !locked && !isGraded;
     final bool enabled = !inFlight && !locked;
     final bool hasPick = _homeGoals != null && _awayGoals != null;
+    // "Confirmed" drives the small checkmark badge between the steppers:
+    // either this submit just succeeded, or the current pick already
+    // matches what's stored server-side (predicted state, unedited).
+    final bool matchesSavedPrediction =
+        myPrediction != null &&
+        myPrediction.homeGoals == _homeGoals &&
+        myPrediction.awayGoals == _awayGoals;
+    final bool isConfirmed =
+        submission is FixtureSubmissionSucceeded || matchesSavedPrediction;
     final String fixtureId = _fixture.fixtureId;
 
     final catalog = ref.watch(teamCatalogProvider).value;
@@ -339,6 +348,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       awayGoals: _awayGoals,
                       enabled: enabled,
                       showEditableControls: showEditableControls,
+                      isConfirmed: isConfirmed,
                       fixtureId: fixtureId,
                       onIncrementHome: _incrementHome,
                       onDecrementHome: _decrementHome,
@@ -356,13 +366,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                 ),
                 if (showEditableControls) ...<Widget>[
                   const SizedBox(height: AppSpacing.sm),
-                  // Two compact controls, not a full-width row — the submit
-                  // check stays at the RTL leading (visual left) edge and
-                  // the double toggle at the trailing (visual right) edge,
-                  // with the Spacer leaving everything else untouched.
                   Row(
                     children: <Widget>[
-                      Flexible(
+                      Expanded(
                         child: _DoubleGlowButton(
                           selected: _isDouble,
                           enabled: enabled,
@@ -370,7 +376,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           fixtureId: fixtureId,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: AppSpacing.sm),
                       _SubmitButton(
                         key: Key('currentMonthFixtures.submit.$fixtureId'),
                         enabled: enabled && hasPick,
@@ -443,39 +449,57 @@ class _CardHeader extends StatelessWidget {
         ? null
         : DateTime.tryParse(kickoffAt!)?.toLocal();
 
+    // A single Flexible wrapping the whole leading group (logo + name +
+    // time), with the icon button as the row's only other, non-flex child
+    // and MainAxisAlignment.spaceBetween pushing it to the far end. Using a
+    // Spacer here instead would give the name and the Spacer an EQUAL share
+    // of the leftover width (both are flex:1 by default), starving the name
+    // of space it should get in full — that was the actual cause of the
+    // truncation this replaces.
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        _CompetitionLogo(assetPath: assetPath),
-        const SizedBox(width: AppSpacing.xs),
         Flexible(
-          fit: FlexFit.loose,
-          child: Text(
-            competitionName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: tokens.textSecondary,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _CompetitionLogo(assetPath: assetPath),
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(
+                fit: FlexFit.loose,
+                child: Text(
+                  competitionName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+              ),
+              if (kickoffLocal != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const SizedBox(width: AppSpacing.xs),
+                    Text('•', style: TextStyle(color: tokens.textMuted)),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      intl.DateFormat.jm(
+                        Localizations.localeOf(context).toString(),
+                      ).format(kickoffLocal),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: tokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ),
-        if (kickoffLocal != null) ...<Widget>[
-          const SizedBox(width: AppSpacing.xs),
-          Text('•', style: TextStyle(color: tokens.textMuted)),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            intl.DateFormat.jm(
-              Localizations.localeOf(context).toString(),
-            ).format(kickoffLocal),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: tokens.textSecondary,
-            ),
-          ),
-        ],
-        const Spacer(),
         IconButton(
           tooltip: l10n.viewLeaderboardTooltip,
           icon: Icon(Icons.open_in_new_rounded, color: tokens.textSecondary),
@@ -532,12 +556,8 @@ class _CompetitionLogo extends StatelessWidget {
 
 /// One side's crest + name — a plain presentational widget: identity is
 /// resolved once by the parent card (which already watches
-/// [teamCatalogProvider] for the shared gradient/glow calculation), not
-/// re-resolved per side. The crest itself sits on a small brand-color glow
-/// (a soft halo scoped to the logo, distinct from the card's wider ambient
-/// glow) — only drawn when a real brand color was resolved, never a guess;
-/// the logo's own size/position are untouched, the glow is purely an extra
-/// layer behind it.
+/// [teamCatalogProvider]). The crest renders bare — no glow/halo or
+/// colored backdrop behind it, in any state — per the reference.
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
@@ -549,41 +569,17 @@ class _TeamColumn extends StatelessWidget {
   final String? crestUrl;
   final Color? brandColor;
 
-  static const double _glowSize = AppSizes.iconXl + AppSpacing.lg;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            if (brandColor != null)
-              Container(
-                width: _glowSize,
-                height: _glowSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: brandColor!.withValues(
-                        alpha: AppOpacity.crestGlow,
-                      ),
-                      blurRadius: 14,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-            TeamLogo(
-              displayName: displayName,
-              crestUrl: crestUrl,
-              brandColor: brandColor,
-              size: AppSizes.iconXl,
-            ),
-          ],
+        TeamLogo(
+          displayName: displayName,
+          crestUrl: crestUrl,
+          brandColor: brandColor,
+          size: AppSizes.iconXl,
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -618,6 +614,7 @@ class _MiddleSlot extends StatelessWidget {
     required this.awayGoals,
     required this.enabled,
     required this.showEditableControls,
+    required this.isConfirmed,
     required this.fixtureId,
     required this.onIncrementHome,
     required this.onDecrementHome,
@@ -634,6 +631,12 @@ class _MiddleSlot extends StatelessWidget {
   final int? awayGoals;
   final bool enabled;
   final bool showEditableControls;
+
+  /// Whether the current pick is a confirmed one — either just submitted
+  /// successfully, or matches an already-stored prediction. Drives the
+  /// small checkmark badge between the two steppers (hidden entirely in
+  /// the locked/graded states, since this branch never runs for those).
+  final bool isConfirmed;
   final String fixtureId;
   final VoidCallback onIncrementHome;
   final VoidCallback onDecrementHome;
@@ -652,27 +655,79 @@ class _MiddleSlot extends StatelessWidget {
     if (locked) {
       return const _LockedSlot();
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: <Widget>[
-        _ScoreStepper(
-          value: homeGoals,
-          enabled: enabled,
-          onIncrement: onIncrementHome,
-          onDecrement: onDecrementHome,
-          fixtureId: fixtureId,
-          side: 'home',
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _ScoreStepper(
+              value: homeGoals,
+              enabled: enabled,
+              onIncrement: onIncrementHome,
+              onDecrement: onDecrementHome,
+              fixtureId: fixtureId,
+              side: 'home',
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            _ScoreStepper(
+              value: awayGoals,
+              enabled: enabled,
+              onIncrement: onIncrementAway,
+              onDecrement: onDecrementAway,
+              fixtureId: fixtureId,
+              side: 'away',
+            ),
+          ],
         ),
-        const SizedBox(width: AppSpacing.xs),
-        _ScoreStepper(
-          value: awayGoals,
-          enabled: enabled,
-          onIncrement: onIncrementAway,
-          onDecrement: onDecrementAway,
-          fixtureId: fixtureId,
-          side: 'away',
-        ),
+        if (homeGoals != null && awayGoals != null)
+          _ConfirmBadge(confirmed: isConfirmed),
       ],
+    );
+  }
+}
+
+/// The small badge that floats over the gap between the two
+/// [_ScoreStepper]s once both sides have a value — centered on the whole
+/// [_MiddleSlot] Stack, which lands it horizontally on the gap and
+/// vertically level with the digit row (the stepper's `+`/`-` zones are
+/// symmetric above and below it). Unconfirmed: an outlined, muted check.
+/// Confirmed (just submitted, or already matches a stored prediction):
+/// solid [AppTokens.primary] fill. No shadow in either state.
+class _ConfirmBadge extends StatelessWidget {
+  const _ConfirmBadge({required this.confirmed});
+
+  final bool confirmed;
+
+  static const double _size = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    return Semantics(
+      label: l10n.predictionScorePickedLabel,
+      child: Container(
+        width: _size,
+        height: _size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: confirmed ? tokens.primary : tokens.surface,
+          border: confirmed
+              ? null
+              : Border.all(
+                  color: tokens.textPrimary.withValues(alpha: 0.12),
+                  width: AppStroke.hairline,
+                ),
+        ),
+        child: Icon(
+          Icons.check_rounded,
+          size: 16,
+          color: confirmed ? tokens.onPrimary : tokens.textMuted,
+        ),
+      ),
     );
   }
 }
@@ -759,9 +814,9 @@ class _ScoreStepper extends StatelessWidget {
   final String fixtureId;
   final String side;
 
-  static const double _width = 88;
-  static const double _height = 124;
-  static const double _zoneHeight = 40;
+  static const double _width = 76;
+  static const double _height = 104;
+  static const double _zoneHeight = 34;
 
   @override
   Widget build(BuildContext context) {
@@ -775,8 +830,12 @@ class _ScoreStepper extends StatelessWidget {
       width: _width,
       height: _height,
       decoration: BoxDecoration(
-        color: tokens.textPrimary.withValues(alpha: 0.08),
+        color: tokens.textPrimary.withValues(alpha: 0.06),
         borderRadius: AppRadius.brCard,
+        border: Border.all(
+          color: tokens.textPrimary.withValues(alpha: 0.12),
+          width: AppStroke.hairline,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -800,7 +859,7 @@ class _ScoreStepper extends StatelessWidget {
                 value?.toString() ?? '?',
                 key: Key('currentMonthFixtures.$side.value.$fixtureId'),
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: value == null ? tokens.textMuted : tokens.textPrimary,
                 ),
