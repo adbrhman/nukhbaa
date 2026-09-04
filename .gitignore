@@ -58,3 +58,6 @@ run_part1_verify*.sh
 .flutter-plugins
 __pycache__/
 *.pyc
+
+# سكربتات تصحيح مؤقتة
+0*_fix_*.py

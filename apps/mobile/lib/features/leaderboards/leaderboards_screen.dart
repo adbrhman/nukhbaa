@@ -91,19 +91,19 @@ class _SeasonLeaderboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final standings = ref.watch(seasonLeaderboardProvider(seasonId));
-    return AsyncListView<LeaderboardEntryDto>(
+    final standings = ref.watch(fixtureLeaderboardProvider(seasonId));
+    return AsyncListView<FixtureLeaderboardEntryDto>(
       value: standings.whenData((board) => board.entries),
-      emptyMessage: l10n.leaderboardsSeasonEmpty,
-      onRetry: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
+      emptyMessage: l10n.fixtureLeaderboardEmpty,
+      onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
       itemBuilder: (context, entry) => ListTile(
         key: Key('leaderboards.item.${entry.participantId}'),
         leading: RankBadge(rank: entry.rank),
         title: Text(
-          entry.participantId,
+          entry.displayName,
           style: TextStyle(color: context.tokens.textPrimary),
         ),
-        subtitle: Text(l10n.leaderboardEntriesCounted(entry.entryCount)),
+        subtitle: Text(l10n.leaderboardEntriesCounted(entry.fixturesScored)),
         trailing: Text(
           l10n.pointsAbbreviated(entry.totalPoints),
           style: TextStyle(
