@@ -104,6 +104,18 @@ SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
     homeTeam: card.homeTeam,
     awayTeam: card.awayTeam,
     kickoffAt: card.kickoffAt?.toIso8601String(),
+    homeTeamId: card.homeTeamId?.value,
+    awayTeamId: card.awayTeamId?.value,
+  );
+}
+
+/// Projects a [Team] onto its wire shape [TeamDto] (`GET /teams`).
+TeamDto teamToDto(Team team) {
+  return TeamDto(
+    id: team.id.value,
+    name: team.name,
+    shortName: team.shortName,
+    crestUrl: team.crestUrl,
   );
 }
 

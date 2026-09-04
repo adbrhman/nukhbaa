@@ -262,12 +262,16 @@ class FixtureScheduleController extends _$FixtureScheduleController {
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
+    String? homeTeamId,
+    String? awayTeamId,
   }) async {
     state = const AsyncValue.loading();
     final result = await _api.registerFixtureSchedule(
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       kickoffAt: kickoffAt,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
     );
     _apply(result);
   }
@@ -283,6 +287,8 @@ class FixtureScheduleController extends _$FixtureScheduleController {
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
+    String? homeTeamId,
+    String? awayTeamId,
   }) async {
     state = const AsyncValue.loading();
     final result = await _api.correctFixtureSchedule(
@@ -290,6 +296,8 @@ class FixtureScheduleController extends _$FixtureScheduleController {
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       kickoffAt: kickoffAt,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
     );
     _apply(result);
     if (state is AsyncData<FixtureScheduleDto>) {
@@ -493,6 +501,8 @@ class AddMatchController extends _$AddMatchController {
     required String awayTeam,
     required String kickoffAt,
     required int displayOrder,
+    String? homeTeamId,
+    String? awayTeamId,
   }) async {
     state = const AsyncValue.loading();
 
@@ -501,6 +511,8 @@ class AddMatchController extends _$AddMatchController {
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       kickoffAt: kickoffAt,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
     );
     if (registerResult is Err<FixtureScheduleDto>) {
       state = AsyncValue.error(registerResult.error, StackTrace.current);

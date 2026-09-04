@@ -38,6 +38,8 @@ final class FixtureScheduleApi {
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
+    String? homeTeamId,
+    String? awayTeamId,
   }) {
     return _transport.postObject<FixtureScheduleDto>(
       '/fixtures',
@@ -45,6 +47,8 @@ final class FixtureScheduleApi {
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         kickoffAt: kickoffAt,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
       ).toJson(),
       parse: FixtureScheduleDto.fromJson,
     );
@@ -60,6 +64,8 @@ final class FixtureScheduleApi {
     required String homeTeam,
     required String awayTeam,
     required String kickoffAt,
+    String? homeTeamId,
+    String? awayTeamId,
   }) {
     return _transport.putObject<FixtureScheduleDto>(
       '/fixtures/$fixtureId',
@@ -67,6 +73,8 @@ final class FixtureScheduleApi {
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         kickoffAt: kickoffAt,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
       ).toJson(),
       parse: FixtureScheduleDto.fromJson,
     );

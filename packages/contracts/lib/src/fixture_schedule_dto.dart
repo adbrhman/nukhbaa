@@ -31,6 +31,8 @@ final class FixtureScheduleDto {
     required this.homeTeam,
     required this.awayTeam,
     required this.kickoffAt,
+    this.homeTeamId,
+    this.awayTeamId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -43,6 +45,8 @@ final class FixtureScheduleDto {
       homeTeam: json['home_team']! as String,
       awayTeam: json['away_team']! as String,
       kickoffAt: json['kickoff_at']! as String,
+      homeTeamId: json['home_team_id'] as String?,
+      awayTeamId: json['away_team_id'] as String?,
     );
   }
 
@@ -62,6 +66,15 @@ final class FixtureScheduleDto {
   /// The kickoff time as an ISO 8601 UTC timestamp string.
   final String kickoffAt;
 
+  /// The home side's resolved Football Data team id, or `null` when the
+  /// admin picked a team not yet in the catalog (or this fixture predates
+  /// the enrichment).
+  final String? homeTeamId;
+
+  /// The away side's resolved Football Data team id, same nullability as
+  /// [homeTeamId].
+  final String? awayTeamId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -72,6 +85,8 @@ final class FixtureScheduleDto {
     'home_team': homeTeam,
     'away_team': awayTeam,
     'kickoff_at': kickoffAt,
+    'home_team_id': homeTeamId,
+    'away_team_id': awayTeamId,
   };
 
   @override
@@ -81,11 +96,20 @@ final class FixtureScheduleDto {
       other.homeTeam == homeTeam &&
       other.awayTeam == awayTeam &&
       other.kickoffAt == kickoffAt &&
+      other.homeTeamId == homeTeamId &&
+      other.awayTeamId == awayTeamId &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(fixtureId, homeTeam, awayTeam, kickoffAt, schemaVersion);
+  int get hashCode => Object.hash(
+    fixtureId,
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+    homeTeamId,
+    awayTeamId,
+    schemaVersion,
+  );
 }
 
 /// The request body of a fixture-identity registration/correction command
@@ -99,6 +123,8 @@ final class FixtureScheduleRequestDto {
     required this.homeTeam,
     required this.awayTeam,
     required this.kickoffAt,
+    this.homeTeamId,
+    this.awayTeamId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -112,6 +138,8 @@ final class FixtureScheduleRequestDto {
       homeTeam: json['home_team'] as String?,
       awayTeam: json['away_team'] as String?,
       kickoffAt: json['kickoff_at'] as String?,
+      homeTeamId: json['home_team_id'] as String?,
+      awayTeamId: json['away_team_id'] as String?,
     );
   }
 
@@ -129,6 +157,15 @@ final class FixtureScheduleRequestDto {
   /// The kickoff time as an ISO 8601 timestamp string.
   final String? kickoffAt;
 
+  /// The home side's Football Data team id, when the admin picked one from
+  /// the team catalog (optional — a legacy free-text-only entry is still
+  /// accepted, Axiom 3).
+  final String? homeTeamId;
+
+  /// The away side's Football Data team id, same optionality as
+  /// [homeTeamId].
+  final String? awayTeamId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -138,6 +175,8 @@ final class FixtureScheduleRequestDto {
     'home_team': homeTeam,
     'away_team': awayTeam,
     'kickoff_at': kickoffAt,
+    'home_team_id': homeTeamId,
+    'away_team_id': awayTeamId,
   };
 
   @override
@@ -146,8 +185,17 @@ final class FixtureScheduleRequestDto {
       other.homeTeam == homeTeam &&
       other.awayTeam == awayTeam &&
       other.kickoffAt == kickoffAt &&
+      other.homeTeamId == homeTeamId &&
+      other.awayTeamId == awayTeamId &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(homeTeam, awayTeam, kickoffAt, schemaVersion);
+  int get hashCode => Object.hash(
+    homeTeam,
+    awayTeam,
+    kickoffAt,
+    homeTeamId,
+    awayTeamId,
+    schemaVersion,
+  );
 }

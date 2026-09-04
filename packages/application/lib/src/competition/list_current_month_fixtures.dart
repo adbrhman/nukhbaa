@@ -186,6 +186,8 @@ final class ListCurrentMonthFixtures {
               homeTeam: byFixture[fixture.value]?.homeTeam,
               awayTeam: byFixture[fixture.value]?.awayTeam,
               kickoffAt: byFixture[fixture.value]?.kickoffAt,
+              homeTeamId: byFixture[fixture.value]?.homeTeamId,
+              awayTeamId: byFixture[fixture.value]?.awayTeamId,
             ),
           ),
     ]);

@@ -32,7 +32,8 @@ import '../../core/ui/app_badge.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
-import '../competition/team_registry.dart';
+import '../competition/team_identity.dart';
+import '../competition/teams_providers.dart';
 import '../history/fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
@@ -383,6 +384,7 @@ class _CurrentMonthFixtureCardState
                           Expanded(
                             child: _TeamHeader(
                               name: _fixture.homeTeam,
+                              teamId: _fixture.homeTeamId,
                               alignEnd: false,
                             ),
                           ),
@@ -400,6 +402,7 @@ class _CurrentMonthFixtureCardState
                           Expanded(
                             child: _TeamHeader(
                               name: _fixture.awayTeam,
+                              teamId: _fixture.awayTeamId,
                               alignEnd: true,
                             ),
                           ),
@@ -591,28 +594,41 @@ class _CurrentMonthFixtureCardState
   }
 }
 
-/// One side's crest + display name, used in the collapsed row. Team
-/// identity resolution is delegated entirely to `team_registry.dart` (the
-/// same lookup `prediction_history_screen.dart`'s `_TeamMini` already
-/// uses) — this widget never talks to the network or guesses a crest
-/// itself, and degrades to a plain tinted circle for an unrecognized name.
-class _TeamHeader extends StatelessWidget {
-  const _TeamHeader({required this.name, required this.alignEnd});
+/// One side's crest + display name, used in the collapsed row. Resolves
+/// through [resolveTeamIdentity]: the model-backed `football_data.teams`
+/// catalog when this fixture carries a resolved [teamId], falling back to
+/// `team_registry.dart`'s name-based lookup otherwise (the same lookup
+/// `prediction_history_screen.dart`'s `_TeamMini` still uses for its
+/// Round-based, id-less fixtures). Never talks to the network itself beyond
+/// watching the already-shared [teamCatalogProvider], and degrades to a
+/// plain tinted circle for an unrecognized/missing team.
+class _TeamHeader extends ConsumerWidget {
+  const _TeamHeader({
+    required this.name,
+    required this.teamId,
+    required this.alignEnd,
+  });
 
   final String? name;
+  final String? teamId;
   final bool alignEnd;
 
   static const double _crestSize = AppSizes.iconLg;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
-    final TeamBrand? brand = lookupTeam(name);
-    final String display = teamDisplayName(name);
+    final catalog = ref.watch(teamCatalogProvider).value;
+    final ResolvedTeamIdentity identity = resolveTeamIdentity(
+      catalog: catalog,
+      teamId: teamId,
+      teamName: name,
+    );
+    final String display = identity.displayName;
     final Widget crest = TeamLogo(
       displayName: display,
-      crestUrl: brand?.logoUrl,
-      brandColor: brand?.c1,
+      crestUrl: identity.crestUrl,
+      brandColor: identity.brandColor,
       size: _crestSize,
     );
     final Text label = Text(

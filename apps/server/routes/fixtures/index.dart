@@ -63,6 +63,8 @@ Future<Response> onRequest(RequestContext context) async {
     homeTeam: (homeResult as Ok<String>).value,
     awayTeam: (awayResult as Ok<String>).value,
     kickoffAt: (kickoffResult as Ok<DateTime>).value,
+    homeTeamId: body['home_team_id'] as String?,
+    awayTeamId: body['away_team_id'] as String?,
   );
 
   return switch (result) {
@@ -73,6 +75,8 @@ Future<Response> onRequest(RequestContext context) async {
         homeTeam: value.homeTeam,
         awayTeam: value.awayTeam,
         kickoffAt: value.kickoffAt.toIso8601String(),
+        homeTeamId: value.homeTeamId?.value,
+        awayTeamId: value.awayTeamId?.value,
       ).toJson(),
     ),
     Err<FixtureSchedule>(:final error) => errorResponse(error),

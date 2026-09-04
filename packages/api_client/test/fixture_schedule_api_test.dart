@@ -43,6 +43,8 @@ void main() {
           'home_team': 'Al Hilal',
           'away_team': 'Al Nassr',
           'kickoff_at': '2026-08-20T18:00:00.000Z',
+          'home_team_id': null,
+          'away_team_id': null,
         });
       },
     );
@@ -118,6 +120,8 @@ void main() {
         'home_team': 'Al Hilal SFC',
         'away_team': 'Al Nassr FC',
         'kickoff_at': '2026-08-21T18:00:00.000Z',
+        'home_team_id': null,
+        'away_team_id': null,
       });
     });
 

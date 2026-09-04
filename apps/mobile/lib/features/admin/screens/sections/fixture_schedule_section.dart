@@ -9,6 +9,7 @@ import '../../../../core/design/app_spacing.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/team_registry.dart';
+import '../../../competition/teams_providers.dart';
 import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
@@ -34,6 +35,8 @@ class _FixtureScheduleSectionState
   String? _competitionId;
   String? _competitionName;
   String? _seasonId;
+  String? _homeTeamId;
+  String? _awayTeamId;
 
   // نطاق اختيار المباراة (لتصحيح بياناتها).
   final TextEditingController _correctHomeTeamController =
@@ -48,6 +51,8 @@ class _FixtureScheduleSectionState
   String? _correctCompetitionName;
   String? _correctSeasonId;
   String? _correctFixtureId;
+  String? _correctHomeTeamId;
+  String? _correctAwayTeamId;
 
   static final List<String> _teamOptions = <String>[
     ...kEplTeams.keys,
@@ -61,8 +66,37 @@ class _FixtureScheduleSectionState
     return _teamOptions;
   }
 
-  Iterable<String> _filterTeams(String query, {String? competitionName}) {
-    final List<String> options = _scopedTeamOptions(competitionName);
+  /// Resolves [text] against [catalog] (the real `football_data.teams`
+  /// catalog) by exact, case-insensitive name match — `null` when the typed
+  /// text doesn't (yet) name a real team, which is a legitimate state (a
+  /// free-text legacy team name, or a league with no seeded catalog).
+  String? _resolveTeamId(List<TeamDto> catalog, String text) {
+    final String trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    for (final TeamDto team in catalog) {
+      if (team.name.toLowerCase() == trimmed.toLowerCase()) return team.id;
+    }
+    return null;
+  }
+
+  /// Suggestion options merging the legacy name-only lists with the real
+  /// [catalog] (deduplicated, case-insensitive), so an admin sees genuine
+  /// `football_data.teams` rows alongside the still-supported free-text
+  /// legacy names — selecting a catalog name is what lets [_resolveTeamId]
+  /// attach a real team id to the fixture.
+  Iterable<String> _filterTeamsWithCatalog(
+    String query, {
+    String? competitionName,
+    required List<TeamDto> catalog,
+  }) {
+    final Map<String, String> merged = <String, String>{};
+    for (final String name in _scopedTeamOptions(competitionName)) {
+      merged[name.toLowerCase()] = name;
+    }
+    for (final TeamDto team in catalog) {
+      merged[team.name.toLowerCase()] = team.name;
+    }
+    final List<String> options = merged.values.toList()..sort();
     final String trimmed = query.trim();
     if (trimmed.isEmpty) return options;
     final String needle = trimmed.toLowerCase();
@@ -85,6 +119,8 @@ class _FixtureScheduleSectionState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final List<TeamDto> catalog =
+        ref.watch(teamCatalogProvider).value ?? const <TeamDto>[];
     final AsyncValue<AddMatchResult>? state = ref.watch(
       addMatchControllerProvider,
     );
@@ -143,6 +179,8 @@ class _FixtureScheduleSectionState
                   _seasonId = null;
                   _homeTeamController.clear();
                   _awayTeamController.clear();
+                  _homeTeamId = null;
+                  _awayTeamId = null;
                 }),
               ),
               if (_competitionId != null) ...[
@@ -163,9 +201,18 @@ class _FixtureScheduleSectionState
                 focusNode: _homeTeamFocusNode,
                 label: l10n.adminHomeTeamLabel,
                 enabled: !inFlight,
-                optionsBuilder: (q) =>
-                    _filterTeams(q, competitionName: _competitionName),
-                onChanged: () => setState(() {}),
+                catalog: catalog,
+                optionsBuilder: (q) => _filterTeamsWithCatalog(
+                  q,
+                  competitionName: _competitionName,
+                  catalog: catalog,
+                ),
+                onChanged: () => setState(() {
+                  _homeTeamId = _resolveTeamId(
+                    catalog,
+                    _homeTeamController.text,
+                  );
+                }),
               ),
               const SizedBox(height: AppSpacing.md),
               _TeamPickerField(
@@ -174,9 +221,18 @@ class _FixtureScheduleSectionState
                 focusNode: _awayTeamFocusNode,
                 label: l10n.adminAwayTeamLabel,
                 enabled: !inFlight,
-                optionsBuilder: (q) =>
-                    _filterTeams(q, competitionName: _competitionName),
-                onChanged: () => setState(() {}),
+                catalog: catalog,
+                optionsBuilder: (q) => _filterTeamsWithCatalog(
+                  q,
+                  competitionName: _competitionName,
+                  catalog: catalog,
+                ),
+                onChanged: () => setState(() {
+                  _awayTeamId = _resolveTeamId(
+                    catalog,
+                    _awayTeamController.text,
+                  );
+                }),
               ),
               const SizedBox(height: AppSpacing.md),
               AdminSecondaryButton(
@@ -236,6 +292,8 @@ class _FixtureScheduleSectionState
                   _correctFixtureId = null;
                   _correctHomeTeamController.clear();
                   _correctAwayTeamController.clear();
+                  _correctHomeTeamId = null;
+                  _correctAwayTeamId = null;
                   _correctKickoffLocal = null;
                 }),
               ),
@@ -262,6 +320,8 @@ class _FixtureScheduleSectionState
                     _correctFixtureId = fixture.fixtureId;
                     _correctHomeTeamController.text = fixture.homeTeam ?? '';
                     _correctAwayTeamController.text = fixture.awayTeam ?? '';
+                    _correctHomeTeamId = fixture.homeTeamId;
+                    _correctAwayTeamId = fixture.awayTeamId;
                     _correctKickoffLocal = DateTime.tryParse(
                       fixture.kickoffAt ?? '',
                     )?.toLocal();
@@ -276,9 +336,18 @@ class _FixtureScheduleSectionState
                   focusNode: _correctHomeTeamFocusNode,
                   label: l10n.adminHomeTeamLabel,
                   enabled: !correctInFlight,
-                  optionsBuilder: (q) =>
-                      _filterTeams(q, competitionName: _correctCompetitionName),
-                  onChanged: () => setState(() {}),
+                  catalog: catalog,
+                  optionsBuilder: (q) => _filterTeamsWithCatalog(
+                    q,
+                    competitionName: _correctCompetitionName,
+                    catalog: catalog,
+                  ),
+                  onChanged: () => setState(() {
+                    _correctHomeTeamId = _resolveTeamId(
+                      catalog,
+                      _correctHomeTeamController.text,
+                    );
+                  }),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _TeamPickerField(
@@ -287,9 +356,18 @@ class _FixtureScheduleSectionState
                   focusNode: _correctAwayTeamFocusNode,
                   label: l10n.adminAwayTeamLabel,
                   enabled: !correctInFlight,
-                  optionsBuilder: (q) =>
-                      _filterTeams(q, competitionName: _correctCompetitionName),
-                  onChanged: () => setState(() {}),
+                  catalog: catalog,
+                  optionsBuilder: (q) => _filterTeamsWithCatalog(
+                    q,
+                    competitionName: _correctCompetitionName,
+                    catalog: catalog,
+                  ),
+                  onChanged: () => setState(() {
+                    _correctAwayTeamId = _resolveTeamId(
+                      catalog,
+                      _correctAwayTeamController.text,
+                    );
+                  }),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 AdminSecondaryButton(
@@ -378,6 +456,8 @@ class _FixtureScheduleSectionState
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
+          homeTeamId: _homeTeamId,
+          awayTeamId: _awayTeamId,
         );
   }
 
@@ -429,6 +509,8 @@ class _FixtureScheduleSectionState
           homeTeam: homeTeam,
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),
+          homeTeamId: _correctHomeTeamId,
+          awayTeamId: _correctAwayTeamId,
         );
   }
 
@@ -448,6 +530,7 @@ class _TeamPickerField extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.optionsBuilder,
+    this.catalog = const <TeamDto>[],
     this.onChanged,
   });
 
@@ -457,6 +540,12 @@ class _TeamPickerField extends StatelessWidget {
   final String label;
   final bool enabled;
   final Iterable<String> Function(String query) optionsBuilder;
+
+  /// The real `football_data.teams` catalog — an option matching one of
+  /// these by name (case-insensitive) is a genuine team: selecting it is
+  /// what lets the fixture link a real team id, shown here as a small hint
+  /// distinguishing it from a legacy free-text-only name.
+  final List<TeamDto> catalog;
   final VoidCallback? onChanged;
 
   @override
@@ -505,10 +594,16 @@ class _TeamPickerField extends StatelessWidget {
                       final String option = optionList[index];
                       final TeamBrand? brand =
                           kEplTeams[option] ?? kSaudiTeams[option];
+                      final bool isCatalogTeam = catalog.any(
+                        (TeamDto t) =>
+                            t.name.toLowerCase() == option.toLowerCase(),
+                      );
                       return ListTile(
                         dense: true,
                         title: Text(option),
-                        subtitle: brand == null ? null : Text(brand.ar),
+                        subtitle: isCatalogTeam
+                            ? const Text('team id مرتبط ✓')
+                            : (brand == null ? null : Text(brand.ar)),
                         onTap: () => onSelected(option),
                       );
                     },

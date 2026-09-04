@@ -169,3 +169,13 @@ AdminApi adminApi(Ref ref) => AdminApi(ref.watch(apiTransportProvider));
 @Riverpod(keepAlive: true)
 FixtureScheduleApi fixtureScheduleApi(Ref ref) =>
     FixtureScheduleApi(ref.watch(apiTransportProvider));
+
+/// The typed Football Data team-catalog client over the shared transport.
+///
+/// Consumed to resolve a fixture's `home_team_id`/`away_team_id` into a
+/// display name + crest (`football_data.teams`, previously unwired) — the
+/// single model-backed source for team identity, replacing per-widget
+/// hardcoded lookups. Like the other domain clients it holds no state and
+/// performs no HTTP of its own.
+@Riverpod(keepAlive: true)
+TeamsApi teamsApi(Ref ref) => TeamsApi(ref.watch(apiTransportProvider));

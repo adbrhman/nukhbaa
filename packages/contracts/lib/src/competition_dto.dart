@@ -540,6 +540,8 @@ final class SeasonFixtureCardDto {
     required this.homeTeam,
     required this.awayTeam,
     required this.kickoffAt,
+    this.homeTeamId,
+    this.awayTeamId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -552,6 +554,8 @@ final class SeasonFixtureCardDto {
       homeTeam: json['home_team'] as String?,
       awayTeam: json['away_team'] as String?,
       kickoffAt: json['kickoff_at'] as String?,
+      homeTeamId: json['home_team_id'] as String?,
+      awayTeamId: json['away_team_id'] as String?,
     );
   }
 
@@ -574,6 +578,12 @@ final class SeasonFixtureCardDto {
   /// yet scheduled.
   final String? kickoffAt;
 
+  /// The home side's resolved Football Data team id, or `null` when unknown.
+  final String? homeTeamId;
+
+  /// The away side's resolved Football Data team id, or `null` when unknown.
+  final String? awayTeamId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -585,6 +595,8 @@ final class SeasonFixtureCardDto {
     'home_team': homeTeam,
     'away_team': awayTeam,
     'kickoff_at': kickoffAt,
+    'home_team_id': homeTeamId,
+    'away_team_id': awayTeamId,
   };
 
   @override
@@ -595,6 +607,8 @@ final class SeasonFixtureCardDto {
       other.homeTeam == homeTeam &&
       other.awayTeam == awayTeam &&
       other.kickoffAt == kickoffAt &&
+      other.homeTeamId == homeTeamId &&
+      other.awayTeamId == awayTeamId &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -604,6 +618,8 @@ final class SeasonFixtureCardDto {
     homeTeam,
     awayTeam,
     kickoffAt,
+    homeTeamId,
+    awayTeamId,
     schemaVersion,
   );
 }

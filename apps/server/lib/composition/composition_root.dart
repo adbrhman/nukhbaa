@@ -82,6 +82,7 @@ final class CompositionRoot {
     required this.adminListFixturePredictions,
     required this.listMyFixturePredictions,
     required this.listMyActiveSeasons,
+    required this.listTeams,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -177,6 +178,7 @@ final class CompositionRoot {
     AdminListFixturePredictions? adminListFixturePredictions,
     ListMyFixturePredictions? listMyFixturePredictions,
     ListMyActiveSeasons? listMyActiveSeasons,
+    ListTeams? listTeams,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -272,6 +274,7 @@ final class CompositionRoot {
            listMyFixturePredictions ?? _absentListMyFixturePredictions(),
        listMyActiveSeasons =
            listMyActiveSeasons ?? _absentListMyActiveSeasons(),
+       listTeams = listTeams ?? _absentListTeams(),
        _connection = null,
        _jwksClient = null;
 
@@ -456,6 +459,11 @@ final class CompositionRoot {
 
   static CorrectFixtureSchedule _absentCorrectFixtureSchedule() =>
       CorrectFixtureSchedule(_unwiredFixtureScheduleRepository);
+
+  static final TeamRepository _unwiredTeamRepository = _UnwiredTeamRepository();
+
+  static ListTeams _absentListTeams() =>
+      ListTeams(repository: _unwiredTeamRepository);
 
   /// Backs the "absent" fixture-scoring use-case, so a test that reaches an
   /// unwired Axiom-4-Amendment scoring slice fails loudly instead of touching
@@ -1018,6 +1026,11 @@ final class CompositionRoot {
   /// fans out per season to [browseSeasonFixtures]).
   final ListMyActiveSeasons listMyActiveSeasons;
 
+  /// Lists the Football Data team catalog (backs `GET /teams`), so a client
+  /// can resolve a fixture's team ids into a display name + crest without
+  /// hardcoding either client-side. Any authenticated user.
+  final ListTeams listTeams;
+
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
     final config = _require(PostgresConfig.fromEnv(env), 'Postgres config');
@@ -1110,6 +1123,12 @@ final class CompositionRoot {
     final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
       connection,
     );
+
+    // Football Data slice: read-only team catalog backing `GET /teams`
+    // (previously unwired schema — `football_data.teams`, migration
+    // `0013_football_data.sql`), so a client can resolve a fixture's team ids
+    // into a display name + crest without hardcoding either client-side.
+    final teamRepository = PostgresTeamRepository(connection);
 
     // Ledger slice: its own Postgres-backed adapters over the ledger.* tables
     // (the append-only PointEntry stream). PostRoundToLedger reads the scored
@@ -1433,6 +1452,7 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         clock: clock,
       ),
+      listTeams: ListTeams(repository: teamRepository),
     );
   }
 
@@ -1835,6 +1855,14 @@ final class _UnwiredParticipantReader implements ParticipantReader {
   Future<Result<Map<String, String>>> findDisplayNames(
     List<ParticipantId> ids,
   ) => throw StateError('A ledger use-case was not wired into this root');
+}
+
+/// Backs an "absent" [ListTeams]: throws if a test reaches the Football Data
+/// team-catalog slice it never wired.
+final class _UnwiredTeamRepository implements TeamRepository {
+  @override
+  Future<Result<List<Team>>> listAll() =>
+      throw StateError('ListTeams was not wired into this test root');
 }
 
 /// Backs the "absent" [GetSeasonLeaderboard]'s repository: throws so a test that

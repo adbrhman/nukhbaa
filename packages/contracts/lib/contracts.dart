@@ -14,6 +14,7 @@ export 'src/fixture_ledger_dto.dart';
 export 'src/fixture_prediction_dto.dart';
 export 'src/fixture_schedule_dto.dart';
 export 'src/fixture_social_dto.dart';
+export 'src/football_data_dto.dart';
 export 'src/group_dto.dart';
 export 'src/health_dto.dart';
 export 'src/latest_build_dto.dart';

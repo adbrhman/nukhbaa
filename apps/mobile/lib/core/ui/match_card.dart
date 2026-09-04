@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
+import 'team_logo.dart';
 
 /// Compact, data-driven fixture card shared by summary surfaces.
+///
+/// Team crests are resolved data the caller already has (per
+/// `team_logo.dart`'s doc: `core/ui` never imports a `features/` lookup
+/// table itself) — pass `homeCrestUrl`/`awayCrestUrl` from the resolved
+/// `football_data.teams` catalog (or leave them `null` for the neutral
+/// initials fallback [TeamLogo] already renders, never a blank space).
 class MatchCard extends StatelessWidget {
   const MatchCard({
     required this.competition,
@@ -12,6 +19,8 @@ class MatchCard extends StatelessWidget {
     required this.awayTeam,
     required this.kickoffAt,
     required this.onTap,
+    this.homeCrestUrl,
+    this.awayCrestUrl,
     super.key,
   });
 
@@ -19,6 +28,8 @@ class MatchCard extends StatelessWidget {
   final String? homeTeam;
   final String? awayTeam;
   final String? kickoffAt;
+  final String? homeCrestUrl;
+  final String? awayCrestUrl;
   final VoidCallback onTap;
 
   @override
@@ -41,18 +52,25 @@ class MatchCard extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.primary.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.sports_soccer_rounded,
-                  color: tokens.primaryLight,
-                  size: 20,
+              SizedBox(
+                width: 44,
+                height: 32,
+                child: Stack(
+                  children: <Widget>[
+                    TeamLogo(
+                      displayName: homeTeam ?? '؟',
+                      crestUrl: homeCrestUrl,
+                      size: 28,
+                    ),
+                    Positioned(
+                      left: 16,
+                      child: TeamLogo(
+                        displayName: awayTeam ?? '؟',
+                        crestUrl: awayCrestUrl,
+                        size: 28,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),

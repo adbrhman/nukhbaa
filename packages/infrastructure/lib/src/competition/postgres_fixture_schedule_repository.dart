@@ -26,12 +26,15 @@ final class PostgresFixtureScheduleRepository
 
   static const String _upsertSql = '''
 INSERT INTO competition.fixture_schedules
-  (fixture_id, home_team, away_team, kickoff_at)
-VALUES (@fixture_id, @home_team, @away_team, @kickoff_at)
+  (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id)
+VALUES (@fixture_id, @home_team, @away_team, @kickoff_at, @home_team_id,
+        @away_team_id)
 ON CONFLICT (fixture_id) DO UPDATE SET
-  home_team  = EXCLUDED.home_team,
-  away_team  = EXCLUDED.away_team,
-  kickoff_at = EXCLUDED.kickoff_at
+  home_team    = EXCLUDED.home_team,
+  away_team    = EXCLUDED.away_team,
+  kickoff_at   = EXCLUDED.kickoff_at,
+  home_team_id = EXCLUDED.home_team_id,
+  away_team_id = EXCLUDED.away_team_id
 ''';
 
   @override
@@ -43,6 +46,8 @@ ON CONFLICT (fixture_id) DO UPDATE SET
         'home_team': schedule.homeTeam,
         'away_team': schedule.awayTeam,
         'kickoff_at': schedule.kickoffAt.toUtc().toIso8601String(),
+        'home_team_id': schedule.homeTeamId?.value,
+        'away_team_id': schedule.awayTeamId?.value,
       },
     );
     return switch (inserted) {
@@ -58,7 +63,8 @@ ON CONFLICT (fixture_id) DO UPDATE SET
   // --------------------------------------------------------------------------
 
   static const String _selectByFixtureSql = '''
-SELECT fixture_id, home_team, away_team, kickoff_at
+SELECT fixture_id, home_team, away_team, kickoff_at, home_team_id,
+       away_team_id
 FROM competition.fixture_schedules
 WHERE fixture_id = @fixture_id
 ''';
@@ -81,7 +87,8 @@ WHERE fixture_id = @fixture_id
   // --------------------------------------------------------------------------
 
   static const String _selectByFixturesSql = '''
-SELECT fixture_id, home_team, away_team, kickoff_at
+SELECT fixture_id, home_team, away_team, kickoff_at, home_team_id,
+       away_team_id
 FROM competition.fixture_schedules
 WHERE fixture_id = ANY(@fixture_ids::uuid[])
 ''';
@@ -159,12 +166,38 @@ WHERE fixture_id = ANY(@fixture_ids::uuid[])
         _corrupt('fixture_schedules', 'kickoff_at', 'not a timestamp'),
       );
     }
+
+    final homeTeamIdRaw = row['home_team_id']?.toString();
+    final awayTeamIdRaw = row['away_team_id']?.toString();
+    TeamRef? homeTeamId;
+    if (homeTeamIdRaw != null) {
+      final parsed = TeamRef.tryParse(homeTeamIdRaw);
+      if (parsed is Err<TeamRef>) {
+        return Result.err(
+          _corrupt('fixture_schedules', 'home_team_id', parsed.error.message),
+        );
+      }
+      homeTeamId = (parsed as Ok<TeamRef>).value;
+    }
+    TeamRef? awayTeamId;
+    if (awayTeamIdRaw != null) {
+      final parsed = TeamRef.tryParse(awayTeamIdRaw);
+      if (parsed is Err<TeamRef>) {
+        return Result.err(
+          _corrupt('fixture_schedules', 'away_team_id', parsed.error.message),
+        );
+      }
+      awayTeamId = (parsed as Ok<TeamRef>).value;
+    }
+
     return Result.ok(
       FixtureSchedule.fromStored(
         fixture: (fixtureResult as Ok<FixtureRef>).value,
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         kickoffAt: kickoffAt,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
       ),
     );
   }
@@ -184,6 +217,14 @@ WHERE fixture_id = ANY(@fixture_ids::uuid[])
       return const AppError.invariant(
         'competition.fixture_schedule_integrity_violation',
         'The fixture schedule violated an integrity rule',
+      );
+    }
+    // 23503 foreign_key_violation — an admin-supplied home_team_id/
+    // away_team_id does not name a row in football_data.teams.
+    if (cause.code == '23503') {
+      return const AppError.validation(
+        'competition.fixture_schedule_unknown_team',
+        'The referenced team id does not exist',
       );
     }
     return error;

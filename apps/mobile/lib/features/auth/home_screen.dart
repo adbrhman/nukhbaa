@@ -9,6 +9,8 @@ import '../../core/ui/match_card.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
+import '../competition/team_identity.dart';
+import '../competition/teams_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
@@ -35,6 +37,7 @@ class HomeScreen extends ConsumerWidget {
     final tokens = context.tokens;
     final fixtures = ref.watch(currentMonthFixturesProvider);
     final seasons = ref.watch(activeSeasonsProvider);
+    final teamCatalog = ref.watch(teamCatalogProvider).value;
     final l10n = AppLocalizations.of(context);
     final name = user.displayName.trim().isEmpty ? 'المتنبئ' : user.displayName;
 
@@ -112,21 +115,30 @@ class HomeScreen extends ConsumerWidget {
                     );
                   }
                   return Column(
-                    children: items
-                        .take(3)
-                        .map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: MatchCard(
-                              competition: item.competitionName,
-                              homeTeam: item.fixture.homeTeam,
-                              awayTeam: item.fixture.awayTeam,
-                              kickoffAt: item.fixture.kickoffAt,
-                              onTap: onOpenMatches,
-                            ),
-                          ),
-                        )
-                        .toList(),
+                    children: items.take(3).map((item) {
+                      final home = resolveTeamIdentity(
+                        catalog: teamCatalog,
+                        teamId: item.fixture.homeTeamId,
+                        teamName: item.fixture.homeTeam,
+                      );
+                      final away = resolveTeamIdentity(
+                        catalog: teamCatalog,
+                        teamId: item.fixture.awayTeamId,
+                        teamName: item.fixture.awayTeam,
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: MatchCard(
+                          competition: item.competitionName,
+                          homeTeam: home.displayName,
+                          awayTeam: away.displayName,
+                          homeCrestUrl: home.crestUrl,
+                          awayCrestUrl: away.crestUrl,
+                          kickoffAt: item.fixture.kickoffAt,
+                          onTap: onOpenMatches,
+                        ),
+                      );
+                    }).toList(),
                   );
                 },
               ),
