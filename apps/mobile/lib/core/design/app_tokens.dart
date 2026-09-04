@@ -23,6 +23,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.errorContainer,
     required this.success,
     required this.successContainer,
+    required this.tintStrength,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
@@ -53,6 +54,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color errorContainer;
   final Color success;
   final Color successContainer;
+
+  /// Alpha for a brand-color wash (e.g. a match card's corner glow) —
+  /// deliberately weaker in light mode, where the same alpha reads far more
+  /// saturated against a light surface than it does in dark mode.
+  final double tintStrength;
   final Color textPrimary;
   final Color textSecondary;
   final Color textMuted;
@@ -85,6 +91,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColors.errorContainer,
     success: AppColors.success,
     successContainer: AppColors.successContainer,
+    tintStrength: 0.14,
     textPrimary: AppColors.textPrimary,
     textSecondary: AppColors.textSecondary,
     textMuted: AppColors.textMuted,
@@ -130,6 +137,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColorsLight.errorContainer,
     success: AppColorsLight.success,
     successContainer: AppColorsLight.successContainer,
+    tintStrength: 0.07,
     textPrimary: AppColorsLight.textPrimary,
     textSecondary: AppColorsLight.textSecondary,
     textMuted: AppColorsLight.textMuted,
@@ -176,6 +184,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? errorContainer,
     Color? success,
     Color? successContainer,
+    double? tintStrength,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
@@ -206,6 +215,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       errorContainer: errorContainer ?? this.errorContainer,
       success: success ?? this.success,
       successContainer: successContainer ?? this.successContainer,
+      tintStrength: tintStrength ?? this.tintStrength,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
@@ -249,6 +259,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
         other.successContainer,
         t,
       )!,
+      tintStrength: tintStrength + (other.tintStrength - tintStrength) * t,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,

@@ -103,7 +103,7 @@ void main() {
   });
 
   testWidgets(
-    'predicted state: steppers are pre-filled and the pending badge shows',
+    'predicted state: steppers are pre-filled from the stored prediction',
     (tester) async {
       final harness = _harnessFor(
         kickoffAt: _futureIso(),
@@ -147,7 +147,10 @@ void main() {
             .data,
         '1',
       );
-      expect(find.text('Result pending'), findsOneWidget);
+      // No standalone "pending result" badge in this state (removed in the
+      // reference-parity pass — it had no counterpart in the reference and
+      // added a fourth row).
+      expect(find.text('Result pending'), findsNothing);
     },
   );
 

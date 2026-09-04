@@ -22,10 +22,32 @@
 ///    of whether a prediction exists (a deliberate simplification over the
 ///    prior design: once locked, the point is moot until graded).
 /// 3. **Predicted** (has a prediction, not locked, not graded) — the score
-///    steppers stay active, pre-filled from the stored prediction, plus a
-///    "pending result" badge under the body.
+///    steppers stay active, pre-filled from the stored prediction. (A
+///    standalone "pending result" badge used to render under the body here
+///    too; removed in the reference-parity pass below — it added a fourth
+///    row with no counterpart in the reference, and the graded state
+///    already carries its own status right next to the score.)
 /// 4. **Open** (no prediction yet, not locked) — steppers start at `null`
 ///    ("?"), submit stays disabled until both sides have a value.
+///
+/// ## Reference-parity pass (corrections, recorded)
+/// A follow-up review against the FotMob reference found the card reading
+/// heavier/more saturated than intended: an outer card-level BoxShadow/glow
+/// with no reference counterpart (removed outright — separation between
+/// cards is the border + margin alone now); a full-width horizontal
+/// gradient wash instead of two faint radial glows confined to the top
+/// corners (replaced, and read through the new `AppTokens.tintStrength`
+/// rather than `Theme.of(context).brightness` inside this widget); score
+/// steppers whose `tokens.surfaceElevated` fill read almost black in dark
+/// mode (switched to `tokens.textPrimary.withValues(alpha: 0.08)`, wider
+/// and taller); the double toggle defaulting to a solid-gold, glowing
+/// unselected state that dominated the card (now quiet/neutral by default,
+/// solid gold only once selected); the submit control fluctuating between
+/// an unrelated success-green and the double button's own gold instead of
+/// signaling readiness via `tokens.primary`; the league name truncating
+/// behind a fixed-width kickoff time; and the competition-logo fallback
+/// showing the same two Arabic letters ("ال") for nearly every league
+/// (replaced with a generic trophy glyph).
 ///
 /// ## Explicit submit, not auto-save (§5 decision, recorded)
 /// The reference FotMob design auto-saves without ever showing a submit
@@ -212,7 +234,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final bool showEditableControls = !locked && !isGraded;
     final bool enabled = !inFlight && !locked;
     final bool hasPick = _homeGoals != null && _awayGoals != null;
-    final bool showPendingBadge = !locked && !isGraded && myPrediction != null;
     final String fixtureId = _fixture.fixtureId;
 
     final catalog = ref.watch(teamCatalogProvider).value;
@@ -226,13 +247,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );
-    final Color homeBase = home.brandColor ?? tokens.surfaceElevated;
-    final Color awayBase = away.brandColor ?? tokens.surfaceElevated;
-    final Color glowColor = Color.lerp(
-      homeBase,
-      awayBase,
-      0.5,
-    )!.withValues(alpha: AppOpacity.glow);
+    // A locked card's corner glow is halved, not removed — a full-strength
+    // glow on a card the user can no longer act on read as an error state.
+    final double tint = tokens.tintStrength * (locked ? 0.5 : 1.0);
 
     return Container(
       key: Key('currentMonthFixtures.fixture.$fixtureId'),
@@ -240,142 +257,166 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: AppRadius.brCardLarge,
-        border: Border.all(color: tokens.border, width: AppStroke.regular),
-        gradient: LinearGradient(
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-          stops: const <double>[0.0, 0.5, 1.0],
-          colors: <Color>[
-            homeBase.withValues(alpha: AppOpacity.tint),
-            tokens.surface,
-            awayBase.withValues(alpha: AppOpacity.tint),
-          ],
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: glowColor,
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: tokens.border, width: AppStroke.hairline),
+        color: tokens.surface,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _CardHeader(
-              competitionId: widget.item.competitionId,
-              competitionName: widget.item.competitionName,
-              kickoffAt: _fixture.kickoffAt,
-              onOpenLeaderboard: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SeasonLeaderboardScreen(
-                    seasonId: _fixture.seasonId,
-                    seasonLabel: widget.item.seasonLabel,
+      child: Stack(
+        children: <Widget>[
+          // Two faint radial washes at the top corners only — the reference
+          // has no full-bleed team-color gradient and no card-level
+          // BoxShadow/halo; separation between cards comes from the border
+          // and margin alone.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(1.0, -1.0),
+                    radius: 0.9,
+                    colors: <Color>[
+                      _cornerGlow(home.brandColor, tint),
+                      Colors.transparent,
+                    ],
+                    stops: const <double>[0.0, 1.0],
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(-1.0, -1.0),
+                    radius: 0.9,
+                    colors: <Color>[
+                      _cornerGlow(away.brandColor, tint),
+                      Colors.transparent,
+                    ],
+                    stops: const <double>[0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Expanded(
-                  child: _TeamColumn(
-                    displayName: home.displayName,
-                    crestUrl: home.crestUrl,
-                    brandColor: home.brandColor,
-                  ),
-                ),
-                _MiddleSlot(
-                  isGraded: isGraded,
-                  locked: locked,
-                  myPrediction: myPrediction,
-                  grade: myGrade,
-                  points: myPoints,
-                  homeGoals: _homeGoals,
-                  awayGoals: _awayGoals,
-                  enabled: enabled,
-                  showEditableControls: showEditableControls,
-                  fixtureId: fixtureId,
-                  onIncrementHome: _incrementHome,
-                  onDecrementHome: _decrementHome,
-                  onIncrementAway: _incrementAway,
-                  onDecrementAway: _decrementAway,
-                ),
-                Expanded(
-                  child: _TeamColumn(
-                    displayName: away.displayName,
-                    crestUrl: away.crestUrl,
-                    brandColor: away.brandColor,
-                  ),
-                ),
-              ],
-            ),
-            if (showPendingBadge)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: AppBadge(
-                    label: l10n.predictionPendingResultLabel,
-                    tone: AppBadgeTone.muted,
-                  ),
-                ),
-              ),
-            if (showEditableControls) ...<Widget>[
-              const SizedBox(height: AppSpacing.md),
-              // Two compact controls, not a full-width row — the submit
-              // check stays at the RTL leading (visual left) edge and the
-              // double toggle at the trailing (visual right) edge, with the
-              // Spacer leaving everything else on the card untouched.
-              Row(
-                children: <Widget>[
-                  Flexible(
-                    child: _DoubleGlowButton(
-                      selected: _isDouble,
-                      enabled: enabled,
-                      onTap: _toggleDouble,
-                      fixtureId: fixtureId,
+                _CardHeader(
+                  competitionId: widget.item.competitionId,
+                  competitionName: widget.item.competitionName,
+                  kickoffAt: _fixture.kickoffAt,
+                  onOpenLeaderboard: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SeasonLeaderboardScreen(
+                        seasonId: _fixture.seasonId,
+                        seasonLabel: widget.item.seasonLabel,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  _SubmitButton(
-                    key: Key('currentMonthFixtures.submit.$fixtureId'),
-                    enabled: enabled && hasPick,
-                    inFlight: inFlight,
-                    tooltip: l10n.submitFixturePredictionButton,
-                    onTap: _submit,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      child: _TeamColumn(
+                        displayName: home.displayName,
+                        crestUrl: home.crestUrl,
+                        brandColor: home.brandColor,
+                      ),
+                    ),
+                    _MiddleSlot(
+                      isGraded: isGraded,
+                      locked: locked,
+                      myPrediction: myPrediction,
+                      grade: myGrade,
+                      points: myPoints,
+                      homeGoals: _homeGoals,
+                      awayGoals: _awayGoals,
+                      enabled: enabled,
+                      showEditableControls: showEditableControls,
+                      fixtureId: fixtureId,
+                      onIncrementHome: _incrementHome,
+                      onDecrementHome: _decrementHome,
+                      onIncrementAway: _incrementAway,
+                      onDecrementAway: _decrementAway,
+                    ),
+                    Expanded(
+                      child: _TeamColumn(
+                        displayName: away.displayName,
+                        crestUrl: away.crestUrl,
+                        brandColor: away.brandColor,
+                      ),
+                    ),
+                  ],
+                ),
+                if (showEditableControls) ...<Widget>[
+                  const SizedBox(height: AppSpacing.sm),
+                  // Two compact controls, not a full-width row — the submit
+                  // check stays at the RTL leading (visual left) edge and
+                  // the double toggle at the trailing (visual right) edge,
+                  // with the Spacer leaving everything else untouched.
+                  Row(
+                    children: <Widget>[
+                      Flexible(
+                        child: _DoubleGlowButton(
+                          selected: _isDouble,
+                          enabled: enabled,
+                          onTap: _toggleDouble,
+                          fixtureId: fixtureId,
+                        ),
+                      ),
+                      const Spacer(),
+                      _SubmitButton(
+                        key: Key('currentMonthFixtures.submit.$fixtureId'),
+                        enabled: enabled && hasPick,
+                        inFlight: inFlight,
+                        tooltip: l10n.submitFixturePredictionButton,
+                        onTap: _submit,
+                      ),
+                    ],
                   ),
+                  if (submission is FixtureSubmissionSucceeded)
+                    Padding(
+                      key: Key('currentMonthFixtures.success.$fixtureId'),
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        l10n.fixturePredictionSavedMessage,
+                        style: TextStyle(color: tokens.primary, fontSize: 12),
+                      ),
+                    ),
+                  if (submission is FixtureSubmissionFailed)
+                    Padding(
+                      key: Key('currentMonthFixtures.failure.$fixtureId'),
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        ErrorPresenter.message(submission.error),
+                        key: Key(
+                          'currentMonthFixtures.failure.message.$fixtureId',
+                        ),
+                        style: TextStyle(color: tokens.error, fontSize: 12),
+                      ),
+                    ),
                 ],
-              ),
-              if (submission is FixtureSubmissionSucceeded)
-                Padding(
-                  key: Key('currentMonthFixtures.success.$fixtureId'),
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Text(
-                    l10n.fixturePredictionSavedMessage,
-                    style: TextStyle(color: tokens.primary, fontSize: 12),
-                  ),
-                ),
-              if (submission is FixtureSubmissionFailed)
-                Padding(
-                  key: Key('currentMonthFixtures.failure.$fixtureId'),
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Text(
-                    ErrorPresenter.message(submission.error),
-                    key: Key('currentMonthFixtures.failure.message.$fixtureId'),
-                    style: TextStyle(color: tokens.error, fontSize: 12),
-                  ),
-                ),
-            ],
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+/// The corner-glow color for one side of the card: the team's own resolved
+/// brand color washed to [tint], or fully transparent (never a guessed
+/// fallback color) when no brand color was resolved.
+Color _cornerGlow(Color? brandColor, double tint) => brandColor == null
+    ? Colors.transparent
+    : brandColor.withValues(alpha: tint);
 
 /// The header row: league logo + name + (optional) kickoff time on the
 /// leading (RTL: right) side, an "open leaderboard" icon button on the
@@ -398,27 +439,22 @@ class _CardHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
     final String? assetPath = competitionLogoAsset(competitionId);
-    final Color logoTint =
-        competitionLogoBrandColor(competitionId) ?? tokens.surfaceHigh;
     final DateTime? kickoffLocal = kickoffAt == null
         ? null
         : DateTime.tryParse(kickoffAt!)?.toLocal();
 
     return Row(
       children: <Widget>[
-        _CompetitionLogo(
-          name: competitionName,
-          assetPath: assetPath,
-          tint: logoTint,
-        ),
+        _CompetitionLogo(assetPath: assetPath),
         const SizedBox(width: AppSpacing.xs),
         Flexible(
+          fit: FlexFit.loose,
           child: Text(
             competitionName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: tokens.textSecondary,
             ),
@@ -455,21 +491,18 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-/// The 18×18 league logo, or a letter-fallback circle when no asset is on
-/// file (`competition_logo_assets.dart` ships empty today — see its doc) —
-/// same "never a blank box" rule `TeamLogo` already follows.
+/// The 16×16 league logo, or a generic trophy-glyph fallback when no asset
+/// is on file (`competition_logo_assets.dart` ships empty today — see its
+/// doc). A two-letter initials fallback would repeat the same two Arabic
+/// letters ("ال", the definite article) for nearly every league name here,
+/// which reads as a bug rather than an identity mark — the trophy glyph
+/// reads clearly as "no logo yet" instead.
 class _CompetitionLogo extends StatelessWidget {
-  const _CompetitionLogo({
-    required this.name,
-    required this.assetPath,
-    required this.tint,
-  });
+  const _CompetitionLogo({required this.assetPath});
 
-  final String name;
   final String? assetPath;
-  final Color tint;
 
-  static const double _size = 18;
+  static const double _size = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -481,39 +514,18 @@ class _CompetitionLogo extends StatelessWidget {
           width: _size,
           height: _size,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) =>
-              _fallback(context, tokens),
+          errorBuilder: (context, error, stackTrace) => _fallback(tokens),
         ),
       );
     }
-    return _fallback(context, tokens);
+    return _fallback(tokens);
   }
 
-  Widget _fallback(BuildContext context, AppTokens tokens) {
-    final String trimmed = name.trim();
-    final String initials = trimmed.isEmpty
-        ? '?'
-        : trimmed.substring(0, trimmed.length >= 2 ? 2 : 1).toUpperCase();
-    return Container(
-      width: _size,
-      height: _size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: tint),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Padding(
-          padding: const EdgeInsets.all(2),
-          child: Text(
-            initials,
-            maxLines: 1,
-            style: TextStyle(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 9,
-            ),
-          ),
-        ),
-      ),
+  Widget _fallback(AppTokens tokens) {
+    return Icon(
+      Icons.emoji_events_outlined,
+      size: _size,
+      color: tokens.textMuted,
     );
   }
 }
@@ -651,7 +663,7 @@ class _MiddleSlot extends StatelessWidget {
           fixtureId: fixtureId,
           side: 'home',
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.xs),
         _ScoreStepper(
           value: awayGoals,
           enabled: enabled,
@@ -747,7 +759,9 @@ class _ScoreStepper extends StatelessWidget {
   final String fixtureId;
   final String side;
 
-  static const double _width = 56;
+  static const double _width = 88;
+  static const double _height = 124;
+  static const double _zoneHeight = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -755,42 +769,54 @@ class _ScoreStepper extends StatelessWidget {
     final tokens = context.tokens;
     final bool canIncrement = enabled && (value ?? -1) < 99;
     final bool canDecrement = enabled && value != null && value! > 0;
+    final Color divider = tokens.textPrimary.withValues(alpha: 0.06);
 
     return Container(
       width: _width,
+      height: _height,
       decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brButton,
+        color: tokens.textPrimary.withValues(alpha: 0.08),
+        borderRadius: AppRadius.brCard,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           _StepperZone(
             key: Key('currentMonthFixtures.$side.increment.$fixtureId'),
             icon: Icons.add_rounded,
             tooltip: l10n.scoreStepperIncreaseTooltip,
-            height: AppSizes.minTouchTarget,
+            height: _zoneHeight,
             onTap: canIncrement ? onIncrement : null,
           ),
-          Container(
-            height: 32,
-            alignment: Alignment.center,
-            child: Text(
-              value?.toString() ?? '?',
-              key: Key('currentMonthFixtures.$side.value.$fixtureId'),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: value == null ? tokens.textMuted : tokens.textPrimary,
+          Divider(
+            height: AppStroke.hairline,
+            thickness: AppStroke.hairline,
+            color: divider,
+          ),
+          Expanded(
+            child: Container(
+              alignment: Alignment.center,
+              child: Text(
+                value?.toString() ?? '?',
+                key: Key('currentMonthFixtures.$side.value.$fixtureId'),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: value == null ? tokens.textMuted : tokens.textPrimary,
+                ),
               ),
             ),
+          ),
+          Divider(
+            height: AppStroke.hairline,
+            thickness: AppStroke.hairline,
+            color: divider,
           ),
           _StepperZone(
             key: Key('currentMonthFixtures.$side.decrement.$fixtureId'),
             icon: Icons.remove_rounded,
             tooltip: l10n.scoreStepperDecreaseTooltip,
-            height: AppSizes.minTouchTarget,
+            height: _zoneHeight,
             onTap: canDecrement ? onDecrement : null,
           ),
         ],
@@ -826,7 +852,11 @@ class _StepperZone extends StatelessWidget {
           child: SizedBox(
             height: height,
             width: double.infinity,
-            child: Icon(icon, size: AppSizes.iconMd, color: tokens.textPrimary),
+            child: Icon(
+              icon,
+              size: AppSizes.iconSm,
+              color: tokens.textSecondary,
+            ),
           ),
         ),
       ),
@@ -834,14 +864,13 @@ class _StepperZone extends StatelessWidget {
   }
 }
 
-/// The "make it double" toggle — a compact pill (not a full-width bar):
-/// unselected is a muted surface fill with a gold icon/border accent,
-/// selected is a gold→bronze gradient fill with an ambient gold glow and
-/// the filled bolt icon. The state is never color-alone — the icon and
-/// border width both change with it too (accessibility). Reuses the same
-/// key the prior chip design used (`currentMonthFixtures.double.$fixtureId`)
-/// — same control, restyled smaller so it no longer competes for width with
-/// the submit control.
+/// The "make it double" toggle — quiet by default so it never competes
+/// with the rest of the card: unselected carries no gold and no glow at
+/// all, just a faint neutral fill/border. Selected is a solid gold fill
+/// (no gradient) with one small ambient shadow. The state is never
+/// color-alone — the icon and fill both change with it too
+/// (accessibility). Reuses the same key the prior chip design used
+/// (`currentMonthFixtures.double.$fixtureId`) — same control, restyled.
 class _DoubleGlowButton extends StatelessWidget {
   const _DoubleGlowButton({
     required this.selected,
@@ -855,7 +884,7 @@ class _DoubleGlowButton extends StatelessWidget {
   final VoidCallback onTap;
   final String fixtureId;
 
-  static const double _height = 48;
+  static const double _height = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -880,22 +909,21 @@ class _DoubleGlowButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
-              gradient: selected
-                  ? LinearGradient(colors: <Color>[tokens.gold, tokens.bronze])
-                  : null,
-              color: selected ? null : tokens.surfaceElevated,
-              border: Border.all(
-                color: selected
-                    ? tokens.gold
-                    : tokens.gold.withValues(alpha: 0.35),
-                width: selected ? AppStroke.selected : AppStroke.regular,
-              ),
+              color: selected
+                  ? tokens.gold
+                  : tokens.textPrimary.withValues(alpha: 0.06),
+              border: selected
+                  ? null
+                  : Border.all(
+                      color: tokens.textPrimary.withValues(alpha: 0.12),
+                      width: AppStroke.hairline,
+                    ),
               boxShadow: selected
                   ? <BoxShadow>[
                       BoxShadow(
-                        color: tokens.gold.withValues(alpha: 0.40),
-                        blurRadius: 18,
-                        offset: const Offset(0, 4),
+                        color: tokens.gold.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
                       ),
                     ]
                   : const <BoxShadow>[],
@@ -907,7 +935,7 @@ class _DoubleGlowButton extends StatelessWidget {
                 Icon(
                   selected ? Icons.bolt_rounded : Icons.bolt_outlined,
                   size: AppSizes.iconSm,
-                  color: selected ? tokens.onPrimary : tokens.gold,
+                  color: selected ? tokens.onPrimary : tokens.textSecondary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Flexible(
@@ -918,7 +946,7 @@ class _DoubleGlowButton extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
-                      color: selected ? tokens.onPrimary : tokens.gold,
+                      color: selected ? tokens.onPrimary : tokens.textSecondary,
                     ),
                   ),
                 ),
@@ -931,10 +959,12 @@ class _DoubleGlowButton extends StatelessWidget {
   }
 }
 
-/// The compact submit control — a small circular success-green check,
-/// sized to the accessible minimum touch target even though its visible
-/// footprint is tighter than the old full-width bar. Icon-only, so it
-/// carries an explicit [Tooltip]/semantic label instead of visible text.
+/// The compact submit control — only turns [tokens.primary] blue once a
+/// pick actually exists to submit; otherwise it stays as quiet as the
+/// double button's own default state, so it never out-shouts the card's
+/// content. Same rounded-rect radius as the double button, no shadow in
+/// either state. Icon-only, so it carries an explicit [Tooltip]/semantic
+/// label instead of visible text.
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({
     required this.enabled,
@@ -949,19 +979,24 @@ class _SubmitButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
 
+  static const double _width = 48;
+  static const double _height = 44;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Tooltip(
       message: tooltip,
       child: SizedBox(
-        width: AppSizes.minTouchTarget,
-        height: AppSizes.minTouchTarget,
+        width: _width,
+        height: _height,
         child: Material(
-          shape: const CircleBorder(),
-          color: enabled ? tokens.successContainer : tokens.surfaceElevated,
+          borderRadius: AppRadius.brButton,
+          color: enabled
+              ? tokens.primary
+              : tokens.textPrimary.withValues(alpha: 0.06),
           child: InkWell(
-            customBorder: const CircleBorder(),
+            borderRadius: AppRadius.brButton,
             onTap: enabled ? onTap : null,
             child: Center(
               child: inFlight
@@ -970,12 +1005,12 @@ class _SubmitButton extends StatelessWidget {
                       height: AppSizes.progressSm,
                       child: CircularProgressIndicator(
                         strokeWidth: AppSizes.progressStroke,
-                        color: tokens.success,
+                        color: tokens.onPrimary,
                       ),
                     )
                   : Icon(
                       Icons.check_rounded,
-                      color: enabled ? tokens.success : tokens.textMuted,
+                      color: enabled ? tokens.onPrimary : tokens.textMuted,
                     ),
             ),
           ),
