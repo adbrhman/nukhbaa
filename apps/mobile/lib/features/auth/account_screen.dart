@@ -409,11 +409,12 @@ class _DarkModeToggle extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     final ThemeMode mode = ref.watch(themeControllerProvider);
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
+    return Material(
+      color: tokens.surfaceElevated,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: AppRadius.brMd,
-        border: Border.all(color: tokens.border),
+        side: BorderSide(color: tokens.border),
       ),
       child: SwitchListTile(
         key: const Key('account.darkModeToggle'),

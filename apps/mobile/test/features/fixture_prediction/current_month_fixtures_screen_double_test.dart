@@ -1,10 +1,11 @@
-/// Widget test isolating the reported "double chip doesn't respond to
-/// taps" issue on [CurrentMonthFixturesScreen], independent of any live
-/// device/emulator: pumps the real screen against a faked transport, taps
-/// the chip by its actual `Key`, and asserts both the visual toggle and
-/// that the flag is actually carried through to the submitted request body
-/// — so a pass here proves the tap-to-state-to-submit path is sound at the
-/// framework level, regardless of what a specific device/browser shows.
+/// Widget test covering the FotMob-style card's double toggle
+/// (`_DoubleGlowButton` in `widgets/fotmob_match_card.dart`), independent of
+/// any live device/emulator: pumps the real screen against a faked
+/// transport, taps the score steppers and the double button by their actual
+/// `Key`s, and asserts both the visual toggle and that the flag is actually
+/// carried through to the submitted request body — so a pass here proves
+/// the tap-to-state-to-submit path is sound at the framework level,
+/// regardless of what a specific device/browser shows.
 library;
 
 import 'dart:convert';
@@ -30,7 +31,7 @@ Widget _host(CurrentMonthFixturesHarness harness, Widget child) =>
 
 void main() {
   testWidgets(
-    'tapping the double chip toggles its icon and the submit body carries isDouble:true',
+    'tapping the double button toggles its icon and the submit body carries isDouble:true',
     (tester) async {
       final harness = buildCurrentMonthFixturesHarness((request) async {
         final path = request.url.path;
@@ -71,22 +72,21 @@ void main() {
       expect(
         doubleKey,
         findsOneWidget,
-        reason:
-            'the double chip must be visible without any expand/collapse step',
+        reason: 'the double button must be visible without any extra step',
       );
 
-      // Before: unselected — the outline icon, not the filled one.
+      // Before: unselected — the outline bolt icon, not the filled one.
       expect(
         find.descendant(
           of: doubleKey,
-          matching: find.byIcon(Icons.circle_outlined),
+          matching: find.byIcon(Icons.bolt_outlined),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: doubleKey,
-          matching: find.byIcon(Icons.check_circle),
+          matching: find.byIcon(Icons.bolt_rounded),
         ),
         findsNothing,
       );
@@ -94,28 +94,32 @@ void main() {
       await tester.tap(doubleKey);
       await tester.pump();
 
-      // After one tap: selected — the filled icon, not the outline one.
+      // After one tap: selected — the filled bolt icon, not the outline one.
       expect(
         find.descendant(
           of: doubleKey,
-          matching: find.byIcon(Icons.check_circle),
+          matching: find.byIcon(Icons.bolt_rounded),
         ),
         findsOneWidget,
-        reason: 'a single tap must flip the chip to its selected state',
+        reason: 'a single tap must flip the button to its selected state',
       );
       expect(
         find.descendant(
           of: doubleKey,
-          matching: find.byIcon(Icons.circle_outlined),
+          matching: find.byIcon(Icons.bolt_outlined),
         ),
         findsNothing,
       );
 
-      // Pick an outcome (required before submit is enabled) then submit,
-      // and confirm the toggled flag actually reaches the request body —
-      // closing the loop from tap to network payload.
+      // Pick a score on both steppers (required before submit is enabled)
+      // then submit, and confirm the toggled flag actually reaches the
+      // request body — closing the loop from tap to network payload.
       await tester.tap(
-        find.byKey(const Key('currentMonthFixtures.quickFill1.f-1')),
+        find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('currentMonthFixtures.away.increment.f-1')),
       );
       await tester.pump();
       await tester.tap(
@@ -133,6 +137,8 @@ void main() {
         true,
         reason: 'the toggled double flag must be carried through to submit',
       );
+      expect(body['home_goals'], 0);
+      expect(body['away_goals'], 0);
 
       // Tap again: back to unselected.
       await tester.tap(doubleKey);
@@ -140,10 +146,10 @@ void main() {
       expect(
         find.descendant(
           of: doubleKey,
-          matching: find.byIcon(Icons.circle_outlined),
+          matching: find.byIcon(Icons.bolt_outlined),
         ),
         findsOneWidget,
-        reason: 'a second tap must flip the chip back off',
+        reason: 'a second tap must flip the button back off',
       );
     },
   );
