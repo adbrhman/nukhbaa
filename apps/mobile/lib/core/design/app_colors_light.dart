@@ -15,7 +15,12 @@ abstract final class AppColorsLight {
   static const Color primaryDark = Color(0xFF1E3A8A);
   static const Color primaryLight = Color(0xFF3B82F6);
 
-  static const Color gold = Color(0xFFA16207);
+  // A true amber-gold hue (~47°) rather than the previous orange-brown
+  // (~35.5°) one, while still holding >=4.5:1 contrast for white text/icons
+  // placed on it (measured ~4.9:1) — see fotmob_match_card.dart's
+  // _DoubleGlowButton selected state, which paints this solid with
+  // tokens.onPrimary (white) content.
+  static const Color gold = Color(0xFF8A6D00);
   static const Color goldDark = Color(0xFF854D0E);
   static const Color silver = Color(0xFF64748B);
   static const Color bronze = Color(0xFF9B5E1E);
