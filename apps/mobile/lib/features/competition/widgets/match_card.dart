@@ -262,8 +262,9 @@ class _TeamColumn extends StatelessWidget {
     final txt = context.text;
 
     return Column(
-      crossAxisAlignment:
-          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: <Widget>[
         _TeamCrest(name: name, logoPath: logoPath),
         const SizedBox(height: AppSpacing.sm),
@@ -386,8 +387,8 @@ class _ScoreColumn extends StatelessWidget {
           Text(
             locked
                 ? (hasScore
-                    ? '${data.homeScore ?? 0} – ${data.awayScore ?? 0}'
-                    : '— : —')
+                      ? '${data.homeScore ?? 0} – ${data.awayScore ?? 0}'
+                      : '— : —')
                 : '— : —',
             textDirection: TextDirection.ltr,
             style: txt.displaySmall?.copyWith(
@@ -397,7 +398,8 @@ class _ScoreColumn extends StatelessWidget {
             ),
           ),
           if (finished &&
-              (data.homePenalty != null || data.awayPenalty != null)) ...<Widget>[
+              (data.homePenalty != null ||
+                  data.awayPenalty != null)) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),
             Container(
               padding: const EdgeInsets.symmetric(
@@ -444,14 +446,20 @@ class _ProbabilityBar extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Text('${h.toInt()}%', style: txt.labelSmall?.copyWith(color: t.error)),
+            Text(
+              '${h.toInt()}%',
+              style: txt.labelSmall?.copyWith(color: t.error),
+            ),
             const Spacer(),
             Text(
               '${d.toInt()}%',
               style: txt.labelSmall?.copyWith(color: t.textMuted),
             ),
             const Spacer(),
-            Text('${a.toInt()}%', style: txt.labelSmall?.copyWith(color: t.gold)),
+            Text(
+              '${a.toInt()}%',
+              style: txt.labelSmall?.copyWith(color: t.gold),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -543,28 +551,25 @@ class _KickoffCountdownState extends State<_KickoffCountdown> {
   }
 
   Widget _seg(String s, TextTheme txt, AppTokens t) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: t.surfaceHigh.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: t.border),
-        ),
-        child: Text(
-          s,
-          textDirection: TextDirection.ltr,
-          style: txt.titleMedium?.copyWith(
-            fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: t.surfaceHigh.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: t.border),
+    ),
+    child: Text(
+      s,
+      textDirection: TextDirection.ltr,
+      style: txt.titleMedium?.copyWith(
+        fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+      ),
+    ),
+  );
 
   Widget _sep(TextTheme txt, AppTokens t) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Text(
-          ':',
-          style: txt.titleMedium?.copyWith(color: t.textMuted),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: Text(':', style: txt.titleMedium?.copyWith(color: t.textMuted)),
+  );
 }
 
 class _Footer extends StatelessWidget {
@@ -596,11 +601,11 @@ class _Footer extends StatelessWidget {
         canPredict
             ? l.submitPredictionButton
             : (wasPredicted
-                ? l.predictionYourForecastScoreLine(
-                    data.predictedHomeGoals ?? 0,
-                    data.predictedAwayGoals ?? 0,
-                  )
-                : l.predictionFixtureLockedLabel),
+                  ? l.predictionYourForecastScoreLine(
+                      data.predictedHomeGoals ?? 0,
+                      data.predictedAwayGoals ?? 0,
+                    )
+                  : l.predictionFixtureLockedLabel),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -704,16 +709,16 @@ class _StatusPill extends StatelessWidget {
     final txt = context.text;
     final colors = switch (kind) {
       _PillKind.live => (
-          t.error.withValues(alpha: 0.14),
-          t.error,
-          t.error.withValues(alpha: 0.4),
-        ),
+        t.error.withValues(alpha: 0.14),
+        t.error,
+        t.error.withValues(alpha: 0.4),
+      ),
       _PillKind.finished => (t.surfaceHigh, t.textSecondary, t.border),
       _PillKind.upcoming => (
-          t.gold.withValues(alpha: 0.14),
-          t.gold,
-          t.gold.withValues(alpha: 0.4),
-        ),
+        t.gold.withValues(alpha: 0.14),
+        t.gold,
+        t.gold.withValues(alpha: 0.4),
+      ),
     };
 
     return Container(
