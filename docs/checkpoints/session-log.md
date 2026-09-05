@@ -164,3 +164,5 @@
 2026-09-05T00:26:46Z — 08_bigger_crests: شعارات الفرق في بطاقة المباراة كانت AppSizes.iconXl وهو رمز مشترك؛ أُدخل ثابت محلّي _crestSize = 56 داخل _TeamColumn ليكبر الشعار في هذه البطاقة وحدها دون المساس ببقية الشاشات — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
 
 2026-09-05T00:28:27Z — 05_compact_footer_badges: الصفّ السفلي للبطاقة صار شارتين صغيرتين عند الطرفين (×2 دبل يمينًا، ✓ إرسال يسارًا) والوسط فارغ، مطابقةً لموضع شارتَي «ف» في المرجع، بدل صفّ يملأ العرض. الارتفاع 36px دون AppSizes.minTouchTarget — مطلب بصري صريح من صاحب المشروع، مسجَّل كانحراف مقصود لا سهو — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
+
+2026-09-05T00:28:32Z — 06_smaller_score_steppers: مربّعات إدخال النتيجة صُغِّرت — 76×104 إلى 68×92، ومنطقتا +/− من 34 إلى 28، والرقم من 22pt إلى 20pt. منطقة اللمس صارت 28px أي دون AppSizes.minTouchTarget — مطلب بصري صريح من صاحب المشروع، مسجَّل كانحراف مقصود — apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
