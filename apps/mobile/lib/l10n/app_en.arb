@@ -570,5 +570,11 @@
   },
   "adminRemoveFixtureConfirmButton": "Remove",
   "adminRemoveFixtureCancelButton": "Cancel",
-  "adminRemoveFixtureSuccess": "Fixture removed from the round."
+  "adminRemoveFixtureSuccess": "Fixture removed from the round.",
+  "fixturesDateToday": "Today",
+  "fixturesDateYesterday": "Yesterday",
+  "fixturesDateTomorrow": "Tomorrow",
+  "fixturesCalendarTooltip": "Calendar",
+  "fixturesCalendarPickTitle": "Pick a date",
+  "fixturesDayEmpty": "No matches on this day."
 }

@@ -842,4 +842,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminRemoveFixtureSuccess => 'Fixture removed from the round.';
+
+  @override
+  String get fixturesDateToday => 'Today';
+
+  @override
+  String get fixturesDateYesterday => 'Yesterday';
+
+  @override
+  String get fixturesDateTomorrow => 'Tomorrow';
+
+  @override
+  String get fixturesCalendarTooltip => 'Calendar';
+
+  @override
+  String get fixturesCalendarPickTitle => 'Pick a date';
+
+  @override
+  String get fixturesDayEmpty => 'No matches on this day.';
 }

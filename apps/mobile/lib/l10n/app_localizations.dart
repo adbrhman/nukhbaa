@@ -1565,6 +1565,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fixture removed from the round.'**
   String get adminRemoveFixtureSuccess;
+
+  /// No description provided for @fixturesDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get fixturesDateToday;
+
+  /// No description provided for @fixturesDateYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get fixturesDateYesterday;
+
+  /// No description provided for @fixturesDateTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get fixturesDateTomorrow;
+
+  /// No description provided for @fixturesCalendarTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get fixturesCalendarTooltip;
+
+  /// No description provided for @fixturesCalendarPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date'**
+  String get fixturesCalendarPickTitle;
+
+  /// No description provided for @fixturesDayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches on this day.'**
+  String get fixturesDayEmpty;
 }
 
 class _AppLocalizationsDelegate

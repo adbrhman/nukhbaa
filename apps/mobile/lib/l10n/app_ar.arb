@@ -250,5 +250,11 @@
   "adminRemoveFixtureConfirmMessage": "حذف {home} ضد {away} من هذه الجولة؟ لا يمكن التراجع عن هذا الإجراء.",
   "adminRemoveFixtureConfirmButton": "حذف",
   "adminRemoveFixtureCancelButton": "إلغاء",
-  "adminRemoveFixtureSuccess": "تم حذف المباراة من الجولة."
+  "adminRemoveFixtureSuccess": "تم حذف المباراة من الجولة.",
+  "fixturesDateToday": "اليوم",
+  "fixturesDateYesterday": "أمس",
+  "fixturesDateTomorrow": "غداً",
+  "fixturesCalendarTooltip": "التقويم",
+  "fixturesCalendarPickTitle": "اختر التاريخ",
+  "fixturesDayEmpty": "لا توجد مباريات في هذا اليوم."
 }

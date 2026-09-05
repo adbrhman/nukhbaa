@@ -847,4 +847,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminRemoveFixtureSuccess => 'تم حذف المباراة من الجولة.';
+
+  @override
+  String get fixturesDateToday => 'اليوم';
+
+  @override
+  String get fixturesDateYesterday => 'أمس';
+
+  @override
+  String get fixturesDateTomorrow => 'غداً';
+
+  @override
+  String get fixturesCalendarTooltip => 'التقويم';
+
+  @override
+  String get fixturesCalendarPickTitle => 'اختر التاريخ';
+
+  @override
+  String get fixturesDayEmpty => 'لا توجد مباريات في هذا اليوم.';
 }
