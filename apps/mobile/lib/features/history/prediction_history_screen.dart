@@ -10,7 +10,7 @@ import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
-import '../fixture_prediction/fixture_prediction_providers.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
 import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
 
@@ -50,11 +50,12 @@ class PredictionHistoryScreen extends ConsumerWidget {
 
 /// A single historical per-fixture forecast (Axiom 4 Amendment).
 ///
-/// Team names come from [seasonFixturesProvider], keyed by the prediction's
-/// own [FixturePredictionDto.seasonId], so every season the caller ever
-/// played resolves — not just the current month. A null seasonId, a
-/// still-loading read, or a fixture no longer linked to the season all fall
-/// back to the raw fixture id rather than a broken card. The
+/// Team names come from [currentMonthFixturesProvider] — the same feed the
+/// fixtures screen renders — because [FixturePredictionDto.seasonId] is the
+/// *participant's* season, not the fixture's, and a monthly competition
+/// gathers its fixtures from several leagues. A still-loading read, or a
+/// fixture outside the current month, falls back to the raw fixture id
+/// rather than a broken card. The
 /// grade badge (✅/❌/🔥), when shown, comes from [fixtureScoresProvider] —
 /// only queried when [FixturePredictionDto.seasonId] is populated. A `null`
 /// seasonId, a still-loading read, or any read error all degrade the same
@@ -79,16 +80,18 @@ class _FixturePredictionCard extends ConsumerWidget {
       }
     }
 
-    // The prediction carries its season, and the season's fixture list
-    // carries the team names — so the history resolves names for every
-    // season the caller ever played, not just the current month.
-    final AsyncValue<List<SeasonFixtureCardDto>>? fixturesAsync =
-        seasonId == null ? null : ref.watch(seasonFixturesProvider(seasonId));
+    // Team names come from the current-month feed, not from the
+    // prediction's own season: `seasonId` is derived server-side from the
+    // *participant's* season, which is not where the fixtures live once a
+    // monthly competition gathers fixtures from several leagues.
+    final AsyncValue<List<CurrentMonthFixtureItemDto>> monthAsync = ref.watch(
+      currentMonthFixturesProvider,
+    );
     SeasonFixtureCardDto? fixture;
-    for (final SeasonFixtureCardDto f
-        in fixturesAsync?.value ?? const <SeasonFixtureCardDto>[]) {
-      if (f.fixtureId == prediction.fixtureId) {
-        fixture = f;
+    for (final CurrentMonthFixtureItemDto item
+        in monthAsync.value ?? const <CurrentMonthFixtureItemDto>[]) {
+      if (item.fixture.fixtureId == prediction.fixtureId) {
+        fixture = item.fixture;
         break;
       }
     }
