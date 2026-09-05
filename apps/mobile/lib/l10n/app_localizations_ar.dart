@@ -546,40 +546,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminPredictionsTab => 'التوقعات';
 
   @override
-  String get adminDailyDoublesTab => 'المضاعفات اليومية';
-
-  @override
-  String get adminLeaderboardsTab => 'لوحات الصدارة';
-
-  @override
-  String get adminCompetitionsTab => 'المسابقات';
-
-  @override
-  String get adminTeamsTab => 'الفرق';
-
-  @override
-  String get adminSocialTab => 'الاجتماعي';
-
-  @override
-  String get adminNotificationsTab => 'الإشعارات';
-
-  @override
-  String get adminReportsAnalyticsTab => 'التقارير والتحليلات';
-
-  @override
-  String get adminSystemHealthTab => 'سلامة النظام';
-
-  @override
-  String get adminRolesPermissionsTab => 'الأدوار والصلاحيات';
-
-  @override
-  String get adminSettingsTab => 'الإعدادات';
-
-  @override
-  String get adminSectionComingSoon =>
-      'هذا القسم قيد التطوير — سيُفعَّل في دفعة لاحقة.';
-
-  @override
   String get adminMonthlyCompetitionsEmpty => 'لا مسابقات عامة بعد.';
 
   @override

@@ -542,40 +542,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPredictionsTab => 'Predictions';
 
   @override
-  String get adminDailyDoublesTab => 'Daily Doubles';
-
-  @override
-  String get adminLeaderboardsTab => 'Leaderboards';
-
-  @override
-  String get adminCompetitionsTab => 'Competitions';
-
-  @override
-  String get adminTeamsTab => 'Teams';
-
-  @override
-  String get adminSocialTab => 'Social';
-
-  @override
-  String get adminNotificationsTab => 'Notifications';
-
-  @override
-  String get adminReportsAnalyticsTab => 'Reports & Analytics';
-
-  @override
-  String get adminSystemHealthTab => 'System Health';
-
-  @override
-  String get adminRolesPermissionsTab => 'Roles & Permissions';
-
-  @override
-  String get adminSettingsTab => 'Settings';
-
-  @override
-  String get adminSectionComingSoon =>
-      'This section is under development — it will be enabled in a later batch.';
-
-  @override
   String get adminMonthlyCompetitionsEmpty => 'No public competitions yet.';
 
   @override
