@@ -59,7 +59,7 @@ VALUES
   (@id, @participant_id, @round_id, @entry_kind::ledger.entry_kind,
    @amount, @source_ref, @occurred_at)
 ON CONFLICT ON CONSTRAINT point_entries_round_score_uniq DO NOTHING
-RETURNING id, participant_id, round_id, entry_kind, amount, source_ref, occurred_at
+RETURNING id, participant_id, round_id, entry_kind::text, amount, source_ref, occurred_at
 ''';
 
   @override
@@ -113,7 +113,7 @@ RETURNING id, participant_id, round_id, entry_kind, amount, source_ref, occurred
   // --------------------------------------------------------------------------
 
   static const String _selectByParticipantSql = '''
-SELECT id, participant_id, round_id, entry_kind, amount, source_ref, occurred_at
+SELECT id, participant_id, round_id, entry_kind::text, amount, source_ref, occurred_at
 FROM ledger.point_entries
 WHERE participant_id = @participant_id
 ORDER BY occurred_at ASC, id ASC

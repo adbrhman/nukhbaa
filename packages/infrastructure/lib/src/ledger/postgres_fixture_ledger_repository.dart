@@ -27,7 +27,7 @@ VALUES
   (@id, @participant_id, @fixture_id, @entry_kind::ledger.entry_kind,
    @amount, @source_ref, @occurred_at)
 ON CONFLICT ON CONSTRAINT fixture_point_entries_fixture_score_uniq DO NOTHING
-RETURNING id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at
+RETURNING id, participant_id, fixture_id, entry_kind::text, amount, source_ref, occurred_at
 ''';
 
   @override
@@ -71,7 +71,7 @@ RETURNING id, participant_id, fixture_id, entry_kind, amount, source_ref, occurr
   }
 
   static const String _selectByParticipantSql = '''
-SELECT id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at
+SELECT id, participant_id, fixture_id, entry_kind::text, amount, source_ref, occurred_at
 FROM ledger.fixture_point_entries
 WHERE participant_id = @participant_id
 ORDER BY occurred_at ASC, id ASC
@@ -92,7 +92,7 @@ ORDER BY occurred_at ASC, id ASC
   }
 
   static const String _selectByFixtureSql = '''
-SELECT id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at
+SELECT id, participant_id, fixture_id, entry_kind::text, amount, source_ref, occurred_at
 FROM ledger.fixture_point_entries
 WHERE fixture_id = @fixture_id
 ORDER BY occurred_at ASC, id ASC
