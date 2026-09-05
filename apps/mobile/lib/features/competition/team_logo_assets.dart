@@ -243,6 +243,8 @@ String _slugifyTeamName(String name) {
 }
 
 const Set<String> _monthlyLogoSlugs = <String>{
+  'al-ittihad',
+  'al-nassr',
   'arsenal',
   'aston-villa',
   'bournemouth',
