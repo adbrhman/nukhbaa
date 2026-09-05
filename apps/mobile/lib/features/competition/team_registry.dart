@@ -329,6 +329,12 @@ TeamBrand? lookupTeam(String? name) {
   for (final MapEntry<String, TeamBrand> entry in _allTeams.entries) {
     if (entry.key.toLowerCase() == needle) return entry.value;
   }
+  // The admin fixture picker also offers `football_data.teams`, whose
+  // names are Arabic, so a stored `home_team` can be the Arabic name.
+  // Exact only — short Arabic names contain one another.
+  for (final TeamBrand brand in _allTeams.values) {
+    if (brand.ar == trimmed) return brand;
+  }
   for (final MapEntry<String, TeamBrand> entry in _allTeams.entries) {
     final String key = entry.key.toLowerCase();
     if (needle.contains(key) || key.contains(needle)) return entry.value;
