@@ -61,6 +61,11 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
   final ScrollController _controller = ScrollController();
   final GlobalKey _selectedKey = GlobalKey();
 
+  /// The very first centring jumps rather than animates — animating from
+  /// offset 0 on the first frame reads as the strip sliding away on its
+  /// own before the user has touched anything.
+  bool _centredOnce = false;
+
   @override
   void initState() {
     super.initState();
@@ -88,9 +93,10 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
       Scrollable.ensureVisible(
         ctx,
         alignment: 0.5,
-        duration: AppMotion.fast,
+        duration: _centredOnce ? AppMotion.fast : Duration.zero,
         curve: AppMotion.standardCurve,
       );
+      _centredOnce = true;
     });
   }
 
@@ -115,23 +121,29 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
 
     return SizedBox(
       height: FixturesDateStrip.height,
-      child: ListView.builder(
+      child: SingleChildScrollView(
         key: const Key('currentMonthFixtures.dayStrip'),
         controller: _controller,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-        itemCount: _radius * 2 + 1,
-        itemBuilder: (context, index) {
-          final DateTime day = selected.add(Duration(days: index - _radius));
-          final bool isSelected = index == _radius;
-          return _DayTab(
-            key: isSelected ? _selectedKey : null,
-            label: _label(context, day, today),
-            selected: isSelected,
-            tokens: tokens,
-            onTap: () => widget.onDaySelected(day),
-          );
-        },
+        child: Row(
+          children: <Widget>[
+            for (int index = 0; index < _radius * 2 + 1; index++)
+              _DayTab(
+                key: index == _radius ? _selectedKey : null,
+                label: _label(
+                  context,
+                  selected.add(Duration(days: index - _radius)),
+                  today,
+                ),
+                selected: index == _radius,
+                tokens: tokens,
+                onTap: () => widget.onDaySelected(
+                  selected.add(Duration(days: index - _radius)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
