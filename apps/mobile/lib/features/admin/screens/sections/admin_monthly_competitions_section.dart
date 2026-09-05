@@ -31,40 +31,42 @@ class AdminMonthlyCompetitionsSection extends ConsumerWidget {
       competitionListProvider,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AdminSectionHeader(title: l10n.adminMonthlyCompetitionsTab),
-        switch (state) {
-          AsyncData<List<CompetitionDto>>(:final value) when value.isEmpty =>
-            AdminEmptyState(
-              icon: Icons.calendar_month_rounded,
-              title: l10n.adminMonthlyCompetitionsEmpty,
-            ),
-          AsyncData<List<CompetitionDto>>(:final value) => AdminCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (int i = 0; i < value.length; i++) ...[
-                  _CompetitionCurrentSeasonRow(competition: value[i]),
-                  if (i != value.length - 1) const Divider(height: 1),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AdminSectionHeader(title: l10n.adminMonthlyCompetitionsTab),
+          switch (state) {
+            AsyncData<List<CompetitionDto>>(:final value) when value.isEmpty =>
+              AdminEmptyState(
+                icon: Icons.calendar_month_rounded,
+                title: l10n.adminMonthlyCompetitionsEmpty,
+              ),
+            AsyncData<List<CompetitionDto>>(:final value) => AdminCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (int i = 0; i < value.length; i++) ...[
+                    _CompetitionCurrentSeasonRow(competition: value[i]),
+                    if (i != value.length - 1) const Divider(height: 1),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          AsyncError(:final error) => AdminErrorBanner(
-            message: ErrorPresenter.message(error as AppError),
-          ),
-          _ => const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        },
-        const SizedBox(height: AppSpacing.lg),
-        const _CreateCompetitionForm(),
-        const SizedBox(height: AppSpacing.lg),
-        const _MonthlyCompetitionLogoCatalog(),
-      ],
+            AsyncError(:final error) => AdminErrorBanner(
+              message: ErrorPresenter.message(error as AppError),
+            ),
+            _ => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          },
+          const SizedBox(height: AppSpacing.lg),
+          const _CreateCompetitionForm(),
+          const SizedBox(height: AppSpacing.lg),
+          const _MonthlyCompetitionLogoCatalog(),
+        ],
+      ),
     );
   }
 }
@@ -216,8 +218,8 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
         size: 18,
       ),
       _ => const SizedBox(
-        width: 14,
-        height: 14,
+        width: 18,
+        height: 18,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
     };
