@@ -368,12 +368,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: <Widget>[
-                      _DoubleGlowButton(
-                        selected: _isDouble,
-                        enabled: enabled,
-                        onTap: _toggleDouble,
-                        fixtureId: fixtureId,
+                      Flexible(
+                        child: _DoubleGlowButton(
+                          selected: _isDouble,
+                          enabled: enabled,
+                          onTap: _toggleDouble,
+                          fixtureId: fixtureId,
+                        ),
                       ),
+                      const SizedBox(width: AppSpacing.sm),
                       const Spacer(),
                       _SubmitButton(
                         key: Key('currentMonthFixtures.submit.$fixtureId'),
