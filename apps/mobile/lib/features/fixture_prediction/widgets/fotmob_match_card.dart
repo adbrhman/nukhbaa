@@ -569,6 +569,10 @@ class _TeamColumn extends StatelessWidget {
   final String? crestUrl;
   final Color? brandColor;
 
+  /// Local to this card so the shared `AppSizes.iconXl` token keeps its
+  /// meaning for every other screen that reads it.
+  static const double _crestSize = 56;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -579,7 +583,7 @@ class _TeamColumn extends StatelessWidget {
           displayName: displayName,
           crestUrl: crestUrl,
           brandColor: brandColor,
-          size: AppSizes.iconXl,
+          size: _crestSize,
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
