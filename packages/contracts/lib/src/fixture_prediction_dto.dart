@@ -94,6 +94,7 @@ final class FixturePredictionDto {
     required this.awayGoals,
     this.isDouble = false,
     this.seasonId,
+    this.displayName = '',
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -110,6 +111,7 @@ final class FixturePredictionDto {
       awayGoals: json['away_goals']! as int,
       isDouble: (json['is_double'] as bool?) ?? false,
       seasonId: json['season_id'] as String?,
+      displayName: (json['display_name'] as String?) ?? '',
     );
   }
 
@@ -146,6 +148,13 @@ final class FixturePredictionDto {
   /// elsewhere.
   final String? seasonId;
 
+  /// The participant's display name, joined server-side on the admin
+  /// raw-predictions read only (the same optional-join shape as
+  /// `ParticipantFixtureScoreDto.displayName`). Empty when unavailable, and
+  /// then omitted from the wire payload — so a decoder that never saw the
+  /// field keeps decoding unchanged.
+  final String displayName;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -161,6 +170,7 @@ final class FixturePredictionDto {
     'away_goals': awayGoals,
     'is_double': isDouble,
     if (seasonId != null) 'season_id': seasonId,
+    if (displayName.isNotEmpty) 'display_name': displayName,
   };
 
   @override
@@ -174,6 +184,7 @@ final class FixturePredictionDto {
       other.awayGoals == awayGoals &&
       other.isDouble == isDouble &&
       other.seasonId == seasonId &&
+      other.displayName == displayName &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -186,6 +197,7 @@ final class FixturePredictionDto {
     awayGoals,
     isDouble,
     seasonId,
+    displayName,
     schemaVersion,
   );
 }

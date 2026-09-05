@@ -54,6 +54,14 @@ void main() {
         fixturePredictionRepository: predictions,
         auditRecorder: recorder,
       ),
+      // The route joins display names onto the payload; the absent stub
+      // throws rather than returning Err, so this slice must be wired. An
+      // empty reader resolves no names, which is exactly the degraded case
+      // the route is specified to tolerate -- the payload keeps its
+      // pre-join shape.
+      adminGetParticipantDisplayNames: AdminGetParticipantDisplayNames(
+        participantReader: InMemoryParticipantReader(),
+      ),
     );
     return (root: root, audit: audit);
   }

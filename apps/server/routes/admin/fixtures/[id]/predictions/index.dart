@@ -50,9 +50,42 @@ Future<Response> onRequest(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<List<FixturePredictionView>>(:final value) => Response.json(
-      body: [for (final view in value) fixturePredictionViewToJson(view)],
+    Ok<List<FixturePredictionView>>(:final value) => await _withDisplayNames(
+      root,
+      principal,
+      value,
     ),
     Err<List<FixturePredictionView>>(:final error) => errorResponse(error),
   };
+}
+
+/// Joins each participant's display name onto the raw-predictions payload —
+/// the same optional enrichment `GET /admin/fixtures/{id}/scores` performs,
+/// via the same admin-gated `AdminGetParticipantDisplayNames`. A failed or
+/// unwired name lookup degrades to no names (the field is then omitted from
+/// the wire shape), never to an error: the predictions read is the primary
+/// value here and must not fail on a cosmetic join.
+Future<Response> _withDisplayNames(
+  CompositionRoot root,
+  AuthenticatedUser principal,
+  List<FixturePredictionView> views,
+) async {
+  final namesResult = await root.adminGetParticipantDisplayNames(
+    principal: principal,
+    participantIds: [
+      for (final view in views) view.prediction.participantId.value,
+    ],
+  );
+  final names = namesResult is Ok<Map<String, String>>
+      ? namesResult.value
+      : const <String, String>{};
+  return Response.json(
+    body: [
+      for (final view in views)
+        fixturePredictionViewToJson(
+          view,
+          displayName: names[view.prediction.participantId.value] ?? '',
+        ),
+    ],
+  );
 }

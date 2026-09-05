@@ -14,7 +14,10 @@ import 'package:contracts/contracts.dart';
 /// view), never fabricated at the edge. `season_id` is included only when
 /// [FixturePredictionView.seasonId] was populated by the repository query
 /// (currently `listByUser` only); otherwise omitted from the wire payload.
-Map<String, Object?> fixturePredictionViewToJson(FixturePredictionView view) {
+Map<String, Object?> fixturePredictionViewToJson(
+  FixturePredictionView view, {
+  String displayName = '',
+}) {
   final prediction = view.prediction;
   return FixturePredictionDto(
     id: prediction.id.value,
@@ -25,5 +28,6 @@ Map<String, Object?> fixturePredictionViewToJson(FixturePredictionView view) {
     awayGoals: prediction.awayGoals,
     isDouble: prediction.isDouble,
     seasonId: view.seasonId?.value,
+    displayName: displayName,
   ).toJson();
 }

@@ -136,6 +136,12 @@ class _AdminPredictionsSectionState
   }
 }
 
+/// Fallback when the server joined no display name: a short slice of the
+/// id instead of a full UUID filling the row.
+String _shortId(String participantId) => participantId.length <= 8
+    ? participantId
+    : '${participantId.substring(0, 8)}…';
+
 class _PredictionRowCard extends StatelessWidget {
   const _PredictionRowCard({required this.prediction});
 
@@ -154,7 +160,9 @@ class _PredictionRowCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  prediction.participantId,
+                  prediction.displayName.isNotEmpty
+                      ? prediction.displayName
+                      : _shortId(prediction.participantId),
                   key: Key('admin.predictions.item.${prediction.id}'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
