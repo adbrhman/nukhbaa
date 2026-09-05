@@ -368,13 +368,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: <Widget>[
-                      _DoubleGlowButton(
-                        selected: _isDouble,
-                        enabled: enabled,
-                        onTap: _toggleDouble,
-                        fixtureId: fixtureId,
+                      Expanded(
+                        child: _DoubleGlowButton(
+                          selected: _isDouble,
+                          enabled: enabled,
+                          onTap: _toggleDouble,
+                          fixtureId: fixtureId,
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: AppSpacing.sm),
                       _SubmitButton(
                         key: Key('currentMonthFixtures.submit.$fixtureId'),
                         enabled: enabled && hasPick,
@@ -712,9 +714,7 @@ class _ConfirmBadge extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: confirmed
-              ? tokens.primary
-              : tokens.textPrimary.withValues(alpha: 0.10),
+          color: confirmed ? tokens.primary : tokens.surface,
           border: confirmed
               ? null
               : Border.all(
@@ -725,7 +725,7 @@ class _ConfirmBadge extends StatelessWidget {
         child: Icon(
           Icons.check_rounded,
           size: 16,
-          color: confirmed ? tokens.onPrimary : tokens.textSecondary,
+          color: confirmed ? tokens.onPrimary : tokens.textMuted,
         ),
       ),
     );
@@ -814,9 +814,9 @@ class _ScoreStepper extends StatelessWidget {
   final String fixtureId;
   final String side;
 
-  static const double _width = 68;
-  static const double _height = 92;
-  static const double _zoneHeight = 28;
+  static const double _width = 76;
+  static const double _height = 104;
+  static const double _zoneHeight = 34;
 
   @override
   Widget build(BuildContext context) {
@@ -859,7 +859,7 @@ class _ScoreStepper extends StatelessWidget {
                 value?.toString() ?? '?',
                 key: Key('currentMonthFixtures.$side.value.$fixtureId'),
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: value == null ? tokens.textMuted : tokens.textPrimary,
                 ),
@@ -943,7 +943,7 @@ class _DoubleGlowButton extends StatelessWidget {
   final VoidCallback onTap;
   final String fixtureId;
 
-  static const double _height = 36;
+  static const double _height = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -964,7 +964,7 @@ class _DoubleGlowButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: AppMotion.fast,
             height: _height,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
@@ -1038,8 +1038,8 @@ class _SubmitButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
 
-  static const double _width = 44;
-  static const double _height = 36;
+  static const double _width = 48;
+  static const double _height = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -1069,7 +1069,6 @@ class _SubmitButton extends StatelessWidget {
                     )
                   : Icon(
                       Icons.check_rounded,
-                      size: AppSizes.iconSm,
                       color: enabled ? tokens.onPrimary : tokens.textMuted,
                     ),
             ),
