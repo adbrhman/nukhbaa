@@ -191,6 +191,8 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'باريس سان جيرمان': 'paris-saint-germain',
   'ميلان': 'milan',
   'يوفنتوس': 'juventus',
+  'الاتحاد': 'al-ittihad',
+  'النصر': 'al-nassr',
   'أتلتيك بلباو': 'athletic-club',
   'إنتر ميلان': 'inter',
   'باير ليفركوزن': 'bayer-leverkusen',

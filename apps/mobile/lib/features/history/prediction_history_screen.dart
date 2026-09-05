@@ -8,8 +8,9 @@ import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
-import '../competition/team_registry.dart';
+import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
+import '../fixture_prediction/fixture_prediction_providers.dart';
 import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
 
@@ -49,10 +50,11 @@ class PredictionHistoryScreen extends ConsumerWidget {
 
 /// A single historical per-fixture forecast (Axiom 4 Amendment).
 ///
-/// There is no season/round context to resolve team names from here —
-/// [FixturePredictionDto] carries only the fixture id — so the score line
-/// always falls back to the raw fixture id (the same fallback [_ScoreLine]
-/// renders whenever it isn't given a resolved [RoundFixtureCardDto]). The
+/// Team names come from [seasonFixturesProvider], keyed by the prediction's
+/// own [FixturePredictionDto.seasonId], so every season the caller ever
+/// played resolves — not just the current month. A null seasonId, a
+/// still-loading read, or a fixture no longer linked to the season all fall
+/// back to the raw fixture id rather than a broken card. The
 /// grade badge (✅/❌/🔥), when shown, comes from [fixtureScoresProvider] —
 /// only queried when [FixturePredictionDto.seasonId] is populated. A `null`
 /// seasonId, a still-loading read, or any read error all degrade the same
@@ -73,6 +75,20 @@ class _FixturePredictionCard extends ConsumerWidget {
         in scoresAsync?.value?.scores ?? const []) {
       if (s.participantId == prediction.participantId) {
         grade = s.grade;
+        break;
+      }
+    }
+
+    // The prediction carries its season, and the season's fixture list
+    // carries the team names — so the history resolves names for every
+    // season the caller ever played, not just the current month.
+    final AsyncValue<List<SeasonFixtureCardDto>>? fixturesAsync =
+        seasonId == null ? null : ref.watch(seasonFixturesProvider(seasonId));
+    SeasonFixtureCardDto? fixture;
+    for (final SeasonFixtureCardDto f
+        in fixturesAsync?.value ?? const <SeasonFixtureCardDto>[]) {
+      if (f.fixtureId == prediction.fixtureId) {
+        fixture = f;
         break;
       }
     }
@@ -107,7 +123,7 @@ class _FixturePredictionCard extends ConsumerWidget {
                   awayGoals: prediction.awayGoals,
                   isDouble: prediction.isDouble,
                 ),
-                fixture: null,
+                fixture: fixture,
                 grade: grade,
               ),
             ),
@@ -120,7 +136,7 @@ class _FixturePredictionCard extends ConsumerWidget {
 
 /// One fixture's scoreline: "[crest] Home  2 - 1  Away [crest]". Falls back to
 /// the raw fixture id (no crests) when [fixture] is `null` — the resolved read
-/// hasn't returned this fixture yet, or it is no longer linked to the round.
+/// hasn't returned this fixture yet, or it is no longer linked to the season.
 class _ScoreLine extends StatelessWidget {
   const _ScoreLine({
     required this.score,
@@ -130,7 +146,7 @@ class _ScoreLine extends StatelessWidget {
   });
 
   final FixtureScoreDto score;
-  final RoundFixtureCardDto? fixture;
+  final SeasonFixtureCardDto? fixture;
   final String? grade;
 
   /// The small correctness badge, or `null` when the round isn't scored yet
@@ -150,7 +166,7 @@ class _ScoreLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final RoundFixtureCardDto? f = fixture;
+    final SeasonFixtureCardDto? f = fixture;
     final bool hasNames =
         (f?.homeTeam?.isNotEmpty ?? false) &&
         (f?.awayTeam?.isNotEmpty ?? false);
@@ -211,12 +227,19 @@ class _TeamMini extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final TeamBrand? brand = lookupTeam(name);
-    final String display = teamDisplayName(name);
+    // No catalog here: the score line resolves by name, which is what the
+    // season fixture list carries. The name-only branch still yields the
+    // bundled asset path and brand colour.
+    final ResolvedTeamIdentity identity = resolveTeamIdentity(
+      catalog: null,
+      teamName: name,
+    );
+    final String display = identity.displayName;
     final Widget crest = TeamLogo(
       displayName: display,
-      crestUrl: brand?.logoUrl,
-      brandColor: brand?.c1,
+      crestUrl: identity.crestUrl,
+      assetPath: identity.assetPath,
+      brandColor: identity.brandColor,
       size: _crestSize,
     );
     final Text label = Text(
