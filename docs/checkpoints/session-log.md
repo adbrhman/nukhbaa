@@ -178,3 +178,42 @@
 2026-09-05T14:03:58Z — 14_entry_kind_read_cast: «ترحيل إلى السجل» كان يفشل دائمًا بـ503 بلا أي أثر في سجلّ الخادم؛ الطباعة التشخيصية في العميل أخرجت السبب: ledger.row_corrupt — «Unknown ledger entry kind: Instance of UndecodedBytes». سائق postgres لا يفكّ ترميز النوع المُعرَّف ledger.entry_kind عند القراءة فيعيد بايتات خامًا. أُضيف ::text لكل جملة تقرأ العمود (ست مواضع، تشمل RETURNING) في محوّلي السجل. لا تغيير في EntryKind ولا المخطّط ولا العقود — packages/infrastructure/lib/src/ledger/postgres_fixture_ledger_repository.dart + packages/infrastructure/lib/src/ledger/postgres_ledger_repository.dart
 
 2026-09-05T15:57:36Z — 15_history_from_month_feed: «توقعاتي» عادت تعرض المعرّف بعد نقل مباريات سبتمبر إلى موسم «شهر 9»، لأن FixturePredictionDto.seasonId هو موسم المشارك لا موسم المباراة (147 مشاركًا في 2026/27 مقابل 9 في 09/2026)، فيعيد seasonFixturesProvider قائمة فارغة؛ صارت القراءة من currentMonthFixturesProvider وهو نفس ما تعرضه شاشة المباريات. لم نوحّد المشاركين في قاعدة البيانات لأن participant_id مفتاح أجنبي في fixture_predictions وfixture_scores وfixture_point_entries — apps/mobile/lib/features/history/prediction_history_screen.dart
+
+## نقطة التسليم — 2026-09-05
+
+**النموذج:** المسابقة هي **الشهر** لا الدوري. كل مباريات سبتمبر تحت موسم
+«شهر 9» (09/2026، id 6bf8134c-3eed-46ce-a0dc-e3dc5d4c57c2). الدوريات
+مصدر للمباريات فقط. الجائزة لصاحب أعلى نقاط في الشهر.
+
+**قواعد النقاط:** مطابقة تامة = 3، مع الدبل = 6، أي شيء آخر = 0.
+correct_outcome موجود كتصنيف لكنه بصفر نقاط. مؤكَّد من
+ConfiguredRulesetProvider: exact_scoreline=3، double_multiplier=2.
+
+**السلسلة تعمل كاملة:** توقّع ← احتساب ← ترحيل ← تصحيح ← ترتيب.
+
+**أُصلح اليوم:** entry_kind::text عند القراءة (كان يفشل الترحيل دائمًا
+بـ503 بلا أثر في السجل)، أسماء المتصدرين، إلغاء التوقّع التلقائي 0-0،
+بطاقة المباراة، الشعارات من الأصول المحلّية، تمرير الشعارات إلى البطاقة،
+تمرير أسماء الفرق إلى «توقعاتي»، تمرير قسم المسابقات الشهرية.
+
+**تسجيل الدخول:** حُلّ بتمديد Access token expiry إلى 604800 في لوحة
+Supabase. لا كود. الحدّ أسبوع لا سنة.
+
+**مؤجّل بقرار:**
+- اسم الدوري في ترويسة البطاقة (تعرض «شهر 9») — يحتاج عمود
+  competition_label على fixture_schedules عبر 7 طبقات. الفريق لا يحدّد
+  الدوري لأن النادي يلعب في دوريه وفي البطولة القارية معًا.
+- displayName في ParticipantFixtureScoreDto — «تقرير المباراة»
+  و«التوقعات» في لوحة المشرف تعرضان معرّفات.
+- حذف مباراة من التطبيق — الاستعلام يكفي حاليًا.
+- تجديد refresh_token (سكربت 12 مكتوب ولم يُنفَّذ).
+
+**مشكلة معلومة غير محلولة:** 182 مشاركًا في مواسم الدوريات (147 في
+2026/27، 35 في 2026/2027) و9 فقط في 09/2026. participant_id مفتاح
+أجنبي في fixture_predictions وfixture_scores وfixture_point_entries،
+فالتوحيد جراحي. لوحة المتصدرين تعرض مشاركي «شهر 9» فقط.
+
+**لوحة المشرف:** 7 أقسام تعمل، 7 فارغة («قيد التطوير») يُنصح بحذفها.
+
+**قيود التشغيل:** Termux/proot، سكربتات Python بمراسٍ assert،
+لا git add -A، الدفع بإذن، flutter test قبل كل دفعة.
