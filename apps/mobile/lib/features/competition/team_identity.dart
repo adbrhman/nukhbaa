@@ -56,7 +56,8 @@ ResolvedTeamIdentity resolveTeamIdentity({
         return ResolvedTeamIdentity(
           displayName: team.name,
           crestUrl: team.crestUrl,
-          assetPath: teamLogoAssetPath(team.name),
+          assetPath:
+              teamLogoAssetPath(team.name) ?? teamLogoAssetPath(teamName),
         );
       }
     }
