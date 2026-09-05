@@ -183,7 +183,10 @@ class _CurrentMonthFixturesScreenState
             }
             return ListView.builder(
               key: const Key('currentMonthFixtures.list'),
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              // The reference leaves ~6 logical px either side of the
+              // card (15px at 1080/2.75x); `lg` (16) was nearly triple
+              // that and visibly narrowed every card.
+              padding: const EdgeInsets.all(AppSpacing.sm),
               itemCount: dayItems.length,
               itemBuilder: (context, index) =>
                   FotmobMatchCard(item: dayItems[index]),

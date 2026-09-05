@@ -575,8 +575,11 @@ class _TeamColumn extends StatelessWidget {
   final Color? brandColor;
 
   /// Local to this card so the shared `AppSizes.iconXl` token keeps its
-  /// meaning for every other screen that reads it.
-  static const double _crestSize = 56;
+  /// meaning for every other screen that reads it. 34 is the reference's
+  /// own crest, measured off the screenshot: 91px wide at a 1080px/2.75x
+  /// capture. The previous 56 was ~65% larger and was what made the card
+  /// read as crest-first rather than score-first.
+  static const double _crestSize = 34;
 
   @override
   Widget build(BuildContext context) {
@@ -826,9 +829,12 @@ class _ScoreStepper extends StatelessWidget {
   final String fixtureId;
   final String side;
 
-  static const double _width = 68;
-  static const double _height = 92;
-  static const double _zoneHeight = 28;
+  // Measured off the reference screenshot (1080px capture, 2.75x): the
+  // stepper box is 167px wide there, i.e. 61 logical, not 68. Height and
+  // tap-zone follow at the same ratio so the box keeps its proportions.
+  static const double _width = 61;
+  static const double _height = 82;
+  static const double _zoneHeight = 26;
 
   @override
   Widget build(BuildContext context) {
