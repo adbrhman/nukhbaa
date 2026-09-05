@@ -280,6 +280,12 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   }
 }
 
+/// الاحتياط حين لا يصل اسم معروض من الخادم: مقطع قصير من المعرّف بدل
+/// UUID كامل يملأ السطر.
+String _shortId(String participantId) => participantId.length <= 8
+    ? participantId
+    : '${participantId.substring(0, 8)}…';
+
 class _FixtureReportRowCard extends StatelessWidget {
   const _FixtureReportRowCard({required this.row});
 
@@ -329,7 +335,9 @@ class _FixtureReportRowCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              row.participantId,
+              row.displayName.isNotEmpty
+                  ? row.displayName
+                  : _shortId(row.participantId),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.text.bodyLarge?.copyWith(

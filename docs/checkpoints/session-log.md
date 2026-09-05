@@ -217,3 +217,5 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 
 **قيود التشغيل:** Termux/proot، سكربتات Python بمراسٍ assert،
 لا git add -A، الدفع بإذن، flutter test قبل كل دفعة.
+
+2026-09-05 — 19_report_display_name: «تقرير المباراة» في لوحة المشرف كان يعرض participantId خامًا رغم أن displayName يصل فعليًا عبر السلسلة كاملة (adminGetParticipantDisplayNames -> fixtureScoresToJson -> ParticipantFixtureScoreDto.displayName -> FixtureReportRow.displayName)؛ _FixtureReportRowCard وحدها كانت ترسم المعرّف. صارت تعرض الاسم، ومع غيابه مقطعًا من ثمانية محارف بدل UUID كامل. تعديل في طبقة العرض وحدها: لا عقود ولا خادم ولا قاعدة بيانات. «التوقعات» لا تزال تعرض المعرّف لأن FixturePredictionDto بلا display_name — إصلاحها يمسّ الخادم والعقود — apps/mobile/lib/features/admin/screens/sections/results_scoring_section.dart
