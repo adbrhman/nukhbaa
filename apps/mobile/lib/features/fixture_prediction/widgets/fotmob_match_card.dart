@@ -335,6 +335,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       child: _TeamColumn(
                         displayName: home.displayName,
                         crestUrl: home.crestUrl,
+                        assetPath: home.assetPath,
                         brandColor: home.brandColor,
                       ),
                     ),
@@ -359,6 +360,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       child: _TeamColumn(
                         displayName: away.displayName,
                         crestUrl: away.crestUrl,
+                        assetPath: away.assetPath,
                         brandColor: away.brandColor,
                       ),
                     ),
@@ -563,11 +565,13 @@ class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
     required this.crestUrl,
+    required this.assetPath,
     required this.brandColor,
   });
 
   final String displayName;
   final String? crestUrl;
+  final String? assetPath;
   final Color? brandColor;
 
   /// Local to this card so the shared `AppSizes.iconXl` token keeps its
@@ -583,6 +587,7 @@ class _TeamColumn extends StatelessWidget {
         TeamLogo(
           displayName: displayName,
           crestUrl: crestUrl,
+          assetPath: assetPath,
           brandColor: brandColor,
           size: _crestSize,
         ),
