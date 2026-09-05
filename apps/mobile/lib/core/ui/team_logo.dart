@@ -21,10 +21,16 @@ class TeamLogo extends StatelessWidget {
   const TeamLogo({
     required this.displayName,
     required this.size,
+    this.assetPath,
     this.crestUrl,
     this.brandColor,
     super.key,
   });
+
+  /// مسار شعار مرفق داخل التطبيق (مثلاً `assets/team_logos/arsenal.png`).
+  /// يسبق [crestUrl] لأنه لا يحتاج شبكة إطلاقًا؛ عند فشله ينتقل العرض
+  /// إلى [crestUrl] ثم إلى الحروف الاحتياطية.
+  final String? assetPath;
 
   /// أفضل اسم عرض متاح (مُحلَّل مسبقًا من الطرف المستدعي عبر
   /// `teamDisplayName`) — يُستخدم فقط لاشتقاق حروف fallback عبر
@@ -52,6 +58,36 @@ class TeamLogo extends StatelessWidget {
       tint: brandColor ?? tokens.surfaceHigh,
       initials: teamInitials(displayName),
     );
+    final Widget networkOrFallback = url.isEmpty
+        ? fallback
+        : ClipOval(
+            child: Image.network(
+              url,
+              key: ValueKey<String>('teamLogo.$url'),
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => fallback,
+              loadingBuilder: (context, child, progress) =>
+                  progress == null ? child : fallback,
+            ),
+          );
+
+    final String asset = assetPath?.trim() ?? '';
+    if (asset.isNotEmpty) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Image.asset(
+          asset,
+          key: ValueKey<String>('teamLogo.asset.$asset'),
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => networkOrFallback,
+        ),
+      );
+    }
     if (url.isEmpty) return fallback;
     return ClipOval(
       child: Image.network(

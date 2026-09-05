@@ -15,6 +15,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 
+import 'team_logo_assets.dart';
 import 'team_registry.dart';
 
 /// One side's resolved display identity, ready for `TeamLogo`/branding.
@@ -23,6 +24,7 @@ class ResolvedTeamIdentity {
   const ResolvedTeamIdentity({
     required this.displayName,
     this.crestUrl,
+    this.assetPath,
     this.brandColor,
   });
 
@@ -31,6 +33,10 @@ class ResolvedTeamIdentity {
 
   /// A crest image URL, or `null` to fall back to the initials circle.
   final String? crestUrl;
+
+  /// A bundled crest asset path, when one ships with the app. Preferred
+  /// over [crestUrl] because it needs no network at all.
+  final String? assetPath;
 
   /// A brand color for the initials-circle fallback, or `null` for the
   /// neutral token color.
@@ -50,6 +56,7 @@ ResolvedTeamIdentity resolveTeamIdentity({
         return ResolvedTeamIdentity(
           displayName: team.name,
           crestUrl: team.crestUrl,
+          assetPath: teamLogoAssetPath(team.name),
         );
       }
     }
@@ -58,6 +65,7 @@ ResolvedTeamIdentity resolveTeamIdentity({
   return ResolvedTeamIdentity(
     displayName: teamDisplayName(teamName),
     crestUrl: brand?.logoUrl,
+    assetPath: teamLogoAssetPath(teamName),
     brandColor: brand?.c1,
   );
 }
