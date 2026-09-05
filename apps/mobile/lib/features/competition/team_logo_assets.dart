@@ -191,6 +191,14 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'باريس سان جيرمان': 'paris-saint-germain',
   'ميلان': 'milan',
   'يوفنتوس': 'juventus',
+  'أتلتيك بلباو': 'athletic-club',
+  'إنتر ميلان': 'inter',
+  'باير ليفركوزن': 'bayer-leverkusen',
+  'روما': 'roma',
+  'شالكه': 'schalke-04',
+  'نابولي': 'napoli',
+  'هوفنهايم': 'hoffenheim',
+  'يونيون برلين': 'union-berlin',
 };
 
 String? teamLogoAssetPath(String? teamName) {
@@ -219,6 +227,8 @@ String _slugifyTeamName(String name) {
       .replaceAll(RegExp(r'^-+|-+$'), '');
   const Map<String, String> aliases = <String, String>{
     'ipswich-town': 'ipswich',
+    'newcastle-united': 'newcastle',
+    'tottenham-hotspur': 'tottenham',
     'bayern-munich': 'bayern-munchen',
     'porto': 'fc-porto',
     'slovan-bratislava': 's-bratislava',
