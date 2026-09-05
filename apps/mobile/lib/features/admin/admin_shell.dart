@@ -7,7 +7,6 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'admin_sections.dart';
-import 'screens/sections/admin_coming_soon_section.dart';
 import 'screens/sections/admin_dashboard_section.dart';
 import 'screens/sections/admin_predictions_section.dart';
 import 'screens/sections/audit_log_section.dart';
@@ -23,20 +22,10 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.monthlyCompetitions => l10n.adminMonthlyCompetitionsTab,
     AdminSection.fixtures => l10n.adminFixturesTab,
     AdminSection.predictions => l10n.adminPredictionsTab,
-    AdminSection.dailyDoubles => l10n.adminDailyDoublesTab,
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
-    AdminSection.leaderboards => l10n.adminLeaderboardsTab,
     AdminSection.users => l10n.adminUsersTab,
-    AdminSection.competitions => l10n.adminCompetitionsTab,
-    AdminSection.teams => l10n.adminTeamsTab,
-    AdminSection.social => l10n.adminSocialTab,
-    AdminSection.notifications => l10n.adminNotificationsTab,
-    AdminSection.reportsAnalytics => l10n.adminReportsAnalyticsTab,
     AdminSection.ledger => l10n.adminLedgerLookupTab,
     AdminSection.audit => l10n.adminAuditLogTab,
-    AdminSection.systemHealth => l10n.adminSystemHealthTab,
-    AdminSection.rolesPermissions => l10n.adminRolesPermissionsTab,
-    AdminSection.settings => l10n.adminSettingsTab,
   };
 }
 
@@ -46,38 +35,14 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
     title: 'المسابقات والمباريات',
     sections: [
       AdminSection.monthlyCompetitions,
-      AdminSection.competitions,
       AdminSection.fixtures,
       AdminSection.predictions,
       AdminSection.resultsScoring,
-      AdminSection.dailyDoubles,
     ],
   ),
-  (
-    title: 'النقاط والترتيب',
-    sections: [AdminSection.leaderboards, AdminSection.ledger],
-  ),
-  (
-    title: 'المستخدمون والتفاعل',
-    sections: [
-      AdminSection.users,
-      AdminSection.teams,
-      AdminSection.social,
-      AdminSection.notifications,
-    ],
-  ),
-  (
-    title: 'التحليلات والأمان',
-    sections: [
-      AdminSection.reportsAnalytics,
-      AdminSection.audit,
-      AdminSection.systemHealth,
-    ],
-  ),
-  (
-    title: 'الإدارة',
-    sections: [AdminSection.rolesPermissions, AdminSection.settings],
-  ),
+  (title: 'النقاط والترتيب', sections: [AdminSection.ledger]),
+  (title: 'المستخدمون والتفاعل', sections: [AdminSection.users]),
+  (title: 'التحليلات والأمان', sections: [AdminSection.audit]),
 ];
 
 /// قائمة التنقّل المشتركة بين الشريط الجانبي الدائم (سطح المكتب/اللوحي)
@@ -154,7 +119,7 @@ class AdminShell extends StatelessWidget {
   final AdminSection selected;
   final ValueChanged<AdminSection> onSelect;
 
-  Widget _bodyFor(AdminSection section, AppLocalizations l10n) {
+  Widget _bodyFor(AdminSection section) {
     return switch (section) {
       AdminSection.dashboard => AdminDashboardSection(onNavigate: onSelect),
       AdminSection.monthlyCompetitions =>
@@ -165,20 +130,18 @@ class AdminShell extends StatelessWidget {
       AdminSection.fixtures => const FixtureScheduleSection(),
       AdminSection.resultsScoring => const ResultsScoringSection(),
       AdminSection.predictions => const AdminPredictionsSection(),
-      _ => AdminComingSoonSection(title: adminSectionLabel(section, l10n)),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens t = context.tokens;
     final bool isMobile = AppBreakpoints.isMobile(context);
 
     final Widget body = Padding(
       key: const Key('admin.shell.body'),
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: _bodyFor(selected, l10n),
+      child: _bodyFor(selected),
     );
 
     if (isMobile) return body;

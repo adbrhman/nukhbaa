@@ -42,7 +42,9 @@ void main() {
         expect(find.byKey(const Key('admin.hub.drawer')), findsNothing);
         expect(find.text(l10n.adminDashboardTab), findsWidgets);
 
-        final Finder teamsTile = find.byKey(const Key('admin.shell.nav.teams'));
+        final Finder teamsTile = find.byKey(
+          const Key('admin.shell.nav.ledger'),
+        );
         final Finder navScrollable = find.descendant(
           of: find.byKey(const Key('admin.shell.navList')),
           matching: find.byType(Scrollable),
@@ -56,8 +58,7 @@ void main() {
         await tester.tap(teamsTile);
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.adminTeamsTab), findsWidgets);
-        expect(find.text(l10n.adminSectionComingSoon), findsOneWidget);
+        expect(find.text(l10n.adminLedgerLookupTab), findsWidgets);
       },
     );
 
@@ -79,12 +80,17 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('admin.hub.drawer')), findsOneWidget);
 
-        // "settings" هو العنصر الأخير (18/18) — لا يُبنى داخل شجرة الـListView
-        // الكسول إلا بعد التمرير الفعلي إليه؛ ensureVisible لا يكفي لأنه
-        // يتطلب أن يكون العنصر مبنيًا مسبقًا. scrollUntilVisible يُمرِّر
-        // تدريجيًا حتى يظهر العنصر فعليًا في الشجرة.
+        // "ledger" (6/8 بعد حذف الأقسام النائبة) دون الطيّ في شاشة 400×800،
+        // فلا يُبنى داخل شجرة الـListView الكسول إلا بعد التمرير الفعلي
+        // إليه؛ ensureVisible لا يكفي لأنه يتطلب أن يكون العنصر مبنيًا
+        // مسبقًا. scrollUntilVisible يُمرِّر تدريجيًا حتى يظهر فعليًا.
+        //
+        // ليس "audit" (الأخير) لأن AuditLogSection يحمّل عند البناء ولا
+        // يكتمل مزوّده في مضيف الاختبار، فيدور مؤشّره أبدًا ولا تستقرّ
+        // pumpAndSettle بعد النقر. القسم النائب القديم كان خاملاً فلم
+        // تظهر المسألة.
         final Finder settingsTile = find.byKey(
-          const Key('admin.shell.nav.settings'),
+          const Key('admin.shell.nav.ledger'),
         );
         final Finder navScrollable = find.descendant(
           of: find.byKey(const Key('admin.shell.navList')),

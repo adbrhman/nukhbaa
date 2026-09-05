@@ -117,7 +117,7 @@ class _DashboardContent extends StatelessWidget {
         value: snapshot.competitions.length,
         icon: Icons.emoji_events_rounded,
         color: t.gold,
-        section: AdminSection.competitions,
+        section: AdminSection.monthlyCompetitions,
       ),
     ];
 
