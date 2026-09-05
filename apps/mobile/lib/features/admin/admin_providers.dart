@@ -18,6 +18,7 @@
 library;
 
 import 'package:api_client/api_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:contracts/contracts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
@@ -403,6 +404,13 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
   Future<void> post(String fixtureId, String seasonId) async {
     state = const AsyncValue.loading();
     final result = await _api.postFixtureToLedger(fixtureId);
+    if (result is Err<PostFixtureToLedgerResponseDto>) {
+      final AppError e = result.error;
+      debugPrint(
+        '[ledger] kind=${e.kind} code=${e.code} '
+        'msg=${e.message} cause=${e.cause}',
+      );
+    }
     state = switch (result) {
       Ok<PostFixtureToLedgerResponseDto>(:final value) => AsyncValue.data(
         value,
