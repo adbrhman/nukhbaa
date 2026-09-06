@@ -309,6 +309,30 @@ jobs:
         working-directory: apps/mobile
         run: sed -i "/<manifest /a\\    <uses-permission android:name=\"android.permission.INTERNET\" />" android/app/src/main/AndroidManifest.xml
 
+      # `flutter create --project-name mobile` derives android:label from the
+      # pub package name, so every build shipped a launcher icon captioned
+      # "mobile". The package name cannot change (every
+      # `import 'package:mobile/...'` depends on it) and android/ is generated
+      # per build rather than committed, so the label is set here -- alongside
+      # the permission and ota_update edits, which patch the same generated
+      # manifest for the same reason. web/manifest.json and web/index.html
+      # already carry the product name; this brings Android in line.
+      - name: Set the launcher label
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import re, sys
+
+          manifest = "android/app/src/main/AndroidManifest.xml"
+          s = open(manifest, encoding="utf-8").read()
+          s, n = re.subn(r'android:label="mobile"', 'android:label="\u0646\u064f\u062e\u0628\u0629"', s, count=1)
+          if n != 1:
+              sys.exit("ERROR: android:label=\"mobile\" not found in the generated manifest")
+          open(manifest, "w", encoding="utf-8").write(s)
+          print("launcher label set")
+          PYEOF
+
       - name: Inject ota_update Android requirements (idempotent)
         working-directory: apps/mobile
         run: |

@@ -310,3 +310,12 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - audit_log_section.dart: printed the raw admin.audit_action enum name and a
   full 36-char UUID. Now an Arabic label (unknown values still fall through
   to the raw name) plus reason, and the target ref shortened to #xxxxxxxx.
+
+## 2026-09-07 - fix 08: the Android launcher said 'mobile'
+- android/ is not committed; CI regenerates it with
+  `flutter create --project-name mobile`, which sets android:label from the
+  pub package name. The installed app was therefore captioned 'mobile'.
+- build-verification.yml: new step rewrites android:label in the generated
+  manifest, next to the existing INTERNET and ota_update manifest patches.
+  The pub package name is unchanged - every package:mobile/... import
+  depends on it.
