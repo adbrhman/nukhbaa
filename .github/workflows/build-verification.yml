@@ -427,6 +427,13 @@ jobs:
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Require API base URL
+        run: |
+          if [ -z "${{ vars.NUKHBA_API_BASE_URL }}" ]; then
+            echo "::error::NUKHBA_API_BASE_URL repository variable is not set. Refusing to build/publish an APK pointing at a placeholder API."
+            exit 1
+          fi
+
       - name: Build APK (split-per-abi)
         working-directory: apps/mobile
         run: |
