@@ -42,8 +42,13 @@ create table if not exists ledger.fixture_point_entries (
   occurred_at    timestamptz not null,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
-  constraint fixture_point_entries_fixture_score_nonneg
-    check (entry_kind <> 'fixture_score' or amount >= 0),
+  -- The `fixture_score` non-negative CHECK is NOT here: it lives in migration
+  -- 0028. PostgreSQL refuses to use an enum value inside the same transaction
+  -- that added it (SQLSTATE 55P04), and `alter type ledger.entry_kind add
+  -- value 'fixture_score'` runs at the top of this very file. Applying this
+  -- file as one transaction -- which is what `supabase db reset` and any
+  -- clean-database rebuild do -- therefore failed here. The constraint is
+  -- identical, just added one committed transaction later.
   constraint fixture_point_entries_source_ref_nonempty
     check (length(source_ref) > 0),
   -- The append-only dedupe key (Axiom 4 Amendment; per-fixture sibling of

@@ -283,3 +283,12 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   the next un-opened month (current month if idle, following month if a
   season is running). Its label carries the target, e.g. 'start season
   10/2026'. Overlap is still rejected by seasons_no_overlap.
+
+## 2026-09-07 - fix 05: migration 0020 could not apply to a clean database
+- The CI migration gate added in fix 03 failed on its very first run:
+  0020 does `alter type ledger.entry_kind add value 'fixture_score'` and then
+  uses that value in a CHECK constraint in the same transaction ->
+  SQLSTATE 55P04. Production was unaffected (statements applied one by one).
+- The CHECK moved to new migration 0028, guarded by a pg_constraint lookup so
+  it is a no-op where the constraint already exists. Resulting schema is
+  identical; 0020 keeps the enum addition and the table.
