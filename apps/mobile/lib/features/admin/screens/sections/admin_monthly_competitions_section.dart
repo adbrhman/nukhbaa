@@ -174,13 +174,18 @@ class _CreateCompetitionFormState
   }
 }
 
-/// صف مسابقة واحدة + حالة موسمها الحالي (شهر تقويمي) + زر بدء موسم جديد.
+/// نفس صيغة التسمية التي يولّدها `StartSeason` على الخادم: `MM/YYYY`.
+String _targetSeasonLabel(DateTime month) =>
+    '${month.month.toString().padLeft(2, '0')}/${month.year}';
+
+/// صف مسابقة واحدة + حالة موسمها الحالي (شهر تقويمي) + زر بدء الشهر التالي.
 ///
 /// `StartSeasonController` (Section 9 -- Monthly Competitions) هو family
 /// حسب `competitionId`: كل صف يملك حالة loading/success/error مستقلة تمامًا
-/// عن بقية الصفوف. الزر يظهر فقط عندما تأكَّد فعليًا (`AsyncData` بقيمة
-/// null) أنه لا يوجد موسم نشط -- لا يظهر أثناء التحميل أو عند الخطأ، تجنبًا
-/// لمحاولة بدء موسم متداخل يرفضها الـbackend (قيد `seasons_no_overlap`).
+/// عن بقية الصفوف. الزر يظهر بمجرد أن تُحسم حالة الموسم (`AsyncData`)، سواء
+/// وُجد موسم نشط أم لا، ويستهدف الشهر التالي غير المفتوح -- حتى يمكن فتح
+/// شهر 10 أثناء شهر 9 بدل انتظار اليوم الأول. التداخل يرفضه الـbackend
+/// (قيد `seasons_no_overlap`).
 class _CompetitionCurrentSeasonRow extends ConsumerWidget {
   const _CompetitionCurrentSeasonRow({required this.competition});
 
@@ -197,8 +202,23 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
       startSeasonControllerProvider(competition.id),
     );
     final bool starting = startState is AsyncLoading<SeasonDto>;
-    final bool noActiveSeasonConfirmed =
-        seasonState is AsyncData<SeasonDto?> && seasonState.value == null;
+
+    // Seasons ARE calendar months, so the next month to open is the current
+    // one when nothing is running, and the following one when this month's
+    // season is already active. Showing the button in both cases is what
+    // lets an admin open (say) 10/2026 during September instead of having to
+    // be present on the 1st -- the day every season ends and the app would
+    // otherwise show no fixtures to anyone. An accidental duplicate is
+    // rejected by the `seasons_no_overlap` constraint, so the button stays
+    // safe to press.
+    final bool seasonStateResolved = seasonState is AsyncData<SeasonDto?>;
+    final bool hasActiveSeason =
+        seasonState is AsyncData<SeasonDto?> && seasonState.value != null;
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final DateTime targetMonth = hasActiveSeason
+        ? DateTime.utc(nowUtc.year, nowUtc.month + 1)
+        : DateTime.utc(nowUtc.year, nowUtc.month);
+    final String targetSeasonLabel = _targetSeasonLabel(targetMonth);
 
     final Widget statusWidget = switch (seasonState) {
       AsyncData<SeasonDto?>(value: final SeasonDto season?) => Text(
@@ -228,25 +248,27 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         statusWidget,
-        if (noActiveSeasonConfirmed) ...[
+        if (seasonStateResolved) ...[
           const SizedBox(width: AppSpacing.sm),
           AdminSecondaryButton(
             key: Key(
               'admin.monthlyCompetitions.startSeasonButton.${competition.id}',
             ),
-            label: l10n.adminStartSeasonButton,
+            label: '${l10n.adminStartSeasonButton} $targetSeasonLabel',
             loading: starting,
             onPressed: starting
                 ? null
                 : () {
-                    final DateTime now = DateTime.now().toUtc();
                     ref
                         .read(
                           startSeasonControllerProvider(
                             competition.id,
                           ).notifier,
                         )
-                        .start(year: now.year, month: now.month);
+                        .start(
+                          year: targetMonth.year,
+                          month: targetMonth.month,
+                        );
                   },
           ),
         ],

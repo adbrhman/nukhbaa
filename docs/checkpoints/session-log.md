@@ -273,3 +273,13 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   is actually executed against an empty database on each push/PR.
 - publish_latest_apk now needs [build_android, database_migrations]: no APK
   reaches Releases unless the schema applies cleanly.
+
+## 2026-09-07 - fix 04: open next month's season ahead of time
+- admin_monthly_competitions_section.dart: the Start-season button used to
+  appear ONLY when no season was active, and always started DateTime.now()'s
+  month. October could therefore not be created during September - someone
+  had to press it on 1 Oct, the day every season ends.
+- The button is now shown whenever the season state has resolved and targets
+  the next un-opened month (current month if idle, following month if a
+  season is running). Its label carries the target, e.g. 'start season
+  10/2026'. Overlap is still rejected by seasons_no_overlap.
