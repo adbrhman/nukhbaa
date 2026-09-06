@@ -23,7 +23,8 @@ final class FixtureSchedule {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
-  });
+  }) : leagueName = null,
+       leagueLogoUrl = null;
 
   /// Rebuilds a stored schedule.
   ///
