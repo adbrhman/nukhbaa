@@ -18,6 +18,55 @@ env:
   API_BASE_URL: ${{ vars.NUKHBA_API_BASE_URL || 'https://api.nukhba.example' }}
 
 jobs:
+  database_migrations:
+    name: Migrations (clean database)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      # A renamed or emptied migration directory must fail loudly rather than
+      # "pass" by applying nothing at all.
+      - name: Verify the migration set is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)
+          echo "migrations found: $count"
+          test "$count" -ge 27 || {
+            echo "::error::expected at least 27 migrations, found $count"
+            exit 1
+          }
+
+      # The full local stack, not a bare Postgres: 0001 references auth.users
+      # and 0026 references storage.buckets/storage.objects, so gotrue and
+      # storage-api must have created their schemas first.
+      - name: Start a clean local Supabase stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f supabase/config.toml || supabase init < /dev/null
+          supabase start
+
+      # Recreates the database and applies EVERY file in supabase/migrations
+      # in order. This is the check CI never had: a SQL error, a bad RLS
+      # policy or a mis-ordered migration now fails the build.
+      - name: Apply every migration to the clean database
+        run: supabase db reset --no-seed
+
+      - name: Show applied migration history
+        run: supabase migration list --local
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
   workspace:
     name: Analyze + Test (workspace)
     runs-on: ubuntu-latest
@@ -388,7 +437,7 @@ jobs:
   publish_latest_apk:
     name: Publish latest APK to Release
     runs-on: ubuntu-latest
-    needs: build_android
+    needs: [build_android, database_migrations]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write

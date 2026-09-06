@@ -266,3 +266,10 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - fotmob_match_card.dart: dropped _findMyPrediction (linear scan per card).
 - prediction_history_screen.dart: dropped the per-row feed scan and its now
   unused current_month_fixtures_providers import.
+
+## 2026-09-07 - fix 03: real migration gate in CI
+- build-verification.yml: new database_migrations job - starts a clean local
+  Supabase stack and runs `supabase db reset --no-seed`, so every migration
+  is actually executed against an empty database on each push/PR.
+- publish_latest_apk now needs [build_android, database_migrations]: no APK
+  reaches Releases unless the schema applies cleanly.
