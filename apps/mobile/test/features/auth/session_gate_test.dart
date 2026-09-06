@@ -168,6 +168,28 @@ void main() {
     expect(find.textContaining('check your connection'), findsOneWidget);
   });
 
+  _authTest('the register tab renders exactly one display-name field', (
+    tester,
+  ) async {
+    final harness = buildAuthHarness((_) async => okMe(sampleUser));
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_appUnder(harness));
+    await tester.pumpAndSettle();
+
+    // Sign-in tab: no display-name input at all.
+    expect(find.byKey(const Key('signIn.nameField')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('signIn.tabRegister')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('signIn.nameField')),
+      findsOneWidget,
+      reason: 'Registration must expose the display-name input exactly once.',
+    );
+  });
+
   _authTest('sign-out from the account screen returns to the sign-in form', (
     tester,
   ) async {

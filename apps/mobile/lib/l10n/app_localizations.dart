@@ -1602,12 +1602,6 @@ abstract class AppLocalizations {
   /// **'Live'**
   String get fixturesLiveLabel;
 
-  /// No description provided for @adminTeamNotInCatalogHint.
-  ///
-  /// In en, this message translates to:
-  /// **'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.'**
-  String get adminTeamNotInCatalogHint;
-
   /// No description provided for @adminRemoveFixtureFromSeasonButton.
   ///
   /// In en, this message translates to:
@@ -1617,7 +1611,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminRemoveFixtureFromSeasonConfirm.
   ///
   /// In en, this message translates to:
-  /// **'This unlinks "{home} vs {away}" from the month\'s competition.'**
+  /// **'This unlinks \"{home} vs {away}\" from the month\'s competition. It cannot be removed once anyone has predicted it or a result is recorded.'**
   String adminRemoveFixtureFromSeasonConfirm(String home, String away);
 
   /// No description provided for @adminRemoveFixtureFromSeasonSuccess.
@@ -1625,6 +1619,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fixture removed from the month\'s competition.'**
   String get adminRemoveFixtureFromSeasonSuccess;
+
+  /// No description provided for @adminTeamNotInCatalogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.'**
+  String get adminTeamNotInCatalogHint;
 }
 
 class _AppLocalizationsDelegate

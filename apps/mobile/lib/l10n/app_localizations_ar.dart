@@ -870,8 +870,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminRemoveFixtureFromSeasonButton => 'حذف المباراة من الشهر';
 
   @override
-  String adminRemoveFixtureFromSeasonConfirm(String home, String away) =>
-      'سيُحذف ربط «$home × $away» بمسابقة الشهر. لا يمكن الحذف إن كان أحد قد توقّعها أو سُجّلت لها نتيجة.';
+  String adminRemoveFixtureFromSeasonConfirm(String home, String away) {
+    return 'سيُحذف ربط «$home × $away» بمسابقة الشهر. لا يمكن الحذف إن كان أحد قد توقّعها أو سُجّلت لها نتيجة.';
+  }
 
   @override
   String get adminRemoveFixtureFromSeasonSuccess =>

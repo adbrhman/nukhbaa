@@ -170,23 +170,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                               const SizedBox(height: AppSpacing.lg),
                             ],
-                            if (_isRegister) ...[
-                              AppTextField(
-                                fieldKey: const Key('signIn.nameField'),
-                                controller: _nameController,
-                                enabled: !inFlight,
-                                label: l10n.displayName,
-                                hint: l10n.displayNameHint,
-                                prefixIcon: Icons.person_outline,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.name],
-                                validator: (String? value) =>
-                                    (value == null || value.trim().isEmpty)
-                                    ? l10n.displayNameRequired
-                                    : null,
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                            ],
                             AppTextField(
                               fieldKey: const Key('signIn.emailField'),
                               controller: _emailController,

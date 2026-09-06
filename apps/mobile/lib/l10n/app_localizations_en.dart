@@ -865,8 +865,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRemoveFixtureFromSeasonButton => 'Remove from the month';
 
   @override
-  String adminRemoveFixtureFromSeasonConfirm(String home, String away) =>
-      'This unlinks "$home vs $away" from the month\'s competition. It cannot be removed once anyone has predicted it or a result is recorded.';
+  String adminRemoveFixtureFromSeasonConfirm(String home, String away) {
+    return 'This unlinks \"$home vs $away\" from the month\'s competition. It cannot be removed once anyone has predicted it or a result is recorded.';
+  }
 
   @override
   String get adminRemoveFixtureFromSeasonSuccess =>
