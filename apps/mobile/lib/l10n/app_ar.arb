@@ -255,5 +255,6 @@
   "fixturesDateYesterday": "أمس",
   "fixturesDateTomorrow": "غداً",
   "fixturesCalendarTooltip": "التقويم",
-  "fixturesDayEmpty": "لا توجد مباريات في هذا اليوم."
+  "fixturesDayEmpty": "لا توجد مباريات في هذا اليوم.",
+  "fixturesLiveLabel": "مباشر"
 }

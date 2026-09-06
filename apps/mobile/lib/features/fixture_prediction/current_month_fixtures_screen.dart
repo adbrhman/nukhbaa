@@ -49,6 +49,7 @@ import 'current_month_fixtures_providers.dart';
 import 'widgets/fixtures_calendar_page.dart';
 import 'widgets/fixtures_date_bar.dart';
 import 'widgets/fotmob_match_card.dart';
+import 'widgets/live_matches_chip.dart';
 
 /// The current-month fixtures screen.
 class CurrentMonthFixturesScreen extends ConsumerStatefulWidget {
@@ -64,6 +65,12 @@ class _CurrentMonthFixturesScreenState
     extends ConsumerState<CurrentMonthFixturesScreen> {
   DateTime _selectedDay = fixtureDayOnly(DateTime.now());
   bool _userPickedDay = false;
+
+  /// Whether the live-only filter is on. Never trusted on its own — the
+  /// build reads it as `_liveOnly && hasLive`, so a match finishing while
+  /// the filter is on drops the screen back to the full day rather than
+  /// stranding the user on an empty list they did not empty.
+  bool _liveOnly = false;
 
   /// The local kickoff day of [item], or `null` when it has no kickoff.
   DateTime? _kickoffDay(CurrentMonthFixtureItemDto item) {
@@ -98,6 +105,22 @@ class _CurrentMonthFixturesScreenState
     setState(() {
       _selectedDay = fixtureDayOnly(day);
       _userPickedDay = true;
+      // Choosing a day is an explicit "show me this day" — keeping a live
+      // filter on top of it would silently hide most of what was asked for.
+      _liveOnly = false;
+    });
+  }
+
+  /// Toggling the live filter on also moves the selection to today, since a
+  /// fixture in play is by definition today's — without it the filter would
+  /// read as broken while the strip sat on some other day.
+  void _toggleLiveOnly() {
+    setState(() {
+      _liveOnly = !_liveOnly;
+      if (_liveOnly) {
+        _selectedDay = fixtureDayOnly(DateTime.now());
+        _userPickedDay = true;
+      }
     });
   }
 
@@ -115,7 +138,14 @@ class _CurrentMonthFixturesScreenState
     final l10n = AppLocalizations.of(context);
     final feed = ref.watch(currentMonthFixturesProvider);
     final tokens = context.tokens;
-    final DateTime day = _effectiveDay(feed.value ?? const []);
+    final List<CurrentMonthFixtureItemDto> all = feed.value ?? const [];
+    final bool hasLive = all.any(
+      (item) => isFixtureLive(item.fixture.kickoffAt),
+    );
+    final bool liveOnly = _liveOnly && hasLive;
+    final DateTime day = liveOnly
+        ? fixtureDayOnly(DateTime.now())
+        : _effectiveDay(all);
 
     return Scaffold(
       backgroundColor: tokens.background,
@@ -128,6 +158,12 @@ class _CurrentMonthFixturesScreenState
           key: const Key('currentMonthFixtures.title'),
         ),
         actions: <Widget>[
+          LiveMatchesChip(
+            hasLive: hasLive,
+            selected: liveOnly,
+            onTap: _toggleLiveOnly,
+          ),
+          const SizedBox(width: AppSpacing.xs),
           IconButton(
             key: const Key('currentMonthFixtures.calendar'),
             tooltip: l10n.fixturesCalendarTooltip,
@@ -170,6 +206,7 @@ class _CurrentMonthFixturesScreenState
             }
             final List<CurrentMonthFixtureItemDto> dayItems = items
                 .where((item) {
+                  if (liveOnly) return isFixtureLive(item.fixture.kickoffAt);
                   final DateTime? kickoff = _kickoffDay(item);
                   return kickoff == null || isSameFixtureDay(kickoff, day);
                 })

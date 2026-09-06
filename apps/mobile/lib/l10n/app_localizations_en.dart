@@ -857,4 +857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fixturesDayEmpty => 'No matches on this day.';
+
+  @override
+  String get fixturesLiveLabel => 'Live';
 }

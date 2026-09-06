@@ -862,4 +862,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fixturesDayEmpty => 'لا توجد مباريات في هذا اليوم.';
+
+  @override
+  String get fixturesLiveLabel => 'مباشر';
 }

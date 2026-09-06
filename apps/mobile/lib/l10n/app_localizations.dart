@@ -1595,6 +1595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matches on this day.'**
   String get fixturesDayEmpty;
+
+  /// No description provided for @fixturesLiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get fixturesLiveLabel;
 }
 
 class _AppLocalizationsDelegate

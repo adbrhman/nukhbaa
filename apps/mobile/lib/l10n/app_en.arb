@@ -575,5 +575,6 @@
   "fixturesDateYesterday": "Yesterday",
   "fixturesDateTomorrow": "Tomorrow",
   "fixturesCalendarTooltip": "Calendar",
-  "fixturesDayEmpty": "No matches on this day."
+  "fixturesDayEmpty": "No matches on this day.",
+  "fixturesLiveLabel": "Live"
 }
