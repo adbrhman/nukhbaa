@@ -42,12 +42,27 @@ class FixturesCalendarPage extends StatelessWidget {
         backgroundColor: tokens.background,
         foregroundColor: tokens.textPrimary,
         elevation: 0,
-        title: Text(l10n.fixturesCalendarPickTitle),
+        // No title: the reference carries the "today" pill and the back
+        // arrow alone. The pill also needs an explicit size — the app's
+        // `FilledButtonThemeData` forces `minimumSize: Size.fromHeight(52)`
+        // for page-level buttons, which overflows a 56px toolbar and
+        // starved the (previously present) centred title of all its width.
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             child: FilledButton(
               key: const Key('fixturesCalendar.today'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(72, 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                ),
+                shape: const StadiumBorder(),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(today),
               child: Text(l10n.fixturesDateToday),
             ),

@@ -575,6 +575,5 @@
   "fixturesDateYesterday": "Yesterday",
   "fixturesDateTomorrow": "Tomorrow",
   "fixturesCalendarTooltip": "Calendar",
-  "fixturesCalendarPickTitle": "Pick a date",
   "fixturesDayEmpty": "No matches on this day."
 }

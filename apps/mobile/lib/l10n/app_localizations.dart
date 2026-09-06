@@ -1590,12 +1590,6 @@ abstract class AppLocalizations {
   /// **'Calendar'**
   String get fixturesCalendarTooltip;
 
-  /// No description provided for @fixturesCalendarPickTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick a date'**
-  String get fixturesCalendarPickTitle;
-
   /// No description provided for @fixturesDayEmpty.
   ///
   /// In en, this message translates to:

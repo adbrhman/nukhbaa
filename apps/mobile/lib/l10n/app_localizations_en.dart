@@ -856,8 +856,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fixturesCalendarTooltip => 'Calendar';
 
   @override
-  String get fixturesCalendarPickTitle => 'Pick a date';
-
-  @override
   String get fixturesDayEmpty => 'No matches on this day.';
 }

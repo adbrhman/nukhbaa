@@ -861,8 +861,5 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fixturesCalendarTooltip => 'التقويم';
 
   @override
-  String get fixturesCalendarPickTitle => 'اختر التاريخ';
-
-  @override
   String get fixturesDayEmpty => 'لا توجد مباريات في هذا اليوم.';
 }
