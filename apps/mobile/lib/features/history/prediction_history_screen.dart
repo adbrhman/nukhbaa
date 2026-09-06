@@ -10,9 +10,9 @@ import '../../core/ui/score_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
-import '../fixture_prediction/current_month_fixtures_providers.dart';
 import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
+import 'prediction_lookup_providers.dart';
 
 /// The caller's own aggregated prediction history — every per-fixture
 /// prediction they have ever submitted, across every fixture and season,
@@ -50,8 +50,9 @@ class PredictionHistoryScreen extends ConsumerWidget {
 
 /// A single historical per-fixture forecast (Axiom 4 Amendment).
 ///
-/// Team names come from [currentMonthFixturesProvider] — the same feed the
-/// fixtures screen renders — because [FixturePredictionDto.seasonId] is the
+/// Team names come from [currentMonthFixturesByIdProvider] — an index over
+/// the same feed the fixtures screen renders — because
+/// [FixturePredictionDto.seasonId] is the
 /// *participant's* season, not the fixture's, and a monthly competition
 /// gathers its fixtures from several leagues. A still-loading read, or a
 /// fixture outside the current month, falls back to the raw fixture id
@@ -84,17 +85,10 @@ class _FixturePredictionCard extends ConsumerWidget {
     // prediction's own season: `seasonId` is derived server-side from the
     // *participant's* season, which is not where the fixtures live once a
     // monthly competition gathers fixtures from several leagues.
-    final AsyncValue<List<CurrentMonthFixtureItemDto>> monthAsync = ref.watch(
-      currentMonthFixturesProvider,
-    );
-    SeasonFixtureCardDto? fixture;
-    for (final CurrentMonthFixtureItemDto item
-        in monthAsync.value ?? const <CurrentMonthFixtureItemDto>[]) {
-      if (item.fixture.fixtureId == prediction.fixtureId) {
-        fixture = item.fixture;
-        break;
-      }
-    }
+    final AsyncValue<Map<String, SeasonFixtureCardDto>> fixturesById = ref
+        .watch(currentMonthFixturesByIdProvider);
+    final SeasonFixtureCardDto? fixture =
+        fixturesById.value?[prediction.fixtureId];
     return Card(
       key: Key('history.item.${prediction.id}'),
       margin: const EdgeInsets.symmetric(

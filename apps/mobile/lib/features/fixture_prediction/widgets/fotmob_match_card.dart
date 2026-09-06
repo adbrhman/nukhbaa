@@ -94,6 +94,7 @@ import '../../competition/team_identity.dart';
 import '../../competition/teams_providers.dart';
 import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
+import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
@@ -132,18 +133,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
   FixturePredictionKey get _key =>
       (seasonId: _fixture.seasonId, fixtureId: _fixture.fixtureId);
-
-  /// The caller's own prediction for this fixture, if any — a linear scan
-  /// over [myFixturePredictionsProvider]'s full history, matched by
-  /// fixture id (unchanged read, same idiom used across every fixture
-  /// card in this app).
-  FixturePredictionDto? _findMyPrediction(List<FixturePredictionDto>? all) {
-    if (all == null) return null;
-    for (final FixturePredictionDto p in all) {
-      if (p.fixtureId == _fixture.fixtureId) return p;
-    }
-    return null;
-  }
 
   void _incrementHome() =>
       setState(() => _homeGoals = ((_homeGoals ?? -1) + 1).clamp(0, 99));
@@ -195,10 +184,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final inFlight = submission is FixtureSubmissionInFlight;
     final locked = _isLocked;
 
-    final myPredictionsAsync = ref.watch(myFixturePredictionsProvider);
-    final FixturePredictionDto? myPrediction = _findMyPrediction(
-      myPredictionsAsync.value,
-    );
+    final AsyncValue<Map<String, FixturePredictionDto>> myPredictionsAsync = ref
+        .watch(myFixturePredictionsByFixtureProvider);
+    final FixturePredictionDto? myPrediction =
+        myPredictionsAsync.value?[_fixture.fixtureId];
 
     final AsyncValue<FixtureScoresDto>? scoresAsync = myPrediction == null
         ? null

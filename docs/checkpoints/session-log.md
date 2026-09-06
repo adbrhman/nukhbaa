@@ -259,3 +259,10 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 ## 2026-09-07 — fix 01: duplicate display-name field
 - sign_in_screen.dart: removed the second identical `if (_isRegister) ...[ AppTextField(signIn.nameField) ]` block (same key, same controller) — the register form rendered the field twice.
 - session_gate_test.dart: added a register-tab regression test asserting `findsOneWidget` for `signIn.nameField`.
+
+## 2026-09-07 - fix 02: constant-time fixture/prediction lookups
+- new prediction_lookup_providers.dart: indexes myFixturePredictions and
+  currentMonthFixtures by fixtureId (plain Provider, no new HTTP read).
+- fotmob_match_card.dart: dropped _findMyPrediction (linear scan per card).
+- prediction_history_screen.dart: dropped the per-row feed scan and its now
+  unused current_month_fixtures_providers import.
