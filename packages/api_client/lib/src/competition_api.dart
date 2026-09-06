@@ -199,6 +199,22 @@ final class CompetitionApi {
     );
   }
 
+  /// `DELETE /seasons/{id}/fixtures/{fixtureId}` — unlinks a fixture from
+  /// the season (command intent `RemoveFixtureFromSeason`), the inverse of
+  /// [linkFixtureToSeason]. Admin-only, enforced inside the server use-case,
+  /// which refuses once the fixture carries any prediction or a recorded
+  /// result. Returns `true` when a link was actually removed and `false`
+  /// when there was none — both are a success.
+  Future<Result<bool>> removeFixtureFromSeason({
+    required String seasonId,
+    required String fixtureId,
+  }) {
+    return _transport.deleteObject<bool>(
+      '/seasons/$seasonId/fixtures/$fixtureId',
+      parse: (json) => json['removed']! as bool,
+    );
+  }
+
   /// `PUT /fixtures/{id}/result` — records (or idempotently corrects) the
   /// fixture's actual final score (command intent `RecordFixtureResult`;
   /// Axiom 3: a result carries no competition/round reference). Admin-only,

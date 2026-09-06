@@ -36,6 +36,7 @@ export 'src/competition/ports/fixture_schedule_repository.dart';
 export 'src/competition/ports/ruleset_provider.dart';
 export 'src/competition/register_fixture_schedule.dart';
 export 'src/competition/remove_fixture_from_round.dart';
+export 'src/competition/remove_fixture_from_season.dart';
 export 'src/competition/start_season.dart';
 export 'src/football_data/list_teams.dart';
 export 'src/football_data/ports/team_repository.dart';

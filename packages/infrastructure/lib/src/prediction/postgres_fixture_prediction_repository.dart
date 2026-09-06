@@ -292,6 +292,39 @@ VALUES (@season_id, @fixture_id, @display_order)
   }
 
   // --------------------------------------------------------------------------
+  // unlinkFixtureFromSeason — inverse of the insert above, idempotent
+  //
+  // RETURNING is what makes "was anything actually removed?" answerable: a
+  // plain DELETE reports no rows either way through this connection wrapper,
+  // so a second call could not be distinguished from a first.
+  // --------------------------------------------------------------------------
+
+  static const String _deleteSeasonFixtureSql = '''
+DELETE FROM competition.season_fixtures
+WHERE season_id = @season_id AND fixture_id = @fixture_id
+RETURNING fixture_id
+''';
+
+  @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) async {
+    final result = await _connection.query(
+      _deleteSeasonFixtureSql,
+      parameters: {'season_id': seasonId.value, 'fixture_id': fixture.value},
+    );
+    return switch (result) {
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isNotEmpty,
+      ),
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(
+        _reclassify(error),
+      ),
+    };
+  }
+
+  // --------------------------------------------------------------------------
   // countDoublesOnDay
   //
   // Joins fixture_predictions -> competition.fixture_schedules to group

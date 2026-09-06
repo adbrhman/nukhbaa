@@ -38,6 +38,7 @@ final class CompositionRoot {
     required this.browseRoundFixtures,
     required this.browseSeasonFixtures,
     required this.linkFixtureToSeason,
+    required this.removeFixtureFromSeason,
     required this.listCurrentMonthFixtures,
     required this.submitPrediction,
     required this.submitFixturePrediction,
@@ -134,6 +135,7 @@ final class CompositionRoot {
     BrowseRoundFixtures? browseRoundFixtures,
     BrowseSeasonFixtures? browseSeasonFixtures,
     LinkFixtureToSeason? linkFixtureToSeason,
+    RemoveFixtureFromSeason? removeFixtureFromSeason,
     ListCurrentMonthFixtures? listCurrentMonthFixtures,
     SubmitPrediction? submitPrediction,
     SubmitFixturePrediction? submitFixturePrediction,
@@ -206,6 +208,8 @@ final class CompositionRoot {
            browseSeasonFixtures ?? _absentBrowseSeasonFixtures(),
        linkFixtureToSeason =
            linkFixtureToSeason ?? _absentLinkFixtureToSeason(),
+       removeFixtureFromSeason =
+           removeFixtureFromSeason ?? _absentRemoveFixtureFromSeason(),
        listCurrentMonthFixtures =
            listCurrentMonthFixtures ?? _absentListCurrentMonthFixtures(),
        submitPrediction = submitPrediction ?? _absentSubmitPrediction(),
@@ -386,6 +390,13 @@ final class CompositionRoot {
       LinkFixtureToSeason(
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
+      );
+
+  static RemoveFixtureFromSeason _absentRemoveFixtureFromSeason() =>
+      RemoveFixtureFromSeason(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        fixtureResultRepository: _unwiredFixtureResultRepository,
       );
 
   static ListCurrentMonthFixtures _absentListCurrentMonthFixtures() =>
@@ -828,6 +839,11 @@ final class CompositionRoot {
   /// Links a fixture to a season (admin-only command; Axiom 4 Amendment —
   /// the per-fixture sibling of [linkFixtureToRound]).
   final LinkFixtureToSeason linkFixtureToSeason;
+
+  /// Removes a fixture from a season (admin-only command), refusing once the
+  /// fixture carries any prediction or a recorded result — see
+  /// [RemoveFixtureFromSeason] for why those are hard refusals.
+  final RemoveFixtureFromSeason removeFixtureFromSeason;
 
   /// The current-month fixture feed: every public competition's current
   /// (calendar-month) season, fixtures flattened into one ordered list --
@@ -1281,6 +1297,11 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
       ),
+      removeFixtureFromSeason: RemoveFixtureFromSeason(
+        competitionRepository: competitionRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        fixtureResultRepository: fixtureResultRepository,
+      ),
       listCurrentMonthFixtures: ListCurrentMonthFixtures(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
@@ -1708,6 +1729,12 @@ final class _UnwiredFixturePredictionRepository
 
   @override
   Future<Result<void>> linkFixtureToSeason(SeasonFixture link) => _unwired();
+
+  @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) => _unwired();
 
   @override
   Future<Result<int>> countDoublesOnDay(

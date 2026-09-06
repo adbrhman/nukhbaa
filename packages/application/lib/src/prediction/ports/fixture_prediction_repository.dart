@@ -51,6 +51,22 @@ abstract interface class FixturePredictionRepository {
   /// `competition.season_fixture_already_linked`.
   Future<Result<void>> linkFixtureToSeason(SeasonFixture link);
 
+  /// Removes the `(seasonId, fixture)` link — the inverse of
+  /// [linkFixtureToSeason], for correcting a mistaken or duplicate link.
+  ///
+  /// Returns `Ok(true)` when a link was actually deleted and `Ok(false)`
+  /// when there was none, so a retried removal converges instead of failing
+  /// — the same idempotent contract
+  /// `CompetitionRepository.deleteRoundFixture` already has.
+  ///
+  /// Deletes ONLY the link. The fixture's schedule row, and anything ever
+  /// predicted or scored against it, are untouched; the use-case above is
+  /// what refuses to unlink a fixture that has either.
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  });
+
   /// Counts how many fixtures [participantId] has already marked as their
   /// double whose kickoff falls on the UTC calendar day [dayUtc] (midnight
   /// UTC of that day), optionally excluding [excludingFixture] (an amendment
