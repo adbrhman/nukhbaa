@@ -62,11 +62,16 @@ ON CONFLICT (fixture_id) DO UPDATE SET
   // findByFixture — single-fixture read (Ok(null) when none registered)
   // --------------------------------------------------------------------------
 
+  // LEFT JOIN, never INNER: a fixture whose league_id is null (every row
+  // registered before migration 0027) must still come back, with null league
+  // columns — an inner join here would silently hide fixtures from the feed.
   static const String _selectByFixtureSql = '''
-SELECT fixture_id, home_team, away_team, kickoff_at, home_team_id,
-       away_team_id
-FROM competition.fixture_schedules
-WHERE fixture_id = @fixture_id
+SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
+       fs.home_team_id, fs.away_team_id,
+       l.name AS league_name, l.logo_url AS league_logo_url
+FROM competition.fixture_schedules fs
+LEFT JOIN football_data.leagues l ON l.id = fs.league_id
+WHERE fs.fixture_id = @fixture_id
 ''';
 
   @override
@@ -87,10 +92,12 @@ WHERE fixture_id = @fixture_id
   // --------------------------------------------------------------------------
 
   static const String _selectByFixturesSql = '''
-SELECT fixture_id, home_team, away_team, kickoff_at, home_team_id,
-       away_team_id
-FROM competition.fixture_schedules
-WHERE fixture_id = ANY(@fixture_ids::uuid[])
+SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
+       fs.home_team_id, fs.away_team_id,
+       l.name AS league_name, l.logo_url AS league_logo_url
+FROM competition.fixture_schedules fs
+LEFT JOIN football_data.leagues l ON l.id = fs.league_id
+WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
 ''';
 
   @override
@@ -190,6 +197,13 @@ WHERE fixture_id = ANY(@fixture_ids::uuid[])
       awayTeamId = (parsed as Ok<TeamRef>).value;
     }
 
+    // The two league columns are display strings off a LEFT JOIN: absent
+    // (null) is the normal state, and a non-string would mean the join
+    // itself is wrong, so they are read defensively rather than validated
+    // into a typed failure the way the identity columns above are.
+    final leagueName = row['league_name'];
+    final leagueLogoUrl = row['league_logo_url'];
+
     return Result.ok(
       FixtureSchedule.fromStored(
         fixture: (fixtureResult as Ok<FixtureRef>).value,
@@ -198,6 +212,8 @@ WHERE fixture_id = ANY(@fixture_ids::uuid[])
         kickoffAt: kickoffAt,
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
+        leagueName: leagueName is String ? leagueName : null,
+        leagueLogoUrl: leagueLogoUrl is String ? leagueLogoUrl : null,
       ),
     );
   }

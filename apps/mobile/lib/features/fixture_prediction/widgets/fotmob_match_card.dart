@@ -315,8 +315,14 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 _CardHeader(
+                  // The league the match was played in when known, falling
+                  // back to the contest's own name ("شهر 9") only while a
+                  // fixture still carries no league. The reference design
+                  // shows the league here, never the contest.
                   competitionId: widget.item.competitionId,
-                  competitionName: widget.item.competitionName,
+                  competitionName:
+                      _fixture.leagueName ?? widget.item.competitionName,
+                  leagueLogoUrl: _fixture.leagueLogoUrl,
                   kickoffAt: _fixture.kickoffAt,
                   onOpenLeaderboard: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -434,12 +440,17 @@ class _CardHeader extends StatelessWidget {
   const _CardHeader({
     required this.competitionId,
     required this.competitionName,
+    required this.leagueLogoUrl,
     required this.kickoffAt,
     required this.onOpenLeaderboard,
   });
 
   final String competitionId;
   final String competitionName;
+
+  /// The league's own logo when the fixture carries one — preferred over the
+  /// bundled per-competition asset, which ships empty.
+  final String? leagueLogoUrl;
   final String? kickoffAt;
   final VoidCallback onOpenLeaderboard;
 
@@ -466,7 +477,7 @@ class _CardHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _CompetitionLogo(assetPath: assetPath),
+              _CompetitionLogo(assetPath: assetPath, logoUrl: leagueLogoUrl),
               const SizedBox(width: AppSpacing.xs),
               Flexible(
                 fit: FlexFit.loose,
@@ -525,15 +536,33 @@ class _CardHeader extends StatelessWidget {
 /// which reads as a bug rather than an identity mark — the trophy glyph
 /// reads clearly as "no logo yet" instead.
 class _CompetitionLogo extends StatelessWidget {
-  const _CompetitionLogo({required this.assetPath});
+  const _CompetitionLogo({required this.assetPath, this.logoUrl});
 
   final String? assetPath;
+
+  /// A remote league logo (`football_data.leagues.logo_url`, migration
+  /// 0027). Preferred over [assetPath] because the bundled asset map ships
+  /// empty; falls through to the trophy glyph on a network/decode failure,
+  /// exactly as the asset path does.
+  final String? logoUrl;
 
   static const double _size = 16;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final String? url = logoUrl;
+    if (url != null && url.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: _size,
+          height: _size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _fallback(tokens),
+        ),
+      );
+    }
     if (assetPath != null) {
       return ClipOval(
         child: Image.asset(

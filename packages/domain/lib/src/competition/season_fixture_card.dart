@@ -22,6 +22,8 @@ final class SeasonFixtureCard {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueName,
+    this.leagueLogoUrl,
   });
 
   /// The owning season.
@@ -47,6 +49,16 @@ final class SeasonFixtureCard {
   /// The away side's resolved team id, same nullability as [homeTeamId].
   final TeamRef? awayTeamId;
 
+  /// The league this fixture was played in ("الدوري الإنجليزي الممتاز"), or
+  /// `null` when the schedule carries no league yet. This is the football
+  /// competition, NOT the contest the fixture scores into — the contest is
+  /// the calendar month and travels separately as
+  /// `CurrentMonthFixtureEntry.competitionName`.
+  final String? leagueName;
+
+  /// The league's logo URL, same nullability as [leagueName].
+  final String? leagueLogoUrl;
+
   @override
   bool operator ==(Object other) =>
       other is SeasonFixtureCard &&
@@ -56,7 +68,9 @@ final class SeasonFixtureCard {
       other.awayTeam == awayTeam &&
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
-      other.awayTeamId == awayTeamId;
+      other.awayTeamId == awayTeamId &&
+      other.leagueName == leagueName &&
+      other.leagueLogoUrl == leagueLogoUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -67,6 +81,8 @@ final class SeasonFixtureCard {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueName,
+    leagueLogoUrl,
   );
 
   @override

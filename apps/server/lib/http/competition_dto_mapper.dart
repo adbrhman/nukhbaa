@@ -106,6 +106,8 @@ SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
     kickoffAt: card.kickoffAt?.toIso8601String(),
     homeTeamId: card.homeTeamId?.value,
     awayTeamId: card.awayTeamId?.value,
+    leagueName: card.leagueName,
+    leagueLogoUrl: card.leagueLogoUrl,
   );
 }
 

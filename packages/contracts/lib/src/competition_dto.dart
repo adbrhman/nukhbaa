@@ -542,6 +542,8 @@ final class SeasonFixtureCardDto {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueName,
+    this.leagueLogoUrl,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -556,6 +558,8 @@ final class SeasonFixtureCardDto {
       kickoffAt: json['kickoff_at'] as String?,
       homeTeamId: json['home_team_id'] as String?,
       awayTeamId: json['away_team_id'] as String?,
+      leagueName: json['league_name'] as String?,
+      leagueLogoUrl: json['league_logo_url'] as String?,
     );
   }
 
@@ -584,6 +588,13 @@ final class SeasonFixtureCardDto {
   /// The away side's resolved Football Data team id, or `null` when unknown.
   final String? awayTeamId;
 
+  /// The league this fixture was played in, or `null` when unknown. Not the
+  /// contest it scores into — that is the month, carried separately.
+  final String? leagueName;
+
+  /// The league's logo URL, or `null` when unknown.
+  final String? leagueLogoUrl;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -597,6 +608,8 @@ final class SeasonFixtureCardDto {
     'kickoff_at': kickoffAt,
     'home_team_id': homeTeamId,
     'away_team_id': awayTeamId,
+    'league_name': leagueName,
+    'league_logo_url': leagueLogoUrl,
   };
 
   @override
@@ -609,6 +622,8 @@ final class SeasonFixtureCardDto {
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
+      other.leagueName == leagueName &&
+      other.leagueLogoUrl == leagueLogoUrl &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -620,6 +635,8 @@ final class SeasonFixtureCardDto {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueName,
+    leagueLogoUrl,
     schemaVersion,
   );
 }

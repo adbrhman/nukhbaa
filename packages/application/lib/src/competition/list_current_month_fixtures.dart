@@ -188,6 +188,8 @@ final class ListCurrentMonthFixtures {
               kickoffAt: byFixture[fixture.value]?.kickoffAt,
               homeTeamId: byFixture[fixture.value]?.homeTeamId,
               awayTeamId: byFixture[fixture.value]?.awayTeamId,
+              leagueName: byFixture[fixture.value]?.leagueName,
+              leagueLogoUrl: byFixture[fixture.value]?.leagueLogoUrl,
             ),
           ),
     ]);

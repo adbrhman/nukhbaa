@@ -25,6 +25,15 @@ final class FixtureSchedule {
     this.awayTeamId,
   });
 
+  /// Rebuilds a stored schedule.
+  ///
+  /// [leagueName]/[leagueLogoUrl] are **read-only** enrichment resolved by
+  /// the repository's join onto `football_data.leagues` (migration 0027).
+  /// They are deliberately absent from [create] and never written back: the
+  /// schedule row stores a `league_id`, not a name — denormalising the two
+  /// display fields onto the read is the same shape
+  /// `CurrentMonthFixtureEntry` already uses for `competitionName`, and it
+  /// spares the client a second catalog round-trip for one label.
   const FixtureSchedule.fromStored({
     required this.fixture,
     required this.homeTeam,
@@ -32,6 +41,8 @@ final class FixtureSchedule {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueName,
+    this.leagueLogoUrl,
   });
 
   static Result<FixtureSchedule> create({
@@ -91,6 +102,13 @@ final class FixtureSchedule {
   final TeamRef? homeTeamId;
   final TeamRef? awayTeamId;
 
+  /// The league this fixture was played in, or `null` when the schedule
+  /// carries no `league_id` yet. Read-only (see [FixtureSchedule.fromStored]).
+  final String? leagueName;
+
+  /// The league's logo URL, same nullability and provenance as [leagueName].
+  final String? leagueLogoUrl;
+
   @override
   bool operator ==(Object other) =>
       other is FixtureSchedule &&
@@ -99,7 +117,9 @@ final class FixtureSchedule {
       other.awayTeam == awayTeam &&
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
-      other.awayTeamId == awayTeamId;
+      other.awayTeamId == awayTeamId &&
+      other.leagueName == leagueName &&
+      other.leagueLogoUrl == leagueLogoUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -109,6 +129,8 @@ final class FixtureSchedule {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueName,
+    leagueLogoUrl,
   );
 
   @override
