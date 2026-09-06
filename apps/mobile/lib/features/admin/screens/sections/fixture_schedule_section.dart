@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
+import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/team_registry.dart';
@@ -14,6 +15,35 @@ import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
+
+/// سطر تحذير تحت حقل فريق لم يُطابق الكتالوج: نبرة تحذير لا خطأ، فالإرسال
+/// يبقى ممكنًا عمدًا.
+class _UnresolvedTeamHint extends StatelessWidget {
+  const _UnresolvedTeamHint({required this.message, super.key});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.info_outline, size: 16, color: tokens.gold),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12, color: tokens.gold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// جدولة المباريات — اختيار المسابقة/الموسم ثم إضافة مباراة.
 class FixtureScheduleSection extends ConsumerStatefulWidget {
@@ -65,6 +95,25 @@ class _FixtureScheduleSectionState
     if (name.contains('سعود')) return kSaudiTeams.keys.toList()..sort();
     return _teamOptions;
   }
+
+  /// Whether [text] names something but resolves to no catalog team — the
+  /// state that must be *visible*.
+  ///
+  /// A fixture stored with a null `home_team_id`/`away_team_id` still works:
+  /// the free-text name is the identity of record (Axiom 3), so nothing
+  /// fails, nothing is logged, and the admin gets no signal at all. What
+  /// silently disappears is everything keyed off the resolved id — the crest
+  /// and the team's brand colour — so the fixture card falls back to two
+  /// grey letters. That is exactly how "اسبانيول" (catalog: "إسبانيول") and
+  /// "مرسيليا" (catalog: "مارسيليا") shipped: one character off, no error,
+  /// found only by eye on a screenshot days later.
+  ///
+  /// This is deliberately a *warning*, not validation: free text stays legal
+  /// — a real fixture whose team is genuinely not in the catalog must remain
+  /// submittable, and the button stays enabled. It only refuses to let the
+  /// mismatch pass unseen.
+  bool _isUnresolvedTeam(List<TeamDto> catalog, String text) =>
+      text.trim().isNotEmpty && _resolveTeamId(catalog, text) == null;
 
   /// Resolves [text] against [catalog] (the real `football_data.teams`
   /// catalog) by exact, case-insensitive name match — `null` when the typed
@@ -214,6 +263,11 @@ class _FixtureScheduleSectionState
                   );
                 }),
               ),
+              if (_isUnresolvedTeam(catalog, _homeTeamController.text))
+                _UnresolvedTeamHint(
+                  key: const Key('admin.fixtures.homeTeamUnresolved'),
+                  message: l10n.adminTeamNotInCatalogHint,
+                ),
               const SizedBox(height: AppSpacing.md),
               _TeamPickerField(
                 fieldKey: const Key('admin.fixtures.awayTeamField'),
@@ -234,6 +288,11 @@ class _FixtureScheduleSectionState
                   );
                 }),
               ),
+              if (_isUnresolvedTeam(catalog, _awayTeamController.text))
+                _UnresolvedTeamHint(
+                  key: const Key('admin.fixtures.awayTeamUnresolved'),
+                  message: l10n.adminTeamNotInCatalogHint,
+                ),
               const SizedBox(height: AppSpacing.md),
               AdminSecondaryButton(
                 key: const Key('admin.fixtures.kickoffPicker'),

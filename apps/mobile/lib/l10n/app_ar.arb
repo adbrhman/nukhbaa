@@ -256,5 +256,6 @@
   "fixturesDateTomorrow": "غداً",
   "fixturesCalendarTooltip": "التقويم",
   "fixturesDayEmpty": "لا توجد مباريات في هذا اليوم.",
-  "fixturesLiveLabel": "مباشر"
+  "fixturesLiveLabel": "مباشر",
+  "adminTeamNotInCatalogHint": "هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا."
 }

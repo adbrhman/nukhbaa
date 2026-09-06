@@ -576,5 +576,6 @@
   "fixturesDateTomorrow": "Tomorrow",
   "fixturesCalendarTooltip": "Calendar",
   "fixturesDayEmpty": "No matches on this day.",
-  "fixturesLiveLabel": "Live"
+  "fixturesLiveLabel": "Live",
+  "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists."
 }

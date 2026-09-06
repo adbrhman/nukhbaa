@@ -865,4 +865,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fixturesLiveLabel => 'مباشر';
+
+  @override
+  String get adminTeamNotInCatalogHint =>
+      'هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.';
 }

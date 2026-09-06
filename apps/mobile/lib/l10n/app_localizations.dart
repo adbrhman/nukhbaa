@@ -1601,6 +1601,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Live'**
   String get fixturesLiveLabel;
+
+  /// No description provided for @adminTeamNotInCatalogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.'**
+  String get adminTeamNotInCatalogHint;
 }
 
 class _AppLocalizationsDelegate
