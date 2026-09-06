@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_spacing.dart';
+import '../../core/format/timestamps.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
@@ -101,7 +102,7 @@ class _FixturePredictionCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              prediction.submittedAt,
+              formatTimestamp(context, prediction.submittedAt),
               key: Key('history.submittedAt.${prediction.id}'),
               style: Theme.of(
                 context,

@@ -301,3 +301,12 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   insufficient_privilege and raises a notice. Production already has them;
   RLS is enabled by Supabase itself; the bucket is public-read and uploads
   use the service-role key, so behaviour is unchanged.
+
+## 2026-09-07 - fix 07: raw ISO timestamps and enum names on screen
+- new core/format/timestamps.dart: parse an ISO-8601 contract string once,
+  convert to the viewer's zone, format via intl with the active locale.
+- prediction_history_screen.dart: the card printed prediction.submittedAt
+  verbatim, e.g. 2026-09-06T02:29:45.121328Z.
+- audit_log_section.dart: printed the raw admin.audit_action enum name and a
+  full 36-char UUID. Now an Arabic label (unknown values still fall through
+  to the raw name) plus reason, and the target ref shortened to #xxxxxxxx.
