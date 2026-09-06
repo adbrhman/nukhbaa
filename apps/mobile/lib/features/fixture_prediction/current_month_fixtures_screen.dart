@@ -174,10 +174,7 @@ class _CurrentMonthFixturesScreenState
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(FixturesDateStrip.height),
-          child: FixturesDateStrip(
-            selectedDay: day,
-            onDaySelected: _selectDay,
-          ),
+          child: FixturesDateStrip(selectedDay: day, onDaySelected: _selectDay),
         ),
       ),
       body: SafeArea(

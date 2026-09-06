@@ -126,10 +126,7 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
                 // Never fades to nothing: the dot stays legible at its
                 // dimmest, so the pulse reads as a heartbeat rather than
                 // as the chip flickering in and out.
-                opacity: Tween<double>(
-                  begin: 0.35,
-                  end: 1,
-                ).animate(_pulse),
+                opacity: Tween<double>(begin: 0.35, end: 1).animate(_pulse),
                 child: Container(
                   width: 8,
                   height: 8,

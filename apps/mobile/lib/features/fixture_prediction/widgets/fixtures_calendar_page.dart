@@ -54,9 +54,7 @@ class FixturesCalendarPage extends StatelessWidget {
               key: const Key('fixturesCalendar.today'),
               style: FilledButton.styleFrom(
                 minimumSize: const Size(72, 40),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 shape: const StadiumBorder(),
                 textStyle: const TextStyle(
                   fontSize: 14,
@@ -167,9 +165,7 @@ class _MonthBlock extends StatelessWidget {
           Row(
             children: <Widget>[
               for (int col = 0; col < 7; col++)
-                Expanded(
-                  child: _dayCell(context, row * 7 + col - leading + 1),
-                ),
+                Expanded(child: _dayCell(context, row * 7 + col - leading + 1)),
             ],
           ),
       ],
