@@ -477,6 +477,42 @@ class FixtureReportController extends _$FixtureReportController {
   }
 }
 
+/// يفكّ ربط مباراة بموسمها (`RemoveFixtureFromSeason`). الخادم يرفض الحذف
+/// إن كانت المباراة قد تلقّت أي توقّع أو سُجّلت لها نتيجة، فلا يحتاج هذا
+/// المتحكّم إلى فحص مسبق: رسالة الرفض تصل عبر `AppError` وتُعرض كما هي.
+///
+/// الحالة `true` تعني أن رابطاً حُذف فعلاً، و`false` أنه لم يكن موجودًا —
+/// وكلاهما نجاح (العملية عديمة الأثر عند التكرار).
+@riverpod
+class RemoveFixtureController extends _$RemoveFixtureController {
+  CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
+
+  @override
+  AsyncValue<bool>? build() => null;
+
+  /// يفكّ ربط [fixtureId] بـ[seasonId].
+  Future<void> remove({
+    required String seasonId,
+    required String fixtureId,
+  }) async {
+    state = const AsyncValue.loading();
+
+    final result = await _competitionApi.removeFixtureFromSeason(
+      seasonId: seasonId,
+      fixtureId: fixtureId,
+    );
+    if (result is Err<bool>) {
+      state = AsyncValue.error(result.error, StackTrace.current);
+      return;
+    }
+    state = AsyncValue.data((result as Ok<bool>).value);
+
+    // نفس الإبطالين اللذين يجريهما AddMatchController، بالاتجاه المعاكس.
+    ref.invalidate(seasonFixturesProvider(seasonId));
+    ref.invalidate(currentMonthFixturesProvider);
+  }
+}
+
 /// نتيجة دمج تسجيل المباراة وربطها بالجولة — نجاح فقط إذا نجحت العمليتان معاً.
 class AddMatchResult {
   const AddMatchResult({required this.fixture, required this.link});

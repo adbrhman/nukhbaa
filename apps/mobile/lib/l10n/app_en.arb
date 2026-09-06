@@ -577,5 +577,11 @@
   "fixturesCalendarTooltip": "Calendar",
   "fixturesDayEmpty": "No matches on this day.",
   "fixturesLiveLabel": "Live",
+  "adminRemoveFixtureFromSeasonButton": "Remove from the month",
+  "adminRemoveFixtureFromSeasonConfirm": "This unlinks \"{home} vs {away}\" from the month's competition. It cannot be removed once anyone has predicted it or a result is recorded.",
+  "@adminRemoveFixtureFromSeasonConfirm": {
+    "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
+  },
+  "adminRemoveFixtureFromSeasonSuccess": "Fixture removed from the month's competition.",
   "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists."
 }

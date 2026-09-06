@@ -867,6 +867,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fixturesLiveLabel => 'مباشر';
 
   @override
+  String get adminRemoveFixtureFromSeasonButton => 'حذف المباراة من الشهر';
+
+  @override
+  String adminRemoveFixtureFromSeasonConfirm(String home, String away) =>
+      'سيُحذف ربط «$home × $away» بمسابقة الشهر. لا يمكن الحذف إن كان أحد قد توقّعها أو سُجّلت لها نتيجة.';
+
+  @override
+  String get adminRemoveFixtureFromSeasonSuccess =>
+      'تم حذف المباراة من مسابقة الشهر.';
+
+  @override
   String get adminTeamNotInCatalogHint =>
       'هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.';
 }

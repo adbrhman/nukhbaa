@@ -1607,6 +1607,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.'**
   String get adminTeamNotInCatalogHint;
+
+  /// No description provided for @adminRemoveFixtureFromSeasonButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from the month'**
+  String get adminRemoveFixtureFromSeasonButton;
+
+  /// No description provided for @adminRemoveFixtureFromSeasonConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This unlinks "{home} vs {away}" from the month\'s competition.'**
+  String adminRemoveFixtureFromSeasonConfirm(String home, String away);
+
+  /// No description provided for @adminRemoveFixtureFromSeasonSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixture removed from the month\'s competition.'**
+  String get adminRemoveFixtureFromSeasonSuccess;
 }
 
 class _AppLocalizationsDelegate

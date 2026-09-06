@@ -165,6 +165,56 @@ class _FixtureScheduleSectionState
     super.dispose();
   }
 
+  /// يطلب تأكيدًا صريحًا ثم يحذف. الحوار يذكر اسمي الفريقين لا معرّف
+  /// المباراة، لأن المعرّف لا يميّز شيئًا في ذهن المشرف.
+  Future<void> _confirmRemoveFixture() async {
+    final l10n = AppLocalizations.of(context);
+    final String seasonId = _correctSeasonId!;
+    final String fixtureId = _correctFixtureId!;
+    final String home = _correctHomeTeamController.text.trim();
+    final String away = _correctAwayTeamController.text.trim();
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const Key('admin.fixtures.remove.confirm'),
+        title: Text(l10n.adminRemoveFixtureFromSeasonButton),
+        content: Text(l10n.adminRemoveFixtureFromSeasonConfirm(home, away)),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('admin.fixtures.remove.confirm.cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.adminRemoveFixtureCancelButton),
+          ),
+          TextButton(
+            key: const Key('admin.fixtures.remove.confirm.ok'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.adminRemoveFixtureFromSeasonButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await ref
+        .read(removeFixtureControllerProvider.notifier)
+        .remove(seasonId: seasonId, fixtureId: fixtureId);
+    if (!mounted) return;
+
+    // بعد حذف ناجح لم يعد للمباراة المختارة وجود، فيُفرَّغ نطاق التصحيح
+    // كي لا يبقى نموذج يشير إلى شيء محذوف.
+    if (ref.read(removeFixtureControllerProvider) is AsyncData<bool>) {
+      setState(() {
+        _correctFixtureId = null;
+        _correctHomeTeamController.clear();
+        _correctAwayTeamController.clear();
+        _correctHomeTeamId = null;
+        _correctAwayTeamId = null;
+        _correctKickoffLocal = null;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -197,6 +247,10 @@ class _FixtureScheduleSectionState
     );
     final bool correctInFlight =
         correctState is AsyncLoading<FixtureScheduleDto>;
+    final AsyncValue<bool>? removeState = ref.watch(
+      removeFixtureControllerProvider,
+    );
+    final bool removeInFlight = removeState is AsyncLoading<bool>;
     final bool canSubmitCorrection =
         !correctInFlight &&
         _correctSeasonId != null &&
@@ -462,6 +516,33 @@ class _FixtureScheduleSectionState
                 loading: correctInFlight,
                 onPressed: canSubmitCorrection ? _correctFixture : null,
               ),
+              // Removal lives inside the correction scope on purpose: the
+              // admin has already picked the exact fixture here, so it needs
+              // no picker of its own — and a delete under every row of a
+              // browse list is a misclick waiting to happen.
+              if (_correctFixtureId != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                if (removeState is AsyncError<bool>)
+                  AdminErrorBanner(
+                    key: const Key('admin.fixtures.remove.error'),
+                    message: ErrorPresenter.message(
+                      removeState.error as AppError,
+                    ),
+                  ),
+                if (removeState is AsyncData<bool>)
+                  AdminSuccessBanner(
+                    key: const Key('admin.fixtures.remove.result'),
+                    message: l10n.adminRemoveFixtureFromSeasonSuccess,
+                  ),
+                const SizedBox(height: AppSpacing.md),
+                AdminSecondaryButton(
+                  key: const Key('admin.fixtures.remove.submit'),
+                  label: l10n.adminRemoveFixtureFromSeasonButton,
+                  icon: Icons.delete_outline_rounded,
+                  loading: removeInFlight,
+                  onPressed: removeInFlight ? null : _confirmRemoveFixture,
+                ),
+              ],
             ],
           ),
         ),

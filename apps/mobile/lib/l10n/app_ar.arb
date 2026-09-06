@@ -257,5 +257,11 @@
   "fixturesCalendarTooltip": "التقويم",
   "fixturesDayEmpty": "لا توجد مباريات في هذا اليوم.",
   "fixturesLiveLabel": "مباشر",
+  "adminRemoveFixtureFromSeasonButton": "حذف المباراة من الشهر",
+  "adminRemoveFixtureFromSeasonConfirm": "سيُحذف ربط «{home} × {away}» بمسابقة الشهر. لا يمكن الحذف إن كان أحد قد توقّعها أو سُجّلت لها نتيجة.",
+  "@adminRemoveFixtureFromSeasonConfirm": {
+    "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
+  },
+  "adminRemoveFixtureFromSeasonSuccess": "تم حذف المباراة من مسابقة الشهر.",
   "adminTeamNotInCatalogHint": "هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا."
 }

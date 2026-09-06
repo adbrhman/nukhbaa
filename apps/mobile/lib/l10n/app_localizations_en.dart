@@ -862,6 +862,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fixturesLiveLabel => 'Live';
 
   @override
+  String get adminRemoveFixtureFromSeasonButton => 'Remove from the month';
+
+  @override
+  String adminRemoveFixtureFromSeasonConfirm(String home, String away) =>
+      'This unlinks "$home vs $away" from the month\'s competition. It cannot be removed once anyone has predicted it or a result is recorded.';
+
+  @override
+  String get adminRemoveFixtureFromSeasonSuccess =>
+      'Fixture removed from the month\'s competition.';
+
+  @override
   String get adminTeamNotInCatalogHint =>
       'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.';
 }
