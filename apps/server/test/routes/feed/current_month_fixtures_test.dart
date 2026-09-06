@@ -201,6 +201,12 @@ final class _InMemoryFixturePredictionRepository
       throw UnimplementedError('not exercised by this route test file');
 
   @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) async => const Result.ok(false);
+
+  @override
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {

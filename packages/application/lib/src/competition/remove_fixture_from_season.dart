@@ -1,5 +1,6 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
 import 'package:domain/domain.dart';

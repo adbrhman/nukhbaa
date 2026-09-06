@@ -200,6 +200,12 @@ final class _InMemoryFixturePredictionRepository
   }
 
   @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) async => const Result.ok(false);
+
+  @override
   Future<Result<FixturePredictionView?>> findByFixtureAndParticipant(
     FixtureRef fixture,
     ParticipantId participantId,

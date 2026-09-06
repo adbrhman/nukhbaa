@@ -141,6 +141,19 @@ final class FakeFixturePredictionRepository
   }
 
   @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final removed = _seasonFixtures.remove(
+      '${seasonId.value}|${fixture.value}',
+    );
+    return Result.ok(removed != null);
+  }
+
+  @override
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {

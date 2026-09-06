@@ -197,6 +197,12 @@ final class _InMemoryFixturePredictionRepository
       const Result.ok(null);
 
   @override
+  Future<Result<bool>> unlinkFixtureFromSeason({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+  }) async => const Result.ok(false);
+
+  @override
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {
