@@ -21,18 +21,42 @@ values ('team-logos', 'team-logos', true)
 on conflict (id) do update
   set public = excluded.public;
 
-alter table storage.objects enable row level security;
+-- Everything below needs OWNERSHIP of storage.objects, which belongs to
+-- supabase_storage_admin. The hosted project's `postgres` role reaches it;
+-- the `postgres` of a local stack does not, and a clean-database rebuild
+-- (`supabase db reset`, the CI migration gate) died here with SQLSTATE 42501
+-- -- "must be owner of table objects".
+--
+-- Skipping in that case is safe and changes nothing observable: Supabase
+-- enables RLS on storage.objects itself in both environments, `team-logos`
+-- is a public bucket served over /object/public/... with no auth check, and
+-- uploads use the service-role key, which bypasses RLS entirely. The two
+-- policies are defense-in-depth for the /object/authenticated/... path and
+-- already exist on the production database.
+do $$
+begin
+  execute 'alter table storage.objects enable row level security';
 
-drop policy if exists team_logos_select_all on storage.objects;
-create policy team_logos_select_all
-  on storage.objects
-  for select
-  to anon, authenticated
-  using (bucket_id = 'team-logos');
+  execute 'drop policy if exists team_logos_select_all on storage.objects';
+  execute $p$
+    create policy team_logos_select_all
+      on storage.objects
+      for select
+      to anon, authenticated
+      using (bucket_id = 'team-logos')
+  $p$;
 
-drop policy if exists team_logos_no_client_writes on storage.objects;
-create policy team_logos_no_client_writes
-  on storage.objects
-  for insert
-  to anon, authenticated
-  with check (bucket_id = 'team-logos' and false);
+  execute 'drop policy if exists team_logos_no_client_writes on storage.objects';
+  execute $p$
+    create policy team_logos_no_client_writes
+      on storage.objects
+      for insert
+      to anon, authenticated
+      with check (bucket_id = 'team-logos' and false)
+  $p$;
+exception
+  when insufficient_privilege then
+    raise notice
+      'storage.objects RLS/policies skipped: current role does not own the table';
+end;
+$$;

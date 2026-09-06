@@ -292,3 +292,12 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - The CHECK moved to new migration 0028, guarded by a pg_constraint lookup so
   it is a no-op where the constraint already exists. Resulting schema is
   identical; 0020 keeps the enum addition and the table.
+
+## 2026-09-07 - fix 06: migration 0026 needs ownership of storage.objects
+- The clean-database gate reached 0026 and failed with SQLSTATE 42501:
+  storage.objects is owned by supabase_storage_admin, and a local stack's
+  postgres role cannot ALTER it or create policies on it.
+- The ALTER + two policies are now inside a DO block that catches
+  insufficient_privilege and raises a notice. Production already has them;
+  RLS is enabled by Supabase itself; the bucket is public-read and uploads
+  use the service-role key, so behaviour is unchanged.
