@@ -114,8 +114,10 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
     const String buildSha = String.fromEnvironment('NUKHBA_BUILD_SHA');
 
     if (buildSha.isNotEmpty) {
-      if (dto.apkUrl.contains('/build-$buildSha/'))
-        return; // this IS the latest
+      // this IS the latest
+      if (dto.apkUrl.contains('/build-$buildSha/')) {
+        return;
+      }
     } else if (lastSeen == null) {
       await _remember(dto.publishedAt);
       return;
