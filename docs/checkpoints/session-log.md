@@ -493,3 +493,13 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - No new environment variable is needed on Northflank after all.
 - Step 3: POST/DELETE /me/avatar, GET /users/{id}/avatar, and the use-cases.
   Step 4: leaderboard avatars, the picker, the report button.
+
+## 2026-09-07 - fix 20: avatars, step 3a of 4 (domain validation)
+- `User.validateAvatar(byteLength, mime)`: empty payload, over 512 KB, or a
+  mime outside jpeg/png/webp all reject with `identity.avatar_*` validation
+  errors -- Arabic messages, matching `validateDisplayName`'s convention.
+- The 512 KB / three-mime limits mirror the migration 0033 CHECK exactly, so
+  a rejection at the edge and the database backstop never disagree.
+- No caller wired yet -- this is pure domain, additive, does not touch
+  `UserDirectory`, routes, or `composition_root.dart`. Next: the
+  `SetAvatar`/`ClearAvatar`/`ReadAvatar` application use-cases.

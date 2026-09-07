@@ -78,6 +78,19 @@ final class User {
   /// The maximum length of a [displayName], enforced by [validateDisplayName].
   static const int maxDisplayNameLength = 60;
 
+  /// The maximum size of an avatar upload, in bytes -- mirrors the database
+  /// CHECK in migration 0033 so a rejection here and a rejection there always
+  /// agree.
+  static const int maxAvatarBytes = 512 * 1024;
+
+  /// The content types the platform accepts for a profile picture. Mirrors
+  /// the database CHECK in migration 0033.
+  static const Set<String> allowedAvatarMimeTypes = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  };
+
   /// Validates a raw, untrusted display name: trims it, rejects empty/too-long
   /// input. Shared by registration (initial name) and [renameDisplayName]
   /// (later changes) so both paths enforce the same invariant.
@@ -97,6 +110,37 @@ final class User {
       );
     }
     return Result.ok(trimmed);
+  }
+
+  /// Validates a candidate avatar upload before it reaches
+  /// [UserDirectory.setAvatar]: rejects an empty payload, one over
+  /// [maxAvatarBytes], or a [mime] outside [allowedAvatarMimeTypes]. The
+  /// server checks this before the bytes ever reach the directory; the
+  /// database CHECK from migration 0033 is the backstop behind it, not the
+  /// first line of defense.
+  static Result<void> validateAvatar(int byteLength, String mime) {
+    if (byteLength <= 0) {
+      return const Result.err(
+        AppError.validation('identity.avatar_empty', 'الصورة فارغة'),
+      );
+    }
+    if (byteLength > maxAvatarBytes) {
+      return const Result.err(
+        AppError.validation(
+          'identity.avatar_too_large',
+          'حجم الصورة كبير جدًا (الحد الأقصى 512 كيلوبايت)',
+        ),
+      );
+    }
+    if (!allowedAvatarMimeTypes.contains(mime)) {
+      return const Result.err(
+        AppError.validation(
+          'identity.avatar_mime_unsupported',
+          'صيغة الصورة غير مدعومة (JPEG أو PNG أو WEBP فقط)',
+        ),
+      );
+    }
+    return const Result.ok(null);
   }
 
   /// Whether this user is currently permitted to perform privileged actions.
