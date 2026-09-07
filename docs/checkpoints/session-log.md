@@ -419,3 +419,24 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   both the podium tiles and the list rows.
 - Arrows stay absent until the second daily snapshot lands - today's capture
   equals the live order, so every movement is currently 0.
+
+## 2026-09-07 - fix 17: accuracy = exact_scoreline alone
+- Owner decision: accuracy is the share of a participant's SETTLED fixtures
+  whose exact scoreline they called right. correct_outcome does not count -
+  it earns points but it did not get the score right, and including it would
+  make the percentage stop tracking the number printed beside it.
+- Migration 0031 recreates season_standings_with_movement with exact_count and
+  settled_count per participant, counted off scoring.fixture_scores and joined
+  by participant_id alone (a participant belongs to one season), so a fixture
+  linked to several rounds cannot double-count a grade.
+- The counts travel raw; the percentage is derived once, in the pure domain,
+  exactly as movement is. A participant with nothing settled reads 0/0:
+  LeaderboardEntry.accuracy returns null, and the client omits the label
+  rather than printing a 0% nobody earned.
+- DTO schema version 3 (exact_count/settled_count, defaulting to 0 on an older
+  payload). New l10n key leaderboardAccuracy in ar + en.
+- The board row folds accuracy into the existing subtitle line; podium tiles
+  carry it on its own line.
+- RLS note in the migration: the view is security_invoker over
+  scoring.fixture_scores, which is own-or-locked. The server reads as table
+  owner so counts are complete; a future direct-from-client read would not be.

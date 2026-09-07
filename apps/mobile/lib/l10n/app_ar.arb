@@ -61,6 +61,7 @@
   "leaderboardsJoinSeasonPrompt": "انضم إلى موسم لتظهر ترتيباتك هنا.",
   "leaderboardsSeasonEmpty": "لا توجد نتائج مسجلة لهذا الموسم بعد.",
   "leaderboardEntriesCounted": "{count, plural, zero{لا توجد مشاركات محتسبة} one{مشاركة واحدة محتسبة} two{مشاركتان محتسبتان} few{{count} مشاركات محتسبة} many{{count} مشاركة محتسبة} other{{count} مشاركة محتسبة}}",
+  "leaderboardAccuracy": "دقة {percent}%",
   "pointsAbbreviated": "{count, plural, zero{0 نقطة} one{نقطة واحدة} two{نقطتان} few{{count} نقاط} many{{count} نقطة} other{{count} نقطة}}",
   "seasonLeaderboardTab": "نقاط الموسم",
   "fixtureLeaderboardTab": "نقاط المباريات",

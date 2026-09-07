@@ -101,6 +101,14 @@ class _SeasonLeaderboardTab extends ConsumerWidget {
               // exists; the subtraction is the one place movement is derived,
               // so the arrow and the place can never come from different reads.
               movement: e.previousRank == null ? null : e.previousRank! - e.rank,
+              // Accuracy is exact_scoreline alone, over settled fixtures. No
+              // settled fixture means no accuracy -- not 0% -- so the label
+              // is omitted rather than showing a zero nobody earned.
+              accuracyLabel: e.settledCount <= 0
+                  ? null
+                  : l10n.leaderboardAccuracy(
+                      (e.exactCount * 100 / e.settledCount).round(),
+                    ),
             ),
         ],
       ),

@@ -24,6 +24,8 @@ LeaderboardEntryDto leaderboardEntryToDto(LeaderboardEntry entry) {
     totalPoints: entry.totalPoints,
     entryCount: entry.entryCount,
     previousRank: entry.previousRank,
+    exactCount: entry.exactCount,
+    settledCount: entry.settledCount,
   );
 }
 

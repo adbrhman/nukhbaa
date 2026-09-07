@@ -50,7 +50,7 @@ final class PostgresLeaderboardRepository implements LeaderboardRepository {
   // and the place disagree. The domain subtracts instead.
   static const String _selectSeasonStandingsSql = '''
 SELECT participant_id, display_name, total_points, entry_count, joined_at,
-       previous_rank
+       previous_rank, exact_count, settled_count
 FROM leaderboard.season_standings_with_movement
 WHERE season_id = @season_id
 ''';
@@ -124,6 +124,10 @@ LIMIT @limit
     final previousRank = row['previous_rank'] == null
         ? null
         : _readInt(row['previous_rank']);
+    // COALESCEd to 0 in the view, so a participant with no graded fixture
+    // reads as 0/0 -- "no accuracy yet", never a corrupt row.
+    final exactCount = _readInt(row['exact_count']) ?? 0;
+    final settledCount = _readInt(row['settled_count']) ?? 0;
 
     if (participantIdResult is Err<ParticipantId>) {
       return Result.err(
@@ -166,6 +170,8 @@ LIMIT @limit
       entryCount: entryCount,
       joinedAt: joinedAt,
       previousRank: previousRank,
+      exactCount: exactCount,
+      settledCount: settledCount,
     );
     if (projected is Err<LeaderboardEntry>) {
       return Result.err(

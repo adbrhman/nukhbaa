@@ -88,6 +88,15 @@
       }
     }
   },
+  "leaderboardAccuracy": "{percent}% exact",
+  "@leaderboardAccuracy": {
+    "description": "Share of a participant's settled fixtures whose exact scoreline they called right.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "pointsAbbreviated": "{count, plural, =0{0 pts} =1{1 pt} other{{count} pts}}",
   "@pointsAbbreviated": {
     "description": "Abbreviated points total, shown on leaderboard rows (e.g. Hall of Fame, season leaderboard).",

@@ -36,6 +36,8 @@ final class LeaderboardEntry {
     required this.joinedAt,
     required this.rank,
     required this.previousRank,
+    required this.exactCount,
+    required this.settledCount,
   });
 
   /// Builds an **unranked** entry from an aggregated ledger projection for one
@@ -60,6 +62,8 @@ final class LeaderboardEntry {
     required int entryCount,
     required DateTime joinedAt,
     int? previousRank,
+    int exactCount = 0,
+    int settledCount = 0,
   }) {
     if (entryCount < 0) {
       return const Result.err(
@@ -86,6 +90,8 @@ final class LeaderboardEntry {
         joinedAt: joinedAt,
         rank: _unassignedRank,
         previousRank: previousRank,
+        exactCount: exactCount,
+        settledCount: settledCount,
       ),
     );
   }
@@ -133,6 +139,23 @@ final class LeaderboardEntry {
   int? get movement =>
       previousRank == null || !isRanked ? null : previousRank! - rank;
 
+  /// How many of the participant's settled fixtures they called EXACTLY
+  /// right (grade `exact_scoreline`). A merely correct outcome is not counted:
+  /// accuracy is the share that named the precise scoreline, so the figure
+  /// keeps tracking the thing it claims to measure.
+  final int exactCount;
+
+  /// How many of the participant's fixtures have been settled at all (any
+  /// grade other than `pending`) -- the denominator of [accuracy].
+  final int settledCount;
+
+  /// The share of settled fixtures called exactly right, in `0.0..1.0`, or
+  /// `null` when nothing has settled yet. A participant with no settled
+  /// fixture has no accuracy -- not zero accuracy -- so the absence is
+  /// modelled as null rather than a misleading 0%.
+  double? get accuracy =>
+      settledCount <= 0 ? null : exactCount / settledCount;
+
   /// Whether this entry has been placed on a board (has a meaningful [rank]).
   bool get isRanked => rank != _unassignedRank;
 
@@ -159,6 +182,8 @@ final class LeaderboardEntry {
         joinedAt: joinedAt,
         rank: assignedRank,
         previousRank: previousRank,
+        exactCount: exactCount,
+        settledCount: settledCount,
       ),
     );
   }
@@ -172,7 +197,9 @@ final class LeaderboardEntry {
       other.entryCount == entryCount &&
       other.joinedAt == joinedAt &&
       other.rank == rank &&
-      other.previousRank == previousRank;
+      other.previousRank == previousRank &&
+      other.exactCount == exactCount &&
+      other.settledCount == settledCount;
 
   @override
   int get hashCode => Object.hash(
@@ -183,6 +210,8 @@ final class LeaderboardEntry {
     joinedAt,
     rank,
     previousRank,
+    exactCount,
+    settledCount,
   );
 
   @override

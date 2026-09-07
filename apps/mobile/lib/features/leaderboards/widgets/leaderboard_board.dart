@@ -26,6 +26,7 @@ class BoardEntry {
     required this.pointsLabel,
     this.subtitle,
     this.movement,
+    this.accuracyLabel,
   });
 
   /// Stable id — also the widget key, so tests and scroll positions survive.
@@ -51,6 +52,10 @@ class BoardEntry {
   /// participant, or a season whose first snapshot has not run). Server-sent
   /// and rendered as-is -- the widget derives nothing.
   final int? movement;
+
+  /// The localized accuracy string, or null when the participant has no
+  /// settled fixture yet and therefore no accuracy at all.
+  final String? accuracyLabel;
 }
 
 /// Podium + list. [myParticipantId] highlights the viewer's own row.
@@ -260,6 +265,14 @@ class _PodiumTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: context.text.labelSmall?.copyWith(color: t.textMuted),
             ),
+          if (entry.accuracyLabel != null)
+            Text(
+              entry.accuracyLabel!,
+              key: Key('$keyPrefix.accuracy.${entry.participantId}'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelSmall?.copyWith(color: t.textMuted),
+            ),
         ],
       ),
     );
@@ -340,9 +353,12 @@ class _BoardRow extends StatelessWidget {
                     fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                if (entry.subtitle != null)
+                if (entry.subtitle != null || entry.accuracyLabel != null)
                   Text(
-                    entry.subtitle!,
+                    <String>[
+                      if (entry.subtitle != null) entry.subtitle!,
+                      if (entry.accuracyLabel != null) entry.accuracyLabel!,
+                    ].join('  ·  '),
                     key: Key('$keyPrefix.entries.${entry.participantId}'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

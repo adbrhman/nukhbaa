@@ -216,6 +216,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String leaderboardAccuracy(int percent) {
+    return '$percent% exact';
+  }
+
+  @override
   String pointsAbbreviated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

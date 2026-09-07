@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No entries counted} =1{1 entry counted} other{{count} entries counted}}'**
   String leaderboardEntriesCounted(int count);
 
+  /// Share of a participant's settled fixtures whose exact scoreline they called right.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% exact'**
+  String leaderboardAccuracy(int percent);
+
   /// Abbreviated points total, shown on leaderboard rows (e.g. Hall of Fame, season leaderboard).
   ///
   /// In en, this message translates to:

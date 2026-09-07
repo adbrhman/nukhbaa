@@ -32,6 +32,8 @@ final class LeaderboardEntryDto {
     required this.totalPoints,
     required this.entryCount,
     this.previousRank,
+    this.exactCount = 0,
+    this.settledCount = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -49,6 +51,8 @@ final class LeaderboardEntryDto {
       totalPoints: json['total_points']! as int,
       entryCount: json['entry_count']! as int,
       previousRank: json['previous_rank'] as int?,
+      exactCount: (json['exact_count'] as int?) ?? 0,
+      settledCount: (json['settled_count'] as int?) ?? 0,
     );
   }
 
@@ -56,7 +60,10 @@ final class LeaderboardEntryDto {
   /// the nullable [previousRank]; a v1 payload simply lacks the key and
   /// deserializes with a null [previousRank], so an older cached response
   /// still renders — without arrows.
-  static const int currentSchemaVersion = 2;
+  /// Version 3 adds [exactCount]/[settledCount]; an older payload lacks the
+  /// keys and deserializes to 0, so a cached response still renders --
+  /// without accuracy.
+  static const int currentSchemaVersion = 3;
 
   /// The participant's standard-competition rank (1-based; tied totals share a
   /// rank, the next distinct total skips by the number tied).
@@ -82,6 +89,15 @@ final class LeaderboardEntryDto {
   /// numbers on screen always come from the same pair.
   final int? previousRank;
 
+  /// Settled fixtures the participant called exactly right, and settled
+  /// fixtures in total. The percentage is derived from the pair by the
+  /// reader, never sent pre-divided, so the ratio and its inputs cannot
+  /// drift; `settledCount == 0` means there is no accuracy yet at all.
+  final int exactCount;
+
+  /// The denominator behind [exactCount] -- see that field.
+  final int settledCount;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -94,6 +110,8 @@ final class LeaderboardEntryDto {
     'total_points': totalPoints,
     'entry_count': entryCount,
     'previous_rank': previousRank,
+    'exact_count': exactCount,
+    'settled_count': settledCount,
   };
 
   @override
@@ -105,6 +123,8 @@ final class LeaderboardEntryDto {
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
       other.previousRank == previousRank &&
+      other.exactCount == exactCount &&
+      other.settledCount == settledCount &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -115,6 +135,8 @@ final class LeaderboardEntryDto {
     totalPoints,
     entryCount,
     previousRank,
+    exactCount,
+    settledCount,
     schemaVersion,
   );
 }
