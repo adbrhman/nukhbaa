@@ -503,3 +503,18 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - No caller wired yet -- this is pure domain, additive, does not touch
   `UserDirectory`, routes, or `composition_root.dart`. Next: the
   `SetAvatar`/`ClearAvatar`/`ReadAvatar` application use-cases.
+
+## 2026-09-07 - fix 21: avatars, step 3b of 4 (application use-cases)
+- `SetAvatar` / `ClearAvatar` / `ReadAvatar` added under
+  `packages/application/lib/src/identity/`, mirroring `UpdateDisplayName`'s
+  shape exactly: self-only authority via `Authorization.requireRole`, no
+  repository lookup needed since the "owner" of an identity is always its
+  own principal.
+- `SetAvatar` also runs `User.validateAvatar` (step 3a) before touching the
+  directory.
+- `ReadAvatar` is the one exception to self-only: it takes a `targetUserId`
+  separate from `principal`, because avatars are visible platform-wide
+  (report-then-remove moderation, decided 2026-09-07) -- any authenticated
+  user may read *any* user's picture, not just their own.
+- Exported from `application.dart`. Still no route wired -- next: the raw-
+  bytes body reader, `composition_root.dart` wiring, then the three routes.
