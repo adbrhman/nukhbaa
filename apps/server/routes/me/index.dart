@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/avatar_url.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
@@ -49,6 +50,7 @@ Future<Response> onRequest(RequestContext context) async {
           status: value.status.name,
           email: value.email,
           displayName: value.displayName,
+          avatarUrl: avatarUrlFor(value),
         ),
       ).toJson(),
     ),

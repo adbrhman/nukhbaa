@@ -642,3 +642,30 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   should render a board without arrows, not fail.
 - DTO schema version 3. Arrows appear after tomorrow's capture - today's
   snapshot equals the live order, so every movement is currently 0.
+
+## 2026-09-07 - fix 26: avatars, step 3 of 4 (routes)
+- POST /me/avatar takes the image BYTES as the body, not JSON. Base64 inside
+  an envelope would inflate every upload by a third for no gain, and the
+  content type is already a header. Everything else here speaks JSON because
+  it carries a domain intent; an image carries none.
+- The content type is required, never sniffed: guessing a format from magic
+  bytes would store something the client never claimed.
+- POST and DELETE both return the same MeResponseDto as GET /me, so a client
+  refreshes its whole identity - including the new avatar_url - from the one
+  response instead of a second call to discover what changed.
+- GET /users/{id}/avatar is the only route returning bytes and the only caller
+  of readAvatar, so image data travels on no other path. No picture is 404,
+  not an error envelope: an image request that finds no image is exactly what
+  404 means, and the client draws the initial.
+- Cached one year, immutable, private. Safe only because the URL carries
+  ?v=avatarUpdatedAt - a replaced picture is a different URL, so nothing stale
+  survives; private because the bytes are a person's face and a shared proxy
+  has no business holding them.
+- avatarUrlFor returns a RELATIVE url: the server sits behind a proxy and does
+  not know its own public origin, while the client already holds the API base
+  it just called. Guessing a host would be inventing an unverified fact.
+- /users is bearer-gated: the picture is meant to be seen by signed-in
+  participants, but leaving it open would make the endpoint a public probe for
+  which user ids exist.
+- Step 4 remains: image_picker, the upload UI, avatars on the board, and the
+  report button.

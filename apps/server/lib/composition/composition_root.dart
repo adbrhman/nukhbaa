@@ -25,6 +25,9 @@ final class CompositionRoot {
     required this.login,
     required this.register,
     required this.updateDisplayName,
+    required this.setAvatar,
+    required this.clearAvatar,
+    required this.readAvatar,
     required this.createCompetition,
     required this.startSeason,
     required this.linkFixtureToRound,
@@ -123,6 +126,9 @@ final class CompositionRoot {
     GetCurrentUser? getCurrentUser,
     EnrolInOpenSeasons? enrolInOpenSeasons,
     UpdateDisplayName? updateDisplayName,
+    SetAvatar? setAvatar,
+    ClearAvatar? clearAvatar,
+    ReadAvatar? readAvatar,
     CreateCompetition? createCompetition,
     StartSeason? startSeason,
     LinkFixtureToRound? linkFixtureToRound,
@@ -192,6 +198,9 @@ final class CompositionRoot {
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
        enrolInOpenSeasons = enrolInOpenSeasons ?? _absentEnrolInOpenSeasons(),
        updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
+       setAvatar = setAvatar ?? _absentSetAvatar(),
+       clearAvatar = clearAvatar ?? _absentClearAvatar(),
+       readAvatar = readAvatar ?? _absentReadAvatar(),
        createCompetition = createCompetition ?? _absentCreateCompetition(),
        startSeason = startSeason ?? _absentStartSeason(),
        linkFixtureToRound = linkFixtureToRound ?? _absentLinkFixtureToRound(),
@@ -311,6 +320,17 @@ final class CompositionRoot {
   /// Builds a [GetCurrentUser] over a directory that throws if invoked.
   static GetCurrentUser _absentGetCurrentUser() =>
       GetCurrentUser(_UnwiredUserDirectory());
+
+  /// Back the "absent" avatar use-cases over a directory that throws if a
+  /// test reaches the avatar slice it never wired.
+  static SetAvatar _absentSetAvatar() =>
+      SetAvatar(userDirectory: _UnwiredUserDirectory());
+
+  static ClearAvatar _absentClearAvatar() =>
+      ClearAvatar(userDirectory: _UnwiredUserDirectory());
+
+  static ReadAvatar _absentReadAvatar() =>
+      ReadAvatar(userDirectory: _UnwiredUserDirectory());
 
   /// Backs an "absent" [EnrolInOpenSeasons] over a repository that throws if
   /// a test reaches the enrolment slice it never wired.
@@ -799,6 +819,15 @@ final class CompositionRoot {
   /// Puts the caller into whatever contest is running, on every `/me`.
   final EnrolInOpenSeasons enrolInOpenSeasons;
 
+  /// Sets or replaces the caller's own profile picture.
+  final SetAvatar setAvatar;
+
+  /// Removes the caller's own profile picture.
+  final ClearAvatar clearAvatar;
+
+  /// Serves a user's stored picture -- the only path image bytes travel.
+  final ReadAvatar readAvatar;
+
   /// Creates a competition (admin-only command).
   final CreateCompetition createCompetition;
 
@@ -1276,6 +1305,9 @@ final class CompositionRoot {
       login: login,
       register: register,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
+      setAvatar: SetAvatar(userDirectory: directory),
+      clearAvatar: ClearAvatar(userDirectory: directory),
+      readAvatar: ReadAvatar(userDirectory: directory),
       createCompetition: CreateCompetition(
         repository: competitionRepository,
         idGenerator: idGenerator,
