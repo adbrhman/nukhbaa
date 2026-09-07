@@ -319,18 +319,4 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   manifest, next to the existing INTERNET and ota_update manifest patches.
   The pub package name is unchanged - every package:mobile/... import
   depends on it.
-
-## 2026-09-07 - fix 09: an unscheduled fixture was predictable forever
-- 0019's trigger guarded `kickoff is not null and now() >= kickoff`, so a
-  fixture with no competition.fixture_schedules row was never rejected -
-  it stayed writable after it had been played. SubmitFixturePrediction had
-  the mirror hole: a synthetic now+1day kickoff stood in for the missing
-  schedule.
-- Both now refuse: error code prediction.fixture_not_scheduled in the
-  use-case, a check_violation from the trigger in migration 0029.
-- The use-case tests previously relied on 'no schedule == open'; setUp now
-  seeds a real kickoff and a new test covers the unscheduled fixture.
-- NOT changed: SubmitPrediction (the legacy round path) has the same
-  substitution, and 0019's SELECT policy still treats a missing schedule as
-  not-locked for visibility.
-- 02:57 fix: أُضيف حارس Require API base URL في build-verification.yml قبل Build APK (split-per-abi)، بنفس نمط deploy-pages.yml — يمنع نشر APK يشير لـplaceholder https://api.nukhba.example عند عدم ضبط NUKHBA_API_BASE_URL
+- 03:20 revert: تراجع عن commit bcc8ec226e0186c1ff839d66d3959eb6e704b867 (fix: guard APK build against unset NUKHBA_API_BASE_URL) بطلب المستخدم
