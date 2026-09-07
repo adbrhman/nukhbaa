@@ -14,6 +14,7 @@ final class AuthenticatedUserDto {
     required this.status,
     this.email,
     this.displayName = '',
+    this.avatarUrl,
   });
 
   /// Deserializes from a JSON map, tolerating older schema versions by reading
@@ -25,6 +26,7 @@ final class AuthenticatedUserDto {
       status: json['status']! as String,
       email: json['email'] as String?,
       displayName: (json['display_name'] as String?) ?? '',
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -44,6 +46,12 @@ final class AuthenticatedUserDto {
   /// from before this field existed).
   final String displayName;
 
+  /// The fully-resolved public URL of the user's profile picture, or null
+  /// when they have none. A URL and not the stored key: resolving the bucket
+  /// base is the server's job, so no client has to know where objects live
+  /// or how to build that address.
+  final String? avatarUrl;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'user_id': userId,
@@ -51,6 +59,7 @@ final class AuthenticatedUserDto {
     'status': status,
     'email': email,
     'display_name': displayName,
+    'avatar_url': avatarUrl,
   };
 
   @override
@@ -60,10 +69,12 @@ final class AuthenticatedUserDto {
       other.role == role &&
       other.status == status &&
       other.email == email &&
-      other.displayName == displayName;
+      other.displayName == displayName &&
+      other.avatarUrl == avatarUrl;
 
   @override
-  int get hashCode => Object.hash(userId, role, status, email, displayName);
+  int get hashCode =>
+      Object.hash(userId, role, status, email, displayName, avatarUrl);
 }
 
 /// The response body of `GET /me`: the current principal plus a schema version

@@ -35,6 +35,30 @@ abstract interface class UserDirectory {
   /// change a user's display name (`UpdateDisplayName` use-case).
   Future<Result<User>> updateDisplayName(UserId userId, String displayName);
 
+  /// Stores [bytes] as [userId]'s profile picture, replacing any current one,
+  /// and stamps the update time.
+  ///
+  /// [mime] is already validated by the caller against the formats the
+  /// platform serves; the size cap is enforced there too. The bytes are
+  /// written whole -- there is no partial or streamed avatar.
+  Future<Result<User>> setAvatar(
+    UserId userId,
+    List<int> bytes,
+    String mime,
+  );
+
+  /// Removes [userId]'s picture. Idempotent: clearing an absent picture
+  /// succeeds, so a retried removal converges instead of erroring on a state
+  /// the caller already wanted.
+  Future<Result<User>> clearAvatar(UserId userId);
+
+  /// Reads the raw picture for [userId], or `Ok(null)` when there is none.
+  ///
+  /// Separate from [findUser] on purpose: this is the only call that moves
+  /// image bytes, and it is made by exactly one route. Keeping it apart means
+  /// no ordinary user read ever drags a blob along.
+  Future<Result<StoredAvatar?>> readAvatar(UserId userId);
+
   /// Reads the canonical [User] for [id] WITHOUT creating it.
   ///
   /// Returns `Ok(null)` when no platform row exists yet.
@@ -45,4 +69,28 @@ abstract interface class UserDirectory {
   /// unlike [ensureUser], this runs on every single request, and an upsert
   /// there would put a write on the hottest path in the system.
   Future<Result<User?>> findUser(UserId id);
+}
+
+/// A stored profile picture as it comes back from the directory: the bytes,
+/// the content type to serve them under, and when they were stored.
+///
+/// Deliberately not part of [User]: an image is payload a single route moves,
+/// not a fact the rest of the system reasons about. Keeping it in its own
+/// type means no ordinary user read can accidentally carry a blob.
+final class StoredAvatar {
+  /// Creates a stored avatar.
+  const StoredAvatar({
+    required this.bytes,
+    required this.mime,
+    required this.updatedAt,
+  });
+
+  /// The raw image bytes.
+  final List<int> bytes;
+
+  /// The content type (`image/jpeg`, `image/png` or `image/webp`).
+  final String mime;
+
+  /// When this picture was stored (UTC) -- the cache-busting token.
+  final DateTime updatedAt;
 }

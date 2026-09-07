@@ -466,3 +466,30 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   on top of it, unchanged apart from the new column.
 - Steps 2-4 still to come: server upload endpoint + report/resolve routes;
   api_client + DTO avatar_url; mobile picker, board avatars, report button.
+
+## 2026-09-07 - fix 19: avatars, step 2 of 4 (bytes in the row)
+- Design changed before any of it shipped. The bucket approach from 0032 cost
+  a service-role secret on Northflank, a storage adapter and an outbound
+  upload call - three moving parts so a CDN could serve the images instead of
+  the server. At a 512 KB cap and a user base in the dozens the whole corpus
+  is a few megabytes, so that trade was backwards. Bytes live in the row and
+  the entire storage path is gone.
+- Migration 0033 adds avatar_bytes / avatar_mime / avatar_updated_at, reverses
+  0032's bucket and policies, drops avatar_path, and reprojects both standings
+  views onto avatar_updated_at. The views carry the TOKEN only, never bytes: a
+  leaderboard read must not drag image data through a join it does not show.
+- A CHECK ties the three columns together and caps bytes at 512 KB, so a row
+  with bytes and no mime is unrepresentable rather than merely unlikely. The
+  server rejects an oversized upload first, with a message the user can act
+  on; the constraint is the backstop.
+- avatar_updated_at travels in the read URL as a cache-busting token, so a
+  replaced picture is a different URL and no stale copy survives on a device.
+- User carries avatarMime + avatarUpdatedAt, never the bytes. copyWith gains
+  clearAvatar, because null cannot mean "remove" when it already means "leave
+  alone".
+- UserDirectory: setAvatar / clearAvatar / readAvatar, the last returning the
+  new StoredAvatar value. readAvatar is separate on purpose - it is the only
+  call in the codebase that moves image bytes, made by exactly one route.
+- No new environment variable is needed on Northflank after all.
+- Step 3: POST/DELETE /me/avatar, GET /users/{id}/avatar, and the use-cases.
+  Step 4: leaderboard avatars, the picker, the report button.

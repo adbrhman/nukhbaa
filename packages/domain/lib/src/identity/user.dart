@@ -38,6 +38,8 @@ final class User {
     required this.role,
     required this.status,
     required this.displayName,
+    this.avatarMime,
+    this.avatarUpdatedAt,
   });
 
   /// The platform identity, equal to the Supabase Auth subject UUID.
@@ -57,6 +59,21 @@ final class User {
   /// email/id (migration 0015; defaults from the email local-part when not
   /// explicitly chosen). Always non-empty once the row exists.
   final String displayName;
+
+  /// The content type of the user's profile picture, or null when they have
+  /// none -- the common case, and the reason this is nullable rather than an
+  /// empty string: "no picture" is a state the UI acts on (it draws the
+  /// name's initial instead), not a blank value.
+  ///
+  /// The bytes themselves never reach the domain: an image is payload, not a
+  /// fact the domain reasons about. This field and [avatarUpdatedAt] are the
+  /// whole of what a User knows about its picture.
+  final String? avatarMime;
+
+  /// When the current picture was set, or null when there is none. Travels in
+  /// the read URL as a cache-busting token, so a replaced picture is a
+  /// different URL and no stale copy survives on a device.
+  final DateTime? avatarUpdatedAt;
 
   /// The maximum length of a [displayName], enforced by [validateDisplayName].
   static const int maxDisplayNameLength = 60;
@@ -88,11 +105,19 @@ final class User {
 
   /// Returns a copy with selected fields replaced. Used by directory upserts to
   /// reconcile provider-sourced fields without mutating the original value.
+  ///
+  /// [clearAvatar] exists because the avatar fields are nullable: passing
+  /// null for them cannot mean "remove the picture" when null already means
+  /// "leave it alone". Removal is therefore explicit and unmistakable at the
+  /// call site.
   User copyWith({
     String? email,
     PlatformRole? role,
     UserStatus? status,
     String? displayName,
+    String? avatarMime,
+    DateTime? avatarUpdatedAt,
+    bool clearAvatar = false,
   }) {
     return User(
       id: id,
@@ -100,6 +125,10 @@ final class User {
       role: role ?? this.role,
       status: status ?? this.status,
       displayName: displayName ?? this.displayName,
+      avatarMime: clearAvatar ? null : (avatarMime ?? this.avatarMime),
+      avatarUpdatedAt: clearAvatar
+          ? null
+          : (avatarUpdatedAt ?? this.avatarUpdatedAt),
     );
   }
 
@@ -163,10 +192,20 @@ final class User {
       other.email == email &&
       other.role == role &&
       other.status == status &&
-      other.displayName == displayName;
+      other.displayName == displayName &&
+      other.avatarMime == avatarMime &&
+      other.avatarUpdatedAt == avatarUpdatedAt;
 
   @override
-  int get hashCode => Object.hash(id, email, role, status, displayName);
+  int get hashCode => Object.hash(
+    id,
+    email,
+    role,
+    status,
+    displayName,
+    avatarMime,
+    avatarUpdatedAt,
+  );
 
   @override
   String toString() =>

@@ -30,6 +30,18 @@ final class _FakeUserDirectory implements UserDirectory {
       throw UnimplementedError();
 
   @override
+  Future<Result<User>> setAvatar(UserId userId, List<int> bytes, String mime) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Result<User>> clearAvatar(UserId userId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Result<StoredAvatar?>> readAvatar(UserId userId) =>
+      throw UnimplementedError();
+
+  @override
   Future<Result<User?>> findUser(UserId id) async =>
       throw StateError('findUser not wired in this test fake');
 }
