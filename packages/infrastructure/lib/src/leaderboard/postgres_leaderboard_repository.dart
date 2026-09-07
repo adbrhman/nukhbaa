@@ -40,9 +40,18 @@ final class PostgresLeaderboardRepository implements LeaderboardRepository {
   // season appears exactly once — a never-credited one with total 0, count 0.
   // The order here is unspecified on purpose (the domain sorts + ranks); we do
   // not ORDER BY in SQL so the ranking rule lives in exactly one place.
+  //
+  // The read is against `leaderboard.season_standings_with_movement`
+  // (migration `0030`), a superset of `season_standings`: the same columns
+  // plus `previous_rank`, the participant's rank at the most recent daily
+  // pg_cron snapshot. The view's own `current_rank`/`movement` columns are
+  // deliberately NOT selected — the current rank is the domain's to assign,
+  // and reading a second, SQL-computed rank alongside it would let the arrow
+  // and the place disagree. The domain subtracts instead.
   static const String _selectSeasonStandingsSql = '''
-SELECT participant_id, display_name, total_points, entry_count, joined_at
-FROM leaderboard.season_standings
+SELECT participant_id, display_name, total_points, entry_count, joined_at,
+       previous_rank
+FROM leaderboard.season_standings_with_movement
 WHERE season_id = @season_id
 ''';
 
@@ -110,6 +119,11 @@ LIMIT @limit
     final totalPoints = _readInt(row['total_points']);
     final entryCount = _readInt(row['entry_count']);
     final joinedAt = _readUtcTimestamp(row['joined_at']);
+    // Nullable by design: no snapshot yet, or a participant who joined after
+    // the last capture. Absent (not corrupt) — mapped straight to null.
+    final previousRank = row['previous_rank'] == null
+        ? null
+        : _readInt(row['previous_rank']);
 
     if (participantIdResult is Err<ParticipantId>) {
       return Result.err(
@@ -151,6 +165,7 @@ LIMIT @limit
       totalPoints: totalPoints,
       entryCount: entryCount,
       joinedAt: joinedAt,
+      previousRank: previousRank,
     );
     if (projected is Err<LeaderboardEntry>) {
       return Result.err(

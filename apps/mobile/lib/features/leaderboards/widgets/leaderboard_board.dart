@@ -25,6 +25,7 @@ class BoardEntry {
     required this.points,
     required this.pointsLabel,
     this.subtitle,
+    this.movement,
   });
 
   /// Stable id — also the widget key, so tests and scroll positions survive.
@@ -44,6 +45,12 @@ class BoardEntry {
 
   /// Optional secondary line, e.g. how many entries were counted.
   final String? subtitle;
+
+  /// Places climbed since the last daily snapshot: positive is up, negative is
+  /// down, `0` is unchanged, `null` is "nothing to compare against" (a new
+  /// participant, or a season whose first snapshot has not run). Server-sent
+  /// and rendered as-is -- the widget derives nothing.
+  final int? movement;
 }
 
 /// Podium + list. [myParticipantId] highlights the viewer's own row.
@@ -219,6 +226,11 @@ class _PodiumTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           _RankPill(rank: entry.rank, color: medal),
           const SizedBox(height: AppSpacing.xs),
+          _MovementChip(
+            movement: entry.movement,
+            keyPrefix: keyPrefix,
+            participantId: entry.participantId,
+          ),
           Text(
             entry.displayName,
             key: Key('$keyPrefix.participant.${entry.participantId}'),
@@ -342,6 +354,12 @@ class _BoardRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
+          _MovementChip(
+            movement: entry.movement,
+            keyPrefix: keyPrefix,
+            participantId: entry.participantId,
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             entry.pointsLabel,
             key: Key('$keyPrefix.points.${entry.participantId}'),
@@ -352,6 +370,60 @@ class _BoardRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The movement arrow: up in success, down in error, a dash when the place is
+/// unchanged, and nothing at all when there is no snapshot to compare with, so
+/// a first-day board stays clean rather than a column of meaningless dashes.
+class _MovementChip extends StatelessWidget {
+  const _MovementChip({
+    required this.movement,
+    required this.keyPrefix,
+    required this.participantId,
+  });
+
+  final int? movement;
+  final String keyPrefix;
+  final String participantId;
+
+  @override
+  Widget build(BuildContext context) {
+    final int? m = movement;
+    if (m == null) {
+      return const SizedBox.shrink();
+    }
+    final AppTokens t = context.tokens;
+    final Key k = Key('$keyPrefix.movement.$participantId');
+
+    if (m == 0) {
+      return Text(
+        '-',
+        key: k,
+        style: context.text.labelSmall?.copyWith(color: t.textMuted),
+      );
+    }
+
+    final bool up = m > 0;
+    final Color color = up ? t.success : t.error;
+    return Row(
+      key: k,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(
+          up ? Icons.arrow_upward : Icons.arrow_downward,
+          size: 12,
+          color: color,
+        ),
+        Text(
+          '${m.abs()}',
+          style: context.text.labelSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

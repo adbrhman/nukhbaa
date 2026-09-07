@@ -399,3 +399,23 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   and bypasses RLS.
 - Same posture as the other leaderboard projections - standings are readable
   by any signed-in participant, never writable from a client.
+
+## 2026-09-07 - fix 16: rank movement arrows wired end to end
+- Migration 0030 is applied on the hosted database: 226 snapshot rows,
+  pg_cron job nukhbaa_season_rank_snapshot active at 05 0 * * * UTC.
+- LeaderboardEntry gains previousRank (nullable) plus a movement getter -
+  previousRank minus rank, computed only once the board has assigned a rank,
+  so the arrow can never disagree with the place printed beside it. Still
+  pure: nothing is derived from a second source.
+- PostgresLeaderboardRepository reads season_standings_with_movement and takes
+  previous_rank only. The view's own current_rank/movement columns are
+  deliberately left unselected - ranking stays the domain's job in exactly one
+  place.
+- LeaderboardEntryDto carries previous_rank; schema version bumped to 2. A v1
+  payload lacks the key, deserializes to null, and renders without arrows.
+- leaderboard_board.dart gains _MovementChip: up in success, down in error, a
+  dash when unchanged, nothing at all when there is no snapshot to compare
+  with, so a first-day board is clean rather than a column of dashes. Shown on
+  both the podium tiles and the list rows.
+- Arrows stay absent until the second daily snapshot lands - today's capture
+  equals the live order, so every movement is currently 0.

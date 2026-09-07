@@ -31,6 +31,7 @@ final class LeaderboardEntryDto {
     required this.displayName,
     required this.totalPoints,
     required this.entryCount,
+    this.previousRank,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -47,11 +48,15 @@ final class LeaderboardEntryDto {
       displayName: (json['display_name'] as String?) ?? participantId,
       totalPoints: json['total_points']! as int,
       entryCount: json['entry_count']! as int,
+      previousRank: json['previous_rank'] as int?,
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 by the addition of
+  /// the nullable [previousRank]; a v1 payload simply lacks the key and
+  /// deserializes with a null [previousRank], so an older cached response
+  /// still renders — without arrows.
+  static const int currentSchemaVersion = 2;
 
   /// The participant's standard-competition rank (1-based; tied totals share a
   /// rank, the next distinct total skips by the number tied).
@@ -71,6 +76,12 @@ final class LeaderboardEntryDto {
   /// How many immutable ledger movements contributed to [totalPoints] (audit).
   final int entryCount;
 
+  /// The rank this participant held at the most recent daily snapshot, or null
+  /// when there is nothing to compare against. The client derives the arrow as
+  /// `previousRank - rank`; the delta is never sent pre-computed, so the two
+  /// numbers on screen always come from the same pair.
+  final int? previousRank;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -82,6 +93,7 @@ final class LeaderboardEntryDto {
     'display_name': displayName,
     'total_points': totalPoints,
     'entry_count': entryCount,
+    'previous_rank': previousRank,
   };
 
   @override
@@ -92,6 +104,7 @@ final class LeaderboardEntryDto {
       other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
+      other.previousRank == previousRank &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -101,6 +114,7 @@ final class LeaderboardEntryDto {
     displayName,
     totalPoints,
     entryCount,
+    previousRank,
     schemaVersion,
   );
 }

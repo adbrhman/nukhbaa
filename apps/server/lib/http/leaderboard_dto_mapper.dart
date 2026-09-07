@@ -23,6 +23,7 @@ LeaderboardEntryDto leaderboardEntryToDto(LeaderboardEntry entry) {
     displayName: entry.displayName,
     totalPoints: entry.totalPoints,
     entryCount: entry.entryCount,
+    previousRank: entry.previousRank,
   );
 }
 

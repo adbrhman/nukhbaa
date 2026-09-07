@@ -35,6 +35,7 @@ final class LeaderboardEntry {
     required this.entryCount,
     required this.joinedAt,
     required this.rank,
+    required this.previousRank,
   });
 
   /// Builds an **unranked** entry from an aggregated ledger projection for one
@@ -58,6 +59,7 @@ final class LeaderboardEntry {
     required int totalPoints,
     required int entryCount,
     required DateTime joinedAt,
+    int? previousRank,
   }) {
     if (entryCount < 0) {
       return const Result.err(
@@ -83,6 +85,7 @@ final class LeaderboardEntry {
         entryCount: entryCount,
         joinedAt: joinedAt,
         rank: _unassignedRank,
+        previousRank: previousRank,
       ),
     );
   }
@@ -113,6 +116,23 @@ final class LeaderboardEntry {
   /// while unassigned (see [projected]). Assigned by [SeasonLeaderboard].
   final int rank;
 
+  /// The rank this participant held at the most recent daily snapshot, or
+  /// `null` when no comparable snapshot exists (a participant who joined after
+  /// the last capture, or a season whose first capture has not run yet).
+  ///
+  /// Read straight from the snapshot projection — never derived here. It is
+  /// the *only* movement input the entry carries; [movement] is the single
+  /// subtraction over it, taken after the board has assigned [rank], so the
+  /// arrow can never disagree with the place shown beside it.
+  final int? previousRank;
+
+  /// How many places the participant has climbed since [previousRank]:
+  /// positive means up, negative means down, `0` means unchanged. `null` when
+  /// there is nothing to compare against ([previousRank] is null) or the entry
+  /// is not yet placed on a board.
+  int? get movement =>
+      previousRank == null || !isRanked ? null : previousRank! - rank;
+
   /// Whether this entry has been placed on a board (has a meaningful [rank]).
   bool get isRanked => rank != _unassignedRank;
 
@@ -138,6 +158,7 @@ final class LeaderboardEntry {
         entryCount: entryCount,
         joinedAt: joinedAt,
         rank: assignedRank,
+        previousRank: previousRank,
       ),
     );
   }
@@ -150,7 +171,8 @@ final class LeaderboardEntry {
       other.totalPoints == totalPoints &&
       other.entryCount == entryCount &&
       other.joinedAt == joinedAt &&
-      other.rank == rank;
+      other.rank == rank &&
+      other.previousRank == previousRank;
 
   @override
   int get hashCode => Object.hash(
@@ -160,6 +182,7 @@ final class LeaderboardEntry {
     entryCount,
     joinedAt,
     rank,
+    previousRank,
   );
 
   @override
