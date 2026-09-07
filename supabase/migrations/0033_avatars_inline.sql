@@ -70,8 +70,9 @@ comment on column identity.users.avatar_updated_at is
 -- ---------------------------------------------------------------------------
 -- Reverse the 0032 storage half.
 -- ---------------------------------------------------------------------------
-delete from storage.buckets where id = 'avatars';
-
+-- The bucket itself is left in place: Supabase forbids deleting from
+-- storage.buckets over SQL (storage.protect_delete raises 42501), and an
+-- empty, unreferenced bucket costs nothing. Its policies do come off.
 do $$
 begin
   execute 'drop policy if exists avatars_select_all on storage.objects';

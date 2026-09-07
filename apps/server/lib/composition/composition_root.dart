@@ -1554,6 +1554,18 @@ final class _UnwiredUserDirectory implements UserDirectory {
       throw StateError('UpdateDisplayName was not wired into this test root');
 
   @override
+  Future<Result<User>> setAvatar(UserId userId, List<int> bytes, String mime) =>
+      throw StateError('SetAvatar was not wired into this test root');
+
+  @override
+  Future<Result<User>> clearAvatar(UserId userId) =>
+      throw StateError('ClearAvatar was not wired into this test root');
+
+  @override
+  Future<Result<StoredAvatar?>> readAvatar(UserId userId) =>
+      throw StateError('ReadAvatar was not wired into this test root');
+
+  @override
   Future<Result<User?>> findUser(UserId id) {
     throw StateError('GetCurrentUser was not wired into this test root');
   }
