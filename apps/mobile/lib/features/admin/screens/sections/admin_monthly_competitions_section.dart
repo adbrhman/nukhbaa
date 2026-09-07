@@ -244,13 +244,16 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
       ),
     };
 
-    final Widget trailing = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        statusWidget,
-        if (seasonStateResolved) ...[
-          const SizedBox(width: AppSpacing.sm),
-          AdminSecondaryButton(
+    // Only the season label rides along the title row. The button gets its
+    // own line below: `AdminListRow` gives `trailing` its natural width next
+    // to an Expanded title, so anything wide there collapses the title to
+    // zero and pushes itself past the edge -- silently, since a release build
+    // paints no overflow stripe. That is what turned this card into a stack
+    // of blank rows.
+    final Widget trailing = statusWidget;
+
+    final Widget? startSeasonButton = seasonStateResolved
+        ? AdminSecondaryButton(
             key: Key(
               'admin.monthlyCompetitions.startSeasonButton.${competition.id}',
             ),
@@ -270,10 +273,8 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
                           month: targetMonth.month,
                         );
                   },
-          ),
-        ],
-      ],
-    );
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -284,6 +285,19 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
           title: competition.name,
           trailing: trailing,
         ),
+        if (startSeasonButton != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: startSeasonButton,
+            ),
+          ),
         if (startState is AsyncError<SeasonDto>)
           Padding(
             padding: const EdgeInsets.fromLTRB(

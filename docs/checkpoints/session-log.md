@@ -334,3 +334,13 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   cleaner follow-up is an explicit build_ref field on LatestBuildDto.
 - Also declared intl in apps/mobile/pubspec.yaml; used directly but only
   arrived transitively, which dart analyze flagged.
+
+## 2026-09-07 - fix 11: blank rows in the monthly-competitions card
+- Regression from fix 04. AdminListRow lays out an Expanded title next to a
+  `trailing` widget of natural width. Putting the start-season button there,
+  with a label carrying the target month, made trailing wider than the row:
+  the title collapsed to zero and the button was clipped off the edge. A
+  release build paints no overflow stripe, so the card just looked empty.
+- The button moved to its own line under the title row; trailing is the
+  season label alone again.
+- Lesson: never hand AdminListRow a trailing whose width depends on text.
