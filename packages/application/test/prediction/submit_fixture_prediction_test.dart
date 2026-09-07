@@ -50,6 +50,18 @@ void main() {
           joinedAt: DateTime.utc(2026),
         ),
       );
+      // A registered kickoff, later than the fixed clock. Before the
+      // unscheduled-fixture rule this seed was unnecessary -- an absent
+      // schedule read as "open" -- so every test here implicitly relied on
+      // the hole this suite now closes.
+      schedules.seed(
+        FixtureSchedule.fromStored(
+          fixture: const FixtureRef(fixtureId),
+          homeTeam: 'Home FC',
+          awayTeam: 'Away FC',
+          kickoffAt: DateTime.utc(2026, 8, 1, 20),
+        ),
+      );
     });
 
     test('inserts a new prediction on first submission', () async {
@@ -125,6 +137,33 @@ void main() {
       );
     });
 
+    test('rejects a fixture with no registered kickoff', () async {
+      const unscheduledId = '44444444-4444-4444-4444-444444444444';
+      fixturePredictions.seedSeasonFixture(
+        (SeasonFixture.create(
+                  seasonId: const SeasonId(seasonId),
+                  fixture: const FixtureRef(unscheduledId),
+                  displayOrder: 2,
+                )
+                as Ok<SeasonFixture>)
+            .value,
+      );
+
+      final result = await useCase(
+        principal: userPrincipal(userId),
+        seasonId: seasonId,
+        fixtureId: unscheduledId,
+        homeGoals: 1,
+        awayGoals: 0,
+      );
+
+      expect(result, isA<Err<FixturePredictionView>>());
+      expect(
+        (result as Err<FixturePredictionView>).error.code,
+        'prediction.fixture_not_scheduled',
+      );
+    });
+
     test('rejects a fixture that has already kicked off', () async {
       schedules.seed(
         FixtureSchedule.fromStored(
@@ -160,6 +199,14 @@ void main() {
                 )
                 as Ok<SeasonFixture>)
             .value,
+      );
+      schedules.seed(
+        FixtureSchedule.fromStored(
+          fixture: const FixtureRef(otherFixtureId),
+          homeTeam: 'Other Home FC',
+          awayTeam: 'Other Away FC',
+          kickoffAt: DateTime.utc(2026, 8, 1, 12),
+        ),
       );
       fixturePredictions.seedKickoff(
         const FixtureRef(otherFixtureId),

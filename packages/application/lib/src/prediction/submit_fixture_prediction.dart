@@ -124,20 +124,31 @@ final class SubmitFixturePrediction {
       );
     }
 
-    // Rule 3: the fixture must not have kicked off yet. No registered
-    // schedule is treated as not locked (mirrors SubmitPrediction). A
-    // synthetic "well after now" kickoff stands in for FixtureLock's pure
-    // comparison when there is no real schedule to compare against.
+    // Rule 3: the fixture must have a registered kickoff, and must not have
+    // reached it. A missing schedule row used to substitute a synthetic
+    // "tomorrow" kickoff, which made such a fixture permanently OPEN: it
+    // could be predicted at any time, including after it had been played and
+    // its result was public. Absence of a kickoff is not evidence that
+    // kickoff has not happened, so it is refused instead. The database
+    // enforces the same rule in migration 0029.
     final schedulesResult = await _fixtureSchedules.findByFixtures([fixture]);
     if (schedulesResult is Err<List<FixtureSchedule>>) {
       return Result.err(schedulesResult.error);
     }
     final schedules = (schedulesResult as Ok<List<FixtureSchedule>>).value;
     final now = _clock.nowUtc();
-    final kickoffAt = schedules.isEmpty ? null : schedules.first.kickoffAt;
-    final effectiveKickoff = kickoffAt ?? now.add(const Duration(days: 1));
+    if (schedules.isEmpty) {
+      return Result.err(
+        AppError.invariant(
+          'prediction.fixture_not_scheduled',
+          'Fixture ${fixture.value} has no registered kickoff time and '
+              'cannot be predicted',
+        ),
+      );
+    }
+    final kickoffAt = schedules.first.kickoffAt;
 
-    final lockResult = FixtureLock.at(kickoffAt: effectiveKickoff, nowUtc: now);
+    final lockResult = FixtureLock.at(kickoffAt: kickoffAt, nowUtc: now);
     if (lockResult is Err<FixtureLock>) {
       return Result.err(lockResult.error);
     }
@@ -154,7 +165,7 @@ final class SubmitFixturePrediction {
 
     // Rule 4: at most one double per UTC calendar day, only when marking one.
     if (isDouble) {
-      final dayReference = kickoffAt ?? now;
+      final dayReference = kickoffAt;
       final dayUtc = DateTime.utc(
         dayReference.year,
         dayReference.month,

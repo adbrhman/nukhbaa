@@ -57,11 +57,23 @@ void main() {
     if (linked) {
       predRepo.links.add(link());
     }
+    // A registered kickoff, later than this harness's fixed clock. The
+    // use-case refuses a fixture with no schedule row outright, so an empty
+    // schedule repository would now fail every submit here.
+    final schedRepo = InMemoryFixtureScheduleRepository()
+      ..seed(
+        FixtureSchedule.fromStored(
+          fixture: (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+          homeTeam: 'Home FC',
+          awayTeam: 'Away FC',
+          kickoffAt: DateTime.utc(2026, 7, 20, 21),
+        ),
+      );
     final root = CompositionRoot.forTesting(
       submitFixturePrediction: SubmitFixturePrediction(
         fixturePredictionRepository: predRepo,
         competitionRepository: compRepo,
-        fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
+        fixtureScheduleRepository: schedRepo,
         idGenerator: ScriptedIdGenerator(const [
           'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         ]),

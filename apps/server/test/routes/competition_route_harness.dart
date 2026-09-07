@@ -473,6 +473,11 @@ final class InMemoryFixtureScheduleRepository
   /// id refreshes in place — never a second row).
   int get count => _byFixture.length;
 
+  /// Synchronous seed for harness setup, where there is no place to await
+  /// [upsert]. Same effect, no Future to leak past `unawaited_futures`.
+  void seed(FixtureSchedule schedule) =>
+      _byFixture[schedule.fixture.value] = schedule;
+
   @override
   Future<Result<void>> upsert(FixtureSchedule schedule) async {
     _byFixture[schedule.fixture.value] = schedule;
