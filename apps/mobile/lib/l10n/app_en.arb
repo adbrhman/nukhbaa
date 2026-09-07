@@ -292,6 +292,11 @@
     "description": "Label on the FotMob-style match card's double toggle button (both unselected and selected states)."
   },
   "accountDarkModeLabel": "Dark mode",
+  "avatarChange": "Change picture",
+  "avatarChoose": "Choose from gallery",
+  "avatarRemove": "Remove picture",
+  "avatarTooLarge": "That picture is too large. Pick a smaller one.",
+  "avatarUploadFailed": "Couldn't upload the picture.",
   "@accountDarkModeLabel": {
     "description": "Label on the account screen's dark-mode SwitchListTile."
   },

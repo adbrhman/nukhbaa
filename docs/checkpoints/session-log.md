@@ -685,3 +685,31 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   as me() - so the caller refreshes its whole identity from one response.
 - Step 4b remains: image_picker, the account screen picker, avatars on the
   board, and the report button.
+
+## 2026-09-07 - fix 28: avatars, step 4b (the picker)
+- image_picker ^1.2.0 added, the one approved new dependency. Reading the
+  photo library is a platform capability, not a widget.
+- New core/ui/user_avatar.dart is the single place a picture is drawn. Two
+  details the endpoint forces: the stored avatar_url is RELATIVE (the server
+  is behind a proxy and cannot know its public origin) so it is resolved
+  against the same base every other call uses; and the route is bearer-gated,
+  so the token is read per URL rather than held, and a sign-out cannot leave a
+  stale credential attached to an image request.
+- The first-letter fallback is not an error state. Most users have no picture,
+  and a letter in the app's own colours reads better than a silhouette. A
+  picture that fails to load falls back to it silently: the letter is a
+  complete answer on its own.
+- Tapping the avatar is how you change it - no separate button, because the
+  thing you want to change is the thing you are looking at. The sheet keeps
+  the destructive "remove" visibly apart from the ordinary "choose".
+- The picker resizes to 512px square at 80% quality BEFORE upload, landing any
+  photograph well under the server's 512 KB cap. Shrinking on the device beats
+  rejecting after arrival, and a phone on mobile data does not pay to send a
+  4 MB original that would only be scaled down anyway. It re-encodes to JPEG,
+  so the content type is known rather than guessed from a file extension.
+- SessionController.setAvatar/removeAvatar mirror updateDisplayName exactly:
+  perform, then re-validate the held token. The server returns the full
+  MeResponseDto, but re-validating rather than trusting that body keeps ONE
+  path by which session state changes.
+- Still to come: avatars on the leaderboard rows (needs avatar_url on the
+  board DTO) and the report button.

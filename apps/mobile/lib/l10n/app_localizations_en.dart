@@ -400,6 +400,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDarkModeLabel => 'Dark mode';
 
   @override
+  String get avatarChange => 'Change picture';
+
+  @override
+  String get avatarChoose => 'Choose from gallery';
+
+  @override
+  String get avatarRemove => 'Remove picture';
+
+  @override
+  String get avatarTooLarge => 'That picture is too large. Pick a smaller one.';
+
+  @override
+  String get avatarUploadFailed => 'Couldn\'t upload the picture.';
+
+  @override
   String get predictionScorePickedLabel => 'Score picked';
 
   @override

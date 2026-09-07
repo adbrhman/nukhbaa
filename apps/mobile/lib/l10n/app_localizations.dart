@@ -756,6 +756,36 @@ abstract class AppLocalizations {
   /// **'Dark mode'**
   String get accountDarkModeLabel;
 
+  /// No description provided for @avatarChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change picture'**
+  String get avatarChange;
+
+  /// No description provided for @avatarChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get avatarChoose;
+
+  /// No description provided for @avatarRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove picture'**
+  String get avatarRemove;
+
+  /// No description provided for @avatarTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That picture is too large. Pick a smaller one.'**
+  String get avatarTooLarge;
+
+  /// No description provided for @avatarUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload the picture.'**
+  String get avatarUploadFailed;
+
   /// Semantic label on the small checkmark badge between the FotMob-style match card's two score steppers, shown once both sides have a value.
   ///
   /// In en, this message translates to:

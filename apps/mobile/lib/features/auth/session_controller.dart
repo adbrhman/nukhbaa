@@ -167,6 +167,37 @@ class SessionController extends _$SessionController {
     return const Result.ok(null);
   }
 
+  /// Sets the caller's profile picture to [bytes] under [contentType].
+  ///
+  /// Deliberately identical in shape to [updateDisplayName]: perform, then
+  /// re-validate the held token so every watcher sees the new identity. The
+  /// server returns the full `MeResponseDto`, but re-validating rather than
+  /// trusting that body keeps ONE path by which session state changes.
+  Future<Result<void>> setAvatar({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    final result = await _authApi.setAvatar(
+      bytes: bytes,
+      contentType: contentType,
+    );
+    if (result is Err<MeResponseDto>) {
+      return Result.err(result.error);
+    }
+    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
+    return const Result.ok(null);
+  }
+
+  /// Removes the caller's profile picture. Same shape as [setAvatar].
+  Future<Result<void>> removeAvatar() async {
+    final result = await _authApi.removeAvatar();
+    if (result is Err<MeResponseDto>) {
+      return Result.err(result.error);
+    }
+    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
+    return const Result.ok(null);
+  }
+
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {

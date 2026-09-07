@@ -5,6 +5,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared/shared.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
@@ -13,6 +14,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
+import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
 import '../competition/my_active_seasons_screen.dart';
@@ -102,6 +104,7 @@ class AccountScreen extends ConsumerWidget {
                   children: [
                     _ProfileHeader(
                       displayName: user.displayName,
+                      avatarUrl: user.avatarUrl,
                       tokens: tokens,
                       text: text,
                     ),
@@ -325,21 +328,19 @@ class AccountScreen extends ConsumerWidget {
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.displayName,
+    required this.avatarUrl,
     required this.tokens,
     required this.text,
   });
 
   final String displayName;
+  final String? avatarUrl;
   final AppTokens tokens;
   final TextTheme text;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String trimmed = displayName.trim();
-    final String initial = trimmed.isEmpty
-        ? '?'
-        : trimmed.substring(0, 1).toUpperCase();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -353,20 +354,20 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: AppSizes.avatarSm,
-            height: AppSizes.avatarSm,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: tokens.primaryGradient,
-              shape: BoxShape.circle,
+          // The picture is its own affordance: tapping the avatar is how
+          // you change it. No separate button, because the thing you want to
+          // change is the thing you are looking at.
+          InkWell(
+            key: const Key('account.changeAvatar'),
+            customBorder: const CircleBorder(),
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => _AvatarSheet(hasAvatar: avatarUrl != null),
             ),
-            child: Text(
-              initial,
-              style: text.titleLarge?.copyWith(
-                color: tokens.onPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+            child: UserAvatar(
+              displayName: displayName,
+              avatarUrl: avatarUrl,
+              size: AppSizes.avatarSm,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -393,6 +394,136 @@ class _ProfileHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// The picture actions, as a sheet rather than a dialog: two choices, one of
+/// them destructive, and a sheet keeps the destructive one visibly separate
+/// from the ordinary one.
+class _AvatarSheet extends ConsumerStatefulWidget {
+  const _AvatarSheet({required this.hasAvatar});
+
+  final bool hasAvatar;
+
+  @override
+  ConsumerState<_AvatarSheet> createState() => _AvatarSheetState();
+}
+
+class _AvatarSheetState extends ConsumerState<_AvatarSheet> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: CircularProgressIndicator(),
+            )
+          else ...<Widget>[
+            ListTile(
+              key: const Key('account.avatar.choose'),
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(l10n.avatarChoose),
+              onTap: _pick,
+            ),
+            if (widget.hasAvatar)
+              ListTile(
+                key: const Key('account.avatar.remove'),
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: context.tokens.error,
+                ),
+                title: Text(
+                  l10n.avatarRemove,
+                  style: TextStyle(color: context.tokens.error),
+                ),
+                onTap: _remove,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pick() async {
+    setState(() => _busy = true);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    // The picker does the resizing. 512px square at 80% quality lands well
+    // under the server's 512 KB cap for any photograph, so the upload is
+    // shrunk before it leaves the device rather than rejected after it
+    // arrives -- and a phone on mobile data does not pay to send a 4 MB
+    // original that would only be scaled down anyway.
+    final XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+    } on Object {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _report(l10n.avatarUploadFailed);
+      return;
+    }
+    if (picked == null) {
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+
+    final result = await ref
+        .read(sessionControllerProvider.notifier)
+        .setAvatar(
+          bytes: bytes,
+          // The picker re-encodes to JPEG when it resizes, so the type is
+          // known rather than guessed from the original file's extension.
+          contentType: 'image/jpeg',
+        );
+    if (!mounted) return;
+
+    switch (result) {
+      case Ok<void>():
+        Navigator.of(context).pop();
+      case Err<void>(:final error):
+        setState(() => _busy = false);
+        _report(
+          error.code == 'identity.avatar_too_large'
+              ? l10n.avatarTooLarge
+              : l10n.avatarUploadFailed,
+        );
+    }
+  }
+
+  Future<void> _remove() async {
+    setState(() => _busy = true);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(sessionControllerProvider.notifier)
+        .removeAvatar();
+    if (!mounted) return;
+    switch (result) {
+      case Ok<void>():
+        Navigator.of(context).pop();
+      case Err<void>():
+        setState(() => _busy = false);
+        _report(l10n.avatarUploadFailed);
+    }
+  }
+
+  void _report(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

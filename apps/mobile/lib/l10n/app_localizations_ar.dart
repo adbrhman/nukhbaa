@@ -406,6 +406,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountDarkModeLabel => 'الوضع الداكن';
 
   @override
+  String get avatarChange => 'تغيير الصورة';
+
+  @override
+  String get avatarChoose => 'اختيار من المعرض';
+
+  @override
+  String get avatarRemove => 'حذف الصورة';
+
+  @override
+  String get avatarTooLarge => 'الصورة كبيرة جدًا. اختر صورة أصغر.';
+
+  @override
+  String get avatarUploadFailed => 'تعذّر رفع الصورة.';
+
+  @override
   String get predictionScorePickedLabel => 'تم اختيار النتيجة';
 
   @override
