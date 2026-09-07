@@ -44,6 +44,23 @@ comment on table leaderboard.season_rank_snapshots is
 create index if not exists season_rank_snapshots_season_day_idx
   on leaderboard.season_rank_snapshots (season_id, captured_on desc);
 
+-- RLS: standings are readable by any signed-in participant (the board is
+-- shown to everyone in the season), and no client may ever write here --
+-- rows come only from capture_season_rank_snapshots(), which runs as the
+-- table owner under pg_cron and therefore bypasses RLS. Enabling RLS in the
+-- same statement block that creates the table also keeps the Supabase SQL
+-- editor from interrupting this migration with its "table without RLS"
+-- confirmation dialog.
+alter table leaderboard.season_rank_snapshots enable row level security;
+
+drop policy if exists season_rank_snapshots_select_all
+  on leaderboard.season_rank_snapshots;
+create policy season_rank_snapshots_select_all
+  on leaderboard.season_rank_snapshots
+  for select
+  to authenticated
+  using (true);
+
 revoke all on leaderboard.season_rank_snapshots from anon;
 grant select on leaderboard.season_rank_snapshots to authenticated;
 

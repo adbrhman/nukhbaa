@@ -387,3 +387,15 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   creates table/function/view and skips the tick with a notice.
 - NOT in this pass: wiring movement through LeaderboardEntryDto and the
   arrows in leaderboard_board.dart. Server + contracts change, next fix.
+
+## 2026-09-07 - fix 15: RLS on season_rank_snapshots
+- Applying 0030 through the Supabase SQL editor was silently blocked: the
+  editor intercepts any query that creates a table without RLS and waits on a
+  confirmation dialog, so nothing reached the database at all.
+- The table now enables RLS and carries season_rank_snapshots_select_all
+  (select, authenticated, using true) inside the migration itself. Writes stay
+  impossible for every client: rows come only from
+  capture_season_rank_snapshots(), which runs as the table owner under pg_cron
+  and bypasses RLS.
+- Same posture as the other leaderboard projections - standings are readable
+  by any signed-in participant, never writable from a client.
