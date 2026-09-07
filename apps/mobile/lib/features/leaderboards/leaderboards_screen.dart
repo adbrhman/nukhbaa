@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
-import '../../core/ui/rank_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
-import '../competition/widgets/async_list_view.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import 'leaderboards_providers.dart';
+import 'widgets/season_standings_board.dart';
 
 /// Discovery entry point for leaderboards. It uses the caller's active seasons
 /// as the server-backed scope and reuses the same season leaderboard provider
@@ -127,35 +125,16 @@ class LeaderboardsScreen extends ConsumerWidget {
   }
 }
 
-class _SeasonLeaderboard extends ConsumerWidget {
+/// Was a bespoke `ListTile` list over the FIXTURE board; now the same
+/// [SeasonStandingsBoard] the season screen shows. The switch is deliberate on
+/// both counts: one rendering to maintain, and the season board is the one
+/// carrying the podium, the movement arrows and the accuracy figure.
+class _SeasonLeaderboard extends StatelessWidget {
   const _SeasonLeaderboard({required this.seasonId});
 
   final String seasonId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final standings = ref.watch(fixtureLeaderboardProvider(seasonId));
-    return AsyncListView<FixtureLeaderboardEntryDto>(
-      value: standings.whenData((board) => board.entries),
-      emptyMessage: l10n.fixtureLeaderboardEmpty,
-      onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
-      itemBuilder: (context, entry) => ListTile(
-        key: Key('leaderboards.item.${entry.participantId}'),
-        leading: RankBadge(rank: entry.rank),
-        title: Text(
-          entry.displayName,
-          style: TextStyle(color: context.tokens.textPrimary),
-        ),
-        subtitle: Text(l10n.leaderboardEntriesCounted(entry.fixturesScored)),
-        trailing: Text(
-          l10n.pointsAbbreviated(entry.totalPoints),
-          style: TextStyle(
-            color: context.tokens.primary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      SeasonStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboards');
 }

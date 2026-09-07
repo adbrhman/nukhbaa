@@ -518,3 +518,20 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   user may read *any* user's picture, not just their own.
 - Exported from `application.dart`. Still no route wired -- next: the raw-
   bytes body reader, `composition_root.dart` wiring, then the three routes.
+
+## 2026-09-07 - fix 20: one leaderboard, not two
+- The redesign, the movement arrows and the accuracy figure were all built on
+  season_leaderboard_screen.dart - a screen the bottom tab never opens. The
+  tab opened leaderboards_screen.dart, which drew its own ListTile rows off
+  the FIXTURE board. Three features shipped where users could not see them.
+- Owner chose unification over duplication: rather than rebuild the podium,
+  the arrows and accuracy a second time against FixtureLeaderboardEntryDto,
+  both surfaces now render one widget.
+- New widgets/season_standings_board.dart holds what was inline in the season
+  tab. Both callers pass their own keyPrefix, so each keeps the widget-test
+  keys it already asserts instead of sharing a namespace and colliding.
+- The bottom tab now shows the SEASON board, not the fixture board. That is
+  the deliberate half of the change: the season board is the one carrying the
+  podium, the arrows and the accuracy.
+- The fixture-points tab on the season screen is untouched - it remains the
+  live per-fixture view.

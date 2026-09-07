@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'leaderboards_providers.dart';
 import 'widgets/leaderboard_board.dart';
+import 'widgets/season_standings_board.dart';
 
 /// The season's leaderboard, in two tabs: **fixture points** (the season's
 /// live, per-fixture standings — Axiom 4 Amendment, always up to date, never
@@ -71,51 +72,8 @@ class _SeasonLeaderboardTab extends ConsumerWidget {
   final String seasonId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<SeasonLeaderboardDto> standings = ref.watch(
-      seasonLeaderboardProvider(seasonId),
-    );
-    return AsyncListView<LeaderboardEntryDto>(
-      value: standings.whenData((board) => board.entries),
-      emptyMessage: l10n.seasonLeaderboardEmpty,
-      onRetry: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
-      listBuilder: (context, entries) => LeaderboardBoard(
-        keyPrefix: 'leaderboard',
-        // Highlighting the viewer's own row needs the board itself to say
-        // which entry is theirs (an is_me / participant_id field on the DTO).
-        // Deriving it from a side read here meant this screen firing an extra
-        // request just to decorate a row -- and, in the leaderboard tests,
-        // consuming the scripted failure meant for the board's own read.
-        myParticipantId: null,
-        entries: <BoardEntry>[
-          for (final LeaderboardEntryDto e in entries)
-            BoardEntry(
-              participantId: e.participantId,
-              rank: e.rank,
-              displayName: e.displayName,
-              points: e.totalPoints,
-              pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
-              subtitle: l10n.leaderboardEntriesCounted(e.entryCount),
-              // previousRank is null until the season's first daily snapshot
-              // exists; the subtraction is the one place movement is derived,
-              // so the arrow and the place can never come from different reads.
-              movement: e.previousRank == null
-                  ? null
-                  : e.previousRank! - e.rank,
-              // Accuracy is exact_scoreline alone, over settled fixtures. No
-              // settled fixture means no accuracy -- not 0% -- so the label
-              // is omitted rather than showing a zero nobody earned.
-              accuracyLabel: e.settledCount <= 0
-                  ? null
-                  : l10n.leaderboardAccuracy(
-                      (e.exactCount * 100 / e.settledCount).round(),
-                    ),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) =>
+      SeasonStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboard');
 }
 
 /// The "fixture points" tab — the season's live, per-fixture standings
