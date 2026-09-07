@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
@@ -56,9 +55,14 @@ Future<Response> _set(RequestContext context) async {
     );
   }
 
+  // `bytes()` streams chunks; the whole image is needed at once because the
+  // domain validates its total size before a single byte is stored.
   final List<int> bytes;
   try {
-    bytes = await context.request.bytes();
+    bytes = await context.request.bytes().fold<List<int>>(
+      <int>[],
+      (acc, chunk) => acc..addAll(chunk),
+    );
   } on Object {
     return errorResponse(
       const AppError.validation(
