@@ -573,3 +573,29 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   rather than printing a zero nobody earned.
 - FixtureLeaderboardEntryDto schema version 2 (exact_count / decided_count,
   defaulting to 0 on an older payload).
+
+## 2026-09-07 - fix 23: opening the app is the join
+- Measured first: of 97 accounts, 28 had joined nothing and 23 had joined only
+  league seasons carrying zero fixtures. Half the user base opened the
+  leaderboard and was told to join a season while the month's contest ran
+  without them. Membership is not a decision this product should ask anyone to
+  make.
+- The 51 missing accounts were enrolled in 09/2026 by hand first (INSERT ...
+  ON CONFLICT DO NOTHING, so the 46 existing members and their joined_at were
+  untouched). Season membership is now 97.
+- New EnrolInOpenSeasons runs on every GET /me: it enrols the caller in every
+  season open right now that has at least one fixture. The fixture requirement
+  is what keeps it off the seven league seasons this project carries but never
+  runs - open by date, permanently empty, and joining one would put a user on
+  a board that can never have a row.
+- Idempotent by construction: membership is checked first and
+  participants_season_user_uniq is the backstop under that check, so two
+  concurrent opens cannot double-enrol and an existing joined_at is never
+  rewritten. Next month enrols everyone the moment its first fixture is filed
+  - no hardcoded season id, no monthly admin step.
+- Every failure is swallowed into Ok. Enrolment is a side benefit of a read,
+  never its purpose: /me must still answer "who am I" when the write cannot
+  happen, and the next call retries.
+- New port method listOpenSeasonsWithFixtures(at); Postgres impl uses the same
+  computed [start_at, end_at) window as findCurrentSeason plus an EXISTS on
+  season_fixtures. Two test fakes and the unwired root repository gained it.

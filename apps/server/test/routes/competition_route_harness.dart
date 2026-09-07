@@ -246,6 +246,11 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
   }
 
   @override
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  ) async => const Result.ok(<CompetitionSeason>[]);
+
+  @override
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId) async {
     // A season's rounds ordered by their 1-based sequence (matches
     // `_listSeasonRoundsSql` ORDER BY sequence ASC). Absent/empty season → [].

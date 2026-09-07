@@ -30,6 +30,16 @@ Future<Response> onRequest(RequestContext context) async {
 
   final result = await root.getCurrentUser(principal);
 
+  // Membership is not a decision this product asks anyone to make: opening the
+  // app is the join. Deliberately AFTER the identity read and deliberately
+  // unchecked -- EnrolInOpenSeasons swallows its own failures, and `/me` must
+  // answer "who am I" even when the enrolment write cannot happen. The next
+  // call retries by construction.
+  await root.enrolInOpenSeasons(
+    principal: principal,
+    now: DateTime.now().toUtc(),
+  );
+
   return switch (result) {
     Ok<User>(:final value) => Response.json(
       body: MeResponseDto(

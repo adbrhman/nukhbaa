@@ -149,6 +149,22 @@ abstract interface class CompetitionRepository {
   /// A season with no rounds yet — or one that does not exist — yields
   /// `Ok(<empty list>)` (a browse read reveals no existence oracle beyond what
   /// the caller could already learn from the season read). Never a `not_found`.
+  /// Lists every season whose `[start_at, end_at)` window covers [at] AND
+  /// which has at least one linked fixture, across all competitions.
+  ///
+  /// Both halves matter. The window is what makes "the current contest"
+  /// answerable without a status column (the same computed-never-stored rule
+  /// as `findCurrentSeason`). The fixture requirement is what keeps automatic
+  /// enrolment off the league seasons this project carries but does not run:
+  /// they are open by date and permanently empty, and enrolling anyone in one
+  /// would put them on a board that can never have a row.
+  ///
+  /// An empty list is a legitimate answer (no contest is running, or this
+  /// month's fixtures have not been filed yet), never an error.
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  );
+
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId);
 
   /// Lists the fixtures linked to a round, ordered by

@@ -21,6 +21,7 @@ final class CompositionRoot {
     required this.getLatestBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
+    required this.enrolInOpenSeasons,
     required this.login,
     required this.register,
     required this.updateDisplayName,
@@ -120,6 +121,7 @@ final class CompositionRoot {
     RegisterWithPassword? register,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
+    EnrolInOpenSeasons? enrolInOpenSeasons,
     UpdateDisplayName? updateDisplayName,
     CreateCompetition? createCompetition,
     StartSeason? startSeason,
@@ -188,6 +190,7 @@ final class CompositionRoot {
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
+       enrolInOpenSeasons = enrolInOpenSeasons ?? _absentEnrolInOpenSeasons(),
        updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
        createCompetition = createCompetition ?? _absentCreateCompetition(),
        startSeason = startSeason ?? _absentStartSeason(),
@@ -308,6 +311,13 @@ final class CompositionRoot {
   /// Builds a [GetCurrentUser] over a directory that throws if invoked.
   static GetCurrentUser _absentGetCurrentUser() =>
       GetCurrentUser(_UnwiredUserDirectory());
+
+  /// Backs an "absent" [EnrolInOpenSeasons] over a repository that throws if
+  /// a test reaches the enrolment slice it never wired.
+  static EnrolInOpenSeasons _absentEnrolInOpenSeasons() => EnrolInOpenSeasons(
+    competitionRepository: _UnwiredCompetitionRepository(),
+    idGenerator: _unwiredIdGenerator,
+  );
 
   /// Builds an "absent" [UpdateDisplayName] over a directory that throws
   /// if a test reaches the display-name slice it never wired.
@@ -779,6 +789,9 @@ final class CompositionRoot {
   /// Resolves the canonical [User] for a verified principal (backs `/me`).
   final GetCurrentUser getCurrentUser;
 
+  /// Puts the caller into whatever contest is running, on every `/me`.
+  final EnrolInOpenSeasons enrolInOpenSeasons;
+
   /// Creates a competition (admin-only command).
   final CreateCompetition createCompetition;
 
@@ -1249,6 +1262,10 @@ final class CompositionRoot {
       getLatestBuild: getLatestBuild,
       authenticateRequest: AuthenticateRequest(verifier, directory: directory),
       getCurrentUser: GetCurrentUser(directory),
+      enrolInOpenSeasons: EnrolInOpenSeasons(
+        competitionRepository: competitionRepository,
+        idGenerator: idGenerator,
+      ),
       login: login,
       register: register,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
@@ -1577,6 +1594,17 @@ final class _UnwiredUserDirectory implements UserDirectory {
 final class _UnwiredCompetitionRepository implements CompetitionRepository {
   static Never _unwired() =>
       throw StateError('A competition use-case was not wired into this root');
+
+  // Deliberately NOT _unwired(). Every other method here throws so a test
+  // that reaches an unwired competition slice fails loudly. This one is
+  // different: automatic enrolment runs on GET /me, so a root that wires only
+  // the identity slice would otherwise explode on a path it never asked for.
+  // "Not wired" means "no contest is running" - the same answer a real
+  // repository gives before the month's fixtures are filed.
+  @override
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  ) async => const Result.ok(<CompetitionSeason>[]);
 
   @override
   Future<Result<void>> saveCompetition(Competition competition) => _unwired();

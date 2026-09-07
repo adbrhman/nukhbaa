@@ -239,6 +239,40 @@ WHERE id = @id
   // competition is a legitimate empty list (no existence oracle) — the SELECT
   // simply returns no rows. Reuses `_mapSeason` so a corrupt row maps to
   // transient `row_corrupt`, exactly as `findSeason` does.
+  // Open by the same computed window as _findCurrentSeasonSql, and narrowed
+  // by EXISTS on season_fixtures. The EXISTS is what excludes the league
+  // seasons this project carries but never runs: open by date, permanently
+  // empty, and enrolling anyone in one would place them on a board that can
+  // never have a row.
+  static const String _listOpenSeasonsWithFixturesSql = '''
+SELECT s.id, s.competition_id, s.label, s.start_at, s.end_at
+FROM competition.seasons s
+WHERE s.start_at <= @now
+  AND s.end_at   >  @now
+  AND EXISTS (
+        SELECT 1 FROM competition.season_fixtures sf
+        WHERE sf.season_id = s.id
+      )
+ORDER BY s.start_at ASC, s.id ASC
+''';
+
+  @override
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  ) async {
+    final result = await _connection.query(
+      _listOpenSeasonsWithFixturesSql,
+      parameters: {'now': at.toUtc().toIso8601String()},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapAll(
+        value,
+        _mapSeason,
+      ),
+    };
+  }
+
   static const String _listCompetitionSeasonsSql = '''
 SELECT id, competition_id, label, start_at, end_at
 FROM competition.seasons

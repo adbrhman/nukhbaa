@@ -20,6 +20,7 @@ export 'src/competition/browse_round_fixtures.dart';
 export 'src/competition/browse_season_fixtures.dart';
 export 'src/competition/correct_fixture_schedule.dart';
 export 'src/competition/create_competition.dart';
+export 'src/competition/enrol_in_open_seasons.dart';
 export 'src/competition/get_competition.dart';
 export 'src/competition/get_current_season.dart';
 export 'src/competition/get_round.dart';

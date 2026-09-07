@@ -293,6 +293,15 @@ base class FakeCompetitionRepository implements CompetitionRepository {
   }
 
   @override
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    return const Result.ok(<CompetitionSeason>[]);
+  }
+
+  @override
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);
