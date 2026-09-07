@@ -1,0 +1,80 @@
+/// The live fixture standings board -- the one users actually see.
+///
+/// ## Why this board and not the season board
+/// The platform has two point stores. `scoring.fixture_scores` fills the
+/// instant a result is recorded and holds every point the app has ever
+/// awarded. `ledger.point_entries` was meant to be the ratified record, but
+/// it is keyed on `round_id`, and this project moved to season-linked
+/// fixtures (migration 0019) and left rounds behind: `round_fixtures` is
+/// empty, so not one scored fixture can be posted there. The ledger is not
+/// behind -- it is unreachable from the data model in use.
+///
+/// So the fixture board is the real board: append-only, always current, and
+/// the source of every number on screen today. This widget is what both
+/// leaderboard surfaces render.
+library;
+
+import 'package:contracts/contracts.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../l10n/app_localizations.dart';
+import '../../competition/widgets/async_list_view.dart';
+import '../leaderboards_providers.dart';
+import 'leaderboard_board.dart';
+
+/// Renders `GET /seasons/{id}/fixture-leaderboard` as a [LeaderboardBoard].
+///
+/// [keyPrefix] is the widget-test key namespace of the surface embedding it,
+/// so the two callers keep the keys their own tests already assert instead of
+/// sharing one namespace and colliding when both are on screen.
+class FixtureStandingsBoard extends ConsumerWidget {
+  /// Creates the board for [seasonId].
+  const FixtureStandingsBoard({
+    required this.seasonId,
+    required this.keyPrefix,
+    super.key,
+  });
+
+  /// The season whose live standings to show.
+  final String seasonId;
+
+  /// The key namespace for the rendered rows.
+  final String keyPrefix;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AsyncValue<FixtureLeaderboardDto> standings = ref.watch(
+      fixtureLeaderboardProvider(seasonId),
+    );
+    return AsyncListView<FixtureLeaderboardEntryDto>(
+      value: standings.whenData((board) => board.entries),
+      emptyMessage: l10n.fixtureLeaderboardEmpty,
+      onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
+      listBuilder: (context, entries) => LeaderboardBoard(
+        keyPrefix: keyPrefix,
+        // Highlighting the viewer's own row needs the board itself to say
+        // which entry is theirs (an is_me / participant_id field on the DTO).
+        // Deriving it from a side read here meant this screen firing an extra
+        // request just to decorate a row -- and, in the leaderboard tests,
+        // consuming the scripted failure meant for the board's own read.
+        myParticipantId: null,
+        entries: <BoardEntry>[
+          for (final FixtureLeaderboardEntryDto e in entries)
+            BoardEntry(
+              participantId: e.participantId,
+              rank: e.rank,
+              displayName: e.displayName,
+              points: e.totalPoints,
+              pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
+              subtitle: l10n.leaderboardEntriesCounted(e.fixturesScored),
+              // Movement and accuracy are not on this DTO yet. Omitted rather
+              // than faked: an arrow the data cannot justify is worse than no
+              // arrow.
+            ),
+        ],
+      ),
+    );
+  }
+}

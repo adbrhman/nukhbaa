@@ -535,3 +535,22 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   podium, the arrows and the accuracy.
 - The fixture-points tab on the season screen is untouched - it remains the
   live per-fixture view.
+
+## 2026-09-07 - fix 21: the board reads the store that has the points
+- ledger.point_entries is empty (0 rows) while scoring.fixture_scores holds
+  359 grades. The ledger is not behind on a manual step - it is UNREACHABLE.
+  point_entries.round_id is NOT NULL with an FK to competition.rounds, and
+  competition.round_fixtures has zero rows: this project moved to
+  season-linked fixtures in migration 0019 and left rounds behind. Not one
+  scored fixture can be posted without inventing a round to satisfy a column.
+- So fix 20 pointed the bottom tab at an empty store. Reversed here: both
+  surfaces render the FIXTURE board, which is append-only, fills the instant a
+  result is recorded, and is the source of every number users see today.
+- New widgets/fixture_standings_board.dart; the bottom tab and the season
+  screen's fixture tab both render it. The season screen is now pure chrome -
+  a tab bar and two board widgets, no list bodies.
+- Movement and accuracy are not on FixtureLeaderboardEntryDto, so they are
+  omitted rather than faked. Both are recoverable from scoring.fixture_scores,
+  which GetSeasonFixtureLeaderboard already reads in full. Next fixes.
+- Nothing here writes to any point store. 359 grades, 504 predictions and 228
+  participants were copied to schema "backup" (suffix 20260907) first.

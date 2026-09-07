@@ -7,7 +7,7 @@ import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import 'widgets/season_standings_board.dart';
+import 'widgets/fixture_standings_board.dart';
 
 /// Discovery entry point for leaderboards. It uses the caller's active seasons
 /// as the server-backed scope and reuses the same season leaderboard provider
@@ -125,10 +125,10 @@ class LeaderboardsScreen extends ConsumerWidget {
   }
 }
 
-/// Was a bespoke `ListTile` list over the FIXTURE board; now the same
-/// [SeasonStandingsBoard] the season screen shows. The switch is deliberate on
-/// both counts: one rendering to maintain, and the season board is the one
-/// carrying the podium, the movement arrows and the accuracy figure.
+/// Was a bespoke `ListTile` list; now the shared [FixtureStandingsBoard], so
+/// this surface gains the podium without gaining a second rendering to
+/// maintain. It keeps reading the FIXTURE board -- the store that actually
+/// holds points (see [FixtureStandingsBoard] for why the ledger cannot).
 class _SeasonLeaderboard extends StatelessWidget {
   const _SeasonLeaderboard({required this.seasonId});
 
@@ -136,5 +136,5 @@ class _SeasonLeaderboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      SeasonStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboards');
+      FixtureStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboards');
 }

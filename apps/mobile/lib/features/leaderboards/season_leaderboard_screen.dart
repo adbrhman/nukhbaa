@@ -1,13 +1,9 @@
 library;
 
-import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../competition/widgets/async_list_view.dart';
-import 'leaderboards_providers.dart';
-import 'widgets/leaderboard_board.dart';
+import 'widgets/fixture_standings_board.dart';
 import 'widgets/season_standings_board.dart';
 
 /// The season's leaderboard, in two tabs: **fixture points** (the season's
@@ -66,13 +62,13 @@ class SeasonLeaderboardScreen extends StatelessWidget {
 /// The "season points" tab — the season's cumulative standings
 /// (`GET /seasons/{id}/leaderboard`), decorated with medal badges for the top
 /// three.
-class _SeasonLeaderboardTab extends ConsumerWidget {
+class _SeasonLeaderboardTab extends StatelessWidget {
   const _SeasonLeaderboardTab({required this.seasonId});
 
   final String seasonId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
+  Widget build(BuildContext context) =>
       SeasonStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboard');
 }
 
@@ -80,40 +76,14 @@ class _SeasonLeaderboardTab extends ConsumerWidget {
 /// (`GET /seasons/{id}/fixture-leaderboard`, Axiom 4 Amendment). Unlike the
 /// old round tab, this board has no picker and no scored-round gate: it is
 /// always live, aggregating every fixture scored so far.
-class _FixtureLeaderboardTab extends ConsumerWidget {
+class _FixtureLeaderboardTab extends StatelessWidget {
   const _FixtureLeaderboardTab({required this.seasonId});
 
   final String seasonId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<FixtureLeaderboardDto> standings = ref.watch(
-      fixtureLeaderboardProvider(seasonId),
-    );
-    return AsyncListView<FixtureLeaderboardEntryDto>(
-      value: standings.whenData((board) => board.entries),
-      emptyMessage: l10n.fixtureLeaderboardEmpty,
-      onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
-      listBuilder: (context, entries) => LeaderboardBoard(
-        keyPrefix: 'leaderboard.fixture',
-        // Highlighting the viewer's own row needs the board itself to say
-        // which entry is theirs (an is_me / participant_id field on the DTO).
-        // Deriving it from a side read here meant this screen firing an extra
-        // request just to decorate a row -- and, in the leaderboard tests,
-        // consuming the scripted failure meant for the board's own read.
-        myParticipantId: null,
-        entries: <BoardEntry>[
-          for (final FixtureLeaderboardEntryDto e in entries)
-            BoardEntry(
-              participantId: e.participantId,
-              rank: e.rank,
-              displayName: e.displayName,
-              points: e.totalPoints,
-              pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FixtureStandingsBoard(
+    seasonId: seasonId,
+    keyPrefix: 'leaderboard.fixture',
+  );
 }
