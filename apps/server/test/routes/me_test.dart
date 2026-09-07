@@ -34,8 +34,7 @@ final class _FakeUserDirectory implements UserDirectory {
       throw UnimplementedError();
 
   @override
-  Future<Result<User>> clearAvatar(UserId userId) =>
-      throw UnimplementedError();
+  Future<Result<User>> clearAvatar(UserId userId) => throw UnimplementedError();
 
   @override
   Future<Result<StoredAvatar?>> readAvatar(UserId userId) =>

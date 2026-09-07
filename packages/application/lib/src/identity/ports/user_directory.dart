@@ -41,11 +41,7 @@ abstract interface class UserDirectory {
   /// [mime] is already validated by the caller against the formats the
   /// platform serves; the size cap is enforced there too. The bytes are
   /// written whole -- there is no partial or streamed avatar.
-  Future<Result<User>> setAvatar(
-    UserId userId,
-    List<int> bytes,
-    String mime,
-  );
+  Future<Result<User>> setAvatar(UserId userId, List<int> bytes, String mime);
 
   /// Removes [userId]'s picture. Idempotent: clearing an absent picture
   /// succeeds, so a retried removal converges instead of erroring on a state

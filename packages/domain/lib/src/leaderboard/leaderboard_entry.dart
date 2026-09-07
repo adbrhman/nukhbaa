@@ -153,8 +153,7 @@ final class LeaderboardEntry {
   /// `null` when nothing has settled yet. A participant with no settled
   /// fixture has no accuracy -- not zero accuracy -- so the absence is
   /// modelled as null rather than a misleading 0%.
-  double? get accuracy =>
-      settledCount <= 0 ? null : exactCount / settledCount;
+  double? get accuracy => settledCount <= 0 ? null : exactCount / settledCount;
 
   /// Whether this entry has been placed on a board (has a meaningful [rank]).
   bool get isRanked => rank != _unassignedRank;

@@ -176,11 +176,7 @@ final class PostgresUserDirectory implements UserDirectory {
   ) async {
     final queryResult = await _connection.query(
       _setAvatarSql,
-      parameters: {
-        'id': userId.value,
-        'bytes': bytes,
-        'mime': mime,
-      },
+      parameters: {'id': userId.value, 'bytes': bytes, 'mime': mime},
     );
     return _mapAvatarWrite(queryResult);
   }
@@ -222,17 +218,11 @@ final class PostgresUserDirectory implements UserDirectory {
       return Result.err(_corrupt('avatar_bytes', 'not a byte list'));
     }
     return Result.ok(
-      StoredAvatar(
-        bytes: bytes,
-        mime: mime,
-        updatedAt: updatedAt.toUtc(),
-      ),
+      StoredAvatar(bytes: bytes, mime: mime, updatedAt: updatedAt.toUtc()),
     );
   }
 
-  Result<User> _mapAvatarWrite(
-    Result<List<Map<String, dynamic>>> queryResult,
-  ) {
+  Result<User> _mapAvatarWrite(Result<List<Map<String, dynamic>>> queryResult) {
     return switch (queryResult) {
       Ok<List<Map<String, dynamic>>>(:final value) =>
         value.isEmpty

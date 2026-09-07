@@ -100,7 +100,9 @@ class _SeasonLeaderboardTab extends ConsumerWidget {
               // previousRank is null until the season's first daily snapshot
               // exists; the subtraction is the one place movement is derived,
               // so the arrow and the place can never come from different reads.
-              movement: e.previousRank == null ? null : e.previousRank! - e.rank,
+              movement: e.previousRank == null
+                  ? null
+                  : e.previousRank! - e.rank,
               // Accuracy is exact_scoreline alone, over settled fixtures. No
               // settled fixture means no accuracy -- not 0% -- so the label
               // is omitted rather than showing a zero nobody earned.
