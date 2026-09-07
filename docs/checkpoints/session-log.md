@@ -440,3 +440,29 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - RLS note in the migration: the view is security_invoker over
   scoring.fixture_scores, which is own-or-locked. The server reads as table
   owner so counts are complete; a future direct-from-client read would not be.
+
+## 2026-09-07 - fix 18: avatars, step 1 of 4 (database)
+- Owner approved the image_picker dependency and chose report-then-remove
+  moderation for launch: pictures publish immediately, any signed-in user can
+  report one, an admin clears it. No automated screening, no approval queue -
+  the user base is a known WhatsApp group, not open sign-up. Moving to
+  pre-approval later is one boolean column, not a redesign.
+- Migration 0032 adds identity.users.avatar_path - the object KEY inside the
+  bucket, never a URL, so the base can change without a data rewrite.
+- Bucket , public-read like team-logos: every leaderboard viewer sees
+  every participant's picture anyway, and signed URLs would mean minting one
+  per row per request for no privacy gain. Keys are random UUIDs. Client
+  writes denied outright - uploads go through the server's service-role key
+  (ADR-002). The storage.objects block is guarded for 42501 exactly as 0026's
+  is, so the CI clean-database gate skips it.
+- identity.avatar_reports keeps reported_path, so a report stays evidence of
+  what was actually seen rather than a pointer to whatever is there now. One
+  OPEN report per (reporter, subject) via a partial unique index; a new one is
+  allowed once the first is resolved. No client RLS policy at all - reports
+  are filed and resolved server-side, and a SELECT policy would let a reporter
+  enumerate who reported whom.
+- season_standings recreated to carry avatar_path (drop + create: Postgres
+  cannot add a column via REPLACE), and season_standings_with_movement rebuilt
+  on top of it, unchanged apart from the new column.
+- Steps 2-4 still to come: server upload endpoint + report/resolve routes;
+  api_client + DTO avatar_url; mobile picker, board avatars, report button.
