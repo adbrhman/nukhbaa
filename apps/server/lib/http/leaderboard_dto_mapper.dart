@@ -116,6 +116,7 @@ FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
     fixturesScored: entry.fixturesScored,
     exactCount: entry.exactCount,
     decidedCount: entry.decidedCount,
+    previousRank: entry.previousRank,
   );
 }
 

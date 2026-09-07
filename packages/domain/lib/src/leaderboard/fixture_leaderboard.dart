@@ -44,6 +44,7 @@ final class FixtureLeaderboard {
     required SeasonId seasonId,
     required List<ParticipantFixtureScore> scores,
     required Map<String, String> displayNames,
+    Map<String, int> previousRanks = const <String, int>{},
   }) {
     final totals = <String, int>{};
     final counts = <String, int>{};
@@ -90,6 +91,10 @@ final class FixtureLeaderboard {
           fixturesScored: counts[key]!,
           exactCount: exact[key] ?? 0,
           decidedCount: decided[key] ?? 0,
+          // Absent from the snapshot means absent from the comparison: a
+          // participant who first scored today gets no arrow rather than a
+          // fabricated one.
+          previousRank: previousRanks[key],
         ),
     ]..sort(_compare);
 

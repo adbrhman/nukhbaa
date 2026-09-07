@@ -508,6 +508,12 @@ final class CompositionRoot {
   static final ParticipantReader _unwiredParticipantReader =
       _UnwiredParticipantReader();
 
+  // Unlike its siblings this one ANSWERS rather than throws. The snapshot is
+  // decoration on a board: a root that wires the fixture-leaderboard slice
+  // without a snapshot reader should render a board with no arrows, not fail.
+  static final RankSnapshotReader _unwiredRankSnapshotReader =
+      _EmptyRankSnapshotReader();
+
   static ReadParticipantLedger _absentReadParticipantLedger() =>
       ReadParticipantLedger(
         participantReader: _unwiredParticipantReader,
@@ -535,6 +541,7 @@ final class CompositionRoot {
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
         participantReader: _unwiredParticipantReader,
+        rankSnapshotReader: _unwiredRankSnapshotReader,
       );
 
   /// Backs the "absent" [GetFixtureScores]'s repositories: throws so a
@@ -1378,6 +1385,7 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
         participantReader: participantReader, // already built (Ledger slice)
+        rankSnapshotReader: PostgresRankSnapshotReader(connection),
       ),
       getFixtureScores: GetFixtureScores(
         competitionRepository: competitionRepository,
@@ -1915,6 +1923,15 @@ final class _UnwiredAuditLogRepository implements AuditLogRepository {
 
 /// Backs an "absent" [ReadParticipantLedger]'s participant reader: throws so a
 /// test that reaches an unwired ledger read slice fails loudly.
+/// Backs an unwired [RankSnapshotReader] with "no capture has run yet" -- the
+/// same answer a real reader gives on a season's first day, and the reason
+/// this one does not throw.
+final class _EmptyRankSnapshotReader implements RankSnapshotReader {
+  @override
+  Future<Result<Map<String, int>>> latestRanks(SeasonId seasonId) async =>
+      const Result.ok(<String, int>{});
+}
+
 final class _UnwiredParticipantReader implements ParticipantReader {
   @override
   Future<Result<Participant?>> findParticipantById(ParticipantId id) =>

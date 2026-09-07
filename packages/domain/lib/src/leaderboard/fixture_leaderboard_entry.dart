@@ -30,6 +30,7 @@ final class FixtureLeaderboardEntry {
     required this.fixturesScored,
     required this.exactCount,
     required this.decidedCount,
+    required this.previousRank,
     required this.rank,
   });
 
@@ -45,6 +46,7 @@ final class FixtureLeaderboardEntry {
     required int fixturesScored,
     int exactCount = 0,
     int decidedCount = 0,
+    int? previousRank,
   }) {
     return FixtureLeaderboardEntry._(
       participantId: participantId,
@@ -53,6 +55,7 @@ final class FixtureLeaderboardEntry {
       fixturesScored: fixturesScored,
       exactCount: exactCount,
       decidedCount: decidedCount,
+      previousRank: previousRank,
       rank: _unassignedRank,
     );
   }
@@ -101,6 +104,22 @@ final class FixtureLeaderboardEntry {
   /// modelled as null rather than a misleading 0%.
   double? get accuracy => decidedCount <= 0 ? null : exactCount / decidedCount;
 
+  /// The rank this participant held at the season's most recent daily
+  /// snapshot, or `null` when there is nothing to compare against -- no
+  /// capture has run yet, or they were not on the board when it did.
+  ///
+  /// Read from the snapshot, never derived: the application layer cannot
+  /// forge a past rank, because a fabricated one would produce an arrow no
+  /// participant earned.
+  final int? previousRank;
+
+  /// How many places the participant has climbed since [previousRank]:
+  /// positive is up, negative is down, `0` is unchanged, `null` is nothing to
+  /// compare against. Computed only once [rank] is assigned, so the arrow can
+  /// never disagree with the place printed beside it.
+  int? get movement =>
+      previousRank == null || !isRanked ? null : previousRank! - rank;
+
   /// The participant's standard-competition ("1224") rank on the board, or
   /// `0` while unassigned. Assigned by `FixtureLeaderboard`.
   final int rank;
@@ -130,6 +149,7 @@ final class FixtureLeaderboardEntry {
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
+        previousRank: previousRank,
         rank: assignedRank,
       ),
     );
@@ -144,6 +164,7 @@ final class FixtureLeaderboardEntry {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
+      other.previousRank == previousRank &&
       other.rank == rank;
 
   @override
@@ -154,6 +175,7 @@ final class FixtureLeaderboardEntry {
     fixturesScored,
     exactCount,
     decidedCount,
+    previousRank,
     rank,
   );
 

@@ -1,5 +1,6 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/leaderboard/ports/rank_snapshot_reader.dart';
 import 'package:application/src/ledger/ports/participant_reader.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_score_repository.dart';
@@ -34,15 +35,18 @@ final class GetSeasonFixtureLeaderboard {
     required FixturePredictionRepository fixturePredictionRepository,
     required FixtureScoreRepository fixtureScoreRepository,
     required ParticipantReader participantReader,
+    required RankSnapshotReader rankSnapshotReader,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _fixtureScores = fixtureScoreRepository,
-       _participants = participantReader;
+       _participants = participantReader,
+       _rankSnapshots = rankSnapshotReader;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScoreRepository _fixtureScores;
   final ParticipantReader _participants;
+  final RankSnapshotReader _rankSnapshots;
 
   /// Returns the live `FixtureLeaderboard` for [seasonId], visible to
   /// [principal] as a member of that season.
@@ -105,10 +109,21 @@ final class GetSeasonFixtureLeaderboard {
     }
     final displayNames = (namesResult as Ok<Map<String, String>>).value;
 
+    // The movement arrows' only input. A failed or empty read degrades to no
+    // arrows rather than failing the board: yesterday's ranking is decoration
+    // on today's standings, and a decoration must never cost a user the
+    // standings themselves.
+    final snapshotResult = await _rankSnapshots.latestRanks(sId);
+    final previousRanks = switch (snapshotResult) {
+      Ok<Map<String, int>>(:final value) => value,
+      Err<Map<String, int>>() => const <String, int>{},
+    };
+
     return FixtureLeaderboard.rank(
       seasonId: sId,
       scores: scores,
       displayNames: displayNames,
+      previousRanks: previousRanks,
     );
   }
 }

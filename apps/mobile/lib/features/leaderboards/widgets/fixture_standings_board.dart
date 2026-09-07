@@ -79,9 +79,13 @@ class FixtureStandingsBoard extends ConsumerWidget {
                   : l10n.leaderboardAccuracy(
                       (e.exactCount * 100 / e.decidedCount).round(),
                     ),
-              // Movement is not on this DTO yet: the daily snapshot still
-              // captures the ledger board. Omitted rather than faked -- an
-              // arrow the data cannot justify is worse than no arrow.
+              // previousRank is null until the season's first daily capture,
+              // and for anyone absent from it. The subtraction is the one
+              // place movement is derived, so the arrow and the place can
+              // never come from different reads.
+              movement: e.previousRank == null
+                  ? null
+                  : e.previousRank! - e.rank,
             ),
         ],
       ),

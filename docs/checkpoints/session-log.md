@@ -618,3 +618,27 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - Arrows still need the Dart side - FixtureLeaderboardEntry has no
   previousRank and no port reads the snapshot table. Next fix. The data has to
   exist before the feature can read it, which is why this lands first.
+
+## 2026-09-07 - fix 25: the arrows, on the board that has the points
+- Migration 0034 landed first and the capture ran: 43 rows for 09/2026, with
+  the same order the app shows (12 points at rank 1, four tied at 9 on rank
+  2). The data existed before the feature was built to read it.
+- New single-method port RankSnapshotReader.latestRanks(seasonId), READ-ONLY
+  by design: nothing in the application layer should be able to forge a past
+  rank, because a fabricated one produces an arrow no participant earned. The
+  snapshot is written by pg_cron and by nothing else.
+- PostgresRankSnapshotReader compares against the season's NEWEST capture
+  rather than "yesterday's": when a capture is missed the comparison is simply
+  older, never absent.
+- GetSeasonFixtureLeaderboard reads it and degrades to no arrows on failure.
+  Yesterday's ranking is decoration on today's standings, and a decoration
+  must never cost a user the standings themselves.
+- FixtureLeaderboardEntry gains previousRank plus a movement getter, computed
+  only once rank is assigned, so the arrow can never disagree with the place
+  printed beside it. A participant absent from the snapshot gets no arrow, not
+  a fabricated one.
+- The root's unwired RankSnapshotReader ANSWERS instead of throwing, unlike
+  its siblings: a root wiring the leaderboard slice without a snapshot reader
+  should render a board without arrows, not fail.
+- DTO schema version 3. Arrows appear after tomorrow's capture - today's
+  snapshot equals the live order, so every movement is currently 0.

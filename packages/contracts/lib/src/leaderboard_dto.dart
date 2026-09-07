@@ -537,6 +537,7 @@ final class FixtureLeaderboardEntryDto {
     required this.fixturesScored,
     this.exactCount = 0,
     this.decidedCount = 0,
+    this.previousRank,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -555,14 +556,15 @@ final class FixtureLeaderboardEntryDto {
       fixturesScored: json['fixtures_scored']! as int,
       exactCount: (json['exact_count'] as int?) ?? 0,
       decidedCount: (json['decided_count'] as int?) ?? 0,
+      previousRank: json['previous_rank'] as int?,
     );
   }
 
-  /// The current schema version for this DTO. Version 2 adds
-  /// [exactCount]/[decidedCount]; a v1 payload lacks the keys and
-  /// deserializes to 0, so an older cached response still renders -- without
-  /// an accuracy figure.
-  static const int currentSchemaVersion = 2;
+  /// The current schema version for this DTO. Version 2 added
+  /// [exactCount]/[decidedCount]; version 3 adds [previousRank]. An older
+  /// payload lacks the keys and deserializes to 0/null, so a cached response
+  /// still renders -- without accuracy, without arrows.
+  static const int currentSchemaVersion = 3;
 
   /// The participant's standard-competition rank (1-based; tied totals share
   /// a rank, the next distinct total skips by the number tied).
@@ -593,6 +595,13 @@ final class FixtureLeaderboardEntryDto {
   /// The denominator behind [exactCount] -- see that field.
   final int decidedCount;
 
+  /// The rank this participant held at the season's most recent daily
+  /// snapshot, or null when there is nothing to compare against. The client
+  /// derives the arrow as `previousRank - rank`; the delta is never sent
+  /// pre-computed, so the two numbers on screen always come from the same
+  /// pair.
+  final int? previousRank;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -606,6 +615,7 @@ final class FixtureLeaderboardEntryDto {
     'fixtures_scored': fixturesScored,
     'exact_count': exactCount,
     'decided_count': decidedCount,
+    'previous_rank': previousRank,
   };
 
   @override
@@ -618,6 +628,7 @@ final class FixtureLeaderboardEntryDto {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
+      other.previousRank == previousRank &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -629,6 +640,7 @@ final class FixtureLeaderboardEntryDto {
     fixturesScored,
     exactCount,
     decidedCount,
+    previousRank,
     schemaVersion,
   );
 }
