@@ -599,3 +599,22 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - New port method listOpenSeasonsWithFixtures(at); Postgres impl uses the same
   computed [start_at, end_at) window as findCurrentSeason plus an EXISTS on
   season_fixtures. Two test fakes and the unwired root repository gained it.
+
+## 2026-09-07 - fix 24: the daily snapshot follows the points
+- Migration 0030 captured season_standings, which sums the unreachable ledger.
+  Every snapshot so far recorded a board where all 226 participants were tied
+  at zero, so every arrow derived from it would have been meaningless.
+- New view leaderboard.season_fixture_standings: the SQL twin of what
+  GetSeasonFixtureLeaderboard computes in memory. Scoped through
+  competition.participants rather than season_fixtures, since a participant
+  belongs to exactly one season - so no fixture-to-season join is needed and a
+  fixture linked to two seasons cannot double-count a grade.
+- capture_season_rank_snapshots repointed at it. Same signature, same
+  idempotence, same schedule: the pg_cron job from 0030 keeps calling it
+  unchanged.
+- The 226 ledger-era snapshot rows are deleted. The table is a re-derivable
+  projection, not a point store: losing every row costs one day of arrows and
+  not a single point.
+- Arrows still need the Dart side - FixtureLeaderboardEntry has no
+  previousRank and no port reads the snapshot table. Next fix. The data has to
+  exist before the feature can read it, which is why this lands first.
