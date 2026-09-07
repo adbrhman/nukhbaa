@@ -366,3 +366,24 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   shared while the data body is a podium rather than a row list.
 - NOT in this pass, for lack of data: accuracy %, rank movement arrows,
   real profile pictures. Each needs server work.
+
+## 2026-09-07 - fix 14: daily rank snapshots (pg_cron)
+- Migration 0030 adds leaderboard.season_rank_snapshots (season_id,
+  participant_id, captured_on, rank, total_points), one row per participant
+  per day. Read-side only: it projects season_standings, which is itself a
+  SUM over the append-only ledger. Axiom 5 untouched.
+- capture_season_rank_snapshots(date) writes today's rows for every season
+  whose calendar window is open, ranked with rank() over (order by
+  total_points desc) - the same 1224 rule as the pure SeasonLeaderboard.rank.
+  Idempotent per day (on conflict do update), so a manual re-run after a
+  failed tick is safe.
+- View season_standings_with_movement joins the live rank to the most recent
+  snapshot and exposes movement = previous_rank - current_rank. NULL means no
+  comparable snapshot (new participant or first day), which the client should
+  render as "new" rather than an arrow.
+- pg_cron scheduled at 05 0 * * * UTC under jobname
+  nukhbaa_season_rank_snapshot. Both CREATE EXTENSION and cron.schedule sit
+  inside a guarded DO block: the CI clean-database gate has no pg_cron, so it
+  creates table/function/view and skips the tick with a notice.
+- NOT in this pass: wiring movement through LeaderboardEntryDto and the
+  arrows in leaderboard_board.dart. Server + contracts change, next fix.
