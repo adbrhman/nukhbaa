@@ -99,8 +99,7 @@ final class FixtureLeaderboardEntry {
   /// `null` when nothing has been decided yet. A participant with no decided
   /// fixture has NO accuracy -- not zero accuracy -- so the absence is
   /// modelled as null rather than a misleading 0%.
-  double? get accuracy =>
-      decidedCount <= 0 ? null : exactCount / decidedCount;
+  double? get accuracy => decidedCount <= 0 ? null : exactCount / decidedCount;
 
   /// The participant's standard-competition ("1224") rank on the board, or
   /// `0` while unassigned. Assigned by `FixtureLeaderboard`.
