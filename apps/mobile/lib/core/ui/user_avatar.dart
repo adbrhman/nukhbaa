@@ -98,7 +98,7 @@ class UserAvatar extends ConsumerWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
-            headers: <String, String>{'authorization': 'Bearer ' + token},
+            headers: <String, String>{'authorization': 'Bearer $token'},
             // A picture that fails to load is not worth an error affordance:
             // the letter is a complete answer on its own.
             errorBuilder: (_, _, _) => fallback,
