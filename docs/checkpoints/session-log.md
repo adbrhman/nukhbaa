@@ -320,3 +320,17 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   The pub package name is unchanged - every package:mobile/... import
   depends on it.
 - 03:20 revert: تراجع عن commit bcc8ec226e0186c1ff839d66d3959eb6e704b867 (fix: guard APK build against unset NUKHBA_API_BASE_URL) بطلب المستخدم
+
+## 2026-09-07 - fix 10: old installs were never prompted to update
+- update_gate.dart compared the newest release's published_at against a
+  timestamp stored ON THE DEVICE. Nothing in that comparison knew which
+  build was installed. Worse, the `lastSeen == null` branch recorded the
+  newest release as 'seen' on first launch and returned - so a stale
+  install marked itself up to date and never prompted again.
+- CI now injects NUKHBA_BUILD_SHA (the same 7 chars as the build-<sha>
+  release tag). The gate checks whether the published apk_url points at
+  its own build; the stored timestamp only prevents re-prompting.
+- Coupling to note: the client matches '/build-<sha>/' in the URL. A
+  cleaner follow-up is an explicit build_ref field on LatestBuildDto.
+- Also declared intl in apps/mobile/pubspec.yaml; used directly but only
+  arrived transitively, which dart analyze flagged.

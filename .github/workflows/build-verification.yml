@@ -431,7 +431,11 @@ jobs:
         working-directory: apps/mobile
         run: |
           CLEAN_API_BASE_URL=$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')
-          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\"}" > /tmp/dart_defines.json
+          # Same 7 characters the release job uses for its `build-<sha>` tag,
+          # so the installed app can recognise its own release URL and tell
+          # whether it is the newest build.
+          BUILD_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\",\"NUKHBA_BUILD_SHA\":\"$BUILD_SHA\"}" > /tmp/dart_defines.json
           flutter build apk --split-per-abi --dart-define-from-file=/tmp/dart_defines.json --release
 
       - name: Verify release signing (apksigner)

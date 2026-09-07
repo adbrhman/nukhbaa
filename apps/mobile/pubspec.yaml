@@ -33,6 +33,11 @@ dependencies:
 
   flutter_localizations:
     sdk: flutter
+  # Used directly by core/format/timestamps.dart and
+  # widgets/fotmob_match_card.dart (DateFormat). It arrived transitively
+  # via flutter_localizations, which `depend_on_referenced_packages`
+  # rightly flags: a transitive dependency can vanish without notice.
+  intl: any
 
   # Internal packages (read-only, per the import_lint boundary above).
   api_client:

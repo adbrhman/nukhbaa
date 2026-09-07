@@ -98,11 +98,30 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
         ? null
         : DateTime.tryParse(lastSeenRaw);
 
-    if (lastSeen == null) {
-      await _remember(dto.publishedAt); // fresh install baseline
+    // The short commit sha of THIS build, injected by CI at
+    // `flutter build apk` time. The published release lives under the tag
+    // `build-<sha>`, so its download URL contains the sha of the build it
+    // ships -- if that is not us, an update exists. This is what the check
+    // was missing: it compared the newest RELEASE against a timestamp the
+    // DEVICE had stored, and nothing in that comparison knew which build was
+    // actually installed.
+    //
+    // The old `lastSeen == null` branch is why an old install was never
+    // prompted at all: on the first launch it recorded the newest release as
+    // "seen" and returned, permanently marking a stale install as up to
+    // date. That branch now only guards builds with no injected identity (a
+    // local `flutter run`), where no better signal exists.
+    const String buildSha = String.fromEnvironment('NUKHBA_BUILD_SHA');
+
+    if (buildSha.isNotEmpty) {
+      if (dto.apkUrl.contains('/build-$buildSha/'))
+        return; // this IS the latest
+    } else if (lastSeen == null) {
+      await _remember(dto.publishedAt);
       return;
     }
-    if (!publishedAt.isAfter(lastSeen)) return;
+    // Do not re-prompt for a release the user has already been offered.
+    if (lastSeen != null && !publishedAt.isAfter(lastSeen)) return;
     if (!mounted) return;
 
     final bool? proceed = await showDialog<bool>(
