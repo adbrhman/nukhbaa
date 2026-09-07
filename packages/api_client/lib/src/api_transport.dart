@@ -177,24 +177,54 @@ final class ApiTransport {
   /// exception becomes a transient [Result.err]; a non-2xx becomes a decoded
   /// [Result.err]; a 2xx with an undecodable body becomes a malformed-response
   /// [Result.err].
+  /// Performs `POST [path]` with a raw byte body under [contentType] and
+  /// decodes a JSON **object** response via [parse].
+  ///
+  /// The one non-JSON request this client makes. An image is payload, not a
+  /// domain intent, so base64-ing it into an envelope would inflate every
+  /// upload by a third to gain nothing; the content type is already a header.
+  /// Everything else -- auth, timeout, 401 handling, error decoding -- is the
+  /// shared pipeline, so this cannot drift from the rest of the client.
+  Future<Result<T>> postBytes<T>(
+    String path, {
+    required List<int> bytes,
+    required String contentType,
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T>(
+      method: 'POST',
+      path: path,
+      requestBytes: bytes,
+      requestContentType: contentType,
+      decode: (respBody) => _decodeObject(respBody, parse),
+    );
+  }
+
   Future<Result<T>> _send<T>({
     required String method,
     required String path,
     Map<String, String>? query,
     Map<String, Object?>? requestBody,
+    List<int>? requestBytes,
+    String? requestContentType,
     required Result<T> Function(String body) decode,
   }) async {
     final uri = _resolve(path, query);
 
     final http.Response response;
     try {
-      final headers = await _headers(hasBody: requestBody != null);
+      final headers = await _headers(
+        hasBody: requestBody != null,
+        contentType: requestContentType,
+      );
       final pending = switch (method) {
         'GET' => _httpClient.get(uri, headers: headers),
+        // A byte body wins when present: the two are never both set, and
+        // jsonEncode(null) would otherwise send the string "null".
         'POST' => _httpClient.post(
           uri,
           headers: headers,
-          body: jsonEncode(requestBody),
+          body: requestBytes ?? jsonEncode(requestBody),
         ),
         'PUT' => _httpClient.put(
           uri,
@@ -245,9 +275,16 @@ final class ApiTransport {
     );
   }
 
-  Future<Map<String, String>> _headers({required bool hasBody}) async {
+  Future<Map<String, String>> _headers({
+    required bool hasBody,
+    String? contentType,
+  }) async {
     final headers = <String, String>{'accept': 'application/json'};
-    if (hasBody) headers['content-type'] = 'application/json';
+    if (contentType != null) {
+      headers['content-type'] = contentType;
+    } else if (hasBody) {
+      headers['content-type'] = 'application/json';
+    }
     final token = await _tokenProvider();
     if (token != null && token.isNotEmpty) {
       headers['authorization'] = 'Bearer $token';

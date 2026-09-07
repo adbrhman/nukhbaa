@@ -669,3 +669,19 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   which user ids exist.
 - Step 4 remains: image_picker, the upload UI, avatars on the board, and the
   report button.
+
+## 2026-09-07 - fix 27: avatars, step 4a (api_client)
+- ApiTransport.postBytes: the one non-JSON request this client makes. An image
+  is payload, not a domain intent, so base64 in an envelope would inflate
+  every upload by a third to gain nothing, and the content type is already a
+  header.
+- Deliberately routed through the same _send pipeline as everything else, so
+  auth headers, the request timeout, 401 handling and error decoding cannot
+  drift from the rest of the client. Only the body and content type differ.
+- _headers gained an optional contentType that overrides the JSON default; a
+  byte body wins over requestBody in the POST branch, so jsonEncode(null) can
+  never send the literal string "null".
+- AuthApi.setAvatar / removeAvatar both return MeResponseDto - the same shape
+  as me() - so the caller refreshes its whole identity from one response.
+- Step 4b remains: image_picker, the account screen picker, avatars on the
+  board, and the report button.
