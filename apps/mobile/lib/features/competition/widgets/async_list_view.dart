@@ -36,18 +36,29 @@ class AsyncListView<T> extends StatelessWidget {
   /// Creates an async list view over [value].
   const AsyncListView({
     required this.value,
-    required this.itemBuilder,
     required this.emptyMessage,
     required this.onRetry,
+    this.itemBuilder,
+    this.listBuilder,
     this.padding = const EdgeInsets.symmetric(vertical: 8),
     super.key,
-  });
+  }) : assert(
+         (itemBuilder == null) != (listBuilder == null),
+         'Provide exactly one of itemBuilder or listBuilder.',
+       );
 
   /// The async list state to render.
   final AsyncValue<List<T>> value;
 
-  /// Builds a widget for a single element.
-  final Widget Function(BuildContext context, T item) itemBuilder;
+  /// Builds a widget for a single element, rendered inside a separated list.
+  final Widget Function(BuildContext context, T item)? itemBuilder;
+
+  /// Builds the whole data body at once, for a layout a per-row builder
+  /// cannot express (a podium above the remaining places, say). Loading,
+  /// error and legitimate-empty stay identical either way -- which is the
+  /// reason to route both through this widget rather than hand-rolling
+  /// `AsyncValue.when` in the screen.
+  final Widget Function(BuildContext context, List<T> items)? listBuilder;
 
   /// The message shown when the list is a legitimate empty result.
   final String emptyMessage;
@@ -68,12 +79,14 @@ class AsyncListView<T> extends StatelessWidget {
         if (items.isEmpty) {
           return _EmptyView(message: emptyMessage);
         }
+        final listBuilder = this.listBuilder;
+        if (listBuilder != null) return listBuilder(context, items);
         return ListView.separated(
           key: const Key('browse.list'),
           padding: padding,
           itemCount: items.length,
           separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) => itemBuilder(context, items[index]),
+          itemBuilder: (context, index) => itemBuilder!(context, items[index]),
         );
       },
     );

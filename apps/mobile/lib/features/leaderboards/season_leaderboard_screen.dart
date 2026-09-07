@@ -4,11 +4,10 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/app_tokens.dart';
-import '../../core/ui/rank_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'leaderboards_providers.dart';
+import 'widgets/leaderboard_board.dart';
 
 /// The season's leaderboard, in two tabs: **fixture points** (the season's
 /// live, per-fixture standings — Axiom 4 Amendment, always up to date, never
@@ -81,35 +80,25 @@ class _SeasonLeaderboardTab extends ConsumerWidget {
       value: standings.whenData((board) => board.entries),
       emptyMessage: l10n.seasonLeaderboardEmpty,
       onRetry: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
-      itemBuilder: (context, entry) => _SeasonLeaderboardRow(entry: entry),
-    );
-  }
-}
-
-class _SeasonLeaderboardRow extends StatelessWidget {
-  const _SeasonLeaderboardRow({required this.entry});
-  final LeaderboardEntryDto entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppTokens tokens = context.tokens;
-    return ListTile(
-      key: Key('leaderboard.item.${entry.participantId}'),
-      leading: RankBadge(rank: entry.rank),
-      title: Text(
-        entry.displayName,
-        key: Key('leaderboard.participant.${entry.participantId}'),
-        style: TextStyle(color: tokens.textPrimary),
-      ),
-      subtitle: Text(
-        l10n.leaderboardEntriesCounted(entry.entryCount),
-        key: Key('leaderboard.entries.${entry.participantId}'),
-      ),
-      trailing: Text(
-        l10n.pointsAbbreviated(entry.totalPoints),
-        key: Key('leaderboard.points.${entry.participantId}'),
-        style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
+      listBuilder: (context, entries) => LeaderboardBoard(
+        keyPrefix: 'leaderboard',
+        // Highlighting the viewer's own row needs the board itself to say
+        // which entry is theirs (an is_me / participant_id field on the DTO).
+        // Deriving it from a side read here meant this screen firing an extra
+        // request just to decorate a row -- and, in the leaderboard tests,
+        // consuming the scripted failure meant for the board's own read.
+        myParticipantId: null,
+        entries: <BoardEntry>[
+          for (final LeaderboardEntryDto e in entries)
+            BoardEntry(
+              participantId: e.participantId,
+              rank: e.rank,
+              displayName: e.displayName,
+              points: e.totalPoints,
+              pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
+              subtitle: l10n.leaderboardEntriesCounted(e.entryCount),
+            ),
+        ],
       ),
     );
   }
@@ -134,31 +123,24 @@ class _FixtureLeaderboardTab extends ConsumerWidget {
       value: standings.whenData((board) => board.entries),
       emptyMessage: l10n.fixtureLeaderboardEmpty,
       onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
-      itemBuilder: (context, entry) => _FixtureLeaderboardRow(entry: entry),
-    );
-  }
-}
-
-class _FixtureLeaderboardRow extends StatelessWidget {
-  const _FixtureLeaderboardRow({required this.entry});
-  final FixtureLeaderboardEntryDto entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppTokens tokens = context.tokens;
-    return ListTile(
-      key: Key('leaderboard.fixture.item.${entry.participantId}'),
-      leading: RankBadge(rank: entry.rank),
-      title: Text(
-        entry.displayName,
-        key: Key('leaderboard.fixture.participant.${entry.participantId}'),
-        style: TextStyle(color: tokens.textPrimary),
-      ),
-      trailing: Text(
-        l10n.pointsAbbreviated(entry.totalPoints),
-        key: Key('leaderboard.fixture.points.${entry.participantId}'),
-        style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
+      listBuilder: (context, entries) => LeaderboardBoard(
+        keyPrefix: 'leaderboard.fixture',
+        // Highlighting the viewer's own row needs the board itself to say
+        // which entry is theirs (an is_me / participant_id field on the DTO).
+        // Deriving it from a side read here meant this screen firing an extra
+        // request just to decorate a row -- and, in the leaderboard tests,
+        // consuming the scripted failure meant for the board's own read.
+        myParticipantId: null,
+        entries: <BoardEntry>[
+          for (final FixtureLeaderboardEntryDto e in entries)
+            BoardEntry(
+              participantId: e.participantId,
+              rank: e.rank,
+              displayName: e.displayName,
+              points: e.totalPoints,
+              pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
+            ),
+        ],
       ),
     );
   }

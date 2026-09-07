@@ -351,3 +351,18 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   the no-stored-preference fallback are now ThemeMode.dark.
 - An explicit 'light' choice is still honoured; the account-screen toggle
   is unchanged. AppTokens.dark / AppTheme.dark already existed.
+
+## 2026-09-07 - fix 13: leaderboard redesign
+- New widgets/leaderboard_board.dart: a three-place podium (gold/silver/
+  bronze, tiered heights, medal glow) above the remaining places as cards.
+  The viewer's row carries a primary border, raised surface and glow.
+- A gap chip shows the points needed for the place directly above the
+  viewer - the only number derived on the client, a subtraction between two
+  values from the same response.
+- The avatar circle is a first-initial placeholder sized and positioned
+  where an uploaded picture will go, so avatars are a later swap, not a
+  re-layout.
+- AsyncListView gained an optional listBuilder so loading/error/empty stay
+  shared while the data body is a podium rather than a row list.
+- NOT in this pass, for lack of data: accuracy %, rank movement arrows,
+  real profile pictures. Each needs server work.
