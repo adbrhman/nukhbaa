@@ -69,9 +69,19 @@ class FixtureStandingsBoard extends ConsumerWidget {
               points: e.totalPoints,
               pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
               subtitle: l10n.leaderboardEntriesCounted(e.fixturesScored),
-              // Movement and accuracy are not on this DTO yet. Omitted rather
-              // than faked: an arrow the data cannot justify is worse than no
-              // arrow.
+              // Accuracy is exact_scoreline over DECIDED fixtures -- missed
+              // and pending ones are excluded, so the figure measures
+              // predictions made, not attendance. Nothing decided yet means
+              // no accuracy at all, so the label is omitted rather than
+              // showing a 0% nobody earned.
+              accuracyLabel: e.decidedCount <= 0
+                  ? null
+                  : l10n.leaderboardAccuracy(
+                      (e.exactCount * 100 / e.decidedCount).round(),
+                    ),
+              // Movement is not on this DTO yet: the daily snapshot still
+              // captures the ledger board. Omitted rather than faked -- an
+              // arrow the data cannot justify is worse than no arrow.
             ),
         ],
       ),

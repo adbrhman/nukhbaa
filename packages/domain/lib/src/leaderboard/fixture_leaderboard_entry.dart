@@ -28,6 +28,8 @@ final class FixtureLeaderboardEntry {
     required this.displayName,
     required this.totalPoints,
     required this.fixturesScored,
+    required this.exactCount,
+    required this.decidedCount,
     required this.rank,
   });
 
@@ -41,12 +43,16 @@ final class FixtureLeaderboardEntry {
     required String displayName,
     required int totalPoints,
     required int fixturesScored,
+    int exactCount = 0,
+    int decidedCount = 0,
   }) {
     return FixtureLeaderboardEntry._(
       participantId: participantId,
       displayName: displayName,
       totalPoints: totalPoints,
       fixturesScored: fixturesScored,
+      exactCount: exactCount,
+      decidedCount: decidedCount,
       rank: _unassignedRank,
     );
   }
@@ -71,6 +77,30 @@ final class FixtureLeaderboardEntry {
   /// season with unscored fixtures remaining is a normal, ongoing state,
   /// never an error).
   final int fixturesScored;
+
+  /// How many of the participant's decided fixtures they called EXACTLY right
+  /// (`exactScoreline`). The numerator of [accuracy]: a merely correct outcome
+  /// earns points but did not get the score right, so it is not accuracy.
+  final int exactCount;
+
+  /// How many fixtures were actually DECIDED for this participant --
+  /// `exactScoreline`, `correctOutcome` or `incorrect`.
+  ///
+  /// Narrower than [fixturesScored] on purpose. That count includes `missed`
+  /// (the fixture kicked off before they predicted it) and `pending` (the
+  /// result is not in yet). Neither is a prediction that turned out wrong:
+  /// counting a missed fixture against accuracy would measure attendance, and
+  /// counting a pending one would let a figure drop for a match still being
+  /// played. The denominator is therefore predictions actually made and
+  /// actually settled.
+  final int decidedCount;
+
+  /// The share of decided fixtures called exactly right, in `0.0..1.0`, or
+  /// `null` when nothing has been decided yet. A participant with no decided
+  /// fixture has NO accuracy -- not zero accuracy -- so the absence is
+  /// modelled as null rather than a misleading 0%.
+  double? get accuracy =>
+      decidedCount <= 0 ? null : exactCount / decidedCount;
 
   /// The participant's standard-competition ("1224") rank on the board, or
   /// `0` while unassigned. Assigned by `FixtureLeaderboard`.
@@ -99,6 +129,8 @@ final class FixtureLeaderboardEntry {
         displayName: displayName,
         totalPoints: totalPoints,
         fixturesScored: fixturesScored,
+        exactCount: exactCount,
+        decidedCount: decidedCount,
         rank: assignedRank,
       ),
     );
@@ -111,6 +143,8 @@ final class FixtureLeaderboardEntry {
       other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.fixturesScored == fixturesScored &&
+      other.exactCount == exactCount &&
+      other.decidedCount == decidedCount &&
       other.rank == rank;
 
   @override
@@ -119,6 +153,8 @@ final class FixtureLeaderboardEntry {
     displayName,
     totalPoints,
     fixturesScored,
+    exactCount,
+    decidedCount,
     rank,
   );
 

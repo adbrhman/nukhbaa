@@ -554,3 +554,22 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   which GetSeasonFixtureLeaderboard already reads in full. Next fixes.
 - Nothing here writes to any point store. 359 grades, 504 predictions and 228
   participants were copied to schema "backup" (suffix 20260907) first.
+
+## 2026-09-07 - fix 22: accuracy on the board that has the points
+- Free of any new read: GetSeasonFixtureLeaderboard already loads every
+  ParticipantFixtureScore for the season, and the grade travels on each one.
+  FixtureLeaderboard.rank now counts exactScoreline while it is already
+  summing points, in the same pass, so the figure cannot disagree with the
+  total printed beside it.
+- Denominator decision, which the earlier season-board version got wrong:
+  DECIDED fixtures only - exactScoreline, correctOutcome, incorrect. missed
+  (kicked off before they predicted) and pending (result not in) are
+  excluded. Counting missed would measure attendance rather than judgement,
+  and counting pending would let a percentage drop for a match still being
+  played. So decidedCount is deliberately narrower than fixturesScored.
+- Numerator stays the owner's decision: exactScoreline alone. A correct
+  outcome earns points but did not get the score right.
+- No accuracy exists at 0 decided - null, not 0%. The client omits the label
+  rather than printing a zero nobody earned.
+- FixtureLeaderboardEntryDto schema version 2 (exact_count / decided_count,
+  defaulting to 0 on an older payload).

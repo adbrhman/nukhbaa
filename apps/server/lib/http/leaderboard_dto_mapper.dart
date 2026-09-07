@@ -114,6 +114,8 @@ FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
     displayName: entry.displayName,
     totalPoints: entry.totalPoints,
     fixturesScored: entry.fixturesScored,
+    exactCount: entry.exactCount,
+    decidedCount: entry.decidedCount,
   );
 }
 

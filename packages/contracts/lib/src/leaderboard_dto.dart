@@ -535,6 +535,8 @@ final class FixtureLeaderboardEntryDto {
     required this.displayName,
     required this.totalPoints,
     required this.fixturesScored,
+    this.exactCount = 0,
+    this.decidedCount = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -551,11 +553,16 @@ final class FixtureLeaderboardEntryDto {
       displayName: (json['display_name'] as String?) ?? participantId,
       totalPoints: json['total_points']! as int,
       fixturesScored: json['fixtures_scored']! as int,
+      exactCount: (json['exact_count'] as int?) ?? 0,
+      decidedCount: (json['decided_count'] as int?) ?? 0,
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Version 2 adds
+  /// [exactCount]/[decidedCount]; a v1 payload lacks the keys and
+  /// deserializes to 0, so an older cached response still renders -- without
+  /// an accuracy figure.
+  static const int currentSchemaVersion = 2;
 
   /// The participant's standard-competition rank (1-based; tied totals share
   /// a rank, the next distinct total skips by the number tied).
@@ -574,6 +581,18 @@ final class FixtureLeaderboardEntryDto {
   /// so far.
   final int fixturesScored;
 
+  /// Decided fixtures the participant called exactly right, and decided
+  /// fixtures in total. The percentage is derived from the pair by the
+  /// reader, never sent pre-divided, so the ratio and its inputs cannot
+  /// drift; `decidedCount == 0` means there is no accuracy yet at all.
+  ///
+  /// [decidedCount] is narrower than [fixturesScored]: it excludes fixtures
+  /// that were missed (never predicted) and still pending.
+  final int exactCount;
+
+  /// The denominator behind [exactCount] -- see that field.
+  final int decidedCount;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -585,6 +604,8 @@ final class FixtureLeaderboardEntryDto {
     'display_name': displayName,
     'total_points': totalPoints,
     'fixtures_scored': fixturesScored,
+    'exact_count': exactCount,
+    'decided_count': decidedCount,
   };
 
   @override
@@ -595,6 +616,8 @@ final class FixtureLeaderboardEntryDto {
       other.displayName == displayName &&
       other.totalPoints == totalPoints &&
       other.fixturesScored == fixturesScored &&
+      other.exactCount == exactCount &&
+      other.decidedCount == decidedCount &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -604,6 +627,8 @@ final class FixtureLeaderboardEntryDto {
     displayName,
     totalPoints,
     fixturesScored,
+    exactCount,
+    decidedCount,
     schemaVersion,
   );
 }

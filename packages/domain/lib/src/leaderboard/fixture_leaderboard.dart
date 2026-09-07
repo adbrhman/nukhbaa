@@ -1,6 +1,7 @@
 import 'package:domain/src/competition/participant_id.dart';
 import 'package:domain/src/competition/season_id.dart';
 import 'package:domain/src/leaderboard/fixture_leaderboard_entry.dart';
+import 'package:domain/src/scoring/fixture_score_result.dart';
 import 'package:domain/src/scoring/participant_fixture_score.dart';
 import 'package:shared/shared.dart';
 
@@ -46,6 +47,8 @@ final class FixtureLeaderboard {
   }) {
     final totals = <String, int>{};
     final counts = <String, int>{};
+    final exact = <String, int>{};
+    final decided = <String, int>{};
     final byId = <String, ParticipantId>{};
 
     for (final score in scores) {
@@ -53,6 +56,24 @@ final class FixtureLeaderboard {
       totals[key] = (totals[key] ?? 0) + score.points;
       counts[key] = (counts[key] ?? 0) + 1;
       byId[key] = score.participantId;
+
+      // Accuracy comes out of the rows already in hand -- the grade travels
+      // with every score, so this costs no extra read and cannot disagree
+      // with the total beside it.
+      switch (score.result.grade) {
+        case FixtureScoreGrade.exactScoreline:
+          exact[key] = (exact[key] ?? 0) + 1;
+          decided[key] = (decided[key] ?? 0) + 1;
+        case FixtureScoreGrade.correctOutcome:
+        case FixtureScoreGrade.incorrect:
+          decided[key] = (decided[key] ?? 0) + 1;
+        case FixtureScoreGrade.missed:
+        case FixtureScoreGrade.pending:
+          // Neither is a prediction that turned out wrong: `missed` means
+          // none was made, `pending` means the match is not settled. Both
+          // stay out of the denominator.
+          break;
+      }
     }
 
     // Copy before sorting — never mutate the caller's list.
@@ -67,6 +88,8 @@ final class FixtureLeaderboard {
           displayName: displayNames[key] ?? '?',
           totalPoints: totals[key]!,
           fixturesScored: counts[key]!,
+          exactCount: exact[key] ?? 0,
+          decidedCount: decided[key] ?? 0,
         ),
     ]..sort(_compare);
 
