@@ -344,3 +344,10 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - The button moved to its own line under the title row; trailing is the
   season label alone again.
 - Lesson: never hand AdminListRow a trailing whose width depends on text.
+
+## 2026-09-07 - fix 12: dark is the default look
+- ThemeController defaulted to ThemeMode.system, so the app followed the
+  phone and most users saw the light palette. Both the initial state and
+  the no-stored-preference fallback are now ThemeMode.dark.
+- An explicit 'light' choice is still honoured; the account-screen toggle
+  is unchanged. AppTokens.dark / AppTheme.dark already existed.

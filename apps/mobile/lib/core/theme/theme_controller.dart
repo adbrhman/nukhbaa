@@ -24,10 +24,13 @@ class SecureThemePreferenceStore implements ThemePreferenceStore {
   @override
   Future<ThemeMode> read() async {
     final String? raw = await _storage.read(key: _key);
+    // ELITE OBSIDIAN is the default look, so an install with no stored
+    // preference gets dark rather than following the phone. Anyone who
+    // picked light explicitly still reads back 'light' and keeps it.
     return switch (raw) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      _ => ThemeMode.dark,
     };
   }
 
@@ -51,7 +54,10 @@ class ThemeController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _hydrate();
-    return ThemeMode.system;
+    // The first frame paints before the stored preference is read, so this
+    // starts on the default look and _hydrate swaps it if the user chose
+    // otherwise. Returning system here would flash a light frame first.
+    return ThemeMode.dark;
   }
 
   Future<void> _hydrate() async {
