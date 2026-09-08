@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
@@ -176,7 +178,17 @@ final class PostgresUserDirectory implements UserDirectory {
   ) async {
     final queryResult = await _connection.query(
       _setAvatarSql,
-      parameters: {'id': userId.value, 'bytes': bytes, 'mime': mime},
+      parameters: {
+        'id': userId.value,
+        // Uint8List, never a bare List<int>: the driver infers the Postgres
+        // type from the Dart value, and a List<int> is inferred as an integer
+        // ARRAY. Postgres then coerces that array's text form into bytea, so
+        // the column ends up holding the ASCII of '{255,216,...}' -- four
+        // characters per byte -- instead of the image. The route serves those
+        // bytes with the right content type and every decoder rejects them.
+        'bytes': Uint8List.fromList(bytes),
+        'mime': mime,
+      },
     );
     return _mapAvatarWrite(queryResult);
   }
