@@ -38,6 +38,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared/shared.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
 import 'in_app_updater.dart';
 
@@ -304,7 +305,7 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
             SelectableText(
               _current.message!,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 12, color: Colors.red),
+              style: TextStyle(fontSize: 12, color: context.tokens.error),
             ),
           ],
         ],

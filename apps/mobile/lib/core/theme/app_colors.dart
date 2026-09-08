@@ -2,65 +2,104 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// Dark palette — ELITE OBSIDIAN V1.0 accents (blue action + gold
-/// achievement) on a **neutral** dark foundation.
+/// Dark palette -- NUKHBA design sheet, adopted verbatim.
 ///
-/// The neutral values below are not chosen by eye: they are sampled from the
-/// reference capture the matches screen is being matched against — pure
-/// black page, `#2F2F2F` card, `#383838` raised control. The violet
-/// foundation this replaces (`#07050D` / `#181326` / `#1D1730` / `#241C3A`)
-/// tinted every surface in the app and was the single largest visual gap
-/// left after the metric pass (`29_card_metrics_parity`). Accent, semantic
-/// and achievement colors are deliberately untouched — only the neutral
-/// ramp and the two grey text tones move, so the app keeps its identity.
+/// Ten values come straight off the sheet's colour system and are not to be
+/// nudged by eye: Obsidian `#000000`, Navy `#071426`, Surface `#0A0A0A`,
+/// Blue `#2F6BFF`, Bright Blue `#008BFF`, Gold `#F5C451`, Silver `#BFC9D6`,
+/// Bronze `#C47A45`, Success `#19E68C`, Danger `#FF3B4D`. Each is marked
+/// SHEET below. Everything else the app needs -- raised surfaces, containers,
+/// "on" colours, warning and info -- is DERIVED from that same navy family,
+/// because the sheet does not name them and inventing a second family is how
+/// a palette drifts back apart.
+///
+/// This replaces the neutral grey ramp (`#2F2F2F` card, `#383838` raised)
+/// that was sampled from a screenshot rather than a design. Greys read as an
+/// absence of choice next to the sheet's navy; the app now carries one
+/// foundation everywhere.
 abstract final class AppColors {
-  static const Color background = Color(0xFF000000);
-  static const Color backgroundElevated = Color(0xFF0A0A0A);
-  static const Color surface = Color(0xFF2F2F2F);
-  static const Color surfaceElevated = Color(0xFF383838);
-  static const Color surfaceHigh = Color(0xFF424242);
+  /// SHEET Navy -- the page. Cards sit only a shade off it and are separated
+  /// by the blue stroke below, exactly as the sheet draws them.
+  static const Color background = Color(0xFF071426);
 
+  /// SHEET Obsidian -- app bar and bottom bar, deeper than the page so the
+  /// chrome recedes instead of competing with the content.
+  static const Color backgroundElevated = Color(0xFF000000);
+
+  /// SHEET Surface -- every card.
+  static const Color surface = Color(0xFF0A0A0A);
+
+  /// DERIVED -- one and two steps up from [surface], tinted toward Navy so a
+  /// raised control reads as lifted rather than merely lighter.
+  static const Color surfaceElevated = Color(0xFF0E1A2E);
+  static const Color surfaceHigh = Color(0xFF16253C);
+
+  /// SHEET Blue -- the action colour.
   static const Color primary = Color(0xFF2F6BFF);
+
+  /// DERIVED -- a pressed/container depth for [primary].
   static const Color primaryDark = Color(0xFF1D4ED8);
-  static const Color primaryLight = Color(0xFF5B8BFF);
 
+  /// SHEET Bright Blue -- the highlight: active tab, kickoff time, the accent
+  /// that has to carry over a near-black card.
+  static const Color primaryLight = Color(0xFF008BFF);
+
+  /// SHEET Gold -- achievement.
   static const Color gold = Color(0xFFF5C451);
+
+  /// DERIVED -- the far end of the gold gradient.
   static const Color goldDark = Color(0xFFB8860B);
-  static const Color silver = Color(0xFFC3CBD6);
-  static const Color onSilver = Color(0xFF1B2430);
-  static const Color bronze = Color(0xFFCD8A4E);
-  static const Color onBronze = Color(0xFF2A1608);
 
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorContainer = Color(0xFF3A151A);
+  /// SHEET Silver and Bronze -- second and third place.
+  static const Color silver = Color(0xFFBFC9D6);
+  static const Color bronze = Color(0xFFC47A45);
 
-  /// Semantic status colors — each an independent hue per the ELITE OBSIDIAN
-  /// spec (violet = action, gold = achievement; success/warning/info are
-  /// their own distinct colors, no longer aliased to primary/gold).
-  static const Color success = Color(0xFF22C55E);
-  static const Color successContainer = Color(0xFF14291D);
-  static const Color onSuccess = Color(0xFFFFFFFF);
+  /// DERIVED -- legible text on a filled silver/bronze medal.
+  static const Color onSilver = Color(0xFF0A1420);
+  static const Color onBronze = Color(0xFF241205);
 
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningContainer = Color(0xFF3A2A0E);
-  static const Color onWarning = Color(0xFF2A1B04);
+  /// SHEET Danger.
+  static const Color error = Color(0xFFFF3B4D);
 
-  static const Color info = Color(0xFF38BDF8);
-  static const Color infoContainer = Color(0xFF122A3A);
-  static const Color onInfo = Color(0xFF0B1220);
+  /// DERIVED -- danger at page depth, so an error block sits on Navy without
+  /// glowing.
+  static const Color errorContainer = Color(0xFF2E0C13);
+
+  /// SHEET Success.
+  static const Color success = Color(0xFF19E68C);
+  static const Color successContainer = Color(0xFF06291C);
+
+  /// DERIVED -- Success is a bright mint; white on it is unreadable, so
+  /// filled success surfaces carry near-black content.
+  static const Color onSuccess = Color(0xFF04160F);
+
+  /// DERIVED -- the sheet names no warning or info hue. Warning is pulled
+  /// toward Gold and info toward Bright Blue, so neither introduces a hue the
+  /// palette does not already own.
+  static const Color warning = Color(0xFFF5A623);
+  static const Color warningContainer = Color(0xFF2E2008);
+  static const Color onWarning = Color(0xFF241703);
+
+  static const Color info = Color(0xFF4FB6FF);
+  static const Color infoContainer = Color(0xFF07243C);
+  static const Color onInfo = Color(0xFF04101C);
 
   static const Color textPrimary = Color(0xFFFFFFFF);
-  // Sampled from the same capture: secondary label text reads near-white,
-  // muted label text ~#9D9D9D. The violet-tinted greys they replace read
-  // markedly darker and cooler against the new neutral surfaces.
-  static const Color textSecondary = Color(0xFFE3E3E3);
-  static const Color textMuted = Color(0xFF9D9D9D);
+
+  /// DERIVED -- the two grey text tones carry a slight cool cast now. Neutral
+  /// greys look dirty on Navy; these are the same lightness, just in the
+  /// palette's own hue.
+  static const Color textSecondary = Color(0xFFD7E1EF);
+  static const Color textMuted = Color(0xFF8B9CB5);
 
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onGold = Color(0xFF2A1E04);
   static const Color onError = Color(0xFFFFFFFF);
 
-  static const Color border = Color(0x0FFFFFFF);
+  /// DERIVED -- a blue hairline, not a white one. With Surface this close to
+  /// Navy, the stroke is what makes a card a card; the sheet draws exactly
+  /// this, and a 6% white line would leave every card edgeless.
+  static const Color border = Color(0x382F6BFF);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,

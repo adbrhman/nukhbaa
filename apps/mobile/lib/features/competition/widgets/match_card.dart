@@ -185,9 +185,9 @@ class _CompetitionRow extends StatelessWidget {
             ],
           ),
           alignment: Alignment.center,
-          child: const Icon(
+          child: Icon(
             Icons.emoji_events_outlined,
-            color: Colors.white,
+            color: t.onPrimary,
             size: 16,
           ),
         ),
@@ -334,7 +334,7 @@ class _TeamCrest extends StatelessWidget {
           colors: <Color>[b.secondary, b.primary],
         ),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.16),
+          color: t.onPrimary.withValues(alpha: 0.16),
           width: 3,
         ),
         boxShadow: <BoxShadow>[
@@ -835,12 +835,12 @@ class _DoubleBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Icon(Icons.star, size: 12, color: Colors.white),
+          Icon(Icons.star, size: 12, color: t.onPrimary),
           const SizedBox(width: 4),
           Text(
             l.predictionDoubleLabel,
             style: txt.labelSmall?.copyWith(
-              color: Colors.white,
+              color: t.onPrimary,
               fontWeight: FontWeight.w900,
             ),
           ),
