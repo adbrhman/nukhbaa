@@ -46,4 +46,17 @@ abstract interface class LeaderboardRepository {
   /// [HallOfFame.rank]); an empty list means nobody has ever been credited yet
   /// (a legitimate empty board, not an error).
   Future<Result<List<HallOfFameEntry>>> allTimeStandings({required int limit});
+
+  /// Every season [userId] has participated in, newest season first, each
+  /// with that user's own standing in it.
+  ///
+  /// One row per season, not per participant: this is a personal record, and
+  /// fetching whole boards to keep a single row out of each would make a
+  /// user's own history the most expensive read on the platform.
+  ///
+  /// A user who has never scored anywhere yields an empty list -- a
+  /// legitimate "no record yet", never an error.
+  Future<Result<List<ParticipantSeasonRecord>>> userSeasonRecords({
+    required UserId userId,
+  });
 }

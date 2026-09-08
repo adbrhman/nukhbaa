@@ -54,6 +54,7 @@ final class CompositionRoot {
     required this.scoreFixture,
     required this.readParticipantLedger,
     required this.getSeasonLeaderboard,
+    required this.listMySeasonRecords,
     required this.getSeasonFixtureLeaderboard,
     required this.getFixtureScores,
     required this.adminGetFixtureScores,
@@ -156,6 +157,7 @@ final class CompositionRoot {
     ScoreFixture? scoreFixture,
     ReadParticipantLedger? readParticipantLedger,
     GetSeasonLeaderboard? getSeasonLeaderboard,
+    ListMySeasonRecords? listMySeasonRecords,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
     GetFixtureScores? getFixtureScores,
     AdminGetFixtureScores? adminGetFixtureScores,
@@ -246,6 +248,8 @@ final class CompositionRoot {
            readParticipantLedger ?? _absentReadParticipantLedger(),
        getSeasonLeaderboard =
            getSeasonLeaderboard ?? _absentGetSeasonLeaderboard(),
+       listMySeasonRecords =
+           listMySeasonRecords ?? _absentListMySeasonRecords(),
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
        getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
@@ -560,6 +564,11 @@ final class CompositionRoot {
         leaderboardRepository: _unwiredLeaderboardRepository,
         competitionRepository: _unwiredCompetitionRepository,
       );
+
+  /// Backs the "absent" [ListMySeasonRecords] -- throws on use, mirroring
+  /// [_absentGetSeasonLeaderboard].
+  static ListMySeasonRecords _absentListMySeasonRecords() =>
+      ListMySeasonRecords(leaderboardRepository: _unwiredLeaderboardRepository);
 
   /// Backs the "absent" [GetSeasonFixtureLeaderboard]'s repositories: throws
   /// so a test that reaches this path fails loudly instead of silently
@@ -950,6 +959,11 @@ final class CompositionRoot {
   /// over the append-only ledger; season-membership gated, never a points
   /// write — Axioms 1/5).
   final GetSeasonLeaderboard getSeasonLeaderboard;
+
+  /// Reads the caller's own season-by-season record (`GET /me/seasons`) --
+  /// one row per season they have played, scoped to their own user id by the
+  /// use-case, never a points write.
+  final ListMySeasonRecords listMySeasonRecords;
 
   /// Reads a season's live, "monthly" fixture leaderboard (Axiom 4
   /// Amendment; a read-side projection aggregating every already-computed
@@ -1423,6 +1437,9 @@ final class CompositionRoot {
       getSeasonLeaderboard: GetSeasonLeaderboard(
         leaderboardRepository: leaderboardRepository,
         competitionRepository: competitionRepository,
+      ),
+      listMySeasonRecords: ListMySeasonRecords(
+        leaderboardRepository: leaderboardRepository,
       ),
       getSeasonFixtureLeaderboard: GetSeasonFixtureLeaderboard(
         competitionRepository: competitionRepository,
@@ -2020,6 +2037,12 @@ final class _UnwiredLeaderboardRepository implements LeaderboardRepository {
   @override
   Future<Result<List<HallOfFameEntry>>> allTimeStandings({
     required int limit,
+  }) =>
+      throw StateError('The leaderboard use-case was not wired into this root');
+
+  @override
+  Future<Result<List<ParticipantSeasonRecord>>> userSeasonRecords({
+    required UserId userId,
   }) =>
       throw StateError('The leaderboard use-case was not wired into this root');
 }

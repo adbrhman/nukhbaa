@@ -32,6 +32,21 @@ final class FakeLeaderboardRepository implements LeaderboardRepository {
   void seedAllTime(List<HallOfFameEntry> entries) =>
       _allTime = List<HallOfFameEntry>.of(entries);
 
+  /// Seeds the caller's own season-by-season record.
+  void seedSeasonRecords(List<ParticipantSeasonRecord> records) =>
+      _records = List<ParticipantSeasonRecord>.of(records);
+
+  List<ParticipantSeasonRecord> _records = const [];
+
+  @override
+  Future<Result<List<ParticipantSeasonRecord>>> userSeasonRecords({
+    required UserId userId,
+  }) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    return Result.ok(List<ParticipantSeasonRecord>.unmodifiable(_records));
+  }
+
   @override
   Future<Result<List<LeaderboardEntry>>> seasonStandings(
     SeasonId seasonId,

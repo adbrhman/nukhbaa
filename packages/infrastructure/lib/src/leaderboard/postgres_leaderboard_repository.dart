@@ -65,6 +65,130 @@ FROM leaderboard.hall_of_fame_standings
 LIMIT @limit
 ''';
 
+  // The personal record. `current_rank` IS selected here, unlike the
+  // season-standings read above -- and for the opposite reason. There the
+  // whole board is in hand and the domain ranks it, so reading a second
+  // SQL-computed rank would let two ranks disagree. Here exactly one row per
+  // season is fetched, so there is no board for the domain to rank; the
+  // view's rank is the only rank available, and it is computed by the same
+  // rule (`rank() over (partition by season_id order by total_points desc)`).
+  //
+  // Ordered newest season first, by the season's own calendar window rather
+  // than by label: labels are display strings and sort alphabetically, which
+  // would put April above March in any year.
+  static const String _selectUserSeasonRecordsSql = '''
+SELECT c.id AS competition_id, c.name AS competition_name,
+       s.id AS season_id, s.label AS season_label,
+       s.start_at, s.end_at,
+       v.current_rank, v.total_points, v.entry_count,
+       v.exact_count, v.settled_count
+FROM leaderboard.season_standings_with_movement v
+JOIN competition.participants p ON p.id = v.participant_id
+JOIN competition.seasons s ON s.id = v.season_id
+JOIN competition.competitions c ON c.id = s.competition_id
+WHERE p.user_id = @user_id
+ORDER BY s.start_at DESC, s.id DESC
+''';
+
+  @override
+  Future<Result<List<ParticipantSeasonRecord>>> userSeasonRecords({
+    required UserId userId,
+  }) async {
+    final result = await _connection.query(
+      _selectUserSeasonRecordsSql,
+      parameters: {'user_id': userId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapSeasonRecords(value),
+    };
+  }
+
+  static Result<List<ParticipantSeasonRecord>> _mapSeasonRecords(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final records = <ParticipantSeasonRecord>[];
+    for (final row in rows) {
+      final mapped = _mapSeasonRecord(row);
+      if (mapped is Err<ParticipantSeasonRecord>) {
+        return Result.err(mapped.error);
+      }
+      records.add((mapped as Ok<ParticipantSeasonRecord>).value);
+    }
+    return Result.ok(records);
+  }
+
+  static Result<ParticipantSeasonRecord> _mapSeasonRecord(
+    Map<String, dynamic> row,
+  ) {
+    const String view = 'season_standings_with_movement';
+    final competitionId = CompetitionId.tryParse(
+      row['competition_id']?.toString(),
+    );
+    final seasonId = SeasonId.tryParse(row['season_id']?.toString());
+    final competitionName = row['competition_name'];
+    final seasonLabel = row['season_label'];
+    final startAt = _readUtcTimestamp(row['start_at']);
+    final endAt = _readUtcTimestamp(row['end_at']);
+    final rank = row['current_rank'];
+    final totalPoints = row['total_points'];
+    final entryCount = row['entry_count'];
+    final exactCount = row['exact_count'];
+    final settledCount = row['settled_count'];
+
+    if (competitionId is Err<CompetitionId>) {
+      return Result.err(
+        _corrupt(view, 'competition_id', competitionId.error.message),
+      );
+    }
+    if (seasonId is Err<SeasonId>) {
+      return Result.err(_corrupt(view, 'season_id', seasonId.error.message));
+    }
+    if (competitionName is! String || competitionName.isEmpty) {
+      return Result.err(_corrupt(view, 'competition_name', 'null or empty'));
+    }
+    if (seasonLabel is! String || seasonLabel.isEmpty) {
+      return Result.err(_corrupt(view, 'season_label', 'null or empty'));
+    }
+    if (startAt == null) {
+      return Result.err(_corrupt(view, 'start_at', 'not a timestamp'));
+    }
+    if (endAt == null) {
+      return Result.err(_corrupt(view, 'end_at', 'not a timestamp'));
+    }
+    if (rank is! int) {
+      return Result.err(_corrupt(view, 'current_rank', 'not an integer'));
+    }
+    if (totalPoints is! int) {
+      return Result.err(_corrupt(view, 'total_points', 'not an integer'));
+    }
+    if (entryCount is! int) {
+      return Result.err(_corrupt(view, 'entry_count', 'not an integer'));
+    }
+    if (exactCount is! int) {
+      return Result.err(_corrupt(view, 'exact_count', 'not an integer'));
+    }
+    if (settledCount is! int) {
+      return Result.err(_corrupt(view, 'settled_count', 'not an integer'));
+    }
+
+    return Result.ok(
+      ParticipantSeasonRecord(
+        competitionId: (competitionId as Ok<CompetitionId>).value,
+        competitionName: competitionName,
+        seasonId: (seasonId as Ok<SeasonId>).value,
+        seasonLabel: seasonLabel,
+        startAt: startAt,
+        endAt: endAt,
+        rank: rank,
+        totalPoints: totalPoints,
+        entryCount: entryCount,
+        exactCount: exactCount,
+        settledCount: settledCount,
+      ),
+    );
+  }
+
   @override
   Future<Result<List<LeaderboardEntry>>> seasonStandings(
     SeasonId seasonId,

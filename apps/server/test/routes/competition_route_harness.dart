@@ -687,6 +687,18 @@ final class InMemoryLeaderboardRepository implements LeaderboardRepository {
   Future<Result<List<HallOfFameEntry>>> allTimeStandings({
     required int limit,
   }) async => Result.ok(_allTime.take(limit).toList(growable: false));
+
+  /// Seeds the personal season record served by `GET /me/seasons`.
+  void seedSeasonRecords(List<ParticipantSeasonRecord> records) {
+    _records = records;
+  }
+
+  List<ParticipantSeasonRecord> _records = const [];
+
+  @override
+  Future<Result<List<ParticipantSeasonRecord>>> userSeasonRecords({
+    required UserId userId,
+  }) async => Result.ok(_records);
 }
 
 /// A [RulesetProvider] returning a fixed valid snapshot, so OpenRound tests need

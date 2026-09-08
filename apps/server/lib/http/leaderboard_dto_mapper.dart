@@ -1,7 +1,6 @@
 import 'package:contracts/contracts.dart';
 import 'package:domain/domain.dart';
-
-import 'avatar_url.dart';
+import 'package:server/http/avatar_url.dart';
 
 /// Projects the domain [SeasonLeaderboard] aggregate onto the versioned wire
 /// shape [SeasonLeaderboardDto] (API ADR §4), and one [LeaderboardEntry] onto
@@ -107,6 +106,26 @@ Map<String, Object?> hallOfFameToJson(HallOfFame hallOfFame) {
 /// exactly as the domain computed it from the season's already-scored
 /// fixture scores — nothing here is client-writable, and there is no
 /// inverse.
+/// Projects a [ParticipantSeasonRecord] onto its wire shape.
+///
+/// Timestamps are emitted as ISO-8601 UTC strings, matching
+/// `activeSeasonToDto`; the accuracy counts pass through undivided.
+MySeasonRecordDto mySeasonRecordToDto(ParticipantSeasonRecord record) {
+  return MySeasonRecordDto(
+    competitionId: record.competitionId.value,
+    competitionName: record.competitionName,
+    seasonId: record.seasonId.value,
+    seasonLabel: record.seasonLabel,
+    startAt: record.startAt.toUtc().toIso8601String(),
+    endAt: record.endAt.toUtc().toIso8601String(),
+    rank: record.rank,
+    totalPoints: record.totalPoints,
+    entryCount: record.entryCount,
+    exactCount: record.exactCount,
+    settledCount: record.settledCount,
+  );
+}
+
 FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
   FixtureLeaderboardEntry entry,
 ) {

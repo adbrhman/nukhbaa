@@ -518,6 +518,139 @@ final class HallOfFameDto {
 /// fixture leaderboard (read projection of the domain
 /// `FixtureLeaderboardEntry`) — the Axiom 4 Amendment sibling of
 /// [RoundLeaderboardEntryDto], aggregated over every fixture scored so far
+/// One season in the caller's personal record -- `GET /me/seasons`.
+///
+/// The accuracy counts travel raw, exactly as they do on
+/// [FixtureLeaderboardEntryDto]: a pre-divided percentage and its inputs can
+/// drift apart on the wire, and a participant with nothing settled has no
+/// accuracy at all rather than zero.
+final class MySeasonRecordDto {
+  /// Creates a record row DTO.
+  const MySeasonRecordDto({
+    required this.competitionId,
+    required this.competitionName,
+    required this.seasonId,
+    required this.seasonLabel,
+    required this.startAt,
+    required this.endAt,
+    required this.rank,
+    required this.totalPoints,
+    this.entryCount = 0,
+    this.exactCount = 0,
+    this.settledCount = 0,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting for legacy payloads.
+  factory MySeasonRecordDto.fromJson(Map<String, Object?> json) {
+    return MySeasonRecordDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      competitionId: json['competition_id']! as String,
+      competitionName: json['competition_name']! as String,
+      seasonId: json['season_id']! as String,
+      seasonLabel: json['season_label']! as String,
+      startAt: json['start_at']! as String,
+      endAt: json['end_at']! as String,
+      rank: json['rank']! as int,
+      totalPoints: json['total_points']! as int,
+      entryCount: (json['entry_count'] as int?) ?? 0,
+      exactCount: (json['exact_count'] as int?) ?? 0,
+      settledCount: (json['settled_count'] as int?) ?? 0,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The owning competition's id (UUID string).
+  final String competitionId;
+
+  /// The owning competition's display name.
+  final String competitionName;
+
+  /// The season's id (UUID string) -- the key for opening its full board.
+  final String seasonId;
+
+  /// The season's display label.
+  final String seasonLabel;
+
+  /// ISO-8601 UTC instant the season's window opens (inclusive).
+  final String startAt;
+
+  /// ISO-8601 UTC instant the season's window closes (exclusive).
+  final String endAt;
+
+  /// The place the caller took, standard-competition ranked.
+  final int rank;
+
+  /// The caller's signed points total for the season.
+  final int totalPoints;
+
+  /// How many ledger entries make up [totalPoints].
+  final int entryCount;
+
+  /// Settled fixtures the caller called exactly right.
+  final int exactCount;
+
+  /// Fixtures settled for the caller at all.
+  final int settledCount;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Accuracy as a whole percent, or null when nothing has settled yet.
+  int? get accuracyPercent =>
+      settledCount == 0 ? null : (exactCount * 100 / settledCount).round();
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'competition_id': competitionId,
+    'competition_name': competitionName,
+    'season_id': seasonId,
+    'season_label': seasonLabel,
+    'start_at': startAt,
+    'end_at': endAt,
+    'rank': rank,
+    'total_points': totalPoints,
+    'entry_count': entryCount,
+    'exact_count': exactCount,
+    'settled_count': settledCount,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is MySeasonRecordDto &&
+      other.competitionId == competitionId &&
+      other.competitionName == competitionName &&
+      other.seasonId == seasonId &&
+      other.seasonLabel == seasonLabel &&
+      other.startAt == startAt &&
+      other.endAt == endAt &&
+      other.rank == rank &&
+      other.totalPoints == totalPoints &&
+      other.entryCount == entryCount &&
+      other.exactCount == exactCount &&
+      other.settledCount == settledCount &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    competitionId,
+    competitionName,
+    seasonId,
+    seasonLabel,
+    startAt,
+    endAt,
+    rank,
+    totalPoints,
+    entryCount,
+    exactCount,
+    settledCount,
+    schemaVersion,
+  );
+}
+
 /// instead of a single round.
 ///
 /// Names the participant by id only and carries the standard-competition

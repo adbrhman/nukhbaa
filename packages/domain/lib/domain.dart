@@ -50,6 +50,7 @@ export 'src/leaderboard/fixture_leaderboard_entry.dart';
 export 'src/leaderboard/hall_of_fame.dart';
 export 'src/leaderboard/hall_of_fame_entry.dart';
 export 'src/leaderboard/leaderboard_entry.dart';
+export 'src/leaderboard/participant_season_record.dart';
 export 'src/leaderboard/round_leaderboard.dart';
 export 'src/leaderboard/round_leaderboard_entry.dart';
 export 'src/leaderboard/season_leaderboard.dart';
