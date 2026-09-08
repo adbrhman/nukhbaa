@@ -12,6 +12,7 @@ import '../competition/competition_providers.dart';
 import '../competition/team_identity.dart';
 import '../competition/teams_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import 'pending_predictions_provider.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
 /// summary: fixtures and active seasons come from server-backed providers,
@@ -83,6 +84,12 @@ class HomeScreen extends ConsumerWidget {
                 seasons: seasons,
                 onOpenMatches: onOpenMatches,
               ),
+              const SizedBox(height: 16),
+              _PendingPredictionsCard(
+                pending: ref.watch(pendingPredictionsProvider),
+                teamCatalog: teamCatalog,
+                onPredict: onOpenMatches,
+              ),
               const SizedBox(height: 24),
               _SectionHeader(title: 'وصول سريع', action: null, onAction: null),
               const SizedBox(height: 10),
@@ -147,6 +154,118 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// "You still have N to predict, and the next one closes in X."
+///
+/// Renders nothing at all when there is nothing pending, or while either
+/// input is still loading. An empty state here would be a card that exists to
+/// say the user has no work -- which is not worth the vertical space that
+/// pushes the fixtures below the fold.
+class _PendingPredictionsCard extends StatelessWidget {
+  const _PendingPredictionsCard({
+    required this.pending,
+    required this.teamCatalog,
+    required this.onPredict,
+  });
+
+  final PendingPredictions? pending;
+  final List<TeamDto>? teamCatalog;
+  final VoidCallback onPredict;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = pending;
+    if (summary == null || summary.isEmpty) return const SizedBox.shrink();
+
+    final tokens = context.tokens;
+    final next = summary.next;
+
+    return InkWell(
+      key: const Key('home.pendingPredictions'),
+      onTap: onPredict,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: tokens.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: tokens.primary),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.bolt, color: tokens.primaryLight, size: 26),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'بقيت ${summary.count} مباراة بلا توقع',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (next != null) ...<Widget>[
+                    const SizedBox(height: 3),
+                    Text(
+                      _nextLine(next),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tokens.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'توقّع الآن',
+              style: TextStyle(
+                color: tokens.primaryLight,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _nextLine(CurrentMonthFixtureItemDto item) {
+    final home = resolveTeamIdentity(
+      catalog: teamCatalog,
+      teamId: item.fixture.homeTeamId,
+      teamName: item.fixture.homeTeam,
+    );
+    final away = resolveTeamIdentity(
+      catalog: teamCatalog,
+      teamId: item.fixture.awayTeamId,
+      teamName: item.fixture.awayTeam,
+    );
+    final closes = _closesIn(item.fixture.kickoffAt);
+    final teams = '${home.displayName} × ${away.displayName}';
+    return closes == null ? 'أقربها: $teams' : 'أقربها: $teams — $closes';
+  }
+
+  /// How long until the fixture locks, rounded DOWN.
+  ///
+  /// Down, not to nearest: rounding "2h 55m" up to three hours would tell a
+  /// user they have more time than they do, and the whole point of the line
+  /// is the deadline. Under an hour it switches to minutes, because "يُغلق
+  /// بعد 0 ساعة" is not a sentence.
+  static String? _closesIn(String? kickoffAt) {
+    if (kickoffAt == null) return null;
+    final kickoff = DateTime.tryParse(kickoffAt)?.toUtc();
+    if (kickoff == null) return null;
+    final left = kickoff.difference(DateTime.now().toUtc());
+    if (left.isNegative) return null;
+    if (left.inHours >= 24) return 'يُغلق بعد ${left.inDays} يوم';
+    if (left.inHours >= 1) return 'يُغلق بعد ${left.inHours} ساعة';
+    return 'يُغلق بعد ${left.inMinutes} دقيقة';
   }
 }
 
