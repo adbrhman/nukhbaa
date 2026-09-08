@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +11,6 @@ import '../competition/competition_providers.dart';
 import '../competition/team_identity.dart';
 import '../competition/teams_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import '../fixture_prediction/fixture_predict_sheet.dart';
 import '../fixture_prediction/kickoff_countdown.dart';
 import 'pending_predictions_provider.dart';
 
@@ -109,10 +106,9 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// The next ACTION, not a summary: how many fixtures are still unpredicted,
-/// which one locks first, a live countdown to that lock, and one button that
-/// opens THAT fixture's predict sheet -- never the generic matches tab, which
-/// would hand the user back the job of finding the match again.
+/// The month's upcoming matches in one line each: how many are still
+/// unpredicted, which one kicks off first, a live countdown to that kickoff,
+/// and a button through to the matches tab for the full list.
 ///
 /// Renders nothing while either input is still loading (`pending == null`):
 /// a claim about what you have not done must not appear before it is known.
@@ -128,9 +124,9 @@ class _PendingPredictionsCard extends StatelessWidget {
   final PendingPredictions? pending;
   final List<TeamDto>? teamCatalog;
 
-  /// The fallback for the one case with nothing specific to open: fixtures
-  /// are pending but none carries a parsable kickoff, so no single match can
-  /// be named. Then, and only then, the button opens the matches tab.
+  /// Opens the matches tab. The card names the fixture closing first but
+  /// deliberately does not open its predict sheet: the button says
+  /// "match details", and a button must do what it says.
   final VoidCallback onPredict;
 
   @override
@@ -242,13 +238,7 @@ class _PendingPredictionsCard extends StatelessWidget {
             key: const Key('home.pendingPredictions.cta'),
             label: 'تفاصيل المباريات',
             icon: Icons.arrow_back_rounded,
-            onPressed: () {
-              if (next == null) {
-                onPredict();
-                return;
-              }
-              unawaited(showFixturePredictSheet(context: context, item: next));
-            },
+            onPressed: onPredict,
           ),
         ],
       ),
