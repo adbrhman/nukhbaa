@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
+import 'forward_chevron.dart';
 import 'team_logo.dart';
 
 /// Compact, data-driven fixture card shared by summary surfaces.
@@ -53,22 +54,28 @@ class MatchCard extends StatelessWidget {
           child: Row(
             children: <Widget>[
               SizedBox(
-                width: 44,
+                width: 48,
                 height: 32,
                 child: Stack(
                   children: <Widget>[
-                    TeamLogo(
-                      displayName: homeTeam ?? '؟',
-                      crestUrl: homeCrestUrl,
-                      size: 28,
+                    // Both crests are positioned DIRECTIONALLY now. The away
+                    // one used to be `Positioned(left: 16)` while the home one
+                    // was unpositioned -- and an unpositioned Stack child sits
+                    // at `AlignmentDirectional.topStart`, which under Arabic is
+                    // the RIGHT edge, i.e. the very pixels `left: 16` was
+                    // already using. The two circles landed on top of each
+                    // other, so every card in the app showed one crest where
+                    // there should have been two.
+                    //
+                    // The away crest is listed first so the home one draws over
+                    // it: home is the team read first in the title beside it.
+                    PositionedDirectional(
+                      start: 16,
+                      child: _Crest(name: awayTeam, crestUrl: awayCrestUrl),
                     ),
-                    Positioned(
-                      left: 16,
-                      child: TeamLogo(
-                        displayName: awayTeam ?? '؟',
-                        crestUrl: awayCrestUrl,
-                        size: 28,
-                      ),
+                    PositionedDirectional(
+                      start: 0,
+                      child: _Crest(name: homeTeam, crestUrl: homeCrestUrl),
                     ),
                   ],
                 ),
@@ -101,25 +108,19 @@ class MatchCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    kickoff,
-                    style: TextStyle(
-                      color: tokens.primaryLight,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Icon(
-                    Icons.chevron_left_rounded,
-                    color: tokens.textMuted,
-                    size: 18,
-                  ),
-                ],
+              // Kickoff and chevron sit on ONE line rather than stacked. Two
+              // short lines made the card tall enough to open a band of empty
+              // space across its middle -- the thing users kept pointing at.
+              Text(
+                kickoff,
+                style: TextStyle(
+                  color: tokens.primaryLight,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
               ),
+              const SizedBox(width: AppSpacing.xs),
+              ForwardChevron(color: tokens.textMuted, size: 18),
             ],
           ),
         ),
@@ -134,5 +135,26 @@ class MatchCard extends StatelessWidget {
     final hour = local.hour.toString().padLeft(2, '0');
     final minute = local.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+}
+
+/// One crest in the overlapped pair, ringed in the card's own colour so two
+/// circles that overlap by more than half still read as two.
+class _Crest extends StatelessWidget {
+  const _Crest({required this.name, required this.crestUrl});
+
+  final String? name;
+  final String? crestUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: context.tokens.surface,
+      ),
+      child: TeamLogo(displayName: name ?? '؟', crestUrl: crestUrl, size: 28),
+    );
   }
 }

@@ -14,6 +14,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
+import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
@@ -660,10 +661,7 @@ class _MatchesCtaCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_left,
-                color: tokens.onPrimary.withValues(alpha: 0.85),
-              ),
+              ForwardChevron(color: tokens.onPrimary.withValues(alpha: 0.85)),
             ],
           ),
         ),
@@ -801,7 +799,7 @@ class _HomeListCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_left, color: tokens.textMuted),
+              ForwardChevron(color: tokens.textMuted),
             ],
           ),
         ),

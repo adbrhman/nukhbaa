@@ -20,6 +20,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/forward_chevron.dart';
 import '../../l10n/app_localizations.dart';
 import '../fixture_prediction/fixture_prediction_screen.dart';
 import 'competition_providers.dart';
@@ -89,7 +90,7 @@ class _CompetitionSeasonsScreenState
           key: Key('seasons.item.${season.id}'),
           leading: const Icon(Icons.calendar_month_outlined),
           title: Text(season.label),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const ForwardChevron(),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => FixturePredictionScreen(
