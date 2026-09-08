@@ -120,7 +120,7 @@ class UserAvatar extends ConsumerWidget {
     // call. `Image.network`'s `headers` are dropped on Flutter web, so the
     // previous version could not authenticate there at all and every picture
     // silently became an initial.
-    final Uint8List? bytes = ref.watch(avatarBytesProvider(url)).valueOrNull;
+    final Uint8List? bytes = ref.watch(avatarBytesProvider(url)).value;
     if (bytes == null) {
       // Loading, absent and failed all land here on purpose: the initial is a
       // complete answer in every one of those cases, and a spinner in a
