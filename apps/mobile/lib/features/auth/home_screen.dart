@@ -187,7 +187,7 @@ class _PendingPredictionsCard extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'لا تفوّت توقعاتك',
+                'لا تفوّت مبارياتك القادمة',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: tokens.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -230,7 +230,7 @@ class _PendingPredictionsCard extends StatelessWidget {
                 Icon(Icons.timer_outlined, color: tokens.textMuted, size: 18),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  'يُغلق التوقع بعد ',
+                  'تبدأ بعد ',
                   style: TextStyle(color: tokens.textMuted, fontSize: 12),
                 ),
                 KickoffCountdown(kickoffAt: next.fixture.kickoffAt),
@@ -240,7 +240,7 @@ class _PendingPredictionsCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           AppButton(
             key: const Key('home.pendingPredictions.cta'),
-            label: 'توقّع الآن',
+            label: 'تفاصيل المباريات',
             icon: Icons.arrow_back_rounded,
             onPressed: () {
               if (next == null) {
@@ -259,10 +259,10 @@ class _PendingPredictionsCard extends StatelessWidget {
   /// (11+) are four different sentences, so the line is chosen rather than
   /// interpolated into a single template.
   static String _countLine(int count) {
-    if (count == 1) return 'آخر مباراة لم تتوقعها!';
-    if (count == 2) return 'بقيت لك مباراتان بلا توقع';
-    if (count <= 10) return 'بقيت لك $count مباريات بلا توقع';
-    return 'بقيت لك $count مباراة بلا توقع';
+    if (count == 1) return 'لديك مباراة قادمة واحدة';
+    if (count == 2) return 'لديك مباراتان قادمتان';
+    if (count <= 10) return 'لديك $count مباريات قادمة';
+    return 'لديك $count مباراة قادمة';
   }
 
   String _teams(CurrentMonthFixtureItemDto item) {
