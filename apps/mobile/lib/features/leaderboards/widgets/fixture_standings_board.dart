@@ -86,6 +86,11 @@ class FixtureStandingsBoard extends ConsumerWidget {
               movement: e.previousRank == null
                   ? null
                   : e.previousRank! - e.rank,
+              // Server-relative and server-built: the client resolves it
+              // against the API base it already holds and never guesses the
+              // route. Null is the normal case (no picture uploaded), not a
+              // failure.
+              avatarUrl: e.avatarUrl,
             ),
         ],
       ),

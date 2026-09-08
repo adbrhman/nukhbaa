@@ -33,4 +33,47 @@ abstract interface class ParticipantReader {
   /// value -> `identity.users.display_name`). Ids with no matching participant
   /// or user are simply absent from the map (never an error).
   Future<Result<Map<String, String>>> findDisplayNames(List<ParticipantId> ids);
+
+  /// Returns, per participant id value, the facts needed to address that
+  /// participant's profile picture -- and ONLY for the participants who
+  /// actually have one. A participant with no picture is simply absent from
+  /// the map (never an error, never an entry with null fields).
+  ///
+  /// The URL itself is deliberately NOT built here: the read URL shape
+  /// (`/users/{id}/avatar?v=...`) is an HTTP surface owned by the server's
+  /// `avatarUrlFor`, and the server sits behind a proxy that only it knows
+  /// about. This port returns the raw facts -- the owning user id and the
+  /// picture's version timestamp -- exactly as `identity.users` stores them.
+  Future<Result<Map<String, ParticipantAvatarRef>>> findAvatarRefs(
+    List<ParticipantId> ids,
+  );
+}
+
+/// The address of one participant's profile picture: whose it is, and which
+/// version of it is current.
+///
+/// Both fields are non-null by construction, because the pair is only
+/// meaningful together -- migration `0033_avatars_inline.sql` enforces the
+/// same at the row level (`users_avatar_consistent`: bytes, mime and
+/// updated_at are all set or all null). A participant without a picture is
+/// represented by the ABSENCE of a ref, not by a ref full of nulls.
+final class ParticipantAvatarRef {
+  /// Creates a ref to a stored picture.
+  const ParticipantAvatarRef({required this.userId, required this.updatedAt});
+
+  /// The user who owns the picture -- the id the read URL is keyed on.
+  final UserId userId;
+
+  /// When the picture was last replaced. It is the cache-busting token: a new
+  /// picture is a new timestamp is a new URL, so no device serves stale bytes.
+  final DateTime updatedAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ParticipantAvatarRef &&
+      other.userId == userId &&
+      other.updatedAt == updatedAt;
+
+  @override
+  int get hashCode => Object.hash(userId, updatedAt);
 }

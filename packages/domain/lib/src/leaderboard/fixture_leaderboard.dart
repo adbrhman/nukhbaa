@@ -1,5 +1,6 @@
 import 'package:domain/src/competition/participant_id.dart';
 import 'package:domain/src/competition/season_id.dart';
+import 'package:domain/src/identity/user_id.dart';
 import 'package:domain/src/leaderboard/fixture_leaderboard_entry.dart';
 import 'package:domain/src/scoring/fixture_score_result.dart';
 import 'package:domain/src/scoring/participant_fixture_score.dart';
@@ -45,6 +46,8 @@ final class FixtureLeaderboard {
     required List<ParticipantFixtureScore> scores,
     required Map<String, String> displayNames,
     Map<String, int> previousRanks = const <String, int>{},
+    Map<String, UserId> avatarUserIds = const <String, UserId>{},
+    Map<String, DateTime> avatarUpdatedAt = const <String, DateTime>{},
   }) {
     final totals = <String, int>{};
     final counts = <String, int>{};
@@ -95,6 +98,11 @@ final class FixtureLeaderboard {
           // participant who first scored today gets no arrow rather than a
           // fabricated one.
           previousRank: previousRanks[key],
+          // Absent from these maps means "no picture stored": the board draws
+          // the participant's initial, which is a complete answer on its own
+          // and never a failed image request.
+          avatarUserId: avatarUserIds[key],
+          avatarUpdatedAt: avatarUpdatedAt[key],
         ),
     ]..sort(_compare);
 

@@ -646,6 +646,14 @@ final class InMemoryParticipantReader implements ParticipantReader {
         if (_byId[id.value] != null) id.value: 'Test User',
     });
   }
+
+  /// No seeded participant has a picture: the route tests assert numbers and
+  /// order, and an avatar-bearing default would put a URL in every expected
+  /// payload for no test's benefit.
+  @override
+  Future<Result<Map<String, ParticipantAvatarRef>>> findAvatarRefs(
+    List<ParticipantId> ids,
+  ) async => const Result.ok({});
 }
 
 /// A minimal in-memory [LeaderboardRepository] for the leaderboard route test.

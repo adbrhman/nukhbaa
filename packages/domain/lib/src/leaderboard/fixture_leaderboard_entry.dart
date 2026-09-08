@@ -1,4 +1,5 @@
 import 'package:domain/src/competition/participant_id.dart';
+import 'package:domain/src/identity/user_id.dart';
 import 'package:shared/shared.dart';
 
 /// One participant's line on a **season-scoped, live "monthly" fixture
@@ -31,6 +32,8 @@ final class FixtureLeaderboardEntry {
     required this.exactCount,
     required this.decidedCount,
     required this.previousRank,
+    required this.avatarUserId,
+    required this.avatarUpdatedAt,
     required this.rank,
   });
 
@@ -47,6 +50,8 @@ final class FixtureLeaderboardEntry {
     int exactCount = 0,
     int decidedCount = 0,
     int? previousRank,
+    UserId? avatarUserId,
+    DateTime? avatarUpdatedAt,
   }) {
     return FixtureLeaderboardEntry._(
       participantId: participantId,
@@ -56,6 +61,8 @@ final class FixtureLeaderboardEntry {
       exactCount: exactCount,
       decidedCount: decidedCount,
       previousRank: previousRank,
+      avatarUserId: avatarUserId,
+      avatarUpdatedAt: avatarUpdatedAt,
       rank: _unassignedRank,
     );
   }
@@ -113,6 +120,20 @@ final class FixtureLeaderboardEntry {
   /// participant earned.
   final int? previousRank;
 
+  /// The user behind this participant, carried ONLY when they have a stored
+  /// profile picture -- null otherwise. Together with [avatarUpdatedAt] it is
+  /// everything needed to address that picture; the URL itself is built at the
+  /// HTTP edge, which is the only layer that owns the route shape.
+  final UserId? avatarUserId;
+
+  /// When that picture was last replaced -- the cache-busting version. Null
+  /// exactly when [avatarUserId] is null: the pair is stored together and is
+  /// meaningful only together.
+  final DateTime? avatarUpdatedAt;
+
+  /// Whether this participant has a profile picture to draw at all.
+  bool get hasAvatar => avatarUserId != null && avatarUpdatedAt != null;
+
   /// How many places the participant has climbed since [previousRank]:
   /// positive is up, negative is down, `0` is unchanged, `null` is nothing to
   /// compare against. Computed only once [rank] is assigned, so the arrow can
@@ -150,6 +171,8 @@ final class FixtureLeaderboardEntry {
         exactCount: exactCount,
         decidedCount: decidedCount,
         previousRank: previousRank,
+        avatarUserId: avatarUserId,
+        avatarUpdatedAt: avatarUpdatedAt,
         rank: assignedRank,
       ),
     );
@@ -165,6 +188,8 @@ final class FixtureLeaderboardEntry {
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.previousRank == previousRank &&
+      other.avatarUserId == avatarUserId &&
+      other.avatarUpdatedAt == avatarUpdatedAt &&
       other.rank == rank;
 
   @override
@@ -176,6 +201,8 @@ final class FixtureLeaderboardEntry {
     exactCount,
     decidedCount,
     previousRank,
+    avatarUserId,
+    avatarUpdatedAt,
     rank,
   );
 

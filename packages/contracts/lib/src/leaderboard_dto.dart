@@ -538,6 +538,7 @@ final class FixtureLeaderboardEntryDto {
     this.exactCount = 0,
     this.decidedCount = 0,
     this.previousRank,
+    this.avatarUrl,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -557,14 +558,16 @@ final class FixtureLeaderboardEntryDto {
       exactCount: (json['exact_count'] as int?) ?? 0,
       decidedCount: (json['decided_count'] as int?) ?? 0,
       previousRank: json['previous_rank'] as int?,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
   /// The current schema version for this DTO. Version 2 added
-  /// [exactCount]/[decidedCount]; version 3 adds [previousRank]. An older
-  /// payload lacks the keys and deserializes to 0/null, so a cached response
-  /// still renders -- without accuracy, without arrows.
-  static const int currentSchemaVersion = 3;
+  /// [exactCount]/[decidedCount]; version 3 added [previousRank]; version 4
+  /// adds [avatarUrl]. An older payload lacks the keys and deserializes to
+  /// 0/null, so a cached response still renders -- without accuracy, without
+  /// arrows, without pictures.
+  static const int currentSchemaVersion = 4;
 
   /// The participant's standard-competition rank (1-based; tied totals share
   /// a rank, the next distinct total skips by the number tied).
@@ -602,6 +605,14 @@ final class FixtureLeaderboardEntryDto {
   /// pair.
   final int? previousRank;
 
+  /// The participant's profile picture, as a **server-relative** URL, or null
+  /// when they have none. Relative because the server sits behind a proxy and
+  /// does not know its own public origin; the client resolves it against the
+  /// same API base it used for this very request. The `v` query parameter is
+  /// the picture's version, so a replaced picture is a different URL and no
+  /// device keeps serving the old bytes.
+  final String? avatarUrl;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -616,6 +627,7 @@ final class FixtureLeaderboardEntryDto {
     'exact_count': exactCount,
     'decided_count': decidedCount,
     'previous_rank': previousRank,
+    'avatar_url': avatarUrl,
   };
 
   @override
@@ -629,6 +641,7 @@ final class FixtureLeaderboardEntryDto {
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.previousRank == previousRank &&
+      other.avatarUrl == avatarUrl &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -641,6 +654,7 @@ final class FixtureLeaderboardEntryDto {
     exactCount,
     decidedCount,
     previousRank,
+    avatarUrl,
     schemaVersion,
   );
 }

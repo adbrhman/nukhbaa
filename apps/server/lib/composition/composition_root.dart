@@ -1988,6 +1988,11 @@ final class _UnwiredParticipantReader implements ParticipantReader {
   Future<Result<Map<String, String>>> findDisplayNames(
     List<ParticipantId> ids,
   ) => throw StateError('A ledger use-case was not wired into this root');
+
+  @override
+  Future<Result<Map<String, ParticipantAvatarRef>>> findAvatarRefs(
+    List<ParticipantId> ids,
+  ) => throw StateError('A ledger use-case was not wired into this root');
 }
 
 /// Backs an "absent" [ListTeams]: throws if a test reaches the Football Data

@@ -1,6 +1,8 @@
 import 'package:contracts/contracts.dart';
 import 'package:domain/domain.dart';
 
+import 'avatar_url.dart';
+
 /// Projects the domain [SeasonLeaderboard] aggregate onto the versioned wire
 /// shape [SeasonLeaderboardDto] (API ADR §4), and one [LeaderboardEntry] onto
 /// [LeaderboardEntryDto].
@@ -117,6 +119,16 @@ FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
     exactCount: entry.exactCount,
     decidedCount: entry.decidedCount,
     previousRank: entry.previousRank,
+    // The one field this mapper builds rather than echoes -- and it is not a
+    // computed fact, it is the route shape applied to two facts the domain
+    // already holds. A participant with no stored picture gets null, and the
+    // client draws their initial.
+    avatarUrl: entry.hasAvatar
+        ? avatarUrlOf(
+            userId: entry.avatarUserId!,
+            updatedAt: entry.avatarUpdatedAt!,
+          )
+        : null,
   );
 }
 

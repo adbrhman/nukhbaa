@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/ui/user_avatar.dart';
 
 /// One row of a board, flattened from whichever DTO the tab reads.
 class BoardEntry {
@@ -27,6 +28,7 @@ class BoardEntry {
     this.subtitle,
     this.movement,
     this.accuracyLabel,
+    this.avatarUrl,
   });
 
   /// Stable id — also the widget key, so tests and scroll positions survive.
@@ -56,6 +58,11 @@ class BoardEntry {
   /// The localized accuracy string, or null when the participant has no
   /// settled fixture yet and therefore no accuracy at all.
   final String? accuracyLabel;
+
+  /// The participant's server-relative profile picture URL, or null when they
+  /// have none -- in which case the row draws their initial, which is the
+  /// normal case and not an error state.
+  final String? avatarUrl;
 }
 
 /// Podium + list. [myParticipantId] highlights the viewer's own row.
@@ -91,12 +98,18 @@ class LeaderboardBoard extends StatelessWidget {
         ? entries[myIndex - 1].points - entries[myIndex].points
         : null;
 
+    // The shell draws its bottom bar OVER the body (`extendBody: true`), so
+    // the last row would sit under it. Scaffold reports that bar's height as
+    // the body's bottom padding, which is added here rather than hard-coded --
+    // a taller bar or a device with a home indicator stays correct on its own.
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.md,
         AppSpacing.md,
-        AppSpacing.xl,
+        AppSpacing.xl + bottomInset,
       ),
       children: <Widget>[
         if (podium.isNotEmpty)
@@ -197,6 +210,11 @@ class _PodiumTile extends StatelessWidget {
 
   final BoardEntry entry;
   final String keyPrefix;
+
+  /// The tile's MINIMUM height -- what staggers the three places. It is a
+  /// floor, not a fixed size: the tile grows for a participant who has an
+  /// accuracy line as well as a name, a total and a count. It used to be a
+  /// fixed height, which clipped the last line the moment accuracy was added.
   final double height;
   final bool isMe;
 
@@ -207,7 +225,7 @@ class _PodiumTile extends StatelessWidget {
 
     return Container(
       key: Key('$keyPrefix.item.${entry.participantId}'),
-      height: height,
+      constraints: BoxConstraints(minHeight: height),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.xs,
         vertical: AppSpacing.sm,
@@ -225,12 +243,19 @@ class _PodiumTile extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
-          _Initial(name: entry.displayName, ring: medal, size: 44),
+          UserAvatar(
+            displayName: entry.displayName,
+            avatarUrl: entry.avatarUrl,
+            size: 44,
+            gradient: false,
+            borderColor: medal,
+            borderWidth: 2,
+          ),
           const SizedBox(height: AppSpacing.xs),
           _RankPill(rank: entry.rank, color: medal),
-          const SizedBox(height: AppSpacing.xs),
           _MovementChip(
             movement: entry.movement,
             keyPrefix: keyPrefix,
@@ -332,10 +357,13 @@ class _BoardRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          _Initial(
-            name: entry.displayName,
-            ring: isMe ? t.primary : t.border,
+          UserAvatar(
+            displayName: entry.displayName,
+            avatarUrl: entry.avatarUrl,
             size: 34,
+            gradient: false,
+            borderColor: isMe ? t.primary : t.border,
+            borderWidth: 2,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -390,9 +418,13 @@ class _BoardRow extends StatelessWidget {
   }
 }
 
-/// The movement arrow: up in success, down in error, a dash when the place is
-/// unchanged, and nothing at all when there is no snapshot to compare with, so
-/// a first-day board stays clean rather than a column of meaningless dashes.
+/// The movement arrow: up in success, down in error, and NOTHING at all when
+/// the place has not changed or there is no snapshot to compare with.
+///
+/// An unchanged place used to draw a dash. On the day the first snapshot runs
+/// that dash is every row -- the snapshot IS today's board, so every movement
+/// is zero -- and a column of identical dashes says nothing while reading as
+/// though it does. Absence carries the same meaning without the noise.
 class _MovementChip extends StatelessWidget {
   const _MovementChip({
     required this.movement,
@@ -407,19 +439,11 @@ class _MovementChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int? m = movement;
-    if (m == null) {
+    if (m == null || m == 0) {
       return const SizedBox.shrink();
     }
     final AppTokens t = context.tokens;
     final Key k = Key('$keyPrefix.movement.$participantId');
-
-    if (m == 0) {
-      return Text(
-        '-',
-        key: k,
-        style: context.text.labelSmall?.copyWith(color: t.textMuted),
-      );
-    }
 
     final bool up = m > 0;
     final Color color = up ? t.success : t.error;
@@ -440,44 +464,6 @@ class _MovementChip extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// A circular avatar placeholder carrying the name's first character.
-///
-/// Sized and positioned exactly where an uploaded profile picture will go, so
-/// adding real avatars later replaces this widget's inside rather than
-/// re-laying-out every board row.
-class _Initial extends StatelessWidget {
-  const _Initial({required this.name, required this.ring, required this.size});
-
-  final String name;
-  final Color ring;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    final String trimmed = name.trim();
-    final String initial = trimmed.isEmpty ? '؟' : trimmed.substring(0, 1);
-
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: t.surfaceElevated,
-        border: Border.all(color: ring, width: 2),
-      ),
-      child: Text(
-        initial,
-        style: context.text.titleMedium?.copyWith(
-          color: t.textSecondary,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }

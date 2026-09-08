@@ -109,6 +109,18 @@ final class GetSeasonFixtureLeaderboard {
     }
     final displayNames = (namesResult as Ok<Map<String, String>>).value;
 
+    // Profile pictures, resolved in the same pass as the names and from the
+    // same participants. A failed read degrades to no pictures rather than
+    // failing the board: a picture is decoration on the standings, and a
+    // decoration must never cost a user the standings themselves -- the same
+    // rule the snapshot read below follows.
+    final avatarsResult = await _participants.findAvatarRefs(participantIds);
+    final avatars = switch (avatarsResult) {
+      Ok<Map<String, ParticipantAvatarRef>>(:final value) => value,
+      Err<Map<String, ParticipantAvatarRef>>() =>
+        const <String, ParticipantAvatarRef>{},
+    };
+
     // The movement arrows' only input. A failed or empty read degrades to no
     // arrows rather than failing the board: yesterday's ranking is decoration
     // on today's standings, and a decoration must never cost a user the
@@ -124,6 +136,12 @@ final class GetSeasonFixtureLeaderboard {
       scores: scores,
       displayNames: displayNames,
       previousRanks: previousRanks,
+      avatarUserIds: {
+        for (final entry in avatars.entries) entry.key: entry.value.userId,
+      },
+      avatarUpdatedAt: {
+        for (final entry in avatars.entries) entry.key: entry.value.updatedAt,
+      },
     );
   }
 }

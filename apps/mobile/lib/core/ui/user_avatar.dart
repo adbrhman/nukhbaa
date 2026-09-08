@@ -29,6 +29,8 @@ class UserAvatar extends ConsumerWidget {
     required this.avatarUrl,
     required this.size,
     this.gradient = true,
+    this.borderColor,
+    this.borderWidth = 1,
     super.key,
   });
 
@@ -45,38 +47,64 @@ class UserAvatar extends ConsumerWidget {
   /// header) or a flat elevated surface (leaderboard rows).
   final bool gradient;
 
+  /// An explicit ring colour, drawn around the picture AND the fallback alike
+  /// so a row does not change shape the moment a user uploads a photo. The
+  /// podium passes its medal colour here. Null keeps the default: a hairline
+  /// border on the flat fallback, none on the gradient one.
+  final Color? borderColor;
+
+  /// The ring's thickness. The picture is inset by it, so the drawn diameter
+  /// stays [size] whether or not there is a photo.
+  final double borderWidth;
+
   String get _initial {
     final trimmed = displayName.trim();
     return trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// The letter circle, drawn at [diameter]. [withRing] is false for the
+  /// copy that sits INSIDE a ring container, so a failed image never draws a
+  /// second border or overflows the ring it is nested in.
+  Widget _fallback(BuildContext context, double diameter, bool withRing) {
     final AppTokens tokens = context.tokens;
-    final String? url = avatarUrl;
-
-    final Widget fallback = Container(
-      width: size,
-      height: size,
+    final Color? ring = withRing ? borderColor : null;
+    final bool plain = gradient && ring == null && withRing;
+    return Container(
+      width: diameter,
+      height: diameter,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: gradient ? tokens.primaryGradient : null,
-        color: gradient ? null : tokens.surfaceElevated,
+        gradient: plain ? tokens.primaryGradient : null,
+        color: plain ? null : tokens.surfaceElevated,
         shape: BoxShape.circle,
-        border: gradient ? null : Border.all(color: tokens.border),
+        border: !withRing
+            ? null
+            : (plain
+                  ? null
+                  : Border.all(
+                      color: ring ?? tokens.border,
+                      width: borderWidth,
+                    )),
       ),
       child: Text(
         _initial,
         style: TextStyle(
-          color: gradient ? tokens.onPrimary : tokens.textSecondary,
+          color: plain ? tokens.onPrimary : tokens.textSecondary,
           fontWeight: FontWeight.bold,
-          fontSize: size * 0.4,
+          fontSize: diameter * 0.4,
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String? url = avatarUrl;
+    final Color? ring = borderColor;
+    final Widget outerFallback = _fallback(context, size, true);
 
     if (url == null) {
-      return fallback;
+      return outerFallback;
     }
 
     final AppConfig config = ref.watch(appConfigProvider);
@@ -84,25 +112,42 @@ class UserAvatar extends ConsumerWidget {
     final Uri resolved = config.apiBaseUrl.resolve(
       url.startsWith('/') ? url.substring(1) : url,
     );
+    // With a ring, the picture is inset by the ring's own thickness, so the
+    // drawn diameter is [size] whether or not there is a photo -- a row does
+    // not shift when one participant uploads one.
+    final double inner = ring == null ? size : size - borderWidth * 2;
 
     return FutureBuilder<String?>(
       future: store.read(),
       builder: (context, snapshot) {
         final token = snapshot.data;
         if (token == null || token.isEmpty) {
-          return fallback;
+          return outerFallback;
         }
-        return ClipOval(
+        final Widget picture = ClipOval(
           child: Image.network(
             resolved.toString(),
-            width: size,
-            height: size,
+            width: inner,
+            height: inner,
             fit: BoxFit.cover,
             headers: <String, String>{'authorization': 'Bearer $token'},
             // A picture that fails to load is not worth an error affordance:
             // the letter is a complete answer on its own.
-            errorBuilder: (_, _, _) => fallback,
+            errorBuilder: (_, _, _) => _fallback(context, inner, ring == null),
           ),
+        );
+        if (ring == null) {
+          return picture;
+        }
+        return Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: ring, width: borderWidth),
+          ),
+          child: picture,
         );
       },
     );

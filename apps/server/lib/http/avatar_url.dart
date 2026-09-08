@@ -20,6 +20,16 @@ String? avatarUrlFor(User user) {
   if (user.avatarMime == null || updatedAt == null) {
     return null;
   }
-  return '/users/${user.id.value}/avatar'
-      '?v=${updatedAt.toUtc().millisecondsSinceEpoch}';
+  return avatarUrlOf(userId: user.id, updatedAt: updatedAt);
 }
+
+/// Builds the same URL from the two facts it actually needs, for callers that
+/// hold those facts without holding a whole [User] -- a leaderboard row, for
+/// one, which never loads the users it ranks.
+///
+/// One function so the shape exists once: if the route ever moves, every
+/// picture on the platform moves with it, instead of the board quietly keeping
+/// a hand-built string that used to be right.
+String avatarUrlOf({required UserId userId, required DateTime updatedAt}) =>
+    '/users/${userId.value}/avatar'
+    '?v=${updatedAt.toUtc().millisecondsSinceEpoch}';

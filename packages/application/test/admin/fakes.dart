@@ -145,6 +145,14 @@ final class InMemoryParticipantReader implements ParticipantReader {
   }
 
   @override
+  // Deliberately does NOT consume the scripted failure: that failure is
+  // arranged for the read under test, and swallowing it here would leave the
+  // real call succeeding.
+  Future<Result<Map<String, ParticipantAvatarRef>>> findAvatarRefs(
+    List<ParticipantId> ids,
+  ) async => const Result.ok({});
+
+  @override
   Future<Result<Participant?>> findParticipantById(ParticipantId id) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);

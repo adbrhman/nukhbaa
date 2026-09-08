@@ -56,6 +56,64 @@ WHERE p.id = ANY(@ids)
     };
   }
 
+  // Only rows that actually HAVE a picture are selected. The alternative --
+  // returning every participant with nullable columns -- would push the "does
+  // this user have an avatar?" decision up into the use-case, where a null
+  // check would silently become a URL to bytes that do not exist.
+  static const String _selectAvatarRefsSql = '''
+SELECT p.id AS participant_id,
+       u.id AS user_id,
+       u.avatar_updated_at AS avatar_updated_at
+FROM competition.participants p
+JOIN identity.users u ON u.id = p.user_id
+WHERE p.id = ANY(@ids)
+  AND u.avatar_mime IS NOT NULL
+  AND u.avatar_updated_at IS NOT NULL
+''';
+
+  @override
+  Future<Result<Map<String, ParticipantAvatarRef>>> findAvatarRefs(
+    List<ParticipantId> ids,
+  ) async {
+    if (ids.isEmpty) return const Result.ok({});
+    final result = await _connection.query(
+      _selectAvatarRefsSql,
+      parameters: {
+        'ids': [for (final id in ids) id.value],
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        _mapAvatarRefs(value),
+      ),
+    };
+  }
+
+  // A row that cannot be decoded is DROPPED, not escalated: a picture is
+  // decoration on a leaderboard, and a malformed avatar row must never cost a
+  // user the standings themselves. The board still renders their initial.
+  static Map<String, ParticipantAvatarRef> _mapAvatarRefs(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final refs = <String, ParticipantAvatarRef>{};
+    for (final row in rows) {
+      final participantId = row['participant_id']?.toString();
+      final userIdResult = UserId.tryParse(row['user_id']?.toString());
+      final updatedAt = _readUtcTimestamp(row['avatar_updated_at']);
+      if (participantId == null ||
+          updatedAt == null ||
+          userIdResult is! Ok<UserId>) {
+        continue;
+      }
+      refs[participantId] = ParticipantAvatarRef(
+        userId: userIdResult.value,
+        updatedAt: updatedAt,
+      );
+    }
+    return refs;
+  }
+
   static const String _selectByIdSql = '''
 SELECT id, season_id, user_id, status::text, joined_at
 FROM competition.participants
