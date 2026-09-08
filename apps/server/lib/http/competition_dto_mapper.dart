@@ -112,6 +112,17 @@ SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
 }
 
 /// Projects a [Team] onto its wire shape [TeamDto] (`GET /teams`).
+/// Projects a [League] onto its wire shape [LeagueDto]. Same integrity
+/// boundary as [teamToDto]: reference data echoed verbatim, no inverse.
+LeagueDto leagueToDto(League league) {
+  return LeagueDto(
+    id: league.id.value,
+    name: league.name,
+    shortName: league.shortName,
+    logoUrl: league.logoUrl,
+  );
+}
+
 TeamDto teamToDto(Team team) {
   return TeamDto(
     id: team.id.value,

@@ -40,6 +40,7 @@ export 'src/competition_api.dart' show CompetitionApi;
 export 'src/fixture_schedule_api.dart' show FixtureScheduleApi;
 export 'src/groups_api.dart' show GroupsApi;
 export 'src/leaderboards_api.dart' show LeaderboardsApi;
+export 'src/leagues_api.dart' show LeaguesApi;
 export 'src/ledger_api.dart' show LedgerApi;
 export 'src/notifications_api.dart' show NotificationsApi;
 export 'src/prediction_api.dart' show PredictionApi;

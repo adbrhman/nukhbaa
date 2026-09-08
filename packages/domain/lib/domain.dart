@@ -31,6 +31,8 @@ export 'src/competition/ruleset_snapshot.dart';
 export 'src/competition/season_fixture.dart';
 export 'src/competition/season_fixture_card.dart';
 export 'src/competition/season_id.dart';
+export 'src/football_data/league.dart';
+export 'src/football_data/league_ref.dart';
 export 'src/football_data/team.dart';
 export 'src/football_data/team_ref.dart';
 export 'src/group/group.dart';

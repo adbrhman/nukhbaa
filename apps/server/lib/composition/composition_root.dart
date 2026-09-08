@@ -88,6 +88,7 @@ final class CompositionRoot {
     required this.listMyFixturePredictions,
     required this.listMyActiveSeasons,
     required this.listTeams,
+    required this.listLeagues,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -189,6 +190,7 @@ final class CompositionRoot {
     ListMyFixturePredictions? listMyFixturePredictions,
     ListMyActiveSeasons? listMyActiveSeasons,
     ListTeams? listTeams,
+    ListLeagues? listLeagues,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -291,6 +293,7 @@ final class CompositionRoot {
        listMyActiveSeasons =
            listMyActiveSeasons ?? _absentListMyActiveSeasons(),
        listTeams = listTeams ?? _absentListTeams(),
+       listLeagues = listLeagues ?? _absentListLeagues(),
        _connection = null,
        _jwksClient = null;
 
@@ -505,6 +508,12 @@ final class CompositionRoot {
 
   static ListTeams _absentListTeams() =>
       ListTeams(repository: _unwiredTeamRepository);
+
+  static final LeagueRepository _unwiredLeagueRepository =
+      _UnwiredLeagueRepository();
+
+  static ListLeagues _absentListLeagues() =>
+      ListLeagues(repository: _unwiredLeagueRepository);
 
   /// Backs the "absent" fixture-scoring use-case, so a test that reaches an
   /// unwired Axiom-4-Amendment scoring slice fails loudly instead of touching
@@ -1097,6 +1106,9 @@ final class CompositionRoot {
   /// hardcoding either client-side. Any authenticated user.
   final ListTeams listTeams;
 
+  /// Lists the Football Data league catalog (backs `GET /leagues`).
+  final ListLeagues listLeagues;
+
   /// Builds the graph from process environment, failing fast on misconfig.
   static Future<CompositionRoot> bootstrap(Map<String, String> env) async {
     final config = _require(PostgresConfig.fromEnv(env), 'Postgres config');
@@ -1533,6 +1545,9 @@ final class CompositionRoot {
         clock: clock,
       ),
       listTeams: ListTeams(repository: teamRepository),
+      listLeagues: ListLeagues(
+        repository: PostgresLeagueRepository(connection),
+      ),
     );
   }
 
@@ -1977,6 +1992,12 @@ final class _UnwiredParticipantReader implements ParticipantReader {
 
 /// Backs an "absent" [ListTeams]: throws if a test reaches the Football Data
 /// team-catalog slice it never wired.
+final class _UnwiredLeagueRepository implements LeagueRepository {
+  @override
+  Future<Result<List<League>>> listAll() =>
+      throw StateError('ListLeagues was not wired into this test root');
+}
+
 final class _UnwiredTeamRepository implements TeamRepository {
   @override
   Future<Result<List<Team>>> listAll() =>

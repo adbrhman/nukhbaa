@@ -6,6 +6,70 @@ library;
 
 /// A single team's identity as it crosses the wire: id, display name, an
 /// optional short code, and an optional crest URL.
+/// The wire shape of a Football Data league (`GET /leagues`), the sibling of
+/// [TeamDto]. Carries display identity only -- id, name, short code, logo.
+final class LeagueDto {
+  /// Creates a league DTO.
+  const LeagueDto({
+    required this.id,
+    required this.name,
+    required this.shortName,
+    required this.logoUrl,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory LeagueDto.fromJson(Map<String, Object?> json) {
+    return LeagueDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      id: json['id']! as String,
+      name: json['name']! as String,
+      shortName: json['short_name'] as String?,
+      logoUrl: json['logo_url'] as String?,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The league's id (UUID string).
+  final String id;
+
+  /// The league's display name.
+  final String name;
+
+  /// A short code (e.g. "PL"), or null when none is on file.
+  final String? shortName;
+
+  /// The league's logo URL, or null when none is on file.
+  final String? logoUrl;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'id': id,
+    'name': name,
+    'short_name': shortName,
+    'logo_url': logoUrl,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is LeagueDto &&
+      other.id == id &&
+      other.name == name &&
+      other.shortName == shortName &&
+      other.logoUrl == logoUrl &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(id, name, shortName, logoUrl, schemaVersion);
+}
+
 final class TeamDto {
   /// Creates a team DTO.
   const TeamDto({

@@ -713,3 +713,23 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   path by which session state changes.
 - Still to come: avatars on the leaderboard rows (needs avatar_url on the
   board DTO) and the report button.
+
+## 2026-09-07 - fix 29: the league catalog, end to end
+- Measured first: 16 of 37 fixtures carried a null league_id, so their cards
+  showed the month's competition name instead of a league. All 16 were
+  assigned by hand in SQL - 7 to existing leagues, 9 after creating UCL, UEL
+  and the EFL Cup. Every fixture now has a league; none is a point-bearing
+  field, so nothing was at risk.
+- The structure already existed: football_data.leagues (migration 0027) and
+  competition.fixture_schedules.league_id. What was missing was the SURFACE -
+  no endpoint listed leagues, so the admin form could not offer them.
+- League + LeagueRef in the domain, deliberately as thin as Team: a league
+  here is what a fixture is labelled with, not a competition with editions and
+  tables. Modelling league seasons would invent structure nothing reads.
+- LeagueRepository, ListLeagues, PostgresLeagueRepository, LeagueDto,
+  leagueToDto, GET /leagues, LeaguesApi - each a line-for-line sibling of its
+  team counterpart, so there is one shape to learn rather than two.
+- Read-only throughout: leagues are seeded reference data, so no write surface
+  is offered that nothing would call.
+- Next: the picker itself in the admin fixture form, so a new fixture cannot
+  be filed without a league.
