@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:api_client/src/api_error.dart';
 import 'package:http/http.dart' as http;
@@ -200,6 +201,33 @@ final class ApiTransport {
     );
   }
 
+  /// `GET` returning raw bytes rather than JSON -- the one response on this
+  /// platform that is not a document: `GET /users/{id}/avatar`.
+  ///
+  /// `Ok(null)` for `404`, because a user with no stored picture is not an
+  /// error; the caller draws their initial. Every other status goes through
+  /// the shared error decoding, and a `401` still triggers the shared
+  /// unauthorized hook, so an expired session logs out here exactly as it
+  /// does on any other call.
+  ///
+  /// This exists so images travel the same authenticated pipeline as
+  /// everything else. `Image.network`'s `headers` argument is silently
+  /// dropped on Flutter web (the browser's own `<img>` loader fetches the
+  /// URL), so a widget that reached for the network directly could not
+  /// authenticate at all there.
+  Future<Result<Uint8List?>> getBytes(String path) async {
+    final sent = await _rawSend(method: 'GET', path: path);
+    if (sent is Err<http.Response>) return Result.err(sent.error);
+    final response = (sent as Ok<http.Response>).value;
+    final status = response.statusCode;
+    if (status == 404) return const Result.ok(null);
+    if (status >= 200 && status < 300) return Result.ok(response.bodyBytes);
+    if (status == 401) {
+      await _onUnauthorized?.call();
+    }
+    return Result.err(decodeError(status, response.body));
+  }
+
   Future<Result<T>> _send<T>({
     required String method,
     required String path,
@@ -208,6 +236,39 @@ final class ApiTransport {
     List<int>? requestBytes,
     String? requestContentType,
     required Result<T> Function(String body) decode,
+  }) async {
+    final sent = await _rawSend(
+      method: method,
+      path: path,
+      query: query,
+      requestBody: requestBody,
+      requestBytes: requestBytes,
+      requestContentType: requestContentType,
+    );
+    if (sent is Err<http.Response>) return Result.err(sent.error);
+    final response = (sent as Ok<http.Response>).value;
+
+    final status = response.statusCode;
+    if (status >= 200 && status < 300) {
+      return decode(response.body);
+    }
+    if (status == 401) {
+      await _onUnauthorized?.call();
+    }
+    return Result.err(decodeError(status, response.body));
+  }
+
+  // The wire itself: URL, headers, method, timeout. Status interpretation is
+  // deliberately NOT here -- a bytes response and a JSON response disagree
+  // about what 404 means, and folding that into the sender would force one of
+  // them to lie.
+  Future<Result<http.Response>> _rawSend({
+    required String method,
+    required String path,
+    Map<String, String>? query,
+    Map<String, Object?>? requestBody,
+    List<int>? requestBytes,
+    String? requestContentType,
   }) async {
     final uri = _resolve(path, query);
 
@@ -249,14 +310,7 @@ final class ApiTransport {
       return Result.err(networkError(cause));
     }
 
-    final status = response.statusCode;
-    if (status >= 200 && status < 300) {
-      return decode(response.body);
-    }
-    if (status == 401) {
-      await _onUnauthorized?.call();
-    }
-    return Result.err(decodeError(status, response.body));
+    return Result.ok(response);
   }
 
   Uri _resolve(String path, Map<String, String>? query) {

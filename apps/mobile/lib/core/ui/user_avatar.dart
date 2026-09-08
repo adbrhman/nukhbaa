@@ -1,13 +1,13 @@
 /// The one place a profile picture is drawn.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/token_store.dart';
-import '../config/app_config.dart';
 import '../design/app_tokens.dart';
-import '../providers.dart';
+import 'avatar_bytes_provider.dart';
 
 /// Draws a user's profile picture, falling back to their name's first letter.
 ///
@@ -17,11 +17,15 @@ import '../providers.dart';
 /// Two details the endpoint forces:
 ///
 /// * The stored `avatar_url` is RELATIVE, because the server sits behind a
-///   proxy and cannot know its own public origin. It is resolved here against
-///   the same base the app already uses for every other call.
-/// * `GET /users/{id}/avatar` is bearer-gated, so the request needs the
-///   token. It is read once per URL rather than held, so a sign-out cannot
-///   leave a stale credential attached to an image request.
+///   proxy and cannot know its own public origin, so it is handed to
+///   `api_client` verbatim and resolved against the same base every other
+///   call already uses.
+/// * `GET /users/{id}/avatar` is bearer-gated. The token is NOT attached
+///   here: the bytes travel the shared transport, which owns authentication,
+///   timeouts and 401 handling for every request the app makes. A widget that
+///   reached for the network itself could not authenticate on Flutter web at
+///   all, where `Image.network`'s headers are dropped by the browser's own
+///   image loader.
 class UserAvatar extends ConsumerWidget {
   /// Creates an avatar for [displayName], showing [avatarUrl] when present.
   const UserAvatar({
@@ -107,49 +111,45 @@ class UserAvatar extends ConsumerWidget {
       return outerFallback;
     }
 
-    final AppConfig config = ref.watch(appConfigProvider);
-    final TokenStore store = ref.watch(tokenStoreProvider);
-    final Uri resolved = config.apiBaseUrl.resolve(
-      url.startsWith('/') ? url.substring(1) : url,
-    );
     // With a ring, the picture is inset by the ring's own thickness, so the
     // drawn diameter is [size] whether or not there is a photo -- a row does
     // not shift when one participant uploads one.
     final double inner = ring == null ? size : size - borderWidth * 2;
 
-    return FutureBuilder<String?>(
-      future: store.read(),
-      builder: (context, snapshot) {
-        final token = snapshot.data;
-        if (token == null || token.isEmpty) {
-          return outerFallback;
-        }
-        final Widget picture = ClipOval(
-          child: Image.network(
-            resolved.toString(),
-            width: inner,
-            height: inner,
-            fit: BoxFit.cover,
-            headers: <String, String>{'authorization': 'Bearer $token'},
-            // A picture that fails to load is not worth an error affordance:
-            // the letter is a complete answer on its own.
-            errorBuilder: (_, _, _) => _fallback(context, inner, ring == null),
-          ),
-        );
-        if (ring == null) {
-          return picture;
-        }
-        return Container(
-          width: size,
-          height: size,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: ring, width: borderWidth),
-          ),
-          child: picture,
-        );
-      },
+    // The bytes come through `api_client`, not from the widget's own network
+    // call. `Image.network`'s `headers` are dropped on Flutter web, so the
+    // previous version could not authenticate there at all and every picture
+    // silently became an initial.
+    final Uint8List? bytes = ref.watch(avatarBytesProvider(url)).valueOrNull;
+    if (bytes == null) {
+      // Loading, absent and failed all land here on purpose: the initial is a
+      // complete answer in every one of those cases, and a spinner in a
+      // 34-pixel circle on a scrolling list is noise.
+      return outerFallback;
+    }
+
+    final Widget picture = ClipOval(
+      child: Image.memory(
+        bytes,
+        width: inner,
+        height: inner,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _fallback(context, inner, ring == null),
+      ),
+    );
+    if (ring == null) {
+      return picture;
+    }
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: ring, width: borderWidth),
+      ),
+      child: picture,
     );
   }
 }

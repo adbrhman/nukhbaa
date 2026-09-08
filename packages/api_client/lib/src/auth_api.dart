@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_client/src/api_transport.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -55,6 +57,18 @@ final class AuthApi {
       contentType: contentType,
       parse: MeResponseDto.fromJson,
     );
+  }
+
+  /// `GET /users/{id}/avatar` — the stored picture's bytes, for any user.
+  ///
+  /// [avatarPath] is the server-relative URL the server already built and put
+  /// on the DTO (`avatar_url`), passed back verbatim rather than rebuilt
+  /// here: the route shape is the server's to own, and the `?v=` version in
+  /// it is what makes a replaced picture a different resource.
+  ///
+  /// `Ok(null)` when the user has no picture — the caller draws their initial.
+  Future<Result<Uint8List?>> avatarBytes(String avatarPath) {
+    return _transport.getBytes(avatarPath);
   }
 
   /// `DELETE /me/avatar` — removes the caller's picture, if any.
