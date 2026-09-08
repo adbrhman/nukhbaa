@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/ui/app_button.dart';
 import '../../core/ui/match_card.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../l10n/app_localizations.dart';
@@ -12,6 +15,8 @@ import '../competition/competition_providers.dart';
 import '../competition/team_identity.dart';
 import '../competition/teams_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../fixture_prediction/fixture_predict_sheet.dart';
+import '../fixture_prediction/kickoff_countdown.dart';
 import 'pending_predictions_provider.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
@@ -157,12 +162,15 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// "You still have N to predict, and the next one closes in X."
+/// The next ACTION, not a summary: how many fixtures are still unpredicted,
+/// which one locks first, a live countdown to that lock, and one button that
+/// opens THAT fixture's predict sheet -- never the generic matches tab, which
+/// would hand the user back the job of finding the match again.
 ///
-/// Renders nothing at all when there is nothing pending, or while either
-/// input is still loading. An empty state here would be a card that exists to
-/// say the user has no work -- which is not worth the vertical space that
-/// pushes the fixtures below the fold.
+/// Renders nothing while either input is still loading (`pending == null`):
+/// a claim about what you have not done must not appear before it is known.
+/// Once everything is predicted it becomes a quiet confirmation rather than
+/// disappearing, so the row does not blink out of the layout mid-scroll.
 class _PendingPredictionsCard extends StatelessWidget {
   const _PendingPredictionsCard({
     required this.pending,
@@ -172,70 +180,145 @@ class _PendingPredictionsCard extends StatelessWidget {
 
   final PendingPredictions? pending;
   final List<TeamDto>? teamCatalog;
+
+  /// The fallback for the one case with nothing specific to open: fixtures
+  /// are pending but none carries a parsable kickoff, so no single match can
+  /// be named. Then, and only then, the button opens the matches tab.
   final VoidCallback onPredict;
 
   @override
   Widget build(BuildContext context) {
     final summary = pending;
-    if (summary == null || summary.isEmpty) return const SizedBox.shrink();
+    if (summary == null) return const SizedBox.shrink();
 
     final tokens = context.tokens;
-    final next = summary.next;
-
-    return InkWell(
-      key: const Key('home.pendingPredictions'),
-      onTap: onPredict,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Container(
+    if (summary.isEmpty) {
+      return Container(
+        key: const Key('home.pendingPredictions.done'),
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: tokens.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: tokens.primary),
+          border: Border.all(color: tokens.border),
         ),
         child: Row(
           children: <Widget>[
-            Icon(Icons.bolt, color: tokens.primaryLight, size: 26),
+            Icon(Icons.verified_rounded, color: tokens.primaryLight, size: 22),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'بقيت ${summary.count} مباراة بلا توقع',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (next != null) ...<Widget>[
-                    const SizedBox(height: 3),
-                    Text(
-                      _nextLine(next),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: tokens.textMuted, fontSize: 12),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'توقّع الآن',
-              style: TextStyle(
-                color: tokens.primaryLight,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
+              child: Text(
+                'أكملت جميع توقعاتك',
+                style: TextStyle(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
         ),
+      );
+    }
+
+    final next = summary.next;
+    return Container(
+      key: const Key('home.pendingPredictions'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: tokens.primary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.local_fire_department_rounded,
+                color: tokens.primaryLight,
+                size: 22,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'لا تفوّت توقعاتك',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _countLine(summary.count),
+            key: const Key('home.pendingPredictions.count'),
+            style: TextStyle(color: tokens.textSecondary, fontSize: 13),
+          ),
+          if (next != null) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.emoji_events_outlined,
+                  color: tokens.textMuted,
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _teams(next),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: <Widget>[
+                Icon(Icons.timer_outlined, color: tokens.textMuted, size: 18),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'يُغلق التوقع بعد ',
+                  style: TextStyle(color: tokens.textMuted, fontSize: 12),
+                ),
+                KickoffCountdown(kickoffAt: next.fixture.kickoffAt),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            key: const Key('home.pendingPredictions.cta'),
+            label: 'توقّع الآن',
+            icon: Icons.arrow_back_rounded,
+            onPressed: () {
+              if (next == null) {
+                onPredict();
+                return;
+              }
+              unawaited(showFixturePredictSheet(context: context, item: next));
+            },
+          ),
+        ],
       ),
     );
   }
 
-  String _nextLine(CurrentMonthFixtureItemDto item) {
+  /// Arabic counts are not a plural suffix: one, two, few (3-10) and many
+  /// (11+) are four different sentences, so the line is chosen rather than
+  /// interpolated into a single template.
+  static String _countLine(int count) {
+    if (count == 1) return 'آخر مباراة لم تتوقعها!';
+    if (count == 2) return 'بقيت لك مباراتان بلا توقع';
+    if (count <= 10) return 'بقيت لك $count مباريات بلا توقع';
+    return 'بقيت لك $count مباراة بلا توقع';
+  }
+
+  String _teams(CurrentMonthFixtureItemDto item) {
     final home = resolveTeamIdentity(
       catalog: teamCatalog,
       teamId: item.fixture.homeTeamId,
@@ -246,26 +329,7 @@ class _PendingPredictionsCard extends StatelessWidget {
       teamId: item.fixture.awayTeamId,
       teamName: item.fixture.awayTeam,
     );
-    final closes = _closesIn(item.fixture.kickoffAt);
-    final teams = '${home.displayName} × ${away.displayName}';
-    return closes == null ? 'أقربها: $teams' : 'أقربها: $teams — $closes';
-  }
-
-  /// How long until the fixture locks, rounded DOWN.
-  ///
-  /// Down, not to nearest: rounding "2h 55m" up to three hours would tell a
-  /// user they have more time than they do, and the whole point of the line
-  /// is the deadline. Under an hour it switches to minutes, because "يُغلق
-  /// بعد 0 ساعة" is not a sentence.
-  static String? _closesIn(String? kickoffAt) {
-    if (kickoffAt == null) return null;
-    final kickoff = DateTime.tryParse(kickoffAt)?.toUtc();
-    if (kickoff == null) return null;
-    final left = kickoff.difference(DateTime.now().toUtc());
-    if (left.isNegative) return null;
-    if (left.inHours >= 24) return 'يُغلق بعد ${left.inDays} يوم';
-    if (left.inHours >= 1) return 'يُغلق بعد ${left.inHours} ساعة';
-    return 'يُغلق بعد ${left.inMinutes} دقيقة';
+    return '${home.displayName} × ${away.displayName}';
   }
 }
 
