@@ -18,11 +18,11 @@ import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
-import '../competition/my_active_seasons_screen.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/my_groups_screen.dart';
 import '../groups/join_group_screen.dart';
-import '../hall_of_fame/hall_of_fame_screen.dart';
+import '../record/elite_card_screen.dart';
+import '../record/season_record_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../ledger/ledger_screen.dart';
@@ -36,10 +36,10 @@ import 'session_controller.dart';
 /// button list. Every destination below already existed as a plain
 /// [AppButton] target; this is a visual restyle only (same providers, same
 /// navigation, same `account.*` keys), not a new architecture or data
-/// source. No success-rate/points/rank stats are shown here: the server
-/// exposes no cross-season aggregate for those (leaderboards are strictly
-/// per-season, Axiom 2/5 — `leaderboards_providers.dart`), so nothing is
-/// fabricated on the client.
+/// source. Cross-season stats ARE shown now, via the elite card: `GET
+/// /me/seasons` is the server-side aggregate whose absence this comment used
+/// to record. Nothing is still fabricated on the client -- every figure on
+/// that card is a fold over rows the server ruled on.
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({required this.user, super.key});
   final AuthenticatedUserDto user;
@@ -189,14 +189,14 @@ class AccountScreen extends ConsumerWidget {
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: _HomeActionCard(
-                              itemKey: const Key('account.hallOfFame'),
-                              icon: Icons.workspace_premium_outlined,
-                              label: l10n.hallOfFame,
+                              itemKey: const Key('account.eliteCard'),
+                              icon: Icons.badge_outlined,
+                              label: l10n.eliteCard,
                               tokens: tokens,
                               text: text,
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute<void>(
-                                  builder: (_) => const HallOfFameScreen(),
+                                  builder: (_) => EliteCardScreen(user: user),
                                 ),
                               ),
                             ),
@@ -206,20 +206,20 @@ class AccountScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     _SectionHeader(
-                      title: l10n.myActiveSeasons,
+                      title: l10n.seasonRecord,
                       tokens: tokens,
                       text: text,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _HomeListCard(
-                      itemKey: const Key('account.myActiveSeasons'),
-                      icon: Icons.calendar_month_outlined,
-                      label: l10n.myActiveSeasons,
+                      itemKey: const Key('account.seasonRecord'),
+                      icon: Icons.emoji_events_outlined,
+                      label: l10n.seasonRecord,
                       tokens: tokens,
                       text: text,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const MyActiveSeasonsScreen(),
+                          builder: (_) => const SeasonRecordScreen(),
                         ),
                       ),
                     ),

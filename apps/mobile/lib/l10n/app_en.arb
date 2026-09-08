@@ -482,6 +482,27 @@
   "adminRoundReportSectionEmpty": "No report for this round yet",
   "adminViewFixtureReportButton": "View fixture report",
   "adminFixtureReportSectionEmpty": "No report for this fixture yet",
+  "seasonRecord": "Championship record",
+  "seasonRecordEmpty": "You have no season result yet.",
+  "eliteCard": "Elite card",
+  "eliteCardEmpty": "Play a season and your card appears here.",
+  "eliteCardBestRank": "Best finish",
+  "eliteCardBestAccuracy": "Best accuracy",
+  "eliteCardTotalPoints": "Total points",
+  "eliteCardRankTrend": "Your finishes over time",
+  "eliteCardSeasonsPlayed": "{count, plural, =0{No seasons yet} =1{1 season} other{{count} seasons}}",
+  "@eliteCardSeasonsPlayed": {
+    "description": "How many seasons the user has a result in, shown under their name on the elite card.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeFirstSeason": "First season",
+  "badgeFirstPodium": "First podium",
+  "badgeSharpshooter": "50% exact",
+  "badgeTitleHolder": "Title",
   "myActiveSeasons": "My Active Seasons",
   "myActiveSeasonsEmpty": "You have no active seasons right now.",
   "myGroups": "My Groups",

@@ -101,6 +101,19 @@ final class LeaderboardsApi {
     );
   }
 
+  /// `GET /me/seasons` — the caller's own season-by-season record, newest
+  /// season first: the place they took, the points they scored, and the raw
+  /// counts behind their accuracy.
+  ///
+  /// An **empty** list is a legitimate result (a new account that has never
+  /// scored), never an error.
+  Future<Result<List<MySeasonRecordDto>>> mySeasons() {
+    return _transport.getList<MySeasonRecordDto>(
+      '/me/seasons',
+      parseElement: MySeasonRecordDto.fromJson,
+    );
+  }
+
   /// `GET /leaderboard/hall-of-fame` — the platform-wide, all-time standings.
   /// [limit] is an optional page-size hint; the server clamps an untrusted
   /// value rather than rejecting it. An **empty** `entries` list is a

@@ -1296,6 +1296,84 @@ abstract class AppLocalizations {
   /// **'No report for this fixture yet'**
   String get adminFixtureReportSectionEmpty;
 
+  /// No description provided for @seasonRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Championship record'**
+  String get seasonRecord;
+
+  /// No description provided for @seasonRecordEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no season result yet.'**
+  String get seasonRecordEmpty;
+
+  /// No description provided for @eliteCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite card'**
+  String get eliteCard;
+
+  /// No description provided for @eliteCardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a season and your card appears here.'**
+  String get eliteCardEmpty;
+
+  /// No description provided for @eliteCardBestRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Best finish'**
+  String get eliteCardBestRank;
+
+  /// No description provided for @eliteCardBestAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Best accuracy'**
+  String get eliteCardBestAccuracy;
+
+  /// No description provided for @eliteCardTotalPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Total points'**
+  String get eliteCardTotalPoints;
+
+  /// No description provided for @eliteCardRankTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Your finishes over time'**
+  String get eliteCardRankTrend;
+
+  /// How many seasons the user has a result in, shown under their name on the elite card.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No seasons yet} =1{1 season} other{{count} seasons}}'**
+  String eliteCardSeasonsPlayed(int count);
+
+  /// No description provided for @badgeFirstSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'First season'**
+  String get badgeFirstSeason;
+
+  /// No description provided for @badgeFirstPodium.
+  ///
+  /// In en, this message translates to:
+  /// **'First podium'**
+  String get badgeFirstPodium;
+
+  /// No description provided for @badgeSharpshooter.
+  ///
+  /// In en, this message translates to:
+  /// **'50% exact'**
+  String get badgeSharpshooter;
+
+  /// No description provided for @badgeTitleHolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get badgeTitleHolder;
+
   /// No description provided for @myActiveSeasons.
   ///
   /// In en, this message translates to:

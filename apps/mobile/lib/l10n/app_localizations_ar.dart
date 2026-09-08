@@ -691,6 +691,57 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد تقرير لهذه المباراة بعد';
 
   @override
+  String get seasonRecord => 'سجل البطولات';
+
+  @override
+  String get seasonRecordEmpty => 'لم تُسجّل نتيجة في أي موسم بعد.';
+
+  @override
+  String get eliteCard => 'بطاقة النخبة';
+
+  @override
+  String get eliteCardEmpty => 'العب موسمًا وستظهر بطاقتك هنا.';
+
+  @override
+  String get eliteCardBestRank => 'أفضل مركز';
+
+  @override
+  String get eliteCardBestAccuracy => 'أعلى دقة';
+
+  @override
+  String get eliteCardTotalPoints => 'مجموع النقاط';
+
+  @override
+  String get eliteCardRankTrend => 'مراكزك عبر المواسم';
+
+  @override
+  String eliteCardSeasonsPlayed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count موسم',
+      many: '$count موسمًا',
+      few: '$count مواسم',
+      two: 'موسمان',
+      one: 'موسم واحد',
+      zero: 'لا مواسم بعد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeFirstSeason => 'أول موسم';
+
+  @override
+  String get badgeFirstPodium => 'أول منصة';
+
+  @override
+  String get badgeSharpshooter => 'دقة 50%';
+
+  @override
+  String get badgeTitleHolder => 'اللقب';
+
+  @override
   String get myActiveSeasons => 'مواسمي النشطة';
 
   @override

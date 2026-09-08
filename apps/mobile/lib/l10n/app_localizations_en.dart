@@ -687,6 +687,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminFixtureReportSectionEmpty => 'No report for this fixture yet';
 
   @override
+  String get seasonRecord => 'Championship record';
+
+  @override
+  String get seasonRecordEmpty => 'You have no season result yet.';
+
+  @override
+  String get eliteCard => 'Elite card';
+
+  @override
+  String get eliteCardEmpty => 'Play a season and your card appears here.';
+
+  @override
+  String get eliteCardBestRank => 'Best finish';
+
+  @override
+  String get eliteCardBestAccuracy => 'Best accuracy';
+
+  @override
+  String get eliteCardTotalPoints => 'Total points';
+
+  @override
+  String get eliteCardRankTrend => 'Your finishes over time';
+
+  @override
+  String eliteCardSeasonsPlayed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seasons',
+      one: '1 season',
+      zero: 'No seasons yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeFirstSeason => 'First season';
+
+  @override
+  String get badgeFirstPodium => 'First podium';
+
+  @override
+  String get badgeSharpshooter => '50% exact';
+
+  @override
+  String get badgeTitleHolder => 'Title';
+
+  @override
   String get myActiveSeasons => 'My Active Seasons';
 
   @override
