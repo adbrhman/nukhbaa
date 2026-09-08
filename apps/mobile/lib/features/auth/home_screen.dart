@@ -8,9 +8,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
-import '../../core/ui/match_card.dart';
 import '../../core/ui/streak_chip.dart';
-import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_identity.dart';
 import '../competition/teams_providers.dart';
@@ -44,7 +42,6 @@ class HomeScreen extends ConsumerWidget {
     final fixtures = ref.watch(currentMonthFixturesProvider);
     final seasons = ref.watch(activeSeasonsProvider);
     final teamCatalog = ref.watch(teamCatalogProvider).value;
-    final l10n = AppLocalizations.of(context);
     final name = user.displayName.trim().isEmpty ? 'المتنبئ' : user.displayName;
 
     return Scaffold(
@@ -89,12 +86,6 @@ class HomeScreen extends ConsumerWidget {
                 seasons: seasons,
                 onOpenMatches: onOpenMatches,
               ),
-              const SizedBox(height: 16),
-              _PendingPredictionsCard(
-                pending: ref.watch(pendingPredictionsProvider),
-                teamCatalog: teamCatalog,
-                onPredict: onOpenMatches,
-              ),
               const SizedBox(height: 24),
               _SectionHeader(title: 'وصول سريع', action: null, onAction: null),
               const SizedBox(height: 10),
@@ -105,54 +96,10 @@ class HomeScreen extends ConsumerWidget {
                 onOpenAccount: onOpenAccount,
               ),
               const SizedBox(height: 24),
-              _SectionHeader(
-                title: l10n.matchesTitle,
-                action: 'عرض الكل',
-                onAction: onOpenMatches,
-              ),
-              const SizedBox(height: 10),
-              fixtures.when(
-                loading: () => const _HomeLoadingCard(),
-                error: (error, stackTrace) => _HomeMessage(
-                  message: 'تعذر تحميل مباريات هذا الشهر.',
-                  action: onOpenMatches,
-                  actionLabel: 'فتح المباريات',
-                ),
-                data: (items) {
-                  if (items.isEmpty) {
-                    return _HomeMessage(
-                      message: l10n.matchesEmpty,
-                      action: onOpenMatches,
-                      actionLabel: 'تحديث',
-                    );
-                  }
-                  return Column(
-                    children: items.take(3).map((item) {
-                      final home = resolveTeamIdentity(
-                        catalog: teamCatalog,
-                        teamId: item.fixture.homeTeamId,
-                        teamName: item.fixture.homeTeam,
-                      );
-                      final away = resolveTeamIdentity(
-                        catalog: teamCatalog,
-                        teamId: item.fixture.awayTeamId,
-                        teamName: item.fixture.awayTeam,
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: MatchCard(
-                          competition: item.competitionName,
-                          homeTeam: home.displayName,
-                          awayTeam: away.displayName,
-                          homeCrestUrl: home.crestUrl,
-                          awayCrestUrl: away.crestUrl,
-                          kickoffAt: item.fixture.kickoffAt,
-                          onTap: onOpenMatches,
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
+              _PendingPredictionsCard(
+                pending: ref.watch(pendingPredictionsProvider),
+                teamCatalog: teamCatalog,
+                onPredict: onOpenMatches,
               ),
             ],
           ),
@@ -557,56 +504,6 @@ class _SectionHeader extends StatelessWidget {
         if (action != null)
           TextButton(onPressed: onAction, child: Text(action!)),
       ],
-    );
-  }
-}
-
-class _HomeLoadingCard extends StatelessWidget {
-  const _HomeLoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Container(
-      height: 112,
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brMd,
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _HomeMessage extends StatelessWidget {
-  const _HomeMessage({
-    required this.message,
-    required this.action,
-    required this.actionLabel,
-  });
-
-  final String message;
-  final VoidCallback action;
-  final String actionLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brMd,
-        border: Border.all(color: tokens.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(message, style: TextStyle(color: tokens.textSecondary)),
-          ),
-          TextButton(onPressed: action, child: Text(actionLabel)),
-        ],
-      ),
     );
   }
 }
