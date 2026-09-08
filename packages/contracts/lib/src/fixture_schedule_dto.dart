@@ -33,6 +33,7 @@ final class FixtureScheduleDto {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -47,6 +48,7 @@ final class FixtureScheduleDto {
       kickoffAt: json['kickoff_at']! as String,
       homeTeamId: json['home_team_id'] as String?,
       awayTeamId: json['away_team_id'] as String?,
+      leagueId: json['league_id'] as String?,
     );
   }
 
@@ -75,6 +77,9 @@ final class FixtureScheduleDto {
   /// [homeTeamId].
   final String? awayTeamId;
 
+  /// The league this fixture belongs to, or `null` when none is on file.
+  final String? leagueId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -87,6 +92,7 @@ final class FixtureScheduleDto {
     'kickoff_at': kickoffAt,
     'home_team_id': homeTeamId,
     'away_team_id': awayTeamId,
+    'league_id': leagueId,
   };
 
   @override
@@ -98,6 +104,7 @@ final class FixtureScheduleDto {
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
+      other.leagueId == leagueId &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -108,6 +115,7 @@ final class FixtureScheduleDto {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueId,
     schemaVersion,
   );
 }
@@ -125,6 +133,7 @@ final class FixtureScheduleRequestDto {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -140,6 +149,7 @@ final class FixtureScheduleRequestDto {
       kickoffAt: json['kickoff_at'] as String?,
       homeTeamId: json['home_team_id'] as String?,
       awayTeamId: json['away_team_id'] as String?,
+      leagueId: json['league_id'] as String?,
     );
   }
 
@@ -166,6 +176,11 @@ final class FixtureScheduleRequestDto {
   /// [homeTeamId].
   final String? awayTeamId;
 
+  /// The league the admin filed this fixture under. Optional on the wire
+  /// so an older client keeps working; when absent, the stored league is
+  /// left as it is rather than cleared.
+  final String? leagueId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -177,6 +192,7 @@ final class FixtureScheduleRequestDto {
     'kickoff_at': kickoffAt,
     'home_team_id': homeTeamId,
     'away_team_id': awayTeamId,
+    'league_id': leagueId,
   };
 
   @override
@@ -187,6 +203,7 @@ final class FixtureScheduleRequestDto {
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
+      other.leagueId == leagueId &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -196,6 +213,7 @@ final class FixtureScheduleRequestDto {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueId,
     schemaVersion,
   );
 }

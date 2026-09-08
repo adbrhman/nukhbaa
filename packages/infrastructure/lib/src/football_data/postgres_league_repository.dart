@@ -62,6 +62,6 @@ ORDER BY name ASC, id ASC
 
   static AppError _corrupt(String field, String detail) => AppError.transient(
     'football_data.row_corrupt',
-    'Stored football_data.leagues row has invalid \$field: \$detail',
+    'Stored football_data.leagues row has invalid $field: $detail',
   );
 }

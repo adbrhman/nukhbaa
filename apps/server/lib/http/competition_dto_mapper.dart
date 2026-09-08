@@ -129,6 +129,7 @@ TeamDto teamToDto(Team team) {
     name: team.name,
     shortName: team.shortName,
     crestUrl: team.crestUrl,
+    leagueId: team.leagueId?.value,
   );
 }
 

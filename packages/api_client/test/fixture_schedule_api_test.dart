@@ -45,6 +45,7 @@ void main() {
           'kickoff_at': '2026-08-20T18:00:00.000Z',
           'home_team_id': null,
           'away_team_id': null,
+          'league_id': null,
         });
       },
     );
@@ -122,6 +123,7 @@ void main() {
         'kickoff_at': '2026-08-21T18:00:00.000Z',
         'home_team_id': null,
         'away_team_id': null,
+        'league_id': null,
       });
     });
 

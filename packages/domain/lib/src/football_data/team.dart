@@ -1,3 +1,4 @@
+import 'package:domain/src/football_data/league_ref.dart';
 import 'package:domain/src/football_data/team_ref.dart';
 
 /// A canonical team identity (`football_data.teams`, migration
@@ -13,6 +14,7 @@ final class Team {
     required this.name,
     required this.shortName,
     required this.crestUrl,
+    this.leagueId,
   });
 
   /// The team's canonical id.
@@ -28,16 +30,22 @@ final class Team {
   /// The team's crest image URL, or `null` when none is on file yet.
   final String? crestUrl;
 
+  /// The league this team plays in (migration 0035), or `null` for a team
+  /// entered outside a seeded league. This is what lets a caller narrow
+  /// the catalog to one league's clubs instead of showing all of them.
+  final LeagueRef? leagueId;
+
   @override
   bool operator ==(Object other) =>
       other is Team &&
       other.id == id &&
       other.name == name &&
       other.shortName == shortName &&
-      other.crestUrl == crestUrl;
+      other.crestUrl == crestUrl &&
+      other.leagueId == leagueId;
 
   @override
-  int get hashCode => Object.hash(id, name, shortName, crestUrl);
+  int get hashCode => Object.hash(id, name, shortName, crestUrl, leagueId);
 
   @override
   String toString() => 'Team(${id.value}, $name)';

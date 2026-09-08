@@ -16,6 +16,7 @@ final class CorrectFixtureSchedule {
     required DateTime kickoffAt,
     String? homeTeamId,
     String? awayTeamId,
+    String? leagueId,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
@@ -36,6 +37,11 @@ final class CorrectFixtureSchedule {
       return Result.err(awayTeamRefResult.error);
     }
 
+    final leagueRefResult = _parseOptionalLeagueRef(leagueId);
+    if (leagueRefResult is Err<LeagueRef?>) {
+      return Result.err(leagueRefResult.error);
+    }
+
     final scheduleResult = FixtureSchedule.create(
       fixture: (fixtureResult as Ok<FixtureRef>).value,
       homeTeam: homeTeam,
@@ -43,6 +49,7 @@ final class CorrectFixtureSchedule {
       kickoffAt: kickoffAt,
       homeTeamId: (homeTeamRefResult as Ok<TeamRef?>).value,
       awayTeamId: (awayTeamRefResult as Ok<TeamRef?>).value,
+      leagueId: (leagueRefResult as Ok<LeagueRef?>).value,
     );
     if (scheduleResult is Err<FixtureSchedule>) {
       return Result.err(scheduleResult.error);
@@ -59,6 +66,17 @@ final class CorrectFixtureSchedule {
   /// Parses an optional client-supplied team id: absent stays absent (the
   /// enrichment is opt-in, Football Data phase), present must be a valid
   /// [TeamRef].
+  static Result<LeagueRef?> _parseOptionalLeagueRef(String? raw) {
+    if (raw == null) {
+      return const Result.ok(null);
+    }
+    final parsed = LeagueRef.tryParse(raw);
+    return switch (parsed) {
+      Ok<LeagueRef>(:final value) => Result.ok(value),
+      Err<LeagueRef>(:final error) => Result.err(error),
+    };
+  }
+
   static Result<TeamRef?> _parseOptionalTeamRef(String? raw) {
     if (raw == null) {
       return const Result.ok(null);

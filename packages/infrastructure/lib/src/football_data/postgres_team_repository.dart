@@ -16,7 +16,7 @@ final class PostgresTeamRepository implements TeamRepository {
   final PostgresConnection _connection;
 
   static const String _listAllSql = '''
-SELECT id, name, short_name, crest_url
+SELECT id, name, short_name, crest_url, league_id
 FROM football_data.teams
 ORDER BY name ASC, id ASC
 ''';
@@ -51,12 +51,23 @@ ORDER BY name ASC, id ASC
     if (name is! String) {
       return Result.err(_corrupt('name', 'not a string'));
     }
+    final leagueIdRaw = row['league_id']?.toString();
+    LeagueRef? leagueId;
+    if (leagueIdRaw != null) {
+      final parsed = LeagueRef.tryParse(leagueIdRaw);
+      if (parsed is Err<LeagueRef>) {
+        return Result.err(_corrupt('league_id', parsed.error.message));
+      }
+      leagueId = (parsed as Ok<LeagueRef>).value;
+    }
+
     return Result.ok(
       Team(
         id: (idResult as Ok<TeamRef>).value,
         name: name,
         shortName: row['short_name'] as String?,
         crestUrl: row['crest_url'] as String?,
+        leagueId: leagueId,
       ),
     );
   }

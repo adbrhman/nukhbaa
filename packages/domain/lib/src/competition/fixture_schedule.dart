@@ -1,4 +1,5 @@
 import 'package:domain/src/competition/fixture_ref.dart';
+import 'package:domain/src/football_data/league_ref.dart';
 import 'package:domain/src/football_data/team_ref.dart';
 import 'package:shared/shared.dart';
 
@@ -23,6 +24,7 @@ final class FixtureSchedule {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueId,
   }) : leagueName = null,
        leagueLogoUrl = null;
 
@@ -42,6 +44,7 @@ final class FixtureSchedule {
     required this.kickoffAt,
     this.homeTeamId,
     this.awayTeamId,
+    this.leagueId,
     this.leagueName,
     this.leagueLogoUrl,
   });
@@ -53,6 +56,7 @@ final class FixtureSchedule {
     required DateTime kickoffAt,
     TeamRef? homeTeamId,
     TeamRef? awayTeamId,
+    LeagueRef? leagueId,
   }) {
     final trimmedHome = homeTeam.trim();
     final trimmedAway = awayTeam.trim();
@@ -82,6 +86,7 @@ final class FixtureSchedule {
         kickoffAt: kickoffAt,
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
+        leagueId: leagueId,
       ),
     );
   }
@@ -103,6 +108,15 @@ final class FixtureSchedule {
   final TeamRef? homeTeamId;
   final TeamRef? awayTeamId;
 
+  /// The league this fixture belongs to, or `null` when none was chosen.
+  ///
+  /// Unlike [leagueName]/[leagueLogoUrl] -- which are read-only display
+  /// strings resolved by the repository's join -- this is the stored
+  /// reference the schedule row actually writes (`league_id`, migration
+  /// 0027). Optional: a fixture with no league is a legitimate state and
+  /// the card simply falls back, exactly as before.
+  final LeagueRef? leagueId;
+
   /// The league this fixture was played in, or `null` when the schedule
   /// carries no `league_id` yet. Read-only (see [FixtureSchedule.fromStored]).
   final String? leagueName;
@@ -119,6 +133,7 @@ final class FixtureSchedule {
       other.kickoffAt == kickoffAt &&
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
+      other.leagueId == leagueId &&
       other.leagueName == leagueName &&
       other.leagueLogoUrl == leagueLogoUrl;
 
@@ -130,6 +145,7 @@ final class FixtureSchedule {
     kickoffAt,
     homeTeamId,
     awayTeamId,
+    leagueId,
     leagueName,
     leagueLogoUrl,
   );

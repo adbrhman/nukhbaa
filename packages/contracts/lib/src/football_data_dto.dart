@@ -77,6 +77,7 @@ final class TeamDto {
     required this.name,
     required this.shortName,
     required this.crestUrl,
+    this.leagueId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -89,6 +90,7 @@ final class TeamDto {
       name: json['name']! as String,
       shortName: json['short_name'] as String?,
       crestUrl: json['crest_url'] as String?,
+      leagueId: json['league_id'] as String?,
     );
   }
 
@@ -107,6 +109,10 @@ final class TeamDto {
   /// The team's crest image URL, or `null` when none is on file yet.
   final String? crestUrl;
 
+  /// The league this team plays in, or `null` when it belongs to none.
+  /// Present so a client can offer only the chosen league's clubs.
+  final String? leagueId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -117,6 +123,7 @@ final class TeamDto {
     'name': name,
     'short_name': shortName,
     'crest_url': crestUrl,
+    'league_id': leagueId,
   };
 
   @override
@@ -126,8 +133,10 @@ final class TeamDto {
       other.name == name &&
       other.shortName == shortName &&
       other.crestUrl == crestUrl &&
+      other.leagueId == leagueId &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(id, name, shortName, crestUrl, schemaVersion);
+  int get hashCode =>
+      Object.hash(id, name, shortName, crestUrl, leagueId, schemaVersion);
 }

@@ -26,15 +26,21 @@ final class PostgresFixtureScheduleRepository
 
   static const String _upsertSql = '''
 INSERT INTO competition.fixture_schedules
-  (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id)
+  (fixture_id, home_team, away_team, kickoff_at, home_team_id,
+   away_team_id, league_id)
 VALUES (@fixture_id, @home_team, @away_team, @kickoff_at, @home_team_id,
-        @away_team_id)
+        @away_team_id, @league_id)
 ON CONFLICT (fixture_id) DO UPDATE SET
   home_team    = EXCLUDED.home_team,
   away_team    = EXCLUDED.away_team,
   kickoff_at   = EXCLUDED.kickoff_at,
   home_team_id = EXCLUDED.home_team_id,
-  away_team_id = EXCLUDED.away_team_id
+  away_team_id = EXCLUDED.away_team_id,
+  -- COALESCE, never a bare assignment: a correction that carries no
+  -- league must not erase the league already on the row (migration 0035
+  -- backfilled every fixture it could recover one for).
+  league_id    = COALESCE(EXCLUDED.league_id,
+                          fixture_schedules.league_id)
 ''';
 
   @override
@@ -48,6 +54,7 @@ ON CONFLICT (fixture_id) DO UPDATE SET
         'kickoff_at': schedule.kickoffAt.toUtc().toIso8601String(),
         'home_team_id': schedule.homeTeamId?.value,
         'away_team_id': schedule.awayTeamId?.value,
+        'league_id': schedule.leagueId?.value,
       },
     );
     return switch (inserted) {
@@ -67,7 +74,7 @@ ON CONFLICT (fixture_id) DO UPDATE SET
   // columns — an inner join here would silently hide fixtures from the feed.
   static const String _selectByFixtureSql = '''
 SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
-       fs.home_team_id, fs.away_team_id,
+       fs.home_team_id, fs.away_team_id, fs.league_id,
        l.name AS league_name, l.logo_url AS league_logo_url
 FROM competition.fixture_schedules fs
 LEFT JOIN football_data.leagues l ON l.id = fs.league_id
@@ -93,7 +100,7 @@ WHERE fs.fixture_id = @fixture_id
 
   static const String _selectByFixturesSql = '''
 SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
-       fs.home_team_id, fs.away_team_id,
+       fs.home_team_id, fs.away_team_id, fs.league_id,
        l.name AS league_name, l.logo_url AS league_logo_url
 FROM competition.fixture_schedules fs
 LEFT JOIN football_data.leagues l ON l.id = fs.league_id
@@ -197,6 +204,18 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
       awayTeamId = (parsed as Ok<TeamRef>).value;
     }
 
+    final leagueIdRaw = row['league_id']?.toString();
+    LeagueRef? leagueId;
+    if (leagueIdRaw != null) {
+      final parsed = LeagueRef.tryParse(leagueIdRaw);
+      if (parsed is Err<LeagueRef>) {
+        return Result.err(
+          _corrupt('fixture_schedules', 'league_id', parsed.error.message),
+        );
+      }
+      leagueId = (parsed as Ok<LeagueRef>).value;
+    }
+
     // The two league columns are display strings off a LEFT JOIN: absent
     // (null) is the normal state, and a non-string would mean the join
     // itself is wrong, so they are read defensively rather than validated
@@ -212,6 +231,7 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
         kickoffAt: kickoffAt,
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
+        leagueId: leagueId,
         leagueName: leagueName is String ? leagueName : null,
         leagueLogoUrl: leagueLogoUrl is String ? leagueLogoUrl : null,
       ),
