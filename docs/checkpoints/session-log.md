@@ -757,3 +757,18 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - Steps 3-6 still to come: Postgres adapter, contracts DTO + server route +
   composition_root wiring, api_client method, mobile firebase_messaging
   integration.
+
+## 2026-09-09 - fix 32: device tokens, step 3 of 6 (Postgres adapter)
+- PostgresDeviceTokenRepository: a single INSERT ... ON CONFLICT (token) DO
+  UPDATE, since token is its own primary key (migration 0039). updated_at is
+  stamped by Postgres's own now() on both the insert and the conflict-update
+  branch - no Clock threaded through the adapter, since this is Tier-3
+  bookkeeping, not domain-modeled state.
+- FK violation on the (practically unreachable, since the caller is already
+  authenticated) case of the user vanishing mid-request maps to
+  notification.device_token_user_not_found via the constraint name, mirroring
+  the notification adapter's _reclassify pattern.
+- Exported from infrastructure.dart, alphabetically before its notification
+  sibling.
+- Steps 4-6 still to come: contracts DTO + server route + composition_root
+  wiring, api_client method, mobile firebase_messaging integration.

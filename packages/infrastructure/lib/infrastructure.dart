@@ -30,6 +30,7 @@ export 'src/leaderboard/postgres_rank_snapshot_reader.dart';
 export 'src/ledger/postgres_fixture_ledger_repository.dart';
 export 'src/ledger/postgres_ledger_repository.dart';
 export 'src/ledger/postgres_participant_reader.dart';
+export 'src/notification/postgres_device_token_repository.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
