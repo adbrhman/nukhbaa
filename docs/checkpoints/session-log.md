@@ -746,3 +746,14 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - Steps 2-6 still to come: application port + RegisterDeviceToken use-case,
   Postgres adapter, contracts DTO + server route + composition_root wiring,
   api_client method, mobile firebase_messaging integration.
+
+## 2026-09-09 - fix 31: device tokens, step 2 of 6 (application)
+- DeviceTokenRepository port (upsert by token) + RegisterDeviceToken
+  use-case, mirroring SetAvatar exactly: self-only authority (no lookup
+  needed - the owner of a registration is always the caller), validation
+  confined to non-empty token + supported platform (the token's own shape is
+  Firebase's contract, not ours).
+- Both exported from application.dart in alphabetical order.
+- Steps 3-6 still to come: Postgres adapter, contracts DTO + server route +
+  composition_root wiring, api_client method, mobile firebase_messaging
+  integration.
