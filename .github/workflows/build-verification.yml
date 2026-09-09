@@ -437,8 +437,21 @@ jobs:
             echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret not set"
             exit 1
           }
-          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | tr -dc 'A-Za-z0-9+/=' > /tmp/gs.b64
-          base64 -d /tmp/gs.b64 > android/app/google-services.json
+          # The secret may hold the file itself or its base64 encoding --
+          # both are things a person reasonably pastes into a secret box, and
+          # guessing wrong costs a failed build, so detect instead of assume.
+          FIRST_CHAR=$(printf '%s' "$GOOGLE_SERVICES_JSON_B64" | tr -d '[:space:]' | cut -c1)
+          if [ "$FIRST_CHAR" = "{" ]; then
+            echo "secret holds raw JSON"
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" > android/app/google-services.json
+          else
+            echo "secret holds base64"
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | tr -dc 'A-Za-z0-9+/=' > /tmp/gs.b64
+            base64 -d /tmp/gs.b64 > android/app/google-services.json || {
+              echo "::error::GOOGLE_SERVICES_JSON_BASE64 is neither valid base64 nor a JSON object"
+              exit 1
+            }
+          fi
           test -s android/app/google-services.json || {
             echo "::error::decoding GOOGLE_SERVICES_JSON_BASE64 produced nothing"
             exit 1
