@@ -273,6 +273,28 @@ ORDER BY s.start_at ASC, s.id ASC
     };
   }
 
+  // Monthly contest seasons, identified by their MM/YYYY label. Newest
+  // first: the admin files today's fixtures far more often than a past
+  // month's, so the month they want is the one at the top.
+  static const String _listMonthlySeasonsSql = '''
+SELECT id, competition_id, label, start_at, end_at
+FROM competition.seasons
+WHERE label ~ '^[0-9]{2}/[0-9]{4}\$'
+ORDER BY start_at DESC, id ASC
+''';
+
+  @override
+  Future<Result<List<CompetitionSeason>>> listMonthlySeasons() async {
+    final result = await _connection.query(_listMonthlySeasonsSql);
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapAll(
+        value,
+        _mapSeason,
+      ),
+    };
+  }
+
   static const String _listCompetitionSeasonsSql = '''
 SELECT id, competition_id, label, start_at, end_at
 FROM competition.seasons

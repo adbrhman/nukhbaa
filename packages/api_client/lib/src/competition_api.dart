@@ -80,6 +80,17 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /months` — the monthly contest seasons, newest first.
+  ///
+  /// The months an admin files fixtures into. A platform with no month
+  /// opened yet is a legitimate `Ok(<empty list>)`, never an error.
+  Future<Result<List<SeasonDto>>> listMonthlySeasons() {
+    return _transport.getList<SeasonDto>(
+      '/months',
+      parseElement: SeasonDto.fromJson,
+    );
+  }
+
   /// `GET /seasons/{id}/rounds` — the season's rounds, 1-based sequence order.
   ///
   /// The second middle hop of the browse navigation. A season with no rounds —

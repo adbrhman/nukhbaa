@@ -302,6 +302,20 @@ base class FakeCompetitionRepository implements CompetitionRepository {
   }
 
   @override
+  Future<Result<List<CompetitionSeason>>> listMonthlySeasons() async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    // Mirrors the adapter's rule: MM/YYYY labels only, newest first.
+    final monthly = [
+      for (final s in _seasons.values)
+        if (_monthLabel.hasMatch(s.label)) s,
+    ]..sort((a, b) => b.startAt.compareTo(a.startAt));
+    return Result.ok(monthly);
+  }
+
+  static final RegExp _monthLabel = RegExp(r'^[0-9]{2}/[0-9]{4}$');
+
+  @override
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId) async {
     final f = _takeFailure();
     if (f != null) return Result.err(f);

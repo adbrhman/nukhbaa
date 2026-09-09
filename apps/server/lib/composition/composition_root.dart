@@ -90,6 +90,7 @@ final class CompositionRoot {
     required this.listMyActiveSeasons,
     required this.listTeams,
     required this.listLeagues,
+    required this.listMonthlySeasons,
   }) : _connection = connection,
        _jwksClient = jwksClient;
 
@@ -193,6 +194,7 @@ final class CompositionRoot {
     ListMyActiveSeasons? listMyActiveSeasons,
     ListTeams? listTeams,
     ListLeagues? listLeagues,
+    ListMonthlySeasons? listMonthlySeasons,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
@@ -298,6 +300,7 @@ final class CompositionRoot {
            listMyActiveSeasons ?? _absentListMyActiveSeasons(),
        listTeams = listTeams ?? _absentListTeams(),
        listLeagues = listLeagues ?? _absentListLeagues(),
+       listMonthlySeasons = listMonthlySeasons ?? _absentListMonthlySeasons(),
        _connection = null,
        _jwksClient = null;
 
@@ -402,6 +405,9 @@ final class CompositionRoot {
 
   static ListCompetitionSeasons _absentListCompetitionSeasons() =>
       ListCompetitionSeasons(repository: _unwiredCompetitionRepository);
+
+  static ListMonthlySeasons _absentListMonthlySeasons() =>
+      ListMonthlySeasons(repository: _unwiredCompetitionRepository);
 
   static GetCurrentSeason _absentGetCurrentSeason() => GetCurrentSeason(
     repository: _unwiredCompetitionRepository,
@@ -870,6 +876,11 @@ final class CompositionRoot {
   /// Lists the browsable public competition catalogue (any authenticated user;
   /// the discovery read — BLOCKER FA-1). Never a points/write path.
   final ListCompetitions listCompetitions;
+
+  /// Lists the monthly contest seasons (label `MM/YYYY`) across every
+  /// competition, newest first -- the months an admin files fixtures
+  /// into. Any authenticated user.
+  final ListMonthlySeasons listMonthlySeasons;
 
   /// Lists a competition's seasons ordered by label (any authenticated user;
   /// the browse navigation step competition → season — BLOCKER FA-1 / DEFECT
@@ -1359,6 +1370,7 @@ final class CompositionRoot {
       getCompetition: GetCompetition(repository: competitionRepository),
       getRound: GetRound(repository: competitionRepository),
       listCompetitions: ListCompetitions(repository: competitionRepository),
+      listMonthlySeasons: ListMonthlySeasons(repository: competitionRepository),
       listCompetitionSeasons: ListCompetitionSeasons(
         repository: competitionRepository,
       ),
@@ -1677,6 +1689,9 @@ final class _UnwiredCompetitionRepository implements CompetitionRepository {
   Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
     DateTime at,
   ) async => const Result.ok(<CompetitionSeason>[]);
+
+  @override
+  Future<Result<List<CompetitionSeason>>> listMonthlySeasons() => _unwired();
 
   @override
   Future<Result<void>> saveCompetition(Competition competition) => _unwired();

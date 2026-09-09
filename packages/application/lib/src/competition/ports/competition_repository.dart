@@ -165,6 +165,20 @@ abstract interface class CompetitionRepository {
     DateTime at,
   );
 
+  /// Lists every MONTHLY contest season across all competitions, newest
+  /// first.
+  ///
+  /// "Monthly" is read off the label (`MM/YYYY`), not off the window.
+  /// Window shape cannot tell them apart: the league seasons this project
+  /// carries were seeded with a current-month window too, so a
+  /// window-based rule would return all nine competitions' seasons and the
+  /// admin would be picking "2026/27" eight times over. The label is the
+  /// only field that distinguishes a month from a league's edition.
+  ///
+  /// An empty list is legitimate (no month has been opened yet), never an
+  /// error.
+  Future<Result<List<CompetitionSeason>>> listMonthlySeasons();
+
   Future<Result<List<Round>>> listSeasonRounds(SeasonId seasonId);
 
   /// Lists the fixtures linked to a round, ordered by
