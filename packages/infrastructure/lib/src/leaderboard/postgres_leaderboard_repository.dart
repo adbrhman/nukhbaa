@@ -87,6 +87,17 @@ JOIN competition.participants p ON p.id = v.participant_id
 JOIN competition.seasons s ON s.id = v.season_id
 JOIN competition.competitions c ON c.id = s.competition_id
 WHERE p.user_id = @user_id
+  -- A season that never held a fixture was never a contest, so a row in it is
+  -- not a record of anything. This project carries seven such seasons: the
+  -- league editions seeded alongside the monthly contest, open by date and
+  -- permanently empty. Automatic enrolment (which predates the
+  -- fixture requirement in `listOpenSeasonsWithFixtures`) put every user in
+  -- all of them, which is why the trophy history opened on six identical
+  -- "2026/27" rows at rank #1 with zero points and nothing behind them.
+  AND EXISTS (
+        SELECT 1 FROM competition.season_fixtures sf
+        WHERE sf.season_id = s.id
+      )
 ORDER BY s.start_at DESC, s.id DESC
 ''';
 
