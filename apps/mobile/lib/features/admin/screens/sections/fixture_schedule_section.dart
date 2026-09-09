@@ -9,7 +9,6 @@ import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../competition/team_registry.dart';
 import '../../../competition/teams_providers.dart';
 import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
@@ -46,7 +45,10 @@ class _UnresolvedTeamHint extends StatelessWidget {
   }
 }
 
-/// جدولة المباريات — اختيار المسابقة/الموسم ثم إضافة مباراة.
+/// إضافة مباراة — اختيار الشهر والدوري ثم الفريقين وموعد الانطلاق.
+///
+/// التعديل والحذف لهما شاشتاهما المستقلتان
+/// (`fixture_edit_section.dart` و`fixture_delete_section.dart`).
 class FixtureScheduleSection extends ConsumerStatefulWidget {
   const FixtureScheduleSection({super.key});
 
@@ -74,52 +76,11 @@ class _FixtureScheduleSectionState
   String? _homeTeamId;
   String? _awayTeamId;
 
-  // نطاق اختيار المباراة (لتصحيح بياناتها).
-  final TextEditingController _correctHomeTeamController =
-      TextEditingController();
-  final TextEditingController _correctAwayTeamController =
-      TextEditingController();
-  final FocusNode _correctHomeTeamFocusNode = FocusNode();
-  final FocusNode _correctAwayTeamFocusNode = FocusNode();
-  DateTime? _correctKickoffLocal;
-
-  String? _correctCompetitionId;
-  String? _correctCompetitionName;
-  String? _correctSeasonId;
-  String? _correctFixtureId;
-  String? _correctHomeTeamId;
-  String? _correctAwayTeamId;
-
-  static final List<String> _teamOptions = <String>[
-    ...kEplTeams.keys,
-    ...kSaudiTeams.keys,
-  ]..sort();
-
-  List<String> _scopedTeamOptions(String? competitionName) {
-    final String name = competitionName ?? '';
-    if (name.contains('إنجليز')) return kEplTeams.keys.toList()..sort();
-    if (name.contains('سعود')) return kSaudiTeams.keys.toList()..sort();
-    return _teamOptions;
-  }
-
-  /// Resolves [text] against [catalog] (the real `football_data.teams`
-  /// catalog) by exact, case-insensitive name match — `null` when the typed
-  /// text doesn't (yet) name a real team, which is a legitimate state (a
-  /// free-text legacy team name, or a league with no seeded catalog).
-  String? _resolveTeamId(List<TeamDto> catalog, String text) {
-    final String trimmed = text.trim();
-    if (trimmed.isEmpty) return null;
-    for (final TeamDto team in catalog) {
-      if (team.name.toLowerCase() == trimmed.toLowerCase()) return team.id;
-    }
-    return null;
-  }
-
   /// The clubs of [leagueId], filtered by [query] — the add-fixture form's
   /// team options.
   ///
-  /// Deliberately narrower than [_filterTeamsWithCatalog]: no legacy
-  /// name-only list, no cross-league names. Picking the German league must
+  /// Deliberately narrow: no legacy name-only list and no cross-league
+  /// names. Picking the German league must
   /// offer German clubs and nothing else, which is only possible now that
   /// `football_data.teams` carries a `league_id` (migration 0035). With no
   /// league chosen yet there is nothing legitimate to suggest, so the list
@@ -188,91 +149,13 @@ class _FixtureScheduleSectionState
       text.trim().isNotEmpty &&
       _resolveTeamIdInLeague(catalog, text, leagueId) == null;
 
-  /// Suggestion options merging the legacy name-only lists with the real
-  /// [catalog] (deduplicated, case-insensitive), so an admin sees genuine
-  /// `football_data.teams` rows alongside the still-supported free-text
-  /// legacy names — selecting a catalog name is what lets [_resolveTeamId]
-  /// attach a real team id to the fixture.
-  Iterable<String> _filterTeamsWithCatalog(
-    String query, {
-    String? competitionName,
-    required List<TeamDto> catalog,
-  }) {
-    final Map<String, String> merged = <String, String>{};
-    for (final String name in _scopedTeamOptions(competitionName)) {
-      merged[name.toLowerCase()] = name;
-    }
-    for (final TeamDto team in catalog) {
-      merged[team.name.toLowerCase()] = team.name;
-    }
-    final List<String> options = merged.values.toList()..sort();
-    final String trimmed = query.trim();
-    if (trimmed.isEmpty) return options;
-    final String needle = trimmed.toLowerCase();
-    return options.where((String t) => t.toLowerCase().contains(needle));
-  }
-
   @override
   void dispose() {
     _homeTeamController.dispose();
     _awayTeamController.dispose();
     _homeTeamFocusNode.dispose();
     _awayTeamFocusNode.dispose();
-    _correctHomeTeamController.dispose();
-    _correctAwayTeamController.dispose();
-    _correctHomeTeamFocusNode.dispose();
-    _correctAwayTeamFocusNode.dispose();
     super.dispose();
-  }
-
-  /// يطلب تأكيدًا صريحًا ثم يحذف. الحوار يذكر اسمي الفريقين لا معرّف
-  /// المباراة، لأن المعرّف لا يميّز شيئًا في ذهن المشرف.
-  Future<void> _confirmRemoveFixture() async {
-    final l10n = AppLocalizations.of(context);
-    final String seasonId = _correctSeasonId!;
-    final String fixtureId = _correctFixtureId!;
-    final String home = _correctHomeTeamController.text.trim();
-    final String away = _correctAwayTeamController.text.trim();
-
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        key: const Key('admin.fixtures.remove.confirm'),
-        title: Text(l10n.adminRemoveFixtureFromSeasonButton),
-        content: Text(l10n.adminRemoveFixtureFromSeasonConfirm(home, away)),
-        actions: <Widget>[
-          TextButton(
-            key: const Key('admin.fixtures.remove.confirm.cancel'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.adminRemoveFixtureCancelButton),
-          ),
-          TextButton(
-            key: const Key('admin.fixtures.remove.confirm.ok'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.adminRemoveFixtureFromSeasonButton),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    await ref
-        .read(removeFixtureControllerProvider.notifier)
-        .remove(seasonId: seasonId, fixtureId: fixtureId);
-    if (!mounted) return;
-
-    // بعد حذف ناجح لم يعد للمباراة المختارة وجود، فيُفرَّغ نطاق التصحيح
-    // كي لا يبقى نموذج يشير إلى شيء محذوف.
-    if (ref.read(removeFixtureControllerProvider) is AsyncData<bool>) {
-      setState(() {
-        _correctFixtureId = null;
-        _correctHomeTeamController.clear();
-        _correctAwayTeamController.clear();
-        _correctHomeTeamId = null;
-        _correctAwayTeamId = null;
-        _correctKickoffLocal = null;
-      });
-    }
   }
 
   @override
@@ -302,23 +185,6 @@ class _FixtureScheduleSectionState
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
         _kickoffLocal != null;
-
-    final AsyncValue<FixtureScheduleDto>? correctState = ref.watch(
-      fixtureScheduleControllerProvider,
-    );
-    final bool correctInFlight =
-        correctState is AsyncLoading<FixtureScheduleDto>;
-    final AsyncValue<bool>? removeState = ref.watch(
-      removeFixtureControllerProvider,
-    );
-    final bool removeInFlight = removeState is AsyncLoading<bool>;
-    final bool canSubmitCorrection =
-        !correctInFlight &&
-        _correctSeasonId != null &&
-        _correctFixtureId != null &&
-        _correctHomeTeamController.text.trim().isNotEmpty &&
-        _correctAwayTeamController.text.trim().isNotEmpty &&
-        _correctKickoffLocal != null;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -448,171 +314,6 @@ class _FixtureScheduleSectionState
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
-        AdminSectionHeader(
-          title: l10n.adminCorrectFixtureSectionTitle,
-          subtitle: l10n.adminCorrectFixtureSubtitle,
-        ),
-        AdminCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CompetitionPickerField(
-                key: const Key('admin.fixtures.correct.competitionField'),
-                fieldKey: const Key(
-                  'admin.fixtures.correct.competitionField.field',
-                ),
-                label: l10n.adminSelectCompetitionLabel,
-                enabled: !correctInFlight,
-                selectedId: _correctCompetitionId,
-                onSelected: (CompetitionDto competition) => setState(() {
-                  _correctCompetitionId = competition.id;
-                  _correctCompetitionName = competition.name;
-                  _correctSeasonId = null;
-                  _correctFixtureId = null;
-                  _correctHomeTeamController.clear();
-                  _correctAwayTeamController.clear();
-                  _correctHomeTeamId = null;
-                  _correctAwayTeamId = null;
-                  _correctKickoffLocal = null;
-                }),
-              ),
-              if (_correctCompetitionId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                SeasonPickerField(
-                  competitionId: _correctCompetitionId!,
-                  enabled: !correctInFlight,
-                  selectedId: _correctSeasonId,
-                  onSelected: (String seasonId) => setState(() {
-                    _correctSeasonId = seasonId;
-                    _correctFixtureId = null;
-                  }),
-                ),
-              ],
-              if (_correctSeasonId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                SeasonFixturePickerField(
-                  keyPrefix: 'admin.fixtures.correct',
-                  seasonId: _correctSeasonId!,
-                  enabled: !correctInFlight,
-                  selectedId: _correctFixtureId,
-                  onSelected: (SeasonFixtureCardDto fixture) => setState(() {
-                    _correctFixtureId = fixture.fixtureId;
-                    _correctHomeTeamController.text = fixture.homeTeam ?? '';
-                    _correctAwayTeamController.text = fixture.awayTeam ?? '';
-                    _correctHomeTeamId = fixture.homeTeamId;
-                    _correctAwayTeamId = fixture.awayTeamId;
-                    _correctKickoffLocal = DateTime.tryParse(
-                      fixture.kickoffAt ?? '',
-                    )?.toLocal();
-                  }),
-                ),
-              ],
-              if (_correctFixtureId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                TeamPickerField(
-                  fieldKey: const Key('admin.fixtures.correct.homeTeamField'),
-                  controller: _correctHomeTeamController,
-                  focusNode: _correctHomeTeamFocusNode,
-                  label: l10n.adminHomeTeamLabel,
-                  enabled: !correctInFlight,
-                  catalog: catalog,
-                  optionsBuilder: (q) => _filterTeamsWithCatalog(
-                    q,
-                    competitionName: _correctCompetitionName,
-                    catalog: catalog,
-                  ),
-                  onChanged: () => setState(() {
-                    _correctHomeTeamId = _resolveTeamId(
-                      catalog,
-                      _correctHomeTeamController.text,
-                    );
-                  }),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TeamPickerField(
-                  fieldKey: const Key('admin.fixtures.correct.awayTeamField'),
-                  controller: _correctAwayTeamController,
-                  focusNode: _correctAwayTeamFocusNode,
-                  label: l10n.adminAwayTeamLabel,
-                  enabled: !correctInFlight,
-                  catalog: catalog,
-                  optionsBuilder: (q) => _filterTeamsWithCatalog(
-                    q,
-                    competitionName: _correctCompetitionName,
-                    catalog: catalog,
-                  ),
-                  onChanged: () => setState(() {
-                    _correctAwayTeamId = _resolveTeamId(
-                      catalog,
-                      _correctAwayTeamController.text,
-                    );
-                  }),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AdminSecondaryButton(
-                  key: const Key('admin.fixtures.correct.kickoffPicker'),
-                  label: _correctKickoffLocal == null
-                      ? l10n.adminPickKickoffButton
-                      : _formatKickoff(_correctKickoffLocal!),
-                  icon: Icons.event_outlined,
-                  onPressed: correctInFlight ? null : _pickCorrectKickoff,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.md),
-              if (correctState is AsyncError<FixtureScheduleDto>)
-                AdminErrorBanner(
-                  key: const Key('admin.fixtures.correct.error'),
-                  message: ErrorPresenter.message(
-                    correctState.error as AppError,
-                  ),
-                ),
-              if (correctState is AsyncData<FixtureScheduleDto>)
-                AdminSuccessBanner(
-                  key: const Key('admin.fixtures.correct.result'),
-                  message: l10n.adminCorrectFixtureSuccess(
-                    correctState.value.homeTeam,
-                    correctState.value.awayTeam,
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.md),
-              AdminPrimaryButton(
-                key: const Key('admin.fixtures.correct.submit'),
-                label: l10n.adminCorrectFixtureButton,
-                icon: Icons.edit_calendar_rounded,
-                loading: correctInFlight,
-                onPressed: canSubmitCorrection ? _correctFixture : null,
-              ),
-              // Removal lives inside the correction scope on purpose: the
-              // admin has already picked the exact fixture here, so it needs
-              // no picker of its own — and a delete under every row of a
-              // browse list is a misclick waiting to happen.
-              if (_correctFixtureId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                if (removeState is AsyncError<bool>)
-                  AdminErrorBanner(
-                    key: const Key('admin.fixtures.remove.error'),
-                    message: ErrorPresenter.message(
-                      removeState.error as AppError,
-                    ),
-                  ),
-                if (removeState is AsyncData<bool>)
-                  AdminSuccessBanner(
-                    key: const Key('admin.fixtures.remove.result'),
-                    message: l10n.adminRemoveFixtureFromSeasonSuccess,
-                  ),
-                const SizedBox(height: AppSpacing.md),
-                AdminSecondaryButton(
-                  key: const Key('admin.fixtures.remove.submit'),
-                  label: l10n.adminRemoveFixtureFromSeasonButton,
-                  icon: Icons.delete_outline_rounded,
-                  loading: removeInFlight,
-                  onPressed: removeInFlight ? null : _confirmRemoveFixture,
-                ),
-              ],
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -668,59 +369,6 @@ class _FixtureScheduleSectionState
           homeTeamId: _homeTeamId,
           awayTeamId: _awayTeamId,
           leagueId: leagueId,
-        );
-  }
-
-  Future<void> _pickCorrectKickoff() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _correctKickoffLocal ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _correctKickoffLocal == null
-          ? TimeOfDay.fromDateTime(now)
-          : TimeOfDay.fromDateTime(_correctKickoffLocal!),
-    );
-    if (time == null) return;
-    setState(() {
-      _correctKickoffLocal = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
-  void _correctFixture() {
-    final fixtureId = _correctFixtureId;
-    final seasonId = _correctSeasonId;
-    final homeTeam = _correctHomeTeamController.text.trim();
-    final awayTeam = _correctAwayTeamController.text.trim();
-    final kickoff = _correctKickoffLocal;
-    if (fixtureId == null ||
-        seasonId == null ||
-        homeTeam.isEmpty ||
-        awayTeam.isEmpty ||
-        kickoff == null) {
-      return;
-    }
-    ref
-        .read(fixtureScheduleControllerProvider.notifier)
-        .correct(
-          fixtureId: fixtureId,
-          seasonId: seasonId,
-          homeTeam: homeTeam,
-          awayTeam: awayTeam,
-          kickoffAt: kickoff.toUtc().toIso8601String(),
-          homeTeamId: _correctHomeTeamId,
-          awayTeamId: _correctAwayTeamId,
         );
   }
 
