@@ -733,3 +733,16 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   is offered that nothing would call.
 - Next: the picker itself in the admin fixture form, so a new fixture cannot
   be filed without a league.
+
+## 2026-09-09 - fix 30: device tokens, step 1 of 6 (database)
+- Migration 0039 adds notification.device_tokens: token as primary key (FCM
+  tokens are themselves globally unique and rotate), user_id FK to
+  identity.users, platform check-constrained to android/ios, updated_at.
+  Re-registering an existing token is a future ON CONFLICT (token) DO UPDATE
+  in the adapter, not modelled here.
+- Backend-only surface: RLS enabled, all client privileges revoked, explicit
+  deny-select policy (mirrors admin.audit_log's pattern) - the client never
+  reads or writes this table directly, only through POST /me/device-token.
+- Steps 2-6 still to come: application port + RegisterDeviceToken use-case,
+  Postgres adapter, contracts DTO + server route + composition_root wiring,
+  api_client method, mobile firebase_messaging integration.
