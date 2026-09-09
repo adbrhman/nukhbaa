@@ -1566,6 +1566,30 @@ abstract class AppLocalizations {
   /// **'Select month'**
   String get adminSelectMonthLabel;
 
+  /// No description provided for @adminFixtureEditTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit fixture'**
+  String get adminFixtureEditTab;
+
+  /// No description provided for @adminFixtureDeleteTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete fixture'**
+  String get adminFixtureDeleteTab;
+
+  /// No description provided for @adminFixtureCurrentLeagueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current league: {league}'**
+  String adminFixtureCurrentLeagueLabel(String league);
+
+  /// No description provided for @adminFixtureNoLeagueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This fixture has no league yet.'**
+  String get adminFixtureNoLeagueLabel;
+
   /// No description provided for @adminNoMonthsHint.
   ///
   /// In en, this message translates to:

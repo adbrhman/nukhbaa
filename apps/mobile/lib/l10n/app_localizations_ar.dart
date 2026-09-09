@@ -852,6 +852,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminSelectMonthLabel => 'اختر الشهر';
 
   @override
+  String get adminFixtureEditTab => 'تعديل مباراة';
+
+  @override
+  String get adminFixtureDeleteTab => 'حذف مباراة';
+
+  @override
+  String adminFixtureCurrentLeagueLabel(String league) {
+    return 'الدوري الحالي: $league';
+  }
+
+  @override
+  String get adminFixtureNoLeagueLabel => 'هذه المباراة بلا دوري بعد.';
+
+  @override
   String get adminNoMonthsHint => 'لم يُفتح أي شهر بعد.';
 
   @override

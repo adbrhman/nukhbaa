@@ -550,7 +550,14 @@
   "adminSelectSeasonLabel": "Select season",
   "adminNoSeasonsHint": "This competition has no seasons.",
   "adminSelectMonthLabel": "Select month",
+  "adminFixtureEditTab": "Edit fixture",
+  "adminFixtureDeleteTab": "Delete fixture",
+  "adminFixtureCurrentLeagueLabel": "Current league: {league}",
+  "adminFixtureNoLeagueLabel": "This fixture has no league yet.",
   "adminNoMonthsHint": "No month has been opened yet.",
+  "@adminFixtureCurrentLeagueLabel": {
+    "placeholders": { "league": { "type": "String" } }
+  },
   "adminSelectLeagueLabel": "Select league",
   "adminNoLeaguesHint": "The league catalog is empty.",
   "adminPickLeagueFirstHint": "Pick a league to list its clubs.",

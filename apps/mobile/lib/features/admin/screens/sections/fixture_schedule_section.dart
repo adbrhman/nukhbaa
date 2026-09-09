@@ -15,6 +15,7 @@ import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/team_picker_field.dart';
 
 /// سطر تحذير تحت حقل فريق لم يُطابق الكتالوج: نبرة تحذير لا خطأ، فالإرسال
 /// يبقى ممكنًا عمدًا.
@@ -354,7 +355,7 @@ class _FixtureScheduleSectionState
                 }),
               ),
               const SizedBox(height: AppSpacing.md),
-              _TeamPickerField(
+              TeamPickerField(
                 fieldKey: const Key('admin.fixtures.homeTeamField'),
                 controller: _homeTeamController,
                 focusNode: _homeTeamFocusNode,
@@ -384,7 +385,7 @@ class _FixtureScheduleSectionState
                   message: l10n.adminTeamNotInCatalogHint,
                 ),
               const SizedBox(height: AppSpacing.md),
-              _TeamPickerField(
+              TeamPickerField(
                 fieldKey: const Key('admin.fixtures.awayTeamField'),
                 controller: _awayTeamController,
                 focusNode: _awayTeamFocusNode,
@@ -509,7 +510,7 @@ class _FixtureScheduleSectionState
               ],
               if (_correctFixtureId != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                _TeamPickerField(
+                TeamPickerField(
                   fieldKey: const Key('admin.fixtures.correct.homeTeamField'),
                   controller: _correctHomeTeamController,
                   focusNode: _correctHomeTeamFocusNode,
@@ -529,7 +530,7 @@ class _FixtureScheduleSectionState
                   }),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _TeamPickerField(
+                TeamPickerField(
                   fieldKey: const Key('admin.fixtures.correct.awayTeamField'),
                   controller: _correctAwayTeamController,
                   focusNode: _correctAwayTeamFocusNode,
@@ -727,102 +728,5 @@ class _FixtureScheduleSectionState
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
-  }
-}
-
-/// حقل نصي مع اقتراحات فرق مفلترة — أي نص يُقبل، حتى لو لم يكن ضمن السجل.
-class _TeamPickerField extends StatelessWidget {
-  const _TeamPickerField({
-    required this.fieldKey,
-    required this.controller,
-    required this.focusNode,
-    required this.label,
-    required this.enabled,
-    required this.optionsBuilder,
-    this.catalog = const <TeamDto>[],
-    this.onChanged,
-  });
-
-  final Key fieldKey;
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String label;
-  final bool enabled;
-  final Iterable<String> Function(String query) optionsBuilder;
-
-  /// The real `football_data.teams` catalog — an option matching one of
-  /// these by name (case-insensitive) is a genuine team: selecting it is
-  /// what lets the fixture link a real team id, shown here as a small hint
-  /// distinguishing it from a legacy free-text-only name.
-  final List<TeamDto> catalog;
-  final VoidCallback? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return RawAutocomplete<String>(
-          textEditingController: controller,
-          focusNode: focusNode,
-          optionsBuilder: (TextEditingValue value) =>
-              optionsBuilder(value.text),
-          onSelected: (String selection) {
-            controller.text = selection;
-            onChanged?.call();
-          },
-          fieldViewBuilder: (context, fieldController, fieldFocusNode, _) {
-            return TextField(
-              key: fieldKey,
-              controller: fieldController,
-              focusNode: fieldFocusNode,
-              decoration: InputDecoration(
-                labelText: label,
-                border: const OutlineInputBorder(),
-              ),
-              enabled: enabled,
-              onChanged: (_) => onChanged?.call(),
-            );
-          },
-          optionsViewBuilder: (context, onSelected, options) {
-            final List<String> optionList = options.toList();
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: constraints.maxWidth,
-                    maxHeight: 240,
-                  ),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: optionList.length,
-                    itemBuilder: (context, index) {
-                      final String option = optionList[index];
-                      final TeamBrand? brand =
-                          kEplTeams[option] ?? kSaudiTeams[option];
-                      final bool isCatalogTeam = catalog.any(
-                        (TeamDto t) =>
-                            t.name.toLowerCase() == option.toLowerCase(),
-                      );
-                      return ListTile(
-                        dense: true,
-                        title: Text(option),
-                        subtitle: isCatalogTeam
-                            ? const Text('team id مرتبط ✓')
-                            : (brand == null ? null : Text(brand.ar)),
-                        onTap: () => onSelected(option),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 }

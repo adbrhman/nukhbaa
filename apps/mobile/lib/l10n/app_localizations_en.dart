@@ -844,6 +844,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminSelectMonthLabel => 'Select month';
 
   @override
+  String get adminFixtureEditTab => 'Edit fixture';
+
+  @override
+  String get adminFixtureDeleteTab => 'Delete fixture';
+
+  @override
+  String adminFixtureCurrentLeagueLabel(String league) {
+    return 'Current league: $league';
+  }
+
+  @override
+  String get adminFixtureNoLeagueLabel => 'This fixture has no league yet.';
+
+  @override
   String get adminNoMonthsHint => 'No month has been opened yet.';
 
   @override

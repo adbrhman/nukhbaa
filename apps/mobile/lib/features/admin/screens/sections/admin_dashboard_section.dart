@@ -301,6 +301,8 @@ class _QuickActions extends StatelessWidget {
     final t = context.tokens;
     const actions = <(String, IconData, AdminSection)>[
       ('إضافة مباراة', Icons.add_circle_outline_rounded, AdminSection.fixtures),
+      ('تعديل مباراة', Icons.edit_calendar_outlined, AdminSection.fixtureEdit),
+      ('حذف مباراة', Icons.delete_outline_rounded, AdminSection.fixtureDelete),
       ('تسجيل نتيجة', Icons.scoreboard_outlined, AdminSection.resultsScoring),
       (
         'إنشاء مسابقة',

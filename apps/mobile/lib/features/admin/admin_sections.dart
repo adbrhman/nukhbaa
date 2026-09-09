@@ -12,6 +12,8 @@ enum AdminSection {
   dashboard(icon: Icons.dashboard_rounded),
   monthlyCompetitions(icon: Icons.calendar_month_rounded),
   fixtures(icon: Icons.sports_soccer_rounded),
+  fixtureEdit(icon: Icons.edit_calendar_rounded),
+  fixtureDelete(icon: Icons.delete_outline_rounded),
   predictions(icon: Icons.rule_folder_rounded),
   resultsScoring(icon: Icons.scoreboard_rounded),
   users(icon: Icons.people_alt_rounded),
