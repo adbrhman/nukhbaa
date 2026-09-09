@@ -62,9 +62,14 @@ class _FixtureScheduleSectionState
   final FocusNode _awayTeamFocusNode = FocusNode();
   DateTime? _kickoffLocal;
 
-  String? _competitionId;
-  String? _competitionName;
+  /// The month this fixture is filed into — a `MM/YYYY` contest season
+  /// from `GET /months`, not a competition's edition.
   String? _seasonId;
+
+  /// The league it belongs to. Required to submit: it is what names the
+  /// fixture on the matches card, and what narrows both team dropdowns to
+  /// one league's clubs.
+  String? _leagueId;
   String? _homeTeamId;
   String? _awayTeamId;
 
@@ -96,25 +101,6 @@ class _FixtureScheduleSectionState
     return _teamOptions;
   }
 
-  /// Whether [text] names something but resolves to no catalog team — the
-  /// state that must be *visible*.
-  ///
-  /// A fixture stored with a null `home_team_id`/`away_team_id` still works:
-  /// the free-text name is the identity of record (Axiom 3), so nothing
-  /// fails, nothing is logged, and the admin gets no signal at all. What
-  /// silently disappears is everything keyed off the resolved id — the crest
-  /// and the team's brand colour — so the fixture card falls back to two
-  /// grey letters. That is exactly how "اسبانيول" (catalog: "إسبانيول") and
-  /// "مرسيليا" (catalog: "مارسيليا") shipped: one character off, no error,
-  /// found only by eye on a screenshot days later.
-  ///
-  /// This is deliberately a *warning*, not validation: free text stays legal
-  /// — a real fixture whose team is genuinely not in the catalog must remain
-  /// submittable, and the button stays enabled. It only refuses to let the
-  /// mismatch pass unseen.
-  bool _isUnresolvedTeam(List<TeamDto> catalog, String text) =>
-      text.trim().isNotEmpty && _resolveTeamId(catalog, text) == null;
-
   /// Resolves [text] against [catalog] (the real `football_data.teams`
   /// catalog) by exact, case-insensitive name match — `null` when the typed
   /// text doesn't (yet) name a real team, which is a legitimate state (a
@@ -127,6 +113,79 @@ class _FixtureScheduleSectionState
     }
     return null;
   }
+
+  /// The clubs of [leagueId], filtered by [query] — the add-fixture form's
+  /// team options.
+  ///
+  /// Deliberately narrower than [_filterTeamsWithCatalog]: no legacy
+  /// name-only list, no cross-league names. Picking the German league must
+  /// offer German clubs and nothing else, which is only possible now that
+  /// `football_data.teams` carries a `league_id` (migration 0035). With no
+  /// league chosen yet there is nothing legitimate to suggest, so the list
+  /// is empty rather than the whole catalog.
+  Iterable<String> _filterTeamsInLeague(
+    String query, {
+    required List<TeamDto> catalog,
+    required String? leagueId,
+  }) {
+    if (leagueId == null) return const <String>[];
+    final List<String> options = <String>[
+      for (final TeamDto team in catalog)
+        if (team.leagueId == leagueId) team.name,
+    ]..sort();
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) return options;
+    final String needle = trimmed.toLowerCase();
+    return options.where((String t) => t.toLowerCase().contains(needle));
+  }
+
+  /// Resolves [text] to a team id *within* [leagueId].
+  ///
+  /// The league scope is not decoration. A club that plays in two seeded
+  /// competitions has two catalog rows under the same name — Barcelona is
+  /// both a LaLiga row and a UCL row — so a name-only match would attach
+  /// whichever row came first and silently file the fixture under the
+  /// wrong league.
+  String? _resolveTeamIdInLeague(
+    List<TeamDto> catalog,
+    String text,
+    String? leagueId,
+  ) {
+    final String trimmed = text.trim();
+    if (trimmed.isEmpty || leagueId == null) return null;
+    for (final TeamDto team in catalog) {
+      if (team.leagueId == leagueId &&
+          team.name.toLowerCase() == trimmed.toLowerCase()) {
+        return team.id;
+      }
+    }
+    return null;
+  }
+
+  /// Whether [text] names something that is not a club of [leagueId] — the
+  /// state that must be *visible*.
+  ///
+  /// A fixture stored with a null `home_team_id`/`away_team_id` still
+  /// works: the free-text name is the identity of record (Axiom 3), so
+  /// nothing fails, nothing is logged, and the admin gets no signal at
+  /// all. What silently disappears is everything keyed off the resolved
+  /// id — the crest and the team's brand colour — so the fixture card
+  /// falls back to two grey letters. That is exactly how "اسبانيول"
+  /// (catalog: "إسبانيول") and "مرسيليا" (catalog: "مارسيليا") shipped:
+  /// one character off, no error, found only by eye on a screenshot days
+  /// later.
+  ///
+  /// Deliberately a *warning*, not validation: the button stays enabled,
+  /// because a real fixture whose club is genuinely absent from the
+  /// catalog must remain submittable. It only refuses to let the mismatch
+  /// pass unseen.
+  bool _isUnresolvedTeamInLeague(
+    List<TeamDto> catalog,
+    String text,
+    String? leagueId,
+  ) =>
+      text.trim().isNotEmpty &&
+      _resolveTeamIdInLeague(catalog, text, leagueId) == null;
 
   /// Suggestion options merging the legacy name-only lists with the real
   /// [catalog] (deduplicated, case-insensitive), so an admin sees genuine
@@ -238,6 +297,7 @@ class _FixtureScheduleSectionState
     final bool canSubmit =
         !inFlight &&
         _seasonId != null &&
+        _leagueId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
         _kickoffLocal != null;
@@ -264,39 +324,35 @@ class _FixtureScheduleSectionState
       children: [
         AdminSectionHeader(
           title: l10n.adminAddMatchSectionTitle,
-          subtitle: 'اختر المسابقة والموسم والجولة ثم أضف المباراة',
+          subtitle: 'اختر الشهر والدوري والفريقين وموعد المباراة',
         ),
         AdminCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CompetitionPickerField(
-                key: const Key('admin.fixtures.competitionField'),
-                fieldKey: const Key('admin.fixtures.competitionField.field'),
-                label: l10n.adminSelectCompetitionLabel,
+              MonthPickerField(
+                key: const Key('admin.fixtures.monthField'),
                 enabled: !inFlight,
-                selectedId: _competitionId,
-                onSelected: (CompetitionDto competition) => setState(() {
-                  _competitionId = competition.id;
-                  _competitionName = competition.name;
-                  _seasonId = null;
+                selectedId: _seasonId,
+                onSelected: (SeasonDto month) => setState(() {
+                  _seasonId = month.id;
+                }),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              LeaguePickerField(
+                key: const Key('admin.fixtures.leagueField'),
+                enabled: !inFlight,
+                selectedId: _leagueId,
+                onSelected: (LeagueDto league) => setState(() {
+                  _leagueId = league.id;
+                  // The clubs on offer change with the league, so whatever
+                  // is already typed belongs to the previous one.
                   _homeTeamController.clear();
                   _awayTeamController.clear();
                   _homeTeamId = null;
                   _awayTeamId = null;
                 }),
               ),
-              if (_competitionId != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                SeasonPickerField(
-                  competitionId: _competitionId!,
-                  enabled: !inFlight,
-                  selectedId: _seasonId,
-                  onSelected: (String seasonId) => setState(() {
-                    _seasonId = seasonId;
-                  }),
-                ),
-              ],
               const SizedBox(height: AppSpacing.md),
               _TeamPickerField(
                 fieldKey: const Key('admin.fixtures.homeTeamField'),
@@ -305,19 +361,24 @@ class _FixtureScheduleSectionState
                 label: l10n.adminHomeTeamLabel,
                 enabled: !inFlight,
                 catalog: catalog,
-                optionsBuilder: (q) => _filterTeamsWithCatalog(
+                optionsBuilder: (q) => _filterTeamsInLeague(
                   q,
-                  competitionName: _competitionName,
                   catalog: catalog,
+                  leagueId: _leagueId,
                 ),
                 onChanged: () => setState(() {
-                  _homeTeamId = _resolveTeamId(
+                  _homeTeamId = _resolveTeamIdInLeague(
                     catalog,
                     _homeTeamController.text,
+                    _leagueId,
                   );
                 }),
               ),
-              if (_isUnresolvedTeam(catalog, _homeTeamController.text))
+              if (_isUnresolvedTeamInLeague(
+                catalog,
+                _homeTeamController.text,
+                _leagueId,
+              ))
                 _UnresolvedTeamHint(
                   key: const Key('admin.fixtures.homeTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
@@ -330,19 +391,24 @@ class _FixtureScheduleSectionState
                 label: l10n.adminAwayTeamLabel,
                 enabled: !inFlight,
                 catalog: catalog,
-                optionsBuilder: (q) => _filterTeamsWithCatalog(
+                optionsBuilder: (q) => _filterTeamsInLeague(
                   q,
-                  competitionName: _competitionName,
                   catalog: catalog,
+                  leagueId: _leagueId,
                 ),
                 onChanged: () => setState(() {
-                  _awayTeamId = _resolveTeamId(
+                  _awayTeamId = _resolveTeamIdInLeague(
                     catalog,
                     _awayTeamController.text,
+                    _leagueId,
                   );
                 }),
               ),
-              if (_isUnresolvedTeam(catalog, _awayTeamController.text))
+              if (_isUnresolvedTeamInLeague(
+                catalog,
+                _awayTeamController.text,
+                _leagueId,
+              ))
                 _UnresolvedTeamHint(
                   key: const Key('admin.fixtures.awayTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
@@ -579,10 +645,12 @@ class _FixtureScheduleSectionState
 
   void _addMatch(int displayOrder) {
     final seasonId = _seasonId;
+    final leagueId = _leagueId;
     final homeTeam = _homeTeamController.text.trim();
     final awayTeam = _awayTeamController.text.trim();
     final kickoff = _kickoffLocal;
     if (seasonId == null ||
+        leagueId == null ||
         homeTeam.isEmpty ||
         awayTeam.isEmpty ||
         kickoff == null) {
@@ -598,6 +666,7 @@ class _FixtureScheduleSectionState
           displayOrder: displayOrder,
           homeTeamId: _homeTeamId,
           awayTeamId: _awayTeamId,
+          leagueId: leagueId,
         );
   }
 

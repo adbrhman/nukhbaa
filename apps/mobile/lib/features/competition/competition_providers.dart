@@ -82,6 +82,19 @@ Future<List<SeasonDto>> competitionSeasons(
   return _unwrap(await api.listCompetitionSeasons(competitionId));
 }
 
+/// `GET /months` — the monthly contest seasons, newest first.
+///
+/// The months an admin files fixtures into. Distinct from
+/// [competitionSeasons], which answers one competition at a time and so
+/// requires the caller to already know which competition owns the months.
+/// A platform with no month opened yet resolves to a legitimate empty
+/// list, never an error.
+@riverpod
+Future<List<SeasonDto>> monthlySeasons(Ref ref) async {
+  final api = ref.watch(competitionApiProvider);
+  return _unwrap(await api.listMonthlySeasons());
+}
+
 /// `GET /seasons/{id}/rounds` — the season's rounds (1-based sequence order).
 ///
 /// The second middle hop. A season with no rounds — or one that does not exist —

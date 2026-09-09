@@ -8,6 +8,7 @@ import 'package:shared/shared.dart';
 import '../../../core/error/error_presenter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_providers.dart';
+import '../../competition/leagues_providers.dart';
 import '../../fixture_prediction/fixture_prediction_providers.dart';
 
 /// The competition dropdown: reads the public catalogue
@@ -150,6 +151,158 @@ class SeasonPickerField extends ConsumerWidget {
               ? null
               : (String? id) {
                   if (id != null) onSelected(id);
+                },
+        );
+      },
+    );
+  }
+}
+
+/// منتقي الشهر: يقرأ `GET /months` (`monthlySeasonsProvider`) ويعرض الأشهر
+/// من الأحدث. المسابقة شهر تقويمي، فهذا هو الاختيار الوحيد الذي يحدّد أين
+/// تُودَع المباراة — لا مسابقة ولا موسم دوري.
+class MonthPickerField extends ConsumerWidget {
+  const MonthPickerField({
+    super.key,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<SeasonDto> onSelected;
+
+  /// Renders a stored `MM/YYYY` label the way the app names a month
+  /// everywhere else: `09/2026` → `شهر 9`. Anything not in that shape is
+  /// shown verbatim rather than mangled — the read only ever returns
+  /// `MM/YYYY`, so an unexpected label is worth seeing as it is.
+  static String monthLabel(String stored) {
+    final List<String> parts = stored.split('/');
+    if (parts.length != 2) return stored;
+    final int? month = int.tryParse(parts.first);
+    if (month == null) return stored;
+    return 'شهر $month';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<SeasonDto>> months = ref.watch(
+      monthlySeasonsProvider,
+    );
+    return months.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectMonthLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<SeasonDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectMonthLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoMonthsHint),
+          );
+        }
+        final String? value = list.any((SeasonDto s) => s.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.fixtures.monthField.field'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectMonthLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final SeasonDto month in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.monthField.${month.id}'),
+                value: month.id,
+                child: Text(monthLabel(month.label)),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  onSelected(list.firstWhere((SeasonDto s) => s.id == id));
+                },
+        );
+      },
+    );
+  }
+}
+
+/// منتقي الدوري: يقرأ `GET /leagues` (`leagueCatalogProvider`). اختياره
+/// إلزامي في نموذج الإضافة — هو ما يُسمّي المباراة في شاشة المباريات وما
+/// يحصر قائمتَي الفريقين في أندية ذلك الدوري وحدها.
+class LeaguePickerField extends ConsumerWidget {
+  const LeaguePickerField({
+    super.key,
+    required this.enabled,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final bool enabled;
+  final String? selectedId;
+  final ValueChanged<LeagueDto> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final AsyncValue<List<LeagueDto>> leagues = ref.watch(
+      leagueCatalogProvider,
+    );
+    return leagues.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (Object error, StackTrace _) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.adminSelectLeagueLabel,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(ErrorPresenter.message(error as AppError)),
+      ),
+      data: (List<LeagueDto> list) {
+        if (list.isEmpty) {
+          return InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectLeagueLabel,
+              border: const OutlineInputBorder(),
+            ),
+            child: Text(l10n.adminNoLeaguesHint),
+          );
+        }
+        final String? value = list.any((LeagueDto l) => l.id == selectedId)
+            ? selectedId
+            : null;
+        return DropdownButtonFormField<String>(
+          key: const Key('admin.fixtures.leagueField.field'),
+          initialValue: value,
+          decoration: InputDecoration(
+            labelText: l10n.adminSelectLeagueLabel,
+            border: const OutlineInputBorder(),
+          ),
+          items: <DropdownMenuItem<String>>[
+            for (final LeagueDto league in list)
+              DropdownMenuItem<String>(
+                key: Key('admin.fixtures.leagueField.${league.id}'),
+                value: league.id,
+                child: Text(league.name),
+              ),
+          ],
+          onChanged: !enabled
+              ? null
+              : (String? id) {
+                  if (id == null) return;
+                  onSelected(list.firstWhere((LeagueDto l) => l.id == id));
                 },
         );
       },

@@ -849,6 +849,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get adminNoSeasonsHint => 'لا توجد مواسم لهذه المسابقة.';
 
   @override
+  String get adminSelectMonthLabel => 'اختر الشهر';
+
+  @override
+  String get adminNoMonthsHint => 'لم يُفتح أي شهر بعد.';
+
+  @override
+  String get adminSelectLeagueLabel => 'اختر الدوري';
+
+  @override
+  String get adminNoLeaguesHint => 'قائمة الدوريات فارغة.';
+
+  @override
+  String get adminPickLeagueFirstHint => 'اختر الدوري أولاً لعرض أنديته.';
+
+  @override
   String get adminSelectFixtureLabel => 'اختر المباراة';
 
   @override

@@ -179,3 +179,12 @@ FixtureScheduleApi fixtureScheduleApi(Ref ref) =>
 /// performs no HTTP of its own.
 @Riverpod(keepAlive: true)
 TeamsApi teamsApi(Ref ref) => TeamsApi(ref.watch(apiTransportProvider));
+
+/// The Football Data league catalog client (`GET /leagues`).
+///
+/// The sibling of [teamsApi]. Consumed by the Admin add-fixture form to
+/// attach a real `league_id` to a fixture by picking a name, which is what
+/// lets the matches card show the league instead of falling back to the
+/// contest's own name.
+@Riverpod(keepAlive: true)
+LeaguesApi leaguesApi(Ref ref) => LeaguesApi(ref.watch(apiTransportProvider));

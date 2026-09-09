@@ -1560,6 +1560,36 @@ abstract class AppLocalizations {
   /// **'This competition has no seasons.'**
   String get adminNoSeasonsHint;
 
+  /// No description provided for @adminSelectMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select month'**
+  String get adminSelectMonthLabel;
+
+  /// No description provided for @adminNoMonthsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No month has been opened yet.'**
+  String get adminNoMonthsHint;
+
+  /// No description provided for @adminSelectLeagueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select league'**
+  String get adminSelectLeagueLabel;
+
+  /// No description provided for @adminNoLeaguesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The league catalog is empty.'**
+  String get adminNoLeaguesHint;
+
+  /// No description provided for @adminPickLeagueFirstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a league to list its clubs.'**
+  String get adminPickLeagueFirstHint;
+
   /// No description provided for @adminSelectFixtureLabel.
   ///
   /// In en, this message translates to:

@@ -841,6 +841,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminNoSeasonsHint => 'This competition has no seasons.';
 
   @override
+  String get adminSelectMonthLabel => 'Select month';
+
+  @override
+  String get adminNoMonthsHint => 'No month has been opened yet.';
+
+  @override
+  String get adminSelectLeagueLabel => 'Select league';
+
+  @override
+  String get adminNoLeaguesHint => 'The league catalog is empty.';
+
+  @override
+  String get adminPickLeagueFirstHint => 'Pick a league to list its clubs.';
+
+  @override
   String get adminSelectFixtureLabel => 'Select fixture';
 
   @override
