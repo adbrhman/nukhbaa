@@ -232,6 +232,9 @@
   "doneButton": "تم",
   "ledgerTitle": "نقاطي",
   "myLedgerLabel": "سجل نقاطي",
+  "mySeasonsLabel": "مواسمي",
+  "mySeasonsEmpty": "لم يكتمل أي موسم بعد.",
+  "mySeasonsMonthCount": "{count, plural, =1{شهر واحد} =2{شهران} few{{count} أشهر} other{{count} شهرًا}}",
   "ledgerEmpty": "لا توجد حركات نقاط بعد.",
   "ledgerEntryCount": "{count} حركة مسجّلة",
   "@ledgerEntryCount": {

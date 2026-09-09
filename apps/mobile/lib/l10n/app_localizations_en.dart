@@ -805,6 +805,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myLedgerLabel => 'My points ledger';
 
   @override
+  String get mySeasonsLabel => 'My seasons';
+
+  @override
+  String get mySeasonsEmpty => 'No season has finished yet.';
+
+  @override
+  String mySeasonsMonthCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '1 month',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ledgerEmpty => 'No points movements yet.';
 
   @override

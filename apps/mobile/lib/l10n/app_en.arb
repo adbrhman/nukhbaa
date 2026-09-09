@@ -530,6 +530,12 @@
   "doneButton": "Done",
   "ledgerTitle": "My Points",
   "myLedgerLabel": "My points ledger",
+  "mySeasonsLabel": "My seasons",
+  "mySeasonsEmpty": "No season has finished yet.",
+  "mySeasonsMonthCount": "{count, plural, =1{1 month} other{{count} months}}",
+  "@mySeasonsMonthCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "ledgerEmpty": "No points movements yet.",
   "ledgerEntryCount": "{count} movements counted",
   "@ledgerEntryCount": {

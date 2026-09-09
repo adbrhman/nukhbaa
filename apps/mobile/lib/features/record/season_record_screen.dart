@@ -10,6 +10,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../competition/month_label.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'season_record_providers.dart';
 
@@ -92,7 +93,7 @@ class SeasonRecordRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  record.seasonLabel,
+                  monthLabelFromStored(record.seasonLabel),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.titleSmall?.copyWith(

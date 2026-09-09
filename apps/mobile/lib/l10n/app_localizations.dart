@@ -1494,6 +1494,24 @@ abstract class AppLocalizations {
   /// **'My points ledger'**
   String get myLedgerLabel;
 
+  /// No description provided for @mySeasonsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My seasons'**
+  String get mySeasonsLabel;
+
+  /// No description provided for @mySeasonsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No season has finished yet.'**
+  String get mySeasonsEmpty;
+
+  /// No description provided for @mySeasonsMonthCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String mySeasonsMonthCount(int count);
+
   /// No description provided for @ledgerEmpty.
   ///
   /// In en, this message translates to:

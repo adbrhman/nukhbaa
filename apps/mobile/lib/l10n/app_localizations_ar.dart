@@ -814,6 +814,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myLedgerLabel => 'سجل نقاطي';
 
   @override
+  String get mySeasonsLabel => 'مواسمي';
+
+  @override
+  String get mySeasonsEmpty => 'لم يكتمل أي موسم بعد.';
+
+  @override
+  String mySeasonsMonthCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شهرًا',
+      few: '$count أشهر',
+      two: 'شهران',
+      one: 'شهر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ledgerEmpty => 'لا توجد حركات نقاط بعد.';
 
   @override

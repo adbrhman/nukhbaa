@@ -9,6 +9,7 @@ import '../../../core/error/error_presenter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_providers.dart';
 import '../../competition/leagues_providers.dart';
+import '../../competition/month_label.dart';
 import '../../fixture_prediction/fixture_prediction_providers.dart';
 
 /// The competition dropdown: reads the public catalogue
@@ -177,13 +178,7 @@ class MonthPickerField extends ConsumerWidget {
   /// everywhere else: `09/2026` → `شهر 9`. Anything not in that shape is
   /// shown verbatim rather than mangled — the read only ever returns
   /// `MM/YYYY`, so an unexpected label is worth seeing as it is.
-  static String monthLabel(String stored) {
-    final List<String> parts = stored.split('/');
-    if (parts.length != 2) return stored;
-    final int? month = int.tryParse(parts.first);
-    if (month == null) return stored;
-    return 'شهر $month';
-  }
+  static String monthLabel(String stored) => monthLabelFromStored(stored);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
