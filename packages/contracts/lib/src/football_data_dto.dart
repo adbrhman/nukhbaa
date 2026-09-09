@@ -15,6 +15,7 @@ final class LeagueDto {
     required this.name,
     required this.shortName,
     required this.logoUrl,
+    this.isContinental = false,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -27,6 +28,7 @@ final class LeagueDto {
       name: json['name']! as String,
       shortName: json['short_name'] as String?,
       logoUrl: json['logo_url'] as String?,
+      isContinental: (json['is_continental'] as bool?) ?? false,
     );
   }
 
@@ -45,6 +47,11 @@ final class LeagueDto {
   /// The league's logo URL, or null when none is on file.
   final String? logoUrl;
 
+  /// Whether this competition draws its entrants from other leagues (the
+  /// Champions League, a domestic cup). Optional on the wire so an older
+  /// server keeps working; absent means a plain domestic league.
+  final bool isContinental;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -55,6 +62,7 @@ final class LeagueDto {
     'name': name,
     'short_name': shortName,
     'logo_url': logoUrl,
+    'is_continental': isContinental,
   };
 
   @override
@@ -64,10 +72,12 @@ final class LeagueDto {
       other.name == name &&
       other.shortName == shortName &&
       other.logoUrl == logoUrl &&
+      other.isContinental == isContinental &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(id, name, shortName, logoUrl, schemaVersion);
+  int get hashCode =>
+      Object.hash(id, name, shortName, logoUrl, isContinental, schemaVersion);
 }
 
 final class TeamDto {

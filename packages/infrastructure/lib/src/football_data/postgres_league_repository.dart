@@ -15,7 +15,7 @@ final class PostgresLeagueRepository implements LeagueRepository {
   final PostgresConnection _connection;
 
   static const String _listAllSql = '''
-SELECT id, name, short_name, logo_url
+SELECT id, name, short_name, logo_url, is_continental
 FROM football_data.leagues
 ORDER BY name ASC, id ASC
 ''';
@@ -56,6 +56,7 @@ ORDER BY name ASC, id ASC
         name: name,
         shortName: row['short_name'] as String?,
         logoUrl: row['logo_url'] as String?,
+        isContinental: (row['is_continental'] as bool?) ?? false,
       ),
     );
   }

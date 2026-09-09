@@ -9,6 +9,7 @@ import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../competition/leagues_providers.dart';
 import '../../../competition/teams_providers.dart';
 import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
@@ -89,11 +90,19 @@ class _FixtureScheduleSectionState
     String query, {
     required List<TeamDto> catalog,
     required String? leagueId,
+    required bool continental,
   }) {
     if (leagueId == null) return const <String>[];
+    // A continental competition has no clubs of its own -- its entrants
+    // are other leagues' clubs -- so the whole catalog is on offer,
+    // deduplicated by name because the seeds left a second row for some
+    // of them.
+    final Set<String> seen = <String>{};
     final List<String> options = <String>[
       for (final TeamDto team in catalog)
-        if (team.leagueId == leagueId) team.name,
+        if ((continental || team.leagueId == leagueId) &&
+            seen.add(team.name.toLowerCase()))
+          team.name,
     ]..sort();
     final String trimmed = query.trim();
     if (trimmed.isEmpty) return options;
@@ -111,17 +120,30 @@ class _FixtureScheduleSectionState
   String? _resolveTeamIdInLeague(
     List<TeamDto> catalog,
     String text,
-    String? leagueId,
-  ) {
+    String? leagueId, {
+    bool continental = false,
+  }) {
     final String trimmed = text.trim();
     if (trimmed.isEmpty || leagueId == null) return null;
     for (final TeamDto team in catalog) {
-      if (team.leagueId == leagueId &&
+      if ((continental || team.leagueId == leagueId) &&
           team.name.toLowerCase() == trimmed.toLowerCase()) {
         return team.id;
       }
     }
     return null;
+  }
+
+  /// Whether the chosen league draws its entrants from other leagues.
+  ///
+  /// Read off the catalog rather than kept in state: the flag belongs to
+  /// the league, and a copy in the widget would go stale the moment a
+  /// league is reclassified.
+  bool _isContinental(List<LeagueDto> leagues) {
+    for (final LeagueDto l in leagues) {
+      if (l.id == _leagueId) return l.isContinental;
+    }
+    return false;
   }
 
   /// Whether [text] names something that is not a club of [leagueId] — the
@@ -144,10 +166,17 @@ class _FixtureScheduleSectionState
   bool _isUnresolvedTeamInLeague(
     List<TeamDto> catalog,
     String text,
-    String? leagueId,
-  ) =>
+    String? leagueId, {
+    bool continental = false,
+  }) =>
       text.trim().isNotEmpty &&
-      _resolveTeamIdInLeague(catalog, text, leagueId) == null;
+      _resolveTeamIdInLeague(
+            catalog,
+            text,
+            leagueId,
+            continental: continental,
+          ) ==
+          null;
 
   @override
   void dispose() {
@@ -163,6 +192,9 @@ class _FixtureScheduleSectionState
     final l10n = AppLocalizations.of(context);
     final List<TeamDto> catalog =
         ref.watch(teamCatalogProvider).value ?? const <TeamDto>[];
+    final List<LeagueDto> leagues =
+        ref.watch(leagueCatalogProvider).value ?? const <LeagueDto>[];
+    final bool continental = _isContinental(leagues);
     final AsyncValue<AddMatchResult>? state = ref.watch(
       addMatchControllerProvider,
     );
@@ -232,12 +264,14 @@ class _FixtureScheduleSectionState
                   q,
                   catalog: catalog,
                   leagueId: _leagueId,
+                  continental: continental,
                 ),
                 onChanged: () => setState(() {
                   _homeTeamId = _resolveTeamIdInLeague(
                     catalog,
                     _homeTeamController.text,
                     _leagueId,
+                    continental: continental,
                   );
                 }),
               ),
@@ -245,6 +279,7 @@ class _FixtureScheduleSectionState
                 catalog,
                 _homeTeamController.text,
                 _leagueId,
+                continental: continental,
               ))
                 _UnresolvedTeamHint(
                   key: const Key('admin.fixtures.homeTeamUnresolved'),
@@ -262,12 +297,14 @@ class _FixtureScheduleSectionState
                   q,
                   catalog: catalog,
                   leagueId: _leagueId,
+                  continental: continental,
                 ),
                 onChanged: () => setState(() {
                   _awayTeamId = _resolveTeamIdInLeague(
                     catalog,
                     _awayTeamController.text,
                     _leagueId,
+                    continental: continental,
                   );
                 }),
               ),
@@ -275,6 +312,7 @@ class _FixtureScheduleSectionState
                 catalog,
                 _awayTeamController.text,
                 _leagueId,
+                continental: continental,
               ))
                 _UnresolvedTeamHint(
                   key: const Key('admin.fixtures.awayTeamUnresolved'),

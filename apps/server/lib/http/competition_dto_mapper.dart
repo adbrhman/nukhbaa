@@ -120,6 +120,7 @@ LeagueDto leagueToDto(League league) {
     name: league.name,
     shortName: league.shortName,
     logoUrl: league.logoUrl,
+    isContinental: league.isContinental,
   );
 }
 
