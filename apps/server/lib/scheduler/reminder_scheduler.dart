@@ -34,6 +34,7 @@ Future<void> _sweep(CompositionRoot root) async {
         if (value > 0) {
           // ignore: avoid_print -- the container log is the only observability
           // this deployment has.
+          // ignore: avoid_print
           print('reminder sweep: notified $value user(s)');
         }
       case Err<int>(:final error):

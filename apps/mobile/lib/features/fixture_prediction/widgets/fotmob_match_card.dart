@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 /// The FotMob-style match card (`match-card-fotmob-spec.md`) — replaces
 /// `current_month_fixtures_screen.dart`'s former `_CurrentMonthFixtureCard`
 /// as the one card `CurrentMonthFixturesScreen` renders per fixture. Lives
@@ -245,9 +246,35 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );
-    // A locked card's corner glow is halved, not removed — a full-strength
-    // glow on a card the user can no longer act on read as an error state.
-    final double tint = tokens.tintStrength * (locked ? 0.5 : 1.0);
+    // Reference-parity card surface: dark grey center with a restrained
+    // team-colored wash on each team's own side. The actual crest glow is
+    // handled by [_TeamColumn] and uses the same resolved team color.
+    final Color cardBase = tokens.isDark
+        ? const Color(0xFF2F2F2F)
+        : tokens.surface;
+    final double intensity = locked ? 0.62 : 1.0;
+    final double edgeTint = (tokens.isDark ? 0.18 : 0.07) * intensity;
+    final double innerTint = (tokens.isDark ? 0.06 : 0.025) * intensity;
+    final Color homeEdge = Color.lerp(
+      cardBase,
+      home.brandColor ?? cardBase,
+      edgeTint,
+    )!;
+    final Color homeInner = Color.lerp(
+      cardBase,
+      home.brandColor ?? cardBase,
+      innerTint,
+    )!;
+    final Color awayInner = Color.lerp(
+      cardBase,
+      away.brandColor ?? cardBase,
+      innerTint,
+    )!;
+    final Color awayEdge = Color.lerp(
+      cardBase,
+      away.brandColor ?? cardBase,
+      edgeTint,
+    )!;
 
     return Container(
       key: Key('currentMonthFixtures.fixture.$fixtureId'),
@@ -256,43 +283,28 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       decoration: BoxDecoration(
         borderRadius: AppRadius.brCardLarge,
         border: Border.all(color: tokens.border, width: AppStroke.hairline),
-        color: tokens.surface,
+        color: cardBase,
       ),
       child: Stack(
         children: <Widget>[
-          // Two faint radial washes at the top corners only — the reference
-          // has no full-bleed team-color gradient and no card-level
-          // BoxShadow/halo; separation between cards comes from the border
-          // and margin alone.
+          // Keep the tint attached to the team's visual side. Directional
+          // alignment is essential here: Arabic RTL puts the home team on the
+          // right, while LTR puts it on the left.
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(1.0, -1.0),
-                    radius: 0.9,
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.centerStart,
+                    end: AlignmentDirectional.centerEnd,
                     colors: <Color>[
-                      _cornerGlow(home.brandColor, tint),
-                      Colors.transparent,
+                      homeEdge,
+                      homeInner,
+                      cardBase,
+                      awayInner,
+                      awayEdge,
                     ],
-                    stops: const <double>[0.0, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(-1.0, -1.0),
-                    radius: 0.9,
-                    colors: <Color>[
-                      _cornerGlow(away.brandColor, tint),
-                      Colors.transparent,
-                    ],
-                    stops: const <double>[0.0, 1.0],
+                    stops: const <double>[0.0, 0.22, 0.5, 0.78, 1.0],
                   ),
                 ),
               ),
@@ -575,10 +587,9 @@ class _CompetitionLogo extends StatelessWidget {
   }
 }
 
-/// One side's crest + name — a plain presentational widget: identity is
-/// resolved once by the parent card (which already watches
-/// [teamCatalogProvider]). The crest renders bare — no glow/halo or
-/// colored backdrop behind it, in any state — per the reference.
+/// One side's crest + name — identity is resolved once by the parent card.
+/// The small halo is intentionally local to the crest and uses the same
+/// dynamic brand color as the side tint; it is visible, but never dominant.
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
@@ -605,12 +616,29 @@ class _TeamColumn extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        TeamLogo(
-          displayName: displayName,
-          crestUrl: crestUrl,
-          assetPath: assetPath,
-          brandColor: brandColor,
-          size: _crestSize,
+        Container(
+          width: _crestSize + 10,
+          height: _crestSize + 10,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: brandColor == null
+                ? const <BoxShadow>[]
+                : <BoxShadow>[
+                    BoxShadow(
+                      color: brandColor!.withValues(alpha: 0.20),
+                      blurRadius: 14,
+                      spreadRadius: 0.5,
+                    ),
+                  ],
+          ),
+          child: TeamLogo(
+            displayName: displayName,
+            crestUrl: crestUrl,
+            assetPath: assetPath,
+            brandColor: brandColor,
+            size: _crestSize,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(

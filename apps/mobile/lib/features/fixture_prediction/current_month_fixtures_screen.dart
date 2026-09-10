@@ -181,7 +181,7 @@ class _CurrentMonthFixturesScreenState
         bottom: true,
         top: false,
         child: feed.when(
-          skipLoadingOnRefresh: false,
+          skipLoadingOnRefresh: true,
           loading: () => const Center(
             key: Key('currentMonthFixtures.loading'),
             child: Padding(
@@ -222,8 +222,9 @@ class _CurrentMonthFixturesScreenState
               // that and visibly narrowed every card.
               padding: const EdgeInsets.all(AppSpacing.sm),
               itemCount: dayItems.length,
-              itemBuilder: (context, index) =>
-                  FotmobMatchCard(item: dayItems[index]),
+              itemBuilder: (context, index) => RepaintBoundary(
+                child: FotmobMatchCard(item: dayItems[index]),
+              ),
             );
           },
         ),

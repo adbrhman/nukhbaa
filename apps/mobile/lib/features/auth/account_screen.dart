@@ -24,7 +24,10 @@ import '../groups/join_group_screen.dart';
 import '../record/elite_card_screen.dart';
 import '../record/my_seasons_screen.dart';
 import '../record/season_record_screen.dart';
+import '../record/season_record_providers.dart';
+import '../record/my_points_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
@@ -49,6 +52,12 @@ class AccountScreen extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
     final AppLocalizations l10n = AppLocalizations.of(context);
+
+    // Warm the two destinations most likely to be opened from this hub. Both
+    // providers are non-auto-disposed singletons, so this starts the request
+    // once and makes the subsequent navigation feel immediate.
+    ref.read(currentMonthFixturesProvider);
+    ref.read(mySeasonRecordsProvider);
 
     return Scaffold(
       backgroundColor: tokens.background,
@@ -166,42 +175,66 @@ class AccountScreen extends ConsumerWidget {
                       text: text,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _HomeActionCard(
-                              itemKey: const Key('account.myPredictions'),
-                              icon: Icons.history_outlined,
-                              label: l10n.myPredictions,
-                              tokens: tokens,
-                              text: text,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) =>
-                                      const PredictionHistoryScreen(),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const gap = AppSpacing.md;
+                        final int columns = constraints.maxWidth >= 680 ? 3 : 2;
+                        final double width =
+                            (constraints.maxWidth - gap * (columns - 1)) /
+                            columns;
+                        return Wrap(
+                          spacing: gap,
+                          runSpacing: gap,
+                          children: [
+                            SizedBox(
+                              width: width,
+                              child: _HomeActionCard(
+                                itemKey: const Key('account.myPoints'),
+                                icon: Icons.auto_graph_outlined,
+                                label: l10n.myPoints,
+                                tokens: tokens,
+                                text: text,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const MyPointsScreen(),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _HomeActionCard(
-                              itemKey: const Key('account.eliteCard'),
-                              icon: Icons.badge_outlined,
-                              label: l10n.eliteCard,
-                              tokens: tokens,
-                              text: text,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => EliteCardScreen(user: user),
+                            SizedBox(
+                              width: width,
+                              child: _HomeActionCard(
+                                itemKey: const Key('account.myPredictions'),
+                                icon: Icons.history_outlined,
+                                label: l10n.myPredictions,
+                                tokens: tokens,
+                                text: text,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        const PredictionHistoryScreen(),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            SizedBox(
+                              width: width,
+                              child: _HomeActionCard(
+                                itemKey: const Key('account.eliteCard'),
+                                icon: Icons.badge_outlined,
+                                label: l10n.eliteCard,
+                                tokens: tokens,
+                                text: text,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => EliteCardScreen(user: user),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     _SectionHeader(

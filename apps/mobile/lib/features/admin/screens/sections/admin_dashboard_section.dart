@@ -315,6 +315,11 @@ class _QuickActions extends StatelessWidget {
         Icons.account_balance_wallet_outlined,
         AdminSection.ledger,
       ),
+      (
+        'المباريات المحتسبة',
+        Icons.fact_check_outlined,
+        AdminSection.countedFixtures,
+      ),
       ('سجل التدقيق', Icons.receipt_long_outlined, AdminSection.audit),
     ];
 

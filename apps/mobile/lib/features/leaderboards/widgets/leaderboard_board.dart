@@ -1,12 +1,11 @@
-/// The shared presentation for a ranked board: a three-place podium above a
-/// list of the remaining places.
+// ignore_for_file: sort_child_properties_last
+/// The presentation for the ranked board.
 ///
-/// Both leaderboard tabs render through here, so the season board and the
-/// fixture board cannot drift apart visually. The widget is deliberately
-/// dumb: it ranks nothing and computes no points (Axiom 2 — the server has
-/// already ranked these entries). The one number it derives is the gap to
-/// the place above the viewer, a subtraction between two values the server
-/// sent in the same response.
+/// The main leaderboards tab uses the reference-style mobile layout:
+/// cosmic header, season selector, segmented scope, summary metrics, podium,
+/// update/gap strip, and a compact ranked table. The ranking values remain
+/// server-produced; the widget only presents them and derives viewer-local
+/// display values from the already-loaded board.
 library;
 
 import 'package:flutter/material.dart';
@@ -16,9 +15,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
 
-/// One row of a board, flattened from whichever DTO the tab reads.
 class BoardEntry {
-  /// Creates a board row.
   const BoardEntry({
     required this.participantId,
     required this.rank,
@@ -31,116 +28,538 @@ class BoardEntry {
     this.avatarUrl,
   });
 
-  /// Stable id — also the widget key, so tests and scroll positions survive.
   final String participantId;
-
-  /// Server-assigned place.
   final int rank;
-
-  /// The participant's own name.
   final String displayName;
-
-  /// Raw score, used only for the gap arithmetic.
   final int points;
-
-  /// The localized score string, rendered as-is.
   final String pointsLabel;
-
-  /// Optional secondary line, e.g. how many entries were counted.
   final String? subtitle;
-
-  /// Places climbed since the last daily snapshot: positive is up, negative is
-  /// down, `0` is unchanged, `null` is "nothing to compare against" (a new
-  /// participant, or a season whose first snapshot has not run). Server-sent
-  /// and rendered as-is -- the widget derives nothing.
   final int? movement;
-
-  /// The localized accuracy string, or null when the participant has no
-  /// settled fixture yet and therefore no accuracy at all.
   final String? accuracyLabel;
-
-  /// The participant's server-relative profile picture URL, or null when they
-  /// have none -- in which case the row draws their initial, which is the
-  /// normal case and not an error state.
   final String? avatarUrl;
 }
 
-/// Podium + list. [myParticipantId] highlights the viewer's own row.
 class LeaderboardBoard extends StatelessWidget {
-  /// Creates the board.
   const LeaderboardBoard({
     required this.entries,
     required this.keyPrefix,
     this.myParticipantId,
+    this.myDisplayName,
+    this.competitionName,
+    this.seasonLabel,
+    this.startAt,
+    this.endAt,
+    this.showHeader = false,
+    this.onRefresh,
+    this.onBack,
     super.key,
   });
 
-  /// Entries in the order the server ranked them.
   final List<BoardEntry> entries;
-
-  /// Key namespace, so the two tabs' rows never collide.
   final String keyPrefix;
-
-  /// The viewer's participant id, when it is known.
   final String? myParticipantId;
+  final String? myDisplayName;
+  final String? competitionName;
+  final String? seasonLabel;
+  final String? startAt;
+  final String? endAt;
+  final bool showHeader;
+  final VoidCallback? onRefresh;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    final List<BoardEntry> podium = entries.take(3).toList();
-    final List<BoardEntry> rest = entries.skip(3).toList();
-
-    // The gap to the place directly above the viewer. Null when the viewer is
-    // first, absent from the board, or not identified yet.
-    final int myIndex = myParticipantId == null
+    final BoardEntry? viewer = _findViewer();
+    final List<BoardEntry> podium = entries.take(3).toList(growable: false);
+    final List<BoardEntry> rest = entries.skip(3).toList(growable: false);
+    final int viewerIndex = viewer == null
         ? -1
-        : entries.indexWhere((e) => e.participantId == myParticipantId);
-    final int? gapToNext = myIndex > 0
-        ? entries[myIndex - 1].points - entries[myIndex].points
+        : entries.indexWhere(
+            (entry) => entry.participantId == viewer.participantId,
+          );
+    final int? gapToAbove = viewerIndex > 0
+        ? entries[viewerIndex - 1].points - viewer!.points
         : null;
 
-    // The shell draws its bottom bar OVER the body (`extendBody: true`), so
-    // the last row would sit under it. Scaffold reports that bar's height as
-    // the body's bottom padding, which is added here rather than hard-coded --
-    // a taller bar or a device with a home indicator stays correct on its own.
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
-        AppSpacing.md,
+        showHeader ? 0 : AppSpacing.md,
         AppSpacing.md,
         AppSpacing.xl + bottomInset,
       ),
       children: <Widget>[
+        if (showHeader) ...<Widget>[
+          _ReferenceHeader(
+            competitionName: competitionName,
+            seasonLabel: seasonLabel,
+            startAt: startAt,
+            endAt: endAt,
+            onRefresh: onRefresh,
+            onBack: onBack,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _ScopeTabs(
+            onFriendsTap: () => _showDisabledScope(context),
+            onEliteTap: () => _showDisabledScope(context),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (showHeader) _SummaryCard(viewer: viewer),
+        if (showHeader) const SizedBox(height: AppSpacing.sm),
         if (podium.isNotEmpty)
           _Podium(
             entries: podium,
             keyPrefix: keyPrefix,
-            myParticipantId: myParticipantId,
+            myParticipantId: viewer?.participantId,
           ),
-        if (gapToNext != null) ...<Widget>[
-          const SizedBox(height: AppSpacing.md),
-          _GapChip(points: gapToNext, rank: entries[myIndex - 1].rank),
+        if (gapToAbove != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.sm),
+          _BoardMetaStrip(
+            gapPoints: gapToAbove,
+            targetRank: entries[viewerIndex - 1].rank,
+          ),
+        ] else if (showHeader && entries.isNotEmpty) ...<Widget>[
+          const SizedBox(height: AppSpacing.sm),
+          const _BoardMetaStrip(),
         ],
-        const SizedBox(height: AppSpacing.md),
-        for (final BoardEntry entry in rest)
-          _BoardRow(
-            entry: entry,
-            keyPrefix: keyPrefix,
-            isMe: entry.participantId == myParticipantId,
+        if (rest.isNotEmpty) ...<Widget>[
+          const SizedBox(height: AppSpacing.sm),
+          _TableHeader(),
+          const SizedBox(height: 4),
+          for (final BoardEntry entry in rest)
+            _BoardRow(
+              entry: entry,
+              keyPrefix: keyPrefix,
+              isMe: entry.participantId == viewer?.participantId,
+            ),
+        ],
+      ],
+    );
+  }
+
+  BoardEntry? _findViewer() {
+    if (myParticipantId != null) {
+      for (final BoardEntry entry in entries) {
+        if (entry.participantId == myParticipantId) return entry;
+      }
+    }
+    final String name = myDisplayName?.trim() ?? '';
+    if (name.isEmpty) return null;
+    for (final BoardEntry entry in entries) {
+      if (entry.displayName.trim() == name) return entry;
+    }
+    return null;
+  }
+
+  void _showDisabledScope(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('هذه القائمة ستتوفر قريبًا.')));
+  }
+}
+
+class _ReferenceHeader extends StatelessWidget {
+  const _ReferenceHeader({
+    required this.competitionName,
+    required this.seasonLabel,
+    required this.startAt,
+    required this.endAt,
+    required this.onRefresh,
+    required this.onBack,
+  });
+
+  final String? competitionName;
+  final String? seasonLabel;
+  final String? startAt;
+  final String? endAt;
+  final VoidCallback? onRefresh;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Column(
+      children: <Widget>[
+        SizedBox(
+          height: 78,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(AppRadius.xl),
+            ),
+            child: Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: const Alignment(0.05, -0.4),
+                        radius: 1.15,
+                        colors: <Color>[
+                          t.primary.withValues(alpha: 0.38),
+                          t.primary.withValues(alpha: 0.10),
+                          Colors.transparent,
+                        ],
+                        stops: const <double>[0.0, 0.35, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: <Color>[
+                          const Color(0xFF06152B).withValues(alpha: 0.92),
+                          t.background.withValues(alpha: 0.98),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Positioned(left: 34, top: 22, child: _StarDot(size: 2)),
+                const Positioned(left: 82, top: 42, child: _StarDot(size: 3)),
+                const Positioned(left: 128, top: 23, child: _StarDot(size: 2)),
+                const Positioned(right: 52, top: 30, child: _StarDot(size: 3)),
+                const Positioned(right: 118, top: 52, child: _StarDot(size: 2)),
+                const Positioned(right: 170, top: 24, child: _StarDot(size: 2)),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Icon(
+                      Icons.workspace_premium_rounded,
+                      color: t.gold,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 9,
+                  left: 34,
+                  child: IconButton(
+                    tooltip: 'تحديث',
+                    onPressed: onRefresh,
+                    icon: const Icon(
+                      Icons.filter_alt_outlined,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 9,
+                  right: 34,
+                  child: IconButton(
+                    tooltip: 'رجوع',
+                    onPressed: onBack,
+                    icon: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  top: 14,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        'المتصدرون',
+                        style: context.text.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 23,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'من يتصدر الترتيب هذا الشهر؟',
+                        style: context.text.labelSmall?.copyWith(
+                          color: t.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _SeasonSelector(
+          competitionName: competitionName,
+          seasonLabel: seasonLabel,
+          startAt: startAt,
+          endAt: endAt,
+        ),
       ],
     );
   }
 }
 
-/// The medal colour for a place, or null below third.
-Color? _medal(AppTokens t, int rank) => switch (rank) {
-  1 => t.gold,
-  2 => t.silver,
-  3 => t.bronze,
-  _ => null,
-};
+class _StarDot extends StatelessWidget {
+  const _StarDot({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _SeasonSelector extends StatelessWidget {
+  const _SeasonSelector({
+    required this.competitionName,
+    required this.seasonLabel,
+    required this.startAt,
+    required this.endAt,
+  });
+
+  final String? competitionName;
+  final String? seasonLabel;
+  final String? startAt;
+  final String? endAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: t.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: t.primary.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(Icons.calendar_month_rounded, color: t.primary),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  competitionName?.trim().isNotEmpty == true
+                      ? competitionName!
+                      : 'موسم التوقعات',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium?.copyWith(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  _rangeText(startAt, endAt),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(color: t.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            seasonLabel ?? 'الشهر الحالي',
+            style: context.text.labelSmall?.copyWith(
+              color: t.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.keyboard_arrow_down_rounded, color: t.textMuted),
+        ],
+      ),
+    );
+  }
+
+  String _rangeText(String? startAt, String? endAt) {
+    final DateTime? start = DateTime.tryParse(startAt ?? '');
+    DateTime? end = DateTime.tryParse(endAt ?? '');
+    if (start == null || end == null) return 'الفترة الحالية';
+    end = end.subtract(const Duration(days: 1));
+    const months = <String>[
+      '',
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    final String month = months[end.month];
+    return '${start.day} - ${end.day} $month ${end.year}';
+  }
+}
+
+class _ScopeTabs extends StatelessWidget {
+  const _ScopeTabs({required this.onFriendsTap, required this.onEliteTap});
+
+  final VoidCallback onFriendsTap;
+  final VoidCallback onEliteTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    Widget segment({
+      required String label,
+      required bool active,
+      VoidCallback? onTap,
+      IconData? icon,
+    }) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? t.primary : t.surface,
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                if (icon != null) ...<Widget>[
+                  Icon(
+                    icon,
+                    size: 14,
+                    color: active ? Colors.white : t.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  label,
+                  style: context.text.labelMedium?.copyWith(
+                    color: active ? Colors.white : t.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: t.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(color: t.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          segment(
+            label: 'الشهر',
+            active: true,
+            icon: Icons.calendar_month_rounded,
+          ),
+          segment(
+            label: 'أصدقائي',
+            active: false,
+            onTap: onFriendsTap,
+            icon: Icons.group_rounded,
+          ),
+          segment(
+            label: 'النخبة',
+            active: false,
+            onTap: onEliteTap,
+            icon: Icons.workspace_premium_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.viewer});
+
+  final BoardEntry? viewer;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final BoardEntry? item = viewer;
+    final String rank = item?.rank.toString() ?? '—';
+    final String points = item?.points.toString() ?? '—';
+    final String accuracy = item?.accuracyLabel ?? '—';
+
+    Widget metric(String label, String value, IconData icon) {
+      return Expanded(
+        child: Column(
+          children: <Widget>[
+            Icon(icon, size: 17, color: t.textMuted),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: context.text.titleMedium?.copyWith(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              label,
+              style: context.text.labelSmall?.copyWith(color: t.textMuted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: t.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          metric('المركز', rank, Icons.person_outline_rounded),
+          Container(width: 1, height: 40, color: t.border),
+          metric('النقاط', points, Icons.star_outline_rounded),
+          Container(width: 1, height: 40, color: t.border),
+          metric('الدقة', accuracy, Icons.track_changes_rounded),
+        ],
+      ),
+    );
+  }
+}
 
 class _Podium extends StatelessWidget {
   const _Podium({
@@ -155,47 +574,50 @@ class _Podium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Second on one side, first raised in the middle, third on the other —
-    // a symmetric arrangement, so it reads correctly in RTL without
-    // mirroring.
     final BoardEntry first = entries[0];
     final BoardEntry? second = entries.length > 1 ? entries[1] : null;
     final BoardEntry? third = entries.length > 2 ? entries[2] : null;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: <Widget>[
-        Expanded(
-          child: second == null
-              ? const SizedBox.shrink()
-              : _PodiumTile(
-                  entry: second,
-                  keyPrefix: keyPrefix,
-                  height: 138,
-                  isMe: second.participantId == myParticipantId,
-                ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: SizedBox(
+        height: 216,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            Expanded(
+              child: second == null
+                  ? const SizedBox.shrink()
+                  : _PodiumTile(
+                      entry: second,
+                      keyPrefix: keyPrefix,
+                      height: 136,
+                      isMe: second.participantId == myParticipantId,
+                    ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _PodiumTile(
+                entry: first,
+                keyPrefix: keyPrefix,
+                height: 172,
+                isMe: first.participantId == myParticipantId,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: third == null
+                  ? const SizedBox.shrink()
+                  : _PodiumTile(
+                      entry: third,
+                      keyPrefix: keyPrefix,
+                      height: 126,
+                      isMe: third.participantId == myParticipantId,
+                    ),
+            ),
+          ],
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _PodiumTile(
-            entry: first,
-            keyPrefix: keyPrefix,
-            height: 172,
-            isMe: first.participantId == myParticipantId,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: third == null
-              ? const SizedBox.shrink()
-              : _PodiumTile(
-                  entry: third,
-                  keyPrefix: keyPrefix,
-                  height: 122,
-                  isMe: third.participantId == myParticipantId,
-                ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -210,95 +632,234 @@ class _PodiumTile extends StatelessWidget {
 
   final BoardEntry entry;
   final String keyPrefix;
-
-  /// The tile's MINIMUM height -- what staggers the three places. It is a
-  /// floor, not a fixed size: the tile grows for a participant who has an
-  /// accuracy line as well as a name, a total and a count. It used to be a
-  /// fixed height, which clipped the last line the moment accuracy was added.
   final double height;
   final bool isMe;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
-    final Color medal = _medal(t, entry.rank) ?? t.primary;
+    final Color medal = _medal(t, entry.rank);
 
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: <Widget>[
+          Container(
+            key: Key('$keyPrefix.item.${entry.participantId}'),
+            width: double.infinity,
+            constraints: BoxConstraints(minHeight: height),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xs,
+              26,
+              AppSpacing.xs,
+              AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: t.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: medal.withValues(alpha: isMe ? 1.0 : 0.58),
+                width: isMe ? 1.6 : 1,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[medal.withValues(alpha: 0.10), t.surface],
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: medal.withValues(alpha: 0.18),
+                  blurRadius: 20,
+                  spreadRadius: -6,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                _RankPill(rank: entry.rank, color: medal),
+                const SizedBox(height: 5),
+                Text(
+                  entry.displayName,
+                  key: Key('$keyPrefix.participant.${entry.participantId}'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: context.text.labelMedium?.copyWith(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  entry.pointsLabel,
+                  key: Key('$keyPrefix.points.${entry.participantId}'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(
+                    color: medal,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (entry.subtitle != null)
+                  Text(
+                    entry.subtitle!,
+                    key: Key('$keyPrefix.entries.${entry.participantId}'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelSmall?.copyWith(
+                      color: t.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 0,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                UserAvatar(
+                  displayName: entry.displayName,
+                  avatarUrl: entry.avatarUrl,
+                  size: 56,
+                  gradient: false,
+                  borderColor: medal,
+                  borderWidth: 2.5,
+                ),
+                if (entry.rank == 1)
+                  Positioned(
+                    top: -12,
+                    child: Icon(
+                      Icons.workspace_premium_rounded,
+                      color: t.gold,
+                      size: 22,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _medal(AppTokens t, int rank) => switch (rank) {
+  1 => t.gold,
+  2 => t.silver,
+  3 => t.bronze,
+  _ => t.primary,
+};
+
+class _RankPill extends StatelessWidget {
+  const _RankPill({required this.rank, required this.color});
+
+  final int rank;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      key: Key('$keyPrefix.item.${entry.participantId}'),
-      constraints: BoxConstraints(minHeight: height),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(color: color.withValues(alpha: 0.72)),
+      ),
+      child: Text(
+        '$rank',
+        style: context.text.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _BoardMetaStrip extends StatelessWidget {
+  const _BoardMetaStrip({this.gapPoints, this.targetRank});
+
+  final int? gapPoints;
+  final int? targetRank;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            'آخر تحديث: الآن',
+            style: context.text.labelSmall?.copyWith(color: t.textMuted),
+          ),
+        ),
+        if (gapPoints != null && targetRank != null)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 7,
+            ),
+            decoration: BoxDecoration(
+              color: t.primary.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              border: Border.all(color: t.primary.withValues(alpha: 0.45)),
+            ),
+            child: Text(
+              '$gapPoints نقطة للوصول للمرتبة $targetRank',
+              style: context.text.labelSmall?.copyWith(
+                color: t.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xs,
-        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.sm,
+        vertical: 7,
+      ),
+      child: Row(
+        children: <Widget>[
+          const SizedBox(
+            width: 28,
+            child: Text('المركز', textAlign: TextAlign.center),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Expanded(child: Text('اللاعب')),
+          const SizedBox(
+            width: 48,
+            child: Text('الدقة', textAlign: TextAlign.center),
+          ),
+          const SizedBox(
+            width: 52,
+            child: Text('المباريات', textAlign: TextAlign.center),
+          ),
+          const SizedBox(
+            width: 48,
+            child: Text('النقاط', textAlign: TextAlign.center),
+          ),
+          const SizedBox(
+            width: 40,
+            child: Text('الحركة', textAlign: TextAlign.center),
+          ),
+        ],
       ),
       decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: medal.withValues(alpha: isMe ? 1 : 0.45)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: medal.withValues(alpha: 0.18),
-            blurRadius: 18,
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          UserAvatar(
-            displayName: entry.displayName,
-            avatarUrl: entry.avatarUrl,
-            size: 44,
-            gradient: false,
-            borderColor: medal,
-            borderWidth: 2,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _RankPill(rank: entry.rank, color: medal),
-          _MovementChip(
-            movement: entry.movement,
-            keyPrefix: keyPrefix,
-            participantId: entry.participantId,
-          ),
-          Text(
-            entry.displayName,
-            key: Key('$keyPrefix.participant.${entry.participantId}'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: context.text.labelMedium?.copyWith(
-              color: t.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            entry.pointsLabel,
-            key: Key('$keyPrefix.points.${entry.participantId}'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.labelSmall?.copyWith(
-              color: medal,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (entry.subtitle != null)
-            Text(
-              entry.subtitle!,
-              key: Key('$keyPrefix.entries.${entry.participantId}'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.labelSmall?.copyWith(color: t.textMuted),
-            ),
-          if (entry.accuracyLabel != null)
-            Text(
-              entry.accuracyLabel!,
-              key: Key('$keyPrefix.accuracy.${entry.participantId}'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.labelSmall?.copyWith(color: t.textMuted),
-            ),
-        ],
+        color: t.surfaceElevated.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
     );
   }
@@ -318,27 +879,27 @@ class _BoardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
+    final Color accent = isMe ? t.primary : t.border;
+    final String accuracy = entry.accuracyLabel ?? '—';
+    final String matches = _matchesFromSubtitle(entry.subtitle);
 
     return Container(
       key: Key('$keyPrefix.item.${entry.participantId}'),
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      margin: const EdgeInsets.only(bottom: 5),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.sm,
+        vertical: 9,
       ),
       decoration: BoxDecoration(
         color: isMe ? t.surfaceElevated : t.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: isMe ? t.primary : t.border,
-          width: isMe ? 1.5 : 1,
-        ),
+        border: Border.all(color: accent, width: isMe ? 1.4 : 1),
         boxShadow: isMe
             ? <BoxShadow>[
                 BoxShadow(
-                  color: t.primary.withValues(alpha: 0.25),
+                  color: t.primary.withValues(alpha: 0.20),
                   blurRadius: 16,
-                  spreadRadius: -4,
+                  spreadRadius: -6,
                 ),
               ]
             : null,
@@ -350,9 +911,9 @@ class _BoardRow extends StatelessWidget {
             child: Text(
               '${entry.rank}',
               textAlign: TextAlign.center,
-              style: context.text.labelLarge?.copyWith(
+              style: context.text.labelMedium?.copyWith(
                 color: isMe ? t.primary : t.textMuted,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -363,68 +924,83 @@ class _BoardRow extends StatelessWidget {
             size: 34,
             gradient: false,
             borderColor: isMe ? t.primary : t.border,
-            borderWidth: 2,
+            borderWidth: 1.8,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  entry.displayName,
-                  key: Key('$keyPrefix.participant.${entry.participantId}'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: t.textPrimary,
-                    fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
-                  ),
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 2),
+              child: Text(
+                entry.displayName,
+                key: Key('$keyPrefix.participant.${entry.participantId}'),
+                maxLines: 2,
+                softWrap: true,
+                overflow: TextOverflow.visible,
+                textAlign: TextAlign.right,
+                style: context.text.bodySmall?.copyWith(
+                  color: t.textPrimary,
+                  fontWeight: isMe ? FontWeight.w800 : FontWeight.w600,
+                  height: 1.15,
                 ),
-                if (entry.subtitle != null || entry.accuracyLabel != null)
-                  Text(
-                    <String>[
-                      if (entry.subtitle != null) entry.subtitle!,
-                      if (entry.accuracyLabel != null) entry.accuracyLabel!,
-                    ].join('  ·  '),
-                    key: Key('$keyPrefix.entries.${entry.participantId}'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.labelSmall?.copyWith(
-                      color: t.textMuted,
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          _MovementChip(
-            movement: entry.movement,
-            keyPrefix: keyPrefix,
-            participantId: entry.participantId,
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 42,
+            child: Text(
+              accuracy,
+              textAlign: TextAlign.center,
+              style: context.text.labelSmall?.copyWith(
+                color: t.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            entry.pointsLabel,
-            key: Key('$keyPrefix.points.${entry.participantId}'),
-            style: context.text.labelLarge?.copyWith(
-              color: isMe ? t.primary : t.textPrimary,
-              fontWeight: FontWeight.w700,
+          SizedBox(
+            width: 44,
+            child: Text(
+              matches,
+              textAlign: TextAlign.center,
+              style: context.text.labelSmall?.copyWith(
+                color: t.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 42,
+            child: Text(
+              entry.points.toString(),
+              key: Key('$keyPrefix.points.${entry.participantId}'),
+              textAlign: TextAlign.center,
+              style: context.text.labelMedium?.copyWith(
+                color: isMe ? t.primary : t.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 30,
+            child: _MovementChip(
+              movement: entry.movement,
+              keyPrefix: keyPrefix,
+              participantId: entry.participantId,
             ),
           ),
         ],
       ),
     );
   }
+
+  String _matchesFromSubtitle(String? subtitle) {
+    if (subtitle == null || subtitle.isEmpty) return '—';
+    final Match? match = RegExp(r'\d+').firstMatch(subtitle);
+    return match?.group(0) ?? '—';
+  }
 }
 
-/// The movement arrow: up in success, down in error, and NOTHING at all when
-/// the place has not changed or there is no snapshot to compare with.
-///
-/// An unchanged place used to draw a dash. On the day the first snapshot runs
-/// that dash is every row -- the snapshot IS today's board, so every movement
-/// is zero -- and a column of identical dashes says nothing while reading as
-/// though it does. Absence carries the same meaning without the noise.
 class _MovementChip extends StatelessWidget {
   const _MovementChip({
     required this.movement,
@@ -439,20 +1015,16 @@ class _MovementChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int? m = movement;
-    if (m == null || m == 0) {
-      return const SizedBox.shrink();
-    }
+    if (m == null || m == 0) return const SizedBox.shrink();
     final AppTokens t = context.tokens;
-    final Key k = Key('$keyPrefix.movement.$participantId');
-
     final bool up = m > 0;
     final Color color = up ? t.success : t.error;
     return Row(
-      key: k,
-      mainAxisSize: MainAxisSize.min,
+      key: Key('$keyPrefix.movement.$participantId'),
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Icon(
-          up ? Icons.arrow_upward : Icons.arrow_downward,
+          up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
           size: 12,
           color: color,
         ),
@@ -460,70 +1032,10 @@ class _MovementChip extends StatelessWidget {
           '${m.abs()}',
           style: context.text.labelSmall?.copyWith(
             color: color,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RankPill extends StatelessWidget {
-  const _RankPill({required this.rank, required this.color});
-
-  final int rank;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: color.withValues(alpha: 0.6)),
-      ),
-      child: Text(
-        '$rank',
-        style: context.text.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// "N points to place M" — the one derived number on this screen.
-class _GapChip extends StatelessWidget {
-  const _GapChip({required this.points, required this.rank});
-
-  final int points;
-  final int rank;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    return Align(
-      child: Container(
-        key: const Key('leaderboard.gapToNext'),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: t.primary.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          border: Border.all(color: t.primary.withValues(alpha: 0.5)),
-        ),
-        child: Text(
-          '$points نقطة للمرتبة $rank',
-          style: context.text.labelMedium?.copyWith(
-            color: t.primary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -990,4 +990,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminTeamNotInCatalogHint =>
       'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.';
+
+  @override
+  String get myPoints => 'My points';
+
+  @override
+  String get myPointsEmpty => 'You have no counted points yet.';
+
+  @override
+  String get myPointsLatestScored => 'Through the latest counted match';
+
+  @override
+  String get myPointsPerformance => 'Performance';
+
+  @override
+  String get myPointsRank => 'Rank';
+
+  @override
+  String get myPointsLeaderGap => 'Gap to leader';
+
+  @override
+  String get myPointsNeededForFirst => 'Needed for first';
+
+  @override
+  String get myPointsLeading => 'You are in first';
+
+  @override
+  String get myPointsLeaderUnavailable => 'Leader gap is unavailable right now';
+
+  @override
+  String get myPointsSettledMatches => 'Counted matches';
+
+  @override
+  String get adminCountedFixturesTab => 'Counted fixtures';
+
+  @override
+  String get adminCountedFixturesEmpty =>
+      'No counted fixtures in the current period.';
+
+  @override
+  String get adminCountedLabel => 'Counted';
+
+  @override
+  String get adminCountedFixturesSubtitle =>
+      'Fixtures with completed point scoring';
 }

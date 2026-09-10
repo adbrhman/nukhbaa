@@ -48,7 +48,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     ),
     const CurrentMonthFixturesScreen(),
     const PredictionHistoryScreen(),
-    const LeaderboardsScreen(),
+    LeaderboardsScreen(userDisplayName: widget.user.displayName),
     AccountScreen(user: widget.user),
   ];
 

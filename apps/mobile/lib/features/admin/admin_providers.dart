@@ -17,6 +17,7 @@
 /// phased in this project.
 library;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_client/api_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:contracts/contracts.dart';
@@ -38,6 +39,64 @@ T _unwrap<T>(Result<T> result) => switch (result) {
   Ok<T>(:final value) => value,
   Err<T>(:final error) => throw error,
 };
+
+/// Current-month fixtures whose server-side per-fixture score projection is
+/// non-empty. This is intentionally lazy: it runs only when the admin opens
+/// the "المباريات المحتسبة" section, keeping the main dashboard fast.
+final class AdminCountedFixture {
+  const AdminCountedFixture({
+    required this.item,
+    required this.predictionsCount,
+  });
+
+  final CurrentMonthFixtureItemDto item;
+  final int predictionsCount;
+}
+
+final adminCountedFixturesProvider = FutureProvider<List<AdminCountedFixture>>((
+  ref,
+) async {
+  final fixtures = await ref.watch(currentMonthFixturesProvider.future);
+  final adminApi = ref.watch(adminApiProvider);
+  final now = DateTime.now().toUtc();
+  final candidates = fixtures
+      .where((item) {
+        final raw = item.fixture.kickoffAt;
+        final kickoff = raw == null ? null : DateTime.tryParse(raw)?.toUtc();
+        return kickoff != null && kickoff.isBefore(now);
+      })
+      .toList(growable: false);
+
+  final loaded = await Future.wait(
+    candidates.map((item) async {
+      final result = await adminApi.adminGetFixtureScores(
+        item.fixture.fixtureId,
+      );
+      return switch (result) {
+        Ok<FixtureScoresDto>(:final value) when value.scores.isNotEmpty =>
+          AdminCountedFixture(
+            item: item,
+            predictionsCount: value.scores.length,
+          ),
+        Ok<FixtureScoresDto>() => null,
+        Err<FixtureScoresDto>(:final error) => throw error,
+      };
+    }),
+  );
+
+  final counted = loaded.whereType<AdminCountedFixture>().toList(
+    growable: true,
+  );
+  counted.sort((a, b) {
+    final aDate = DateTime.tryParse(a.item.fixture.kickoffAt ?? '');
+    final bDate = DateTime.tryParse(b.item.fixture.kickoffAt ?? '');
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return 1;
+    if (bDate == null) return -1;
+    return bDate.compareTo(aDate);
+  });
+  return counted;
+});
 
 /// The live data used by the Admin Control Center.
 ///

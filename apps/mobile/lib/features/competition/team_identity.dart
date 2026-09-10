@@ -15,6 +15,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/branding/team_branding.dart';
 import 'team_logo_assets.dart';
 import 'team_registry.dart';
 
@@ -58,15 +59,19 @@ ResolvedTeamIdentity resolveTeamIdentity({
           crestUrl: team.crestUrl,
           assetPath:
               teamLogoAssetPath(team.name) ?? teamLogoAssetPath(teamName),
+          brandColor: brandingForTeam(team.name).primary,
         );
       }
     }
   }
   final TeamBrand? brand = lookupTeam(teamName);
+  final String fallbackName = teamName?.trim().isNotEmpty == true
+      ? teamName!.trim()
+      : teamDisplayName(teamName);
   return ResolvedTeamIdentity(
     displayName: teamDisplayName(teamName),
     crestUrl: brand?.logoUrl,
     assetPath: teamLogoAssetPath(teamName),
-    brandColor: brand?.c1,
+    brandColor: brand?.c1 ?? brandingForTeam(fallbackName).primary,
   );
 }

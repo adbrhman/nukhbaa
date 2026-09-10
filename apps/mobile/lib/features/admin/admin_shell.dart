@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import 'admin_sections.dart';
 import 'screens/sections/admin_dashboard_section.dart';
 import 'screens/sections/admin_predictions_section.dart';
+import 'screens/sections/admin_counted_fixtures_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
@@ -27,6 +28,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.fixtureDelete => l10n.adminFixtureDeleteTab,
     AdminSection.predictions => l10n.adminPredictionsTab,
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
+    AdminSection.countedFixtures => l10n.adminCountedFixturesTab,
     AdminSection.users => l10n.adminUsersTab,
     AdminSection.ledger => l10n.adminLedgerLookupTab,
     AdminSection.audit => l10n.adminAuditLogTab,
@@ -44,6 +46,7 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
       AdminSection.fixtureDelete,
       AdminSection.predictions,
       AdminSection.resultsScoring,
+      AdminSection.countedFixtures,
     ],
   ),
   (title: 'النقاط والترتيب', sections: [AdminSection.ledger]),
@@ -138,6 +141,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.fixtureDelete => const FixtureDeleteSection(),
       AdminSection.resultsScoring => const ResultsScoringSection(),
       AdminSection.predictions => const AdminPredictionsSection(),
+      AdminSection.countedFixtures => const AdminCountedFixturesSection(),
     };
   }
 

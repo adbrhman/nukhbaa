@@ -27,6 +27,13 @@ class SeasonStandingsBoard extends ConsumerWidget {
   const SeasonStandingsBoard({
     required this.seasonId,
     required this.keyPrefix,
+    this.myDisplayName,
+    this.competitionName,
+    this.seasonLabel,
+    this.startAt,
+    this.endAt,
+    this.showHeader = false,
+    this.onBack,
     super.key,
   });
 
@@ -35,6 +42,14 @@ class SeasonStandingsBoard extends ConsumerWidget {
 
   /// The key namespace for the rendered rows.
   final String keyPrefix;
+
+  final String? myDisplayName;
+  final String? competitionName;
+  final String? seasonLabel;
+  final String? startAt;
+  final String? endAt;
+  final bool showHeader;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,12 +63,14 @@ class SeasonStandingsBoard extends ConsumerWidget {
       onRetry: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
-        // Highlighting the viewer's own row needs the board itself to say
-        // which entry is theirs (an is_me / participant_id field on the DTO).
-        // Deriving it from a side read here meant this screen firing an extra
-        // request just to decorate a row -- and, in the leaderboard tests,
-        // consuming the scripted failure meant for the board's own read.
-        myParticipantId: null,
+        myDisplayName: myDisplayName,
+        competitionName: competitionName,
+        seasonLabel: seasonLabel,
+        startAt: startAt,
+        endAt: endAt,
+        showHeader: showHeader,
+        onRefresh: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
+        onBack: onBack,
         entries: <BoardEntry>[
           for (final LeaderboardEntryDto e in entries)
             BoardEntry(

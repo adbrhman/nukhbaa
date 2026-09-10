@@ -1811,6 +1811,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.'**
   String get adminTeamNotInCatalogHint;
+
+  /// No description provided for @myPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'My points'**
+  String get myPoints;
+
+  /// No description provided for @myPointsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no counted points yet.'**
+  String get myPointsEmpty;
+
+  /// No description provided for @myPointsLatestScored.
+  ///
+  /// In en, this message translates to:
+  /// **'Through the latest counted match'**
+  String get myPointsLatestScored;
+
+  /// No description provided for @myPointsPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get myPointsPerformance;
+
+  /// No description provided for @myPointsRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get myPointsRank;
+
+  /// No description provided for @myPointsLeaderGap.
+  ///
+  /// In en, this message translates to:
+  /// **'Gap to leader'**
+  String get myPointsLeaderGap;
+
+  /// No description provided for @myPointsNeededForFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed for first'**
+  String get myPointsNeededForFirst;
+
+  /// No description provided for @myPointsLeading.
+  ///
+  /// In en, this message translates to:
+  /// **'You are in first'**
+  String get myPointsLeading;
+
+  /// No description provided for @myPointsLeaderUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Leader gap is unavailable right now'**
+  String get myPointsLeaderUnavailable;
+
+  /// No description provided for @myPointsSettledMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted matches'**
+  String get myPointsSettledMatches;
+
+  /// No description provided for @adminCountedFixturesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted fixtures'**
+  String get adminCountedFixturesTab;
+
+  /// No description provided for @adminCountedFixturesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No counted fixtures in the current period.'**
+  String get adminCountedFixturesEmpty;
+
+  /// No description provided for @adminCountedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted'**
+  String get adminCountedLabel;
+
+  /// No description provided for @adminCountedFixturesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixtures with completed point scoring'**
+  String get adminCountedFixturesSubtitle;
 }
 
 class _AppLocalizationsDelegate

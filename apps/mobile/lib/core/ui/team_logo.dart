@@ -66,6 +66,8 @@ class TeamLogo extends StatelessWidget {
               key: ValueKey<String>('teamLogo.$url'),
               width: size,
               height: size,
+              cacheWidth: (size * 4).ceil(),
+              cacheHeight: (size * 4).ceil(),
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => fallback,
               loadingBuilder: (context, child, progress) =>
@@ -83,6 +85,8 @@ class TeamLogo extends StatelessWidget {
           key: ValueKey<String>('teamLogo.asset.$asset'),
           width: size,
           height: size,
+          cacheWidth: (size * 4).ceil(),
+          cacheHeight: (size * 4).ceil(),
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => networkOrFallback,
         ),

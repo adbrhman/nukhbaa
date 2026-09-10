@@ -636,5 +636,19 @@
     "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
   },
   "adminRemoveFixtureFromSeasonSuccess": "Fixture removed from the month's competition.",
-  "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists."
+  "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists.",
+  "myPoints": "My points",
+  "myPointsEmpty": "You have no counted points yet.",
+  "myPointsLatestScored": "Through the latest counted match",
+  "myPointsPerformance": "Performance",
+  "myPointsRank": "Rank",
+  "myPointsLeaderGap": "Gap to leader",
+  "myPointsNeededForFirst": "Needed for first",
+  "myPointsLeading": "You are in first",
+  "myPointsLeaderUnavailable": "Leader gap is unavailable right now",
+  "myPointsSettledMatches": "Counted matches",
+  "adminCountedFixturesTab": "Counted fixtures",
+  "adminCountedFixturesEmpty": "No counted fixtures in the current period.",
+  "adminCountedLabel": "Counted",
+  "adminCountedFixturesSubtitle": "Fixtures with completed point scoring"
 }

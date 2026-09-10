@@ -9,49 +9,27 @@ import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import 'widgets/fixture_standings_board.dart';
 
-/// Discovery entry point for leaderboards. It uses the caller's active seasons
-/// as the server-backed scope and reuses the same season leaderboard provider
-/// as the contextual board opened from a fixture.
+/// The bottom-tab leaderboard surface.
 ///
-/// ## One board, not one per league
-/// The contest is the calendar month, not the league: the admin files
-/// fixtures from several leagues into the month's competition, every user
-/// predicts all of them together, and the month's highest total wins. A
-/// league is only a source of fixtures, so a per-league tab is not a view
-/// of anything — and in practice the account carries memberships in league
-/// seasons that hold **zero** fixtures, which rendered as tabs onto empty
-/// boards.
-///
-/// So the tabs are narrowed to the seasons that actually carry a fixture
-/// this month, read off [currentMonthFixturesProvider] — the same feed the
-/// matches screen already watches, so this costs no new endpoint, no new
-/// provider and no server change. It is also self-maintaining: next
-/// month's season appears the moment it has a fixture, and an emptied
-/// season drops out on its own.
-///
-/// Deliberately a **view** narrowing, not a data deletion: the league
-/// seasons and their memberships stay in the database untouched (project
-/// owner's choice — option ب). If they are ever removed for real, this
-/// filter becomes a no-op rather than a thing to undo.
-///
-/// If the fixtures feed has not resolved (or failed), the filter is skipped
-/// entirely and every active season is shown — a leaderboard must not go
-/// blank because an unrelated read is in flight.
+/// It narrows the display to seasons that actually carry current-month
+/// fixtures, then renders the reference-style leaderboard board.
 class LeaderboardsScreen extends ConsumerWidget {
-  const LeaderboardsScreen({super.key});
+  const LeaderboardsScreen({this.userDisplayName, super.key});
+
+  final String? userDisplayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.tokens;
-    final l10n = AppLocalizations.of(context);
-    final seasons = ref.watch(activeSeasonsProvider);
-    final monthFixtures = ref.watch(currentMonthFixturesProvider);
+    final AppTokens tokens = context.tokens;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AsyncValue<List<ActiveSeasonDto>> seasons = ref.watch(
+      activeSeasonsProvider,
+    );
+    final AsyncValue<List<CurrentMonthFixtureItemDto>> monthFixtures = ref
+        .watch(currentMonthFixturesProvider);
+
     return Scaffold(
       backgroundColor: tokens.background,
-      appBar: AppBar(
-        title: Text(l10n.leaderboardsScreenTitle),
-        backgroundColor: tokens.background,
-      ),
       body: seasons.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
@@ -66,6 +44,7 @@ class LeaderboardsScreen extends ConsumerWidget {
                     .map((item) => item.fixture.seasonId)
                     .toSet()
               : null;
+
           final List<ActiveSeasonDto> visible = seasonsWithFixtures == null
               ? items
               : items
@@ -73,6 +52,7 @@ class LeaderboardsScreen extends ConsumerWidget {
                       (season) => seasonsWithFixtures.contains(season.seasonId),
                     )
                     .toList(growable: false);
+
           if (visible.isEmpty) {
             return Center(
               child: Padding(
@@ -85,33 +65,46 @@ class LeaderboardsScreen extends ConsumerWidget {
               ),
             );
           }
-          // A single-tab TabBar is chrome around nothing — the expected
-          // steady state now that the month is the competition.
+
           if (visible.length == 1) {
-            return _SeasonLeaderboard(seasonId: visible.first.seasonId);
+            final ActiveSeasonDto season = visible.first;
+            return _SeasonLeaderboard(
+              season: season,
+              userDisplayName: userDisplayName,
+            );
           }
+
           return DefaultTabController(
             length: visible.length,
             child: Column(
               children: <Widget>[
-                TabBar(
-                  isScrollable: true,
-                  tabs: visible
-                      .map(
-                        (season) => Tab(
-                          key: Key('leaderboards.season.${season.seasonId}'),
-                          text:
-                              '${season.competitionName} · ${season.seasonLabel}',
-                        ),
-                      )
-                      .toList(),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.xs,
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                  ),
+                  child: TabBar(
+                    isScrollable: true,
+                    tabs: visible
+                        .map(
+                          (season) => Tab(
+                            key: Key('leaderboards.season.${season.seasonId}'),
+                            text:
+                                '${season.competitionName} · ${season.seasonLabel}',
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
                 Expanded(
                   child: TabBarView(
                     children: visible
                         .map(
-                          (season) =>
-                              _SeasonLeaderboard(seasonId: season.seasonId),
+                          (season) => _SeasonLeaderboard(
+                            season: season,
+                            userDisplayName: userDisplayName,
+                          ),
                         )
                         .toList(),
                   ),
@@ -125,16 +118,27 @@ class LeaderboardsScreen extends ConsumerWidget {
   }
 }
 
-/// Was a bespoke `ListTile` list; now the shared [FixtureStandingsBoard], so
-/// this surface gains the podium without gaining a second rendering to
-/// maintain. It keeps reading the FIXTURE board -- the store that actually
-/// holds points (see [FixtureStandingsBoard] for why the ledger cannot).
 class _SeasonLeaderboard extends StatelessWidget {
-  const _SeasonLeaderboard({required this.seasonId});
+  const _SeasonLeaderboard({
+    required this.season,
+    required this.userDisplayName,
+  });
 
-  final String seasonId;
+  final ActiveSeasonDto season;
+  final String? userDisplayName;
 
   @override
-  Widget build(BuildContext context) =>
-      FixtureStandingsBoard(seasonId: seasonId, keyPrefix: 'leaderboards');
+  Widget build(BuildContext context) {
+    return FixtureStandingsBoard(
+      seasonId: season.seasonId,
+      keyPrefix: 'leaderboards',
+      myDisplayName: userDisplayName,
+      competitionName: season.competitionName,
+      seasonLabel: season.seasonLabel,
+      startAt: season.startAt,
+      endAt: season.endAt,
+      showHeader: true,
+      onBack: () => Navigator.of(context).maybePop(),
+    );
+  }
 }

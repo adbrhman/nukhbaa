@@ -294,5 +294,19 @@
     "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
   },
   "adminRemoveFixtureFromSeasonSuccess": "تم حذف المباراة من مسابقة الشهر.",
-  "adminTeamNotInCatalogHint": "هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا."
+  "adminTeamNotInCatalogHint": "هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.",
+  "myPoints": "نقاطي",
+  "myPointsEmpty": "لا توجد نقاط محتسبة لك حتى الآن.",
+  "myPointsLatestScored": "حتى آخر مباراة محتسبة",
+  "myPointsPerformance": "الأداء",
+  "myPointsRank": "المركز",
+  "myPointsLeaderGap": "الفارق عن المتصدر",
+  "myPointsNeededForFirst": "تحتاج للصدارة",
+  "myPointsLeading": "أنت في الصدارة",
+  "myPointsLeaderUnavailable": "لا يمكن عرض الفارق الآن",
+  "myPointsSettledMatches": "المباريات المحتسبة",
+  "adminCountedFixturesTab": "المباريات المحتسبة",
+  "adminCountedFixturesEmpty": "لا توجد مباريات محتسبة في الفترة الحالية.",
+  "adminCountedLabel": "محتسبة",
+  "adminCountedFixturesSubtitle": "المباريات التي اكتمل احتساب نقاطها"
 }

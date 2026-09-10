@@ -16,6 +16,7 @@ enum AdminSection {
   fixtureDelete(icon: Icons.delete_outline_rounded),
   predictions(icon: Icons.rule_folder_rounded),
   resultsScoring(icon: Icons.scoreboard_rounded),
+  countedFixtures(icon: Icons.fact_check_rounded),
   users(icon: Icons.people_alt_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
   audit(icon: Icons.receipt_long_rounded);

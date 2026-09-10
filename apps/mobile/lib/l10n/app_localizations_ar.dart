@@ -1000,4 +1000,48 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adminTeamNotInCatalogHint =>
       'هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.';
+
+  @override
+  String get myPoints => 'نقاطي';
+
+  @override
+  String get myPointsEmpty => 'لا توجد نقاط محتسبة لك حتى الآن.';
+
+  @override
+  String get myPointsLatestScored => 'حتى آخر مباراة محتسبة';
+
+  @override
+  String get myPointsPerformance => 'الأداء';
+
+  @override
+  String get myPointsRank => 'المركز';
+
+  @override
+  String get myPointsLeaderGap => 'الفارق عن المتصدر';
+
+  @override
+  String get myPointsNeededForFirst => 'تحتاج للصدارة';
+
+  @override
+  String get myPointsLeading => 'أنت في الصدارة';
+
+  @override
+  String get myPointsLeaderUnavailable => 'لا يمكن عرض الفارق الآن';
+
+  @override
+  String get myPointsSettledMatches => 'المباريات المحتسبة';
+
+  @override
+  String get adminCountedFixturesTab => 'المباريات المحتسبة';
+
+  @override
+  String get adminCountedFixturesEmpty =>
+      'لا توجد مباريات محتسبة في الفترة الحالية.';
+
+  @override
+  String get adminCountedLabel => 'محتسبة';
+
+  @override
+  String get adminCountedFixturesSubtitle =>
+      'المباريات التي اكتمل احتساب نقاطها';
 }
