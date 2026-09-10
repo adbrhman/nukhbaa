@@ -78,6 +78,7 @@ final class CompositionRoot {
     required this.listMyNotifications,
     required this.getUnreadCount,
     required this.markNotificationRead,
+    required this.sendPredictionReminders,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -183,6 +184,7 @@ final class CompositionRoot {
     ListMyNotifications? listMyNotifications,
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
+    SendPredictionReminders? sendPredictionReminders,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -286,6 +288,8 @@ final class CompositionRoot {
        getUnreadCount = getUnreadCount ?? _absentGetUnreadCount(),
        markNotificationRead =
            markNotificationRead ?? _absentMarkNotificationRead(),
+       sendPredictionReminders =
+           sendPredictionReminders ?? _absentSendPredictionReminders(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
@@ -736,6 +740,15 @@ final class CompositionRoot {
   static final NotificationRepository _unwiredNotificationRepository =
       _UnwiredNotificationRepository();
 
+  /// Backs an "absent" [SendPredictionReminders]: the reminder sweep is
+  /// never exercised by a route test, and a silent no-op would hide a
+  /// wiring bug in the one test that does reach it.
+  static SendPredictionReminders _absentSendPredictionReminders() =>
+      SendPredictionReminders(
+        reminders: _UnwiredPredictionReminderRepository(),
+        sender: const NoopPushSender(),
+      );
+
   /// Backs an "absent" [RegisterDeviceToken]: a test that reaches the
   /// device-token slice without wiring it has a wiring bug, and a silent
   /// no-op would hide it. Separate from the notification repository -- a
@@ -1096,6 +1109,10 @@ final class CompositionRoot {
   /// Tier-3 mutation.
   final MarkNotificationRead markNotificationRead;
 
+  /// Reminds everyone who has not predicted, three hours before the day's
+  /// first kickoff. Driven by the scheduler, never by a request.
+  final SendPredictionReminders sendPredictionReminders;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -1327,6 +1344,13 @@ final class CompositionRoot {
     // bootstrap wires only the recipient-facing read/mark surface that has an
     // HTTP route.
     final notificationRepository = PostgresNotificationRepository(connection);
+
+    // Push delivery. A missing/unparsable service account degrades to a
+    // no-op sender rather than refusing to boot: Tier-3 (ADR 0007 §2.4),
+    // and a server that cannot remind is still a server that can score.
+    final pushSender =
+        FcmPushSender.tryParse(env['FIREBASE_SERVICE_ACCOUNT_JSON']) ??
+        const NoopPushSender();
     final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
 
     // Admin slice (phase 11). The ONE new stored surface is the append-only
@@ -1364,6 +1388,10 @@ final class CompositionRoot {
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
+      sendPredictionReminders: SendPredictionReminders(
+        reminders: PostgresPredictionReminderRepository(connection),
+        sender: pushSender,
+      ),
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
       ),
@@ -2251,6 +2279,36 @@ final class _UnwiredDeviceTokenRepository implements DeviceTokenRepository {
   }) => throw StateError(
     'DeviceTokenRepository was not wired into this test root',
   );
+}
+
+/// Refuses every call: see [_absentSendPredictionReminders].
+final class _UnwiredPredictionReminderRepository
+    implements PredictionReminderRepository {
+  static Never _unwired() =>
+      throw StateError('The reminder sweep was not wired into this root');
+
+  @override
+  Future<Result<DateTime?>> firstKickoffInWindow({
+    required DateTime windowStart,
+    required DateTime windowEnd,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<ReminderTarget>>> pendingTargets({
+    required DateTime windowStart,
+    required DateTime windowEnd,
+    required String reminderDate,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markSent({
+    required List<UserId> userIds,
+    required String reminderDate,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
 }
 
 final class _UnwiredNotificationRepository implements NotificationRepository {

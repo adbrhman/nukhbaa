@@ -63,6 +63,7 @@ export 'src/notification/notification.dart';
 export 'src/notification/notification_id.dart';
 export 'src/notification/notification_kind.dart';
 export 'src/notification/notification_subject.dart';
+export 'src/notification/reminder_target.dart';
 export 'src/platform/health.dart';
 export 'src/platform/latest_build.dart';
 export 'src/prediction/daily_double_policy.dart';
