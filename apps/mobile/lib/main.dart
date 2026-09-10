@@ -3,7 +3,7 @@ library;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/design/app_spacing.dart';
