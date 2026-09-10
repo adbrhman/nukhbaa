@@ -99,6 +99,7 @@ import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
+import 'live_matches_chip.dart';
 
 /// One fixture's FotMob-style card. Entirely independent of every other
 /// card on screen (`fixturePredictionControllerProvider` is a family keyed
@@ -349,6 +350,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     _MiddleSlot(
                       isGraded: isGraded,
                       locked: locked,
+                      live: locked && isFixtureLive(_fixture.kickoffAt),
                       myPrediction: myPrediction,
                       grade: myGrade,
                       points: myPoints,
@@ -666,6 +668,7 @@ class _MiddleSlot extends StatelessWidget {
   const _MiddleSlot({
     required this.isGraded,
     required this.locked,
+    required this.live,
     required this.myPrediction,
     required this.grade,
     required this.points,
@@ -683,6 +686,10 @@ class _MiddleSlot extends StatelessWidget {
 
   final bool isGraded;
   final bool locked;
+
+  /// Locked AND inside [liveWindow] after kickoff (a time estimate, see
+  /// [isFixtureLive]); drives "live" vs "awaiting result" in [_LockedSlot].
+  final bool live;
   final FixturePredictionDto? myPrediction;
   final String? grade;
   final int? points;
@@ -712,7 +719,7 @@ class _MiddleSlot extends StatelessWidget {
       );
     }
     if (locked) {
-      return const _LockedSlot();
+      return _LockedSlot(live: live);
     }
     return Stack(
       alignment: Alignment.center,
@@ -807,8 +814,10 @@ class _GradedSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bool success =
-        grade == 'exact_scoreline' || grade == 'correct_outcome';
+    // Tone follows the server's points, not the grade name: a correct
+    // outcome can award 0 under the frozen ruleset, and a green "0 pts"
+    // reads as a win nobody got.
+    final bool success = (points ?? 0) > 0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -825,28 +834,35 @@ class _GradedSlot extends StatelessWidget {
   }
 }
 
+/// A started, not-yet-graded fixture: "live" (red dot) inside the
+/// [liveWindow] after kickoff, then "awaiting result" -- instead of one
+/// generic "started" label for both, which kept a finished match looking
+/// like it was still being played.
 class _LockedSlot extends StatelessWidget {
-  const _LockedSlot();
+  const _LockedSlot({required this.live});
+
+  final bool live;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
+    final Color color = live ? tokens.error : tokens.textMuted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(
-          Icons.lock_outline,
-          size: AppSizes.iconSm,
-          color: tokens.textMuted,
+          live ? Icons.circle : Icons.lock_outline,
+          size: live ? 10 : AppSizes.iconSm,
+          color: color,
         ),
         const SizedBox(height: 2),
         Text(
-          l10n.predictionFixtureLockedLabel,
+          live ? l10n.fixturesLiveLabel : l10n.predictionPendingResultLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: TextStyle(color: tokens.textMuted, fontSize: 11),
+          style: TextStyle(color: color, fontSize: 11),
         ),
       ],
     );

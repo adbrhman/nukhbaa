@@ -28,10 +28,19 @@ import '../../l10n/app_localizations.dart';
 class KickoffCountdown extends StatefulWidget {
   /// Creates a countdown to [kickoffAt] (an ISO-8601 UTC string, or `null`
   /// when the fixture carries no kickoff time).
-  const KickoffCountdown({required this.kickoffAt, super.key});
+  const KickoffCountdown({
+    required this.kickoffAt,
+    this.timePrefix = '',
+    super.key,
+  });
 
   /// The fixture's kickoff time as an ISO-8601 string, or `null`.
   final String? kickoffAt;
+
+  /// Prepended only to the sub-day `HH:MM:SS` form. The day form is a full
+  /// phrase on its own ("in 2 days"), while a bare clock needs a
+  /// preposition inside a sentence ("starts in 05:12:33").
+  final String timePrefix;
 
   @override
   State<KickoffCountdown> createState() => _KickoffCountdownState();
@@ -94,7 +103,7 @@ class _KickoffCountdownState extends State<KickoffCountdown> {
     final h = d.inHours.remainder(24).toString().padLeft(2, '0');
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
+    return '${widget.timePrefix}$h:$m:$s';
   }
 
   @override

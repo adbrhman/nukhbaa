@@ -119,6 +119,29 @@
   "visibilityPublic": "Public",
   "visibilityPrivate": "Private",
   "predictionHistoryEmpty": "You have not submitted any predictions yet.",
+  "historyKickoffAt": "Kickoff · {moment}",
+  "@historyKickoffAt": {
+    "description": "My predictions card: the fixture's kickoff, local day and time.",
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      }
+    }
+  },
+  "historySubmittedAt": "Predicted · {moment}",
+  "@historySubmittedAt": {
+    "description": "My predictions card: when the forecast was submitted, local day and time.",
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      }
+    }
+  },
+  "historyStatusUpcoming": "Not started",
+  "historyGradeExact": "Correct",
+  "historyGradeOutcome": "Right outcome",
+  "historyGradeWrong": "Incorrect",
+  "historyGradeMissed": "Not counted",
   "predictionHistoryScoreLine": "{fixtureId}: {homeGoals} - {awayGoals}",
   "@predictionHistoryScoreLine": {
     "description": "One fixture's predicted scoreline within a submitted prediction history row.",
@@ -335,7 +358,7 @@
   },
   "matchesTitle": "Matches",
   "matchesEmpty": "No open matches right now.",
-  "kickoffCountdownDays": "in {days}d",
+  "kickoffCountdownDays": "{days, plural, other{in {days}d}}",
   "@kickoffCountdownDays": {
     "description": "Countdown label for a fixture kicking off more than a day from now.",
     "placeholders": {

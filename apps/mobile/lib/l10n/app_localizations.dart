@@ -554,6 +554,48 @@ abstract class AppLocalizations {
   /// **'You have not submitted any predictions yet.'**
   String get predictionHistoryEmpty;
 
+  /// My predictions card: the fixture's kickoff, local day and time.
+  ///
+  /// In en, this message translates to:
+  /// **'Kickoff · {moment}'**
+  String historyKickoffAt(String moment);
+
+  /// My predictions card: when the forecast was submitted, local day and time.
+  ///
+  /// In en, this message translates to:
+  /// **'Predicted · {moment}'**
+  String historySubmittedAt(String moment);
+
+  /// No description provided for @historyStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get historyStatusUpcoming;
+
+  /// No description provided for @historyGradeExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get historyGradeExact;
+
+  /// No description provided for @historyGradeOutcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Right outcome'**
+  String get historyGradeOutcome;
+
+  /// No description provided for @historyGradeWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect'**
+  String get historyGradeWrong;
+
+  /// No description provided for @historyGradeMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not counted'**
+  String get historyGradeMissed;
+
   /// One fixture's predicted scoreline within a submitted prediction history row.
   ///
   /// In en, this message translates to:
@@ -855,7 +897,7 @@ abstract class AppLocalizations {
   /// Countdown label for a fixture kicking off more than a day from now.
   ///
   /// In en, this message translates to:
-  /// **'in {days}d'**
+  /// **'{days, plural, other{in {days}d}}'**
   String kickoffCountdownDays(int days);
 
   /// Tooltip on a collapsed fixture card, inviting the user to tap it open to enter a prediction.

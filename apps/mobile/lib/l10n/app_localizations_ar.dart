@@ -281,6 +281,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get predictionHistoryEmpty => 'لم تقدّم أي توقعات بعد.';
 
   @override
+  String historyKickoffAt(String moment) {
+    return 'موعد المباراة · $moment';
+  }
+
+  @override
+  String historySubmittedAt(String moment) {
+    return 'تم التوقع · $moment';
+  }
+
+  @override
+  String get historyStatusUpcoming => 'لم تبدأ';
+
+  @override
+  String get historyGradeExact => 'توقع صحيح';
+
+  @override
+  String get historyGradeOutcome => 'اتجاه صحيح';
+
+  @override
+  String get historyGradeWrong => 'توقع غير صحيح';
+
+  @override
+  String get historyGradeMissed => 'لم تُحتسب';
+
+  @override
   String predictionHistoryScoreLine(
     String fixtureId,
     int homeGoals,
@@ -400,7 +425,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get predictionDoubleLabel => 'الدبل';
 
   @override
-  String get predictionMakeItDoubleLabel => '×2 اختَرها دبل';
+  String get predictionMakeItDoubleLabel => 'ضاعِف النقاط ×2';
 
   @override
   String get accountDarkModeLabel => 'الوضع الداكن';
@@ -458,7 +483,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String kickoffCountdownDays(int days) {
-    return 'خلال $days يوم';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'خلال $days يومًا',
+      few: 'خلال $days أيام',
+      two: 'خلال يومين',
+      one: 'خلال يوم واحد',
+    );
+    return '$_temp0';
   }
 
   @override

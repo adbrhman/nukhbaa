@@ -179,7 +179,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Started'), findsOneWidget);
+      // Kicked off a day ago: past the live window, not graded yet.
+      expect(find.text('Result pending'), findsOneWidget);
       expect(
         find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
         findsNothing,
@@ -229,7 +230,7 @@ void main() {
       expect(find.text('2 - 1'), findsOneWidget);
       expect(find.text('5 pts'), findsOneWidget);
       expect(
-        find.text('Started'),
+        find.text('Result pending'),
         findsNothing,
         reason: 'graded must win over locked in the middle slot',
       );

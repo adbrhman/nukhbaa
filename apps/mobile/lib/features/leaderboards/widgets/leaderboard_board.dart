@@ -72,14 +72,16 @@ class LeaderboardBoard extends StatelessWidget {
     final BoardEntry? viewer = _findViewer();
     final List<BoardEntry> podium = entries.take(3).toList(growable: false);
     final List<BoardEntry> rest = entries.skip(3).toList(growable: false);
-    final int viewerIndex = viewer == null
-        ? -1
-        : entries.indexWhere(
-            (entry) => entry.participantId == viewer.participantId,
-          );
-    final int? gapToAbove = viewerIndex > 0
-        ? entries[viewerIndex - 1].points - viewer!.points
+    // Competition ranking (1-1-1-4): everyone tied on the top total holds
+    // rank 1, so a rank-1 viewer is the leader and every other viewer is
+    // measured to the leader -- never to the row above, which may be a tie
+    // and used to print "0 points to reach rank 1".
+    final bool viewerLeads = viewer != null && viewer.rank == 1;
+    final int? gapToLeader =
+        viewer != null && !viewerLeads && entries.isNotEmpty
+        ? entries.first.points - viewer.points
         : null;
+    final bool showGap = gapToLeader != null && gapToLeader > 0;
 
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -115,11 +117,12 @@ class LeaderboardBoard extends StatelessWidget {
             keyPrefix: keyPrefix,
             myParticipantId: viewer?.participantId,
           ),
-        if (gapToAbove != null) ...<Widget>[
+        if (viewerLeads || showGap) ...<Widget>[
           const SizedBox(height: AppSpacing.sm),
           _BoardMetaStrip(
-            gapPoints: gapToAbove,
-            targetRank: entries[viewerIndex - 1].rank,
+            gapPoints: showGap ? gapToLeader : null,
+            targetRank: entries.first.rank,
+            isLeader: viewerLeads,
           ),
         ] else if (showHeader && entries.isNotEmpty) ...<Widget>[
           const SizedBox(height: AppSpacing.sm),
@@ -782,10 +785,15 @@ class _RankPill extends StatelessWidget {
 }
 
 class _BoardMetaStrip extends StatelessWidget {
-  const _BoardMetaStrip({this.gapPoints, this.targetRank});
+  const _BoardMetaStrip({
+    this.gapPoints,
+    this.targetRank,
+    this.isLeader = false,
+  });
 
   final int? gapPoints;
   final int? targetRank;
+  final bool isLeader;
 
   @override
   Widget build(BuildContext context) {
@@ -798,7 +806,7 @@ class _BoardMetaStrip extends StatelessWidget {
             style: context.text.labelSmall?.copyWith(color: t.textMuted),
           ),
         ),
-        if (gapPoints != null && targetRank != null)
+        if (isLeader || (gapPoints != null && targetRank != null))
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
@@ -810,7 +818,9 @@ class _BoardMetaStrip extends StatelessWidget {
               border: Border.all(color: t.primary.withValues(alpha: 0.45)),
             ),
             child: Text(
-              '$gapPoints نقطة للوصول للمرتبة $targetRank',
+              isLeader
+                  ? 'أنت في الصدارة 🥇'
+                  : '${_arabicPoints(gapPoints!)} للوصول للمرتبة $targetRank',
               style: context.text.labelSmall?.copyWith(
                 color: t.primary,
                 fontWeight: FontWeight.w800,
@@ -1038,4 +1048,14 @@ class _MovementChip extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Arabic number agreement for a points figure: one, two, few (3-10) and
+/// many (11+) are different words, not a plural suffix.
+String _arabicPoints(int count) {
+  final int tail = count % 100;
+  if (count == 1) return 'نقطة واحدة';
+  if (count == 2) return 'نقطتان';
+  if (tail >= 3 && tail <= 10) return '$count نقاط';
+  return '$count نقطة';
 }

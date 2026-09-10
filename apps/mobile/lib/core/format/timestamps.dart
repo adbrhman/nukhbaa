@@ -30,3 +30,16 @@ String formatTimeOfDay(BuildContext context, String isoTimestamp) {
   final String locale = Localizations.localeOf(context).toString();
   return intl.DateFormat.jm(locale).format(parsed.toLocal());
 }
+
+/// Day + time of day without the year, e.g. `10 Sep · 10:00 PM` in the
+/// viewer's zone -- for cards inside the current month, where the year is
+/// implied. Same parse/convert/locale idiom as [formatTimestamp].
+String formatDayAndTime(BuildContext context, String isoTimestamp) {
+  final DateTime? parsed = DateTime.tryParse(isoTimestamp);
+  if (parsed == null) return isoTimestamp;
+  final String locale = Localizations.localeOf(context).toString();
+  final DateTime local = parsed.toLocal();
+  final String day = intl.DateFormat.MMMd(locale).format(local);
+  final String time = intl.DateFormat.jm(locale).format(local);
+  return '$day · $time';
+}

@@ -226,10 +226,13 @@ class _PendingPredictionsCard extends StatelessWidget {
                 Icon(Icons.timer_outlined, color: tokens.textMuted, size: 18),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  'تبدأ بعد ',
+                  'تبدأ ',
                   style: TextStyle(color: tokens.textMuted, fontSize: 12),
                 ),
-                KickoffCountdown(kickoffAt: next.fixture.kickoffAt),
+                KickoffCountdown(
+                  kickoffAt: next.fixture.kickoffAt,
+                  timePrefix: 'بعد ',
+                ),
               ],
             ),
           ],
@@ -347,7 +350,9 @@ class _OverviewCard extends StatelessWidget {
                 ),
               ),
               StreakChip(
-                label: seasonCount == null ? '...' : '$seasonCount موسم نشط',
+                label: seasonCount == null
+                    ? '...'
+                    : _activeSeasonsLabel(seasonCount),
               ),
             ],
           ),
@@ -355,7 +360,7 @@ class _OverviewCard extends StatelessWidget {
           Text(
             fixtureCount == null
                 ? 'جارٍ تحديث مبارياتك...'
-                : '$fixtureCount مباراة متاحة هذا الشهر',
+                : _monthFixturesLabel(fixtureCount),
             style: TextStyle(
               color: tokens.onPrimary.withValues(alpha: 0.9),
               fontSize: 13,
@@ -496,4 +501,26 @@ class _SectionHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Arabic number agreement: zero, one, two, few (3-10) and many (11-99)
+/// are different sentences, not a plural suffix -- the same split as the
+/// pending-fixtures line above.
+String _activeSeasonsLabel(int count) {
+  final int tail = count % 100;
+  if (count == 0) return 'لا مواسم نشطة';
+  if (count == 1) return 'موسم نشط واحد';
+  if (count == 2) return 'موسمان نشطان';
+  if (tail >= 3 && tail <= 10) return '$count مواسم نشطة';
+  if (tail >= 11) return '$count موسمًا نشطًا';
+  return '$count موسم نشط';
+}
+
+String _monthFixturesLabel(int count) {
+  final int tail = count % 100;
+  if (count == 0) return 'لا مباريات متاحة هذا الشهر';
+  if (count == 1) return 'مباراة واحدة متاحة هذا الشهر';
+  if (count == 2) return 'مباراتان متاحتان هذا الشهر';
+  if (tail >= 3 && tail <= 10) return '$count مباريات متاحة هذا الشهر';
+  return '$count مباراة متاحة هذا الشهر';
 }

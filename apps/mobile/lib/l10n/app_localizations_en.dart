@@ -275,6 +275,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have not submitted any predictions yet.';
 
   @override
+  String historyKickoffAt(String moment) {
+    return 'Kickoff · $moment';
+  }
+
+  @override
+  String historySubmittedAt(String moment) {
+    return 'Predicted · $moment';
+  }
+
+  @override
+  String get historyStatusUpcoming => 'Not started';
+
+  @override
+  String get historyGradeExact => 'Correct';
+
+  @override
+  String get historyGradeOutcome => 'Right outcome';
+
+  @override
+  String get historyGradeWrong => 'Incorrect';
+
+  @override
+  String get historyGradeMissed => 'Not counted';
+
+  @override
   String predictionHistoryScoreLine(
     String fixtureId,
     int homeGoals,
@@ -454,7 +479,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String kickoffCountdownDays(int days) {
-    return 'in ${days}d';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'in ${days}d',
+    );
+    return '$_temp0';
   }
 
   @override
