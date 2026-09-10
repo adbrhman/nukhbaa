@@ -40,6 +40,14 @@ dependencies:
   # Verified on pub.dev 2026-09-07: image_picker 1.2.x. Gallery selection for
   # profile pictures -- the one thing the app cannot do without a plugin,
   # since reading the photo library is a platform capability, not a widget.
+  # Push delivery for the prediction reminder. Verified on pub.dev
+  # 2026-09-10: firebase_core 4.4.x, firebase_messaging 16.6.0 (min Dart
+  # SDK 3.6 -- the ratified pin is well above it). ANDROID ONLY at
+  # runtime: the web build ships no Firebase configuration, so every
+  # entry point is guarded by kIsWeb rather than throwing on load.
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.6.0
+
   image_picker: ^1.2.0
   intl: any
 

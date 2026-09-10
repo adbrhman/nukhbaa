@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_tokens.dart';
+import '../../core/providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
@@ -24,6 +27,16 @@ class NukhbaaShell extends ConsumerStatefulWidget {
 
 class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   int currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fire-and-forget, and only once the user is signed in: the token is
+    // bound to an account server-side, so registering before sign-in would
+    // have nobody to bind it to. Never awaited -- registration must not
+    // delay the first frame.
+    unawaited(ref.read(pushTokenServiceProvider).registerCurrentDevice());
+  }
 
   List<Widget> get pages => <Widget>[
     HomeScreen(

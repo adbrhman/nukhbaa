@@ -26,6 +26,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'config/app_config.dart';
 import 'auth/token_store.dart';
 import 'network/http_client.dart';
+import 'notifications/push_token_service.dart';
 
 part 'providers.g.dart';
 
@@ -75,6 +76,11 @@ class SessionExpiry extends _$SessionExpiry {
 /// The typed Auth (identity) client over the shared transport.
 @Riverpod(keepAlive: true)
 AuthApi authApi(Ref ref) => AuthApi(ref.watch(apiTransportProvider));
+
+/// Registers this device's FCM token for the prediction reminder.
+@Riverpod(keepAlive: true)
+PushTokenService pushTokenService(Ref ref) =>
+    PushTokenService(ref.watch(authApiProvider));
 
 /// The typed App (platform update-check) client over the shared transport.
 ///
