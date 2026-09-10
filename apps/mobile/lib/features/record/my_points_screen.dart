@@ -9,13 +9,18 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../history/prediction_history_providers.dart';
 import '../leaderboards/leaderboards_providers.dart';
 import 'season_record_providers.dart';
 
 /// A compact personal-points dashboard backed entirely by server-produced
 /// season records and season leaderboards.
 class MyPointsScreen extends ConsumerWidget {
-  const MyPointsScreen({super.key});
+  const MyPointsScreen({this.userDisplayName, super.key});
+
+  /// The signed-in user's display name -- only a fallback for finding the
+  /// viewer's row when none of their predictions carries the season id.
+  final String? userDisplayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -96,8 +101,10 @@ class MyPointsScreen extends ConsumerWidget {
               ),
               itemCount: rows.length,
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-              itemBuilder: (context, index) =>
-                  _SeasonPointsCard(record: rows[index]),
+              itemBuilder: (context, index) => _SeasonPointsCard(
+                record: rows[index],
+                userDisplayName: userDisplayName,
+              ),
             );
           },
         ),
@@ -107,60 +114,54 @@ class MyPointsScreen extends ConsumerWidget {
 }
 
 class _SeasonPointsCard extends ConsumerWidget {
-  const _SeasonPointsCard({required this.record});
+  const _SeasonPointsCard({required this.record, this.userDisplayName});
 
   final MySeasonRecordDto record;
+  final String? userDisplayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
     final board = ref.watch(fixtureLeaderboardProvider(record.seasonId));
-    final dynamic rawEntries = board.value?.entries;
-    final List<dynamic> entries = rawEntries is Iterable<dynamic>
-        ? rawEntries.toList(growable: false)
-        : const <dynamic>[];
+    final List<FixtureLeaderboardEntryDto> entries =
+        board.value?.entries ?? const <FixtureLeaderboardEntryDto>[];
+    final List<FixturePredictionDto> myPredictions =
+        ref.watch(myFixturePredictionsProvider).value ??
+        const <FixturePredictionDto>[];
 
-    dynamic rankedMe;
+    // The same board the leaderboard tab renders, so both screens show one
+    // number. The viewer is found by participant id (from their own
+    // prediction in this season), never as "the only rank-1 row": a tie on
+    // first place used to fall through to the season record's total, which
+    // read 0 while the board showed the real total.
+    final FixtureLeaderboardEntryDto? me = findMyFixtureEntry(
+      entries: entries,
+      myPredictions: myPredictions,
+      seasonId: record.seasonId,
+      displayName: userDisplayName,
+    );
 
-    // This is the exact leaderboard projection used by the visible
-    // "المتصدرون / الشهر" surface. Match the authenticated display name.
-    if (record.rank == 1) {
-      final firstPlace = entries
-          .where((entry) => (entry.rank as int) == 1)
-          .toList();
-      if (firstPlace.length == 1) {
-        rankedMe = firstPlace.first;
-      }
-    }
-
-    final int displayPoints = rankedMe == null
-        ? record.totalPoints
-        : rankedMe.totalPoints as int;
-    final int displayRank = rankedMe == null
-        ? record.rank
-        : rankedMe.rank as int;
+    final int displayPoints = me?.totalPoints ?? record.totalPoints;
+    final int displayRank = me?.rank ?? record.rank;
 
     final int? leaderPoints = entries.isEmpty
         ? null
-        : entries.first.totalPoints as int;
+        : entries.first.totalPoints;
     final int? gap = leaderPoints == null
         ? null
         : (leaderPoints - displayPoints < 0 ? 0 : leaderPoints - displayPoints);
 
     final bool isLeader = displayRank == 1;
 
-    final int? accuracy = rankedMe == null
+    // Same definition as the board: exact scorelines over decided fixtures.
+    final int? accuracy = me == null
         ? record.accuracyPercent
-        : (() {
-            final int settled = rankedMe.settledCount as int;
-            if (settled <= 0) return null;
-            return ((rankedMe.exactCount as int) * 100 / settled).round();
-          })();
+        : (me.decidedCount <= 0
+              ? null
+              : (me.exactCount * 100 / me.decidedCount).round());
 
-    final int settledMatches = rankedMe == null
-        ? record.settledCount
-        : rankedMe.settledCount as int;
+    final int settledMatches = me?.fixturesScored ?? record.settledCount;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -354,4 +355,28 @@ class _StatTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The viewer's row on a fixture board: by participant id first (taken from
+/// their own prediction in [seasonId]), then by display name -- the same
+/// fallback the leaderboard tab uses. `null` when neither matches.
+FixtureLeaderboardEntryDto? findMyFixtureEntry({
+  required List<FixtureLeaderboardEntryDto> entries,
+  required List<FixturePredictionDto> myPredictions,
+  required String seasonId,
+  String? displayName,
+}) {
+  for (final FixturePredictionDto prediction in myPredictions) {
+    if (prediction.seasonId != seasonId) continue;
+    for (final FixtureLeaderboardEntryDto entry in entries) {
+      if (entry.participantId == prediction.participantId) return entry;
+    }
+    break;
+  }
+  final String name = displayName?.trim() ?? '';
+  if (name.isEmpty) return null;
+  for (final FixtureLeaderboardEntryDto entry in entries) {
+    if (entry.displayName.trim() == name) return entry;
+  }
+  return null;
 }

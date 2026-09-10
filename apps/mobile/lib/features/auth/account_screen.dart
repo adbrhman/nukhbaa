@@ -196,7 +196,9 @@ class AccountScreen extends ConsumerWidget {
                                 text: text,
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (_) => const MyPointsScreen(),
+                                    builder: (_) => MyPointsScreen(
+                                      userDisplayName: user.displayName,
+                                    ),
                                   ),
                                 ),
                               ),
