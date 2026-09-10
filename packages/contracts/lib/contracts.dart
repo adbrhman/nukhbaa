@@ -9,6 +9,7 @@ library;
 export 'src/admin_dto.dart';
 export 'src/auth_dto.dart';
 export 'src/competition_dto.dart';
+export 'src/device_token_dto.dart';
 export 'src/error_dto.dart';
 export 'src/fixture_ledger_dto.dart';
 export 'src/fixture_prediction_dto.dart';

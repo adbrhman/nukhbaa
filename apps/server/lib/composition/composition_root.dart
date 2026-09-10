@@ -78,6 +78,7 @@ final class CompositionRoot {
     required this.listMyNotifications,
     required this.getUnreadCount,
     required this.markNotificationRead,
+    required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -182,6 +183,7 @@ final class CompositionRoot {
     ListMyNotifications? listMyNotifications,
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
+    RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
     ListUsers? listUsers,
@@ -284,6 +286,8 @@ final class CompositionRoot {
        getUnreadCount = getUnreadCount ?? _absentGetUnreadCount(),
        markNotificationRead =
            markNotificationRead ?? _absentMarkNotificationRead(),
+       registerDeviceToken =
+           registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
        reinstateUser = reinstateUser ?? _absentReinstateUser(),
        listUsers = listUsers ?? _absentListUsers(),
@@ -732,6 +736,16 @@ final class CompositionRoot {
   static final NotificationRepository _unwiredNotificationRepository =
       _UnwiredNotificationRepository();
 
+  /// Backs an "absent" [RegisterDeviceToken]: a test that reaches the
+  /// device-token slice without wiring it has a wiring bug, and a silent
+  /// no-op would hide it. Separate from the notification repository -- a
+  /// different table (notification.device_tokens), not the aggregate.
+  static final DeviceTokenRepository _unwiredDeviceTokenRepository =
+      _UnwiredDeviceTokenRepository();
+
+  static RegisterDeviceToken _absentRegisterDeviceToken() =>
+      RegisterDeviceToken(deviceTokens: _unwiredDeviceTokenRepository);
+
   static ListMyNotifications _absentListMyNotifications() =>
       ListMyNotifications(notifications: _unwiredNotificationRepository);
 
@@ -1082,6 +1096,10 @@ final class CompositionRoot {
   /// Tier-3 mutation.
   final MarkNotificationRead markNotificationRead;
 
+  /// Registers the caller's OWN device token for push delivery. Self-only:
+  /// the owner is bound from the verified principal, never a body field.
+  final RegisterDeviceToken registerDeviceToken;
+
   /// Suspends a user — the reversible admin sanction (admin-only, gated inside
   /// the use-case; a mandatory reason feeds the immutable audit record — Admin
   /// Panel decisions OPEN-A #1 / OPEN-B). The genuinely-new domain capability of
@@ -1309,6 +1327,7 @@ final class CompositionRoot {
     // bootstrap wires only the recipient-facing read/mark surface that has an
     // HTTP route.
     final notificationRepository = PostgresNotificationRepository(connection);
+    final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
 
     // Admin slice (phase 11). The ONE new stored surface is the append-only
     // `admin.audit_log` (migration 0010); the user sanction toggles the
@@ -1345,6 +1364,9 @@ final class CompositionRoot {
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
+      registerDeviceToken: RegisterDeviceToken(
+        deviceTokens: deviceTokenRepository,
+      ),
       createCompetition: CreateCompetition(
         repository: competitionRepository,
         idGenerator: idGenerator,
@@ -2219,6 +2241,18 @@ final class _UnwiredActivityFeedReader implements ActivityFeedReader {
 /// Backs every "absent" Notifications use-case: any method throws so a test
 /// that reaches an unwired notification slice fails loudly instead of touching
 /// a real database.
+/// Refuses every call: see [_unwiredDeviceTokenRepository].
+final class _UnwiredDeviceTokenRepository implements DeviceTokenRepository {
+  @override
+  Future<Result<void>> upsert({
+    required UserId userId,
+    required String token,
+    required String platform,
+  }) => throw StateError(
+    'DeviceTokenRepository was not wired into this test root',
+  );
+}
+
 final class _UnwiredNotificationRepository implements NotificationRepository {
   static Never _unwired() =>
       throw StateError('A notification use-case was not wired into this root');

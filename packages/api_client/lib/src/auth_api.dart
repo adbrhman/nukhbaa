@@ -84,4 +84,22 @@ final class AuthApi {
       parse: MeResponseDto.fromJson,
     );
   }
+
+  /// `POST /me/device-token` — registers this device's FCM token for push
+  /// delivery. Safe to call on every app start and on every token refresh:
+  /// the server upserts by token, so a repeat is a re-confirmation rather
+  /// than a duplicate.
+  Future<Result<DeviceTokenAckDto>> registerDeviceToken({
+    required String token,
+    required String platform,
+  }) {
+    return _transport.postObject<DeviceTokenAckDto>(
+      '/me/device-token',
+      body: DeviceTokenRegistrationRequestDto(
+        token: token,
+        platform: platform,
+      ).toJson(),
+      parse: DeviceTokenAckDto.fromJson,
+    );
+  }
 }
