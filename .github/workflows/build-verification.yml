@@ -147,6 +147,16 @@ jobs:
       - name: Restore committed web assets
         run: git checkout -- apps/mobile/web
 
+      - name: Install NUKHBAA web icon
+        run: |
+          set -euo pipefail
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
+          echo "NUKHBAA web icon installed
+
       - name: Generate code (build_runner)
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
@@ -194,6 +204,37 @@ jobs:
         working-directory: apps/mobile
         run: flutter create --platforms=android . --project-name mobile
 
+      # Android platform files are generated in CI, so the launcher icon must be
+      # copied into the generated mipmap folders on every Android build.
+      - name: Install NUKHBAA launcher icon
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="assets/branding/nukhbaa_icon_v7"
+          test -s "$src/mdpi.png"
+          test -s "$src/hdpi.png"
+          test -s "$src/xhdpi.png"
+          test -s "$src/xxhdpi.png"
+          test -s "$src/xxxhdpi.png"
+          cp "$src/mdpi.png" android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp "$src/hdpi.png" android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp "$src/xhdpi.png" android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp "$src/xxhdpi.png" android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp "$src/xxxhdpi.png" android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          for f in \
+            android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png \
+            android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png \
+            android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png \
+            android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png \
+            android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png; do
+            if test -e "$f"; then cp "${f%/*}/ic_launcher.png" "$f"; fi
+          done
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          echo "NUKHBAA Android launcher icon installed"
+
+      - name: Decode release keystore
       - name: Apply NUKHBAA launcher icon
         working-directory: apps/mobile
         run: |
@@ -587,6 +628,16 @@ jobs:
 
       - name: Restore committed web assets
         run: git checkout -- apps/mobile/web
+
+      - name: Install NUKHBAA web icon
+        run: |
+          set -euo pipefail
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
+          echo "NUKHBAA web icon installed
 
       - name: Generate code (build_runner)
         working-directory: apps/mobile

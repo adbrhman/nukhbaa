@@ -59,6 +59,16 @@ jobs:
       - name: Restore committed web assets
         run: git checkout -- apps/mobile/web
 
+      - name: Install NUKHBAA web icon
+        run: |
+          set -euo pipefail
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
+          cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
+          echo "NUKHBAA web icon installed
+
       - name: Generate code (build_runner)
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
