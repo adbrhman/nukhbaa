@@ -168,9 +168,25 @@ class _CurrentMonthFixturesScreenState
         backgroundColor: tokens.background,
         foregroundColor: tokens.textPrimary,
         elevation: 0,
-        title: Text(
-          l10n.matchesTitle,
-          key: const Key('currentMonthFixtures.title'),
+        centerTitle: false,
+        // A tighter toolbar pulls the day strip and the first card up.
+        toolbarHeight: 48,
+        // The brand wordmark replaces the tab name: the bottom bar already
+        // says "المباريات", so the header carries the app's identity.
+        title: ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (Rect bounds) =>
+              tokens.primaryGradient.createShader(bounds),
+          child: const Text(
+            'NUKHBAA',
+            key: Key('currentMonthFixtures.title'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.6,
+            ),
+          ),
         ),
         actions: <Widget>[
           LiveMatchesChip(
@@ -238,7 +254,12 @@ class _CurrentMonthFixturesScreenState
                 // The reference leaves ~6 logical px either side of the
                 // card (15px at 1080/2.75x); `lg` (16) was nearly triple
                 // that and visibly narrowed every card.
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.sm,
+                  AppSpacing.xs,
+                  AppSpacing.sm,
+                  AppSpacing.sm,
+                ),
                 itemCount: dayItems.length,
                 itemBuilder: (context, index) => RepaintBoundary(
                   child: FotmobMatchCard(item: dayItems[index]),
