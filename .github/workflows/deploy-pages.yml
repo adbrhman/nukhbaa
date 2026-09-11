@@ -67,7 +67,7 @@ jobs:
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
-          echo "NUKHBAA web icon installed
+          echo "NUKHBAA web icon installed"
 
       - name: Generate code (build_runner)
         working-directory: apps/mobile

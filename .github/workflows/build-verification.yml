@@ -155,7 +155,7 @@ jobs:
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
-          echo "NUKHBAA web icon installed
+          echo "NUKHBAA web icon installed"
 
       - name: Generate code (build_runner)
         working-directory: apps/mobile
@@ -233,37 +233,6 @@ jobs:
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           echo "NUKHBAA Android launcher icon installed"
-
-      - name: Decode release keystore
-      - name: Apply NUKHBAA launcher icon
-        working-directory: apps/mobile
-        run: |
-          set -euo pipefail
-          mkdir -p android/app/src/main/res/drawable
-          cp web/icons/Icon-512.png android/app/src/main/res/drawable/nukhbaa_launcher.png
-          python3 - <<'PYEOF'
-          from pathlib import Path
-          import re
-
-          manifest = Path("android/app/src/main/AndroidManifest.xml")
-          text = manifest.read_text(encoding="utf-8")
-          text, count = re.subn(
-              r'android:icon="@mipmap/ic_launcher"',
-              'android:icon="@drawable/nukhbaa_launcher"',
-              text,
-              count=1,
-          )
-          if count != 1:
-              raise SystemExit("ERROR: generated launcher icon reference not found exactly once")
-          text = re.sub(
-              r'android:roundIcon="@mipmap/ic_launcher_round"',
-              'android:roundIcon="@drawable/nukhbaa_launcher"',
-              text,
-              count=1,
-          )
-          manifest.write_text(text, encoding="utf-8")
-          print("NUKHBAA launcher icon applied")
-          PYEOF
 
       - name: Decode release keystore
         working-directory: apps/mobile
@@ -637,7 +606,7 @@ jobs:
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon192.png apps/mobile/web/icons/Icon-maskable-192.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/icon512.png apps/mobile/web/icons/Icon-maskable-512.png
           cp apps/mobile/assets/branding/nukhbaa_icon_v7/favicon.png apps/mobile/web/favicon.png
-          echo "NUKHBAA web icon installed
+          echo "NUKHBAA web icon installed"
 
       - name: Generate code (build_runner)
         working-directory: apps/mobile
