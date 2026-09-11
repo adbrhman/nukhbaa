@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
+import '../../history/prediction_history_providers.dart';
 import '../leaderboards_providers.dart';
 import 'leaderboard_board.dart';
 
@@ -63,12 +64,20 @@ class FixtureStandingsBoard extends ConsumerWidget {
     final AsyncValue<FixtureLeaderboardDto> standings = ref.watch(
       fixtureLeaderboardProvider(seasonId),
     );
+    // The viewer's row is found by participant id first; the display name is
+    // only the fallback, since two players can share a name.
+    final String? myParticipantId = _myParticipantIdIn(
+      ref.watch(myFixturePredictionsProvider).value ??
+          const <FixturePredictionDto>[],
+      seasonId,
+    );
     return AsyncListView<FixtureLeaderboardEntryDto>(
       value: standings.whenData((board) => board.entries),
       emptyMessage: l10n.fixtureLeaderboardEmpty,
       onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
+        myParticipantId: myParticipantId,
         myDisplayName: myDisplayName,
         competitionName: competitionName,
         seasonLabel: seasonLabel,
@@ -113,4 +122,17 @@ class FixtureStandingsBoard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The viewer's participant id in [seasonId], taken from their own
+/// prediction there -- the same source "نقاطي" uses, so both screens pick
+/// the same row. `null` until they have predicted in this season.
+String? _myParticipantIdIn(
+  List<FixturePredictionDto> predictions,
+  String seasonId,
+) {
+  for (final FixturePredictionDto prediction in predictions) {
+    if (prediction.seasonId == seasonId) return prediction.participantId;
+  }
+  return null;
 }

@@ -163,7 +163,7 @@ void main() {
         expect(find.byKey(const Key('browse.error')), findsOneWidget);
         // The tailored ErrorPresenter copy for this stable code (not a raw code).
         expect(
-          find.textContaining('not a member of this season'),
+          find.textContaining('لست مشاركًا في هذا الموسم'),
           findsOneWidget,
         );
         // An authorization failure is NOT retryable — no retry affordance.
@@ -180,6 +180,12 @@ void main() {
       final harness = buildLeaderboardsHarness((request) async {
         if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
           return okJsonObject(emptyFixtureBoard.toJson());
+        }
+        // The fixture tab now also reads the caller's own predictions (to find
+        // their row by participant id); keep this counter on the season
+        // leaderboard alone, as the comment above intends.
+        if (request.url.path != '/seasons/s-1/leaderboard') {
+          return errorEnvelope(404, 'not_found', 'unexpected request');
         }
         leaderboardCalls++;
         if (leaderboardCalls == 1) throw Exception('offline');

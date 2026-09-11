@@ -45,6 +45,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
+import '../history/prediction_history_providers.dart';
 import 'current_month_fixtures_providers.dart';
 import 'widgets/fixtures_calendar_page.dart';
 import 'widgets/fixtures_date_bar.dart';
@@ -122,6 +123,20 @@ class _CurrentMonthFixturesScreenState
         _userPickedDay = true;
       }
     });
+  }
+
+  /// Pull to refresh: the tab lives in the shell's `IndexedStack`, so
+  /// without this a fixture the admin adds during the day never appears
+  /// until the app restarts.
+  Future<void> _refresh() async {
+    ref.invalidate(currentMonthFixturesProvider);
+    ref.invalidate(myFixturePredictionsProvider);
+    try {
+      await ref.read(currentMonthFixturesProvider.future);
+    } on Object {
+      // A failed reload keeps its error on screen through the feed itself;
+      // the pull gesture still has to finish.
+    }
   }
 
   Future<void> _openCalendar(DateTime current) async {
@@ -215,15 +230,19 @@ class _CurrentMonthFixturesScreenState
                 message: l10n.fixturesDayEmpty,
               );
             }
-            return ListView.builder(
-              key: const Key('currentMonthFixtures.list'),
-              // The reference leaves ~6 logical px either side of the
-              // card (15px at 1080/2.75x); `lg` (16) was nearly triple
-              // that and visibly narrowed every card.
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              itemCount: dayItems.length,
-              itemBuilder: (context, index) => RepaintBoundary(
-                child: FotmobMatchCard(item: dayItems[index]),
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.builder(
+                key: const Key('currentMonthFixtures.list'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                // The reference leaves ~6 logical px either side of the
+                // card (15px at 1080/2.75x); `lg` (16) was nearly triple
+                // that and visibly narrowed every card.
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                itemCount: dayItems.length,
+                itemBuilder: (context, index) => RepaintBoundary(
+                  child: FotmobMatchCard(item: dayItems[index]),
+                ),
               ),
             );
           },

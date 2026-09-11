@@ -42,6 +42,7 @@ void main() {
       final root = CompositionRoot.forTesting(
         recordFixtureResult: RecordFixtureResult(
           resultRepository: results,
+          fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
           clock: FixedClock(_at),
         ),
         // No fixture-level predictions are seeded either, so `ScoreFixture`
@@ -193,6 +194,7 @@ void main() {
       final root = CompositionRoot.forTesting(
         recordFixtureResult: RecordFixtureResult(
           resultRepository: results,
+          fixtureScheduleRepository: InMemoryFixtureScheduleRepository(),
           clock: FixedClock(_at),
         ),
         scoreFixture: ScoreFixture(

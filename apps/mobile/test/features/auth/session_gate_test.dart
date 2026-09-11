@@ -137,8 +137,9 @@ void main() {
     // Still on the form, banner visible, no token persisted.
     expect(find.byKey(const Key('signIn.title')), findsOneWidget);
     expect(find.byKey(const Key('signIn.errorBanner')), findsOneWidget);
-    // ErrorPresenter maps an authorization failure to the sign-in-again copy.
-    expect(find.textContaining('session has expired'), findsOneWidget);
+    // ErrorPresenter gives bad credentials their own copy, never the
+    // "session expired" one.
+    expect(find.textContaining('كلمة المرور غير صحيحة'), findsOneWidget);
     expect(await harness.store.read(), isNull);
   });
 
@@ -165,7 +166,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('signIn.errorBanner')), findsOneWidget);
-    expect(find.textContaining('check your connection'), findsOneWidget);
+    expect(find.textContaining('تحقّق من اتصالك'), findsOneWidget);
   });
 
   _authTest('the register tab renders exactly one display-name field', (

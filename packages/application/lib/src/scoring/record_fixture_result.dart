@@ -1,4 +1,5 @@
 import 'package:application/src/common/clock.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
 import 'package:domain/domain.dart';
@@ -24,11 +25,14 @@ final class RecordFixtureResult {
   /// Creates the use-case over its collaborators.
   const RecordFixtureResult({
     required FixtureResultRepository resultRepository,
+    required FixtureScheduleRepository fixtureScheduleRepository,
     required Clock clock,
   }) : _results = resultRepository,
+       _fixtureSchedules = fixtureScheduleRepository,
        _clock = clock;
 
   final FixtureResultRepository _results;
+  final FixtureScheduleRepository _fixtureSchedules;
   final Clock _clock;
 
   /// Records that [fixtureId] finished [homeGoals]–[awayGoals], on behalf of the
@@ -63,7 +67,27 @@ final class RecordFixtureResult {
     }
     final result = (resultResult as Ok<FixtureResult>).value;
 
-    final saved = await _results.upsert(result, _clock.nowUtc());
+    // A result is a fact about a match that has been played. While the
+    // fixture's registered kickoff is still ahead it is refused: recording
+    // one early scores every open prediction against a scoreline that has
+    // not happened, and the fixture stays open for predictions after it.
+    final now = _clock.nowUtc();
+    final schedulesResult = await _fixtureSchedules.findByFixtures([fixture]);
+    if (schedulesResult is Err<List<FixtureSchedule>>) {
+      return Result.err(schedulesResult.error);
+    }
+    final schedules = (schedulesResult as Ok<List<FixtureSchedule>>).value;
+    if (schedules.isNotEmpty && schedules.first.kickoffAt.isAfter(now)) {
+      return Result.err(
+        AppError.invariant(
+          'scoring.fixture_not_started',
+          'Fixture ${fixture.value} has not kicked off yet; its result '
+              'cannot be recorded before kickoff',
+        ),
+      );
+    }
+
+    final saved = await _results.upsert(result, now);
     return switch (saved) {
       Ok<void>() => Result.ok(result),
       Err<void>(:final error) => Result.err(error),

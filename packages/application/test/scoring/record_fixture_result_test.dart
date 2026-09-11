@@ -4,6 +4,7 @@ import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
 import '../competition/fakes.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
 import 'fakes.dart';
 
 const _fixture = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -12,12 +13,15 @@ const _user = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 
 void main() {
   late FakeFixtureResultRepository results;
+  late FakeFixtureScheduleRepository schedules;
   late RecordFixtureResult useCase;
 
   setUp(() {
     results = FakeFixtureResultRepository();
+    schedules = FakeFixtureScheduleRepository();
     useCase = RecordFixtureResult(
       resultRepository: results,
+      fixtureScheduleRepository: schedules,
       clock: FixedClock(DateTime.utc(2026, 7, 11, 18)),
     );
   });
@@ -102,5 +106,44 @@ void main() {
       awayGoals: 0,
     );
     expect((r as Err<FixtureResult>).error.kind, ErrorKind.transient);
+  });
+
+  test('a result before the registered kickoff is refused', () async {
+    schedules.seed(
+      FixtureSchedule.fromStored(
+        fixture: const FixtureRef(_fixture),
+        homeTeam: 'Home FC',
+        awayTeam: 'Away FC',
+        kickoffAt: DateTime.utc(2026, 7, 11, 20),
+      ),
+    );
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      fixtureId: _fixture,
+      homeGoals: 1,
+      awayGoals: 0,
+    );
+    expect(r, isA<Err<FixtureResult>>());
+    expect((r as Err<FixtureResult>).error.code, 'scoring.fixture_not_started');
+    expect(results.count, 0);
+  });
+
+  test('a result after the registered kickoff is stored', () async {
+    schedules.seed(
+      FixtureSchedule.fromStored(
+        fixture: const FixtureRef(_fixture),
+        homeTeam: 'Home FC',
+        awayTeam: 'Away FC',
+        kickoffAt: DateTime.utc(2026, 7, 11, 16),
+      ),
+    );
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      fixtureId: _fixture,
+      homeGoals: 1,
+      awayGoals: 0,
+    );
+    expect(r, isA<Ok<FixtureResult>>());
+    expect(results.count, 1);
   });
 }

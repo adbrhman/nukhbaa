@@ -507,6 +507,7 @@ final class CompositionRoot {
   static RecordFixtureResult _absentRecordFixtureResult() =>
       RecordFixtureResult(
         resultRepository: _unwiredFixtureResultRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
         clock: _unwiredClock,
       );
 
@@ -1476,6 +1477,7 @@ final class CompositionRoot {
       ),
       recordFixtureResult: RecordFixtureResult(
         resultRepository: fixtureResultRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
       ),
       registerFixtureSchedule: RegisterFixtureSchedule(

@@ -65,36 +65,54 @@ FROM leaderboard.hall_of_fame_standings
 LIMIT @limit
 ''';
 
-  // The personal record. `current_rank` IS selected here, unlike the
-  // season-standings read above -- and for the opposite reason. There the
-  // whole board is in hand and the domain ranks it, so reading a second
-  // SQL-computed rank would let two ranks disagree. Here exactly one row per
-  // season is fetched, so there is no board for the domain to rank; the
-  // view's rank is the only rank available, and it is computed by the same
-  // rule (`rank() over (partition by season_id order by total_points desc)`).
+  // The personal record, read from the SAME store the monthly board uses:
+  // `leaderboard.season_fixture_standings` (migration 0034) over
+  // `scoring.fixture_scores`. The previous source,
+  // `season_standings_with_movement`, sums `ledger.point_entries`, which is
+  // keyed on rounds and unreachable since fixtures moved to seasons -- so
+  // every record read 0 points at rank #1 while the board showed real totals.
+  //
+  // The rank is computed over EVERY participant of each of the caller's
+  // seasons (LEFT JOIN, zero when nothing is scored yet) with the same
+  // standard-competition rule the domain board applies. `settled_count` is
+  // the board's `decided_count`: missed and pending grades are excluded, so
+  // the record's accuracy equals the board's.
   //
   // Ordered newest season first, by the season's own calendar window rather
   // than by label: labels are display strings and sort alphabetically, which
   // would put April above March in any year.
   static const String _selectUserSeasonRecordsSql = '''
+WITH mine AS (
+  SELECT p.id AS participant_id, p.season_id
+  FROM competition.participants p
+  WHERE p.user_id = @user_id
+),
+board AS (
+  SELECT p.season_id,
+         p.id AS participant_id,
+         COALESCE(f.total_points, 0)::bigint AS total_points,
+         COALESCE(f.fixtures_scored, 0)::bigint AS entry_count,
+         COALESCE(f.exact_count, 0)::bigint AS exact_count,
+         COALESCE(f.decided_count, 0)::bigint AS settled_count,
+         rank() OVER (
+           PARTITION BY p.season_id
+           ORDER BY COALESCE(f.total_points, 0) DESC
+         ) AS current_rank
+  FROM competition.participants p
+  LEFT JOIN leaderboard.season_fixture_standings f
+    ON f.participant_id = p.id
+  WHERE p.season_id IN (SELECT m.season_id FROM mine m)
+)
 SELECT c.id AS competition_id, c.name AS competition_name,
        s.id AS season_id, s.label AS season_label,
        s.start_at, s.end_at,
-       v.current_rank, v.total_points, v.entry_count,
-       v.exact_count, v.settled_count
-FROM leaderboard.season_standings_with_movement v
-JOIN competition.participants p ON p.id = v.participant_id
-JOIN competition.seasons s ON s.id = v.season_id
+       b.current_rank, b.total_points, b.entry_count,
+       b.exact_count, b.settled_count
+FROM board b
+JOIN mine m ON m.participant_id = b.participant_id
+JOIN competition.seasons s ON s.id = b.season_id
 JOIN competition.competitions c ON c.id = s.competition_id
-WHERE p.user_id = @user_id
-  -- A season that never held a fixture was never a contest, so a row in it is
-  -- not a record of anything. This project carries seven such seasons: the
-  -- league editions seeded alongside the monthly contest, open by date and
-  -- permanently empty. Automatic enrolment (which predates the
-  -- fixture requirement in `listOpenSeasonsWithFixtures`) put every user in
-  -- all of them, which is why the trophy history opened on six identical
-  -- "2026/27" rows at rank #1 with zero points and nothing behind them.
-  AND EXISTS (
+WHERE EXISTS (
         SELECT 1 FROM competition.season_fixtures sf
         WHERE sf.season_id = s.id
       )
@@ -132,7 +150,7 @@ ORDER BY s.start_at DESC, s.id DESC
   static Result<ParticipantSeasonRecord> _mapSeasonRecord(
     Map<String, dynamic> row,
   ) {
-    const String view = 'season_standings_with_movement';
+    const String view = 'season_fixture_standings';
     final competitionId = CompetitionId.tryParse(
       row['competition_id']?.toString(),
     );
