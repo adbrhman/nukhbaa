@@ -46,7 +46,9 @@ class FixturesDateStrip extends StatefulWidget {
   final ValueChanged<DateTime> onDaySelected;
 
   /// The strip's fixed height, for the app bar's `PreferredSize`.
-  static const double height = 46;
+  /// 40 still fits the 14px label, its 8px gap and the 3px underline,
+  /// with the leading spacer absorbing the rest.
+  static const double height = 40;
 
   @override
   State<FixturesDateStrip> createState() => _FixturesDateStripState();

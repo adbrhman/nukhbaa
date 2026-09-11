@@ -170,7 +170,7 @@ class _CurrentMonthFixturesScreenState
         elevation: 0,
         centerTitle: false,
         // A tighter toolbar pulls the day strip and the first card up.
-        toolbarHeight: 48,
+        toolbarHeight: 44,
         // The brand wordmark replaces the tab name: the bottom bar already
         // says "المباريات", so the header carries the app's identity.
         title: ShaderMask(
