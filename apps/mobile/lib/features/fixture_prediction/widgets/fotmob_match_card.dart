@@ -1041,15 +1041,18 @@ class _StepperZone extends StatelessWidget {
       opacity: enabled ? 1 : AppOpacity.disabled,
       child: Tooltip(
         message: tooltip,
-        child: InkWell(
-          onTap: onTap,
-          child: SizedBox(
-            height: height,
-            width: double.infinity,
-            child: Icon(
-              icon,
-              size: AppSizes.iconSm,
-              color: tokens.textSecondary,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              height: height,
+              width: double.infinity,
+              child: Icon(
+                icon,
+                size: AppSizes.iconSm,
+                color: tokens.textSecondary,
+              ),
             ),
           ),
         ),
