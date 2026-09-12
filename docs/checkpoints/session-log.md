@@ -786,3 +786,11 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - postgres_notification_repository.dart: _createSql/createIfAbsent now bind fixture_id; _listSql/_findSql select it; the fixtureScored case in _mapSubject now builds NotificationSubject.fixtureScored from the stored column instead of the old deliberate 'not yet wired' error (which would otherwise have broken the WHOLE notification list for any winner, per the existing row_corrupt-propagation behavior).
 - REMAINING MANUAL STEP: apply migration 0041 to the live Supabase project (thxzwzscwukifymjthnp) -- no CI/CD step applies migrations to production, only to the throwaway local instance in build-verification.
 - backup: /home/dev/nukhbaa-fix-backups/fixture_scored_notification_storage_20260912_202726
+
+## 2026-09-13T01:05:35+03:00 - stepper_material_repaint_fix
+- Root cause: _StepperZone's +/- InkWell (fotmob_match_card.dart) had no local Material ancestor, so its tap ripple was hosted on the nearest ancestor Material up the tree (the Scaffold's own, spanning the whole screen) -- every +/- tap repainted that whole surface instead of the ~61x26 stepper zone, which is what made rapid +/- taps feel unresponsive.
+- Fix: wrapped the stepper's InkWell in its own `Material(type: MaterialType.transparency)`, matching the pattern the card's own _SubmitButton already used correctly. Purely a paint/perf isolation change -- no visual or behavioral difference, no new imports.
+- File: apps/mobile/lib/features/fixture_prediction/widgets/fotmob_match_card.dart
+- Tests: fotmob_match_card_state_test.dart, fotmob_match_card_overflow_test.dart, widget_test.dart -- pass (see run.log).
+- backup: /home/dev/nukhbaa-fix-backups/nukhbaa-fix-stepper-material_20260913_010455
+- fix_commit: 8d45fc1cca22fac205d490cd6070977433e74b6d
