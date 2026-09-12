@@ -58,6 +58,7 @@ ApiTransport apiTransport(Ref ref) {
     baseUri: config.apiBaseUrl,
     httpClient: client,
     tokenProvider: store.read,
+    requestTimeout: const Duration(seconds: 35),
     onUnauthorized: () async {
       await store.clear();
       ref.read(sessionExpiryProvider.notifier).signal();

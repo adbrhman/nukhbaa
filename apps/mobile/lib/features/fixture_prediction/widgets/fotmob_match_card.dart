@@ -826,26 +826,29 @@ class _ConfirmBadge extends StatelessWidget {
     final tokens = context.tokens;
     return Semantics(
       label: l10n.predictionScorePickedLabel,
-      child: Container(
-        width: _size,
-        height: _size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: confirmed
-              ? tokens.primary
-              : tokens.textPrimary.withValues(alpha: 0.10),
-          border: confirmed
-              ? null
-              : Border.all(
-                  color: tokens.textPrimary.withValues(alpha: 0.12),
-                  width: AppStroke.hairline,
-                ),
-        ),
-        child: Icon(
-          Icons.check_rounded,
-          size: AppSizes.iconMd,
-          color: confirmed ? Colors.white : tokens.textSecondary,
+      child: Transform.scale(
+        scale: 0.5,
+        child: Container(
+          width: _size,
+          height: _size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: confirmed
+                ? tokens.primary
+                : tokens.textPrimary.withValues(alpha: 0.10),
+            border: confirmed
+                ? null
+                : Border.all(
+                    color: tokens.textPrimary.withValues(alpha: 0.12),
+                    width: AppStroke.hairline,
+                  ),
+          ),
+          child: Icon(
+            Icons.check_rounded,
+            size: AppSizes.iconMd,
+            color: confirmed ? Colors.white : tokens.textSecondary,
+          ),
         ),
       ),
     );
