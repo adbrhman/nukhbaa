@@ -249,4 +249,24 @@ void main() {
       );
     });
   });
+  group('PredictionApi.getFixturePredictionDistribution', () {
+    test('200 -> typed distribution DTO at the exact path', () async {
+      const dto = FixturePredictionDistributionDto(
+        homeWinPercentage: 68,
+        awayWinPercentage: 32,
+      );
+      final ctx = buildTransport((_) async => okJson(dto.toJson()));
+
+      final result = await PredictionApi(
+        ctx.transport,
+      ).getFixturePredictionDistribution(seasonId: 's-1', fixtureId: 'f-1');
+
+      expect(result, const Result<FixturePredictionDistributionDto>.ok(dto));
+      expect(
+        ctx.captured.single.url.path,
+        '/seasons/s-1/fixtures/f-1/prediction-distribution',
+      );
+      expect(ctx.captured.single.method, 'GET');
+    });
+  });
 }

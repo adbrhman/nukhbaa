@@ -20,14 +20,10 @@
 /// no HTTP itself.
 ///
 /// ## Scope
-/// [seasonFixturesProvider] is the only read this file owns: the season's
-/// linked fixtures (`GET /seasons/{id}/fixtures`), each carrying only its
-/// identity (`seasonId`/`fixtureId`) plus schedule (`homeTeam`/`awayTeam`/
-/// `kickoffAt`) when registered. There is deliberately no "my prediction for
-/// this fixture" read here — the server does not expose one yet (only the
-/// `POST .../prediction` submit endpoint exists as of Phase 7.2), so the
-/// fixture-prediction screen submits blind, with no pre-fill, until that read
-/// is added.
+/// [seasonFixturesProvider] is the season's linked-fixtures read, while
+/// [fixturePredictionDistributionProvider] reads the server-aggregated
+/// home/away win shares used by each match card. Neither provider exposes
+/// individual predictions.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -56,5 +52,28 @@ final seasonFixturesProvider =
       return switch (result) {
         Ok<List<SeasonFixtureCardDto>>(:final value) => value,
         Err<List<SeasonFixtureCardDto>>(:final error) => throw error,
+      };
+    });
+
+typedef FixturePredictionDistributionKey = ({
+  String seasonId,
+  String fixtureId,
+});
+
+/// `GET /seasons/{id}/fixtures/{fixtureId}/prediction-distribution` — the
+/// server-computed split between home-win and away-win predictions.
+final fixturePredictionDistributionProvider =
+    FutureProvider.family<
+      FixturePredictionDistributionDto,
+      FixturePredictionDistributionKey
+    >((ref, key) async {
+      final api = ref.watch(predictionApiProvider);
+      final result = await api.getFixturePredictionDistribution(
+        seasonId: key.seasonId,
+        fixtureId: key.fixtureId,
+      );
+      return switch (result) {
+        Ok<FixturePredictionDistributionDto>(:final value) => value,
+        Err<FixturePredictionDistributionDto>(:final error) => throw error,
       };
     });

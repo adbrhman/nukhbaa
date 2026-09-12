@@ -69,6 +69,20 @@ final class PredictionApi {
     );
   }
 
+  /// `GET /seasons/{id}/fixtures/{fixtureId}/prediction-distribution` —
+  /// server-aggregated home/away win shares for the fixture card. Individual
+  /// predictions never cross this API boundary.
+  Future<Result<FixturePredictionDistributionDto>>
+  getFixturePredictionDistribution({
+    required String seasonId,
+    required String fixtureId,
+  }) {
+    return _transport.getObject<FixturePredictionDistributionDto>(
+      '/seasons/$seasonId/fixtures/$fixtureId/prediction-distribution',
+      parse: FixturePredictionDistributionDto.fromJson,
+    );
+  }
+
   /// `GET /rounds/{id}/predictions` — the caller's own prediction for
   /// [roundId], any round status (self-read is safe).
   ///

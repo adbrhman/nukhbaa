@@ -9,6 +9,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/design/app_tokens.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -48,6 +49,25 @@ CurrentMonthFixturesHarness _harnessFor({
         ).toJson(),
       ]);
     }
+    if (path == '/seasons/s-1/fixtures/f-1/prediction-distribution') {
+      return okJsonObject(const {
+        'schema_version': 1,
+        'home_win_percentage': 68,
+        'away_win_percentage': 32,
+      });
+    }
+    if (path == '/seasons/s-1/fixtures/f-1/prediction') {
+      return okJsonObject({
+        'schema_version': 1,
+        'id': 'fp-1',
+        'participant_id': 'part-1',
+        'fixture_id': 'f-1',
+        'submitted_at': '2026-09-12T20:00:00.000Z',
+        'home_goals': 0,
+        'away_goals': 0,
+        'is_double': false,
+      });
+    }
     if (path == '/me/fixture-predictions') {
       return okJsonList(myPredictions);
     }
@@ -71,7 +91,7 @@ String _pastIso() =>
     DateTime.now().toUtc().subtract(const Duration(days: 1)).toIso8601String();
 
 void main() {
-  testWidgets('open state: steppers show "?" and submit stays disabled', (
+  testWidgets('open state: score changes auto-save and show a check', (
     tester,
   ) async {
     final harness = _harnessFor(
@@ -89,17 +109,42 @@ void main() {
       findsNWidgets(2),
       reason: 'both steppers must start unset, never a default 0-0',
     );
-    final submit = tester.widget<InkWell>(
-      find.descendant(
-        of: find.byKey(const Key('currentMonthFixtures.submit.f-1')),
-        matching: find.byType(InkWell),
-      ),
+    expect(
+      find.byKey(const Key('currentMonthFixtures.submit.f-1')),
+      findsNothing,
+      reason: 'auto-save replaces the explicit submit control',
+    );
+    expect(find.text('68%'), findsOneWidget);
+    expect(find.text('32%'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
+    );
+    await tester.tap(
+      find.byKey(const Key('currentMonthFixtures.away.increment.f-1')),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final request = harness.captured.firstWhere(
+      (c) => c.request.url.path == '/seasons/s-1/fixtures/f-1/prediction',
+    );
+    expect(request.request.method, 'POST');
+    final checkIcon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+    expect(checkIcon.color, Colors.white);
+    final badge = tester.widget<Container>(
+      find
+          .ancestor(
+            of: find.byIcon(Icons.check_rounded),
+            matching: find.byType(Container),
+          )
+          .first,
     );
     expect(
-      submit.onTap,
-      isNull,
-      reason: 'submit must stay disabled until both sides have a pick',
+      badge.constraints,
+      const BoxConstraints.tightFor(width: 48, height: 48),
     );
+    expect((badge.decoration! as BoxDecoration).color, AppTokens.dark.primary);
   });
 
   testWidgets(

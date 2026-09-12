@@ -14,6 +14,13 @@ import 'package:contracts/contracts.dart';
 /// view), never fabricated at the edge. `season_id` is included only when
 /// [FixturePredictionView.seasonId] was populated by the repository query
 /// (currently `listByUser` only); otherwise omitted from the wire payload.
+Map<String, Object?> fixturePredictionDistributionToJson(
+  FixturePredictionDistribution distribution,
+) => FixturePredictionDistributionDto(
+  homeWinPercentage: distribution.homeWinPercentage,
+  awayWinPercentage: distribution.awayWinPercentage,
+).toJson();
+
 Map<String, Object?> fixturePredictionViewToJson(
   FixturePredictionView view, {
   String displayName = '',

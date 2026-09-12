@@ -57,6 +57,7 @@ final class CompositionRoot {
     required this.listMySeasonRecords,
     required this.getSeasonFixtureLeaderboard,
     required this.getFixtureScores,
+    required this.getFixturePredictionDistribution,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
     required this.createGroup,
@@ -163,6 +164,7 @@ final class CompositionRoot {
     ListMySeasonRecords? listMySeasonRecords,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
     GetFixtureScores? getFixtureScores,
+    GetFixturePredictionDistribution? getFixturePredictionDistribution,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
     CreateGroup? createGroup,
@@ -259,6 +261,9 @@ final class CompositionRoot {
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
        getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
+       getFixturePredictionDistribution =
+           getFixturePredictionDistribution ??
+           _absentGetFixturePredictionDistribution(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -600,6 +605,11 @@ final class CompositionRoot {
   /// Backs the "absent" [GetFixtureScores]'s repositories: throws so a
   /// test that reaches this path fails loudly instead of silently touching
   /// a real database — mirrors [_absentGetSeasonFixtureLeaderboard].
+  static GetFixturePredictionDistribution
+  _absentGetFixturePredictionDistribution() => GetFixturePredictionDistribution(
+    fixturePredictionRepository: _unwiredFixturePredictionRepository,
+  );
+
   static GetFixtureScores _absentGetFixtureScores() => GetFixtureScores(
     competitionRepository: _unwiredCompetitionRepository,
     fixturePredictionRepository: _unwiredFixturePredictionRepository,
@@ -1010,6 +1020,9 @@ final class CompositionRoot {
   /// gated on the season being finished; season-membership gated only).
   final GetSeasonFixtureLeaderboard getSeasonFixtureLeaderboard;
   final GetFixtureScores getFixtureScores;
+
+  /// Reads the aggregated home/away win shares displayed on fixture cards.
+  final GetFixturePredictionDistribution getFixturePredictionDistribution;
 
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
   /// without the participant-of-season gate (added so an admin can
@@ -1529,6 +1542,9 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
+      ),
+      getFixturePredictionDistribution: GetFixturePredictionDistribution(
+        fixturePredictionRepository: fixturePredictionRepository,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,

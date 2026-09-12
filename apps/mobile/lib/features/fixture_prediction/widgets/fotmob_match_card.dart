@@ -6,14 +6,11 @@
 /// needs [resolveTeamIdentity] + `teamCatalogProvider`, and `core/ui/**` may
 /// never import `features/**` (`import_lint`).
 ///
-/// Reuses the existing per-fixture submit slice exactly as-is, unmodified:
-/// [fixturePredictionControllerProvider] / [FixtureSubmissionState] keyed by
-/// `(seasonId, fixtureId)`, [myFixturePredictionsProvider],
-/// [fixtureScoresProvider], [teamCatalogProvider] — no new provider, no new
-/// endpoint, no new architecture. The card computes no point, rank, or
-/// probability of its own (Axiom 2) — every number it shows is either the
-/// user's own not-yet-submitted pick or a value already echoed back by the
-/// server.
+/// Reuses the existing per-fixture submit slice and adds one read-only
+/// server aggregate for the team win shares. The card computes no point, rank,
+/// or probability of its own — scores are saved through the existing
+/// [fixturePredictionControllerProvider], while percentages come from the
+/// server-side distribution read.
 ///
 /// ## States (exclusive, most specific first — §6 of the spec)
 /// 1. **Graded** — hide the steppers/double/submit; show the stored
@@ -29,7 +26,7 @@
 ///    row with no counterpart in the reference, and the graded state
 ///    already carries its own status right next to the score.)
 /// 4. **Open** (no prediction yet, not locked) — steppers start at `null`
-///    ("?"), submit stays disabled until both sides have a value.
+///    ("?"), and the prediction auto-saves once both sides have a value.
 ///
 /// ## Reference-parity pass (corrections, recorded)
 /// A follow-up review against the FotMob reference found the card reading
@@ -50,22 +47,14 @@
 /// showing the same two Arabic letters ("ال") for nearly every league
 /// (replaced with a generic trophy glyph).
 ///
-/// ## Explicit submit, not auto-save (§5 decision, recorded)
-/// The reference FotMob design auto-saves without ever showing a submit
-/// control. Nukhba's submission is an explicit command to the server
-/// (`FixturePredictionController.submit`), so this card keeps a compact
-/// submit button — the spec's own §5 flags this exact question as
-/// "requires project-owner approval before turning into auto-save", and a
-/// later block appended to the spec's acceptance-criteria section describes
-/// an auto-save debounce mechanism that contradicts that explicit gate.
-/// Per the spec's own delivery instructions (§11.7: record a deviation as a
-/// decision with its reason, not as a pending question), the decision taken
-/// here is: implement the explicit-submit design §5 itself asks for and
-/// that acceptance criterion §6-row-4 ("submit disabled until two numbers
-/// entered") already assumes — and do NOT implement the contradicting
-/// auto-save block, since that would be exactly the unapproved change §5
-/// warns against.
+/// ## Auto-save
+/// Every score change schedules one debounced server submission. The small
+/// check badge between the steppers becomes solid blue only after the server
+/// confirms the current values. The existing controller remains the sole
+/// prediction-write path.
 library;
+
+import 'dart:async';
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
@@ -98,6 +87,7 @@ import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
 import '../fixture_prediction_controller.dart';
+import '../fixture_prediction_providers.dart';
 import '../fixture_prediction_submission.dart';
 import 'live_matches_chip.dart';
 
@@ -122,6 +112,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   int? _awayGoals;
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
+  Timer? _autoSaveTimer;
 
   SeasonFixtureCardDto get _fixture => widget.item.fixture;
 
@@ -136,38 +127,85 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   FixturePredictionKey get _key =>
       (seasonId: _fixture.seasonId, fixtureId: _fixture.fixtureId);
 
-  void _incrementHome() =>
-      setState(() => _homeGoals = ((_homeGoals ?? -1) + 1).clamp(0, 99));
+  void _incrementHome() {
+    setState(() => _homeGoals = ((_homeGoals ?? -1) + 1).clamp(0, 99));
+    _scheduleAutoSave();
+  }
 
   void _decrementHome() {
     final int? value = _homeGoals;
     if (value == null || value <= 0) return;
     setState(() => _homeGoals = value - 1);
+    _scheduleAutoSave();
   }
 
-  void _incrementAway() =>
-      setState(() => _awayGoals = ((_awayGoals ?? -1) + 1).clamp(0, 99));
+  void _incrementAway() {
+    setState(() => _awayGoals = ((_awayGoals ?? -1) + 1).clamp(0, 99));
+    _scheduleAutoSave();
+  }
 
   void _decrementAway() {
     final int? value = _awayGoals;
     if (value == null || value <= 0) return;
     setState(() => _awayGoals = value - 1);
+    _scheduleAutoSave();
   }
 
-  void _toggleDouble() => setState(() => _isDouble = !_isDouble);
+  void _toggleDouble() {
+    setState(() => _isDouble = !_isDouble);
+    _scheduleAutoSave();
+  }
 
-  void _submit() {
+  void _scheduleAutoSave() {
     final int? home = _homeGoals;
     final int? away = _awayGoals;
-    if (home == null || away == null) return;
-    ref
-        .read(fixturePredictionControllerProvider(_key).notifier)
-        .submit(homeGoals: home, awayGoals: away, isDouble: _isDouble);
+    if (home == null || away == null || _isLocked) return;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(milliseconds: 250), () async {
+      await _saveLatestPrediction();
+    });
+  }
+
+  Future<void> _saveLatestPrediction() async {
+    final int? home = _homeGoals;
+    final int? away = _awayGoals;
+    if (!mounted || home == null || away == null || _isLocked) return;
+
+    if (ref.read(fixturePredictionControllerProvider(_key))
+        is FixtureSubmissionInFlight) {
+      _scheduleAutoSave();
+      return;
+    }
+
+    final notifier = ref.read(
+      fixturePredictionControllerProvider(_key).notifier,
+    );
+    await notifier.submit(
+      homeGoals: home,
+      awayGoals: away,
+      isDouble: _isDouble,
+    );
+
+    if (!mounted) return;
+    final submission = ref.read(fixturePredictionControllerProvider(_key));
+    if (submission is FixtureSubmissionSucceeded) {
+      final saved = submission.prediction;
+      if (saved.homeGoals != _homeGoals ||
+          saved.awayGoals != _awayGoals ||
+          saved.isDouble != _isDouble) {
+        _scheduleAutoSave();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
     final submission = ref.watch(fixturePredictionControllerProvider(_key));
 
@@ -179,6 +217,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       (previous, next) {
         if (next is FixtureSubmissionSucceeded) {
           ref.invalidate(myFixturePredictionsProvider);
+          ref.invalidate(
+            fixturePredictionDistributionProvider((
+              seasonId: _fixture.seasonId,
+              fixtureId: _fixture.fixtureId,
+            )),
+          );
         }
       },
     );
@@ -224,16 +268,27 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
     final bool showEditableControls = !locked && !isGraded;
     final bool enabled = !inFlight && !locked;
-    final bool hasPick = _homeGoals != null && _awayGoals != null;
-    // "Confirmed" drives the small checkmark badge between the steppers:
-    // either this submit just succeeded, or the current pick already
-    // matches what's stored server-side (predicted state, unedited).
+    final FixturePredictionDistributionDto? distribution = ref
+        .watch(
+          fixturePredictionDistributionProvider((
+            seasonId: _fixture.seasonId,
+            fixtureId: _fixture.fixtureId,
+          )),
+        )
+        .value;
+    // The check between the steppers means "this exact pick is saved".
+    // Include the double flag so changing it also requires server confirmation.
     final bool matchesSavedPrediction =
         myPrediction != null &&
         myPrediction.homeGoals == _homeGoals &&
-        myPrediction.awayGoals == _awayGoals;
-    final bool isConfirmed =
-        submission is FixtureSubmissionSucceeded || matchesSavedPrediction;
+        myPrediction.awayGoals == _awayGoals &&
+        myPrediction.isDouble == _isDouble;
+    final bool submissionMatchesCurrent =
+        submission is FixtureSubmissionSucceeded &&
+        submission.prediction.homeGoals == _homeGoals &&
+        submission.prediction.awayGoals == _awayGoals &&
+        submission.prediction.isDouble == _isDouble;
+    final bool isConfirmed = submissionMatchesCurrent || matchesSavedPrediction;
     final String fixtureId = _fixture.fixtureId;
 
     final catalog = ref.watch(teamCatalogProvider).value;
@@ -375,51 +430,50 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     ),
                   ],
                 ),
-                if (showEditableControls) ...<Widget>[
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Flexible(
-                        child: _DoubleGlowButton(
-                          selected: _isDouble,
-                          enabled: enabled,
-                          onTap: _toggleDouble,
-                          fixtureId: fixtureId,
+                      Expanded(
+                        child: _WinPercentage(
+                          percentage: distribution?.homeWinPercentage ?? 0,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      const Spacer(),
-                      _SubmitButton(
-                        key: Key('currentMonthFixtures.submit.$fixtureId'),
-                        enabled: enabled && hasPick,
-                        inFlight: inFlight,
-                        tooltip: l10n.submitFixturePredictionButton,
-                        onTap: _submit,
+                      if (showEditableControls)
+                        SizedBox(
+                          width: 130,
+                          child: _DoubleGlowButton(
+                            selected: _isDouble,
+                            enabled: enabled,
+                            onTap: _toggleDouble,
+                            fixtureId: fixtureId,
+                          ),
+                        )
+                      else
+                        const SizedBox(width: 130, height: 36),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _WinPercentage(
+                          percentage: distribution?.awayWinPercentage ?? 0,
+                        ),
                       ),
                     ],
                   ),
-                  if (submission is FixtureSubmissionSucceeded)
-                    Padding(
-                      key: Key('currentMonthFixtures.success.$fixtureId'),
-                      padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        l10n.fixturePredictionSavedMessage,
-                        style: TextStyle(color: tokens.primary, fontSize: 12),
+                ),
+                if (submission is FixtureSubmissionFailed)
+                  Padding(
+                    key: Key('currentMonthFixtures.failure.$fixtureId'),
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Text(
+                      ErrorPresenter.message(submission.error),
+                      key: Key(
+                        'currentMonthFixtures.failure.message.$fixtureId',
                       ),
+                      style: TextStyle(color: tokens.error, fontSize: 12),
                     ),
-                  if (submission is FixtureSubmissionFailed)
-                    Padding(
-                      key: Key('currentMonthFixtures.failure.$fixtureId'),
-                      padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        ErrorPresenter.message(submission.error),
-                        key: Key(
-                          'currentMonthFixtures.failure.message.$fixtureId',
-                        ),
-                        style: TextStyle(color: tokens.error, fontSize: 12),
-                      ),
-                    ),
-                ],
+                  ),
               ],
             ),
           ),
@@ -754,19 +808,17 @@ class _MiddleSlot extends StatelessWidget {
   }
 }
 
-/// The small badge that floats over the gap between the two
+/// The circular badge that floats over the gap between the two
 /// [_ScoreStepper]s once both sides have a value — centered on the whole
-/// [_MiddleSlot] Stack, which lands it horizontally on the gap and
-/// vertically level with the digit row (the stepper's `+`/`-` zones are
-/// symmetric above and below it). Unconfirmed: an outlined, muted check.
-/// Confirmed (just submitted, or already matches a stored prediction):
+/// [_MiddleSlot] Stack, sized to match the reference card. Unconfirmed: an
+/// outlined, muted check. Confirmed (server accepted the current prediction):
 /// solid [AppTokens.primary] fill. No shadow in either state.
 class _ConfirmBadge extends StatelessWidget {
   const _ConfirmBadge({required this.confirmed});
 
   final bool confirmed;
 
-  static const double _size = 28;
+  static const double _size = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -792,7 +844,7 @@ class _ConfirmBadge extends StatelessWidget {
         ),
         child: Icon(
           Icons.check_rounded,
-          size: 16,
+          size: AppSizes.iconMd,
           color: confirmed ? Colors.white : tokens.textSecondary,
         ),
       ),
@@ -1003,6 +1055,79 @@ class _StepperZone extends StatelessWidget {
   }
 }
 
+class _WinPercentage extends StatelessWidget {
+  const _WinPercentage({required this.percentage});
+
+  final int percentage;
+
+  static const double _percentageWidth = 48;
+  static const double _labelWidth = 32;
+  static const double _height = 36;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Semantics(
+      label: '$percentage%',
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                width: _percentageWidth,
+                height: _height,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.textPrimary.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.brButton,
+                  border: Border.all(
+                    color: tokens.textPrimary.withValues(alpha: 0.10),
+                    width: AppStroke.hairline,
+                  ),
+                ),
+                child: Text(
+                  '$percentage%',
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Container(
+                width: _labelWidth,
+                height: _height,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.textPrimary.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.brButton,
+                  border: Border.all(
+                    color: tokens.textPrimary.withValues(alpha: 0.10),
+                    width: AppStroke.hairline,
+                  ),
+                ),
+                child: Text(
+                  'ف',
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The "make it double" toggle — quiet by default so it never competes
 /// with the rest of the card: unselected carries no gold and no glow at
 /// all, just a faint neutral fill/border. Selected is a solid gold fill
@@ -1090,68 +1215,6 @@ class _DoubleGlowButton extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The compact submit control — only turns [tokens.primary] blue once a
-/// pick actually exists to submit; otherwise it stays as quiet as the
-/// double button's own default state, so it never out-shouts the card's
-/// content. Same rounded-rect radius as the double button, no shadow in
-/// either state. Icon-only, so it carries an explicit [Tooltip]/semantic
-/// label instead of visible text.
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.enabled,
-    required this.inFlight,
-    required this.tooltip,
-    required this.onTap,
-    super.key,
-  });
-
-  final bool enabled;
-  final bool inFlight;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  static const double _width = 44;
-  static const double _height = 36;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: _width,
-        height: _height,
-        child: Material(
-          borderRadius: AppRadius.brButton,
-          color: enabled
-              ? tokens.primary
-              : tokens.textPrimary.withValues(alpha: 0.06),
-          child: InkWell(
-            borderRadius: AppRadius.brButton,
-            onTap: enabled ? onTap : null,
-            child: Center(
-              child: inFlight
-                  ? SizedBox(
-                      width: AppSizes.progressSm,
-                      height: AppSizes.progressSm,
-                      child: CircularProgressIndicator(
-                        strokeWidth: AppSizes.progressStroke,
-                        color: tokens.onPrimary,
-                      ),
-                    )
-                  : Icon(
-                      Icons.check_rounded,
-                      size: AppSizes.iconSm,
-                      color: enabled ? tokens.onPrimary : tokens.textMuted,
-                    ),
             ),
           ),
         ),

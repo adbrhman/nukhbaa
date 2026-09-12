@@ -31,12 +31,19 @@ Widget _host(CurrentMonthFixturesHarness harness, Widget child) =>
 
 void main() {
   testWidgets(
-    'tapping the double button toggles its icon and the submit body carries isDouble:true',
+    'tapping the double button toggles its icon and auto-save carries isDouble:true',
     (tester) async {
       final harness = buildCurrentMonthFixturesHarness((request) async {
         final path = request.url.path;
         if (path == '/feed/current-month-fixtures') {
           return okJsonList([sampleFeedItem.toJson()]);
+        }
+        if (path == '/seasons/s-1/fixtures/f-1/prediction-distribution') {
+          return okJsonObject(const {
+            'schema_version': 1,
+            'home_win_percentage': 68,
+            'away_win_percentage': 32,
+          });
         }
         if (path == '/me/fixture-predictions') {
           return okJsonList(const []);
@@ -111,9 +118,8 @@ void main() {
         findsNothing,
       );
 
-      // Pick a score on both steppers (required before submit is enabled)
-      // then submit, and confirm the toggled flag actually reaches the
-      // request body — closing the loop from tap to network payload.
+      // Pick a score on both steppers; auto-save sends the current score
+      // and double flag after the debounce window.
       await tester.tap(
         find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
       );
@@ -122,9 +128,7 @@ void main() {
         find.byKey(const Key('currentMonthFixtures.away.increment.f-1')),
       );
       await tester.pump();
-      await tester.tap(
-        find.byKey(const Key('currentMonthFixtures.submit.f-1')),
-      );
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       final submitRequest = harness.captured.firstWhere(
@@ -135,7 +139,7 @@ void main() {
       expect(
         body['is_double'],
         true,
-        reason: 'the toggled double flag must be carried through to submit',
+        reason: 'the toggled double flag must be carried through to auto-save',
       );
       expect(body['home_goals'], 0);
       expect(body['away_goals'], 0);

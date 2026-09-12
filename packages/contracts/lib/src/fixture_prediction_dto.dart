@@ -201,3 +201,53 @@ final class FixturePredictionDto {
     schemaVersion,
   );
 }
+
+/// The server-side read model of the two visible team win shares for a
+/// fixture card. Draw picks are excluded from the denominator.
+final class FixturePredictionDistributionDto {
+  /// Creates the fixture prediction distribution DTO.
+  const FixturePredictionDistributionDto({
+    required this.homeWinPercentage,
+    required this.awayWinPercentage,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes a versioned JSON object.
+  factory FixturePredictionDistributionDto.fromJson(Map<String, Object?> json) {
+    return FixturePredictionDistributionDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      homeWinPercentage: json['home_win_percentage']! as int,
+      awayWinPercentage: json['away_win_percentage']! as int,
+    );
+  }
+
+  /// Current wire schema version.
+  static const int currentSchemaVersion = 1;
+
+  /// Percentage of decisive predictions selecting the home team.
+  final int homeWinPercentage;
+
+  /// Percentage of decisive predictions selecting the away team.
+  final int awayWinPercentage;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'home_win_percentage': homeWinPercentage,
+    'away_win_percentage': awayWinPercentage,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is FixturePredictionDistributionDto &&
+      other.homeWinPercentage == homeWinPercentage &&
+      other.awayWinPercentage == awayWinPercentage &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode =>
+      Object.hash(homeWinPercentage, awayWinPercentage, schemaVersion);
+}

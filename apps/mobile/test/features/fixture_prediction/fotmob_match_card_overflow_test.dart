@@ -49,6 +49,13 @@ void main() {
         if (path == '/feed/current-month-fixtures') {
           return okJsonList([sampleFeedItem.toJson()]);
         }
+        if (path == '/seasons/s-1/fixtures/f-1/prediction-distribution') {
+          return okJsonObject(const {
+            'schema_version': 1,
+            'home_win_percentage': 68,
+            'away_win_percentage': 32,
+          });
+        }
         if (path == '/me/fixture-predictions') {
           return okJsonList(const []);
         }
