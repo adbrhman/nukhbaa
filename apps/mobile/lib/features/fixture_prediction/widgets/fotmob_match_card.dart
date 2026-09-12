@@ -793,7 +793,7 @@ class _ConfirmBadge extends StatelessWidget {
         child: Icon(
           Icons.check_rounded,
           size: 16,
-          color: confirmed ? tokens.onPrimary : tokens.textSecondary,
+          color: confirmed ? Colors.white : tokens.textSecondary,
         ),
       ),
     );
