@@ -1,5 +1,6 @@
 import 'package:application/src/competition/ports/ruleset_provider.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/notification/notify_fixture_winners.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
@@ -49,15 +50,21 @@ final class ScoreFixture {
     required FixtureResultRepository resultRepository,
     required FixtureScoreRepository scoreRepository,
     required RulesetProvider rulesetProvider,
+    NotifyFixtureWinners? winnerNotifier,
   }) : _fixturePredictions = fixturePredictionRepository,
        _results = resultRepository,
        _scores = scoreRepository,
-       _rulesetProvider = rulesetProvider;
+       _rulesetProvider = rulesetProvider,
+       _winnerNotifier = winnerNotifier;
 
   final FixturePredictionRepository _fixturePredictions;
   final FixtureResultRepository _results;
   final FixtureScoreRepository _scores;
   final RulesetProvider _rulesetProvider;
+
+  /// Optional Tier-3 announcer. Null in the test roots and in any composition
+  /// that has no push transport; scoring behaves identically either way.
+  final NotifyFixtureWinners? _winnerNotifier;
 
   /// Scores fixture [fixtureId] on behalf of admin [principal].
   Future<Result<List<ParticipantFixtureScore>>> call({
@@ -122,6 +129,14 @@ final class ScoreFixture {
     final saved = await _scores.saveFixtureScores(fixtureScores);
     if (saved is Err<void>) {
       return Result.err(saved.error);
+    }
+
+    // Tier-3 (ADR 0007 SS2.4): tell the exact callers. Awaited so the push
+    // leaves before the request ends, but its Result is deliberately dropped
+    // -- an unreachable phone must never fail a scored fixture.
+    final notifier = _winnerNotifier;
+    if (notifier != null) {
+      await notifier(fixture: fixture, scores: fixtureScores);
     }
 
     return Result.ok(List<ParticipantFixtureScore>.unmodifiable(fixtureScores));

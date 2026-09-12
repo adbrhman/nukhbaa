@@ -35,6 +35,7 @@ export 'src/notification/postgres_device_token_repository.dart';
 export 'src/notification/fcm_push_sender.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/notification/postgres_prediction_reminder_repository.dart';
+export 'src/notification/postgres_score_announcement_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_repository.dart';

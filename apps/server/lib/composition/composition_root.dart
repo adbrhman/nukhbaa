@@ -1490,6 +1490,19 @@ final class CompositionRoot {
         resultRepository: fixtureResultRepository,
         scoreRepository: fixtureScoreRepository,
         rulesetProvider: rulesetProvider,
+        // The exact-hit announcement rides the same proven transport as the
+        // daily reminder: same FCM sender, same device_tokens table. With no
+        // service account configured `pushSender` is the no-op, so scoring
+        // still works and simply says nothing.
+        winnerNotifier: NotifyFixtureWinners(
+          announcements: PostgresScoreAnnouncementRepository(connection),
+          sender: pushSender,
+          create: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+        ),
       ),
       adminGetParticipantDisplayNames: AdminGetParticipantDisplayNames(
         participantReader: participantReader,

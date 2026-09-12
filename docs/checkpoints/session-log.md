@@ -772,3 +772,10 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
   sibling.
 - Steps 4-6 still to come: contracts DTO + server route + composition_root
   wiring, api_client method, mobile firebase_messaging integration.
+
+## 2026-09-12T19:40:35+03:00 - notify_fixture_winners (v2)
+- NotifyFixtureWinners: Tier-3 push announcement for exact-score hits, wired into ScoreFixture as an optional dependency (null-safe, no-op if unset).
+- New: score_announcement_repository.dart (port), notify_fixture_winners.dart (use-case), postgres_score_announcement_repository.dart (infra), notify_fixture_winners_test.dart.
+- v2 fix over the first attempt: the test now reuses the existing test/notification/fakes.dart (InMemoryNotificationRepository, FakeClock, FakeIdGenerator, uuidA..D) instead of redeclaring stale NotificationRepository/Clock fakes, and unwraps ParticipantFixtureScore.fromGraded's Result correctly.
+- Guard against double-notify is CreateNotification.createIfAbsent keyed on (recipient, kind, fixture) -- a re-score never re-pings a phone.
+- backup: /home/dev/nukhbaa-fix-backups/notify_fixture_winners_20260912_194006
