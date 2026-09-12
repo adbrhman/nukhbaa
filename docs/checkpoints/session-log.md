@@ -779,3 +779,10 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - v2 fix over the first attempt: the test now reuses the existing test/notification/fakes.dart (InMemoryNotificationRepository, FakeClock, FakeIdGenerator, uuidA..D) instead of redeclaring stale NotificationRepository/Clock fakes, and unwraps ParticipantFixtureScore.fromGraded's Result correctly.
 - Guard against double-notify is CreateNotification.createIfAbsent keyed on (recipient, kind, fixture) -- a re-score never re-pings a phone.
 - backup: /home/dev/nukhbaa-fix-backups/notify_fixture_winners_20260912_194006
+
+## 2026-09-12T20:27:52+03:00 - fixture_scored_notification_storage
+- Root cause of '05_notify_fixture_winners.sh applied but no push arrives': NotificationKind.fixtureScored had no DB enum value and no fixture_id column, so CreateNotification.createIfAbsent always failed and notify_fixture_winners.dart silently skipped the push (Tier-3 best-effort continue).
+- Migration 0041 (additive): notification_kind + 'fixture_scored', notifications.fixture_id uuid (FK -> competition.fixture_schedules), no existing row touched.
+- postgres_notification_repository.dart: _createSql/createIfAbsent now bind fixture_id; _listSql/_findSql select it; the fixtureScored case in _mapSubject now builds NotificationSubject.fixtureScored from the stored column instead of the old deliberate 'not yet wired' error (which would otherwise have broken the WHOLE notification list for any winner, per the existing row_corrupt-propagation behavior).
+- REMAINING MANUAL STEP: apply migration 0041 to the live Supabase project (thxzwzscwukifymjthnp) -- no CI/CD step applies migrations to production, only to the throwaway local instance in build-verification.
+- backup: /home/dev/nukhbaa-fix-backups/fixture_scored_notification_storage_20260912_202726

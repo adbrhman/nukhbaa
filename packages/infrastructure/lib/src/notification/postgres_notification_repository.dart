@@ -49,11 +49,11 @@ final class PostgresNotificationRepository implements NotificationRepository {
   // deep-link; the dedupe is on subject_ref, not the individual columns.
   static const String _createSql = '''
 INSERT INTO notification.notifications
-  (id, recipient_id, kind, round_id, group_id, actor_user_id, subject_ref,
-   read_at, created_at)
+  (id, recipient_id, kind, round_id, group_id, actor_user_id, fixture_id,
+   subject_ref, read_at, created_at)
 VALUES
   (@id, @recipient_id, @kind, @round_id, @group_id, @actor_user_id,
-   @subject_ref, @read_at, @created_at)
+   @fixture_id, @subject_ref, @read_at, @created_at)
 ON CONFLICT ON CONSTRAINT notifications_dedupe_uniq DO NOTHING
 RETURNING id
 ''';
@@ -70,6 +70,7 @@ RETURNING id
         'round_id': subject.roundId?.value,
         'group_id': subject.groupId?.value,
         'actor_user_id': subject.actorUserId?.value,
+        'fixture_id': subject.fixture?.value,
         'subject_ref': subject.dedupeRef,
         'read_at': notification.readAt?.toUtc(),
         'created_at': notification.createdAt.toUtc(),
@@ -103,8 +104,8 @@ RETURNING id
   // --------------------------------------------------------------------------
 
   static const String _listSql = '''
-SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id, read_at,
-       created_at
+SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
+       fixture_id, read_at, created_at
 FROM notification.notifications
 WHERE recipient_id = @recipient_id
 ORDER BY created_at DESC, id DESC
@@ -131,8 +132,8 @@ LIMIT @limit
   // --------------------------------------------------------------------------
 
   static const String _findSql = '''
-SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id, read_at,
-       created_at
+SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
+       fixture_id, read_at, created_at
 FROM notification.notifications
 WHERE id = @id AND recipient_id = @recipient_id
 ''';
@@ -381,16 +382,20 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
           ),
         );
       case NotificationKind.fixtureScored:
-        // Deferred (Axiom 4 Amendment, Phase 6b note): NotifyFixtureScored
-        // is not yet wired to Postgres — notification.notifications has no
-        // `fixture_id` column and notification_kind has no 'fixture_scored'
-        // value yet (both land in a dedicated follow-up migration). Until
-        // then a stored fixtureScored row is unreachable via application
-        // code; this is a defensive, honest guard rather than a placeholder.
-        return const Result.err(
-          AppError.transient(
-            'notification.fixture_scored_not_supported',
-            'fixtureScored notifications are not yet backed by storage',
+        // Wired since migration 0041: notification_kind gained the
+        // 'fixture_scored' value and notifications.fixture_id was added
+        // (NotifyFixtureWinners, the exact-hit push announcer).
+        final fixtureResult = FixtureRef.tryParse(
+          row['fixture_id']?.toString(),
+        );
+        if (fixtureResult is Err<FixtureRef>) {
+          return Result.err(
+            _corrupt('fixture_id', fixtureResult.error.message),
+          );
+        }
+        return Result.ok(
+          NotificationSubject.fixtureScored(
+            fixture: (fixtureResult as Ok<FixtureRef>).value,
           ),
         );
     }
@@ -444,6 +449,12 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
       return const AppError.invariant(
         'notification.actor_not_found',
         'Actor user not found',
+      );
+    }
+    if (constraint == 'notifications_fixture_id_fkey') {
+      return const AppError.invariant(
+        'notification.fixture_not_found',
+        'Fixture not found',
       );
     }
     return const AppError.invariant(
