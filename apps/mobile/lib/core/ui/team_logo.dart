@@ -1,5 +1,6 @@
 library;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../branding/team_branding.dart';
@@ -52,6 +53,11 @@ class TeamLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    // Downscale the decode on native only. On web, cacheWidth/cacheHeight
+    // send the image through a resizing createImageBitmap path that loses
+    // the alpha channel for some PNGs, which turns a transparent crest into
+    // the opaque plate hidden in its fully-transparent pixels.
+    final int? decodeSize = kIsWeb ? null : (size * 4).ceil();
     final String url = crestUrl?.trim() ?? '';
     final Widget fallback = _InitialsCircle(
       diameter: size,
@@ -66,8 +72,8 @@ class TeamLogo extends StatelessWidget {
               key: ValueKey<String>('teamLogo.$url'),
               width: size,
               height: size,
-              cacheWidth: (size * 4).ceil(),
-              cacheHeight: (size * 4).ceil(),
+              cacheWidth: decodeSize,
+              cacheHeight: decodeSize,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => fallback,
               loadingBuilder: (context, child, progress) =>
@@ -85,8 +91,8 @@ class TeamLogo extends StatelessWidget {
           key: ValueKey<String>('teamLogo.asset.$asset'),
           width: size,
           height: size,
-          cacheWidth: (size * 4).ceil(),
-          cacheHeight: (size * 4).ceil(),
+          cacheWidth: decodeSize,
+          cacheHeight: decodeSize,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => networkOrFallback,
         ),
