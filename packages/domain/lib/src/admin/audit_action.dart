@@ -74,7 +74,13 @@ enum AuditAction {
   fixturePredictionsViewed,
 
   /// An admin viewed one selected user's prediction history.
-  userPredictionsViewed;
+  userPredictionsViewed,
+
+  /// An admin corrected a registered fixture's identity or kickoff time
+  /// (`CorrectFixtureSchedule`). The prediction lock is derived from
+  /// `kickoff_at`, so a change here moves a deadline -- the reason carries the
+  /// old and new kickoff whenever the time actually moved.
+  fixtureScheduleCorrected;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -93,6 +99,7 @@ enum AuditAction {
     AuditAction.roundPredictionsViewed => 'round_predictions_viewed',
     AuditAction.fixturePredictionsViewed => 'fixture_predictions_viewed',
     AuditAction.userPredictionsViewed => 'user_predictions_viewed',
+    AuditAction.fixtureScheduleCorrected => 'fixture_schedule_corrected',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

@@ -38,6 +38,10 @@ void main() {
 
   final kickoff = DateTime.utc(2026, 9, 1, 18, 30);
 
+  // Pinned before [kickoff]: the stored kickoff is still in the future, so
+  // CorrectFixtureSchedule's freeze rule permits a correction.
+  final beforeKickoff = kickoff.subtract(const Duration(days: 1));
+
   // ---------------------------------------------------------------------------
   // POST /fixtures — RegisterFixtureSchedule (admin-only, server-generated id)
   // ---------------------------------------------------------------------------
@@ -258,7 +262,15 @@ void main() {
     rootFor() {
       final schedules = InMemoryFixtureScheduleRepository();
       final root = CompositionRoot.forTesting(
-        correctFixtureSchedule: CorrectFixtureSchedule(schedules),
+        correctFixtureSchedule: CorrectFixtureSchedule(
+          schedules,
+          auditRecorder: AuditRecorder(
+            auditLog: InMemoryAuditLogRepository(),
+            idGenerator: ScriptedIdGenerator([kAuditEntryId, kAuditEntryId2]),
+            clock: FixedClock(beforeKickoff),
+          ),
+          clock: FixedClock(beforeKickoff),
+        ),
       );
       return (root: root, schedules: schedules);
     }

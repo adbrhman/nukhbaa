@@ -539,7 +539,11 @@ final class CompositionRoot {
       );
 
   static CorrectFixtureSchedule _absentCorrectFixtureSchedule() =>
-      CorrectFixtureSchedule(_unwiredFixtureScheduleRepository);
+      CorrectFixtureSchedule(
+        _unwiredFixtureScheduleRepository,
+        auditRecorder: _absentAuditRecorder(),
+        clock: _unwiredClock,
+      );
 
   static final TeamRepository _unwiredTeamRepository = _UnwiredTeamRepository();
 
@@ -1559,7 +1563,11 @@ final class CompositionRoot {
         repository: fixtureScheduleRepository,
         idGenerator: idGenerator,
       ),
-      correctFixtureSchedule: CorrectFixtureSchedule(fixtureScheduleRepository),
+      correctFixtureSchedule: CorrectFixtureSchedule(
+        fixtureScheduleRepository,
+        auditRecorder: auditRecorder,
+        clock: clock,
+      ),
       scoreFixture: ScoreFixture(
         fixturePredictionRepository: fixturePredictionRepository,
         resultRepository: fixtureResultRepository,
