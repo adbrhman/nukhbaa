@@ -108,8 +108,10 @@ class FotmobMatchCard extends ConsumerStatefulWidget {
 class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   // Nullable — a card must never show an auto-selected outcome the user
   // never picked (fixed in commit c70b8b1; do not reinitialize to 0).
-  int? _homeGoals;
-  int? _awayGoals;
+  // ValueNotifier (not setState) so a +/- tap repaints only the
+  // _MiddleSlot subtree (steppers + confirm badge), not the whole card.
+  final ValueNotifier<int?> _homeGoals = ValueNotifier<int?>(null);
+  final ValueNotifier<int?> _awayGoals = ValueNotifier<int?>(null);
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
   Timer? _autoSaveTimer;
@@ -128,26 +130,26 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       (seasonId: _fixture.seasonId, fixtureId: _fixture.fixtureId);
 
   void _incrementHome() {
-    setState(() => _homeGoals = ((_homeGoals ?? -1) + 1).clamp(0, 99));
+    _homeGoals.value = ((_homeGoals.value ?? -1) + 1).clamp(0, 99);
     _scheduleAutoSave();
   }
 
   void _decrementHome() {
-    final int? value = _homeGoals;
+    final int? value = _homeGoals.value;
     if (value == null || value <= 0) return;
-    setState(() => _homeGoals = value - 1);
+    _homeGoals.value = value - 1;
     _scheduleAutoSave();
   }
 
   void _incrementAway() {
-    setState(() => _awayGoals = ((_awayGoals ?? -1) + 1).clamp(0, 99));
+    _awayGoals.value = ((_awayGoals.value ?? -1) + 1).clamp(0, 99);
     _scheduleAutoSave();
   }
 
   void _decrementAway() {
-    final int? value = _awayGoals;
+    final int? value = _awayGoals.value;
     if (value == null || value <= 0) return;
-    setState(() => _awayGoals = value - 1);
+    _awayGoals.value = value - 1;
     _scheduleAutoSave();
   }
 
@@ -157,8 +159,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   }
 
   void _scheduleAutoSave() {
-    final int? home = _homeGoals;
-    final int? away = _awayGoals;
+    final int? home = _homeGoals.value;
+    final int? away = _awayGoals.value;
     if (home == null || away == null || _isLocked) return;
     _autoSaveTimer?.cancel();
     _autoSaveTimer = Timer(const Duration(milliseconds: 250), () async {
@@ -167,8 +169,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   }
 
   Future<void> _saveLatestPrediction() async {
-    final int? home = _homeGoals;
-    final int? away = _awayGoals;
+    final int? home = _homeGoals.value;
+    final int? away = _awayGoals.value;
     if (!mounted || home == null || away == null || _isLocked) return;
 
     if (ref.read(fixturePredictionControllerProvider(_key))
@@ -190,8 +192,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final submission = ref.read(fixturePredictionControllerProvider(_key));
     if (submission is FixtureSubmissionSucceeded) {
       final saved = submission.prediction;
-      if (saved.homeGoals != _homeGoals ||
-          saved.awayGoals != _awayGoals ||
+      if (saved.homeGoals != _homeGoals.value ||
+          saved.awayGoals != _awayGoals.value ||
           saved.isDouble != _isDouble) {
         _scheduleAutoSave();
       }
@@ -201,6 +203,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   @override
   void dispose() {
     _autoSaveTimer?.cancel();
+    _homeGoals.dispose();
+    _awayGoals.dispose();
     super.dispose();
   }
 
@@ -260,8 +264,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // One-time prefill from an existing prediction — guarded so it never
     // clobbers an edit already in progress once the async read resolves.
     if (!_prefilledFromPrediction && myPrediction != null) {
-      _homeGoals = myPrediction.homeGoals;
-      _awayGoals = myPrediction.awayGoals;
+      _homeGoals.value = myPrediction.homeGoals;
+      _awayGoals.value = myPrediction.awayGoals;
       _isDouble = myPrediction.isDouble;
       _prefilledFromPrediction = true;
     }
@@ -277,18 +281,24 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
         )
         .value;
     // The check between the steppers means "this exact pick is saved".
-    // Include the double flag so changing it also requires server confirmation.
-    final bool matchesSavedPrediction =
-        myPrediction != null &&
-        myPrediction.homeGoals == _homeGoals &&
-        myPrediction.awayGoals == _awayGoals &&
-        myPrediction.isDouble == _isDouble;
-    final bool submissionMatchesCurrent =
-        submission is FixtureSubmissionSucceeded &&
-        submission.prediction.homeGoals == _homeGoals &&
-        submission.prediction.awayGoals == _awayGoals &&
-        submission.prediction.isDouble == _isDouble;
-    final bool isConfirmed = submissionMatchesCurrent || matchesSavedPrediction;
+    // Include the double flag so changing it also requires server
+    // confirmation. Takes home/away explicitly so it can be re-evaluated
+    // per keystroke from inside the ListenableBuilder below, without this
+    // whole build() re-running.
+    bool isConfirmedFor(int? home, int? away) {
+      final bool matchesSavedPrediction =
+          myPrediction != null &&
+          myPrediction.homeGoals == home &&
+          myPrediction.awayGoals == away &&
+          myPrediction.isDouble == _isDouble;
+      final bool submissionMatchesCurrent =
+          submission is FixtureSubmissionSucceeded &&
+          submission.prediction.homeGoals == home &&
+          submission.prediction.awayGoals == away &&
+          submission.prediction.isDouble == _isDouble;
+      return submissionMatchesCurrent || matchesSavedPrediction;
+    }
+
     final String fixtureId = _fixture.fixtureId;
 
     final catalog = ref.watch(teamCatalogProvider).value;
@@ -402,23 +412,33 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                         brandColor: home.brandColor,
                       ),
                     ),
-                    _MiddleSlot(
-                      isGraded: isGraded,
-                      locked: locked,
-                      live: locked && isFixtureLive(_fixture.kickoffAt),
-                      myPrediction: myPrediction,
-                      grade: myGrade,
-                      points: myPoints,
-                      homeGoals: _homeGoals,
-                      awayGoals: _awayGoals,
-                      enabled: enabled,
-                      showEditableControls: showEditableControls,
-                      isConfirmed: isConfirmed,
-                      fixtureId: fixtureId,
-                      onIncrementHome: _incrementHome,
-                      onDecrementHome: _decrementHome,
-                      onIncrementAway: _incrementAway,
-                      onDecrementAway: _decrementAway,
+                    ListenableBuilder(
+                      listenable: Listenable.merge(<Listenable>[
+                        _homeGoals,
+                        _awayGoals,
+                      ]),
+                      builder: (context, _) {
+                        final int? homeGoals = _homeGoals.value;
+                        final int? awayGoals = _awayGoals.value;
+                        return _MiddleSlot(
+                          isGraded: isGraded,
+                          locked: locked,
+                          live: locked && isFixtureLive(_fixture.kickoffAt),
+                          myPrediction: myPrediction,
+                          grade: myGrade,
+                          points: myPoints,
+                          homeGoals: homeGoals,
+                          awayGoals: awayGoals,
+                          enabled: enabled,
+                          showEditableControls: showEditableControls,
+                          isConfirmed: isConfirmedFor(homeGoals, awayGoals),
+                          fixtureId: fixtureId,
+                          onIncrementHome: _incrementHome,
+                          onDecrementHome: _decrementHome,
+                          onIncrementAway: _incrementAway,
+                          onDecrementAway: _decrementAway,
+                        );
+                      },
                     ),
                     Expanded(
                       child: _TeamColumn(

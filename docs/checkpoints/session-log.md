@@ -794,3 +794,5 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - Tests: fotmob_match_card_state_test.dart, fotmob_match_card_overflow_test.dart, widget_test.dart -- pass (see run.log).
 - backup: /home/dev/nukhbaa-fix-backups/nukhbaa-fix-stepper-material_20260913_010455
 - fix_commit: 8d45fc1cca22fac205d490cd6070977433e74b6d
+
+- 2026-09-13: fotmob_match_card.dart -- _homeGoals/_awayGoals to ValueNotifier<int?>, _MiddleSlot wrapped in ListenableBuilder (+/- no longer rebuilds the whole card).
