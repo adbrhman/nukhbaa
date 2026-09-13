@@ -39,7 +39,27 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
   int? _sentTo;
 
   @override
+  void initState() {
+    super.initState();
+    // العنوان يُكتب غالبًا بعد نص التعليمات، و AdminTextField لا يستدعي أي
+    // onChanged يُعيد بناء هذا الأب عند تعديله -- فيبقى الزر عالقًا على حالة
+    // _canSend القديمة (معطّلاً) حتى لو صار كِلا الحقلين ممتلئين فعليًا.
+    // الاستماع مباشرةً لكِلا المتحكِّمين يضمن إعادة البناء عند أي تغيير في
+    // أيّهما، بصرف النظر عمّا إذا كان الحقل نفسه يملك onChanged أم لا.
+    _title.addListener(_onFieldsChanged);
+    _body.addListener(_onFieldsChanged);
+  }
+
+  void _onFieldsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
+    _title.removeListener(_onFieldsChanged);
+    _body.removeListener(_onFieldsChanged);
     _title.dispose();
     _body.dispose();
     super.dispose();
@@ -111,7 +131,6 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
                   hintText: 'نص التعليمات كما سيقرؤه المستخدم',
                   border: OutlineInputBorder(),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.sm),
