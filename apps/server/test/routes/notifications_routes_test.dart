@@ -40,6 +40,10 @@ void main() {
     final clock = FixedClock(DateTime.utc(2026, 7, 13, 12));
     final root = CompositionRoot.forTesting(
       listMyNotifications: ListMyNotifications(notifications: notifications),
+      listMyNotificationFeed: ListMyNotificationFeed(
+        list: ListMyNotifications(notifications: notifications),
+        announcements: InMemoryAnnouncementRepository(),
+      ),
       getUnreadCount: GetUnreadCount(notifications: notifications),
       markNotificationRead: MarkNotificationRead(
         notifications: notifications,

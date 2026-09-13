@@ -310,6 +310,7 @@ class _QuickActions extends StatelessWidget {
         AdminSection.monthlyCompetitions,
       ),
       ('إدارة المستخدمين', Icons.person_search_outlined, AdminSection.users),
+      ('إرسال إشعار', Icons.campaign_outlined, AdminSection.announcements),
       (
         'سجل النقاط',
         Icons.account_balance_wallet_outlined,

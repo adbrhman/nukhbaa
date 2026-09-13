@@ -1,3 +1,4 @@
+import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:domain/domain.dart';
 
@@ -38,6 +39,52 @@ NotificationDto notificationToDto(Notification notification) {
     groupId: subject.groupId?.value,
     actorUserId: subject.actorUserId?.value,
   );
+}
+
+/// Projects one [NotificationFeedItem] -- a notification plus, for an
+/// `admin_announcement`, the referenced text -- onto the wire
+/// [NotificationDto].
+///
+/// This is the read path the client actually renders: the announcement's
+/// title/body are resolved server-side and travel as plain `title`/`body`, so
+/// the client never needs a second call to make an announcement readable. For
+/// every other kind the text fields are absent and the client labels the row
+/// from `kind` exactly as before.
+NotificationDto notificationFeedItemToDto(NotificationFeedItem item) {
+  final base = notificationToDto(item.notification);
+  final announcement = item.announcement;
+  if (announcement == null) {
+    return base;
+  }
+  return NotificationDto(
+    id: base.id,
+    recipientId: base.recipientId,
+    kind: base.kind,
+    read: base.read,
+    createdAt: base.createdAt,
+    readAt: base.readAt,
+    roundId: base.roundId,
+    groupId: base.groupId,
+    actorUserId: base.actorUserId,
+    announcementId: announcement.id.value,
+    title: announcement.title,
+    body: announcement.body,
+  );
+}
+
+/// Shapes the response of `GET /notifications` from the resolved feed --
+/// identical to [notificationListJson] except that each row may carry its
+/// already-resolved announcement text.
+Map<String, Object?> notificationFeedJson(
+  String recipientId,
+  List<NotificationFeedItem> items,
+  int unreadCount,
+) {
+  return NotificationListDto(
+    recipientId: recipientId,
+    notifications: [for (final item in items) notificationFeedItemToDto(item)],
+    unreadCount: unreadCount,
+  ).toJson();
 }
 
 /// Shapes the response of `GET /notifications` — the caller's own notification

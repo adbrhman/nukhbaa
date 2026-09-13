@@ -256,6 +256,8 @@
   "notificationRoundScored": "تم تسجيل نتيجة جولة توقعتها",
   "notificationGroupMemberJoined": "انضم شخص إلى مجموعتك",
   "notificationReactionReceived": "تلقيت تفاعلاً",
+  "notificationFixtureScored": "تم احتساب نتيجة مباراة توقّعتها",
+  "notificationAdminAnnouncement": "تعليمات من الإدارة",
   "notificationsMarkAsRead": "تمييز كمقروء",
   "adminAddMatchSectionTitle": "تسجيل مباراة وإضافتها لجولة",
   "adminSelectSeasonLabel": "اختر الموسم",

@@ -889,6 +889,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationReactionReceived => 'تلقيت تفاعلاً';
 
   @override
+  String get notificationFixtureScored => 'تم احتساب نتيجة مباراة توقّعتها';
+
+  @override
+  String get notificationAdminAnnouncement => 'تعليمات من الإدارة';
+
+  @override
   String get notificationsMarkAsRead => 'تمييز كمقروء';
 
   @override

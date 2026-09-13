@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:application/application.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
@@ -46,14 +47,14 @@ Future<Response> onRequest(RequestContext context) async {
   final rawLimit = context.request.uri.queryParameters['limit'];
   final limit = rawLimit == null ? null : int.tryParse(rawLimit);
 
-  final listResult = await root.listMyNotifications(
+  final listResult = await root.listMyNotificationFeed(
     principal: principal,
     limit: limit,
   );
-  if (listResult is Err<List<Notification>>) {
+  if (listResult is Err<List<NotificationFeedItem>>) {
     return errorResponse(listResult.error);
   }
-  final notifications = (listResult as Ok<List<Notification>>).value;
+  final items = (listResult as Ok<List<NotificationFeedItem>>).value;
 
   final countResult = await root.getUnreadCount(principal: principal);
   if (countResult is Err<int>) {
@@ -62,10 +63,6 @@ Future<Response> onRequest(RequestContext context) async {
   final unreadCount = (countResult as Ok<int>).value;
 
   return Response.json(
-    body: notificationListJson(
-      principal.userId.value,
-      notifications,
-      unreadCount,
-    ),
+    body: notificationFeedJson(principal.userId.value, items, unreadCount),
   );
 }

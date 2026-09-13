@@ -7,6 +7,7 @@
 library;
 
 export 'src/admin_dto.dart';
+export 'src/announcement_dto.dart';
 export 'src/admin_user_prediction_dto.dart';
 export 'src/auth_dto.dart';
 export 'src/competition_dto.dart';

@@ -18,6 +18,7 @@ enum AdminSection {
   resultsScoring(icon: Icons.scoreboard_rounded),
   countedFixtures(icon: Icons.fact_check_rounded),
   users(icon: Icons.people_alt_rounded),
+  announcements(icon: Icons.campaign_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
   audit(icon: Icons.receipt_long_rounded);
 

@@ -4,13 +4,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('NotificationKind', () {
-    test('has exactly the three ratified v1 kinds (closed set)', () {
-      expect(NotificationKind.values, hasLength(4));
+    test('has exactly the ratified kinds (closed set)', () {
+      expect(NotificationKind.values, hasLength(5));
       expect(NotificationKind.values.toSet(), {
         NotificationKind.roundScored,
         NotificationKind.groupMemberJoined,
         NotificationKind.reactionReceived,
         NotificationKind.fixtureScored,
+        NotificationKind.adminAnnouncement,
       });
     });
 
@@ -22,6 +23,10 @@ void main() {
       );
       expect(NotificationKind.reactionReceived.wireValue, 'reaction_received');
       expect(NotificationKind.fixtureScored.wireValue, 'fixture_scored');
+      expect(
+        NotificationKind.adminAnnouncement.wireValue,
+        'admin_announcement',
+      );
     });
 
     test('tryParse round-trips every kind', () {

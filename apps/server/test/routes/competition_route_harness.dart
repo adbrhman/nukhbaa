@@ -1240,6 +1240,36 @@ Future<Map<String, Object?>> decodeBody(Response response) async {
 /// `notification.not_found` with no existence oracle). It is NOT a substitute
 /// for the Postgres adapter's own tests — those live in the infrastructure
 /// package. Never throws; a scripted transient failure proves propagation.
+/// In-memory [AnnouncementRepository] for the route tests: enough to let the
+/// inbox feed resolve announcement text without a database. Seeded rows are
+/// returned by id; the audience is whatever was registered.
+final class InMemoryAnnouncementRepository implements AnnouncementRepository {
+  /// Announcements written or seeded, newest last.
+  final List<Announcement> announcements = [];
+
+  /// The audience returned by [audience]; empty unless a test sets it.
+  final List<AnnouncementRecipient> recipients = [];
+
+  @override
+  Future<Result<void>> save(Announcement announcement) async {
+    announcements.add(announcement);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<Announcement>>> findByIds(List<AnnouncementId> ids) async {
+    final wanted = {for (final id in ids) id.value};
+    return Result.ok([
+      for (final a in announcements)
+        if (wanted.contains(a.id.value)) a,
+    ]);
+  }
+
+  @override
+  Future<Result<List<AnnouncementRecipient>>> audience() async =>
+      Result.ok(List<AnnouncementRecipient>.unmodifiable(recipients));
+}
+
 final class InMemoryNotificationRepository implements NotificationRepository {
   final List<Notification> notifications = [];
 

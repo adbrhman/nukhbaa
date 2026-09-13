@@ -77,6 +77,8 @@ final class CompositionRoot {
     required this.listFixtureReactions,
     required this.getGroupActivityFeed,
     required this.listMyNotifications,
+    required this.listMyNotificationFeed,
+    required this.publishAnnouncement,
     required this.getUnreadCount,
     required this.markNotificationRead,
     required this.sendPredictionReminders,
@@ -185,6 +187,8 @@ final class CompositionRoot {
     ListFixtureReactions? listFixtureReactions,
     GetGroupActivityFeed? getGroupActivityFeed,
     ListMyNotifications? listMyNotifications,
+    ListMyNotificationFeed? listMyNotificationFeed,
+    PublishAnnouncement? publishAnnouncement,
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
@@ -292,6 +296,10 @@ final class CompositionRoot {
            getGroupActivityFeed ?? _absentGetGroupActivityFeed(),
        listMyNotifications =
            listMyNotifications ?? _absentListMyNotifications(),
+       listMyNotificationFeed =
+           listMyNotificationFeed ?? _absentListMyNotificationFeed(),
+       publishAnnouncement =
+           publishAnnouncement ?? _absentPublishAnnouncement(),
        getUnreadCount = getUnreadCount ?? _absentGetUnreadCount(),
        markNotificationRead =
            markNotificationRead ?? _absentMarkNotificationRead(),
@@ -778,6 +786,31 @@ final class CompositionRoot {
   static ListMyNotifications _absentListMyNotifications() =>
       ListMyNotifications(notifications: _unwiredNotificationRepository);
 
+  /// A single throwing announcement repository backing every "absent"
+  /// announcement use-case, so a test that reaches the broadcast slice
+  /// without wiring it fails loudly instead of touching a real database.
+  static final AnnouncementRepository _unwiredAnnouncementRepository =
+      _UnwiredAnnouncementRepository();
+
+  static ListMyNotificationFeed _absentListMyNotificationFeed() =>
+      ListMyNotificationFeed(
+        list: _absentListMyNotifications(),
+        announcements: _unwiredAnnouncementRepository,
+      );
+
+  static PublishAnnouncement _absentPublishAnnouncement() =>
+      PublishAnnouncement(
+        announcements: _unwiredAnnouncementRepository,
+        create: CreateNotification(
+          notifications: _unwiredNotificationRepository,
+          idGenerator: _unwiredIdGenerator,
+          clock: _unwiredClock,
+        ),
+        sender: const NoopPushSender(),
+        idGenerator: _unwiredIdGenerator,
+        clock: _unwiredClock,
+      );
+
   static GetUnreadCount _absentGetUnreadCount() =>
       GetUnreadCount(notifications: _unwiredNotificationRepository);
 
@@ -1128,6 +1161,15 @@ final class CompositionRoot {
   /// from the verified token, never a body/path.
   final ListMyNotifications listMyNotifications;
 
+  /// The same inbox read as [listMyNotifications], with any admin-announcement
+  /// text already resolved so the client renders a readable row rather than a
+  /// bare kind token. This is what `GET /notifications` serves.
+  final ListMyNotificationFeed listMyNotificationFeed;
+
+  /// Publishes one admin instruction to every active user (admin-only; the
+  /// audience is resolved server-side, never from the request body).
+  final PublishAnnouncement publishAnnouncement;
+
   /// Reads the caller's OWN unread-notification count (recipient-only badge
   /// count — Notifications decision #4).
   final GetUnreadCount getUnreadCount;
@@ -1385,6 +1427,7 @@ final class CompositionRoot {
         FcmPushSender.tryParse(env['FIREBASE_SERVICE_ACCOUNT_JSON']) ??
         const NoopPushSender();
     final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
+    final announcementRepository = PostgresAnnouncementRepository(connection);
 
     // Admin slice (phase 11). The ONE new stored surface is the append-only
     // `admin.audit_log` (migration 0010); the user sanction toggles the
@@ -1634,6 +1677,24 @@ final class CompositionRoot {
       ),
       listMyNotifications: ListMyNotifications(
         notifications: notificationRepository,
+      ),
+      listMyNotificationFeed: ListMyNotificationFeed(
+        list: ListMyNotifications(notifications: notificationRepository),
+        announcements: announcementRepository,
+      ),
+      publishAnnouncement: PublishAnnouncement(
+        announcements: announcementRepository,
+        create: CreateNotification(
+          notifications: notificationRepository,
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        // Same transport as the reminder and the exact-hit announcement: with
+        // no service account configured this is the no-op sender, so the
+        // broadcast still lands in every inbox and simply rings nothing.
+        sender: pushSender,
+        idGenerator: idGenerator,
+        clock: clock,
       ),
       getUnreadCount: GetUnreadCount(notifications: notificationRepository),
       markNotificationRead: MarkNotificationRead(
@@ -2397,6 +2458,21 @@ final class _UnwiredNotificationRepository implements NotificationRepository {
 
   @override
   Future<Result<int>> unreadCount(UserId recipientId) => _unwired();
+}
+
+final class _UnwiredAnnouncementRepository implements AnnouncementRepository {
+  static Never _unwired() =>
+      throw StateError('An announcement use-case was not wired into this root');
+
+  @override
+  Future<Result<void>> save(Announcement announcement) => _unwired();
+
+  @override
+  Future<Result<List<Announcement>>> findByIds(List<AnnouncementId> ids) =>
+      _unwired();
+
+  @override
+  Future<Result<List<AnnouncementRecipient>>> audience() => _unwired();
 }
 
 /// Backs an "absent" [AuthGateway]: throws if a test reaches the auth

@@ -1596,6 +1596,18 @@ abstract class AppLocalizations {
   /// **'You received a reaction'**
   String get notificationReactionReceived;
 
+  /// No description provided for @notificationFixtureScored.
+  ///
+  /// In en, this message translates to:
+  /// **'A match you predicted has been scored'**
+  String get notificationFixtureScored;
+
+  /// No description provided for @notificationAdminAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'A message from the admins'**
+  String get notificationAdminAnnouncement;
+
   /// No description provided for @notificationsMarkAsRead.
   ///
   /// In en, this message translates to:

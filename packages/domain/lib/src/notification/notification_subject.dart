@@ -2,6 +2,7 @@ import 'package:domain/src/competition/fixture_ref.dart';
 import 'package:domain/src/competition/round_id.dart';
 import 'package:domain/src/group/group_id.dart';
 import 'package:domain/src/identity/user_id.dart';
+import 'package:domain/src/notification/announcement_id.dart';
 import 'package:domain/src/notification/notification_kind.dart';
 
 /// The bounded, **kind-discriminated reference payload** of a [Notification]
@@ -32,6 +33,7 @@ final class NotificationSubject {
     this.groupId,
     this.actorUserId,
     this.fixture,
+    this.announcementId,
   });
 
   /// Rehydrates a subject from already-trusted stored fields (used by the
@@ -44,6 +46,7 @@ final class NotificationSubject {
     this.groupId,
     this.actorUserId,
     this.fixture,
+    this.announcementId,
   });
 
   /// The subject of a `roundScored` notification — the scored [roundId].
@@ -86,6 +89,15 @@ final class NotificationSubject {
         fixture: fixture,
       );
 
+  /// The subject of an `adminAnnouncement` notification -- the
+  /// [announcementId] whose row carries the admin's text (migration 0043).
+  static NotificationSubject adminAnnouncement({
+    required AnnouncementId announcementId,
+  }) => NotificationSubject._(
+    kind: NotificationKind.adminAnnouncement,
+    announcementId: announcementId,
+  );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -102,6 +114,9 @@ final class NotificationSubject {
   /// The fixture involved (`fixtureScored`); else null (Axiom 4 Amendment).
   final FixtureRef? fixture;
 
+  /// The announcement involved (`adminAnnouncement`); else null.
+  final AnnouncementId? announcementId;
+
   /// A deterministic string that identifies the originating event, keying the
   /// `(recipientId, kind, subjectRef)` idempotency constraint so a replayed
   /// trigger dedupes and a distinct event does not. Built purely from the
@@ -112,6 +127,8 @@ final class NotificationSubject {
     NotificationKind.groupMemberJoined =>
       'group_join:${groupId!.value}:${actorUserId!.value}',
     NotificationKind.fixtureScored => 'fixture:${fixture!.value}',
+    NotificationKind.adminAnnouncement =>
+      'announcement:${announcementId!.value}',
     NotificationKind.reactionReceived =>
       'reaction:${groupId!.value}:${roundId!.value}:${actorUserId!.value}',
   };
@@ -123,10 +140,12 @@ final class NotificationSubject {
       other.roundId == roundId &&
       other.groupId == groupId &&
       other.actorUserId == actorUserId &&
-      other.fixture == fixture;
+      other.fixture == fixture &&
+      other.announcementId == announcementId;
 
   @override
-  int get hashCode => Object.hash(kind, roundId, groupId, actorUserId, fixture);
+  int get hashCode =>
+      Object.hash(kind, roundId, groupId, actorUserId, fixture, announcementId);
 
   @override
   String toString() => 'NotificationSubject(${kind.wireValue}, $dedupeRef)';

@@ -50,10 +50,10 @@ final class PostgresNotificationRepository implements NotificationRepository {
   static const String _createSql = '''
 INSERT INTO notification.notifications
   (id, recipient_id, kind, round_id, group_id, actor_user_id, fixture_id,
-   subject_ref, read_at, created_at)
+   announcement_id, subject_ref, read_at, created_at)
 VALUES
   (@id, @recipient_id, @kind, @round_id, @group_id, @actor_user_id,
-   @fixture_id, @subject_ref, @read_at, @created_at)
+   @fixture_id, @announcement_id, @subject_ref, @read_at, @created_at)
 ON CONFLICT ON CONSTRAINT notifications_dedupe_uniq DO NOTHING
 RETURNING id
 ''';
@@ -71,6 +71,7 @@ RETURNING id
         'group_id': subject.groupId?.value,
         'actor_user_id': subject.actorUserId?.value,
         'fixture_id': subject.fixture?.value,
+        'announcement_id': subject.announcementId?.value,
         'subject_ref': subject.dedupeRef,
         'read_at': notification.readAt?.toUtc(),
         'created_at': notification.createdAt.toUtc(),
@@ -105,7 +106,7 @@ RETURNING id
 
   static const String _listSql = '''
 SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
-       fixture_id, read_at, created_at
+       fixture_id, announcement_id, read_at, created_at
 FROM notification.notifications
 WHERE recipient_id = @recipient_id
 ORDER BY created_at DESC, id DESC
@@ -133,7 +134,7 @@ LIMIT @limit
 
   static const String _findSql = '''
 SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
-       fixture_id, read_at, created_at
+       fixture_id, announcement_id, read_at, created_at
 FROM notification.notifications
 WHERE id = @id AND recipient_id = @recipient_id
 ''';
@@ -396,6 +397,23 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
         return Result.ok(
           NotificationSubject.fixtureScored(
             fixture: (fixtureResult as Ok<FixtureRef>).value,
+          ),
+        );
+      case NotificationKind.adminAnnouncement:
+        // Migration 0043: the free text lives in notification.announcements
+        // and the row only references it, so a corrupt/absent id is the same
+        // class of corruption as a missing fixture_id above.
+        final announcementResult = AnnouncementId.tryParse(
+          row['announcement_id']?.toString(),
+        );
+        if (announcementResult is Err<AnnouncementId>) {
+          return Result.err(
+            _corrupt('announcement_id', announcementResult.error.message),
+          );
+        }
+        return Result.ok(
+          NotificationSubject.adminAnnouncement(
+            announcementId: (announcementResult as Ok<AnnouncementId>).value,
           ),
         );
     }

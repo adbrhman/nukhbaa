@@ -32,7 +32,12 @@ enum NotificationKind {
   /// A fixture the recipient predicted was scored (its result was posted)
   /// (docs/project-context.md, Axiom 4 Amendment — the per-fixture sibling
   /// of [roundScored]). Subject references the scored fixture.
-  fixtureScored;
+  fixtureScored,
+
+  /// An admin published a broadcast instruction to every active user
+  /// (migration 0043). Subject references the `Announcement` carrying the
+  /// text -- the notification row itself stays free of prose (decision #1).
+  adminAnnouncement;
 
   /// The stable wire/storage token for this notification kind.
   String get wireValue => switch (this) {
@@ -40,6 +45,7 @@ enum NotificationKind {
     NotificationKind.groupMemberJoined => 'group_member_joined',
     NotificationKind.reactionReceived => 'reaction_received',
     NotificationKind.fixtureScored => 'fixture_scored',
+    NotificationKind.adminAnnouncement => 'admin_announcement',
   };
 
   /// Parses a [NotificationKind] from an untrusted [raw] token, returning a

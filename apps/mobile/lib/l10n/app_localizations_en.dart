@@ -875,6 +875,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationReactionReceived => 'You received a reaction';
 
   @override
+  String get notificationFixtureScored =>
+      'A match you predicted has been scored';
+
+  @override
+  String get notificationAdminAnnouncement => 'A message from the admins';
+
+  @override
   String get notificationsMarkAsRead => 'Mark as read';
 
   @override

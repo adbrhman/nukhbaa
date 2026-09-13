@@ -574,6 +574,8 @@
   "notificationRoundScored": "A round you predicted was scored",
   "notificationGroupMemberJoined": "Someone joined your group",
   "notificationReactionReceived": "You received a reaction",
+  "notificationFixtureScored": "A match you predicted has been scored",
+  "notificationAdminAnnouncement": "A message from the admins",
   "notificationsMarkAsRead": "Mark as read",
   "adminAddMatchSectionTitle": "Register a match and add it to a round",
   "adminSelectSeasonLabel": "Select season",

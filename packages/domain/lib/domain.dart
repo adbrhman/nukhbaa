@@ -59,6 +59,8 @@ export 'src/ledger/fixture_point_entry.dart';
 export 'src/ledger/ledger_balance.dart';
 export 'src/ledger/point_entry.dart';
 export 'src/ledger/point_entry_id.dart';
+export 'src/notification/announcement.dart';
+export 'src/notification/announcement_id.dart';
 export 'src/notification/notification.dart';
 export 'src/notification/notification_id.dart';
 export 'src/notification/notification_kind.dart';

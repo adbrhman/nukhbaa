@@ -34,6 +34,9 @@ final class NotificationDto {
     this.roundId,
     this.groupId,
     this.actorUserId,
+    this.announcementId,
+    this.title,
+    this.body,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -51,11 +54,17 @@ final class NotificationDto {
       roundId: json['round_id'] as String?,
       groupId: json['group_id'] as String?,
       actorUserId: json['actor_user_id'] as String?,
+      announcementId: json['announcement_id'] as String?,
+      title: json['title'] as String?,
+      body: json['body'] as String?,
     );
   }
 
   /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  ///
+  /// Bumped to 2 when `admin_announcement` added the resolved [title]/[body]
+  /// text fields; a v1 client simply ignores them.
+  static const int currentSchemaVersion = 2;
 
   /// The notification id (UUID string).
   final String id;
@@ -88,6 +97,18 @@ final class NotificationDto {
   /// `group_member_joined`/`reaction_received`; else null.
   final String? actorUserId;
 
+  /// The announcement involved (UUID string), for `admin_announcement`; else
+  /// null.
+  final String? announcementId;
+
+  /// The already-resolved headline for kinds that carry stored text
+  /// (`admin_announcement`); null for every other kind, which the client
+  /// labels from [kind] as before.
+  final String? title;
+
+  /// The already-resolved body text (`admin_announcement`); else null.
+  final String? body;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -104,6 +125,9 @@ final class NotificationDto {
     if (roundId != null) 'round_id': roundId,
     if (groupId != null) 'group_id': groupId,
     if (actorUserId != null) 'actor_user_id': actorUserId,
+    if (announcementId != null) 'announcement_id': announcementId,
+    if (title != null) 'title': title,
+    if (body != null) 'body': body,
   };
 
   @override
@@ -118,6 +142,9 @@ final class NotificationDto {
       other.roundId == roundId &&
       other.groupId == groupId &&
       other.actorUserId == actorUserId &&
+      other.announcementId == announcementId &&
+      other.title == title &&
+      other.body == body &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -131,6 +158,9 @@ final class NotificationDto {
     roundId,
     groupId,
     actorUserId,
+    announcementId,
+    title,
+    body,
     schemaVersion,
   );
 }

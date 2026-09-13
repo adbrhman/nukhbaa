@@ -56,6 +56,20 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/announcements` -- publish one instruction to every active
+  /// user. The audience is resolved server-side; the client supplies only the
+  /// [title] and [body]. Returns how many inboxes gained the announcement.
+  Future<Result<AnnouncementPublishedDto>> publishAnnouncement({
+    required String title,
+    required String body,
+  }) {
+    return _transport.postObject<AnnouncementPublishedDto>(
+      '/admin/announcements',
+      body: PublishAnnouncementRequestDto(title: title, body: body).toJson(),
+      parse: AnnouncementPublishedDto.fromJson,
+    );
+  }
+
   /// `POST /admin/users/{userId}/suspend` — suspends a user, with a
   /// mandatory [reason] recorded on the audit trail. Idempotent: re-suspending
   /// an already-suspended user converges and echoes `suspended`.
