@@ -231,7 +231,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       },
     );
 
-    final inFlight = submission is FixtureSubmissionInFlight;
     final locked = _isLocked;
 
     final AsyncValue<Map<String, FixturePredictionDto>> myPredictionsAsync = ref
@@ -271,7 +270,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     }
 
     final bool showEditableControls = !locked && !isGraded;
-    final bool enabled = !inFlight && !locked;
+    // Interactivity must NOT depend on an in-flight submit. The auto-save is
+    // debounced at 250 ms, and the pause while moving a finger from one
+    // stepper to the other is longer than that -- so the save fired and
+    // disabled all four +/- zones plus the double toggle for the whole
+    // request, making the second side look dead to fast taps. The controller
+    // already ignores an overlapping submit and _saveLatestPrediction
+    // reschedules itself until the server holds the current value, so the
+    // last tap still wins.
+    final bool enabled = !locked;
     final FixturePredictionDistributionDto? distribution = ref
         .watch(
           fixturePredictionDistributionProvider((
