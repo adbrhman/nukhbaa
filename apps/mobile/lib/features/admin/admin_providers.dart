@@ -17,10 +17,10 @@
 /// phased in this project.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_client/api_client.dart';
-import 'package:flutter/foundation.dart';
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
@@ -222,7 +222,7 @@ class UsersLookupController extends _$UsersLookupController {
   @override
   AsyncValue<UserListDto>? build() => null;
 
-  /// Searches users by an optional email-contains [search].
+  /// Searches users by an optional display-name or email-contains [search].
   Future<void> search(String search) async {
     state = const AsyncValue.loading();
     final result = await _api.listUsers(search: search);
@@ -235,6 +235,46 @@ class UsersLookupController extends _$UsersLookupController {
     };
   }
 }
+
+/// A non-generated provider for the selected admin user's prediction history.
+/// The query key includes only the selected user id and the date boundaries,
+/// so it never fan-outs to all users.
+@immutable
+final class AdminUserPredictionQuery {
+  const AdminUserPredictionQuery({
+    required this.userId,
+    this.fromUtc,
+    this.toUtc,
+  });
+
+  final String userId;
+  final DateTime? fromUtc;
+  final DateTime? toUtc;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AdminUserPredictionQuery &&
+      other.userId == userId &&
+      other.fromUtc == fromUtc &&
+      other.toUtc == toUtc;
+
+  @override
+  int get hashCode => Object.hash(userId, fromUtc, toUtc);
+}
+
+final adminUserPredictionHistoryProvider = FutureProvider.autoDispose
+    .family<AdminUserPredictionHistoryDto, AdminUserPredictionQuery>((
+      ref,
+      query,
+    ) async {
+      final api = ref.watch(adminApiProvider);
+      final result = await api.adminGetUserPredictionHistory(
+        query.userId,
+        fromUtc: query.fromUtc,
+        toUtc: query.toUtc,
+      );
+      return _unwrap(result);
+    });
 
 /// Owns the narrow cross-user ledger support-read
 /// (`GET /admin/participants/{id}/ledger`). Modelled as a controller (rather

@@ -31,6 +31,7 @@ Map<String, Object?> userSanctionResultJson(User user) {
 UserSummaryDto userSummaryToDto(User user) => UserSummaryDto(
   id: user.id.value,
   email: user.email,
+  displayName: user.displayName,
   status: user.status.name,
 );
 

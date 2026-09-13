@@ -89,6 +89,7 @@ final class CompositionRoot {
     required this.adminGetParticipantDisplayNames,
     required this.adminListRoundPredictions,
     required this.adminListFixturePredictions,
+    required this.adminGetUserFixturePredictions,
     required this.listMyFixturePredictions,
     required this.listMyActiveSeasons,
     required this.listTeams,
@@ -196,6 +197,7 @@ final class CompositionRoot {
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
     AdminListRoundPredictions? adminListRoundPredictions,
     AdminListFixturePredictions? adminListFixturePredictions,
+    AdminGetUserFixturePredictions? adminGetUserFixturePredictions,
     ListMyFixturePredictions? listMyFixturePredictions,
     ListMyActiveSeasons? listMyActiveSeasons,
     ListTeams? listTeams,
@@ -307,6 +309,9 @@ final class CompositionRoot {
            adminListRoundPredictions ?? _absentAdminListRoundPredictions(),
        adminListFixturePredictions =
            adminListFixturePredictions ?? _absentAdminListFixturePredictions(),
+       adminGetUserFixturePredictions =
+           adminGetUserFixturePredictions ??
+           _absentAdminGetUserFixturePredictions(),
        listMyFixturePredictions =
            listMyFixturePredictions ?? _absentListMyFixturePredictions(),
        listMyActiveSeasons =
@@ -837,6 +842,16 @@ final class CompositionRoot {
         auditRecorder: _absentAuditRecorder(),
       );
 
+  static AdminGetUserFixturePredictions
+  _absentAdminGetUserFixturePredictions() => AdminGetUserFixturePredictions(
+    userAdminRepository: _unwiredUserAdminRepository,
+    fixturePredictionRepository: _unwiredFixturePredictionRepository,
+    fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+    fixtureResultRepository: _unwiredFixtureResultRepository,
+    fixtureScoreRepository: _unwiredFixtureScoreRepository,
+    auditRecorder: _absentAuditRecorder(),
+  );
+
   static ListMyFixturePredictions _absentListMyFixturePredictions() =>
       ListMyFixturePredictions(
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
@@ -1163,6 +1178,10 @@ final class CompositionRoot {
   /// for one fixture, itself audited (admin-only — mirrors
   /// [adminListRoundPredictions], but carries no fixture-status gate).
   final AdminListFixturePredictions adminListFixturePredictions;
+
+  /// Reads the prediction history of exactly one selected platform user,
+  /// itself audited and scoped by user id.
+  final AdminGetUserFixturePredictions adminGetUserFixturePredictions;
 
   /// Lists the caller's own aggregated fixture-prediction history — every
   /// per-fixture prediction they have ever submitted, across every fixture
@@ -1644,6 +1663,14 @@ final class CompositionRoot {
       adminListFixturePredictions: AdminListFixturePredictions(
         fixturePredictionRepository:
             fixturePredictionRepository, // already built
+        auditRecorder: auditRecorder,
+      ),
+      adminGetUserFixturePredictions: AdminGetUserFixturePredictions(
+        userAdminRepository: userAdminRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+        fixtureResultRepository: fixtureResultRepository,
+        fixtureScoreRepository: fixtureScoreRepository,
         auditRecorder: auditRecorder,
       ),
       listMyFixturePredictions: ListMyFixturePredictions(

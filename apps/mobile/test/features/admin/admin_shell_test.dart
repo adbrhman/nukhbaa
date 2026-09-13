@@ -42,12 +42,23 @@ void main() {
         expect(find.byKey(const Key('admin.hub.drawer')), findsNothing);
         expect(find.text(l10n.adminDashboardTab), findsWidgets);
 
-        final Finder teamsTile = find.byKey(
-          const Key('admin.shell.nav.ledger'),
-        );
         final Finder navScrollable = find.descendant(
           of: find.byKey(const Key('admin.shell.navList')),
           matching: find.byType(Scrollable),
+        );
+        final Finder usersTile = find.byKey(const Key('admin.shell.nav.users'));
+        await tester.scrollUntilVisible(
+          usersTile,
+          200,
+          scrollable: navScrollable,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(usersTile);
+        await tester.pumpAndSettle();
+        expect(find.text('بحث عن مستخدم وتوقعاته'), findsOneWidget);
+
+        final Finder teamsTile = find.byKey(
+          const Key('admin.shell.nav.ledger'),
         );
         await tester.scrollUntilVisible(
           teamsTile,

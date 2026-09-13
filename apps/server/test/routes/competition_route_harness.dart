@@ -1415,9 +1415,13 @@ final class InMemoryUserAdminRepository implements UserAdminRepository {
         ? all
         : all
               .where(
-                (u) => (u.email ?? '').toLowerCase().contains(
-                  search.toLowerCase(),
-                ),
+                (u) =>
+                    u.displayName.toLowerCase().contains(
+                      search.toLowerCase(),
+                    ) ||
+                    (u.email ?? '').toLowerCase().contains(
+                      search.toLowerCase(),
+                    ),
               )
               .toList();
     final capped = matched.length > limit ? matched.sublist(0, limit) : matched;

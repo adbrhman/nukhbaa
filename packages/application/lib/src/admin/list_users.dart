@@ -4,8 +4,8 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
 /// Query use-case: browse platform users by an optional case-insensitive
-/// email-contains [search] — the admin "find a user to sanction" flow
-/// (admin-only, Security ADR §2.2/§2.3).
+/// display-name or email-contains [search] — the admin "find a user to
+/// sanction" flow (admin-only, Security ADR §2.2/§2.3).
 ///
 /// 1. authorize the caller as [PlatformRole.admin];
 /// 2. clamp an untrusted [limit] to `[1, maxLimit]`;

@@ -127,17 +127,16 @@ final class UserSanctionResultDto {
   int get hashCode => Object.hash(userId, status, schemaVersion);
 }
 
-/// One row of `GET /admin/users` — a minimal user summary for the admin
-/// find-a-user flow. Carries only what the sanction UI needs: [id] (to fill
-/// the target-user field), [email] (nullable — provider-sourced, may be
-/// absent), and [status]. No role field: the browse surface has no authority
-/// over role.
+/// One row of `GET /admin/users` — a minimal user summary for admin user
+/// lookup and sanction flows. Carries [id], optional [email], [displayName],
+/// and [status]. No role field: the browse surface has no authority over role.
 final class UserSummaryDto {
   /// Creates a user-summary DTO.
   const UserSummaryDto({
     required this.id,
     required this.status,
     this.email,
+    this.displayName = '',
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -148,6 +147,7 @@ final class UserSummaryDto {
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       id: json['id']! as String,
       email: json['email'] as String?,
+      displayName: (json['display_name'] as String?) ?? '',
       status: json['status']! as String,
     );
   }
@@ -161,6 +161,10 @@ final class UserSummaryDto {
   /// The user's email, when known. Omitted from JSON when `null`.
   final String? email;
 
+  /// The platform-owned display name. Empty only for legacy rows that cannot
+  /// supply a name.
+  final String displayName;
+
   /// The user's lifecycle status (`active` / `suspended`).
   final String status;
 
@@ -172,6 +176,7 @@ final class UserSummaryDto {
     'schema_version': schemaVersion,
     'id': id,
     if (email != null) 'email': email,
+    if (displayName.isNotEmpty) 'display_name': displayName,
     'status': status,
   };
 
@@ -180,11 +185,13 @@ final class UserSummaryDto {
       other is UserSummaryDto &&
       other.id == id &&
       other.email == email &&
+      other.displayName == displayName &&
       other.status == status &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(id, email, status, schemaVersion);
+  int get hashCode =>
+      Object.hash(id, email, displayName, status, schemaVersion);
 }
 
 /// The wire shape of `GET /admin/users` — a bounded, server-ordered browse

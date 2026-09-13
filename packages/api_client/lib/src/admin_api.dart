@@ -41,8 +41,9 @@ final class AdminApi {
     );
   }
 
-  /// `GET /admin/users` — browse users by an optional email-contains
-  /// [search]; [limit] is an optional page cap, clamped server-side.
+  /// `GET /admin/users` — browse users by an optional display-name or
+  /// email-contains [search]; [limit] is an optional page cap, clamped
+  /// server-side.
   Future<Result<UserListDto>> listUsers({String? search, int? limit}) {
     final query = <String, String>{
       if (search != null && search.isNotEmpty) 'search': search,
@@ -126,6 +127,25 @@ final class AdminApi {
       '/admin/fixtures/$fixtureId/predictions',
       query: reason == null ? null : {'reason': reason},
       parseElement: FixturePredictionDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/users/{userId}/fixture-predictions` — read ONLY the selected
+  /// user's fixture predictions. Optional [fromUtc]/[toUtc] boundaries are
+  /// inclusive/exclusive and are passed as UTC ISO-8601 query parameters.
+  Future<Result<AdminUserPredictionHistoryDto>> adminGetUserPredictionHistory(
+    String userId, {
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) {
+    final query = <String, String>{
+      if (fromUtc != null) 'from': fromUtc.toUtc().toIso8601String(),
+      if (toUtc != null) 'to': toUtc.toUtc().toIso8601String(),
+    };
+    return _transport.getObject<AdminUserPredictionHistoryDto>(
+      '/admin/users/$userId/fixture-predictions',
+      query: query.isEmpty ? null : query,
+      parse: AdminUserPredictionHistoryDto.fromJson,
     );
   }
 

@@ -105,14 +105,18 @@ RETURNING id, email, role::text, status::text, display_name
   }
 
   // --------------------------------------------------------------------------
-  // listUsers — browse by optional email-contains search
+  // listUsers — browse by optional display-name/email-contains search
   // --------------------------------------------------------------------------
 
   static const String _listSql = '''
 SELECT id, email, role::text, status::text, display_name
 FROM identity.users
-WHERE (@search::text IS NULL OR email ILIKE @search)
-ORDER BY email ASC
+WHERE (
+  @search::text IS NULL
+  OR display_name ILIKE @search
+  OR email ILIKE @search
+)
+ORDER BY display_name ASC, email ASC
 LIMIT @limit
 ''';
 
