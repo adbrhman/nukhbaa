@@ -153,24 +153,10 @@ class SessionController extends _$SessionController {
     }
   }
 
-  /// Renames the current user via `PATCH /me/display-name`, then re-validates
-  /// the held token (`GET /me`) so [SessionAuthenticated] reflects the new
-  /// name — mirrors [register]/[signInWithCredentials]'s "call, then
-  /// revalidate" shape rather than patching local state, so the displayed
-  /// name is always what the server actually stored.
-  Future<Result<void>> updateDisplayName(String displayName) async {
-    final result = await _authApi.updateDisplayName(displayName);
-    if (result is Err<MeResponseDto>) {
-      return Result.err(result.error);
-    }
-    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
-    return const Result.ok(null);
-  }
-
   /// Sets the caller's profile picture to [bytes] under [contentType].
   ///
-  /// Deliberately identical in shape to [updateDisplayName]: perform, then
-  /// re-validate the held token so every watcher sees the new identity. The
+  /// Performs, then re-validates the held token so every watcher sees the new
+  /// identity (the same shape [register]/[signInWithCredentials] use). The
   /// server returns the full `MeResponseDto`, but re-validating rather than
   /// trusting that body keeps ONE path by which session state changes.
   Future<Result<void>> setAvatar({

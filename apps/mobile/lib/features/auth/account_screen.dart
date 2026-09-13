@@ -11,9 +11,6 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
-import '../../core/error/error_presenter.dart';
-import '../../core/ui/app_button.dart';
-import '../../core/ui/app_text_field.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
@@ -36,7 +33,7 @@ import 'session_controller.dart';
 
 /// The signed-in user's home hub — a card-based dashboard replacing the flat
 /// button list. Every destination below already existed as a plain
-/// [AppButton] target; this is a visual restyle only (same providers, same
+/// AppButton target; this is a visual restyle only (same providers, same
 /// navigation, same `account.*` keys), not a new architecture or data
 /// source. Cross-season stats ARE shown now, via the elite card: `GET
 /// /me/seasons` is the server-side aggregate whose absence this comment used
@@ -358,8 +355,9 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-/// Avatar (first letter of [displayName]) + name + edit affordance, replacing
-/// the old plain-text `_DisplayNameRow`. Same edit dialog/behavior as before.
+/// Avatar (first letter of [displayName]) + name. There is no rename
+/// affordance: the display name is chosen once at registration and is
+/// immutable afterwards, enforced by `PUT /me/display-name` refusing.
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.displayName,
@@ -375,7 +373,6 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -414,16 +411,6 @@ class _ProfileHeader extends StatelessWidget {
                 color: tokens.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
-            ),
-          ),
-          IconButton(
-            key: const Key('account.editDisplayName'),
-            tooltip: l10n.changeDisplayName,
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) =>
-                  _ChangeDisplayNameDialog(currentName: displayName),
             ),
           ),
         ],
@@ -838,104 +825,6 @@ class _HomeListCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChangeDisplayNameDialog extends ConsumerStatefulWidget {
-  const _ChangeDisplayNameDialog({required this.currentName});
-  final String currentName;
-
-  @override
-  ConsumerState<_ChangeDisplayNameDialog> createState() =>
-      _ChangeDisplayNameDialogState();
-}
-
-class _ChangeDisplayNameDialogState
-    extends ConsumerState<_ChangeDisplayNameDialog> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.currentName,
-  );
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _submitting = false;
-  AppError? _error;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref
-        .read(sessionControllerProvider.notifier)
-        .updateDisplayName(_controller.text.trim());
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        Navigator.of(context).pop();
-      case Err<void>(:final error):
-        setState(() {
-          _submitting = false;
-          _error = error;
-        });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.changeDisplayName),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppTextField(
-              fieldKey: const Key('account.displayNameField'),
-              controller: _controller,
-              enabled: !_submitting,
-              label: l10n.displayName,
-              hint: l10n.displayNameHint,
-              prefixIcon: Icons.person_outline,
-              autofillHints: const [AutofillHints.name],
-              validator: (String? value) =>
-                  (value == null || value.trim().isEmpty)
-                  ? l10n.displayNameRequired
-                  : null,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                ErrorPresenter.message(_error!),
-                key: const Key('account.displayNameError'),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: context.tokens.error),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.cancel),
-        ),
-        AppButton(
-          key: const Key('account.saveDisplayName'),
-          label: l10n.save,
-          loading: _submitting,
-          onPressed: _submitting ? null : _submit,
-        ),
-      ],
     );
   }
 }

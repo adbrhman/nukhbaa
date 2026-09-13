@@ -76,15 +76,6 @@ final class AuthApi {
     return _transport.deleteObject('/me/avatar', parse: MeResponseDto.fromJson);
   }
 
-  /// `PUT /me/display-name` — renames the current user.
-  Future<Result<MeResponseDto>> updateDisplayName(String displayName) {
-    return _transport.putObject<MeResponseDto>(
-      '/me/display-name',
-      body: {'display_name': displayName},
-      parse: MeResponseDto.fromJson,
-    );
-  }
-
   /// `POST /me/device-token` — registers this device's FCM token for push
   /// delivery. Safe to call on every app start and on every token refresh:
   /// the server upserts by token, so a repeat is a re-confirmation rather
