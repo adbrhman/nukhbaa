@@ -3,6 +3,7 @@ import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/prediction/ports/fixture_prediction_tally_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -22,6 +23,8 @@ final class CurrentMonthFixtureEntry {
     required this.competitionName,
     required this.seasonLabel,
     required this.fixture,
+    this.homeWinPercentage,
+    this.awayWinPercentage,
   });
 
   /// The owning competition's identity.
@@ -37,17 +40,34 @@ final class CurrentMonthFixtureEntry {
   /// nullable per Axiom 3).
   final SeasonFixtureCard fixture;
 
+  /// The home share of decisive predictions on this fixture, or `null` when
+  /// the feed was built without a [FixturePredictionTallyReader] (no tally
+  /// was read at all -- which is NOT the same as a fixture nobody predicted,
+  /// which is a genuine `0`).
+  final int? homeWinPercentage;
+
+  /// The away share of decisive predictions, with the same null meaning.
+  final int? awayWinPercentage;
+
   @override
   bool operator ==(Object other) =>
       other is CurrentMonthFixtureEntry &&
       other.competitionId == competitionId &&
       other.competitionName == competitionName &&
       other.seasonLabel == seasonLabel &&
-      other.fixture == fixture;
+      other.fixture == fixture &&
+      other.homeWinPercentage == homeWinPercentage &&
+      other.awayWinPercentage == awayWinPercentage;
 
   @override
-  int get hashCode =>
-      Object.hash(competitionId, competitionName, seasonLabel, fixture);
+  int get hashCode => Object.hash(
+    competitionId,
+    competitionName,
+    seasonLabel,
+    fixture,
+    homeWinPercentage,
+    awayWinPercentage,
+  );
 
   @override
   String toString() =>
@@ -87,15 +107,21 @@ final class ListCurrentMonthFixtures {
     required FixturePredictionRepository fixturePredictionRepository,
     required FixtureScheduleRepository fixtureScheduleRepository,
     required Clock clock,
+    FixturePredictionTallyReader? predictionTallyReader,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _schedules = fixtureScheduleRepository,
-       _clock = clock;
+       _clock = clock,
+       _tallies = predictionTallyReader;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScheduleRepository _schedules;
   final Clock _clock;
+
+  /// Optional on purpose: every existing construction of this use-case keeps
+  /// compiling, and a feed built without it simply reports no split.
+  final FixturePredictionTallyReader? _tallies;
 
   /// Builds the current-month feed, visible to [principal].
   Future<Result<List<CurrentMonthFixtureEntry>>> call({
@@ -173,6 +199,24 @@ final class ListCurrentMonthFixtures {
         schedule.fixture.value: schedule,
     };
 
+    // Step 5: the prediction split for the same fixture set, in ONE grouped
+    // query -- the same no-N+1 discipline as step 4. This used to be a
+    // per-card request from the client (one HTTP round trip per fixture on
+    // screen); the feed already knows exactly which fixtures it is about to
+    // return, so it answers the question while it is here.
+    final tallies = <String, FixtureOutcomeTally>{};
+    final FixturePredictionTallyReader? tallyReader = _tallies;
+    if (tallyReader != null) {
+      final talliesResult = await tallyReader.tallyByFixtures(allFixtures);
+      if (talliesResult is Err<List<FixtureOutcomeTally>>) {
+        return Result.err(talliesResult.error);
+      }
+      for (final tally
+          in (talliesResult as Ok<List<FixtureOutcomeTally>>).value) {
+        tallies[tally.fixture.value] = tally;
+      }
+    }
+
     return Result.ok([
       for (final entry in currentSeasons)
         for (final fixture in fixturesBySeason[entry.season.id.value]!)
@@ -180,6 +224,15 @@ final class ListCurrentMonthFixtures {
             competitionId: entry.competition.id,
             competitionName: entry.competition.name,
             seasonLabel: entry.season.label,
+            // A fixture nobody has predicted has no tally row, which is a
+            // real 0/0 split, not a missing answer -- so it reads as 0 while
+            // the reader is wired, and as null only when it is not.
+            homeWinPercentage: tallyReader == null
+                ? null
+                : (tallies[fixture.value]?.homeWinPercentage ?? 0),
+            awayWinPercentage: tallyReader == null
+                ? null
+                : (tallies[fixture.value]?.awayWinPercentage ?? 0),
             fixture: SeasonFixtureCard(
               seasonId: entry.season.id,
               fixtureId: fixture,

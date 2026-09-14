@@ -796,6 +796,8 @@ final class CurrentMonthFixtureItemDto {
     required this.competitionName,
     required this.seasonLabel,
     required this.fixture,
+    this.homeWinPercentage,
+    this.awayWinPercentage,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -809,11 +811,16 @@ final class CurrentMonthFixtureItemDto {
       fixture: SeasonFixtureCardDto.fromJson(
         (json['fixture']! as Map<Object?, Object?>).cast<String, Object?>(),
       ),
+      homeWinPercentage: json['home_win_percentage'] as int?,
+      awayWinPercentage: json['away_win_percentage'] as int?,
     );
   }
 
-  /// The current schema version for this DTO.
-  static const int currentSchemaVersion = 1;
+  /// The current schema version for this DTO. Bumped to 2 for the two
+  /// optional percentage fields; a v1 payload (an older server) simply
+  /// decodes them as `null`, and an older client ignores them, so neither
+  /// side has to be deployed first.
+  static const int currentSchemaVersion = 2;
 
   /// The owning competition's id (UUID string).
   final String competitionId;
@@ -827,6 +834,14 @@ final class CurrentMonthFixtureItemDto {
   /// The fixture card (team names + kickoff, nullable per Axiom 3).
   final SeasonFixtureCardDto fixture;
 
+  /// The home share of decisive predictions on this fixture (draws excluded
+  /// from the denominator), or `null` when the server did not compute one.
+  /// `null` is not `0`: `0` means nobody picked the home side.
+  final int? homeWinPercentage;
+
+  /// The away share of decisive predictions, with the same null meaning.
+  final int? awayWinPercentage;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -837,6 +852,8 @@ final class CurrentMonthFixtureItemDto {
     'competition_name': competitionName,
     'season_label': seasonLabel,
     'fixture': fixture.toJson(),
+    'home_win_percentage': homeWinPercentage,
+    'away_win_percentage': awayWinPercentage,
   };
 
   @override
@@ -846,6 +863,8 @@ final class CurrentMonthFixtureItemDto {
       other.competitionName == competitionName &&
       other.seasonLabel == seasonLabel &&
       other.fixture == fixture &&
+      other.homeWinPercentage == homeWinPercentage &&
+      other.awayWinPercentage == awayWinPercentage &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -854,6 +873,8 @@ final class CurrentMonthFixtureItemDto {
     competitionName,
     seasonLabel,
     fixture,
+    homeWinPercentage,
+    awayWinPercentage,
     schemaVersion,
   );
 }

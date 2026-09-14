@@ -1325,6 +1325,13 @@ final class CompositionRoot {
       connection,
     );
 
+    // The batched win-share read behind the current-month feed. Its own tiny
+    // adapter rather than another method on the repository above -- see
+    // FixturePredictionTallyReader for why.
+    final fixturePredictionTallyReader = PostgresFixturePredictionTallyReader(
+      connection,
+    );
+
     // Scoring slice: its own Postgres-backed adapters over the scoring.* tables
     // (the actual-result seam — Axiom 3 option (a) — and the server-computed
     // round scores). ScoreRound reuses the competition + prediction repos
@@ -1531,6 +1538,7 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
+        predictionTallyReader: fixturePredictionTallyReader,
       ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,

@@ -164,5 +164,7 @@ CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
     competitionName: entry.competitionName,
     seasonLabel: entry.seasonLabel,
     fixture: seasonFixtureCardToDto(entry.fixture),
+    homeWinPercentage: entry.homeWinPercentage,
+    awayWinPercentage: entry.awayWinPercentage,
   );
 }

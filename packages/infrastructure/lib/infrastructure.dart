@@ -40,6 +40,7 @@ export 'src/notification/postgres_score_announcement_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_repository.dart';
+export 'src/prediction/postgres_fixture_prediction_tally_reader.dart';
 export 'src/prediction/postgres_prediction_repository.dart';
 export 'src/scoring/postgres_fixture_result_repository.dart';
 export 'src/scoring/postgres_fixture_score_repository.dart';

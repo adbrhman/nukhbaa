@@ -46,6 +46,8 @@ CurrentMonthFixturesHarness _harnessFor({
             awayTeam: 'Al Nassr',
             kickoffAt: kickoffAt,
           ),
+          homeWinPercentage: 68,
+          awayWinPercentage: 32,
         ).toJson(),
       ]);
     }

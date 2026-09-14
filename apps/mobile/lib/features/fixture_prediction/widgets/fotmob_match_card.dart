@@ -6,11 +6,11 @@
 /// needs [resolveTeamIdentity] + `teamCatalogProvider`, and `core/ui/**` may
 /// never import `features/**` (`import_lint`).
 ///
-/// Reuses the existing per-fixture submit slice and adds one read-only
-/// server aggregate for the team win shares. The card computes no point, rank,
-/// or probability of its own — scores are saved through the existing
-/// [fixturePredictionControllerProvider], while percentages come from the
-/// server-side distribution read.
+/// Reuses the existing per-fixture submit slice. The card computes no point,
+/// rank, or probability of its own — scores are saved through the existing
+/// [fixturePredictionControllerProvider], while the win percentages are
+/// server-computed and arrive on the feed item itself (they were once a
+/// per-card GET; see the build method).
 ///
 /// ## States (exclusive, most specific first — §6 of the spec)
 /// 1. **Graded** — hide the steppers/double/submit; show the stored
@@ -86,8 +86,8 @@ import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
+import '../current_month_fixtures_providers.dart';
 import '../fixture_prediction_controller.dart';
-import '../fixture_prediction_providers.dart';
 import '../fixture_prediction_submission.dart';
 import 'live_matches_chip.dart';
 
@@ -291,12 +291,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       (previous, next) {
         if (next is FixtureSubmissionSucceeded) {
           ref.invalidate(myFixturePredictionsProvider);
-          ref.invalidate(
-            fixturePredictionDistributionProvider((
-              seasonId: _fixture.seasonId,
-              fixtureId: _fixture.fixtureId,
-            )),
-          );
+          // The win shares now ride along with the feed, so refreshing them
+          // after your own vote means refreshing the feed. Still one request,
+          // and it also picks up any fixture the admin added meanwhile.
+          ref.invalidate(currentMonthFixturesProvider);
         }
       },
     );
@@ -353,14 +351,13 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // reschedules itself until the server holds the current value, so the
     // last tap still wins.
     final bool enabled = !locked;
-    final FixturePredictionDistributionDto? distribution = ref
-        .watch(
-          fixturePredictionDistributionProvider((
-            seasonId: _fixture.seasonId,
-            fixtureId: _fixture.fixtureId,
-          )),
-        )
-        .value;
+    // The win shares arrive with the feed item itself. They used to be a
+    // separate GET per card, so a twenty-match day opened twenty extra
+    // requests over a phone network to learn twenty numbers the feed's own
+    // query already had in hand. `null` means the server did not send them
+    // (an older build); nobody having predicted is a real 0.
+    final int homeWinShare = widget.item.homeWinPercentage ?? 0;
+    final int awayWinShare = widget.item.awayWinPercentage ?? 0;
     // The check between the steppers means "this exact pick is saved".
     // Include the double flag so changing it also requires server
     // confirmation. Takes home/away explicitly so it can be re-evaluated
@@ -536,11 +533,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Expanded(
-                        child: _WinPercentage(
-                          percentage: distribution?.homeWinPercentage ?? 0,
-                        ),
-                      ),
+                      Expanded(child: _WinPercentage(percentage: homeWinShare)),
                       const SizedBox(width: AppSpacing.sm),
                       if (showEditableControls)
                         SizedBox(
@@ -555,11 +548,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       else
                         const SizedBox(width: 130, height: 36),
                       const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _WinPercentage(
-                          percentage: distribution?.awayWinPercentage ?? 0,
-                        ),
-                      ),
+                      Expanded(child: _WinPercentage(percentage: awayWinShare)),
                     ],
                   ),
                 ),

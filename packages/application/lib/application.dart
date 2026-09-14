@@ -108,6 +108,7 @@ export 'src/prediction/get_my_prediction.dart';
 export 'src/prediction/list_my_fixture_predictions.dart';
 export 'src/prediction/list_round_predictions.dart';
 export 'src/prediction/ports/fixture_prediction_repository.dart';
+export 'src/prediction/ports/fixture_prediction_tally_reader.dart';
 export 'src/prediction/ports/prediction_repository.dart';
 export 'src/prediction/prediction_view.dart';
 export 'src/prediction/submit_fixture_prediction.dart';
