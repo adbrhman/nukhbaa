@@ -116,7 +116,28 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   bool _prefilledFromPrediction = false;
   Timer? _autoSaveTimer;
 
+  /// The controller captured while this card was still mounted, so a save
+  /// that is still pending when the card goes away can be flushed from
+  /// [dispose] without reaching for `ref` after it is gone.
+  FixturePredictionController? _saveTarget;
+
   SeasonFixtureCardDto get _fixture => widget.item.fixture;
+
+  /// The list now keys every card by fixture id, so a State should never
+  /// outlive its fixture. This is the second guard: if a card is ever handed
+  /// a different fixture anyway, it starts clean rather than presenting the
+  /// previous match's scoreline as if it were this one's.
+  @override
+  void didUpdateWidget(covariant FotmobMatchCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.fixture.fixtureId == _fixture.fixtureId) return;
+    _autoSaveTimer?.cancel();
+    _saveTarget = null;
+    _homeGoals.value = null;
+    _awayGoals.value = null;
+    _isDouble = false;
+    _prefilledFromPrediction = false;
+  }
 
   bool get _isLocked {
     final kickoff = _fixture.kickoffAt;
@@ -163,6 +184,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final int? away = _awayGoals.value;
     if (home == null || away == null || _isLocked) return;
     _autoSaveTimer?.cancel();
+    // Captured now, while `ref` is certainly usable, for the dispose flush.
+    _saveTarget = ref.read(fixturePredictionControllerProvider(_key).notifier);
     _autoSaveTimer = Timer(const Duration(milliseconds: 250), () async {
       await _saveLatestPrediction();
     });
@@ -200,9 +223,56 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     }
   }
 
+  /// Writes a save that was still inside its debounce window when the card
+  /// went away.
+  ///
+  /// The microtask is not optional. By the time a State's dispose() runs,
+  /// StatefulElement.unmount has ALREADY marked the element defunct, so
+  /// mutating a provider from here notifies this very element -- whose
+  /// subscription is not closed yet -- and trips markNeedsBuild's assert. One
+  /// microtask later the unmount has finished and the subscription is gone,
+  /// so the write lands on nobody.
+  ///
+  /// Guarded, because "the card went away" has two very different causes.
+  /// Usually it is a scroll, a switched day or a switched tab: the controller
+  /// family is not auto-disposed, so it outlives this widget and the write
+  /// completes exactly as it would have. But the card also goes away when the
+  /// whole app -- or a test's ProviderScope -- is torn down, and then the
+  /// controller is disposed in the same breath and the write has nowhere to
+  /// land. That is not a failure worth surfacing: there is no user left to
+  /// tell. The throw can arrive synchronously or on the far side of the
+  /// request, so both are caught.
+  void _flushPendingSave() {
+    final int? home = _homeGoals.value;
+    final int? away = _awayGoals.value;
+    final FixturePredictionController? target = _saveTarget;
+    if (home == null || away == null || target == null || _isLocked) return;
+    final bool isDouble = _isDouble;
+    scheduleMicrotask(() {
+      try {
+        unawaited(
+          target
+              .submit(homeGoals: home, awayGoals: away, isDouble: isDouble)
+              .catchError((Object _) {}),
+        );
+      } on Object {
+        // The controller went down with the tree; nothing to flush into.
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    // A card scrolled out of view, a switched day, a switched tab: each used
+    // to take a pending 250 ms auto-save down with it, so a tap made just
+    // before leaving was silently never written. The controller family is
+    // not auto-disposed, so the submit can still finish on its own.
+    final Timer? pending = _autoSaveTimer;
+    _autoSaveTimer = null;
+    if (pending != null && pending.isActive) {
+      pending.cancel();
+      _flushPendingSave();
+    }
     _homeGoals.dispose();
     _awayGoals.dispose();
     super.dispose();

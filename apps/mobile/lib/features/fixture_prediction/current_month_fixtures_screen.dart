@@ -262,7 +262,17 @@ class _CurrentMonthFixturesScreenState
                 ),
                 itemCount: dayItems.length,
                 itemBuilder: (context, index) => RepaintBoundary(
-                  child: FotmobMatchCard(item: dayItems[index]),
+                  // A card's State holds the scoreline being typed, and a
+                  // ListView recycles State by POSITION. With no key, the day
+                  // strip could hand tomorrow's fixture to the State that was
+                  // drawing today's -- so the card showed a scoreline that
+                  // belonged to a different match, and that of course had
+                  // never been saved for the one on screen. Keying by fixture
+                  // id ties each State to its own fixture for its whole life.
+                  child: FotmobMatchCard(
+                    key: ValueKey<String>(dayItems[index].fixture.fixtureId),
+                    item: dayItems[index],
+                  ),
                 ),
               ),
             );

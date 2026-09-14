@@ -126,6 +126,9 @@ class FixturePredictionScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             itemCount: list.length,
             itemBuilder: (context, index) => _FixturePredictionCard(
+              // Same hazard as the month feed: this card's State owns the
+              // scoreline, and an unkeyed list recycles State by position.
+              key: ValueKey<String>(list[index].fixtureId),
               seasonId: seasonId,
               fixture: list[index],
             ),
@@ -198,7 +201,11 @@ class _FixturePredictionError extends StatelessWidget {
 /// `(1,0)`/`(0,0)`/`(0,1)` pair so the existing submit contract needs no
 /// change.
 class _FixturePredictionCard extends ConsumerStatefulWidget {
-  const _FixturePredictionCard({required this.seasonId, required this.fixture});
+  const _FixturePredictionCard({
+    required this.seasonId,
+    required this.fixture,
+    super.key,
+  });
 
   final String seasonId;
   final SeasonFixtureCardDto fixture;
@@ -214,6 +221,19 @@ class _FixturePredictionCardState
   int? _awayGoals;
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
+
+  /// Second guard behind the list's per-fixture key: a State handed a
+  /// different fixture starts clean instead of showing the previous match's
+  /// scoreline as though it belonged here.
+  @override
+  void didUpdateWidget(covariant _FixturePredictionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fixture.fixtureId == widget.fixture.fixtureId) return;
+    _homeGoals = null;
+    _awayGoals = null;
+    _isDouble = false;
+    _prefilledFromPrediction = false;
+  }
 
   bool get _isLocked {
     final kickoff = widget.fixture.kickoffAt;
