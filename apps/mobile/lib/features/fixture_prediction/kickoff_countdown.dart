@@ -46,7 +46,8 @@ class KickoffCountdown extends StatefulWidget {
   State<KickoffCountdown> createState() => _KickoffCountdownState();
 }
 
-class _KickoffCountdownState extends State<KickoffCountdown> {
+class _KickoffCountdownState extends State<KickoffCountdown>
+    with WidgetsBindingObserver {
   Timer? _timer;
   DateTime? _kickoff;
   Duration _remaining = Duration.zero;
@@ -54,7 +55,20 @@ class _KickoffCountdownState extends State<KickoffCountdown> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _resync();
+  }
+
+  /// PERF: the tab stays mounted inside the shell's IndexedStack and the
+  /// timer kept firing while the app was in the background. Nothing can be
+  /// read there, so the clock stops and resynchronises on resume.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _resync();
+    } else {
+      _timer?.cancel();
+    }
   }
 
   @override
@@ -67,6 +81,7 @@ class _KickoffCountdownState extends State<KickoffCountdown> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -75,10 +90,16 @@ class _KickoffCountdownState extends State<KickoffCountdown> {
     _timer?.cancel();
     _kickoff = _parse(widget.kickoffAt);
     _tick();
-    if (_kickoff != null) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-    }
   }
+
+  /// PERF: seconds are only ever drawn under a day (above that the text is
+  /// "in 3 days", which a one-second rebuild redraws identically 86,400
+  /// times a day, per card). The interval is therefore re-derived on every
+  /// tick from what is left, and the timer is a self-rescheduling one-shot
+  /// rather than a fixed periodic one.
+  Duration _interval(Duration remaining) => remaining.inDays > 0
+      ? const Duration(minutes: 1)
+      : const Duration(seconds: 1);
 
   DateTime? _parse(String? raw) =>
       raw == null ? null : DateTime.tryParse(raw)?.toUtc();
@@ -87,11 +108,12 @@ class _KickoffCountdownState extends State<KickoffCountdown> {
     final kickoff = _kickoff;
     if (kickoff == null) return;
     final next = kickoff.difference(DateTime.now().toUtc());
+    _timer?.cancel();
     if (next.isNegative) {
-      _timer?.cancel();
       if (mounted) setState(() => _remaining = Duration.zero);
       return;
     }
+    _timer = Timer(_interval(next), _tick);
     if (mounted) setState(() => _remaining = next);
   }
 

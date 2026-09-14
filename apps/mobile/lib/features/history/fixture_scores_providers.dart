@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,6 +28,17 @@ Future<FixtureScoresDto> fixtureScores(
   String seasonId,
   String fixtureId,
 ) async {
+  // PERF: this read is watched once per visible match card and once per
+  // history row. Left auto-disposing, every card the scroll pushes out of
+  // the viewport disposes its provider, and scrolling back re-issues the
+  // same GET -- a burst of identical requests on every flick. Hold the
+  // answer for two minutes instead: long enough that scrolling costs
+  // nothing, short enough that a fixture graded while the screen is open
+  // still refreshes on the next read.
+  final link = ref.keepAlive();
+  final Timer expiry = Timer(const Duration(minutes: 2), link.close);
+  ref.onDispose(expiry.cancel);
+
   final CompetitionApi api = ref.watch(competitionApiProvider);
   final result = await api.getFixtureScores(
     seasonId: seasonId,

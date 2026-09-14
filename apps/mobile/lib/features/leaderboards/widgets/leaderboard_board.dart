@@ -85,61 +85,70 @@ class LeaderboardBoard extends StatelessWidget {
 
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return ListView(
+    // PERF: `ListView(children: ...)` instantiates and lays out every row up
+    // front, and a monthly board is the entire user base -- every row below
+    // the fold was built for nothing. The fixed header block stays eager (a
+    // handful of widgets); only the ranked rows become lazy.
+    final List<Widget> leading = <Widget>[
+      if (showHeader) ...<Widget>[
+        _ReferenceHeader(
+          competitionName: competitionName,
+          seasonLabel: seasonLabel,
+          startAt: startAt,
+          endAt: endAt,
+          onRefresh: onRefresh,
+          onBack: onBack,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _ScopeTabs(
+          onFriendsTap: () => _showDisabledScope(context),
+          onEliteTap: () => _showDisabledScope(context),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+      if (showHeader) _SummaryCard(viewer: viewer),
+      if (showHeader) const SizedBox(height: AppSpacing.sm),
+      if (podium.isNotEmpty)
+        _Podium(
+          entries: podium,
+          keyPrefix: keyPrefix,
+          myParticipantId: viewer?.participantId,
+        ),
+      if (viewerLeads || showGap) ...<Widget>[
+        const SizedBox(height: AppSpacing.sm),
+        _BoardMetaStrip(
+          gapPoints: showGap ? gapToLeader : null,
+          targetRank: entries.first.rank,
+          isLeader: viewerLeads,
+        ),
+      ] else if (showHeader && entries.isNotEmpty) ...<Widget>[
+        const SizedBox(height: AppSpacing.sm),
+        const _BoardMetaStrip(),
+      ],
+      if (rest.isNotEmpty) ...<Widget>[
+        const SizedBox(height: AppSpacing.sm),
+        _TableHeader(),
+        const SizedBox(height: 4),
+      ],
+    ];
+
+    return ListView.builder(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
         showHeader ? 0 : AppSpacing.md,
         AppSpacing.md,
         AppSpacing.xl + bottomInset,
       ),
-      children: <Widget>[
-        if (showHeader) ...<Widget>[
-          _ReferenceHeader(
-            competitionName: competitionName,
-            seasonLabel: seasonLabel,
-            startAt: startAt,
-            endAt: endAt,
-            onRefresh: onRefresh,
-            onBack: onBack,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _ScopeTabs(
-            onFriendsTap: () => _showDisabledScope(context),
-            onEliteTap: () => _showDisabledScope(context),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        if (showHeader) _SummaryCard(viewer: viewer),
-        if (showHeader) const SizedBox(height: AppSpacing.sm),
-        if (podium.isNotEmpty)
-          _Podium(
-            entries: podium,
-            keyPrefix: keyPrefix,
-            myParticipantId: viewer?.participantId,
-          ),
-        if (viewerLeads || showGap) ...<Widget>[
-          const SizedBox(height: AppSpacing.sm),
-          _BoardMetaStrip(
-            gapPoints: showGap ? gapToLeader : null,
-            targetRank: entries.first.rank,
-            isLeader: viewerLeads,
-          ),
-        ] else if (showHeader && entries.isNotEmpty) ...<Widget>[
-          const SizedBox(height: AppSpacing.sm),
-          const _BoardMetaStrip(),
-        ],
-        if (rest.isNotEmpty) ...<Widget>[
-          const SizedBox(height: AppSpacing.sm),
-          _TableHeader(),
-          const SizedBox(height: 4),
-          for (final BoardEntry entry in rest)
-            _BoardRow(
-              entry: entry,
-              keyPrefix: keyPrefix,
-              isMe: entry.participantId == viewer?.participantId,
-            ),
-        ],
-      ],
+      itemCount: leading.length + rest.length,
+      itemBuilder: (BuildContext context, int index) {
+        if (index < leading.length) return leading[index];
+        final BoardEntry entry = rest[index - leading.length];
+        return _BoardRow(
+          entry: entry,
+          keyPrefix: keyPrefix,
+          isMe: entry.participantId == viewer?.participantId,
+        );
+      },
     );
   }
 

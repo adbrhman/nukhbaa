@@ -42,7 +42,7 @@ AppConfig appConfig(Ref ref) => AppConfig.fromEnvironment();
 /// tests override this provider with an [InMemoryTokenStore].
 @Riverpod(keepAlive: true)
 TokenStore tokenStore(Ref ref) =>
-    const SecureTokenStore(FlutterSecureStorage());
+    SecureTokenStore(const FlutterSecureStorage());
 
 /// The one shared [ApiTransport]. It owns the app's single `http.Client`
 /// (closed when this provider is disposed) and reads the bearer token from the

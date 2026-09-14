@@ -28,6 +28,21 @@ class NukhbaaShell extends ConsumerStatefulWidget {
 class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   int currentIndex = 0;
 
+  /// PERF: IndexedStack builds every child on the first frame, so all five
+  /// tabs used to fire their reads at launch -- the predictions tab alone
+  /// issues one scores request per row, for a tab nobody has opened. A tab
+  /// is built the first time it is selected and kept alive from then on,
+  /// which preserves the scroll position and in-progress prediction the
+  /// IndexedStack was chosen for, without paying for unopened tabs.
+  final Set<int> _built = <int>{0};
+
+  void _select(int index) {
+    setState(() {
+      currentIndex = index;
+      _built.add(index);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -38,19 +53,23 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     unawaited(ref.read(pushTokenServiceProvider).registerCurrentDevice());
   }
 
-  List<Widget> get pages => <Widget>[
-    HomeScreen(
+  /// The number of destinations in the bottom bar.
+  static const int tabCount = 5;
+
+  /// One destination, built on demand. Index order is the bottom bar's.
+  Widget _pageAt(int index) => switch (index) {
+    0 => HomeScreen(
       user: widget.user,
-      onOpenMatches: () => setState(() => currentIndex = 1),
-      onOpenPredictions: () => setState(() => currentIndex = 2),
-      onOpenLeaderboards: () => setState(() => currentIndex = 3),
-      onOpenAccount: () => setState(() => currentIndex = 4),
+      onOpenMatches: () => _select(1),
+      onOpenPredictions: () => _select(2),
+      onOpenLeaderboards: () => _select(3),
+      onOpenAccount: () => _select(4),
     ),
-    const CurrentMonthFixturesScreen(),
-    const PredictionHistoryScreen(),
-    LeaderboardsScreen(userDisplayName: widget.user.displayName),
-    AccountScreen(user: widget.user),
-  ];
+    1 => const CurrentMonthFixturesScreen(),
+    2 => const PredictionHistoryScreen(),
+    3 => LeaderboardsScreen(userDisplayName: widget.user.displayName),
+    _ => AccountScreen(user: widget.user),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -59,10 +78,16 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
       child: Scaffold(
         backgroundColor: context.tokens.background,
         extendBody: true,
-        body: IndexedStack(index: currentIndex, children: pages),
+        body: IndexedStack(
+          index: currentIndex,
+          children: <Widget>[
+            for (int i = 0; i < tabCount; i++)
+              if (_built.contains(i)) _pageAt(i) else const SizedBox.shrink(),
+          ],
+        ),
         bottomNavigationBar: NukhbaaBottomNav(
           index: currentIndex,
-          onChanged: (index) => setState(() => currentIndex = index),
+          onChanged: _select,
         ),
       ),
     );

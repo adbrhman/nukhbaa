@@ -57,7 +57,12 @@ class TeamLogo extends StatelessWidget {
     // send the image through a resizing createImageBitmap path that loses
     // the alpha channel for some PNGs, which turns a transparent crest into
     // the opaque plate hidden in its fully-transparent pixels.
-    final int? decodeSize = kIsWeb ? null : (size * 4).ceil();
+    //
+    // PERF: decode at the device's own density instead of a blanket 4x. On a
+    // 3x phone that is a quarter less image memory for every crest on the
+    // screen, and 4x was already above any shipping density anyway.
+    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
+    final int? decodeSize = kIsWeb ? null : (size * density).ceil();
     final String url = crestUrl?.trim() ?? '';
     final Widget fallback = _InitialsCircle(
       diameter: size,

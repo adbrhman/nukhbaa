@@ -82,7 +82,23 @@ class _FixturePredictionCard extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String? seasonId = prediction.seasonId;
-    final AsyncValue<FixtureScoresDto>? scoresAsync = seasonId == null
+    // Team names come from the current-month feed, not from the
+    // prediction's own season: `seasonId` is derived server-side from the
+    // *participant's* season, which is not where the fixtures live once a
+    // monthly competition gathers fixtures from several leagues. Read
+    // BEFORE the scores below, which now depend on the kickoff.
+    final AsyncValue<Map<String, SeasonFixtureCardDto>> fixturesById = ref
+        .watch(currentMonthFixturesByIdProvider);
+    final SeasonFixtureCardDto? fixture =
+        fixturesById.value?[prediction.fixtureId];
+    final String? kickoffAt = fixture?.kickoffAt;
+    // PERF: one scores request per visible row, over the caller's whole
+    // history. A fixture whose kickoff is still ahead cannot carry a grade,
+    // so that request can only come back empty -- skip it. An unknown
+    // kickoff (a fixture outside the current month) still asks: "unknown"
+    // is not "not yet".
+    final AsyncValue<FixtureScoresDto>? scoresAsync =
+        seasonId == null || _kickoffAhead(kickoffAt)
         ? null
         : ref.watch(fixtureScoresProvider(seasonId, prediction.fixtureId));
     String? grade;
@@ -96,15 +112,6 @@ class _FixturePredictionCard extends ConsumerWidget {
       }
     }
 
-    // Team names come from the current-month feed, not from the
-    // prediction's own season: `seasonId` is derived server-side from the
-    // *participant's* season, which is not where the fixtures live once a
-    // monthly competition gathers fixtures from several leagues.
-    final AsyncValue<Map<String, SeasonFixtureCardDto>> fixturesById = ref
-        .watch(currentMonthFixturesByIdProvider);
-    final SeasonFixtureCardDto? fixture =
-        fixturesById.value?[prediction.fixtureId];
-    final String? kickoffAt = fixture?.kickoffAt;
     final AppBadge? status = _statusBadge(
       l10n,
       grade: grade,
@@ -172,6 +179,16 @@ class _FixturePredictionCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Whether [kickoffAt] is a parseable instant still in the future. An
+  /// absent or unparseable kickoff is deliberately NOT "ahead": the row
+  /// then behaves exactly as it did before this gate existed.
+  static bool _kickoffAhead(String? kickoffAt) {
+    if (kickoffAt == null) return false;
+    final DateTime? parsed = DateTime.tryParse(kickoffAt)?.toUtc();
+    if (parsed == null) return false;
+    return parsed.isAfter(DateTime.now().toUtc());
   }
 
   /// The card's single status, most specific first: the server's verdict

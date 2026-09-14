@@ -8,7 +8,10 @@ import '../design/app_tokens.dart';
 import '../design/app_typography.dart';
 
 abstract final class AppTheme {
-  static ThemeData get dark => _build(
+  // PERF: a getter rebuilt the whole ThemeData (and every nested
+  // *ThemeData sub-object) on each MaterialApp rebuild, then leaned on deep
+  // value equality to avoid re-notifying the tree. Built once instead.
+  static final ThemeData dark = _build(
     brightness: Brightness.dark,
     tokens: AppTokens.dark,
     scheme: const ColorScheme.dark(
@@ -36,7 +39,7 @@ abstract final class AppTheme {
     divider: AppColors.border,
   );
 
-  static ThemeData get light => _build(
+  static final ThemeData light = _build(
     brightness: Brightness.light,
     tokens: AppTokens.light,
     scheme: const ColorScheme.light(

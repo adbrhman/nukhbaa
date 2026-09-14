@@ -238,7 +238,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final FixturePredictionDto? myPrediction =
         myPredictionsAsync.value?[_fixture.fixtureId];
 
-    final AsyncValue<FixtureScoresDto>? scoresAsync = myPrediction == null
+    // PERF: a fixture that has not kicked off cannot have been graded, so
+    // asking the server for its scores is a guaranteed-empty round trip --
+    // one per visible card, on a screen that is mostly upcoming matches.
+    final AsyncValue<FixtureScoresDto>? scoresAsync =
+        myPrediction == null || !locked
         ? null
         : ref.watch(
             fixtureScoresProvider(_fixture.seasonId, _fixture.fixtureId),

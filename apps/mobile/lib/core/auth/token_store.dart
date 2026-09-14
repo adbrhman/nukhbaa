@@ -34,9 +34,20 @@ abstract interface class TokenStore {
 /// WebCrypto-backed store on web).
 final class SecureTokenStore implements TokenStore {
   /// Creates a secure store over [storage].
-  const SecureTokenStore(this._storage);
+  SecureTokenStore(this._storage);
 
   final FlutterSecureStorage _storage;
+
+  /// PERF: the transport asks for the token on EVERY request, and a keystore
+  /// read is a platform-channel round trip with a decrypt behind it -- a
+  /// screen issuing twenty requests paid twenty of them on the UI isolate.
+  /// The token only ever changes through [write]/[clear] on this same
+  /// instance (the app holds exactly one, from `core/providers.dart`), so
+  /// the value is cached after the first read and every later read is a
+  /// field access. [_loaded] is separate from [_cached] because "no token
+  /// stored" is itself an answer worth caching.
+  String? _cached;
+  bool _loaded = false;
 
   /// The storage key under which the access token is persisted.
   static const String tokenKey = 'nukhba.access_token';
@@ -47,20 +58,27 @@ final class SecureTokenStore implements TokenStore {
     // token" rather than crashing the app on boot — the user is simply asked
     // to sign in again. The failure is not swallowed silently in higher
     // layers: an absent token routes to the sign-in screen.
+    if (_loaded) return _cached;
     try {
-      return await _storage.read(key: tokenKey);
+      _cached = await _storage.read(key: tokenKey);
     } on Object {
-      return null;
+      _cached = null;
     }
+    _loaded = true;
+    return _cached;
   }
 
   @override
   Future<void> write(String token) {
+    _cached = token;
+    _loaded = true;
     return _storage.write(key: tokenKey, value: token);
   }
 
   @override
   Future<void> clear() {
+    _cached = null;
+    _loaded = true;
     return _storage.delete(key: tokenKey);
   }
 }
