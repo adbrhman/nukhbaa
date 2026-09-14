@@ -796,3 +796,8 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - fix_commit: 8d45fc1cca22fac205d490cd6070977433e74b6d
 
 - 2026-09-13: fotmob_match_card.dart -- _homeGoals/_awayGoals to ValueNotifier<int?>, _MiddleSlot wrapped in ListenableBuilder (+/- no longer rebuilds the whole card).
+
+## 2026-09-15T01:45:19+03:00 - team_logo_aliases
+- إضافة 6 مفاتيح إملاء عربي بديلة في _arabicTeamLogoAliases (team_logo_assets.dart) تشير لشرائح شعار موجودة أصلًا: بشتکاش/فيرينكفاروس/فاینورد/نیمیجن/أمونيا نيقوسيا/فايكينج -> besiktas/ferencvaros/feyenoord/nec-nijmegen/omonoia/viking.
+- لم تُمس: باير ليفركوزن ونيوكاسل (المفتاح والشعار موجودان بالفعل بدون تعديل؛ إن استمر عدم الظهور فالسبب على الأرجح بناء APK قديم لم يشمل هذين الملفين، لا الكود).
+- 10 فرق من القائمة (نورويتش سيتي، ولفرهامبتون، بريست، تروا، موناكو، ستراسبورغ، باريس إف سي، ميلوال، ميدلزبره، ريدينغ) لا شعار محلي لها إطلاقًا في assets/team_logos/ -- يحتاج ملفات PNG فعلية، لم يُنفَّذ هنا.
