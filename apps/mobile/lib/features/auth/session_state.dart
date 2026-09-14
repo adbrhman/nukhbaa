@@ -86,15 +86,24 @@ final class SessionAuthenticated extends SessionState {
 /// an error is shown, rather than a clean signed-out screen.
 final class SessionFailed extends SessionState {
   /// Creates a failed sign-in state carrying [error].
-  const SessionFailed(this.error);
+  const SessionFailed(this.error, {this.canRetryRestore = false});
 
   /// The typed failure from the sign-in attempt.
   final AppError error;
 
-  @override
-  bool operator ==(Object other) =>
-      other is SessionFailed && other.error == error;
+  /// True when a persisted token is STILL held and was never rejected -- the
+  /// server was simply unreachable. Such a user is signed in and offline, not
+  /// signed out, so the gate offers a retry instead of a password form they
+  /// cannot fill without a network. False for every failure that came from an
+  /// explicit sign-in attempt or from a token the server refused.
+  final bool canRetryRestore;
 
   @override
-  int get hashCode => error.hashCode;
+  bool operator ==(Object other) =>
+      other is SessionFailed &&
+      other.error == error &&
+      other.canRetryRestore == canRetryRestore;
+
+  @override
+  int get hashCode => Object.hash(error, canRetryRestore);
 }

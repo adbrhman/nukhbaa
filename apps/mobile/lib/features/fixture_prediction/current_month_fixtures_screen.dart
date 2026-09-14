@@ -73,6 +73,30 @@ class _CurrentMonthFixturesScreenState
   /// stranding the user on an empty list they did not empty.
   bool _liveOnly = false;
 
+  /// Re-evaluates every clock-derived state on the screen once a minute.
+  ///
+  /// Kickoff passing changes nothing in the feed, so nothing rebuilt the
+  /// cards at that moment: the steppers stayed live after a match had
+  /// started (the auto-save then bounced off the server with
+  /// `prediction.fixture_locked`, which reads to the user as a random
+  /// error), and the live chip neither lit up nor went out while the screen
+  /// stayed open. One minute is the finest granularity anything here shows.
+  Timer? _clockTick;
+
+  @override
+  void initState() {
+    super.initState();
+    _clockTick = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTick?.cancel();
+    super.dispose();
+  }
+
   /// The local kickoff day of [item], or `null` when it has no kickoff.
   DateTime? _kickoffDay(CurrentMonthFixtureItemDto item) {
     final String? raw = item.fixture.kickoffAt;

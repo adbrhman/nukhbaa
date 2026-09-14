@@ -242,9 +242,16 @@ class SessionController extends _$SessionController {
     AppError error, {
     required bool clearOnAuthFailure,
   }) async {
-    if (error.kind == ErrorKind.authorization && clearOnAuthFailure) {
-      await _store.clear();
+    if (error.kind == ErrorKind.authorization) {
+      if (clearOnAuthFailure) {
+        await _store.clear();
+      }
+      // A refused token is refused whether or not it was erased: there is
+      // nothing to retry with.
+      return SessionFailed(error);
     }
-    return SessionFailed(error);
+    // The token was NOT cleared -- the failure is the network's, not the
+    // token's -- so this is recoverable without re-entering anything.
+    return SessionFailed(error, canRetryRestore: true);
   }
 }

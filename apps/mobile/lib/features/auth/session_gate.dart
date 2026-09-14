@@ -17,8 +17,13 @@
 /// imperative navigation.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/shared.dart';
+
+import '../../core/error/error_presenter.dart';
 
 import 'nukhbaa_shell.dart';
 import 'session_controller.dart';
@@ -34,6 +39,25 @@ class SessionGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncSession = ref.watch(sessionControllerProvider);
 
+    // A session that ends while the user is deep inside a pushed route (a
+    // leaderboard, the admin panel, an open dialog) used to leave them
+    // exactly there: only `home:` swapped underneath, while every request on
+    // the visible screen quietly 401'd. Unwind to the root so what they
+    // actually see is the sign-in form.
+    ref.listen<AsyncValue<SessionState>>(sessionControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (previous?.value is! SessionAuthenticated) return;
+      if (next.value is SessionAuthenticated) return;
+      final NavigatorState navigator = Navigator.of(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (navigator.mounted) {
+          navigator.popUntil((Route<dynamic> route) => route.isFirst);
+        }
+      });
+    });
+
     // The boot-time restore is in flight (or errored at the provider level,
     // which cannot happen here since build() is total): show a splash rather
     // than flashing the sign-in form to a returning, still-valid user.
@@ -45,10 +69,67 @@ class SessionGate extends ConsumerWidget {
     return switch (session) {
       SessionUnknown() => const _Splash(),
       SessionAuthenticated(:final user) => NukhbaaShell(user: user),
+      // Still holding a token the server never rejected: offline, not signed
+      // out. Dropping such a user onto the password form was the bug.
+      SessionFailed(canRetryRestore: true, :final error) => _ConnectionRetry(
+        error: error,
+      ),
       SessionUnauthenticated() ||
       SessionAuthenticating() ||
       SessionFailed() => const SignInScreen(),
     };
+  }
+}
+
+/// Shown when a session that is still held could not be confirmed with the
+/// server -- in practice a launch with no connectivity. The token stays on
+/// disk, so this is a retry affordance, never a sign-out.
+class _ConnectionRetry extends ConsumerWidget {
+  const _ConnectionRetry({required this.error});
+
+  final AppError error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      key: const Key('session.connectionRetry'),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.wifi_off_rounded, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                ErrorPresenter.message(error),
+                key: const Key('session.connectionRetry.message'),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                key: const Key('session.connectionRetry.button'),
+                onPressed: () => unawaited(
+                  ref.read(sessionControllerProvider.notifier).retry(),
+                ),
+                child: const Text('إعادة المحاولة'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                key: const Key('session.connectionRetry.signOut'),
+                onPressed: () => unawaited(
+                  ref.read(sessionControllerProvider.notifier).signOut(),
+                ),
+                child: const Text(
+                  'تسجيل الدخول '
+                  'بحساب آخر',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

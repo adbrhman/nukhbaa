@@ -238,8 +238,19 @@ class _UpdateProgressDialog extends StatefulWidget {
 class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
   StreamSubscription<UpdateProgress>? _sub;
   // Guards against a double Navigator.pop: the plugin's terminal stream
-  // event and the user's Cancel tap can otherwise both fire.
+  // event, the user's Cancel tap, the stream closing and the watchdog can
+  // otherwise all fire.
   bool _settled = false;
+
+  /// Bounds the whole dialog. `ota_update` can close its stream without ever
+  /// emitting a terminal event -- the usual shape once the platform installer
+  /// takes over at `installing` -- and it can also simply go quiet mid
+  /// download. This dialog is `barrierDismissible: false` and offers a
+  /// control only while downloading, so before this bound existed there was
+  /// no way out of it at all: the app had to be killed.
+  static const Duration _silenceTimeout = Duration(seconds: 90);
+  Timer? _watchdog;
+
   UpdateProgress _current = const UpdateProgress(
     UpdatePhase.downloading,
     percent: 0,
@@ -248,25 +259,53 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
   @override
   void initState() {
     super.initState();
-    _sub = widget.stream.listen((p) {
-      if (!mounted || _settled) return;
-      setState(() => _current = p);
-      if (p.isTerminal) {
-        final delay = p.phase == UpdatePhase.completed
-            ? const Duration(milliseconds: 600)
-            : Duration.zero;
-        Future<void>.delayed(delay, () {
-          if (mounted && !_settled) {
-            _settled = true;
-            Navigator.of(context).pop(p.phase);
-          }
-        });
-      }
-    });
+    _armWatchdog();
+    _sub = widget.stream.listen(
+      (p) {
+        if (!mounted || _settled) return;
+        setState(() => _current = p);
+        if (p.isTerminal) {
+          final delay = p.phase == UpdatePhase.completed
+              ? const Duration(milliseconds: 600)
+              : Duration.zero;
+          Future<void>.delayed(delay, () => _settle(p.phase));
+        } else {
+          _armWatchdog();
+        }
+      },
+      // An error on the plugin's stream used to reach nobody: the dialog kept
+      // spinning and the zone reported an unhandled error.
+      onError: (Object error) => _settle(UpdatePhase.failed),
+      onDone: () {
+        if (_settled || _current.isTerminal) return;
+        // Closed with no terminal event. `installing` means the platform
+        // installer is already up (the parent treats it as a non-failure);
+        // anything else is a failure worth the browser fallback.
+        _settle(
+          _current.phase == UpdatePhase.installing
+              ? UpdatePhase.installing
+              : UpdatePhase.failed,
+        );
+      },
+    );
+  }
+
+  void _armWatchdog() {
+    _watchdog?.cancel();
+    _watchdog = Timer(_silenceTimeout, () => _settle(UpdatePhase.failed));
+  }
+
+  /// Closes the dialog exactly once, handing [phase] back to the parent.
+  void _settle(UpdatePhase phase) {
+    if (_settled || !mounted) return;
+    _settled = true;
+    _watchdog?.cancel();
+    Navigator.of(context).pop(phase);
   }
 
   @override
   void dispose() {
+    _watchdog?.cancel();
     _sub?.cancel();
     super.dispose();
   }
@@ -317,12 +356,17 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
               // Best-effort native cancel — never let the UI hang
               // waiting for a terminal event the plugin might not send.
               unawaited(widget.onCancel());
-              if (!_settled && mounted) {
-                _settled = true;
-                Navigator.of(context).pop(UpdatePhase.cancelled);
-              }
+              _settle(UpdatePhase.cancelled);
             },
             child: const Text('إلغاء'),
+          )
+        else
+          // Verifying/installing offered no control at all, so a plugin that
+          // went quiet left a dialog the user could not dismiss.
+          TextButton(
+            key: const Key('update.progress.close'),
+            onPressed: () => _settle(_current.phase),
+            child: const Text('إغلاق'),
           ),
       ],
     );
