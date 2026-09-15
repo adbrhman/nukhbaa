@@ -1,10 +1,10 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/leaderboard/ports/fixture_totals_reader.dart';
 import 'package:application/src/leaderboard/ports/rank_snapshot_reader.dart';
 import 'package:application/src/ledger/ports/participant_reader.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
-import 'package:application/src/scoring/ports/fixture_score_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -41,20 +41,20 @@ final class GetSeasonFixtureLeaderboard {
   const GetSeasonFixtureLeaderboard({
     required CompetitionRepository competitionRepository,
     required FixturePredictionRepository fixturePredictionRepository,
-    required FixtureScoreRepository fixtureScoreRepository,
+    required FixtureTotalsReader fixtureTotalsReader,
     required FixtureScheduleRepository fixtureScheduleRepository,
     required ParticipantReader participantReader,
     required RankSnapshotReader rankSnapshotReader,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
-       _fixtureScores = fixtureScoreRepository,
+       _fixtureTotals = fixtureTotalsReader,
        _schedules = fixtureScheduleRepository,
        _participants = participantReader,
        _rankSnapshots = rankSnapshotReader;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
-  final FixtureScoreRepository _fixtureScores;
+  final FixtureTotalsReader _fixtureTotals;
   final FixtureScheduleRepository _schedules;
   final ParticipantReader _participants;
   final RankSnapshotReader _rankSnapshots;
@@ -126,23 +126,18 @@ final class GetSeasonFixtureLeaderboard {
           .toList(growable: false);
     }
 
-    final List<ParticipantFixtureScore> scores;
-    if (fixtures.isEmpty) {
-      scores = const <ParticipantFixtureScore>[];
-    } else {
-      final scoresResult = await _fixtureScores.listBySeasonFixtures(fixtures);
-      if (scoresResult is Err<List<ParticipantFixtureScore>>) {
-        return Result.err(scoresResult.error);
-      }
-      scores = (scoresResult as Ok<List<ParticipantFixtureScore>>).value;
+    final totalsResult = await _fixtureTotals.totalsFor(fixtures);
+    if (totalsResult is Err<List<ParticipantFixtureTotals>>) {
+      return Result.err(totalsResult.error);
     }
+    final totals = (totalsResult as Ok<List<ParticipantFixtureTotals>>).value;
 
     // Resolve each scored participant's display name so the board shows a
     // real name instead of a raw id (mirrors the season-standings VIEW's
     // identity.users join, without a VIEW to join through here since this
     // board is aggregated in-memory from live fixture scores).
     final participantIds = <ParticipantId>{
-      for (final score in scores) score.participantId,
+      for (final line in totals) line.participantId,
     }.toList(growable: false);
     final namesResult = await _participants.findDisplayNames(participantIds);
     if (namesResult is Err<Map<String, String>>) {
@@ -177,9 +172,9 @@ final class GetSeasonFixtureLeaderboard {
       };
     }
 
-    return FixtureLeaderboard.rank(
+    return FixtureLeaderboard.rankTotals(
       seasonId: sId,
-      scores: scores,
+      totals: totals,
       displayNames: displayNames,
       previousRanks: previousRanks,
       avatarUserIds: {

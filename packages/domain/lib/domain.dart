@@ -47,6 +47,7 @@ export 'src/identity/user.dart';
 export 'src/identity/user_id.dart';
 export 'src/leaderboard/fixture_leaderboard.dart';
 export 'src/leaderboard/fixture_leaderboard_entry.dart';
+export 'src/leaderboard/participant_fixture_totals.dart';
 export 'src/leaderboard/hall_of_fame.dart';
 export 'src/leaderboard/hall_of_fame_entry.dart';
 export 'src/leaderboard/leaderboard_entry.dart';

@@ -74,6 +74,7 @@ export 'src/leaderboard/get_season_leaderboard.dart';
 export 'src/leaderboard/get_sporting_season_leaderboard.dart';
 export 'src/leaderboard/list_my_season_records.dart';
 export 'src/leaderboard/ports/leaderboard_repository.dart';
+export 'src/leaderboard/ports/fixture_totals_reader.dart';
 export 'src/leaderboard/ports/rank_snapshot_reader.dart';
 export 'src/leaderboard/ports/sporting_season_standings_reader.dart';
 export 'src/ledger/ports/fixture_ledger_repository.dart';

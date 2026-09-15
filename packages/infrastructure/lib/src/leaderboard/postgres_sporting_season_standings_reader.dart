@@ -5,9 +5,10 @@ import 'package:shared/shared.dart';
 
 /// Postgres adapter for [SportingSeasonStandingsReader].
 ///
-/// Sums `leaderboard.season_fixture_standings` (migration 0034, the same
-/// per-month fixture store the monthly board and the daily snapshot read)
-/// across every monthly contest of the season, per user. A monthly contest
+/// Sums `scoring.fixture_scores` (the store the monthly board reads, with
+/// the grade buckets of migration 0034) across every monthly contest of
+/// the season, per user; months are selected first so only their
+/// participants and scores are touched. A monthly contest
 /// is identified by its `MM/YYYY` label -- the same rule `GET /months`
 /// applies -- and the label, not the stored instants, decides which season a
 /// month belongs to, so no time-zone offset can move a month across the
@@ -31,18 +32,21 @@ WITH months AS (
          END AS month_key
   FROM competition.seasons
 )
-SELECT p.user_id::text                          AS user_id,
-       max(u.display_name)                      AS display_name,
-       sum(f.total_points)::bigint              AS total_points,
-       sum(f.fixtures_scored)::bigint           AS fixtures_scored,
-       sum(f.exact_count)::bigint               AS exact_count,
-       sum(f.decided_count)::bigint             AS decided_count,
-       count(DISTINCT f.season_id)::bigint      AS months_played
-FROM leaderboard.season_fixture_standings f
-JOIN months m
-  ON m.id = f.season_id
+SELECT p.user_id::text                                        AS user_id,
+       max(u.display_name)                                    AS display_name,
+       sum(fs.points)::bigint                                 AS total_points,
+       count(*)::bigint                                       AS fixtures_scored,
+       count(*) FILTER (WHERE fs.grade = 'exact_scoreline')::bigint
+                                                              AS exact_count,
+       count(*) FILTER (
+         WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
+       )::bigint                                              AS decided_count,
+       count(DISTINCT p.season_id)::bigint                    AS months_played
+FROM months m
 JOIN competition.participants p
-  ON p.id = f.participant_id
+  ON p.season_id = m.id
+JOIN scoring.fixture_scores fs
+  ON fs.participant_id = p.id
 JOIN identity.users u
   ON u.id = p.user_id
 WHERE m.month_key BETWEEN @first_key AND @last_key

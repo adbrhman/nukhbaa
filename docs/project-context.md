@@ -2571,6 +2571,26 @@ Additive only; no new dependency, no new internal package, no migration.
   records and groups moved under `الإعدادات`. No language row: the app locale
   is fixed to Arabic.
 
+### Capacity on the free plans (2026-09-16)
+
+- Monthly/day board: `GetSeasonFixtureLeaderboard` reads per-participant sums
+  through the new port `FixtureTotalsReader`
+  (`PostgresFixtureTotalsReader`, `GROUP BY participant_id` on
+  `scoring.fixture_scores`) and ranks them with
+  `FixtureLeaderboard.rankTotals` -- one row per player instead of one row
+  per player per fixture. `FixtureLeaderboard.rank` stays for tests and the
+  equivalence test pins both to the same board.
+- Season board SQL now filters months first and joins
+  participants -> fixture_scores by index instead of scanning the view.
+- In-process TTL caches (`CachedFixtureTotalsReader` 30 s,
+  `CachedSportingSeasonStandingsReader` 60 s); failures are never cached; a
+  newly scored result can take up to the TTL to appear.
+- `.github/workflows/db-backup.yml`: daily `supabase db dump` (roles, schema,
+  data, auth data), tar + gpg AES-256, kept 90 days as an artifact (public
+  repo: never committed). Secrets `SUPABASE_DB_URL` (session pooler) and
+  `BACKUP_PASSPHRASE`. Fails -- and emails -- when the database reaches
+  400 MB of the Free plan's 500 MB.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -2,6 +2,7 @@ import 'package:domain/src/competition/participant_id.dart';
 import 'package:domain/src/competition/season_id.dart';
 import 'package:domain/src/identity/user_id.dart';
 import 'package:domain/src/leaderboard/fixture_leaderboard_entry.dart';
+import 'package:domain/src/leaderboard/participant_fixture_totals.dart';
 import 'package:domain/src/scoring/fixture_score_result.dart';
 import 'package:domain/src/scoring/participant_fixture_score.dart';
 import 'package:shared/shared.dart';
@@ -133,6 +134,69 @@ final class FixtureLeaderboard {
 
   /// The total order over entries: points descending, then participant id
   /// ascending (a stable, total tie-break).
+  /// Builds the same ranked board from [totals] the store already summed per
+  /// participant -- the production path, so the individual score rows never
+  /// leave the database. Ordering, tie-breaks and ranks are exactly
+  /// [rank]'s. A participant listed twice is an invariant breach (the store
+  /// groups by participant), never silently merged.
+  static Result<FixtureLeaderboard> rankTotals({
+    required SeasonId seasonId,
+    required List<ParticipantFixtureTotals> totals,
+    required Map<String, String> displayNames,
+    Map<String, int> previousRanks = const <String, int>{},
+    Map<String, UserId> avatarUserIds = const <String, UserId>{},
+    Map<String, DateTime> avatarUpdatedAt = const <String, DateTime>{},
+  }) {
+    final seen = <String>{};
+    for (final line in totals) {
+      if (!seen.add(line.participantId.value)) {
+        return Result.err(
+          AppError.invariant(
+            'fixture_leaderboard.duplicate_participant',
+            'Participant ${line.participantId.value} appears more than once '
+                'in the fixture totals',
+          ),
+        );
+      }
+    }
+
+    final ordered = <FixtureLeaderboardEntry>[
+      for (final line in totals)
+        FixtureLeaderboardEntry.aggregate(
+          participantId: line.participantId,
+          displayName: displayNames[line.participantId.value] ?? '?',
+          totalPoints: line.totalPoints,
+          fixturesScored: line.fixturesScored,
+          exactCount: line.exactCount,
+          decidedCount: line.decidedCount,
+          previousRank: previousRanks[line.participantId.value],
+          avatarUserId: avatarUserIds[line.participantId.value],
+          avatarUpdatedAt: avatarUpdatedAt[line.participantId.value],
+        ),
+    ]..sort(_compare);
+
+    final ranked = <FixtureLeaderboardEntry>[];
+    for (var i = 0; i < ordered.length; i++) {
+      final entry = ordered[i];
+      final int assigned =
+          i > 0 && ordered[i - 1].totalPoints == entry.totalPoints
+          ? ranked[i - 1].rank
+          : i + 1;
+      final placed = entry.withRank(assigned);
+      if (placed is Err<FixtureLeaderboardEntry>) {
+        return Result.err(placed.error);
+      }
+      ranked.add((placed as Ok<FixtureLeaderboardEntry>).value);
+    }
+
+    return Result.ok(
+      FixtureLeaderboard._(
+        seasonId: seasonId,
+        entries: List<FixtureLeaderboardEntry>.unmodifiable(ranked),
+      ),
+    );
+  }
+
   static int _compare(FixtureLeaderboardEntry a, FixtureLeaderboardEntry b) {
     final byPoints = b.totalPoints.compareTo(a.totalPoints);
     if (byPoints != 0) {

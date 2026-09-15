@@ -619,7 +619,7 @@ final class CompositionRoot {
       GetSeasonFixtureLeaderboard(
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
-        fixtureScoreRepository: _unwiredFixtureScoreRepository,
+        fixtureTotalsReader: _UnwiredFixtureTotalsReader(),
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
         participantReader: _unwiredParticipantReader,
         rankSnapshotReader: _unwiredRankSnapshotReader,
@@ -1630,7 +1630,9 @@ final class CompositionRoot {
       getSeasonFixtureLeaderboard: GetSeasonFixtureLeaderboard(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
-        fixtureScoreRepository: fixtureScoreRepository,
+        fixtureTotalsReader: CachedFixtureTotalsReader(
+          PostgresFixtureTotalsReader(connection),
+        ),
         fixtureScheduleRepository: fixtureScheduleRepository,
         participantReader: participantReader, // already built (Ledger slice)
         rankSnapshotReader: PostgresRankSnapshotReader(connection),
@@ -1650,7 +1652,9 @@ final class CompositionRoot {
         leaderboardRepository: leaderboardRepository,
       ),
       getSportingSeasonLeaderboard: GetSportingSeasonLeaderboard(
-        reader: PostgresSportingSeasonStandingsReader(connection),
+        reader: CachedSportingSeasonStandingsReader(
+          PostgresSportingSeasonStandingsReader(connection),
+        ),
         clock: clock,
       ),
       createGroup: CreateGroup(
@@ -2011,7 +2015,15 @@ final class _UnwiredIdGenerator implements IdGenerator {
       throw StateError('A competition use-case was not wired into this root');
 }
 
-/// Backs "absent" competition use-cases' clock.
+final class _UnwiredFixtureTotalsReader implements FixtureTotalsReader {
+  @override
+  Future<Result<List<ParticipantFixtureTotals>>> totalsFor(
+    List<FixtureRef> fixtures,
+  ) => throw StateError(
+    'GetSeasonFixtureLeaderboard was not wired into this root',
+  );
+}
+
 final class _UnwiredSportingSeasonStandingsReader
     implements SportingSeasonStandingsReader {
   @override
@@ -2022,6 +2034,7 @@ final class _UnwiredSportingSeasonStandingsReader
   );
 }
 
+/// Backs "absent" competition use-cases' clock.
 final class _UnwiredClock implements Clock {
   @override
   DateTime nowUtc() =>
