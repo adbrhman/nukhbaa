@@ -2585,7 +2585,7 @@ Additive only; no new dependency, no new internal package, no migration.
 - In-process TTL caches (`CachedFixtureTotalsReader` 30 s,
   `CachedSportingSeasonStandingsReader` 60 s); failures are never cached; a
   newly scored result can take up to the TTL to appear.
-- `.github/workflows/db-backup.yml`: daily `supabase db dump` (roles, schema,
+- `.github/workflows/db-backup.yml`: weekly (Tuesday 01:30 UTC) `supabase db dump` (roles, schema,
   data, auth data), tar + gpg AES-256, kept 90 days as an artifact (public
   repo: never committed). Secrets `SUPABASE_DB_URL` (session pooler) and
   `BACKUP_PASSPHRASE`. Fails -- and emails -- when the database reaches

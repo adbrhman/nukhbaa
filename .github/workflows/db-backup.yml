@@ -1,4 +1,6 @@
-# Daily encrypted backup of the Supabase database (the Free plan has none).
+# Weekly encrypted backup of the Supabase database (the Free plan has none),
+# every Tuesday 01:30 UTC -- weekly keeps the dump inside the Free plan
+# egress quota as the database grows. Run it by hand before risky changes.
 #
 # Required repository secrets (Settings > Secrets and variables > Actions):
 #   SUPABASE_DB_URL    Session pooler connection string (IPv4), port 5432:
@@ -18,7 +20,7 @@ name: db-backup
 
 on:
   schedule:
-    - cron: '30 1 * * *'
+    - cron: '30 1 * * 2'
   workflow_dispatch:
 
 permissions:
