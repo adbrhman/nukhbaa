@@ -38,10 +38,43 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   String? _fixtureId;
 
   @override
+  void initState() {
+    super.initState();
+    // The record button's enabled state depends on these two fields, and a
+    // TextEditingController does not rebuild anything on its own -- so the
+    // button has to be told when the score is typed.
+    _homeGoals.addListener(_onGoalsChanged);
+    _awayGoals.addListener(_onGoalsChanged);
+  }
+
+  void _onGoalsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _homeGoals.removeListener(_onGoalsChanged);
+    _awayGoals.removeListener(_onGoalsChanged);
     _homeGoals.dispose();
     _awayGoals.dispose();
     super.dispose();
+  }
+
+  /// A controller can only ever surface an [AppError], but an unconditional
+  /// cast turns any other failure into a red screen on an admin's phone
+  /// instead of a message they can read and report.
+  AppError _asAppError(Object? error) => error is AppError
+      ? error
+      : const AppError.transient(
+          'client.unexpected',
+          'Something went wrong. Please try again.',
+        );
+
+  /// Whether the two score fields currently hold a recordable result.
+  bool get _goalsAreValid {
+    final int? home = int.tryParse(_homeGoals.text.trim());
+    final int? away = int.tryParse(_awayGoals.text.trim());
+    return home != null && away != null && home >= 0 && away >= 0;
   }
 
   void _recordResult() {
@@ -87,7 +120,11 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     final resultInFlight = resultState is AsyncLoading;
     final fixtureReportInFlight = fixtureReportState is AsyncLoading;
 
-    final bool canRecord = !resultInFlight && _fixtureId != null;
+    // Was `!resultInFlight && _fixtureId != null`: with an empty or
+    // non-numeric score the button stayed live, and tapping it returned
+    // silently from _recordResult with nothing on screen to explain why.
+    final bool canRecord =
+        !resultInFlight && _fixtureId != null && _goalsAreValid;
     final bool canScoreFixture =
         _fixtureId != null && scoreFixtureState is! AsyncLoading;
     final bool canPostFixtureLedger =
@@ -166,7 +203,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (resultState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    resultState!.error as AppError,
+                    _asAppError(resultState!.error),
                   ),
                 ),
               if (resultState is AsyncData)
@@ -185,7 +222,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (scoreFixtureState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    scoreFixtureState!.error as AppError,
+                    _asAppError(scoreFixtureState!.error),
                   ),
                 ),
               if (scoreFixtureState is AsyncData<FixtureScoresDto>)
@@ -197,7 +234,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (postFixtureLedgerState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    postFixtureLedgerState!.error as AppError,
+                    _asAppError(postFixtureLedgerState!.error),
                   ),
                 ),
               if (postFixtureLedgerState
@@ -236,7 +273,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               if (fixtureReportState is AsyncError)
                 AdminErrorBanner(
                   message: ErrorPresenter.message(
-                    fixtureReportState!.error as AppError,
+                    _asAppError(fixtureReportState!.error),
                   ),
                 ),
               if (fixtureReportState is AsyncError)

@@ -46,23 +46,28 @@ class ResolvedTeamIdentity {
 
 /// Resolves [teamId] (a fixture's `home_team_id`/`away_team_id`, when
 /// present) against [catalog], falling back to [teamName]-based lookup.
+/// [catalogById] is the same catalog already indexed by id
+/// (`teamCatalogByIdProvider`) and is preferred when given: a screen drawing
+/// many fixtures at once should not pay a linear scan per team per rebuild.
+/// [catalog] remains for callers that only hold the plain list.
 ResolvedTeamIdentity resolveTeamIdentity({
   required List<TeamDto>? catalog,
+  Map<String, TeamDto>? catalogById,
   String? teamId,
   String? teamName,
 }) {
-  if (teamId != null && catalog != null) {
-    for (final TeamDto team in catalog) {
-      if (team.id == teamId) {
-        return ResolvedTeamIdentity(
-          displayName: team.name,
-          crestUrl: team.crestUrl,
-          assetPath:
-              teamLogoAssetPath(team.name) ?? teamLogoAssetPath(teamName),
-          brandColor: brandingForTeam(team.name).primary,
-        );
-      }
-    }
+  final TeamDto? matched = _matchById(
+    catalog: catalog,
+    catalogById: catalogById,
+    teamId: teamId,
+  );
+  if (matched != null) {
+    return ResolvedTeamIdentity(
+      displayName: matched.name,
+      crestUrl: matched.crestUrl,
+      assetPath: teamLogoAssetPath(matched.name) ?? teamLogoAssetPath(teamName),
+      brandColor: brandingForTeam(matched.name).primary,
+    );
   }
   final TeamBrand? brand = lookupTeam(teamName);
   final String fallbackName = teamName?.trim().isNotEmpty == true
@@ -74,4 +79,20 @@ ResolvedTeamIdentity resolveTeamIdentity({
     assetPath: teamLogoAssetPath(teamName),
     brandColor: brand?.c1 ?? brandingForTeam(fallbackName).primary,
   );
+}
+
+/// The catalog entry for [teamId], from the indexed catalog when one was
+/// supplied and from a scan of the plain list otherwise.
+TeamDto? _matchById({
+  required List<TeamDto>? catalog,
+  required Map<String, TeamDto>? catalogById,
+  required String? teamId,
+}) {
+  if (teamId == null) return null;
+  if (catalogById != null) return catalogById[teamId];
+  if (catalog == null) return null;
+  for (final TeamDto team in catalog) {
+    if (team.id == teamId) return team;
+  }
+  return null;
 }

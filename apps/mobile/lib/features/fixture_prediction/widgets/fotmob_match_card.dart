@@ -80,13 +80,13 @@ import '../../../core/ui/score_pill.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_logo_assets.dart';
+import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
-import '../../competition/teams_providers.dart';
 import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
-import '../current_month_fixtures_providers.dart';
+import '../feed_refresh_signal.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
 import 'live_matches_chip.dart';
@@ -122,6 +122,36 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   FixturePredictionController? _saveTarget;
 
   SeasonFixtureCardDto get _fixture => widget.item.fixture;
+
+  @override
+  void initState() {
+    super.initState();
+    // The history is usually already cached by the time a card is built, and
+    // reading it here rather than in build() is what keeps the prefill out of
+    // the build phase entirely.
+    _applyPrefill(
+      ref
+          .read(myFixturePredictionsByFixtureProvider)
+          .value?[_fixture.fixtureId],
+    );
+  }
+
+  /// Fills the steppers from an existing [prediction], exactly once.
+  ///
+  /// Never from build(): writing a `ValueNotifier` there notifies the
+  /// `ListenableBuilder` below in the middle of the frame that is building it,
+  /// and `_isDouble` was being changed with no `setState` at all. The two
+  /// entry points are [initState] (the prediction was already cached) and the
+  /// `ref.listen` in build (it arrived later). Returns whether anything
+  /// changed, so the caller can decide about repainting.
+  bool _applyPrefill(FixturePredictionDto? prediction) {
+    if (_prefilledFromPrediction || prediction == null) return false;
+    _prefilledFromPrediction = true;
+    _homeGoals.value = prediction.homeGoals;
+    _awayGoals.value = prediction.awayGoals;
+    _isDouble = prediction.isDouble;
+    return true;
+  }
 
   /// The list now keys every card by fixture id, so a State should never
   /// outlive its fixture. This is the second guard: if a card is ever handed
@@ -179,7 +209,24 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     _scheduleAutoSave();
   }
 
-  void _scheduleAutoSave() {
+  /// How many times a save may reschedule itself before the card gives up.
+  ///
+  /// The reschedule covers two legitimate races -- a submit already in flight,
+  /// and a server that ended up holding values older than the ones on screen
+  /// -- and both settle within a round or two. Unbounded, a disagreement that
+  /// never resolved (the server storing something other than what was sent)
+  /// became one submit every 250 ms for as long as the card stayed visible.
+  static const int _maxAutoSaveRetries = 4;
+  int _autoSaveRetries = 0;
+
+  void _scheduleAutoSave({bool isRetry = false}) {
+    if (isRetry) {
+      if (_autoSaveRetries >= _maxAutoSaveRetries) return;
+      _autoSaveRetries++;
+    } else {
+      // A fresh tap is not a retry: it restarts the budget.
+      _autoSaveRetries = 0;
+    }
     final int? home = _homeGoals.value;
     final int? away = _awayGoals.value;
     if (home == null || away == null || _isLocked) return;
@@ -198,7 +245,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
     if (ref.read(fixturePredictionControllerProvider(_key))
         is FixtureSubmissionInFlight) {
-      _scheduleAutoSave();
+      _scheduleAutoSave(isRetry: true);
       return;
     }
 
@@ -218,7 +265,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       if (saved.homeGoals != _homeGoals.value ||
           saved.awayGoals != _awayGoals.value ||
           saved.isDouble != _isDouble) {
-        _scheduleAutoSave();
+        _scheduleAutoSave(isRetry: true);
       }
     }
   }
@@ -291,10 +338,22 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       (previous, next) {
         if (next is FixtureSubmissionSucceeded) {
           ref.invalidate(myFixturePredictionsProvider);
-          // The win shares now ride along with the feed, so refreshing them
-          // after your own vote means refreshing the feed. Still one request,
-          // and it also picks up any fixture the admin added meanwhile.
-          ref.invalidate(currentMonthFixturesProvider);
+          // The win shares ride along with the feed, so refreshing them after
+          // your own vote used to mean refetching the entire month here --
+          // once per saved prediction. Raise a flag instead; the screen's
+          // minute tick and pull-to-refresh are what actually reload it.
+          ref.read(feedRefreshSignalProvider.notifier).request();
+        }
+      },
+    );
+
+    // The prediction history can resolve after this card is already on
+    // screen; that is the only case initState cannot cover.
+    ref.listen<AsyncValue<Map<String, FixturePredictionDto>>>(
+      myFixturePredictionsByFixtureProvider,
+      (previous, next) {
+        if (_applyPrefill(next.value?[_fixture.fixtureId]) && mounted) {
+          setState(() {});
         }
       },
     );
@@ -331,15 +390,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
         myGrade == 'exact_scoreline' ||
         myGrade == 'correct_outcome' ||
         myGrade == 'incorrect';
-
-    // One-time prefill from an existing prediction — guarded so it never
-    // clobbers an edit already in progress once the async read resolves.
-    if (!_prefilledFromPrediction && myPrediction != null) {
-      _homeGoals.value = myPrediction.homeGoals;
-      _awayGoals.value = myPrediction.awayGoals;
-      _isDouble = myPrediction.isDouble;
-      _prefilledFromPrediction = true;
-    }
 
     final bool showEditableControls = !locked && !isGraded;
     // Interactivity must NOT depend on an in-flight submit. The auto-save is
@@ -379,14 +429,16 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
     final String fixtureId = _fixture.fixtureId;
 
-    final catalog = ref.watch(teamCatalogProvider).value;
+    final catalogById = ref.watch(teamCatalogByIdProvider);
     final ResolvedTeamIdentity home = resolveTeamIdentity(
-      catalog: catalog,
+      catalog: null,
+      catalogById: catalogById,
       teamId: _fixture.homeTeamId,
       teamName: _fixture.homeTeam,
     );
     final ResolvedTeamIdentity away = resolveTeamIdentity(
-      catalog: catalog,
+      catalog: null,
+      catalogById: catalogById,
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );

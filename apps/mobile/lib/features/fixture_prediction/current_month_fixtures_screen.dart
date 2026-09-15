@@ -47,6 +47,7 @@ import '../../core/error/error_presenter.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/prediction_history_providers.dart';
 import 'current_month_fixtures_providers.dart';
+import 'feed_refresh_signal.dart';
 import 'widgets/fixtures_calendar_page.dart';
 import 'widgets/fixtures_date_bar.dart';
 import 'widgets/fotmob_match_card.dart';
@@ -87,7 +88,14 @@ class _CurrentMonthFixturesScreenState
   void initState() {
     super.initState();
     _clockTick = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      // One coalesced feed read per minute, instead of one per saved
+      // prediction (see feed_refresh_signal.dart).
+      if (ref.read(feedRefreshSignalProvider)) {
+        ref.read(feedRefreshSignalProvider.notifier).consume();
+        ref.invalidate(currentMonthFixturesProvider);
+      }
+      setState(() {});
     });
   }
 
@@ -153,6 +161,7 @@ class _CurrentMonthFixturesScreenState
   /// without this a fixture the admin adds during the day never appears
   /// until the app restarts.
   Future<void> _refresh() async {
+    ref.read(feedRefreshSignalProvider.notifier).consume();
     ref.invalidate(currentMonthFixturesProvider);
     ref.invalidate(myFixturePredictionsProvider);
     try {

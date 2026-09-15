@@ -160,10 +160,17 @@ class LeaderboardBoard extends StatelessWidget {
     }
     final String name = myDisplayName?.trim() ?? '';
     if (name.isEmpty) return null;
+    // Display names are not unique, and taking the first match meant a second
+    // user with the same name saw a stranger's row marked as their own, with
+    // the gap-to-leader strip computed from it. Ambiguity is answered with no
+    // highlight at all rather than with the wrong one.
+    BoardEntry? match;
     for (final BoardEntry entry in entries) {
-      if (entry.displayName.trim() == name) return entry;
+      if (entry.displayName.trim() != name) continue;
+      if (match != null) return null;
+      match = entry;
     }
-    return null;
+    return match;
   }
 
   void _showDisabledScope(BuildContext context) {

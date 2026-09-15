@@ -500,7 +500,19 @@ class _AvatarSheetState extends ConsumerState<_AvatarSheet> {
       return;
     }
 
-    final bytes = await picked.readAsBytes();
+    // Reading the picked file is I/O like any other: a photo removed from
+    // the gallery mid-flow, or a revoked read permission, threw straight out
+    // of _pick and left _busy stuck true -- every control in the sheet dead
+    // until the screen was closed and reopened.
+    final List<int> bytes;
+    try {
+      bytes = await picked.readAsBytes();
+    } on Object {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _report(l10n.avatarUploadFailed);
+      return;
+    }
     if (!mounted) return;
 
     final result = await ref

@@ -67,26 +67,32 @@ final adminCountedFixturesProvider = FutureProvider<List<AdminCountedFixture>>((
       })
       .toList(growable: false);
 
-  final loaded = await Future.wait(
-    candidates.map((item) async {
-      final result = await adminApi.adminGetFixtureScores(
-        item.fixture.fixtureId,
-      );
-      return switch (result) {
-        Ok<FixtureScoresDto>(:final value) when value.scores.isNotEmpty =>
-          AdminCountedFixture(
-            item: item,
-            predictionsCount: value.scores.length,
-          ),
-        Ok<FixtureScoresDto>() => null,
-        Err<FixtureScoresDto>(:final error) => throw error,
-      };
-    }),
-  );
-
-  final counted = loaded.whereType<AdminCountedFixture>().toList(
-    growable: true,
-  );
+  // One request per already-played fixture, in small batches rather than all
+  // at once: late in the month this fanned out sixty-plus simultaneous
+  // requests from a phone, and a single failure among them threw away every
+  // successful answer with it. A fixture that will not report is left out of
+  // the list instead -- an incomplete section beats an empty one.
+  const int batchSize = 6;
+  final counted = <AdminCountedFixture>[];
+  for (var start = 0; start < candidates.length; start += batchSize) {
+    final batch = await Future.wait(
+      candidates.skip(start).take(batchSize).map((item) async {
+        final result = await adminApi.adminGetFixtureScores(
+          item.fixture.fixtureId,
+        );
+        return switch (result) {
+          Ok<FixtureScoresDto>(:final value) when value.scores.isNotEmpty =>
+            AdminCountedFixture(
+              item: item,
+              predictionsCount: value.scores.length,
+            ),
+          Ok<FixtureScoresDto>() => null,
+          Err<FixtureScoresDto>() => null,
+        };
+      }),
+    );
+    counted.addAll(batch.whereType<AdminCountedFixture>());
+  }
   counted.sort((a, b) {
     final aDate = DateTime.tryParse(a.item.fixture.kickoffAt ?? '');
     final bDate = DateTime.tryParse(b.item.fixture.kickoffAt ?? '');
