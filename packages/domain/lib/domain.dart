@@ -54,6 +54,7 @@ export 'src/leaderboard/participant_season_record.dart';
 export 'src/leaderboard/round_leaderboard.dart';
 export 'src/leaderboard/round_leaderboard_entry.dart';
 export 'src/leaderboard/season_leaderboard.dart';
+export 'src/leaderboard/sporting_season_leaderboard.dart';
 export 'src/ledger/entry_kind.dart';
 export 'src/ledger/fixture_point_entry.dart';
 export 'src/ledger/ledger_balance.dart';

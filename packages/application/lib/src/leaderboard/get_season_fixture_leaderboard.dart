@@ -1,4 +1,5 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/leaderboard/ports/rank_snapshot_reader.dart';
 import 'package:application/src/ledger/ports/participant_reader.dart';
@@ -27,6 +28,13 @@ import 'package:shared/shared.dart';
 /// member keeps their competitive record). A non-member is refused
 /// [ErrorKind.authorization] `leaderboard.not_a_participant`.
 ///
+/// **Optional kickoff window** ([fromUtc] inclusive, [toUtc] exclusive):
+/// narrows the board to the season's fixtures kicking off inside it -- the
+/// "today" board. The points are still the ones `ScoreFixture` stored; the
+/// window only selects which of them are summed. A windowed board carries no
+/// movement arrows: the daily snapshot ranks the whole month, so comparing a
+/// single day against it would print arrows that mean nothing.
+///
 /// Never throws; returns a typed [Result].
 final class GetSeasonFixtureLeaderboard {
   /// Creates the use-case over its collaborators.
@@ -34,17 +42,20 @@ final class GetSeasonFixtureLeaderboard {
     required CompetitionRepository competitionRepository,
     required FixturePredictionRepository fixturePredictionRepository,
     required FixtureScoreRepository fixtureScoreRepository,
+    required FixtureScheduleRepository fixtureScheduleRepository,
     required ParticipantReader participantReader,
     required RankSnapshotReader rankSnapshotReader,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _fixtureScores = fixtureScoreRepository,
+       _schedules = fixtureScheduleRepository,
        _participants = participantReader,
        _rankSnapshots = rankSnapshotReader;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScoreRepository _fixtureScores;
+  final FixtureScheduleRepository _schedules;
   final ParticipantReader _participants;
   final RankSnapshotReader _rankSnapshots;
 
@@ -53,11 +64,19 @@ final class GetSeasonFixtureLeaderboard {
   Future<Result<FixtureLeaderboard>> call({
     required AuthenticatedUser principal,
     required String seasonId,
+    DateTime? fromUtc,
+    DateTime? toUtc,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
+
+    final rangeError = _validateWindow(fromUtc, toUtc);
+    if (rangeError != null) {
+      return Result.err(rangeError);
+    }
+    final bool windowed = fromUtc != null && toUtc != null;
 
     final seasonIdResult = SeasonId.tryParse(seasonId);
     if (seasonIdResult is Err<SeasonId>) {
@@ -88,13 +107,35 @@ final class GetSeasonFixtureLeaderboard {
     if (fixturesResult is Err<List<FixtureRef>>) {
       return Result.err(fixturesResult.error);
     }
-    final fixtures = (fixturesResult as Ok<List<FixtureRef>>).value;
+    final seasonFixtures = (fixturesResult as Ok<List<FixtureRef>>).value;
 
-    final scoresResult = await _fixtureScores.listBySeasonFixtures(fixtures);
-    if (scoresResult is Err<List<ParticipantFixtureScore>>) {
-      return Result.err(scoresResult.error);
+    var fixtures = seasonFixtures;
+    if (fromUtc != null && toUtc != null && seasonFixtures.isNotEmpty) {
+      final schedulesResult = await _schedules.findByFixtures(seasonFixtures);
+      if (schedulesResult is Err<List<FixtureSchedule>>) {
+        return Result.err(schedulesResult.error);
+      }
+      final inWindow = <String>{
+        for (final schedule
+            in (schedulesResult as Ok<List<FixtureSchedule>>).value)
+          if (_inWindow(schedule.kickoffAt, fromUtc, toUtc))
+            schedule.fixture.value,
+      };
+      fixtures = seasonFixtures
+          .where((fixture) => inWindow.contains(fixture.value))
+          .toList(growable: false);
     }
-    final scores = (scoresResult as Ok<List<ParticipantFixtureScore>>).value;
+
+    final List<ParticipantFixtureScore> scores;
+    if (fixtures.isEmpty) {
+      scores = const <ParticipantFixtureScore>[];
+    } else {
+      final scoresResult = await _fixtureScores.listBySeasonFixtures(fixtures);
+      if (scoresResult is Err<List<ParticipantFixtureScore>>) {
+        return Result.err(scoresResult.error);
+      }
+      scores = (scoresResult as Ok<List<ParticipantFixtureScore>>).value;
+    }
 
     // Resolve each scored participant's display name so the board shows a
     // real name instead of a raw id (mirrors the season-standings VIEW's
@@ -125,11 +166,16 @@ final class GetSeasonFixtureLeaderboard {
     // arrows rather than failing the board: yesterday's ranking is decoration
     // on today's standings, and a decoration must never cost a user the
     // standings themselves.
-    final snapshotResult = await _rankSnapshots.latestRanks(sId);
-    final previousRanks = switch (snapshotResult) {
-      Ok<Map<String, int>>(:final value) => value,
-      Err<Map<String, int>>() => const <String, int>{},
-    };
+    final Map<String, int> previousRanks;
+    if (windowed) {
+      previousRanks = const <String, int>{};
+    } else {
+      final snapshotResult = await _rankSnapshots.latestRanks(sId);
+      previousRanks = switch (snapshotResult) {
+        Ok<Map<String, int>>(:final value) => value,
+        Err<Map<String, int>>() => const <String, int>{},
+      };
+    }
 
     return FixtureLeaderboard.rank(
       seasonId: sId,
@@ -143,5 +189,26 @@ final class GetSeasonFixtureLeaderboard {
         for (final entry in avatars.entries) entry.key: entry.value.updatedAt,
       },
     );
+  }
+
+  static bool _inWindow(DateTime kickoff, DateTime from, DateTime to) {
+    final instant = kickoff.toUtc();
+    return !instant.isBefore(from.toUtc()) && instant.isBefore(to.toUtc());
+  }
+
+  static AppError? _validateWindow(DateTime? fromUtc, DateTime? toUtc) {
+    if ((fromUtc == null) != (toUtc == null)) {
+      return const AppError.validation(
+        'leaderboard.invalid_window',
+        'Both window boundaries are required',
+      );
+    }
+    if (fromUtc != null && toUtc != null && !toUtc.isAfter(fromUtc)) {
+      return const AppError.validation(
+        'leaderboard.invalid_window',
+        'The window must end after it starts',
+      );
+    }
+    return null;
   }
 }

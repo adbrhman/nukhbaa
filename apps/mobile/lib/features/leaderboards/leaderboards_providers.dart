@@ -34,6 +34,7 @@ library;
 
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
@@ -78,3 +79,39 @@ Future<FixtureLeaderboardDto> fixtureLeaderboard(
   final api = ref.watch(leaderboardsApiProvider);
   return _unwrap(await api.fixtureLeaderboard(seasonId));
 }
+
+/// One device-local calendar day of one season: the key of the "today"
+/// board. [day] is midnight-local, so two reads of the same day share one
+/// cache entry however the time of day moved between them.
+typedef DayLeaderboardKey = ({String seasonId, DateTime day});
+
+/// `GET /seasons/{id}/fixture-leaderboard?from=&to=` -- the season's
+/// standings over the fixtures kicking off on one local day, most points
+/// first. The window is the device's local midnight-to-midnight, sent as UTC
+/// instants; the server selects the fixtures and sums the points it already
+/// stored, so nothing is ranked or totalled here.
+final dayFixtureLeaderboardProvider = FutureProvider.autoDispose
+    .family<FixtureLeaderboardDto, DayLeaderboardKey>((ref, key) async {
+      final api = ref.watch(leaderboardsApiProvider);
+      final DateTime start = DateTime(key.day.year, key.day.month, key.day.day);
+      final DateTime end = DateTime(
+        key.day.year,
+        key.day.month,
+        key.day.day + 1,
+      );
+      return _unwrap(
+        await api.fixtureLeaderboard(
+          key.seasonId,
+          fromUtc: start.toUtc(),
+          toUtc: end.toUtc(),
+        ),
+      );
+    });
+
+/// `GET /leaderboard/season` -- the sporting season's standings, the monthly
+/// boards from September to August summed per user by the server.
+final sportingSeasonLeaderboardProvider =
+    FutureProvider.autoDispose<SportingSeasonLeaderboardDto>((ref) async {
+      final api = ref.watch(leaderboardsApiProvider);
+      return _unwrap(await api.sportingSeasonLeaderboard());
+    });

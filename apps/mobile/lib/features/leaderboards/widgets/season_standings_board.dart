@@ -28,12 +28,7 @@ class SeasonStandingsBoard extends ConsumerWidget {
     required this.seasonId,
     required this.keyPrefix,
     this.myDisplayName,
-    this.competitionName,
-    this.seasonLabel,
-    this.startAt,
-    this.endAt,
     this.showHeader = false,
-    this.onBack,
     super.key,
   });
 
@@ -44,12 +39,7 @@ class SeasonStandingsBoard extends ConsumerWidget {
   final String keyPrefix;
 
   final String? myDisplayName;
-  final String? competitionName;
-  final String? seasonLabel;
-  final String? startAt;
-  final String? endAt;
   final bool showHeader;
-  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,13 +54,7 @@ class SeasonStandingsBoard extends ConsumerWidget {
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
         myDisplayName: myDisplayName,
-        competitionName: competitionName,
-        seasonLabel: seasonLabel,
-        startAt: startAt,
-        endAt: endAt,
         showHeader: showHeader,
-        onRefresh: () => ref.invalidate(seasonLeaderboardProvider(seasonId)),
-        onBack: onBack,
         entries: <BoardEntry>[
           for (final LeaderboardEntryDto e in entries)
             BoardEntry(

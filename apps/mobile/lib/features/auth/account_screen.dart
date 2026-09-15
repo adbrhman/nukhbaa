@@ -1,44 +1,42 @@
 library;
 
 import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared/shared.dart';
+
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
-import '../../core/ui/forward_chevron.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
-import '../groups/create_group_screen.dart';
-import '../groups/my_groups_screen.dart';
-import '../groups/join_group_screen.dart';
-import '../record/elite_card_screen.dart';
-import '../record/my_seasons_screen.dart';
-import '../record/season_record_screen.dart';
-import '../record/season_record_providers.dart';
-import '../record/my_points_screen.dart';
-import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
-import '../../core/theme/theme_controller.dart';
+import '../record/elite_card_screen.dart';
+import '../record/my_points_screen.dart';
+import '../record/season_record_providers.dart';
+import 'account_settings_screen.dart';
 import 'session_controller.dart';
+import 'widgets/account_menu.dart';
 
-/// The signed-in user's home hub — a card-based dashboard replacing the flat
-/// button list. Every destination below already existed as a plain
-/// AppButton target; this is a visual restyle only (same providers, same
-/// navigation, same `account.*` keys), not a new architecture or data
-/// source. Cross-season stats ARE shown now, via the elite card: `GET
-/// /me/seasons` is the server-side aggregate whose absence this comment used
-/// to record. Nothing is still fabricated on the client -- every figure on
-/// that card is a fold over rows the server ruled on.
+/// The signed-in user's account tab: a profile card with this month's
+/// figures, the personal destinations, the settings group and sign-out.
+///
+/// Every figure on the profile card is the server's: the current month's row
+/// of `GET /me/seasons`, whose accuracy is computed exactly like the
+/// leaderboard's (exact scorelines over decided fixtures), so the two
+/// screens can never disagree. The admin dashboard row is rendered only for
+/// the `admin` role; the server authorizes every admin call regardless.
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({required this.user, super.key});
   final AuthenticatedUserDto user;
@@ -49,303 +47,170 @@ class AccountScreen extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final MySeasonRecordDto? record = _currentRecord(
+      ref.watch(mySeasonRecordsProvider).value,
+    );
+    final int unreadCount = unread.value ?? 0;
 
-    // Warm the two destinations most likely to be opened from this hub. Both
-    // providers are non-auto-disposed singletons, so this starts the request
-    // once and makes the subsequent navigation feel immediate.
+    // Warm the matches feed: it is the destination most likely to be opened
+    // from here, and the provider is a non-auto-disposed singleton.
     ref.read(currentMonthFixturesProvider);
-    ref.read(mySeasonRecordsProvider);
+
+    void open(Widget page) => Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => page));
 
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(l10n.appTitle, key: const Key('account.title')),
         actions: [
           IconButton(
             key: const Key('account.notifications'),
             tooltip: l10n.notifications,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const NotificationsScreen(),
-              ),
-            ),
+            onPressed: () => open(const NotificationsScreen()),
             icon: Badge(
               key: const Key('account.notifications.badge'),
-              label: unread.maybeWhen(
-                data: (count) => count > 0 ? Text('$count') : null,
-                orElse: () => null,
-              ),
-              isLabelVisible: unread.maybeWhen(
-                data: (count) => count > 0,
-                orElse: () => false,
-              ),
+              label: unreadCount > 0 ? Text('$unreadCount') : null,
+              isLabelVisible: unreadCount > 0,
               child: const Icon(Icons.notifications_outlined),
-            ),
-          ),
-          IconButton(
-            key: const Key('account.signOut'),
-            tooltip: l10n.signOut,
-            icon: const Icon(Icons.logout),
-            onPressed: () => unawaited(
-              ref.read(sessionControllerProvider.notifier).signOut(),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        bottom: true,
         top: false,
-        child: DecoratedBox(
-          decoration: BoxDecoration(gradient: tokens.backgroundGradient),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppSizes.maxAccountWidth,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: AppSizes.maxAccountWidth,
+            ),
+            child: SingleChildScrollView(
+              // The shell's bottom bar floats over the page, so the last
+              // card must be able to scroll clear of it.
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                104,
               ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _ProfileHeader(
-                      displayName: user.displayName,
-                      avatarUrl: user.avatarUrl,
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    const _DarkModeToggle(),
-                    // Raw identity fields (id/role/status/email) are debug-only
-                    // diagnostics, never production UI - kept behind
-                    // kDebugMode instead of deleted so the team can still
-                    // inspect the signed-in principal while developing/testing.
-                    if (kDebugMode) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      _Field(
-                        label: l10n.userId,
-                        value: user.userId,
-                        valueKey: const Key('account.userId'),
-                        tokens: tokens,
-                        text: text,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ProfileCard(
+                    user: user,
+                    record: record,
+                    tokens: tokens,
+                    text: text,
+                    l10n: l10n,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AccountMenuCard(
+                    children: [
+                      AccountMenuRow(
+                        key: const Key('account.myPredictions'),
+                        icon: Icons.bolt_rounded,
+                        title: l10n.myPredictions,
+                        subtitle: l10n.accountMyPredictionsSubtitle,
+                        onTap: () => open(const PredictionHistoryScreen()),
                       ),
-                      _Field(
-                        label: l10n.role,
-                        value: user.role,
-                        valueKey: const Key('account.role'),
-                        tokens: tokens,
-                        text: text,
-                      ),
-                      _Field(
-                        label: l10n.status,
-                        value: user.status,
-                        valueKey: const Key('account.status'),
-                        tokens: tokens,
-                        text: text,
-                      ),
-                      if (user.email != null)
-                        _Field(
-                          label: l10n.email,
-                          value: user.email!,
-                          valueKey: const Key('account.email'),
-                          tokens: tokens,
-                          text: text,
-                        ),
-                    ],
-                    const SizedBox(height: AppSpacing.xl),
-                    _MatchesCtaCard(
-                      itemKey: const Key('account.matches'),
-                      title: l10n.matchesTitle,
-                      subtitle: l10n.homeMatchesSubtitle,
-                      tokens: tokens,
-                      text: text,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CurrentMonthFixturesScreen(),
+                      AccountMenuRow(
+                        key: const Key('account.myPoints'),
+                        icon: Icons.emoji_events_outlined,
+                        title: l10n.myPoints,
+                        subtitle: l10n.accountMyPointsSubtitle,
+                        onTap: () => open(
+                          MyPointsScreen(userDisplayName: user.displayName),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionHeader(
-                      title: l10n.homePerformanceSection,
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const gap = AppSpacing.md;
-                        final int columns = constraints.maxWidth >= 680 ? 3 : 2;
-                        final double width =
-                            (constraints.maxWidth - gap * (columns - 1)) /
-                            columns;
-                        return Wrap(
-                          spacing: gap,
-                          runSpacing: gap,
-                          children: [
-                            SizedBox(
-                              width: width,
-                              child: _HomeActionCard(
-                                itemKey: const Key('account.myPoints'),
-                                icon: Icons.auto_graph_outlined,
-                                label: l10n.myPoints,
-                                tokens: tokens,
-                                text: text,
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => MyPointsScreen(
-                                      userDisplayName: user.displayName,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: width,
-                              child: _HomeActionCard(
-                                itemKey: const Key('account.myPredictions'),
-                                icon: Icons.history_outlined,
-                                label: l10n.myPredictions,
-                                tokens: tokens,
-                                text: text,
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        const PredictionHistoryScreen(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: width,
-                              child: _HomeActionCard(
-                                itemKey: const Key('account.eliteCard'),
-                                icon: Icons.badge_outlined,
-                                label: l10n.eliteCard,
-                                tokens: tokens,
-                                text: text,
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => EliteCardScreen(user: user),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionHeader(
-                      title: l10n.seasonRecord,
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeListCard(
-                      itemKey: const Key('account.seasonRecord'),
-                      icon: Icons.emoji_events_outlined,
-                      label: l10n.seasonRecord,
-                      tokens: tokens,
-                      text: text,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SeasonRecordScreen(),
-                        ),
+                      AccountMenuRow(
+                        key: const Key('account.matches'),
+                        icon: Icons.sports_soccer_outlined,
+                        title: l10n.matchesTitle,
+                        subtitle: l10n.homeMatchesSubtitle,
+                        onTap: () => open(const CurrentMonthFixturesScreen()),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionHeader(
-                      title: l10n.myGroups,
-                      tokens: tokens,
-                      text: text,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeListCard(
-                      itemKey: const Key('account.myGroups'),
-                      icon: Icons.groups_outlined,
-                      label: l10n.myGroups,
-                      tokens: tokens,
-                      text: text,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const MyGroupsScreen(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeListCard(
-                      itemKey: const Key('account.mySeasons'),
-                      icon: Icons.calendar_month_outlined,
-                      label: l10n.mySeasonsLabel,
-                      tokens: tokens,
-                      text: text,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const MySeasonsScreen(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _HomeActionCard(
-                              itemKey: const Key('account.createGroup'),
-                              icon: Icons.group_add_outlined,
-                              label: l10n.createGroup,
-                              tokens: tokens,
-                              text: text,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const CreateGroupScreen(),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _HomeActionCard(
-                              itemKey: const Key('account.joinGroup'),
-                              icon: Icons.group_outlined,
-                              label: l10n.joinGroup,
-                              tokens: tokens,
-                              text: text,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const JoinGroupScreen(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (user.role == 'admin') ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      _SectionHeader(
-                        title: l10n.homeAdminSection,
-                        tokens: tokens,
-                        text: text,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _HomeListCard(
-                        itemKey: const Key('account.adminDashboard'),
-                        icon: Icons.admin_panel_settings_outlined,
-                        label: l10n.adminDashboard,
-                        tokens: tokens,
-                        text: text,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const AdminHubScreen(),
-                          ),
-                        ),
+                      AccountMenuRow(
+                        key: const Key('account.eliteCard'),
+                        icon: Icons.badge_outlined,
+                        title: l10n.eliteCard,
+                        subtitle: l10n.accountEliteCardSubtitle,
+                        onTap: () => open(EliteCardScreen(user: user)),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AccountMenuCard(
+                    children: [
+                      AccountMenuRow(
+                        key: const Key('account.settings'),
+                        icon: Icons.settings_outlined,
+                        title: l10n.accountSettings,
+                        onTap: () => open(const AccountSettingsScreen()),
+                      ),
+                      const _DarkModeRow(),
+                      AccountMenuRow(
+                        key: const Key('account.notificationsRow'),
+                        icon: Icons.notifications_none_rounded,
+                        title: l10n.notifications,
+                        trailing: unreadCount > 0
+                            ? Badge(label: Text('$unreadCount'))
+                            : null,
+                        onTap: () => open(const NotificationsScreen()),
+                      ),
+                      if (user.role == 'admin')
+                        AccountMenuRow(
+                          key: const Key('account.adminDashboard'),
+                          icon: Icons.admin_panel_settings_outlined,
+                          title: l10n.adminDashboard,
+                          onTap: () => open(const AdminHubScreen()),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SignOutCard(
+                    label: l10n.signOut,
+                    onTap: () => unawaited(
+                      ref.read(sessionControllerProvider.notifier).signOut(),
+                    ),
+                  ),
+                  // Raw identity fields (id/role/status/email) are debug-only
+                  // diagnostics, never production UI.
+                  if (kDebugMode) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _Field(
+                      label: l10n.userId,
+                      value: user.userId,
+                      valueKey: const Key('account.userId'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    _Field(
+                      label: l10n.role,
+                      value: user.role,
+                      valueKey: const Key('account.role'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    _Field(
+                      label: l10n.status,
+                      value: user.status,
+                      valueKey: const Key('account.status'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                    if (user.email != null)
+                      _Field(
+                        label: l10n.email,
+                        value: user.email!,
+                        valueKey: const Key('account.email'),
+                        tokens: tokens,
+                        text: text,
+                      ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
@@ -353,67 +218,215 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// The row of the month in play, else the newest one the server listed.
+  static MySeasonRecordDto? _currentRecord(List<MySeasonRecordDto>? records) {
+    if (records == null || records.isEmpty) return null;
+    final DateTime now = DateTime.now().toUtc();
+    for (final MySeasonRecordDto record in records) {
+      final DateTime? start = DateTime.tryParse(record.startAt)?.toUtc();
+      final DateTime? end = DateTime.tryParse(record.endAt)?.toUtc();
+      if (start != null &&
+          end != null &&
+          !now.isBefore(start) &&
+          now.isBefore(end)) {
+        return record;
+      }
+    }
+    return records.first;
+  }
 }
 
-/// Avatar (first letter of [displayName]) + name. There is no rename
-/// affordance: the display name is chosen once at registration and is
-/// immutable afterwards, enforced by `PUT /me/display-name` refusing.
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.displayName,
-    required this.avatarUrl,
+/// Avatar and name, then this month's points, decided matches and accuracy.
+/// There is no rename affordance: the display name is chosen once at
+/// registration and is immutable afterwards.
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.user,
+    required this.record,
     required this.tokens,
     required this.text,
+    required this.l10n,
   });
 
-  final String displayName;
-  final String? avatarUrl;
+  final AuthenticatedUserDto user;
+  final MySeasonRecordDto? record;
   final AppTokens tokens;
   final TextTheme text;
+  final AppLocalizations l10n;
+
+  static const double _avatarSize = 64;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brMd,
-        border: Border.all(color: tokens.border),
-      ),
-      child: Row(
+    final MySeasonRecordDto? row = record;
+    final int? accuracy = row?.accuracyPercent;
+
+    Widget stat(String value, String label, Key valueKey) => Expanded(
+      child: Column(
         children: [
-          // The picture is its own affordance: tapping the avatar is how
-          // you change it. No separate button, because the thing you want to
-          // change is the thing you are looking at.
-          InkWell(
-            key: const Key('account.changeAvatar'),
-            customBorder: const CircleBorder(),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              builder: (_) => _AvatarSheet(hasAvatar: avatarUrl != null),
-            ),
-            child: UserAvatar(
-              displayName: displayName,
-              avatarUrl: avatarUrl,
-              size: AppSizes.avatarSm,
+          Text(
+            value,
+            key: valueKey,
+            style: text.titleLarge?.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              displayName,
-              key: const Key('account.displayName'),
-              style: text.titleMedium?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: text.bodySmall?.copyWith(color: tokens.textSecondary),
           ),
         ],
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: AppRadius.brLg,
+        border: Border.all(color: tokens.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              // The picture is its own affordance: tapping the avatar is how
+              // you change it.
+              InkWell(
+                key: const Key('account.changeAvatar'),
+                customBorder: const CircleBorder(),
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  builder: (_) =>
+                      _AvatarSheet(hasAvatar: user.avatarUrl != null),
+                ),
+                child: UserAvatar(
+                  displayName: user.displayName,
+                  avatarUrl: user.avatarUrl,
+                  size: _avatarSize,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  user.displayName,
+                  key: const Key('account.displayName'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.titleLarge?.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Divider(height: 1, color: tokens.border),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              stat(
+                accuracy == null ? '—' : '$accuracy%',
+                l10n.accountStatAccuracy,
+                const Key('account.stat.accuracy'),
+              ),
+              stat(
+                row == null ? '—' : '${row.settledCount}',
+                l10n.accountStatMatches,
+                const Key('account.stat.matches'),
+              ),
+              stat(
+                row == null ? '—' : '${row.totalPoints}',
+                l10n.accountStatPoints,
+                const Key('account.stat.points'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The one dark/light switch for the whole app, as a row of the settings
+/// card. [ThemeMode] is tri-valued but the switch is binary, so `system`
+/// reads as off and [ThemeController.toggle] drives it.
+class _DarkModeRow extends ConsumerWidget {
+  const _DarkModeRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppTokens tokens = context.tokens;
+    final ThemeMode mode = ref.watch(themeControllerProvider);
+    return SwitchListTile(
+      key: const Key('account.darkModeToggle'),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      secondary: Icon(
+        Icons.dark_mode_outlined,
+        color: tokens.primary,
+        size: AppSizes.iconLg,
+      ),
+      activeThumbColor: tokens.primary,
+      title: Text(
+        l10n.accountDarkModeLabel,
+        style: context.text.bodyLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      value: mode == ThemeMode.dark,
+      onChanged: (_) => ref.read(themeControllerProvider.notifier).toggle(),
+    );
+  }
+}
+
+/// Sign-out, on its own card in the danger colour.
+class _SignOutCard extends StatelessWidget {
+  const _SignOutCard({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Material(
+      color: tokens.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.brLg,
+        side: BorderSide(color: tokens.border),
+      ),
+      child: InkWell(
+        key: const Key('account.signOut'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: context.text.bodyLarge?.copyWith(
+                    color: tokens.error,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(Icons.logout_rounded, color: tokens.error),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -558,286 +571,6 @@ class _AvatarSheetState extends ConsumerState<_AvatarSheet> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
-/// The one dark/light toggle for the whole app (§8) — reuses
-/// [themeControllerProvider] verbatim, no new state mechanism. [ThemeMode]
-/// is tri-valued (`system`/`light`/`dark`) but a [SwitchListTile] is binary,
-/// so `system` reads as off (light) and [ThemeController.toggle] (already
-/// binary light↔dark) drives the switch.
-class _DarkModeToggle extends ConsumerWidget {
-  const _DarkModeToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppTokens tokens = context.tokens;
-    final ThemeMode mode = ref.watch(themeControllerProvider);
-    return Material(
-      color: tokens.surfaceElevated,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.brMd,
-        side: BorderSide(color: tokens.border),
-      ),
-      child: SwitchListTile(
-        key: const Key('account.darkModeToggle'),
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.brMd),
-        activeThumbColor: tokens.primary,
-        title: Text(
-          l10n.accountDarkModeLabel,
-          style: TextStyle(color: tokens.textPrimary),
-        ),
-        value: mode == ThemeMode.dark,
-        onChanged: (_) => ref.read(themeControllerProvider.notifier).toggle(),
-      ),
-    );
-  }
-}
-
-/// A section title above a group of home cards.
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.tokens,
-    required this.text,
-  });
-
-  final String title;
-  final AppTokens tokens;
-  final TextTheme text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: text.titleSmall?.copyWith(
-        color: tokens.textSecondary,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-/// The big primary call-to-action card ("المباريات") — full-width, gradient.
-class _MatchesCtaCard extends StatelessWidget {
-  const _MatchesCtaCard({
-    required this.itemKey,
-    required this.title,
-    required this.subtitle,
-    required this.tokens,
-    required this.text,
-    required this.onTap,
-  });
-
-  final Key itemKey;
-  final String title;
-  final String subtitle;
-  final AppTokens tokens;
-  final TextTheme text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      key: itemKey,
-      color: Colors.transparent,
-      borderRadius: AppRadius.brLg,
-      child: InkWell(
-        borderRadius: AppRadius.brLg,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            gradient: tokens.primaryGradient,
-            borderRadius: AppRadius.brLg,
-            boxShadow: tokens.shadowMd,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: AppSizes.avatarSm,
-                height: AppSizes.avatarSm,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.onPrimary.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.sports_soccer,
-                  color: tokens.onPrimary,
-                  size: AppSizes.iconLg,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: text.titleMedium?.copyWith(
-                        color: tokens.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      subtitle,
-                      style: text.bodySmall?.copyWith(
-                        color: tokens.onPrimary.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ForwardChevron(color: tokens.onPrimary.withValues(alpha: 0.85)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// One square-ish tappable card used two-per-row (predictions/hall of fame,
-/// create/join group).
-class _HomeActionCard extends StatelessWidget {
-  const _HomeActionCard({
-    required this.itemKey,
-    required this.icon,
-    required this.label,
-    required this.tokens,
-    required this.text,
-    required this.onTap,
-  });
-
-  final Key itemKey;
-  final IconData icon;
-  final String label;
-  final AppTokens tokens;
-  final TextTheme text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      key: itemKey,
-      color: Colors.transparent,
-      borderRadius: AppRadius.brMd,
-      child: InkWell(
-        borderRadius: AppRadius.brMd,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.lg,
-          ),
-          decoration: BoxDecoration(
-            color: tokens.surfaceElevated,
-            borderRadius: AppRadius.brMd,
-            border: Border.all(color: tokens.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: AppSizes.avatarSm,
-                height: AppSizes.avatarSm,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceHigh,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: tokens.primary, size: AppSizes.iconMd),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: text.bodyMedium?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// One full-width tappable row card (active seasons / groups / admin).
-class _HomeListCard extends StatelessWidget {
-  const _HomeListCard({
-    required this.itemKey,
-    required this.icon,
-    required this.label,
-    required this.tokens,
-    required this.text,
-    required this.onTap,
-  });
-
-  final Key itemKey;
-  final IconData icon;
-  final String label;
-  final AppTokens tokens;
-  final TextTheme text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      key: itemKey,
-      color: Colors.transparent,
-      borderRadius: AppRadius.brMd,
-      child: InkWell(
-        borderRadius: AppRadius.brMd,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            color: tokens.surfaceElevated,
-            borderRadius: AppRadius.brMd,
-            border: Border.all(color: tokens.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: AppSizes.avatarSm,
-                height: AppSizes.avatarSm,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceHigh,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: tokens.primary, size: AppSizes.iconMd),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  label,
-                  style: text.bodyMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ForwardChevron(color: tokens.textMuted),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

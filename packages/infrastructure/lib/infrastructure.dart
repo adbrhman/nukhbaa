@@ -28,6 +28,7 @@ export 'src/identity/supabase_auth_gateway.dart';
 export 'src/identity/supabase_jwt_verifier.dart';
 export 'src/leaderboard/postgres_leaderboard_repository.dart';
 export 'src/leaderboard/postgres_rank_snapshot_reader.dart';
+export 'src/leaderboard/postgres_sporting_season_standings_reader.dart';
 export 'src/ledger/postgres_fixture_ledger_repository.dart';
 export 'src/ledger/postgres_ledger_repository.dart';
 export 'src/ledger/postgres_participant_reader.dart';

@@ -869,3 +869,169 @@ final class FixtureLeaderboardDto {
     return true;
   }
 }
+
+/// One user's line on the sporting-season board (`GET /leaderboard/season`):
+/// monthly fixture standings summed from September to August. The accuracy
+/// counts travel raw, as on [FixtureLeaderboardEntryDto].
+final class SportingSeasonEntryDto {
+  /// Creates a sporting-season entry DTO.
+  const SportingSeasonEntryDto({
+    required this.rank,
+    required this.userId,
+    required this.displayName,
+    required this.totalPoints,
+    required this.fixturesScored,
+    required this.exactCount,
+    required this.decidedCount,
+    required this.monthsPlayed,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory SportingSeasonEntryDto.fromJson(Map<String, Object?> json) {
+    final userId = json['user_id']! as String;
+    return SportingSeasonEntryDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      rank: json['rank']! as int,
+      userId: userId,
+      displayName: (json['display_name'] as String?) ?? userId,
+      totalPoints: json['total_points']! as int,
+      fixturesScored: (json['fixtures_scored'] as int?) ?? 0,
+      exactCount: (json['exact_count'] as int?) ?? 0,
+      decidedCount: (json['decided_count'] as int?) ?? 0,
+      monthsPlayed: (json['months_played'] as int?) ?? 0,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// Standard-competition ("1224") rank.
+  final int rank;
+
+  /// The user's id (UUID string) -- constant across the season's months.
+  final String userId;
+
+  /// The platform-owned display name.
+  final String displayName;
+
+  /// Points summed over the season's months.
+  final int totalPoints;
+
+  /// Scored fixtures summed over the season.
+  final int fixturesScored;
+
+  /// Decided fixtures called exactly right.
+  final int exactCount;
+
+  /// Decided fixtures in total; 0 means no accuracy yet.
+  final int decidedCount;
+
+  /// How many months contributed.
+  final int monthsPlayed;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'rank': rank,
+    'user_id': userId,
+    'display_name': displayName,
+    'total_points': totalPoints,
+    'fixtures_scored': fixturesScored,
+    'exact_count': exactCount,
+    'decided_count': decidedCount,
+    'months_played': monthsPlayed,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is SportingSeasonEntryDto &&
+      other.rank == rank &&
+      other.userId == userId &&
+      other.displayName == displayName &&
+      other.totalPoints == totalPoints &&
+      other.fixturesScored == fixturesScored &&
+      other.exactCount == exactCount &&
+      other.decidedCount == decidedCount &&
+      other.monthsPlayed == monthsPlayed &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    rank,
+    userId,
+    displayName,
+    totalPoints,
+    fixturesScored,
+    exactCount,
+    decidedCount,
+    monthsPlayed,
+    schemaVersion,
+  );
+}
+
+/// The sporting-season board: [label] (e.g. `2026/2027`) and its ranked
+/// [entries], best first.
+final class SportingSeasonLeaderboardDto {
+  /// Creates a sporting-season board DTO.
+  const SportingSeasonLeaderboardDto({
+    required this.label,
+    required this.entries,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map.
+  factory SportingSeasonLeaderboardDto.fromJson(Map<String, Object?> json) {
+    final rawEntries = (json['entries'] as List<Object?>?) ?? const [];
+    return SportingSeasonLeaderboardDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      label: json['label']! as String,
+      entries: [
+        for (final raw in rawEntries)
+          SportingSeasonEntryDto.fromJson(
+            (raw! as Map<Object?, Object?>).cast<String, Object?>(),
+          ),
+      ],
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The season's display label.
+  final String label;
+
+  /// The ranked lines.
+  final List<SportingSeasonEntryDto> entries;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'label': label,
+    'entries': [for (final entry in entries) entry.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! SportingSeasonLeaderboardDto ||
+        other.label != label ||
+        other.schemaVersion != schemaVersion ||
+        other.entries.length != entries.length) {
+      return false;
+    }
+    for (var i = 0; i < entries.length; i++) {
+      if (other.entries[i] != entries[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(label, Object.hashAll(entries), schemaVersion);
+}

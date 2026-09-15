@@ -26,6 +26,9 @@ import 'leaderboard_board.dart';
 
 /// Renders `GET /seasons/{id}/fixture-leaderboard` as a [LeaderboardBoard].
 ///
+/// With [day] set, the board is that local day's (`?from=&to=`): the same
+/// season, narrowed by the server to the fixtures kicking off that day.
+///
 /// [keyPrefix] is the widget-test key namespace of the surface embedding it,
 /// so the two callers keep the keys their own tests already assert instead of
 /// sharing one namespace and colliding when both are on screen.
@@ -35,12 +38,9 @@ class FixtureStandingsBoard extends ConsumerWidget {
     required this.seasonId,
     required this.keyPrefix,
     this.myDisplayName,
-    this.competitionName,
-    this.seasonLabel,
-    this.startAt,
-    this.endAt,
     this.showHeader = false,
-    this.onBack,
+    this.day,
+    this.emptyMessage,
     super.key,
   });
 
@@ -51,19 +51,36 @@ class FixtureStandingsBoard extends ConsumerWidget {
   final String keyPrefix;
 
   final String? myDisplayName;
-  final String? competitionName;
-  final String? seasonLabel;
-  final String? startAt;
-  final String? endAt;
   final bool showHeader;
-  final VoidCallback? onBack;
+
+  /// Midnight-local day to narrow the board to, or null for the whole month.
+  final DateTime? day;
+
+  /// Replaces the default "nothing scored yet" message.
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<FixtureLeaderboardDto> standings = ref.watch(
-      fixtureLeaderboardProvider(seasonId),
-    );
+    final DateTime? selectedDay = day;
+    final AsyncValue<FixtureLeaderboardDto> standings = selectedDay == null
+        ? ref.watch(fixtureLeaderboardProvider(seasonId))
+        : ref.watch(
+            dayFixtureLeaderboardProvider((
+              seasonId: seasonId,
+              day: selectedDay,
+            )),
+          );
+    void reload() {
+      if (selectedDay == null) {
+        ref.invalidate(fixtureLeaderboardProvider(seasonId));
+      } else {
+        ref.invalidate(
+          dayFixtureLeaderboardProvider((seasonId: seasonId, day: selectedDay)),
+        );
+      }
+    }
+
     // The viewer's row is found by participant id first; the display name is
     // only the fallback, since two players can share a name.
     final String? myParticipantId = _myParticipantIdIn(
@@ -73,19 +90,13 @@ class FixtureStandingsBoard extends ConsumerWidget {
     );
     return AsyncListView<FixtureLeaderboardEntryDto>(
       value: standings.whenData((board) => board.entries),
-      emptyMessage: l10n.fixtureLeaderboardEmpty,
-      onRetry: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
+      emptyMessage: emptyMessage ?? l10n.fixtureLeaderboardEmpty,
+      onRetry: reload,
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
         myParticipantId: myParticipantId,
         myDisplayName: myDisplayName,
-        competitionName: competitionName,
-        seasonLabel: seasonLabel,
-        startAt: startAt,
-        endAt: endAt,
         showHeader: showHeader,
-        onRefresh: () => ref.invalidate(fixtureLeaderboardProvider(seasonId)),
-        onBack: onBack,
         entries: <BoardEntry>[
           for (final FixtureLeaderboardEntryDto e in entries)
             BoardEntry(

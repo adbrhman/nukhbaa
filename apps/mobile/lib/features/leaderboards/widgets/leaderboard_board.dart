@@ -2,8 +2,7 @@
 /// The presentation for the ranked board.
 ///
 /// The main leaderboards tab uses the reference-style mobile layout:
-/// cosmic header, season selector, segmented scope, summary metrics, podium,
-/// update/gap strip, and a compact ranked table. The ranking values remain
+/// summary metrics, podium, update/gap strip, and a compact ranked table. The ranking values remain
 /// server-produced; the widget only presents them and derives viewer-local
 /// display values from the already-loaded board.
 library;
@@ -45,13 +44,7 @@ class LeaderboardBoard extends StatelessWidget {
     required this.keyPrefix,
     this.myParticipantId,
     this.myDisplayName,
-    this.competitionName,
-    this.seasonLabel,
-    this.startAt,
-    this.endAt,
     this.showHeader = false,
-    this.onRefresh,
-    this.onBack,
     super.key,
   });
 
@@ -59,13 +52,11 @@ class LeaderboardBoard extends StatelessWidget {
   final String keyPrefix;
   final String? myParticipantId;
   final String? myDisplayName;
-  final String? competitionName;
-  final String? seasonLabel;
-  final String? startAt;
-  final String? endAt;
+
+  /// Whether the viewer summary (rank / points / accuracy) and the gap strip
+  /// lead the list. The page title, period and scope switch live above the
+  /// board in the leaderboards tab, so they stay put while a board loads.
   final bool showHeader;
-  final VoidCallback? onRefresh;
-  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -90,22 +81,6 @@ class LeaderboardBoard extends StatelessWidget {
     // the fold was built for nothing. The fixed header block stays eager (a
     // handful of widgets); only the ranked rows become lazy.
     final List<Widget> leading = <Widget>[
-      if (showHeader) ...<Widget>[
-        _ReferenceHeader(
-          competitionName: competitionName,
-          seasonLabel: seasonLabel,
-          startAt: startAt,
-          endAt: endAt,
-          onRefresh: onRefresh,
-          onBack: onBack,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _ScopeTabs(
-          onFriendsTap: () => _showDisabledScope(context),
-          onEliteTap: () => _showDisabledScope(context),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-      ],
       if (showHeader) _SummaryCard(viewer: viewer),
       if (showHeader) const SizedBox(height: AppSpacing.sm),
       if (podium.isNotEmpty)
@@ -135,7 +110,7 @@ class LeaderboardBoard extends StatelessWidget {
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
-        showHeader ? 0 : AppSpacing.md,
+        showHeader ? AppSpacing.sm : AppSpacing.md,
         AppSpacing.md,
         AppSpacing.xl + bottomInset,
       ),
@@ -171,357 +146,6 @@ class LeaderboardBoard extends StatelessWidget {
       match = entry;
     }
     return match;
-  }
-
-  void _showDisabledScope(BuildContext context) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('هذه القائمة ستتوفر قريبًا.')));
-  }
-}
-
-class _ReferenceHeader extends StatelessWidget {
-  const _ReferenceHeader({
-    required this.competitionName,
-    required this.seasonLabel,
-    required this.startAt,
-    required this.endAt,
-    required this.onRefresh,
-    required this.onBack,
-  });
-
-  final String? competitionName;
-  final String? seasonLabel;
-  final String? startAt;
-  final String? endAt;
-  final VoidCallback? onRefresh;
-  final VoidCallback? onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    return Column(
-      children: <Widget>[
-        SizedBox(
-          height: 78,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(AppRadius.xl),
-            ),
-            child: Stack(
-              children: <Widget>[
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: const Alignment(0.05, -0.4),
-                        radius: 1.15,
-                        colors: <Color>[
-                          t.primary.withValues(alpha: 0.38),
-                          t.primary.withValues(alpha: 0.10),
-                          Colors.transparent,
-                        ],
-                        stops: const <double>[0.0, 0.35, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: <Color>[
-                          const Color(0xFF06152B).withValues(alpha: 0.92),
-                          t.background.withValues(alpha: 0.98),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const Positioned(left: 34, top: 22, child: _StarDot(size: 2)),
-                const Positioned(left: 82, top: 42, child: _StarDot(size: 3)),
-                const Positioned(left: 128, top: 23, child: _StarDot(size: 2)),
-                const Positioned(right: 52, top: 30, child: _StarDot(size: 3)),
-                const Positioned(right: 118, top: 52, child: _StarDot(size: 2)),
-                const Positioned(right: 170, top: 24, child: _StarDot(size: 2)),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Icon(
-                      Icons.workspace_premium_rounded,
-                      color: t.gold,
-                      size: 22,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 9,
-                  left: 34,
-                  child: IconButton(
-                    tooltip: 'تحديث',
-                    onPressed: onRefresh,
-                    icon: const Icon(
-                      Icons.filter_alt_outlined,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 9,
-                  right: 34,
-                  child: IconButton(
-                    tooltip: 'رجوع',
-                    onPressed: onBack,
-                    icon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  top: 14,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        'المتصدرون',
-                        style: context.text.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 23,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'من يتصدر الترتيب هذا الشهر؟',
-                        style: context.text.labelSmall?.copyWith(
-                          color: t.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _SeasonSelector(
-          competitionName: competitionName,
-          seasonLabel: seasonLabel,
-          startAt: startAt,
-          endAt: endAt,
-        ),
-      ],
-    );
-  }
-}
-
-class _StarDot extends StatelessWidget {
-  const _StarDot({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-class _SeasonSelector extends StatelessWidget {
-  const _SeasonSelector({
-    required this.competitionName,
-    required this.seasonLabel,
-    required this.startAt,
-    required this.endAt,
-  });
-
-  final String? competitionName;
-  final String? seasonLabel;
-  final String? startAt;
-  final String? endAt;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: t.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: t.primary.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(Icons.calendar_month_rounded, color: t.primary),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  competitionName?.trim().isNotEmpty == true
-                      ? competitionName!
-                      : 'موسم التوقعات',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium?.copyWith(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  _rangeText(startAt, endAt),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelSmall?.copyWith(color: t.textMuted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            seasonLabel ?? 'الشهر الحالي',
-            style: context.text.labelSmall?.copyWith(
-              color: t.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.keyboard_arrow_down_rounded, color: t.textMuted),
-        ],
-      ),
-    );
-  }
-
-  String _rangeText(String? startAt, String? endAt) {
-    final DateTime? start = DateTime.tryParse(startAt ?? '');
-    DateTime? end = DateTime.tryParse(endAt ?? '');
-    if (start == null || end == null) return 'الفترة الحالية';
-    end = end.subtract(const Duration(days: 1));
-    const months = <String>[
-      '',
-      'يناير',
-      'فبراير',
-      'مارس',
-      'أبريل',
-      'مايو',
-      'يونيو',
-      'يوليو',
-      'أغسطس',
-      'سبتمبر',
-      'أكتوبر',
-      'نوفمبر',
-      'ديسمبر',
-    ];
-    final String month = months[end.month];
-    return '${start.day} - ${end.day} $month ${end.year}';
-  }
-}
-
-class _ScopeTabs extends StatelessWidget {
-  const _ScopeTabs({required this.onFriendsTap, required this.onEliteTap});
-
-  final VoidCallback onFriendsTap;
-  final VoidCallback onEliteTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    Widget segment({
-      required String label,
-      required bool active,
-      VoidCallback? onTap,
-      IconData? icon,
-    }) {
-      return Expanded(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            decoration: BoxDecoration(
-              color: active ? t.primary : t.surface,
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                if (icon != null) ...<Widget>[
-                  Icon(
-                    icon,
-                    size: 14,
-                    color: active ? Colors.white : t.textMuted,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  label,
-                  style: context.text.labelMedium?.copyWith(
-                    color: active ? Colors.white : t.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: t.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: t.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          segment(
-            label: 'الشهر',
-            active: true,
-            icon: Icons.calendar_month_rounded,
-          ),
-          segment(
-            label: 'أصدقائي',
-            active: false,
-            onTap: onFriendsTap,
-            icon: Icons.group_rounded,
-          ),
-          segment(
-            label: 'النخبة',
-            active: false,
-            onTap: onEliteTap,
-            icon: Icons.workspace_premium_outlined,
-          ),
-        ],
-      ),
-    );
   }
 }
 

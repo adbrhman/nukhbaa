@@ -1,17 +1,21 @@
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' as intl;
 
 import '../../core/design/app_radius.dart';
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/streak_chip.dart';
+import '../../core/ui/team_logo.dart';
 import '../competition/competition_providers.dart';
+import '../competition/team_catalog_index.dart';
 import '../competition/team_identity.dart';
-import '../competition/teams_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import '../fixture_prediction/kickoff_countdown.dart';
+import '../notifications/notifications_providers.dart';
+import '../notifications/notifications_screen.dart';
 import 'pending_predictions_provider.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
@@ -21,25 +25,26 @@ class HomeScreen extends ConsumerWidget {
   const HomeScreen({
     required this.user,
     required this.onOpenMatches,
-    required this.onOpenPredictions,
-    required this.onOpenLeaderboards,
     required this.onOpenAccount,
     super.key,
   });
 
   final AuthenticatedUserDto user;
   final VoidCallback onOpenMatches;
-  final VoidCallback onOpenPredictions;
-  final VoidCallback onOpenLeaderboards;
   final VoidCallback onOpenAccount;
+
+  /// How many of the day's matches the home page lists.
+  static const int highlightCount = 3;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
     final fixtures = ref.watch(currentMonthFixturesProvider);
     final seasons = ref.watch(activeSeasonsProvider);
-    final teamCatalog = ref.watch(teamCatalogProvider).value;
     final name = user.displayName.trim().isEmpty ? 'المتنبئ' : user.displayName;
+    final _Highlights highlights = _Highlights.from(
+      fixtures.value ?? const <CurrentMonthFixtureItemDto>[],
+    );
 
     return Scaffold(
       backgroundColor: tokens.background,
@@ -57,13 +62,10 @@ class HomeScreen extends ConsumerWidget {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 104),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 104),
             children: <Widget>[
-              _HomeHeader(
-                onNotifications: onOpenAccount,
-                onAccount: onOpenAccount,
-              ),
-              const SizedBox(height: 24),
+              _HomeHeader(onAccount: onOpenAccount),
+              const SizedBox(height: 20),
               Text(
                 'مرحبًا، $name',
                 key: const Key('home.welcome'),
@@ -74,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'تابع مبارياتك واثبت أنك من النخبة.',
+                'تابع مبارياتك وأثبت أنك من النخبة.',
                 style: TextStyle(color: tokens.textSecondary),
               ),
               const SizedBox(height: 18),
@@ -83,19 +85,25 @@ class HomeScreen extends ConsumerWidget {
                 seasons: seasons,
                 onOpenMatches: onOpenMatches,
               ),
-              const SizedBox(height: 24),
-              _SectionHeader(title: 'وصول سريع', action: null, onAction: null),
-              const SizedBox(height: 10),
-              _QuickActions(
-                onOpenMatches: onOpenMatches,
-                onOpenPredictions: onOpenPredictions,
-                onOpenLeaderboards: onOpenLeaderboards,
-                onOpenAccount: onOpenAccount,
-              ),
-              const SizedBox(height: 24),
+              if (highlights.items.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 24),
+                _SectionHeader(
+                  title: highlights.isToday
+                      ? 'أهم مباريات اليوم'
+                      : 'أقرب المباريات القادمة',
+                  action: 'عرض الكل',
+                  onAction: onOpenMatches,
+                ),
+                const SizedBox(height: 10),
+                for (final CurrentMonthFixtureItemDto item
+                    in highlights.items) ...<Widget>[
+                  _HighlightRow(item: item, onTap: onOpenMatches),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ],
+              const SizedBox(height: 16),
               _PendingPredictionsCard(
                 pending: ref.watch(pendingPredictionsProvider),
-                teamCatalog: teamCatalog,
                 onPredict: onOpenMatches,
               ),
             ],
@@ -106,9 +114,185 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// The month's upcoming matches in one line each: how many are still
-/// unpredicted, which one kicks off first, a live countdown to that kickoff,
-/// and a button through to the matches tab for the full list.
+/// The matches the home page highlights: today's, earliest kickoff first;
+/// on a day without matches, the nearest upcoming day's instead, so the
+/// section never promises "today" and shows another day.
+class _Highlights {
+  const _Highlights(this.items, {required this.isToday});
+
+  factory _Highlights.from(List<CurrentMonthFixtureItemDto> all) {
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final List<(DateTime, CurrentMonthFixtureItemDto)> dated =
+        <(DateTime, CurrentMonthFixtureItemDto)>[
+          for (final CurrentMonthFixtureItemDto item in all)
+            if (DateTime.tryParse(item.fixture.kickoffAt ?? '')
+                case final DateTime kickoff)
+              (kickoff.toLocal(), item),
+        ]..sort((a, b) => a.$1.compareTo(b.$1));
+
+    bool sameDay(DateTime a, DateTime b) =>
+        a.year == b.year && a.month == b.month && a.day == b.day;
+
+    final List<CurrentMonthFixtureItemDto> todays =
+        <CurrentMonthFixtureItemDto>[
+          for (final (DateTime kickoff, CurrentMonthFixtureItemDto item)
+              in dated)
+            if (sameDay(kickoff, today)) item,
+        ];
+    if (todays.isNotEmpty) {
+      return _Highlights(
+        todays.take(HomeScreen.highlightCount).toList(growable: false),
+        isToday: true,
+      );
+    }
+
+    DateTime? nextDay;
+    for (final (DateTime kickoff, CurrentMonthFixtureItemDto _) in dated) {
+      if (kickoff.isAfter(now)) {
+        nextDay = DateTime(kickoff.year, kickoff.month, kickoff.day);
+        break;
+      }
+    }
+    final DateTime? day = nextDay;
+    if (day == null) {
+      return const _Highlights(<CurrentMonthFixtureItemDto>[], isToday: false);
+    }
+    return _Highlights(
+      <CurrentMonthFixtureItemDto>[
+        for (final (DateTime kickoff, CurrentMonthFixtureItemDto item) in dated)
+          if (sameDay(kickoff, day)) item,
+      ].take(HomeScreen.highlightCount).toList(growable: false),
+      isToday: false,
+    );
+  }
+
+  final List<CurrentMonthFixtureItemDto> items;
+  final bool isToday;
+}
+
+/// One highlighted match: league and kickoff on top, then home crest and
+/// name, "Vs", away name and crest.
+class _HighlightRow extends ConsumerWidget {
+  const _HighlightRow({required this.item, required this.onTap});
+
+  final CurrentMonthFixtureItemDto item;
+  final VoidCallback onTap;
+
+  static const double _crestSize = 30;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.tokens;
+    final catalogById = ref.watch(teamCatalogByIdProvider);
+    final SeasonFixtureCardDto fixture = item.fixture;
+    final ResolvedTeamIdentity home = resolveTeamIdentity(
+      catalog: null,
+      catalogById: catalogById,
+      teamId: fixture.homeTeamId,
+      teamName: fixture.homeTeam,
+    );
+    final ResolvedTeamIdentity away = resolveTeamIdentity(
+      catalog: null,
+      catalogById: catalogById,
+      teamId: fixture.awayTeamId,
+      teamName: fixture.awayTeam,
+    );
+    final DateTime? kickoff = DateTime.tryParse(
+      fixture.kickoffAt ?? '',
+    )?.toLocal();
+    final String league = fixture.leagueName ?? item.competitionName;
+    final String meta = kickoff == null
+        ? league
+        : '$league · ${intl.DateFormat.jm(Localizations.localeOf(context).toString()).format(kickoff)}';
+
+    Widget crest(ResolvedTeamIdentity team) => TeamLogo(
+      displayName: team.displayName,
+      crestUrl: team.crestUrl,
+      assetPath: team.assetPath,
+      brandColor: team.brandColor,
+      size: _crestSize,
+    );
+    Widget teamName(ResolvedTeamIdentity team, TextAlign align) => Text(
+      team.displayName,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: align,
+      style: TextStyle(
+        color: tokens.textPrimary,
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+
+    return Material(
+      key: Key('home.highlight.${fixture.fixtureId}'),
+      color: tokens.surface,
+      borderRadius: AppRadius.brLg,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.brLg,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.brLg,
+            border: Border.all(color: tokens.border),
+          ),
+          child: Column(
+            children: <Widget>[
+              Text(
+                meta,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: tokens.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Row(
+                      children: <Widget>[
+                        crest(home),
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(child: teamName(home, TextAlign.start)),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                    child: Text(
+                      'Vs',
+                      textDirection: TextDirection.ltr,
+                      style: TextStyle(
+                        color: tokens.textMuted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        Flexible(child: teamName(away, TextAlign.end)),
+                        const SizedBox(width: AppSpacing.sm),
+                        crest(away),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The month's unpredicted matches in one card: how many are left and a
+/// button through to the matches tab.
 ///
 /// Renders nothing while either input is still loading (`pending == null`):
 /// a claim about what you have not done must not appear before it is known.
@@ -117,16 +301,12 @@ class HomeScreen extends ConsumerWidget {
 class _PendingPredictionsCard extends StatelessWidget {
   const _PendingPredictionsCard({
     required this.pending,
-    required this.teamCatalog,
     required this.onPredict,
   });
 
   final PendingPredictions? pending;
-  final List<TeamDto>? teamCatalog;
 
-  /// Opens the matches tab. The card names the fixture closing first but
-  /// deliberately does not open its predict sheet: the button says
-  /// "match details", and a button must do what it says.
+  /// Opens the matches tab.
   final VoidCallback onPredict;
 
   @override
@@ -162,7 +342,6 @@ class _PendingPredictionsCard extends StatelessWidget {
       );
     }
 
-    final next = summary.next;
     return Container(
       key: const Key('home.pendingPredictions'),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -172,70 +351,41 @@ class _PendingPredictionsCard extends StatelessWidget {
         border: Border.all(color: tokens.primary),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(
-                Icons.local_fire_department_rounded,
-                color: tokens.primaryLight,
-                size: 22,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                'لا تفوّت مبارياتك القادمة',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w800,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'لا تفوّت مبارياتك القادمة',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _countLine(summary.count),
+                      key: const Key('home.pendingPredictions.count'),
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Icon(
+                Icons.emoji_events_rounded,
+                color: tokens.gold,
+                size: AppSizes.iconXl,
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            _countLine(summary.count),
-            key: const Key('home.pendingPredictions.count'),
-            style: TextStyle(color: tokens.textSecondary, fontSize: 13),
-          ),
-          if (next != null) ...<Widget>[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.emoji_events_outlined,
-                  color: tokens.textMuted,
-                  size: 18,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    _teams(next),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: <Widget>[
-                Icon(Icons.timer_outlined, color: tokens.textMuted, size: 18),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  'تبدأ ',
-                  style: TextStyle(color: tokens.textMuted, fontSize: 12),
-                ),
-                KickoffCountdown(
-                  kickoffAt: next.fixture.kickoffAt,
-                  timePrefix: 'بعد ',
-                ),
-              ],
-            ),
-          ],
           const SizedBox(height: AppSpacing.md),
           AppButton(
             key: const Key('home.pendingPredictions.cta'),
@@ -257,46 +407,47 @@ class _PendingPredictionsCard extends StatelessWidget {
     if (count <= 10) return 'لديك $count مباريات قادمة';
     return 'لديك $count مباراة قادمة';
   }
-
-  String _teams(CurrentMonthFixtureItemDto item) {
-    final home = resolveTeamIdentity(
-      catalog: teamCatalog,
-      teamId: item.fixture.homeTeamId,
-      teamName: item.fixture.homeTeam,
-    );
-    final away = resolveTeamIdentity(
-      catalog: teamCatalog,
-      teamId: item.fixture.awayTeamId,
-      teamName: item.fixture.awayTeam,
-    );
-    return '${home.displayName} × ${away.displayName}';
-  }
 }
 
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.onNotifications, required this.onAccount});
+class _HomeHeader extends ConsumerWidget {
+  const _HomeHeader({required this.onAccount});
 
-  final VoidCallback onNotifications;
   final VoidCallback onAccount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
+    final int unread = ref.watch(unreadCountProvider).value ?? 0;
     return Row(
       children: <Widget>[
-        Text(
-          'NUKHBAA',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (Rect bounds) =>
+              tokens.primaryGradient.createShader(bounds),
+          child: const Text(
+            'NUKHBAA',
+            key: Key('home.brand'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.6,
+            ),
           ),
         ),
         const Spacer(),
         IconButton(
           key: const Key('home.notifications'),
-          onPressed: onNotifications,
-          icon: const Icon(Icons.notifications_none_rounded),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const NotificationsScreen(),
+            ),
+          ),
+          icon: Badge(
+            isLabelVisible: unread > 0,
+            label: Text('$unread'),
+            child: const Icon(Icons.notifications_none_rounded),
+          ),
           color: tokens.textSecondary,
         ),
         IconButton(
@@ -338,8 +489,6 @@ class _OverviewCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
-              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'لوحة النخبة',
@@ -349,6 +498,8 @@ class _OverviewCard extends StatelessWidget {
                   ),
                 ),
               ),
+              Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
+              const SizedBox(width: AppSpacing.sm),
               StreakChip(
                 label: seasonCount == null
                     ? '...'
@@ -368,105 +519,20 @@ class _OverviewCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           FilledButton(
+            key: const Key('home.startPredicting'),
             onPressed: onOpenMatches,
             style: FilledButton.styleFrom(
               backgroundColor: tokens.onPrimary,
               foregroundColor: tokens.primary,
+              minimumSize: const Size.fromHeight(AppSizes.controlMd),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             child: const Text('ابدأ التوقع'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({
-    required this.onOpenMatches,
-    required this.onOpenPredictions,
-    required this.onOpenLeaderboards,
-    required this.onOpenAccount,
-  });
-
-  final VoidCallback onOpenMatches;
-  final VoidCallback onOpenPredictions;
-  final VoidCallback onOpenLeaderboards;
-  final VoidCallback onOpenAccount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        _QuickAction(
-          icon: Icons.sports_soccer_rounded,
-          label: 'المباريات',
-          onTap: onOpenMatches,
-        ),
-        const SizedBox(width: 8),
-        _QuickAction(
-          icon: Icons.bolt_rounded,
-          label: 'توقعاتي',
-          onTap: onOpenPredictions,
-        ),
-        const SizedBox(width: 8),
-        _QuickAction(
-          icon: Icons.leaderboard_rounded,
-          label: 'المتصدرون',
-          onTap: onOpenLeaderboards,
-        ),
-        const SizedBox(width: 8),
-        _QuickAction(
-          icon: Icons.person_rounded,
-          label: 'الحساب',
-          onTap: onOpenAccount,
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Expanded(
-      child: Material(
-        color: tokens.surfaceElevated,
-        borderRadius: AppRadius.brMd,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppRadius.brMd,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-            child: Column(
-              children: <Widget>[
-                Icon(icon, color: tokens.primaryLight, size: 22),
-                const SizedBox(height: 7),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.textPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -480,24 +546,35 @@ class _SectionHeader extends StatelessWidget {
   });
 
   final String title;
-  final String? action;
-  final VoidCallback? onAction;
+  final String action;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Row(
       children: <Widget>[
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w800,
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-        const Spacer(),
-        if (action != null)
-          TextButton(onPressed: onAction, child: Text(action!)),
+        TextButton(
+          key: const Key('home.viewAll'),
+          onPressed: onAction,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(action),
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(Icons.arrow_back_rounded, size: AppSizes.iconSm),
+            ],
+          ),
+        ),
       ],
     );
   }

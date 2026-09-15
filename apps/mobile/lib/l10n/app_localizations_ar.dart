@@ -1083,4 +1083,67 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adminCountedFixturesSubtitle =>
       'المباريات التي اكتمل احتساب نقاطها';
+
+  @override
+  String get leaderboardsHeading => 'المتصدرون';
+
+  @override
+  String get leaderboardScopeMonth => 'الشهر';
+
+  @override
+  String get leaderboardScopeDay => 'اليوم';
+
+  @override
+  String get leaderboardScopeSeason => 'الموسم';
+
+  @override
+  String get leaderboardSubtitleMonth => 'من يتصدر الترتيب هذا الشهر؟';
+
+  @override
+  String get leaderboardSubtitleDay => 'من يتصدر ترتيب هذا اليوم؟';
+
+  @override
+  String get leaderboardSubtitleSeason => 'من سيكون بطل الموسم؟';
+
+  @override
+  String get leaderboardDayEmpty => 'لم تُسجَّل نتائج لمباريات هذا اليوم بعد.';
+
+  @override
+  String get leaderboardSeasonEmpty => 'لم تُسجَّل نقاط في هذا الموسم بعد.';
+
+  @override
+  String get historyFilterAll => 'الكل';
+
+  @override
+  String get historyFilterUpcoming => 'قادمة';
+
+  @override
+  String get historyFilterCompleted => 'مكتملة';
+
+  @override
+  String get historyFilterEmpty => 'لا توجد توقعات في هذا التصنيف.';
+
+  @override
+  String get accountMyPredictionsSubtitle => 'عرض جميع توقعاتك';
+
+  @override
+  String get accountMyPointsSubtitle => 'تفاصيل نقاطك وإحصائياتك';
+
+  @override
+  String get accountEliteCardSubtitle => 'معلومات عضويتك في النخبة';
+
+  @override
+  String get accountSettings => 'الإعدادات';
+
+  @override
+  String get accountRecordsSection => 'سجلي';
+
+  @override
+  String get accountStatPoints => 'النقاط';
+
+  @override
+  String get accountStatMatches => 'المباريات';
+
+  @override
+  String get accountStatAccuracy => 'الدقة';
 }

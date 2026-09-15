@@ -1949,6 +1949,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fixtures with completed point scoring'**
   String get adminCountedFixturesSubtitle;
+
+  /// No description provided for @leaderboardsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboardsHeading;
+
+  /// No description provided for @leaderboardScopeMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get leaderboardScopeMonth;
+
+  /// No description provided for @leaderboardScopeDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get leaderboardScopeDay;
+
+  /// No description provided for @leaderboardScopeSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Season'**
+  String get leaderboardScopeSeason;
+
+  /// No description provided for @leaderboardSubtitleMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Who leads this month?'**
+  String get leaderboardSubtitleMonth;
+
+  /// No description provided for @leaderboardSubtitleDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Who leads the day?'**
+  String get leaderboardSubtitleDay;
+
+  /// No description provided for @leaderboardSubtitleSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Who will be the season champion?'**
+  String get leaderboardSubtitleSeason;
+
+  /// No description provided for @leaderboardDayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No results have been recorded for this day\'s matches yet.'**
+  String get leaderboardDayEmpty;
+
+  /// No description provided for @leaderboardSeasonEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No points have been recorded this season yet.'**
+  String get leaderboardSeasonEmpty;
+
+  /// No description provided for @historyFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get historyFilterAll;
+
+  /// No description provided for @historyFilterUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get historyFilterUpcoming;
+
+  /// No description provided for @historyFilterCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get historyFilterCompleted;
+
+  /// No description provided for @historyFilterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No predictions in this category.'**
+  String get historyFilterEmpty;
+
+  /// No description provided for @accountMyPredictionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View all your predictions'**
+  String get accountMyPredictionsSubtitle;
+
+  /// No description provided for @accountMyPointsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your points and statistics in detail'**
+  String get accountMyPointsSubtitle;
+
+  /// No description provided for @accountEliteCardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Nukhba membership details'**
+  String get accountEliteCardSubtitle;
+
+  /// No description provided for @accountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get accountSettings;
+
+  /// No description provided for @accountRecordsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'My record'**
+  String get accountRecordsSection;
+
+  /// No description provided for @accountStatPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get accountStatPoints;
+
+  /// No description provided for @accountStatMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get accountStatMatches;
+
+  /// No description provided for @accountStatAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get accountStatAccuracy;
 }
 
 class _AppLocalizationsDelegate

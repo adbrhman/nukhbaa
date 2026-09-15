@@ -1071,4 +1071,69 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminCountedFixturesSubtitle =>
       'Fixtures with completed point scoring';
+
+  @override
+  String get leaderboardsHeading => 'Leaderboard';
+
+  @override
+  String get leaderboardScopeMonth => 'Month';
+
+  @override
+  String get leaderboardScopeDay => 'Today';
+
+  @override
+  String get leaderboardScopeSeason => 'Season';
+
+  @override
+  String get leaderboardSubtitleMonth => 'Who leads this month?';
+
+  @override
+  String get leaderboardSubtitleDay => 'Who leads the day?';
+
+  @override
+  String get leaderboardSubtitleSeason => 'Who will be the season champion?';
+
+  @override
+  String get leaderboardDayEmpty =>
+      'No results have been recorded for this day\'s matches yet.';
+
+  @override
+  String get leaderboardSeasonEmpty =>
+      'No points have been recorded this season yet.';
+
+  @override
+  String get historyFilterAll => 'All';
+
+  @override
+  String get historyFilterUpcoming => 'Upcoming';
+
+  @override
+  String get historyFilterCompleted => 'Completed';
+
+  @override
+  String get historyFilterEmpty => 'No predictions in this category.';
+
+  @override
+  String get accountMyPredictionsSubtitle => 'View all your predictions';
+
+  @override
+  String get accountMyPointsSubtitle => 'Your points and statistics in detail';
+
+  @override
+  String get accountEliteCardSubtitle => 'Your Nukhba membership details';
+
+  @override
+  String get accountSettings => 'Settings';
+
+  @override
+  String get accountRecordsSection => 'My record';
+
+  @override
+  String get accountStatPoints => 'Points';
+
+  @override
+  String get accountStatMatches => 'Matches';
+
+  @override
+  String get accountStatAccuracy => 'Accuracy';
 }

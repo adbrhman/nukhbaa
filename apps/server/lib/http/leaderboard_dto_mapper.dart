@@ -164,3 +164,26 @@ Map<String, Object?> fixtureLeaderboardToJson(FixtureLeaderboard leaderboard) {
     ],
   ).toJson();
 }
+
+/// Projects the domain [SportingSeasonLeaderboard] onto its wire shape.
+/// Every number is echoed as the domain ranked it; nothing is recomputed.
+Map<String, Object?> sportingSeasonLeaderboardToJson(
+  SportingSeasonLeaderboard board,
+) {
+  return SportingSeasonLeaderboardDto(
+    label: board.season.label,
+    entries: [
+      for (final entry in board.entries)
+        SportingSeasonEntryDto(
+          rank: entry.rank,
+          userId: entry.userId.value,
+          displayName: entry.displayName,
+          totalPoints: entry.totalPoints,
+          fixturesScored: entry.fixturesScored,
+          exactCount: entry.exactCount,
+          decidedCount: entry.decidedCount,
+          monthsPlayed: entry.monthsPlayed,
+        ),
+    ],
+  ).toJson();
+}

@@ -205,6 +205,9 @@ void main() {
     await _openAccountTab(tester);
     expect(find.byKey(const Key('account.title')), findsOneWidget);
 
+    // Sign-out sits at the foot of the account page now, below the fold.
+    await tester.ensureVisible(find.byKey(const Key('account.signOut')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('account.signOut')));
     await tester.pumpAndSettle();
 

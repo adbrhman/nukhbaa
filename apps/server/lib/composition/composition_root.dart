@@ -60,6 +60,7 @@ final class CompositionRoot {
     required this.getFixturePredictionDistribution,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
+    required this.getSportingSeasonLeaderboard,
     required this.createGroup,
     required this.getGroup,
     required this.joinGroupByInvite,
@@ -170,6 +171,7 @@ final class CompositionRoot {
     GetFixturePredictionDistribution? getFixturePredictionDistribution,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
+    GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
     GetGroup? getGroup,
     JoinGroupByInvite? joinGroupByInvite,
@@ -273,6 +275,9 @@ final class CompositionRoot {
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
+       getSportingSeasonLeaderboard =
+           getSportingSeasonLeaderboard ??
+           _absentGetSportingSeasonLeaderboard(),
        createGroup = createGroup ?? _absentCreateGroup(),
        getGroup = getGroup ?? _absentGetGroup(),
        joinGroupByInvite = joinGroupByInvite ?? _absentJoinGroupByInvite(),
@@ -615,6 +620,7 @@ final class CompositionRoot {
         competitionRepository: _unwiredCompetitionRepository,
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
         participantReader: _unwiredParticipantReader,
         rankSnapshotReader: _unwiredRankSnapshotReader,
       );
@@ -646,6 +652,14 @@ final class CompositionRoot {
   /// database.
   static GetHallOfFame _absentGetHallOfFame() =>
       GetHallOfFame(leaderboardRepository: _unwiredLeaderboardRepository);
+
+  /// Backs the "absent" [GetSportingSeasonLeaderboard]: its reader and clock
+  /// both throw, so a test that reaches it fails loudly.
+  static GetSportingSeasonLeaderboard _absentGetSportingSeasonLeaderboard() =>
+      GetSportingSeasonLeaderboard(
+        reader: _UnwiredSportingSeasonStandingsReader(),
+        clock: _unwiredClock,
+      );
 
   /// A single throwing repository backing every "absent" group use-case, so a
   /// test that reaches an unwired group slice fails loudly instead of touching
@@ -1087,6 +1101,10 @@ final class CompositionRoot {
   /// every season (Axiom 5); visible to any authenticated user, unlike the
   /// season board.
   final GetHallOfFame getHallOfFame;
+
+  /// Reads the current sporting season's standings: the monthly boards from
+  /// September to August summed per user.
+  final GetSportingSeasonLeaderboard getSportingSeasonLeaderboard;
 
   /// Creates a new private group (any authenticated user; the creator becomes
   /// the sole owner, owner membership written atomically — Groups decision #2).
@@ -1613,6 +1631,7 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
         participantReader: participantReader, // already built (Ledger slice)
         rankSnapshotReader: PostgresRankSnapshotReader(connection),
       ),
@@ -1629,6 +1648,10 @@ final class CompositionRoot {
       ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
+      ),
+      getSportingSeasonLeaderboard: GetSportingSeasonLeaderboard(
+        reader: PostgresSportingSeasonStandingsReader(connection),
+        clock: clock,
       ),
       createGroup: CreateGroup(
         repository: groupRepository,
@@ -1989,6 +2012,16 @@ final class _UnwiredIdGenerator implements IdGenerator {
 }
 
 /// Backs "absent" competition use-cases' clock.
+final class _UnwiredSportingSeasonStandingsReader
+    implements SportingSeasonStandingsReader {
+  @override
+  Future<Result<List<SportingSeasonStanding>>> standings(
+    SportingSeason season,
+  ) => throw StateError(
+    'GetSportingSeasonLeaderboard was not wired into this root',
+  );
+}
+
 final class _UnwiredClock implements Clock {
   @override
   DateTime nowUtc() =>

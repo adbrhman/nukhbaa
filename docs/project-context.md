@@ -2541,6 +2541,36 @@ analyze` + `flutter test` on a Flutter 3.44.0 machine, and `melos run verify` /
 - تحقق Android غير متاح في بيئة Codespaces الحالية لعدم وجود Android SDK.
 - تحقق iOS متخطّى لأن البيئة ليست macOS ولا تحتوي Xcode.
 
+### Design refresh -- five screens (2026-09-15)
+
+Additive only; no new dependency, no new internal package, no migration.
+
+- **Leaderboard scopes** `الشهر / اليوم / الموسم` replace the placeholder
+  `أصدقائي / النخبة` tabs (which only showed a "coming soon" snackbar).
+  - *Day*: `GET /seasons/{id}/fixture-leaderboard?from=&to=` -- optional UTC
+    window (from inclusive, to exclusive, both or neither, else `400
+    leaderboard.invalid_window`). `GetSeasonFixtureLeaderboard` now takes
+    `FixtureScheduleRepository` and keeps only the season fixtures kicking off
+    inside the window; points are the stored fixture scores, only selected.
+    A windowed board carries no movement arrows.
+  - *Season*: the sporting season is September..August; points accumulate
+    across its monthly contests and the top total is the season champion.
+    `GET /leaderboard/season` -> `GetSportingSeasonLeaderboard` (domain
+    `SportingSeason` / `SportingSeasonStanding` / `SportingSeasonLeaderboard`,
+    port `SportingSeasonStandingsReader`, adapter
+    `PostgresSportingSeasonStandingsReader` summing
+    `leaderboard.season_fixture_standings` per user over months whose `MM/YYYY`
+    label falls in the season). Contract `SportingSeasonLeaderboardDto`.
+  - Hall of Fame is retired from the product; its code is left untouched.
+- **My predictions**: filter `الكل / قادمة / مكتملة` (client-side view over the
+  existing read; unknown kickoff appears under "all" only).
+- **Matches**: day chips (weekday + date, relative badge), double button blue.
+- **Home**: header, overview card, top matches of the day, pending card.
+- **Account**: profile card with the current month's points / decided matches
+  / accuracy from `GET /me/seasons`; admin dashboard row for `admin` only;
+  records and groups moved under `الإعدادات`. No language row: the app locale
+  is fixed to Arabic.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

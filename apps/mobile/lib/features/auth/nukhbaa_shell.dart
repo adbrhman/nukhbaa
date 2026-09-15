@@ -61,13 +61,14 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     0 => HomeScreen(
       user: widget.user,
       onOpenMatches: () => _select(1),
-      onOpenPredictions: () => _select(2),
-      onOpenLeaderboards: () => _select(3),
       onOpenAccount: () => _select(4),
     ),
     1 => const CurrentMonthFixturesScreen(),
     2 => const PredictionHistoryScreen(),
-    3 => LeaderboardsScreen(userDisplayName: widget.user.displayName),
+    3 => LeaderboardsScreen(
+      userDisplayName: widget.user.displayName,
+      userId: widget.user.userId,
+    ),
     _ => AccountScreen(user: widget.user),
   };
 

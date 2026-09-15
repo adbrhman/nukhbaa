@@ -1276,13 +1276,11 @@ class _WinPercentage extends StatelessWidget {
   }
 }
 
-/// The "make it double" toggle — quiet by default so it never competes
-/// with the rest of the card: unselected carries no gold and no glow at
-/// all, just a faint neutral fill/border. Selected is a solid gold fill
-/// (no gradient) with one small ambient shadow. The state is never
-/// color-alone — the icon and fill both change with it too
-/// (accessibility). Reuses the same key the prior chip design used
-/// (`currentMonthFixtures.double.$fixtureId`) — same control, restyled.
+/// The "make it double" toggle, in the action blue: a solid blue button by
+/// default, and once selected a brighter blue gradient with a gold rim, a
+/// filled gold bolt and a soft glow. The state is never colour-alone -- the
+/// rim and the icon change with it (accessibility). Reuses the same key the
+/// prior chip design used (`currentMonthFixtures.double.$fixtureId`).
 class _DoubleGlowButton extends StatelessWidget {
   const _DoubleGlowButton({
     required this.selected,
@@ -1321,19 +1319,16 @@ class _DoubleGlowButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
-              color: selected
-                  ? tokens.gold
-                  : tokens.textPrimary.withValues(alpha: 0.06),
-              border: selected
-                  ? null
-                  : Border.all(
-                      color: tokens.textPrimary.withValues(alpha: 0.12),
-                      width: AppStroke.hairline,
-                    ),
+              color: selected ? null : tokens.primary,
+              gradient: selected ? tokens.primaryGradient : null,
+              border: Border.all(
+                color: selected ? tokens.gold : tokens.primary,
+                width: selected ? 1.5 : AppStroke.hairline,
+              ),
               boxShadow: selected
                   ? <BoxShadow>[
                       BoxShadow(
-                        color: tokens.gold.withValues(alpha: 0.25),
+                        color: tokens.primary.withValues(alpha: 0.35),
                         blurRadius: 12,
                         offset: const Offset(0, 2),
                       ),
@@ -1347,7 +1342,7 @@ class _DoubleGlowButton extends StatelessWidget {
                 Icon(
                   selected ? Icons.bolt_rounded : Icons.bolt_outlined,
                   size: AppSizes.iconSm,
-                  color: selected ? tokens.onPrimary : tokens.textSecondary,
+                  color: selected ? tokens.gold : tokens.onPrimary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Flexible(
@@ -1358,7 +1353,7 @@ class _DoubleGlowButton extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
-                      color: selected ? tokens.onPrimary : tokens.textSecondary,
+                      color: tokens.onPrimary,
                     ),
                   ),
                 ),

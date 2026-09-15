@@ -94,9 +94,18 @@ final class LeaderboardsApi {
   ///   * `Err(transient)` on `503` or a network failure (retryable);
   ///   * `Err(validation, code: api_client.malformed_response)` if the `200`
   ///     body is not a valid [FixtureLeaderboardDto].
-  Future<Result<FixtureLeaderboardDto>> fixtureLeaderboard(String seasonId) {
+  Future<Result<FixtureLeaderboardDto>> fixtureLeaderboard(
+    String seasonId, {
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) {
+    final query = <String, String>{
+      if (fromUtc != null) 'from': fromUtc.toUtc().toIso8601String(),
+      if (toUtc != null) 'to': toUtc.toUtc().toIso8601String(),
+    };
     return _transport.getObject<FixtureLeaderboardDto>(
       '/seasons/$seasonId/fixture-leaderboard',
+      query: query.isEmpty ? null : query,
       parse: FixtureLeaderboardDto.fromJson,
     );
   }
@@ -107,6 +116,15 @@ final class LeaderboardsApi {
   ///
   /// An **empty** list is a legitimate result (a new account that has never
   /// scored), never an error.
+  /// `GET /leaderboard/season` -- the current sporting season's standings
+  /// (September to August, summed per user, most points first).
+  Future<Result<SportingSeasonLeaderboardDto>> sportingSeasonLeaderboard() {
+    return _transport.getObject<SportingSeasonLeaderboardDto>(
+      '/leaderboard/season',
+      parse: SportingSeasonLeaderboardDto.fromJson,
+    );
+  }
+
   Future<Result<List<MySeasonRecordDto>>> mySeasons() {
     return _transport.getList<MySeasonRecordDto>(
       '/me/seasons',

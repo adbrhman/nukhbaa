@@ -9,6 +9,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -28,32 +29,99 @@ import 'prediction_lookup_providers.dart';
 /// was submitted, and one labelled status: the server's verdict and points
 /// once [fixtureScoresProvider] resolves a grade, otherwise where the
 /// fixture stands against its kickoff (not started / live / awaiting).
-class PredictionHistoryScreen extends ConsumerWidget {
+///
+/// A filter on top narrows the list: all, upcoming (not finished yet --
+/// still ahead of kickoff or in play), or completed (kicked off and no
+/// longer live). A prediction whose kickoff is unknown only appears under
+/// "all", since neither of the other two can be claimed for it.
+class PredictionHistoryScreen extends ConsumerStatefulWidget {
   const PredictionHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PredictionHistoryScreen> createState() =>
+      _PredictionHistoryScreenState();
+}
+
+enum _HistoryFilter { all, upcoming, completed }
+
+class _PredictionHistoryScreenState
+    extends ConsumerState<PredictionHistoryScreen> {
+  _HistoryFilter _filter = _HistoryFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<FixturePredictionDto>> history = ref.watch(
       myFixturePredictionsProvider,
     );
+    final Map<String, SeasonFixtureCardDto>? fixturesById = ref
+        .watch(currentMonthFixturesByIdProvider)
+        .value;
+    final bool hasAny = history.value?.isNotEmpty ?? false;
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: Text(l10n.myPredictions, key: const Key('history.title')),
       ),
       // The shell's bottom bar floats over the page (`extendBody`), so the
       // list must stop above it -- the same SafeArea the other tabs use.
       body: SafeArea(
         top: false,
-        child: AsyncListView<FixturePredictionDto>(
-          value: history,
-          emptyMessage: l10n.predictionHistoryEmpty,
-          onRetry: () => ref.invalidate(myFixturePredictionsProvider),
-          itemBuilder: (context, prediction) =>
-              _FixturePredictionCard(prediction: prediction),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: SegmentedPills(
+                keyPrefix: 'history.filter',
+                labels: <String>[
+                  l10n.historyFilterAll,
+                  l10n.historyFilterUpcoming,
+                  l10n.historyFilterCompleted,
+                ],
+                selectedIndex: _filter.index,
+                onSelected: (index) =>
+                    setState(() => _filter = _HistoryFilter.values[index]),
+              ),
+            ),
+            Expanded(
+              child: AsyncListView<FixturePredictionDto>(
+                value: history.whenData(
+                  (items) => items
+                      .where((p) => _passes(p, fixturesById))
+                      .toList(growable: false),
+                ),
+                emptyMessage: hasAny
+                    ? l10n.historyFilterEmpty
+                    : l10n.predictionHistoryEmpty,
+                onRetry: () => ref.invalidate(myFixturePredictionsProvider),
+                itemBuilder: (context, prediction) =>
+                    _FixturePredictionCard(prediction: prediction),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  bool _passes(
+    FixturePredictionDto prediction,
+    Map<String, SeasonFixtureCardDto>? fixturesById,
+  ) {
+    if (_filter == _HistoryFilter.all) return true;
+    final String? kickoffAt = fixturesById?[prediction.fixtureId]?.kickoffAt;
+    final DateTime? kickoff = kickoffAt == null
+        ? null
+        : DateTime.tryParse(kickoffAt)?.toUtc();
+    if (kickoff == null) return false;
+    final bool finished =
+        !DateTime.now().toUtc().isBefore(kickoff) && !isFixtureLive(kickoffAt);
+    return _filter == _HistoryFilter.completed ? finished : !finished;
   }
 }
 

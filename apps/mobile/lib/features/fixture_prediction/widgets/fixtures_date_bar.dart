@@ -1,8 +1,7 @@
-/// The FotMob-style **day strip** that sits under the matches app bar
-/// (`current_month_fixtures_screen.dart`): one horizontally scrollable tab
-/// per calendar day, the selected one underlined. Relative labels for
-/// yesterday / today / tomorrow, `EEEE dd MMMM` for everything else — the
-/// same shape the reference uses.
+/// The **day strip** that sits under the matches app bar
+/// (`current_month_fixtures_screen.dart`): one horizontally scrollable chip
+/// per calendar day -- weekday on top, date below -- the selected one filled
+/// blue. Yesterday / today / tomorrow carry a small badge on top.
 ///
 /// Purely presentational: it owns no fixture read and no selection state.
 /// The screen owns the selected day and hands it down, so the strip, the
@@ -17,8 +16,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 
 import '../../../core/design/app_motion.dart';
+import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Midnight-local for [value] — the canonical "day" key used by the strip,
@@ -45,10 +46,9 @@ class FixturesDateStrip extends StatefulWidget {
   /// Called with a midnight-local day when a tab is tapped.
   final ValueChanged<DateTime> onDaySelected;
 
-  /// The strip's fixed height, for the app bar's `PreferredSize`.
-  /// 40 still fits the 14px label, its 8px gap and the 3px underline,
-  /// with the leading spacer absorbing the rest.
-  static const double height = 40;
+  /// The strip's fixed height, for the app bar's `PreferredSize`: a 58px
+  /// chip (badge, weekday, date) plus its vertical margin.
+  static const double height = 70;
 
   @override
   State<FixturesDateStrip> createState() => _FixturesDateStripState();
@@ -102,22 +102,22 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
     });
   }
 
-  String _label(BuildContext context, DateTime day, DateTime today) {
+  /// "اليوم" / "أمس" / "غداً" for the three days around today, else null.
+  String? _relative(BuildContext context, DateTime day, DateTime today) {
     final l10n = AppLocalizations.of(context);
     final int diff = day.difference(today).inDays;
     if (diff == 0) return l10n.fixturesDateToday;
     if (diff == -1) return l10n.fixturesDateYesterday;
     if (diff == 1) return l10n.fixturesDateTomorrow;
-    final String locale = Localizations.localeOf(context).toString();
-    final String weekday = intl.DateFormat.EEEE(locale).format(day);
-    final String month = intl.DateFormat.MMMM(locale).format(day);
-    final String dayNum = intl.DateFormat('dd', locale).format(day);
-    return '$weekday $dayNum $month';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final String locale = Localizations.localeOf(context).toString();
+    final intl.DateFormat weekdayFormat = intl.DateFormat.EEEE(locale);
+    final intl.DateFormat dateFormat = intl.DateFormat('d MMMM', locale);
     final DateTime today = fixtureDayOnly(DateTime.now());
     final DateTime selected = fixtureDayOnly(widget.selectedDay);
 
@@ -127,13 +127,22 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
         key: const Key('currentMonthFixtures.dayStrip'),
         controller: _controller,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 6,
+        ),
         child: Row(
           children: <Widget>[
             for (int index = 0; index < _radius * 2 + 1; index++)
               _DayTab(
                 key: index == _radius ? _selectedKey : null,
-                label: _label(
+                weekday: weekdayFormat.format(
+                  selected.add(Duration(days: index - _radius)),
+                ),
+                date: dateFormat.format(
+                  selected.add(Duration(days: index - _radius)),
+                ),
+                badge: _relative(
                   context,
                   selected.add(Duration(days: index - _radius)),
                   today,
@@ -151,54 +160,107 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
   }
 }
 
-/// One day tab: label plus a 3px selection underline, exactly as the
-/// reference draws it. Unselected tabs carry no fill and no border, so the
-/// strip reads as text until something is chosen.
+/// One day chip: an optional relative badge, the weekday and the date. The
+/// selected chip is filled with the action colour; the rest sit on the
+/// surface colour with a hairline border, so the strip reads as a row of
+/// days rather than as text.
 class _DayTab extends StatelessWidget {
   const _DayTab({
-    required this.label,
+    required this.weekday,
+    required this.date,
+    required this.badge,
     required this.selected,
     required this.tokens,
     required this.onTap,
     super.key,
   });
 
-  final String label;
+  final String weekday;
+  final String date;
+  final String? badge;
   final bool selected;
   final AppTokens tokens;
   final VoidCallback onTap;
 
+  static const double _width = 80;
+  static const double _badgeHeight = 15;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Spacer(),
-            Text(
-              label,
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? tokens.textPrimary : tokens.textMuted,
+    final String? relative = badge;
+    final Color primaryText = selected ? tokens.onPrimary : tokens.textPrimary;
+    final Color secondaryText = selected
+        ? tokens.onPrimary.withValues(alpha: 0.85)
+        : tokens.textMuted;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.brMd,
+          child: AnimatedContainer(
+            duration: AppMotion.fast,
+            width: _width,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: selected ? tokens.primary : tokens.surface,
+              borderRadius: AppRadius.brMd,
+              border: Border.all(
+                color: selected ? tokens.primary : tokens.border,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              height: 3,
-              width: 44,
-              decoration: BoxDecoration(
-                color: selected ? tokens.primary : Colors.transparent,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(3),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  height: _badgeHeight,
+                  child: relative == null
+                      ? null
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: tokens.gold,
+                            borderRadius: AppRadius.brSm,
+                          ),
+                          child: Text(
+                            relative,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              height: 1.1,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.onBronze,
+                            ),
+                          ),
+                        ),
                 ),
-              ),
+                Text(
+                  weekday,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.2,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    color: primaryText,
+                  ),
+                ),
+                Text(
+                  date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: secondaryText,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
