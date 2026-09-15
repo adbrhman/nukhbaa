@@ -1787,8 +1787,27 @@ final class CompositionRoot {
   static Future<CompositionRoot>? _instanceFuture;
 
   /// Returns the process-wide root, building it once on first access.
+  ///
+  /// A *failed* bootstrap is deliberately not kept: `??=` cached the rejected
+  /// Future, so one bad moment at startup (the pooler briefly unreachable, a
+  /// slow JWKS warm-up) poisoned every later request with the same error and
+  /// nothing short of a container restart could clear it. Concurrent callers
+  /// still share one in-flight attempt; only a failure reopens the door.
   static Future<CompositionRoot> instance() {
-    return _instanceFuture ??= bootstrap(Platform.environment);
+    final cached = _instanceFuture;
+    if (cached != null) return cached;
+    late final Future<CompositionRoot> attempt;
+    attempt = bootstrap(Platform.environment).catchError((
+      Object error,
+      StackTrace stackTrace,
+    ) {
+      if (identical(_instanceFuture, attempt)) {
+        _instanceFuture = null;
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    });
+    _instanceFuture = attempt;
+    return attempt;
   }
 
   /// Resets the cached root. Intended for tests and controlled shutdown; not

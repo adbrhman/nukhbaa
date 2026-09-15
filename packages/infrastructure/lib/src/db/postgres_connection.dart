@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:infrastructure/src/db/postgres_config.dart';
@@ -28,6 +29,17 @@ abstract interface class DbExecutor {
     Map<String, Object?> parameters,
   });
 }
+
+/// How long any single statement may take before it is abandoned.
+///
+/// The startup probe was bounded; the statements that follow it were not. A
+/// pooler that accepts the connection and then stalls (a blackholed network
+/// path, a session stuck behind a lock) left the awaiting request hanging with
+/// no limit -- and dart_frog applies no request timeout of its own, so the
+/// caller waited forever while a pool connection stayed checked out. Ten
+/// seconds is far above any query this service issues and far below the point
+/// where a user would still be waiting.
+const Duration _statementTimeout = Duration(seconds: 10);
 
 /// Owns the lifecycle of the Postgres connection pool.
 ///
@@ -123,7 +135,7 @@ class PostgresConnection implements DbExecutor {
   /// Runs a liveness probe. `Ok(true)` when the DB answers `SELECT 1`.
   Future<Result<bool>> ping() async {
     try {
-      final result = await _pool.execute('SELECT 1');
+      final result = await _pool.execute('SELECT 1').timeout(_statementTimeout);
       return Result.ok(result.isNotEmpty);
     } on Object catch (e) {
       return Result.err(
@@ -149,14 +161,21 @@ class PostgresConnection implements DbExecutor {
     Map<String, Object?> parameters = const {},
   }) async {
     try {
-      final result = await _pool.execute(
-        Sql.named(sql),
-        parameters: parameters,
-      );
+      final result = await _pool
+          .execute(Sql.named(sql), parameters: parameters)
+          .timeout(_statementTimeout);
       final rows = result
           .map((row) => row.toColumnMap())
           .toList(growable: false);
       return Result.ok(rows);
+    } on TimeoutException catch (e) {
+      stderr.writeln(
+        '[PostgresConnection.query] timed out after '
+        '${_statementTimeout.inSeconds}s',
+      );
+      return Result.err(
+        AppError.transient('db.query_timeout', 'Database query timed out', e),
+      );
     } on Object catch (e) {
       stderr.writeln('[PostgresConnection.query] $e');
       return Result.err(
@@ -237,14 +256,23 @@ final class _TxExecutor implements DbExecutor {
     Map<String, Object?> parameters = const {},
   }) async {
     try {
-      final result = await _session.execute(
-        Sql.named(sql),
-        parameters: parameters,
-      );
+      final result = await _session
+          .execute(Sql.named(sql), parameters: parameters)
+          .timeout(_statementTimeout);
       final rows = result
           .map((row) => row.toColumnMap())
           .toList(growable: false);
       return Result.ok(rows);
+    } on TimeoutException catch (e) {
+      // A stalled statement inside a transaction holds a pool connection AND
+      // an open transaction; runInTransaction turns this Err into a rollback.
+      stderr.writeln(
+        '[_TxExecutor.query] timed out after '
+        '${_statementTimeout.inSeconds}s',
+      );
+      return Result.err(
+        AppError.transient('db.query_timeout', 'Database query timed out', e),
+      );
     } on Object catch (e) {
       // Surface as transient; runInTransaction converts a returned Err into a
       // rollback. Re-raising the underlying driver exception is avoided so the

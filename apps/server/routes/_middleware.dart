@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/security_headers.dart';
@@ -63,7 +64,25 @@ Handler middleware(Handler handler) {
       );
     }
 
-    final response = await withCompositionRoot(context);
+    Response response;
+    try {
+      response = await withCompositionRoot(context);
+    } on Object catch (error, stackTrace) {
+      // Anything that escapes a handler used to be answered by the framework
+      // with a bare 500 carrying none of the headers below -- so the web
+      // build saw an opaque CORS failure rather than the error, and the
+      // container log, which is the only observability this deployment has,
+      // said nothing at all. Same envelope as every other error response.
+      // ignore: avoid_print
+      print('[middleware] unhandled failure: $error\n$stackTrace');
+      response = Response.json(
+        statusCode: HttpStatus.internalServerError,
+        body: const ErrorResponseDto(
+          code: 'server.unexpected',
+          message: 'Unexpected server error',
+        ).toJson(),
+      );
+    }
     return response.copyWith(
       headers: {...response.headers, ...corsHeaders, ...securityHeaders},
     );
