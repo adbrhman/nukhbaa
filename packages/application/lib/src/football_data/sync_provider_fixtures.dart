@@ -10,7 +10,7 @@ import 'package:application/src/prediction/ports/fixture_prediction_repository.d
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
-/// System use-case: add the provider's upcoming matches that the rules select
+/// System use-case: add the providers' upcoming matches that the rules select
 /// to the monthly contest, exactly as an admin would -- a fixture schedule
 /// (catalog team names and ids, league), a link to the month's season, and the
 /// provider identity so the same match is never added twice.
@@ -26,7 +26,7 @@ import 'package:shared/shared.dart';
 final class SyncProviderFixtures {
   /// Creates the use-case.
   const SyncProviderFixtures({
-    required FootballDataProvider provider,
+    required Map<String, FootballDataProvider> providers,
     required ProviderSyncStore store,
     required LeagueRepository leagueRepository,
     required TeamRepository teamRepository,
@@ -35,10 +35,9 @@ final class SyncProviderFixtures {
     required FixturePredictionRepository fixturePredictionRepository,
     required IdGenerator idGenerator,
     required List<ProviderLeagueRule> rules,
-    required String source,
     this.minimumLead = const Duration(minutes: 30),
     this.duplicateWindow = const Duration(hours: 12),
-  }) : _provider = provider,
+  }) : _providers = providers,
        _store = store,
        _leagues = leagueRepository,
        _teams = teamRepository,
@@ -46,10 +45,9 @@ final class SyncProviderFixtures {
        _schedules = fixtureScheduleRepository,
        _fixturePredictions = fixturePredictionRepository,
        _ids = idGenerator,
-       _rules = rules,
-       _source = source;
+       _rules = rules;
 
-  final FootballDataProvider _provider;
+  final Map<String, FootballDataProvider> _providers;
   final ProviderSyncStore _store;
   final LeagueRepository _leagues;
   final TeamRepository _teams;
@@ -58,7 +56,6 @@ final class SyncProviderFixtures {
   final FixturePredictionRepository _fixturePredictions;
   final IdGenerator _ids;
   final List<ProviderLeagueRule> _rules;
-  final String _source;
 
   /// Matches kicking off sooner than this are not added.
   final Duration minimumLead;
@@ -109,7 +106,16 @@ final class SyncProviderFixtures {
     var known = 0;
     var skipped = 0;
 
+    final exhausted = <String>{};
     for (final rule in _rules) {
+      final provider = _providers[rule.source];
+      if (provider == null) {
+        notes.add('no provider configured for ${rule.source}');
+        continue;
+      }
+      if (exhausted.contains(rule.source)) {
+        continue;
+      }
       final league = leagueByName[rule.leagueName];
       if (league == null) {
         notes.add('league not in catalog: ${rule.leagueName}');
@@ -124,7 +130,7 @@ final class SyncProviderFixtures {
 
       for (final day in riyadhDays) {
         requests++;
-        final fetched = await _provider.matchesOn(
+        final fetched = await provider.matchesOn(
           leagueExternalId: rule.externalLeagueId,
           riyadhDay: day,
         );
@@ -134,15 +140,9 @@ final class SyncProviderFixtures {
             '${fetched.error.code}',
           );
           if (fetched.error.code == providerQuotaErrorCode) {
-            return Result.ok(
-              ProviderSyncReport(
-                requests: requests,
-                applied: applied,
-                alreadyKnown: known,
-                skipped: skipped,
-                notes: notes,
-              ),
-            );
+            // This provider is done for the run; the others carry on.
+            exhausted.add(rule.source);
+            break;
           }
           continue;
         }
@@ -160,7 +160,7 @@ final class SyncProviderFixtures {
         }
 
         final teamIdsResult = await _store.canonicalIds(
-          source: _source,
+          source: rule.source,
           table: 'team',
           externalIds: [
             for (final match in candidates) ...[
@@ -174,7 +174,7 @@ final class SyncProviderFixtures {
           continue;
         }
         final fixtureIdsResult = await _store.canonicalIds(
-          source: _source,
+          source: rule.source,
           table: 'fixture',
           externalIds: [for (final match in candidates) match.externalId],
         );
@@ -251,7 +251,7 @@ final class SyncProviderFixtures {
               continue;
             }
             final adopted = await _store.link(
-              source: _source,
+              source: rule.source,
               table: 'fixture',
               externalId: match.externalId,
               canonicalId: existing,
@@ -271,6 +271,7 @@ final class SyncProviderFixtures {
           }
 
           final added = await _add(
+            source: rule.source,
             match: match,
             home: home,
             away: away,
@@ -300,6 +301,7 @@ final class SyncProviderFixtures {
   }
 
   Future<Result<void>> _add({
+    required String source,
     required ProviderMatch match,
     required Team home,
     required Team away,
@@ -352,7 +354,7 @@ final class SyncProviderFixtures {
       return Result.err(saved.error);
     }
     final identity = await _store.link(
-      source: _source,
+      source: source,
       table: 'fixture',
       externalId: match.externalId,
       canonicalId: fixture.value,

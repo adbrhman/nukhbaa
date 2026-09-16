@@ -25,13 +25,19 @@ final _kickoff = DateTime.utc(2026, 9, 19, 14);
 final _day = riyadhDayOf(_kickoff);
 
 const _rules = [
-  ProviderLeagueRule(externalLeagueId: 'PL', leagueName: 'الإنجليزي'),
   ProviderLeagueRule(
+    source: 'highlightly',
+    externalLeagueId: 'PL',
+    leagueName: 'الإنجليزي',
+  ),
+  ProviderLeagueRule(
+    source: 'highlightly',
     externalLeagueId: 'LL',
     leagueName: 'الإسباني',
     clubs: {'rm'},
   ),
   ProviderLeagueRule(
+    source: 'highlightly',
     externalLeagueId: 'LC',
     leagueName: 'كأس الرابطة',
     bothFromLeagueName: 'الإنجليزي',
@@ -73,7 +79,7 @@ void main() {
         ),
       );
     sync = SyncProviderFixtures(
-      provider: provider,
+      providers: {'highlightly': provider},
       store: store,
       leagueRepository: FakeLeagueRepository(const [
         League(
@@ -107,7 +113,6 @@ void main() {
       fixturePredictionRepository: links,
       idGenerator: FakeIdGenerator(const [_newFixture]),
       rules: _rules,
-      source: 'highlightly',
     );
   });
 

@@ -40,7 +40,7 @@ void main() {
       ];
     recorded = <_Call>[];
     sync = SyncProviderResults(
-      provider: provider,
+      providers: {'highlightly': provider},
       store: store,
       leagueRepository: FakeLeagueRepository(const [
         League(
@@ -51,7 +51,11 @@ void main() {
         ),
       ]),
       rules: const [
-        ProviderLeagueRule(externalLeagueId: 'PL', leagueName: 'الإنجليزي'),
+        ProviderLeagueRule(
+          source: 'highlightly',
+          externalLeagueId: 'PL',
+          leagueName: 'الإنجليزي',
+        ),
       ],
       recorder:
           ({
@@ -66,7 +70,6 @@ void main() {
             ));
             return const Result.ok(null);
           },
-      source: 'highlightly',
     );
   });
 

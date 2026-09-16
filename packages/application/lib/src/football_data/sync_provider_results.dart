@@ -30,28 +30,25 @@ typedef ProviderResultRecorder =
 final class SyncProviderResults {
   /// Creates the use-case.
   const SyncProviderResults({
-    required FootballDataProvider provider,
+    required Map<String, FootballDataProvider> providers,
     required ProviderSyncStore store,
     required LeagueRepository leagueRepository,
     required List<ProviderLeagueRule> rules,
     required ProviderResultRecorder recorder,
-    required String source,
     this.settleTime = const Duration(minutes: 110),
     this.lookback = const Duration(days: 3),
     this.maxCallsPerRun = 8,
-  }) : _provider = provider,
+  }) : _providers = providers,
        _store = store,
        _leagues = leagueRepository,
        _rules = rules,
-       _recorder = recorder,
-       _source = source;
+       _recorder = recorder;
 
-  final FootballDataProvider _provider;
+  final Map<String, FootballDataProvider> _providers;
   final ProviderSyncStore _store;
   final LeagueRepository _leagues;
   final List<ProviderLeagueRule> _rules;
   final ProviderResultRecorder _recorder;
-  final String _source;
 
   /// How long after kickoff a match is first looked up.
   final Duration settleTime;
@@ -62,23 +59,36 @@ final class SyncProviderResults {
   /// Provider calls allowed in one run.
   final int maxCallsPerRun;
 
-  /// Runs once at [now]; writes only when [apply].
+  /// Runs once at [now]; writes only when [apply]. Every provider with a
+  /// rule is asked about its own pending fixtures; a fixture linked to two
+  /// providers is recorded by whichever reports it finished first (it is no
+  /// longer pending for the other).
   Future<Result<ProviderSyncReport>> call({
     required DateTime now,
     required bool apply,
   }) async {
     final nowUtc = now.toUtc();
-    final pendingResult = await _store.fixturesAwaitingResult(
-      source: _source,
-      kickedOffFrom: nowUtc.subtract(lookback),
-      kickedOffBefore: nowUtc.subtract(settleTime),
-    );
-    if (pendingResult is Err<List<PendingProviderFixture>>) {
-      return Result.err(pendingResult.error);
+    final sources = <String>{
+      for (final rule in _rules)
+        if (_providers.containsKey(rule.source)) rule.source,
+    };
+
+    final pendingBySource = <String, List<PendingProviderFixture>>{};
+    for (final source in sources) {
+      final pendingResult = await _store.fixturesAwaitingResult(
+        source: source,
+        kickedOffFrom: nowUtc.subtract(lookback),
+        kickedOffBefore: nowUtc.subtract(settleTime),
+      );
+      if (pendingResult is Err<List<PendingProviderFixture>>) {
+        return Result.err(pendingResult.error);
+      }
+      final pending = (pendingResult as Ok<List<PendingProviderFixture>>).value;
+      if (pending.isNotEmpty) {
+        pendingBySource[source] = pending;
+      }
     }
-    final pending = (pendingResult as Ok<List<PendingProviderFixture>>).value;
-    final notes = <String>[];
-    if (pending.isEmpty) {
+    if (pendingBySource.isEmpty) {
       return const Result.ok(
         ProviderSyncReport(
           requests: 0,
@@ -98,49 +108,61 @@ final class SyncProviderResults {
       for (final league in (leaguesResult as Ok<List<League>>).value)
         league.id.value: league.name.trim(),
     };
-    final ruleByLeagueName = <String, ProviderLeagueRule>{
-      for (final rule in _rules) rule.leagueName: rule,
+    final ruleFor = <String, ProviderLeagueRule>{
+      for (final rule in _rules) '${rule.source}|${rule.leagueName}': rule,
     };
 
-    // Group by provider competition and Riyadh day: one call covers them.
+    // Group by provider, competition and Riyadh day: one call covers them.
+    // A fixture linked to a provider that does not serve its competition is
+    // left to the provider that does.
+    final notes = <String>[];
     final groups = <String, List<PendingProviderFixture>>{};
     final groupRule = <String, ProviderLeagueRule>{};
     final groupDay = <String, DateTime>{};
-    var skipped = 0;
-    for (final fixture in pending) {
-      final leagueId = fixture.leagueId;
-      final rule = leagueId == null
-          ? null
-          : ruleByLeagueName[leagueNameById[leagueId]];
-      if (rule == null) {
-        skipped++;
-        notes.add('no provider league for fixture ${fixture.fixtureId}');
-        continue;
+    for (final entry in pendingBySource.entries) {
+      for (final fixture in entry.value) {
+        final leagueName = leagueNameById[fixture.leagueId];
+        final rule = leagueName == null
+            ? null
+            : ruleFor['${entry.key}|$leagueName'];
+        if (rule == null) {
+          continue;
+        }
+        final day = riyadhDayOf(fixture.kickoffAt);
+        final key = '${rule.source}|${rule.externalLeagueId}|${isoDay(day)}';
+        groups.putIfAbsent(key, () => <PendingProviderFixture>[]).add(fixture);
+        groupRule[key] = rule;
+        groupDay[key] = day;
       }
-      final day = riyadhDayOf(fixture.kickoffAt);
-      final key = '${rule.externalLeagueId}|${isoDay(day)}';
-      groups.putIfAbsent(key, () => <PendingProviderFixture>[]).add(fixture);
-      groupRule[key] = rule;
-      groupDay[key] = day;
     }
 
     var requests = 0;
     var applied = 0;
     var waiting = 0;
+    var skipped = 0;
+    final recordedIds = <String>{};
+    final exhausted = <String>{};
+    final calls = <String, int>{};
     for (final entry in groups.entries) {
-      if (requests >= maxCallsPerRun) {
-        notes.add('call budget reached; the rest waits for the next run');
-        break;
+      final rule = groupRule[entry.key]!;
+      if (exhausted.contains(rule.source)) {
+        continue;
       }
+      if ((calls[rule.source] ?? 0) >= maxCallsPerRun) {
+        notes.add('call budget reached for ${rule.source}; the rest waits');
+        exhausted.add(rule.source);
+        continue;
+      }
+      calls[rule.source] = (calls[rule.source] ?? 0) + 1;
       requests++;
-      final fetched = await _provider.matchesOn(
-        leagueExternalId: groupRule[entry.key]!.externalLeagueId,
+      final fetched = await _providers[rule.source]!.matchesOn(
+        leagueExternalId: rule.externalLeagueId,
         riyadhDay: groupDay[entry.key]!,
       );
       if (fetched is Err<List<ProviderMatch>>) {
         notes.add('fetch ${entry.key} failed: ${fetched.error.code}');
         if (fetched.error.code == providerQuotaErrorCode) {
-          break;
+          exhausted.add(rule.source);
         }
         continue;
       }
@@ -150,6 +172,9 @@ final class SyncProviderResults {
       };
 
       for (final fixture in entry.value) {
+        if (recordedIds.contains(fixture.fixtureId)) {
+          continue;
+        }
         final match = byId[fixture.externalId];
         if (match == null) {
           skipped++;
@@ -186,6 +211,7 @@ final class SyncProviderResults {
             '${match.awayTeamName} (fixture ${fixture.fixtureId})';
         if (!apply) {
           applied++;
+          recordedIds.add(fixture.fixtureId);
           notes.add('would record: $label');
           continue;
         }
@@ -199,6 +225,7 @@ final class SyncProviderResults {
           continue;
         }
         applied++;
+        recordedIds.add(fixture.fixtureId);
         notes.add('recorded: $label');
       }
     }

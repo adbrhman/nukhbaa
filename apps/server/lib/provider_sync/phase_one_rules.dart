@@ -3,61 +3,75 @@ import 'package:application/application.dart';
 /// The identity-map source name of the Highlightly provider.
 const String highlightlySource = 'highlightly';
 
-/// Phase 1 of automatic fixtures (decided 2026-09-16). League names are the
-/// rows of `football_data.leagues`; club ids are Highlightly team ids (their
-/// app teams are mapped in `supabase/seed/highlightly_team_map_2026_27.sql`).
+/// The identity-map source name of the football-data.org provider.
+const String footballDataSource = 'football-data';
+
+/// Phase 1 of automatic fixtures (decided 2026-09-16, providers split
+/// 2026-09-17). League names are the rows of `football_data.leagues`; club
+/// ids are the serving provider's team ids (their app teams are mapped in
+/// `supabase/seed/highlightly_team_map_2026_27.sql` and
+/// `supabase/seed/football_data_team_map_2026_27.sql`).
 ///
-/// * Premier League, Champions League: every match.
-/// * League Cup: only ties between two Premier League clubs.
-/// * Bundesliga, La Liga, Serie A, Roshan League, Europa League: any match of
-///   one of the listed clubs.
+/// * football-data.org: Premier League and Champions League (every match),
+///   Bundesliga, La Liga, Serie A (any match of a listed club).
+/// * Highlightly: Roshan League and Europa League (any match of a listed
+///   club), League Cup (only ties between two Premier League clubs).
 const List<ProviderLeagueRule> phaseOneRules = [
   ProviderLeagueRule(
-    externalLeagueId: '33973',
+    source: footballDataSource,
+    externalLeagueId: 'PL',
     leagueName: 'الدوري الإنجليزي الممتاز',
   ),
-  ProviderLeagueRule(externalLeagueId: '2486', leagueName: 'دوري أبطال أوروبا'),
   ProviderLeagueRule(
-    externalLeagueId: '67162',
+    source: footballDataSource,
+    externalLeagueId: 'CL',
+    leagueName: 'دوري أبطال أوروبا',
+  ),
+  ProviderLeagueRule(
+    source: footballDataSource,
+    externalLeagueId: 'BL1',
     leagueName: 'الدوري الألماني',
     clubs: {
-      '134391', // Bayern Munich
-      '141199', // Borussia Dortmund
-      '143752', // Bayer Leverkusen
-      '148007', // RB Leipzig
-      '142901', // Hoffenheim
-      '148858', // Schalke 04
+      '5', // Bayern Munich
+      '4', // Borussia Dortmund
+      '3', // Bayer Leverkusen
+      '721', // RB Leipzig
+      '2', // Hoffenheim
+      '6', // Schalke 04
     },
   ),
   ProviderLeagueRule(
-    externalLeagueId: '119924',
+    source: footballDataSource,
+    externalLeagueId: 'PD',
     leagueName: 'الدوري الإسباني',
     clubs: {
-      '460324', // Espanyol
-      '461175', // Real Madrid
-      '451814', // Atletico Madrid
-      '456920', // Sevilla
-      '450963', // Barcelona
-      '462877', // Real Betis
-      '462026', // Alaves
-      '452665', // Athletic Club
+      '80', // Espanyol
+      '86', // Real Madrid
+      '78', // Atletico Madrid
+      '559', // Sevilla
+      '81', // Barcelona
+      '90', // Real Betis
+      '263', // Alaves
+      '77', // Athletic Club
     },
   ),
   ProviderLeagueRule(
-    externalLeagueId: '115669',
+    source: footballDataSource,
+    externalLeagueId: 'SA',
     leagueName: 'الدوري الإيطالي',
     clubs: {
-      '423731', // Roma
-      '430539', // Inter
-      '415221', // Lazio
-      '416923', // AC Milan
-      '762429', // Como
-      '425433', // Atalanta
-      '419476', // Napoli
-      '422880', // Juventus
+      '100', // Roma
+      '108', // Inter
+      '110', // Lazio
+      '98', // AC Milan
+      '7397', // Como
+      '102', // Atalanta
+      '113', // Napoli
+      '109', // Juventus
     },
   ),
   ProviderLeagueRule(
+    source: highlightlySource,
     externalLeagueId: '262041',
     leagueName: 'دوري روشن السعودي',
     clubs: {
@@ -69,6 +83,7 @@ const List<ProviderLeagueRule> phaseOneRules = [
     },
   ),
   ProviderLeagueRule(
+    source: highlightlySource,
     externalLeagueId: '3337',
     leagueName: 'الدوري الأوروبي',
     clubs: {
@@ -87,6 +102,7 @@ const List<ProviderLeagueRule> phaseOneRules = [
     },
   ),
   ProviderLeagueRule(
+    source: highlightlySource,
     externalLeagueId: '41632',
     leagueName: 'كأس الرابطة الإنجليزية',
     bothFromLeagueName: 'الدوري الإنجليزي الممتاز',

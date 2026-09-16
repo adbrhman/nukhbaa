@@ -2680,6 +2680,28 @@ Phase 1 of the Highlightly sync (rules in
   `provider-sync [mode]`.
 - Budget: ~16 fixture calls/day + result calls only for due groups.
 
+### Two football data providers (2026-09-17)
+
+Highlightly's free plan (100 requests/day) ran out during testing, so the
+five football-data.org competitions moved there (free tier: 10 calls/minute,
+no daily cap): Premier League `PL`, Champions League `CL`, Bundesliga `BL1`,
+La Liga `PD`, Serie A `SA`. Highlightly keeps the Roshan League, Europa
+League and League Cup.
+
+- `ProviderLeagueRule.source` names the serving provider; the sync
+  use-cases take `providers: {source: FootballDataProvider}`. A quota stop on
+  one provider no longer stops the others. Results are chased per source; a
+  fixture linked to two providers is recorded by the first that reports it
+  finished.
+- `FootballDataOrgProvider` (`X-Auth-Token`; calls spaced >= 6.5 s; a Riyadh
+  day is asked for as its two UTC dates and filtered; penalty shoot-outs are
+  removed via `regularTime + extraTime`, else `fullTime - penalties`, else no
+  result).
+- `supabase/seed/football_data_team_map_2026_27.sql` maps 96 clubs
+  (`external_source = 'football-data'`) to the same catalog teams as their
+  Highlightly ids. Env: `NUKHBA_FOOTBALL_DATA_API_KEY`; a provider without a
+  key is skipped.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

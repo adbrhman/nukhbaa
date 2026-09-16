@@ -28,13 +28,19 @@ enum ProviderSyncMode {
 final class ProviderLeagueRule {
   /// Creates the rule.
   const ProviderLeagueRule({
+    required this.source,
     required this.externalLeagueId,
     required this.leagueName,
     this.clubs = const <String>{},
     this.bothFromLeagueName,
   });
 
-  /// The provider's competition id.
+  /// The provider that serves this competition (`highlightly`,
+  /// `football-data`): its adapter answers the calls, and its name is the
+  /// identity-map source for the competition's teams and fixtures.
+  final String source;
+
+  /// The provider's competition id (or code).
   final String externalLeagueId;
 
   /// The competition's name in `football_data.leagues`; fixtures are filed

@@ -1527,21 +1527,30 @@ final class CompositionRoot {
       clock: clock,
     );
 
-    // Automatic fixtures/results from Highlightly (phase 1). Off unless both
-    // NUKHBA_HIGHLIGHTLY_API_KEY and NUKHBA_PROVIDER_SYNC (shadow|on) are set.
-    // Results go through the same RecordFixtureResult + ScoreFixture pair as
-    // the admin endpoint, under a service principal; `root` is bound below.
+    // Automatic fixtures/results (phase 1): football-data.org serves the
+    // Premier League, Champions League, Bundesliga, La Liga and Serie A;
+    // Highlightly the Roshan League, Europa League and League Cup. Off unless
+    // NUKHBA_PROVIDER_SYNC (shadow|on) and at least one provider key are set;
+    // a rule whose provider has no key is skipped. Results go through the same
+    // RecordFixtureResult + ScoreFixture pair as the admin endpoint, under a
+    // service principal; `root` is bound below.
     final highlightlyKey = (env['NUKHBA_HIGHLIGHTLY_API_KEY'] ?? '').trim();
-    final providerSyncMode = highlightlyKey.isEmpty
+    final footballDataKey = (env['NUKHBA_FOOTBALL_DATA_API_KEY'] ?? '').trim();
+    final providers = <String, FootballDataProvider>{
+      if (highlightlyKey.isNotEmpty)
+        highlightlySource: HighlightlyFootballDataProvider(
+          apiKey: highlightlyKey,
+        ),
+      if (footballDataKey.isNotEmpty)
+        footballDataSource: FootballDataOrgProvider(apiKey: footballDataKey),
+    };
+    final providerSyncMode = providers.isEmpty
         ? ProviderSyncMode.off
         : ProviderSyncMode.parse(env['NUKHBA_PROVIDER_SYNC']);
     late final CompositionRoot root;
     SyncProviderFixtures? syncProviderFixtures;
     SyncProviderResults? syncProviderResults;
     if (providerSyncMode != ProviderSyncMode.off) {
-      final footballData = HighlightlyFootballDataProvider(
-        apiKey: highlightlyKey,
-      );
       final syncStore = PostgresProviderSyncStore(connection);
       final syncLeagues = PostgresLeagueRepository(connection);
       const systemPrincipal = AuthenticatedUser(
@@ -1549,7 +1558,7 @@ final class CompositionRoot {
         role: PlatformRole.service,
       );
       syncProviderFixtures = SyncProviderFixtures(
-        provider: footballData,
+        providers: providers,
         store: syncStore,
         leagueRepository: syncLeagues,
         teamRepository: teamRepository,
@@ -1558,14 +1567,12 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         idGenerator: idGenerator,
         rules: phaseOneRules,
-        source: highlightlySource,
       );
       syncProviderResults = SyncProviderResults(
-        provider: footballData,
+        providers: providers,
         store: syncStore,
         leagueRepository: syncLeagues,
         rules: phaseOneRules,
-        source: highlightlySource,
         recorder:
             ({
               required String fixtureId,
