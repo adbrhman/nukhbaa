@@ -2627,6 +2627,28 @@ or audit entry, so a backup admin cannot lock the owner out. Reinstate is
 unchanged (still role-agnostic). Changing an admin account remains possible
 only directly in the database.
 
+### Highlightly team identities (2026-09-16)
+
+Football data provider for automatic fixtures/results: **Highlightly**
+(free plan: 100 requests/day, all leagues, current season; requests need an
+explicit User-Agent -- Cloudflare rejects library defaults with 1010).
+Provider league ids: Premier League 33973, Champions League 2486,
+Bundesliga 67162, La Liga 119924, Serie A 115669, Roshan League 262041,
+Europa League 3337, League Cup 41632 (manual for now: Ligue 1 52695,
+DFB Pokal 69715, FA Cup 39079, Asian Cup 6741, AFCON 5890, AFCON
+qualification 31420, Gulf Cup 22059).
+
+Phase-1 selection rules: Premier League and Champions League -- every
+match; League Cup -- only when both sides are Premier League clubs;
+Bundesliga, La Liga, Serie A, Roshan League, Europa League -- any match of
+one of the owner's listed clubs (see the owner's list in the session record).
+
+`supabase/seed/highlightly_team_map_2026_27.sql` (hand-applied) maps 141
+clubs in `football_data.external_identity_map` (`external_source =
+'highlightly'`): 121 existing, 20 created (8 UCL, 12 UEL). Neom is
+"Al Suqoor" at the provider. Migration 0048 adds `football_data.teams.league_id`
+to the repository (already present in production; no-op there).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
