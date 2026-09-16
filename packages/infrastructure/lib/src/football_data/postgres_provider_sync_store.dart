@@ -46,6 +46,49 @@ ORDER BY s.kickoff_at
 LIMIT 200
 ''';
 
+  static const String _existingSql = '''
+SELECT fixture_id::text AS fixture_id
+FROM competition.fixture_schedules
+WHERE kickoff_at >= @from::timestamptz
+  AND kickoff_at < @to::timestamptz
+  AND (
+    (home_team_id = @home_id::uuid AND away_team_id = @away_id::uuid)
+    OR (home_team_id IS NULL
+        AND btrim(home_team) = @home_name
+        AND btrim(away_team) = @away_name)
+  )
+ORDER BY kickoff_at
+LIMIT 1
+''';
+
+  @override
+  Future<Result<String?>> findExistingFixture({
+    required String homeTeamId,
+    required String awayTeamId,
+    required String homeTeamName,
+    required String awayTeamName,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final result = await _connection.query(
+      _existingSql,
+      parameters: {
+        'home_id': homeTeamId,
+        'away_id': awayTeamId,
+        'home_name': homeTeamName.trim(),
+        'away_name': awayTeamName.trim(),
+        'from': from.toUtc().toIso8601String(),
+        'to': to.toUtc().toIso8601String(),
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isEmpty ? null : value.first['fixture_id'].toString(),
+      ),
+    };
+  }
+
   @override
   Future<Result<Map<String, String>>> canonicalIds({
     required String source,

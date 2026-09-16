@@ -54,6 +54,25 @@ final class FakeProviderSyncStore implements ProviderSyncStore {
     return const Result.ok(null);
   }
 
+  /// `homeTeamId|awayTeamId` -> (kickoff, fixtureId) of hand-added fixtures.
+  final Map<String, (DateTime, String)> existing = {};
+
+  @override
+  Future<Result<String?>> findExistingFixture({
+    required String homeTeamId,
+    required String awayTeamId,
+    required String homeTeamName,
+    required String awayTeamName,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final hit = existing['$homeTeamId|$awayTeamId'];
+    if (hit == null || hit.$1.isBefore(from) || !hit.$1.isBefore(to)) {
+      return const Result.ok(null);
+    }
+    return Result.ok(hit.$2);
+  }
+
   @override
   Future<Result<List<PendingProviderFixture>>> fixturesAwaitingResult({
     required String source,

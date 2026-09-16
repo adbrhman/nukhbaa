@@ -2660,7 +2660,10 @@ Phase 1 of the Highlightly sync (rules in
   use-cases `SyncProviderFixtures` (adds selected upcoming matches exactly
   like an admin: schedule with catalog names/ids/league, identity link,
   season link; skips unmapped teams, matches < 30 min away, and matches
-  outside every monthly contest) and `SyncProviderResults` (fixtures linked
+  outside every monthly contest; a fixture of the same two teams already on
+  the schedule within 12 h is adopted -- identity linked, nothing added --
+  so hand-added matches also get automatic results) and
+  `SyncProviderResults` (fixtures linked
   to the provider, no result, kicked off 110 min - 3 days ago; one provider
   call per league/Riyadh day, max 8 per run; postponed/cancelled are logged
   for an admin, never scored).

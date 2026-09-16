@@ -37,6 +37,7 @@ final class SyncProviderFixtures {
     required List<ProviderLeagueRule> rules,
     required String source,
     this.minimumLead = const Duration(minutes: 30),
+    this.duplicateWindow = const Duration(hours: 12),
   }) : _provider = provider,
        _store = store,
        _leagues = leagueRepository,
@@ -61,6 +62,10 @@ final class SyncProviderFixtures {
 
   /// Matches kicking off sooner than this are not added.
   final Duration minimumLead;
+
+  /// An existing fixture of the same two teams kicking off this close to the
+  /// provider's kickoff is taken to be the same match.
+  final Duration duplicateWindow;
 
   static final RegExp _monthlyLabel = RegExp(r'^\d{2}/\d{4}$');
 
@@ -187,6 +192,12 @@ final class SyncProviderFixtures {
           }
           final home = teamById[teamIds[match.homeTeamExternalId]];
           final away = teamById[teamIds[match.awayTeamExternalId]];
+          if (pairLeague != null && (home == null || away == null)) {
+            // An unmapped side cannot be a club of the paired league: this
+            // tie is simply not wanted, not a mapping problem.
+            skipped++;
+            continue;
+          }
           if (home == null || away == null) {
             skipped++;
             notes.add(
@@ -215,6 +226,44 @@ final class SyncProviderFixtures {
           final label =
               '${home.name} - ${away.name} '
               '${match.kickoffAt.toIso8601String()} -> ${month.label}';
+
+          final existingResult = await _store.findExistingFixture(
+            homeTeamId: home.id.value,
+            awayTeamId: away.id.value,
+            homeTeamName: home.name,
+            awayTeamName: away.name,
+            from: match.kickoffAt.toUtc().subtract(duplicateWindow),
+            to: match.kickoffAt.toUtc().add(duplicateWindow),
+          );
+          if (existingResult is Err<String?>) {
+            notes.add(
+              'duplicate check failed (${existingResult.error.code}): $label',
+            );
+            continue;
+          }
+          final existing = (existingResult as Ok<String?>).value;
+          if (existing != null) {
+            // Already on the schedule (added by hand): adopt it so its result
+            // is fetched too, instead of adding a second copy.
+            known++;
+            if (!apply) {
+              notes.add('would adopt existing $existing: $label');
+              continue;
+            }
+            final adopted = await _store.link(
+              source: _source,
+              table: 'fixture',
+              externalId: match.externalId,
+              canonicalId: existing,
+            );
+            notes.add(
+              adopted is Err<void>
+                  ? 'adopt failed (${adopted.error.code}): $label'
+                  : 'adopted existing $existing: $label',
+            );
+            continue;
+          }
+
           if (!apply) {
             applied++;
             notes.add('would add: $label');

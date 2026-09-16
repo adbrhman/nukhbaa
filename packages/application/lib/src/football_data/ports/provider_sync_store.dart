@@ -46,6 +46,19 @@ abstract interface class ProviderSyncStore {
     required String canonicalId,
   });
 
+  /// The id of a fixture already on the schedule between the same two
+  /// catalog teams kicking off in `[from, to)` -- one an admin added by hand,
+  /// or one another source created -- earliest first. Matches on team ids,
+  /// and on the exact team names for older rows that carry no ids.
+  Future<Result<String?>> findExistingFixture({
+    required String homeTeamId,
+    required String awayTeamId,
+    required String homeTeamName,
+    required String awayTeamName,
+    required DateTime from,
+    required DateTime to,
+  });
+
   /// Fixtures linked to [source] that kicked off in
   /// `[kickedOffFrom, kickedOffBefore)` and have no recorded result yet,
   /// earliest first.

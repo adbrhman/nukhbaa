@@ -299,6 +299,61 @@ void main() {
     expect(report.notes.single, startsWith('no monthly contest'));
   });
 
+  test('a fixture already added by hand is adopted, not duplicated', () async {
+    const handAdded = 'e1000000-0000-0000-0000-0000000000aa';
+    store.existing['$_arsenal|$_chelsea'] = (
+      _kickoff.add(const Duration(hours: 1)),
+      handAdded,
+    );
+    provider.answer('PL', _day, [
+      providerMatch(
+        id: 'm1',
+        league: 'PL',
+        home: 'ars',
+        away: 'che',
+        kickoff: _kickoff,
+      ),
+    ]);
+
+    final report =
+        ((await sync.call(now: _now, riyadhDays: [_day], apply: true))
+                as Ok<ProviderSyncReport>)
+            .value;
+
+    expect(report.applied, 0);
+    expect(report.alreadyKnown, 1);
+    expect(store.map['highlightly|fixture|m1'], handAdded);
+    expect(
+      ((await schedules.findByFixture(const FixtureRef(_newFixture)))
+              as Ok<FixtureSchedule?>)
+          .value,
+      isNull,
+    );
+  });
+
+  test(
+    'League Cup ties with an unmapped side are passed over quietly',
+    () async {
+      provider.answer('LC', _day, [
+        providerMatch(
+          id: 'c3',
+          league: 'LC',
+          home: 'ars',
+          away: 'nobody',
+          kickoff: _kickoff,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(now: _now, riyadhDays: [_day], apply: false))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.skipped, 1);
+      expect(report.notes, isEmpty);
+    },
+  );
+
   test('a quota stop ends the run', () async {
     provider.answers['PL|${isoDay(_day)}'] = const Result.err(
       AppError.transient(providerQuotaErrorCode, 'reserve'),
