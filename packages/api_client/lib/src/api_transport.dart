@@ -140,6 +140,23 @@ final class ApiTransport {
     );
   }
 
+  /// Performs a JSON POST with an explicitly supplied bearer token.
+  /// Used only for short-lived recovery credentials.
+  Future<Result<T>> postObjectWithBearerToken<T>(
+    String path, {
+    required String bearerToken,
+    required Map<String, Object?> body,
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T>(
+      method: 'POST',
+      path: path,
+      requestBody: body,
+      overrideToken: bearerToken,
+      decode: (respBody) => _decodeObject(respBody, parse),
+    );
+  }
+
   /// Performs `PUT [path]` with a JSON object [body] and decodes a JSON
   /// **object** response via [parse]. Used for idempotent full-resource
   /// upserts (e.g. `PUT /fixtures/{id}`) — the same request pipeline and
@@ -235,6 +252,7 @@ final class ApiTransport {
     Map<String, Object?>? requestBody,
     List<int>? requestBytes,
     String? requestContentType,
+    String? overrideToken,
     required Result<T> Function(String body) decode,
   }) async {
     final sent = await _rawSend(
@@ -244,6 +262,7 @@ final class ApiTransport {
       requestBody: requestBody,
       requestBytes: requestBytes,
       requestContentType: requestContentType,
+      overrideToken: overrideToken,
     );
     if (sent is Err<http.Response>) return Result.err(sent.error);
     final response = (sent as Ok<http.Response>).value;
@@ -269,6 +288,7 @@ final class ApiTransport {
     Map<String, Object?>? requestBody,
     List<int>? requestBytes,
     String? requestContentType,
+    String? overrideToken,
   }) async {
     final uri = _resolve(path, query);
 
@@ -277,6 +297,7 @@ final class ApiTransport {
       final headers = await _headers(
         hasBody: requestBody != null,
         contentType: requestContentType,
+        overrideToken: overrideToken,
       );
       final pending = switch (method) {
         'GET' => _httpClient.get(uri, headers: headers),
@@ -332,6 +353,7 @@ final class ApiTransport {
   Future<Map<String, String>> _headers({
     required bool hasBody,
     String? contentType,
+    String? overrideToken,
   }) async {
     final headers = <String, String>{'accept': 'application/json'};
     if (contentType != null) {
@@ -339,7 +361,8 @@ final class ApiTransport {
     } else if (hasBody) {
       headers['content-type'] = 'application/json';
     }
-    final token = await _tokenProvider();
+    final token = overrideToken ?? await _tokenProvider();
+
     if (token != null && token.isNotEmpty) {
       headers['authorization'] = 'Bearer $token';
     }

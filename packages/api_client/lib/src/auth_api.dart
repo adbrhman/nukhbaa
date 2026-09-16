@@ -35,6 +35,28 @@ final class AuthApi {
     );
   }
 
+  Future<Result<PasswordResetResponseDto>> requestPasswordReset({
+    required String email,
+  }) {
+    return _transport.postObject<PasswordResetResponseDto>(
+      '/auth/password-reset/request',
+      body: PasswordResetRequestDto(email: email).toJson(),
+      parse: PasswordResetResponseDto.fromJson,
+    );
+  }
+
+  Future<Result<PasswordResetResponseDto>> updatePassword({
+    required String recoveryToken,
+    required String password,
+  }) {
+    return _transport.postObjectWithBearerToken<PasswordResetResponseDto>(
+      '/auth/password-reset/update',
+      bearerToken: recoveryToken,
+      body: UpdatePasswordRequestDto(password: password).toJson(),
+      parse: PasswordResetResponseDto.fromJson,
+    );
+  }
+
   Future<Result<MeResponseDto>> me() {
     return _transport.getObject<MeResponseDto>(
       '/me',

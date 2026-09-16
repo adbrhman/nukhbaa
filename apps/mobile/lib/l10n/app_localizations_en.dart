@@ -1136,4 +1136,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountStatAccuracy => 'Accuracy';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Reset your password';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your email and we will send you a password reset link.';
+
+  @override
+  String get sendResetLink => 'Send reset link';
+
+  @override
+  String get passwordResetEmailSent =>
+      'If the email belongs to an account, you will receive a password reset link. Check your inbox.';
+
+  @override
+  String get resetPasswordTitle => 'Set a new password';
+
+  @override
+  String get resetPasswordSubtitle => 'Enter a new password for your account.';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmNewPassword => 'Confirm new password';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 8 characters.';
+
+  @override
+  String get saveNewPassword => 'Save new password';
+
+  @override
+  String get passwordResetSuccess =>
+      'Your password has been changed successfully.';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
 }

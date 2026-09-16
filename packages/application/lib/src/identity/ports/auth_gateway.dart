@@ -47,4 +47,13 @@ abstract class AuthGateway {
     required String password,
     required String displayName,
   });
+
+  /// Sends a password-reset email without revealing whether the address exists.
+  Future<Result<void>> requestPasswordReset({required String email});
+
+  /// Updates the password using a Supabase recovery access token.
+  Future<Result<void>> updatePassword({
+    required String recoveryToken,
+    required String password,
+  });
 }

@@ -300,7 +300,14 @@
   "adminRemoveFixtureFromSeasonButton": "حذف المباراة من الشهر",
   "adminRemoveFixtureFromSeasonConfirm": "سيُحذف ربط «{home} × {away}» بمسابقة الشهر. لا يمكن الحذف إن كان أحد قد توقّعها أو سُجّلت لها نتيجة.",
   "@adminRemoveFixtureFromSeasonConfirm": {
-    "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
   },
   "adminRemoveFixtureFromSeasonSuccess": "تم حذف المباراة من مسابقة الشهر.",
   "adminTeamNotInCatalogHint": "هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.",
@@ -338,5 +345,18 @@
   "accountRecordsSection": "سجلي",
   "accountStatPoints": "النقاط",
   "accountStatMatches": "المباريات",
-  "accountStatAccuracy": "الدقة"
+  "accountStatAccuracy": "الدقة",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "forgotPasswordTitle": "استعادة كلمة المرور",
+  "forgotPasswordSubtitle": "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+  "sendResetLink": "إرسال رابط الاستعادة",
+  "passwordResetEmailSent": "إذا كان البريد مرتبطًا بحساب، فسيصلك رابط استعادة كلمة المرور. تحقق من بريدك الإلكتروني.",
+  "resetPasswordTitle": "تعيين كلمة مرور جديدة",
+  "resetPasswordSubtitle": "أدخل كلمة المرور الجديدة لحسابك.",
+  "newPassword": "كلمة المرور الجديدة",
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "passwordTooShort": "يجب أن تكون كلمة المرور 8 أحرف على الأقل.",
+  "saveNewPassword": "حفظ كلمة المرور الجديدة",
+  "passwordResetSuccess": "تم تغيير كلمة المرور بنجاح.",
+  "backToSignIn": "العودة لتسجيل الدخول"
 }

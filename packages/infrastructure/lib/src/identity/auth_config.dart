@@ -18,6 +18,7 @@ final class AuthConfig {
     required this.legacyHs256Secret,
     required this.gotrueUri,
     required this.anonKey,
+    required this.passwordResetRedirectUri,
   });
 
   /// The exhaustive set of JWS alg values this backend will EVER honour, as a
@@ -69,6 +70,8 @@ final class AuthConfig {
     final audience = env['NUKHBA_SUPABASE_JWT_AUD'];
     final legacySecret = env['NUKHBA_SUPABASE_JWT_SECRET'];
     final anonKey = env['NUKHBA_SUPABASE_ANON_KEY'];
+    final resetRedirect = env['NUKHBA_PASSWORD_RESET_REDIRECT_URL'];
+    final resetRedirectUri = _parseResetRedirect(resetRedirect);
 
     return Result.ok(
       AuthConfig(
@@ -87,6 +90,7 @@ final class AuthConfig {
             ? null
             : legacySecret,
         anonKey: (anonKey == null || anonKey.isEmpty) ? null : anonKey,
+        passwordResetRedirectUri: resetRedirectUri,
       ),
     );
   }
@@ -125,6 +129,40 @@ final class AuthConfig {
   /// by design (it identifies the project, not a user), so shipping it in the
   /// server env is safe; it is still never logged.
   final String? anonKey;
+
+  /// Default recovery landing page. Deployments may override this with
+  /// NUKHBA_PASSWORD_RESET_REDIRECT_URL.
+  static const String defaultPasswordResetRedirectUrl =
+      'https://adbrhman.github.io/nukhbaa/reset-password';
+
+  static Uri _parseResetRedirect(String? raw) {
+    final value = (raw == null || raw.trim().isEmpty)
+        ? defaultPasswordResetRedirectUrl
+        : raw.trim();
+
+    final uri = Uri.tryParse(value);
+
+    if (uri == null || !uri.isAbsolute || uri.host.isEmpty) {
+      throw StateError(
+        'NUKHBA_PASSWORD_RESET_REDIRECT_URL must be an absolute URL',
+      );
+    }
+
+    final local =
+        uri.scheme == 'http' &&
+        (uri.host == 'localhost' || uri.host == '127.0.0.1');
+
+    if (uri.scheme != 'https' && !local) {
+      throw StateError(
+        'NUKHBA_PASSWORD_RESET_REDIRECT_URL must use HTTPS (except localhost)',
+      );
+    }
+
+    return uri;
+  }
+
+  /// The password-reset landing URL allowed by Supabase Auth.
+  final Uri passwordResetRedirectUri;
 
   /// Whether the HS256 shared-secret fallback is available.
   bool get hasLegacySecret => legacyHs256Secret != null;

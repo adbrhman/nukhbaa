@@ -67,6 +67,8 @@ export 'src/identity/ports/token_verifier.dart';
 export 'src/identity/ports/user_directory.dart';
 export 'src/identity/read_avatar.dart';
 export 'src/identity/register_with_password.dart';
+export 'src/identity/request_password_reset.dart';
+export 'src/identity/update_password.dart';
 export 'src/identity/set_avatar.dart';
 export 'src/identity/update_display_name.dart';
 export 'src/leaderboard/get_hall_of_fame.dart';

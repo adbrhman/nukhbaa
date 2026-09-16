@@ -14,6 +14,7 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import 'session_controller.dart';
+import 'password_reset_screen.dart';
 import 'session_state.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -186,6 +187,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   : null,
                             ),
                             const SizedBox(height: AppSpacing.lg),
+                            if (!_isRegister) ...[
+                              Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: TextButton(
+                                  key: const Key('signIn.forgotPassword'),
+                                  onPressed: inFlight
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  PasswordResetScreen(
+                                                    initialEmail:
+                                                        _emailController.text
+                                                            .trim(),
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                  child: Text(l10n.forgotPassword),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                            ],
                             AppTextField(
                               fieldKey: const Key('signIn.passwordField'),
                               controller: _passwordController,

@@ -172,3 +172,39 @@ final class AuthResponseDto {
     schemaVersion,
   );
 }
+
+/// Request body for POST /auth/password-reset/request.
+final class PasswordResetRequestDto {
+  const PasswordResetRequestDto({required this.email});
+
+  factory PasswordResetRequestDto.fromJson(Map<String, dynamic> json) =>
+      PasswordResetRequestDto(email: json['email']! as String);
+
+  final String email;
+
+  Map<String, dynamic> toJson() => {'email': email};
+}
+
+/// Request body for POST /auth/password-reset/update.
+final class UpdatePasswordRequestDto {
+  const UpdatePasswordRequestDto({required this.password});
+
+  factory UpdatePasswordRequestDto.fromJson(Map<String, dynamic> json) =>
+      UpdatePasswordRequestDto(password: json['password']! as String);
+
+  final String password;
+
+  Map<String, dynamic> toJson() => {'password': password};
+}
+
+/// Generic acknowledgement for password-reset operations.
+final class PasswordResetResponseDto {
+  const PasswordResetResponseDto({this.success = true});
+
+  factory PasswordResetResponseDto.fromJson(Map<String, dynamic> json) =>
+      PasswordResetResponseDto(success: json['success'] as bool? ?? true);
+
+  final bool success;
+
+  Map<String, dynamic> toJson() => {'success': success};
+}

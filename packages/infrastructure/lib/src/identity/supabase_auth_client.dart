@@ -102,6 +102,45 @@ final class SupabaseAuthClient {
     );
   }
 
+  /// Requests a password-reset email through GoTrue's `/recover` endpoint.
+  /// The redirect is server-configured.
+  Future<Result<void>> requestPasswordReset({required String email}) {
+    return _postAction(
+      path: 'recover',
+      body: {
+        'email': email,
+        'redirect_to': _config.passwordResetRedirectUri.toString(),
+      },
+    );
+  }
+
+  /// Changes the password using a recovery access token.
+  /// The token is sent only in the Authorization header.
+  Future<Result<void>> updatePassword({
+    required String recoveryToken,
+    required String password,
+  }) {
+    final token = recoveryToken.trim();
+
+    if (token.isEmpty) {
+      return Future.value(
+        const Result.err(
+          AppError.validation(
+            'auth.recovery_token_required',
+            'Password reset link is invalid or expired',
+          ),
+        ),
+      );
+    }
+
+    return _actionRequest(
+      method: 'PUT',
+      path: 'user',
+      body: {'password': password},
+      token: token,
+    );
+  }
+
   /// Shared request pipeline: builds the GoTrue request, applies the required
   /// apikey + JSON headers, bounds it with [_timeout], and maps the response.
   /// Never throws.
@@ -168,6 +207,100 @@ final class SupabaseAuthClient {
     }
 
     return _dispatch(response, onSuccess);
+  }
+
+  Future<Result<void>> _postAction({
+    required String path,
+    required Map<String, Object?> body,
+  }) {
+    return _actionRequest(method: 'POST', path: path, body: body);
+  }
+
+  Future<Result<void>> _actionRequest({
+    required String method,
+    required String path,
+    required Map<String, Object?> body,
+    String? token,
+  }) async {
+    final anonKey = _config.anonKey;
+
+    if (anonKey == null) {
+      return const Result.err(
+        AppError.invariant(
+          'auth.not_configured',
+          'Email/password auth is not configured on this server',
+        ),
+      );
+    }
+
+    final uri = _config.gotrueUri.resolve(path);
+
+    final headers = <String, String>{
+      'apikey': anonKey,
+      'content-type': 'application/json',
+      'accept': 'application/json',
+      if (token != null && token.isNotEmpty)
+        'authorization': 'Bearer $token'
+      else if (_isLegacyJwtKey(anonKey))
+        'authorization': 'Bearer $anonKey',
+    };
+
+    try {
+      final pending = switch (method) {
+        'POST' => _httpClient.post(
+          uri,
+          headers: headers,
+          body: jsonEncode(body),
+        ),
+        'PUT' => _httpClient.put(uri, headers: headers, body: jsonEncode(body)),
+        _ => throw ArgumentError.value(method, 'method', 'unsupported'),
+      };
+
+      final response = _timeout == null
+          ? await pending
+          : await pending.timeout(_timeout!);
+
+      final status = response.statusCode;
+
+      if (status >= 200 && status < 300) {
+        return const Result.ok(null);
+      }
+
+      Map<String, Object?> json = <String, Object?>{};
+
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map) {
+          json = decoded.cast<String, Object?>();
+        }
+      } on Object {
+        // Keep generic validation error.
+      }
+
+      return Result.err(
+        AppError.validation(
+          'auth.rejected',
+          _errorMessage(json) ?? 'Authentication action failed',
+        ),
+      );
+    } on TimeoutException catch (cause) {
+      return Result.err(
+        AppError.transient(
+          'auth.upstream_timeout',
+          'Supabase Auth did not respond in time',
+          cause,
+        ),
+      );
+    } on Object catch (cause) {
+      return Result.err(
+        AppError.transient(
+          'auth.upstream_unreachable',
+          'Could not reach Supabase Auth',
+          cause,
+        ),
+      );
+    }
   }
 
   Result<SupabaseSession> _dispatch(

@@ -36,6 +36,22 @@ final class SupabaseAuthGateway implements AuthGateway {
     return result.map(_toIssuedSession);
   }
 
+  @override
+  Future<Result<void>> requestPasswordReset({required String email}) {
+    return _client.requestPasswordReset(email: email);
+  }
+
+  @override
+  Future<Result<void>> updatePassword({
+    required String recoveryToken,
+    required String password,
+  }) {
+    return _client.updatePassword(
+      recoveryToken: recoveryToken,
+      password: password,
+    );
+  }
+
   IssuedSession _toIssuedSession(SupabaseSession session) => IssuedSession(
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,

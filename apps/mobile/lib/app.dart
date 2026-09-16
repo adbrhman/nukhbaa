@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/auth/password_reset_screen.dart';
 import 'features/auth/session_gate.dart';
 import 'features/update/update_gate.dart';
 import 'l10n/app_localizations.dart';
@@ -40,7 +41,20 @@ class NukhbaApp extends ConsumerWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: const UpdateGate(child: SessionGate()),
+      home: const UpdateGate(child: _AuthEntry()),
     );
+  }
+}
+
+class _AuthEntry extends StatelessWidget {
+  const _AuthEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    if (isPasswordResetWebUrl()) {
+      return PasswordResetScreen(recoveryToken: recoveryTokenFromWebUrl());
+    }
+
+    return const SessionGate();
   }
 }

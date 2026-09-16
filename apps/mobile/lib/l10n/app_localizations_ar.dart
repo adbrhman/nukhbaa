@@ -1146,4 +1146,45 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accountStatAccuracy => 'الدقة';
+
+  @override
+  String get forgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get forgotPasswordTitle => 'استعادة كلمة المرور';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.';
+
+  @override
+  String get sendResetLink => 'إرسال رابط الاستعادة';
+
+  @override
+  String get passwordResetEmailSent =>
+      'إذا كان البريد مرتبطًا بحساب، فسيصلك رابط استعادة كلمة المرور. تحقق من بريدك الإلكتروني.';
+
+  @override
+  String get resetPasswordTitle => 'تعيين كلمة مرور جديدة';
+
+  @override
+  String get resetPasswordSubtitle => 'أدخل كلمة المرور الجديدة لحسابك.';
+
+  @override
+  String get newPassword => 'كلمة المرور الجديدة';
+
+  @override
+  String get confirmNewPassword => 'تأكيد كلمة المرور الجديدة';
+
+  @override
+  String get passwordTooShort => 'يجب أن تكون كلمة المرور 8 أحرف على الأقل.';
+
+  @override
+  String get saveNewPassword => 'حفظ كلمة المرور الجديدة';
+
+  @override
+  String get passwordResetSuccess => 'تم تغيير كلمة المرور بنجاح.';
+
+  @override
+  String get backToSignIn => 'العودة لتسجيل الدخول';
 }

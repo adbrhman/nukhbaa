@@ -557,7 +557,11 @@
   "mySeasonsEmpty": "No season has finished yet.",
   "mySeasonsMonthCount": "{count, plural, =1{1 month} other{{count} months}}",
   "@mySeasonsMonthCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "ledgerEmpty": "No points movements yet.",
   "ledgerEntryCount": "{count} movements counted",
@@ -587,7 +591,11 @@
   "adminFixtureNoLeagueLabel": "This fixture has no league yet.",
   "adminNoMonthsHint": "No month has been opened yet.",
   "@adminFixtureCurrentLeagueLabel": {
-    "placeholders": { "league": { "type": "String" } }
+    "placeholders": {
+      "league": {
+        "type": "String"
+      }
+    }
   },
   "adminSelectLeagueLabel": "Select league",
   "adminNoLeaguesHint": "The league catalog is empty.",
@@ -658,7 +666,14 @@
   "adminRemoveFixtureFromSeasonButton": "Remove from the month",
   "adminRemoveFixtureFromSeasonConfirm": "This unlinks \"{home} vs {away}\" from the month's competition. It cannot be removed once anyone has predicted it or a result is recorded.",
   "@adminRemoveFixtureFromSeasonConfirm": {
-    "placeholders": { "home": { "type": "String" }, "away": { "type": "String" } }
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
   },
   "adminRemoveFixtureFromSeasonSuccess": "Fixture removed from the month's competition.",
   "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists.",
@@ -696,5 +711,18 @@
   "accountRecordsSection": "My record",
   "accountStatPoints": "Points",
   "accountStatMatches": "Matches",
-  "accountStatAccuracy": "Accuracy"
+  "accountStatAccuracy": "Accuracy",
+  "forgotPassword": "Forgot password?",
+  "forgotPasswordTitle": "Reset your password",
+  "forgotPasswordSubtitle": "Enter your email and we will send you a password reset link.",
+  "sendResetLink": "Send reset link",
+  "passwordResetEmailSent": "If the email belongs to an account, you will receive a password reset link. Check your inbox.",
+  "resetPasswordTitle": "Set a new password",
+  "resetPasswordSubtitle": "Enter a new password for your account.",
+  "newPassword": "New password",
+  "confirmNewPassword": "Confirm new password",
+  "passwordTooShort": "Password must be at least 8 characters.",
+  "saveNewPassword": "Save new password",
+  "passwordResetSuccess": "Your password has been changed successfully.",
+  "backToSignIn": "Back to sign in"
 }

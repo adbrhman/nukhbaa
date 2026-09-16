@@ -24,6 +24,8 @@ final class CompositionRoot {
     required this.enrolInOpenSeasons,
     required this.login,
     required this.register,
+    required this.requestPasswordReset,
+    required this.updatePassword,
     required this.updateDisplayName,
     required this.setAvatar,
     required this.clearAvatar,
@@ -133,6 +135,8 @@ final class CompositionRoot {
     GetLatestBuild? getLatestBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
+    RequestPasswordReset? requestPasswordReset,
+    UpdatePassword? updatePassword,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
     EnrolInOpenSeasons? enrolInOpenSeasons,
@@ -215,6 +219,9 @@ final class CompositionRoot {
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
+       requestPasswordReset =
+           requestPasswordReset ?? _absentRequestPasswordReset(),
+       updatePassword = updatePassword ?? _absentUpdatePassword(),
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
@@ -350,6 +357,12 @@ final class CompositionRoot {
   /// Backs an "absent" [AuthGateway] for registration.
   static RegisterWithPassword _absentRegister() =>
       RegisterWithPassword(_UnwiredAuthGateway());
+
+  static RequestPasswordReset _absentRequestPasswordReset() =>
+      RequestPasswordReset(_UnwiredAuthGateway());
+
+  static UpdatePassword _absentUpdatePassword() =>
+      UpdatePassword(_UnwiredAuthGateway());
 
   static CheckHealth _absentCheckHealth() =>
       CheckHealth(_UnwiredHealthRepository());
@@ -947,6 +960,8 @@ final class CompositionRoot {
 
   /// Registers a new email/password account.
   final RegisterWithPassword register;
+  final RequestPasswordReset requestPasswordReset;
+  final UpdatePassword updatePassword;
 
   /// Changes the caller's own display name (backs `PATCH /me/display-name`).
   final UpdateDisplayName updateDisplayName;
@@ -1336,6 +1351,8 @@ final class CompositionRoot {
     );
     final login = LoginWithPassword(authGateway);
     final register = RegisterWithPassword(authGateway);
+    final requestPasswordReset = RequestPasswordReset(authGateway);
+    final updatePassword = UpdatePassword(authGateway);
 
     // Competition slice: the Postgres-backed repository, the configured
     // ruleset provider (the placeholder-free Scoring seam), and the shared
@@ -1506,6 +1523,8 @@ final class CompositionRoot {
       ),
       login: login,
       register: register,
+      requestPasswordReset: requestPasswordReset,
+      updatePassword: updatePassword,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
@@ -2591,5 +2610,15 @@ final class _UnwiredAuthGateway implements AuthGateway {
     required String email,
     required String password,
     required String displayName,
+  }) => throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<void>> requestPasswordReset({required String email}) =>
+      throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<void>> updatePassword({
+    required String recoveryToken,
+    required String password,
   }) => throw StateError('An auth use-case was not wired into this root');
 }
