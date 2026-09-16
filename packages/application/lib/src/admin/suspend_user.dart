@@ -44,6 +44,11 @@ final class SuspendUser {
 
   /// Suspends the user [targetUserId] on behalf of the admin [principal], with
   /// the mandatory [reason].
+  ///
+  /// An admin account is never suspendable from the app
+  /// (`admin.cannot_suspend_admin`): a second admin must not be able to
+  /// lock the owner out. The owner can still change any account directly
+  /// in the database. Reinstating keeps not gating on role.
   Future<Result<User>> call({
     required AuthenticatedUser principal,
     required String targetUserId,
@@ -54,7 +59,14 @@ final class SuspendUser {
       targetUserId: targetUserId,
       reason: reason,
       action: AuditAction.userSuspended,
-      apply: (user) => user.suspend(),
+      apply: (user) => user.role == PlatformRole.admin
+          ? const Result<User>.err(
+              AppError.invariant(
+                'admin.cannot_suspend_admin',
+                'لا يمكن إيقاف حساب مشرف من التطبيق.',
+              ),
+            )
+          : user.suspend(),
     );
   }
 

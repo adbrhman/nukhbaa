@@ -46,6 +46,22 @@ void main() {
     );
 
     test(
+      'refuses to suspend an admin account, so the owner cannot be locked out',
+      () async {
+        users.seed(storedUser(id: targetUuid, role: PlatformRole.admin));
+        final result = await suspend.call(
+          principal: admin,
+          targetUserId: targetUuid,
+          reason: 'takeover attempt',
+        );
+        expect((result as Err<User>).error.code, 'admin.cannot_suspend_admin');
+        // No mutation, no audit.
+        expect(users.rowOf(targetUuid)!.status, UserStatus.active);
+        expect(auditLog.rows, isEmpty);
+      },
+    );
+
+    test(
       'refuses a non-admin caller (authorization) before any state change',
       () async {
         users.seed(storedUser(id: targetUuid));

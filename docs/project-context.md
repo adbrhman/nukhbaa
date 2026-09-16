@@ -2619,6 +2619,14 @@ Reliability audit follow-up (report kept outside the repo).
   `alter role postgres reset statement_timeout;`.
 - Still manual (product decision pending): daily fixtures and results entry.
 
+### Admins cannot suspend admins (2026-09-16)
+
+`SuspendUser` refuses a target whose role is `admin`
+(`admin.cannot_suspend_admin`, invariant, Arabic message) before any write
+or audit entry, so a backup admin cannot lock the owner out. Reinstate is
+unchanged (still role-agnostic). Changing an admin account remains possible
+only directly in the database.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
