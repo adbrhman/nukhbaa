@@ -2591,6 +2591,34 @@ Additive only; no new dependency, no new internal package, no migration.
   `BACKUP_PASSPHRASE`. Fails -- and emails -- when the database reaches
   400 MB of the Free plan's 500 MB.
 
+### Unattended operation (2026-09-16)
+
+Reliability audit follow-up (report kept outside the repo).
+
+- **Next monthly contest is created automatically.**
+  `EnsureUpcomingMonthlySeasons` (application, no principal) follows the
+  newest `MM/YYYY` season and creates the next month under the same
+  competition once it starts within 7 days (same UTC window/label as
+  `StartSeason`; additive only; at most 3 months per run; skips an existing
+  label). Driven by `apps/server/lib/scheduler/monthly_season_scheduler.dart`
+  (1 min after boot, then every 6 h). An empty season enrols nobody, so an
+  early month is invisible until the admin adds its first fixture.
+- **Supabase publishable keys.** `SupabaseAuthClient` sends the
+  `Authorization: Bearer` header only for legacy JWT-shaped anon keys; a
+  `sb_publishable_...` key goes in `apikey` only. Legacy anon/service_role
+  keys are retired by Supabase at the end of 2026: set
+  `NUKHBA_SUPABASE_ANON_KEY` on Northflank to the publishable key before
+  then.
+- **Backup schedule keep-alive.** `db-backup.yml` re-enables itself on every
+  run (`actions: write`) so GitHub's 60-day inactivity rule for public repos
+  cannot silently stop backups.
+- **Migration 0047** sets `statement_timeout = 20s` on role `postgres` so a
+  statement the server abandoned (Dart-side 10 s timeout) is also cancelled
+  in Postgres and frees its pool connection. Apply in the SQL editor, then
+  restart the Northflank service. Rollback:
+  `alter role postgres reset statement_timeout;`.
+- Still manual (product decision pending): daily fixtures and results entry.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

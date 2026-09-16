@@ -83,6 +83,7 @@ final class CompositionRoot {
     required this.getUnreadCount,
     required this.markNotificationRead,
     required this.sendPredictionReminders,
+    required this.ensureUpcomingMonthlySeasons,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -194,6 +195,7 @@ final class CompositionRoot {
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
+    EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -310,6 +312,9 @@ final class CompositionRoot {
            markNotificationRead ?? _absentMarkNotificationRead(),
        sendPredictionReminders =
            sendPredictionReminders ?? _absentSendPredictionReminders(),
+       ensureUpcomingMonthlySeasons =
+           ensureUpcomingMonthlySeasons ??
+           _absentEnsureUpcomingMonthlySeasons(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
@@ -782,6 +787,14 @@ final class CompositionRoot {
   static final NotificationRepository _unwiredNotificationRepository =
       _UnwiredNotificationRepository();
 
+  /// Backs the "absent" [EnsureUpcomingMonthlySeasons]: its repository
+  /// throws, so a test that reaches it fails loudly.
+  static EnsureUpcomingMonthlySeasons _absentEnsureUpcomingMonthlySeasons() =>
+      EnsureUpcomingMonthlySeasons(
+        repository: _unwiredCompetitionRepository,
+        idGenerator: _unwiredIdGenerator,
+      );
+
   /// Backs an "absent" [SendPredictionReminders]: the reminder sweep is
   /// never exercised by a route test, and a silent no-op would hide a
   /// wiring bug in the one test that does reach it.
@@ -1206,6 +1219,10 @@ final class CompositionRoot {
   /// first kickoff. Driven by the scheduler, never by a request.
   final SendPredictionReminders sendPredictionReminders;
 
+  /// Creates the next monthly contest a week before it starts. Driven by
+  /// the scheduler, never by a request.
+  final EnsureUpcomingMonthlySeasons ensureUpcomingMonthlySeasons;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -1496,6 +1513,10 @@ final class CompositionRoot {
       sendPredictionReminders: SendPredictionReminders(
         reminders: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
+      ),
+      ensureUpcomingMonthlySeasons: EnsureUpcomingMonthlySeasons(
+        repository: competitionRepository,
+        idGenerator: idGenerator,
       ),
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,

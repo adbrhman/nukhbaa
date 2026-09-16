@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
@@ -15,6 +16,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   // The prediction reminder runs on a timer inside this process (see
   // reminder_scheduler.dart for why not pg_cron).
   startReminderScheduler(root);
+  // Keeps the next monthly contest in place without an admin (see
+  // monthly_season_scheduler.dart).
+  startMonthlySeasonScheduler(root);
 
   return serve(handler, ip, port);
 }

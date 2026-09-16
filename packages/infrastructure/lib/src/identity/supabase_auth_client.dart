@@ -135,7 +135,11 @@ final class SupabaseAuthClient {
         uri,
         headers: {
           'apikey': anonKey,
-          'authorization': 'Bearer $anonKey',
+          // Legacy anon keys are JWTs and were accepted as a bearer too.
+          // Their replacement (`sb_publishable_...`, required before the
+          // legacy keys are retired at the end of 2026) is not a JWT and
+          // must travel in `apikey` only.
+          if (_isLegacyJwtKey(anonKey)) 'authorization': 'Bearer $anonKey',
           'content-type': 'application/json',
           'accept': 'application/json',
         },
@@ -210,6 +214,11 @@ final class SupabaseAuthClient {
         json['message'];
     return msg is String && msg.isNotEmpty ? msg : null;
   }
+
+  /// Whether [key] is a legacy JWT-shaped anon key rather than a
+  /// publishable key.
+  static bool _isLegacyJwtKey(String key) =>
+      !key.startsWith('sb_') && key.split('.').length == 3;
 
   /// Maps a GoTrue /token success body to a [SupabaseSession].
   static Result<SupabaseSession> _sessionFromLogin(Map<String, Object?> json) {

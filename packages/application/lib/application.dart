@@ -40,6 +40,7 @@ export 'src/competition/ports/ruleset_provider.dart';
 export 'src/competition/register_fixture_schedule.dart';
 export 'src/competition/remove_fixture_from_round.dart';
 export 'src/competition/remove_fixture_from_season.dart';
+export 'src/competition/ensure_upcoming_monthly_seasons.dart';
 export 'src/competition/start_season.dart';
 export 'src/football_data/list_leagues.dart';
 export 'src/football_data/list_teams.dart';
