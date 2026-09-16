@@ -226,6 +226,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     } else {
       // A fresh tap is not a retry: it restarts the budget.
       _autoSaveRetries = 0;
+      // Once the user has touched this card, what they tapped wins: the
+      // one-shot prefill from the history must never fire afterwards. On a
+      // card with no stored prediction it was still armed, so the first
+      // save refreshed the history and the refreshed (older) pick was
+      // copied over a tap made while that save was in flight.
+      _prefilledFromPrediction = true;
     }
     final int? home = _homeGoals.value;
     final int? away = _awayGoals.value;
