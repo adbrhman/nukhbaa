@@ -187,6 +187,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   : null,
                             ),
                             const SizedBox(height: AppSpacing.lg),
+                            AppTextField(
+                              fieldKey: const Key('signIn.passwordField'),
+                              controller: _passwordController,
+                              enabled: !inFlight,
+                              obscure: true,
+                              label: l10n.password,
+                              prefixIcon: Icons.lock_outline,
+                              textInputAction: _isRegister
+                                  ? TextInputAction.next
+                                  : TextInputAction.done,
+                              autofillHints: [
+                                _isRegister
+                                    ? AutofillHints.newPassword
+                                    : AutofillHints.password,
+                              ],
+                              onFieldSubmitted: _isRegister
+                                  ? null
+                                  : (_) => _submit(session),
+                              validator: (String? value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? l10n.passwordRequired
+                                  : null,
+                            ),
                             if (!_isRegister) ...[
                               Align(
                                 alignment: AlignmentDirectional.centerEnd,
@@ -211,29 +234,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                               const SizedBox(height: AppSpacing.sm),
                             ],
-                            AppTextField(
-                              fieldKey: const Key('signIn.passwordField'),
-                              controller: _passwordController,
-                              enabled: !inFlight,
-                              obscure: true,
-                              label: l10n.password,
-                              prefixIcon: Icons.lock_outline,
-                              textInputAction: _isRegister
-                                  ? TextInputAction.next
-                                  : TextInputAction.done,
-                              autofillHints: [
-                                _isRegister
-                                    ? AutofillHints.newPassword
-                                    : AutofillHints.password,
-                              ],
-                              onFieldSubmitted: _isRegister
-                                  ? null
-                                  : (_) => _submit(session),
-                              validator: (String? value) =>
-                                  (value == null || value.trim().isEmpty)
-                                  ? l10n.passwordRequired
-                                  : null,
-                            ),
                             if (_isRegister) ...[
                               const SizedBox(height: AppSpacing.lg),
                               AppTextField(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../core/platform/browser_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
@@ -15,7 +16,7 @@ import '../../core/providers.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
-import 'sign_in_screen.dart';
+import 'session_gate.dart';
 
 /// Password recovery screen.
 ///
@@ -100,8 +101,13 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
   }
 
   void _backToSignIn() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
+    if (widget.isReset) {
+      clearPasswordResetUrl();
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const SessionGate()),
+      (Route<dynamic> route) => false,
     );
   }
 

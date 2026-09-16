@@ -258,7 +258,7 @@ final class SupabaseAuthClient {
 
       final response = _timeout == null
           ? await pending
-          : await pending.timeout(_timeout!);
+          : await pending.timeout(_timeout);
 
       final status = response.statusCode;
 
