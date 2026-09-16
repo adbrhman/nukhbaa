@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/infrastructure.dart';
 import 'package:meta/meta.dart';
+import 'package:server/provider_sync/phase_one_rules.dart';
 import 'package:shared/shared.dart';
 
 /// The single place where the dependency graph is wired (Application ADR,
@@ -86,6 +87,9 @@ final class CompositionRoot {
     required this.markNotificationRead,
     required this.sendPredictionReminders,
     required this.ensureUpcomingMonthlySeasons,
+    required this.providerSyncMode,
+    this.syncProviderFixtures,
+    this.syncProviderResults,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -200,6 +204,9 @@ final class CompositionRoot {
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
+    this.providerSyncMode = ProviderSyncMode.off,
+    this.syncProviderFixtures,
+    this.syncProviderResults,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1238,6 +1245,16 @@ final class CompositionRoot {
   /// the scheduler, never by a request.
   final EnsureUpcomingMonthlySeasons ensureUpcomingMonthlySeasons;
 
+  /// Automatic fixtures/results mode (`NUKHBA_PROVIDER_SYNC`); `off` when
+  /// no provider key is configured.
+  final ProviderSyncMode providerSyncMode;
+
+  /// Adds the provider's selected fixtures; null while the sync is off.
+  final SyncProviderFixtures? syncProviderFixtures;
+
+  /// Records the provider's results; null while the sync is off.
+  final SyncProviderResults? syncProviderResults;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -1510,7 +1527,73 @@ final class CompositionRoot {
       clock: clock,
     );
 
-    return CompositionRoot._(
+    // Automatic fixtures/results from Highlightly (phase 1). Off unless both
+    // NUKHBA_HIGHLIGHTLY_API_KEY and NUKHBA_PROVIDER_SYNC (shadow|on) are set.
+    // Results go through the same RecordFixtureResult + ScoreFixture pair as
+    // the admin endpoint, under a service principal; `root` is bound below.
+    final highlightlyKey = (env['NUKHBA_HIGHLIGHTLY_API_KEY'] ?? '').trim();
+    final providerSyncMode = highlightlyKey.isEmpty
+        ? ProviderSyncMode.off
+        : ProviderSyncMode.parse(env['NUKHBA_PROVIDER_SYNC']);
+    late final CompositionRoot root;
+    SyncProviderFixtures? syncProviderFixtures;
+    SyncProviderResults? syncProviderResults;
+    if (providerSyncMode != ProviderSyncMode.off) {
+      final footballData = HighlightlyFootballDataProvider(
+        apiKey: highlightlyKey,
+      );
+      final syncStore = PostgresProviderSyncStore(connection);
+      final syncLeagues = PostgresLeagueRepository(connection);
+      const systemPrincipal = AuthenticatedUser(
+        userId: UserId(_providerSyncUserId),
+        role: PlatformRole.service,
+      );
+      syncProviderFixtures = SyncProviderFixtures(
+        provider: footballData,
+        store: syncStore,
+        leagueRepository: syncLeagues,
+        teamRepository: teamRepository,
+        competitionRepository: competitionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        idGenerator: idGenerator,
+        rules: phaseOneRules,
+        source: highlightlySource,
+      );
+      syncProviderResults = SyncProviderResults(
+        provider: footballData,
+        store: syncStore,
+        leagueRepository: syncLeagues,
+        rules: phaseOneRules,
+        source: highlightlySource,
+        recorder:
+            ({
+              required String fixtureId,
+              required int homeGoals,
+              required int awayGoals,
+            }) async {
+              final recorded = await root.recordFixtureResult(
+                principal: systemPrincipal,
+                fixtureId: fixtureId,
+                homeGoals: homeGoals,
+                awayGoals: awayGoals,
+              );
+              if (recorded is Err<FixtureResult>) {
+                return Result.err(recorded.error);
+              }
+              final scored = await root.scoreFixture(
+                principal: systemPrincipal,
+                fixtureId: fixtureId,
+              );
+              if (scored is Err<List<ParticipantFixtureScore>>) {
+                return Result.err(scored.error);
+              }
+              return const Result.ok(null);
+            },
+      );
+    }
+
+    return root = CompositionRoot._(
       connection: connection,
       jwksClient: jwksClient,
       checkHealth: checkHealth,
@@ -1537,6 +1620,9 @@ final class CompositionRoot {
         repository: competitionRepository,
         idGenerator: idGenerator,
       ),
+      providerSyncMode: providerSyncMode,
+      syncProviderFixtures: syncProviderFixtures,
+      syncProviderResults: syncProviderResults,
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
       ),
@@ -2622,3 +2708,7 @@ final class _UnwiredAuthGateway implements AuthGateway {
     required String password,
   }) => throw StateError('An auth use-case was not wired into this root');
 }
+
+/// The service principal the provider sync records results under. Not a
+/// person; never issued to a session.
+const String _providerSyncUserId = '00000000-0000-4000-8000-00000000517c';

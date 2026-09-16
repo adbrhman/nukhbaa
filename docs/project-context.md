@@ -2649,6 +2649,34 @@ clubs in `football_data.external_identity_map` (`external_source =
 "Al Suqoor" at the provider. Migration 0048 adds `football_data.teams.league_id`
 to the repository (already present in production; no-op there).
 
+### Automatic fixtures and results (2026-09-16)
+
+Phase 1 of the Highlightly sync (rules in
+`apps/server/lib/provider_sync/phase_one_rules.dart`).
+
+- **Application:** ports `FootballDataProvider` (`ProviderMatch`,
+  `ProviderMatchStatus`) and `ProviderSyncStore` (identity map + pending
+  results); `ProviderLeagueRule`, `ProviderSyncMode`, `riyadhDayOf`;
+  use-cases `SyncProviderFixtures` (adds selected upcoming matches exactly
+  like an admin: schedule with catalog names/ids/league, identity link,
+  season link; skips unmapped teams, matches < 30 min away, and matches
+  outside every monthly contest) and `SyncProviderResults` (fixtures linked
+  to the provider, no result, kicked off 110 min - 3 days ago; one provider
+  call per league/Riyadh day, max 8 per run; postponed/cancelled are logged
+  for an admin, never scored).
+- **Infrastructure:** `HighlightlyFootballDataProvider` (explicit
+  User-Agent; `timezone=Asia/Riyadh`; keeps 25 requests of the daily 100 in
+  reserve via `x-ratelimit-requests-remaining`; `state.score.current` is the
+  score after extra time, shoot-outs excluded) and
+  `PostgresProviderSyncStore`.
+- **Server:** `NUKHBA_HIGHLIGHTLY_API_KEY` + `NUKHBA_PROVIDER_SYNC`
+  (`off` default | `shadow` logs only | `on` writes). Results are recorded
+  through `RecordFixtureResult` + `ScoreFixture` under a service principal.
+  `provider_sync_scheduler.dart`: fixtures 3 min after boot (today + 2 days),
+  then daily (next 2 days); results every 20 min. Logs are prefixed
+  `provider-sync [mode]`.
+- Budget: ~16 fixture calls/day + result calls only for due groups.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
