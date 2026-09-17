@@ -40,11 +40,73 @@ class CompetitionLogoAsset {
 const Map<String, CompetitionLogoAsset> kCompetitionLogoAssets =
     <String, CompetitionLogoAsset>{};
 
+const CompetitionLogoAsset _premierLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/premier-league.png',
+);
+const CompetitionLogoAsset _laLigaLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/la-liga.png',
+);
+const CompetitionLogoAsset _serieALogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/serie-a.png',
+);
+const CompetitionLogoAsset _bundesligaLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/bundesliga.png',
+);
+const CompetitionLogoAsset _ligue1Logo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/ligue-1.png',
+);
+const CompetitionLogoAsset _championsLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/champions-league.png',
+);
+const CompetitionLogoAsset _europaLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/europa-league.png',
+);
+const CompetitionLogoAsset _saudiProLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/saudi-pro-league.png',
+);
+
+/// Local league-logo catalog keyed by the football league name shown on the
+/// fixture. The aliases mirror the current football-data/provider seed names.
+const Map<String, CompetitionLogoAsset> kLeagueLogoAssetsByName =
+    <String, CompetitionLogoAsset>{
+      'الدوري الإنجليزي الممتاز': _premierLeagueLogo,
+      'Premier League': _premierLeagueLogo,
+      'الدوري الإسباني': _laLigaLogo,
+      'LaLiga': _laLigaLogo,
+      'La Liga': _laLigaLogo,
+      'الدوري الإيطالي': _serieALogo,
+      'Serie A': _serieALogo,
+      'الدوري الألماني': _bundesligaLogo,
+      'Bundesliga': _bundesligaLogo,
+      'الدوري الفرنسي': _ligue1Logo,
+      'Ligue 1': _ligue1Logo,
+      'دوري أبطال أوروبا': _championsLeagueLogo,
+      'UEFA Champions League': _championsLeagueLogo,
+      'Champions League': _championsLeagueLogo,
+      'الدوري الأوروبي': _europaLeagueLogo,
+      'UEFA Europa League': _europaLeagueLogo,
+      'Europa League': _europaLeagueLogo,
+      'دوري روشن السعودي': _saudiProLeagueLogo,
+      'روشن السعودي': _saudiProLeagueLogo,
+      'الدوري السعودي': _saudiProLeagueLogo,
+      'Saudi Pro League': _saudiProLeagueLogo,
+    };
+
+String _normaliseLeagueName(String value) =>
+    value.trim().replaceAll(RegExp(r'\s+'), ' ');
+
 /// The bundled asset path for [competitionId]'s logo, or `null` when none is
 /// on file (a legitimate, expected state right now — see this file's doc).
-String? competitionLogoAsset(String? competitionId) {
-  if (competitionId == null) return null;
-  return kCompetitionLogoAssets[competitionId]?.assetPath;
+String? competitionLogoAsset(String? competitionId, [String? competitionName]) {
+  if (competitionId != null) {
+    final CompetitionLogoAsset? idAsset = kCompetitionLogoAssets[competitionId];
+    if (idAsset != null) return idAsset.assetPath;
+  }
+
+  if (competitionName == null) return null;
+  final CompetitionLogoAsset? nameAsset =
+      kLeagueLogoAssetsByName[_normaliseLeagueName(competitionName)];
+  return nameAsset?.assetPath;
 }
 
 /// [competitionId]'s brand color, or `null` when none is on file.

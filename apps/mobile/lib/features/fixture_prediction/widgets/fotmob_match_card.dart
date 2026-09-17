@@ -667,7 +667,10 @@ class _CardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final String? assetPath = competitionLogoAsset(competitionId);
+    final String? assetPath = competitionLogoAsset(
+      competitionId,
+      competitionName,
+    );
     final DateTime? kickoffLocal = kickoffAt == null
         ? null
         : DateTime.tryParse(kickoffAt!)?.toLocal();

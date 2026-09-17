@@ -130,6 +130,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/team_logos/
+    - assets/league_logos/
   generate: true
   fonts:
     - family: IBMPlexSansArabic
