@@ -801,3 +801,11 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - إضافة 6 مفاتيح إملاء عربي بديلة في _arabicTeamLogoAliases (team_logo_assets.dart) تشير لشرائح شعار موجودة أصلًا: بشتکاش/فيرينكفاروس/فاینورد/نیمیجن/أمونيا نيقوسيا/فايكينج -> besiktas/ferencvaros/feyenoord/nec-nijmegen/omonoia/viking.
 - لم تُمس: باير ليفركوزن ونيوكاسل (المفتاح والشعار موجودان بالفعل بدون تعديل؛ إن استمر عدم الظهور فالسبب على الأرجح بناء APK قديم لم يشمل هذين الملفين، لا الكود).
 - 10 فرق من القائمة (نورويتش سيتي، ولفرهامبتون، بريست، تروا، موناكو، ستراسبورغ، باريس إف سي، ميلوال، ميدلزبره، ريدينغ) لا شعار محلي لها إطلاقًا في assets/team_logos/ -- يحتاج ملفات PNG فعلية، لم يُنفَّذ هنا.
+
+## 2026-09-17T20:53:08+03:00 - knockout_rule_and_sync_timeout
+- knockout rule (UEFA Predict Six): score after 90 min (120 with extra time) counts; penalty shoot-outs count as a draw. New rules_screen.dart (Account -> Settings), sign-in rules card line, admin result-form hint, ar/en l10n. fix_commit: 0047dda
+- sync timeout fix: postgres_provider_sync_store.dart now retries once after 500ms on db.query_timeout (background sync jobs only, request paths unchanged). Migration 0049 adds index fixture_schedules_kickoff_at_idx on competition.fixture_schedules(kickoff_at). fix_commit: 11e95d7
+- both pushed: ead38b0..11e95d7 main -> main (confirmed)
+- migration 0049 applied manually in Supabase SQL Editor: confirmed (Success. No rows returned)
+- name_match dedup (d19eecc) verified already on origin/main from a prior session -- no action needed this session
+- REMAINING: verify tonight's Europa League fixtures auto-scored -- grep "recorded:" in sync logs after matches end
