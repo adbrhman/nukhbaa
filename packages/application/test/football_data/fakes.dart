@@ -111,6 +111,9 @@ ProviderMatch providerMatch({
   ProviderMatchStatus status = ProviderMatchStatus.scheduled,
   int? homeGoals,
   int? awayGoals,
+  int? currentHomeGoals,
+  int? currentAwayGoals,
+  int? minute,
 }) => ProviderMatch(
   externalId: id,
   leagueExternalId: league,
@@ -122,4 +125,7 @@ ProviderMatch providerMatch({
   status: status,
   homeGoals: homeGoals,
   awayGoals: awayGoals,
+  currentHomeGoals: currentHomeGoals,
+  currentAwayGoals: currentAwayGoals,
+  minute: minute,
 );

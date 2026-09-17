@@ -28,11 +28,23 @@ Future<Response> onRequest(RequestContext context) async {
 
   final result = await root.listCurrentMonthFixtures(principal: principal);
 
+  // Running scores (display only), kept by the provider scheduler.
+  final ids = switch (result) {
+    Ok<List<CurrentMonthFixtureEntry>>(:final value) => [
+      for (final entry in value) entry.fixture.fixtureId.value,
+    ],
+    Err<List<CurrentMonthFixtureEntry>>() => const <String>[],
+  };
+  final live = root.liveScoreBoard?.read(ids) ?? const <String, LiveScore>{};
+
   return switch (result) {
     Ok<List<CurrentMonthFixtureEntry>>(:final value) => Response.json(
       body: [
         for (final entry in value)
-          currentMonthFixtureEntryToDto(entry).toJson(),
+          currentMonthFixtureEntryToDto(
+            entry,
+            live: live[entry.fixture.fixtureId.value],
+          ).toJson(),
       ],
     ),
     Err<List<CurrentMonthFixtureEntry>>(:final error) => errorResponse(error),

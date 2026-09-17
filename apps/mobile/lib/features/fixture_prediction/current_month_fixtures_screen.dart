@@ -83,6 +83,7 @@ class _CurrentMonthFixturesScreenState
   /// error), and the live chip neither lit up nor went out while the screen
   /// stayed open. One minute is the finest granularity anything here shows.
   Timer? _clockTick;
+  int _ticks = 0;
 
   @override
   void initState() {
@@ -91,8 +92,18 @@ class _CurrentMonthFixturesScreenState
       if (!mounted) return;
       // One coalesced feed read per minute, instead of one per saved
       // prediction (see feed_refresh_signal.dart).
+      _ticks++;
+      final bool anyLive =
+          ref
+              .read(currentMonthFixturesProvider)
+              .value
+              ?.any((item) => isFixtureLive(item.fixture.kickoffAt)) ??
+          false;
       if (ref.read(feedRefreshSignalProvider)) {
         ref.read(feedRefreshSignalProvider.notifier).consume();
+        ref.invalidate(currentMonthFixturesProvider);
+      } else if (anyLive && _ticks.isEven) {
+        // Running scores are refreshed server-side every 2 minutes.
         ref.invalidate(currentMonthFixturesProvider);
       }
       setState(() {});

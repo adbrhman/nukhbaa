@@ -41,6 +41,9 @@ final class ProviderMatch {
     required this.status,
     this.homeGoals,
     this.awayGoals,
+    this.currentHomeGoals,
+    this.currentAwayGoals,
+    this.minute,
   });
 
   /// The provider's match id.
@@ -73,6 +76,16 @@ final class ProviderMatch {
 
   /// Final away goals, same rule as [homeGoals].
   final int? awayGoals;
+
+  /// The running home score while [status] is live (for display only;
+  /// never recorded). May lag the real game on a delayed feed.
+  final int? currentHomeGoals;
+
+  /// The running away score while [status] is live (display only).
+  final int? currentAwayGoals;
+
+  /// The match minute while live, when the provider reports one.
+  final int? minute;
 
   /// Whether a final scoreline can be recorded from this match.
   bool get hasFinalScore =>

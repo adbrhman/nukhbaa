@@ -194,6 +194,12 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
       status: status,
       homeGoals: status == ProviderMatchStatus.finished ? goals?.$1 : null,
       awayGoals: status == ProviderMatchStatus.finished ? goals?.$2 : null,
+      currentHomeGoals: status == ProviderMatchStatus.live ? goals?.$1 : null,
+      currentAwayGoals: status == ProviderMatchStatus.live ? goals?.$2 : null,
+      minute:
+          status == ProviderMatchStatus.live && state is Map<String, Object?>
+          ? _minute(state['clock'])
+          : null,
     );
   }
 
@@ -232,6 +238,16 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
   static final RegExp _scorePattern = RegExp(r'^\s*(\d+)\s*-\s*(\d+)\s*$');
 
   static String _text(Object? raw) => raw is String ? raw : '';
+
+  static int? _minute(Object? raw) {
+    if (raw is int) {
+      return raw;
+    }
+    if (raw is String) {
+      return int.tryParse(raw.replaceAll(RegExp(r"[^0-9]"), ''));
+    }
+    return null;
+  }
 
   static (int, int)? _parseScore(String raw) {
     final match = _scorePattern.firstMatch(raw);

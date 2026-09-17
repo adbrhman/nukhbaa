@@ -2702,6 +2702,28 @@ League and League Cup.
   Highlightly ids. Env: `NUKHBA_FOOTBALL_DATA_API_KEY`; a provider without a
   key is skipped.
 
+### Live scores in the fixtures feed (2026-09-17)
+
+Option 1 (free): running scores for the five football-data.org
+competitions only (the free tier's scores are delayed); Roshan and Europa
+League cards keep the bare "مباشر" label so Highlightly's 100 daily requests
+stay for results.
+
+- `RefreshLiveScores` (application) polls, every 2 min, only competitions
+  with a provider-linked fixture that kicked off < 150 min ago and has no
+  result; writes `LiveScore`s to the `LiveScoreBoard` port
+  (`InMemoryLiveScoreBoard`, forgets after 15 min). Display only: nothing is
+  recorded or scored. `ProviderMatch` gained `currentHomeGoals`,
+  `currentAwayGoals`, `minute`.
+- `GET /feed/current-month-fixtures` attaches `live_home_goals`,
+  `live_away_goals`, `live_minute`, `live_finished`
+  (`CurrentMonthFixtureItemDto` schema 3; older clients ignore them).
+- Mobile: a locked card shows `2 - 1` with the minute (or the final score
+  with "بانتظار النتيجة"); the matches screen refreshes the feed every 2 min
+  while a fixture is live.
+- Upgrade path: Highlightly paid plan -> add `highlightly` to `liveSources`
+  in `composition_root.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

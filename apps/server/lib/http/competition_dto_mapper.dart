@@ -157,8 +157,9 @@ ActiveSeasonDto activeSeasonToDto(ParticipantSeasonFeedEntry entry) {
 /// for the nested fixture card so it never drifts from
 /// `GET /seasons/{id}/fixtures`.
 CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
-  CurrentMonthFixtureEntry entry,
-) {
+  CurrentMonthFixtureEntry entry, {
+  LiveScore? live,
+}) {
   return CurrentMonthFixtureItemDto(
     competitionId: entry.competitionId.value,
     competitionName: entry.competitionName,
@@ -166,5 +167,9 @@ CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
     fixture: seasonFixtureCardToDto(entry.fixture),
     homeWinPercentage: entry.homeWinPercentage,
     awayWinPercentage: entry.awayWinPercentage,
+    liveHomeGoals: live?.homeGoals,
+    liveAwayGoals: live?.awayGoals,
+    liveMinute: live?.minute,
+    liveFinished: live?.finished,
   );
 }

@@ -14,6 +14,9 @@ import 'package:shared/shared.dart';
 /// * **Days:** the API filters by UTC date, so a Riyadh day (UTC+3) is asked
 ///   for as the UTC dates it spans and the matches are then kept by their
 ///   Riyadh day.
+/// * **Live:** while a match is in play, `score.fullTime` is the running
+///   score (delayed on the free tier) and `minute` the clock when present;
+///   both are for display only.
 /// * **Scores:** the result recorded is the score after extra time, never
 ///   including a shoot-out. For a match decided on penalties it is
 ///   `regularTime + extraTime` when present, else `fullTime - penalties`;
@@ -180,6 +183,19 @@ final class FootballDataOrgProvider implements FootballDataProvider {
     final goals = status == ProviderMatchStatus.finished
         ? finalScore(json['score'])
         : null;
+    final score = json['score'];
+    final running =
+        status == ProviderMatchStatus.live && score is Map<String, Object?>
+        ? _pair(score['fullTime'])
+        : null;
+    final minuteRaw = json['minute'];
+    final minute = status != ProviderMatchStatus.live
+        ? null
+        : minuteRaw is int
+        ? minuteRaw
+        : minuteRaw is String
+        ? int.tryParse(minuteRaw.replaceAll(RegExp(r"[^0-9]"), ''))
+        : null;
     return ProviderMatch(
       externalId: id.toString(),
       leagueExternalId: code,
@@ -191,6 +207,9 @@ final class FootballDataOrgProvider implements FootballDataProvider {
       status: status,
       homeGoals: goals?.$1,
       awayGoals: goals?.$2,
+      currentHomeGoals: running?.$1,
+      currentAwayGoals: running?.$2,
+      minute: minute,
     );
   }
 

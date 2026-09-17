@@ -798,6 +798,10 @@ final class CurrentMonthFixtureItemDto {
     required this.fixture,
     this.homeWinPercentage,
     this.awayWinPercentage,
+    this.liveHomeGoals,
+    this.liveAwayGoals,
+    this.liveMinute,
+    this.liveFinished,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -813,14 +817,19 @@ final class CurrentMonthFixtureItemDto {
       ),
       homeWinPercentage: json['home_win_percentage'] as int?,
       awayWinPercentage: json['away_win_percentage'] as int?,
+      liveHomeGoals: json['live_home_goals'] as int?,
+      liveAwayGoals: json['live_away_goals'] as int?,
+      liveMinute: json['live_minute'] as int?,
+      liveFinished: json['live_finished'] as bool?,
     );
   }
 
-  /// The current schema version for this DTO. Bumped to 2 for the two
+  /// The current schema version for this DTO. Bumped to 3 for the four
+  /// optional live-score fields, and to 2 before that for the two
   /// optional percentage fields; a v1 payload (an older server) simply
   /// decodes them as `null`, and an older client ignores them, so neither
   /// side has to be deployed first.
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   /// The owning competition's id (UUID string).
   final String competitionId;
@@ -842,6 +851,20 @@ final class CurrentMonthFixtureItemDto {
   /// The away share of decisive predictions, with the same null meaning.
   final int? awayWinPercentage;
 
+  /// The running home score while the match is in play (display only,
+  /// possibly delayed); null when the server has none.
+  final int? liveHomeGoals;
+
+  /// The running away score, same meaning as [liveHomeGoals].
+  final int? liveAwayGoals;
+
+  /// The match minute, when the provider reports one.
+  final int? liveMinute;
+
+  /// True once the provider reports the match over (its official result
+  /// may not be recorded yet).
+  final bool? liveFinished;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -854,6 +877,10 @@ final class CurrentMonthFixtureItemDto {
     'fixture': fixture.toJson(),
     'home_win_percentage': homeWinPercentage,
     'away_win_percentage': awayWinPercentage,
+    'live_home_goals': liveHomeGoals,
+    'live_away_goals': liveAwayGoals,
+    'live_minute': liveMinute,
+    'live_finished': liveFinished,
   };
 
   @override
@@ -865,6 +892,10 @@ final class CurrentMonthFixtureItemDto {
       other.fixture == fixture &&
       other.homeWinPercentage == homeWinPercentage &&
       other.awayWinPercentage == awayWinPercentage &&
+      other.liveHomeGoals == liveHomeGoals &&
+      other.liveAwayGoals == liveAwayGoals &&
+      other.liveMinute == liveMinute &&
+      other.liveFinished == liveFinished &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -875,6 +906,10 @@ final class CurrentMonthFixtureItemDto {
     fixture,
     homeWinPercentage,
     awayWinPercentage,
+    liveHomeGoals,
+    liveAwayGoals,
+    liveMinute,
+    liveFinished,
     schemaVersion,
   );
 }

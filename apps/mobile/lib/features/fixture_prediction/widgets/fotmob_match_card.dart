@@ -560,6 +560,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           isGraded: isGraded,
                           locked: locked,
                           live: locked && isFixtureLive(_fixture.kickoffAt),
+                          liveHome: widget.item.liveHomeGoals,
+                          liveAway: widget.item.liveAwayGoals,
+                          liveMinute: widget.item.liveMinute,
+                          liveFinished: widget.item.liveFinished,
                           myPrediction: myPrediction,
                           grade: myGrade,
                           points: myPoints,
@@ -884,6 +888,10 @@ class _MiddleSlot extends StatelessWidget {
     required this.onDecrementHome,
     required this.onIncrementAway,
     required this.onDecrementAway,
+    this.liveHome,
+    this.liveAway,
+    this.liveMinute,
+    this.liveFinished,
   });
 
   final bool isGraded;
@@ -911,6 +919,12 @@ class _MiddleSlot extends StatelessWidget {
   final VoidCallback onIncrementAway;
   final VoidCallback onDecrementAway;
 
+  /// The provider's running score for a locked card (display only).
+  final int? liveHome;
+  final int? liveAway;
+  final int? liveMinute;
+  final bool? liveFinished;
+
   @override
   Widget build(BuildContext context) {
     if (isGraded && myPrediction != null) {
@@ -921,7 +935,14 @@ class _MiddleSlot extends StatelessWidget {
       );
     }
     if (locked) {
-      return _LockedSlot(live: live);
+      return _LockedSlot(
+        live: live,
+        fixtureId: fixtureId,
+        home: liveHome,
+        away: liveAway,
+        minute: liveMinute,
+        finished: liveFinished,
+      );
     }
     return Stack(
       alignment: Alignment.center,
@@ -1042,14 +1063,72 @@ class _GradedSlot extends StatelessWidget {
 /// generic "started" label for both, which kept a finished match looking
 /// like it was still being played.
 class _LockedSlot extends StatelessWidget {
-  const _LockedSlot({required this.live});
+  const _LockedSlot({
+    required this.live,
+    required this.fixtureId,
+    this.home,
+    this.away,
+    this.minute,
+    this.finished,
+  });
 
   final bool live;
+  final String fixtureId;
+
+  /// The provider's running (or, when [finished], final) score, if any.
+  final int? home;
+  final int? away;
+  final int? minute;
+  final bool? finished;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
+    final int? homeGoals = home;
+    final int? awayGoals = away;
+    if (homeGoals != null && awayGoals != null) {
+      final bool over = finished ?? false;
+      final Color accent = over ? tokens.textMuted : tokens.error;
+      final int? clock = minute;
+      return Column(
+        key: Key('currentMonthFixtures.liveScore.$fixtureId'),
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            '$homeGoals - $awayGoals',
+            textDirection: TextDirection.ltr,
+            style: TextStyle(
+              color: tokens.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (!over) ...<Widget>[
+                Icon(Icons.circle, size: 8, color: accent),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                over
+                    ? l10n.predictionPendingResultLabel
+                    : clock != null
+                    ? "$clock'"
+                    : l10n.fixturesLiveLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textDirection: over || clock == null ? null : TextDirection.ltr,
+                style: TextStyle(color: accent, fontSize: 11),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
     final Color color = live ? tokens.error : tokens.textMuted;
     return Column(
       mainAxisSize: MainAxisSize.min,

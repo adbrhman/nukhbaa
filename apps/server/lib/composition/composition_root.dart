@@ -90,6 +90,8 @@ final class CompositionRoot {
     required this.providerSyncMode,
     this.syncProviderFixtures,
     this.syncProviderResults,
+    this.liveScoreBoard,
+    this.refreshLiveScores,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -207,6 +209,8 @@ final class CompositionRoot {
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
     this.syncProviderResults,
+    this.liveScoreBoard,
+    this.refreshLiveScores,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1255,6 +1259,13 @@ final class CompositionRoot {
   /// Records the provider's results; null while the sync is off.
   final SyncProviderResults? syncProviderResults;
 
+  /// Running scores for the fixtures feed (display only); null in tests
+  /// that do not provide one.
+  final LiveScoreBoard? liveScoreBoard;
+
+  /// Refreshes [liveScoreBoard]; null while the sync is off.
+  final RefreshLiveScores? refreshLiveScores;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -1547,6 +1558,10 @@ final class CompositionRoot {
     final providerSyncMode = providers.isEmpty
         ? ProviderSyncMode.off
         : ProviderSyncMode.parse(env['NUKHBA_PROVIDER_SYNC']);
+    // Running scores for the fixtures feed (display only), refreshed by the
+    // provider scheduler; empty until a poll fills it.
+    final liveScoreBoard = InMemoryLiveScoreBoard();
+    RefreshLiveScores? refreshLiveScores;
     late final CompositionRoot root;
     SyncProviderFixtures? syncProviderFixtures;
     SyncProviderResults? syncProviderResults;
@@ -1567,6 +1582,15 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         idGenerator: idGenerator,
         rules: phaseOneRules,
+      );
+      refreshLiveScores = RefreshLiveScores(
+        providers: providers,
+        store: syncStore,
+        leagueRepository: syncLeagues,
+        rules: phaseOneRules,
+        board: liveScoreBoard,
+        // Highlightly's 100 daily requests are kept for results.
+        liveSources: const {footballDataSource},
       );
       syncProviderResults = SyncProviderResults(
         providers: providers,
@@ -1630,6 +1654,8 @@ final class CompositionRoot {
       providerSyncMode: providerSyncMode,
       syncProviderFixtures: syncProviderFixtures,
       syncProviderResults: syncProviderResults,
+      liveScoreBoard: liveScoreBoard,
+      refreshLiveScores: refreshLiveScores,
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
       ),

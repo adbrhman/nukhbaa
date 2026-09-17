@@ -15,6 +15,10 @@ const Duration providerFixturesTick = Duration(hours: 24);
 /// due, so most runs cost nothing.
 const Duration providerResultsTick = Duration(minutes: 20);
 
+/// Live-score polls. Each run only calls a provider while a synced fixture
+/// of one of its competitions is in play.
+const Duration providerLiveTick = Duration(minutes: 2);
+
 /// Drives the automatic fixtures/results sync in the server process, like the
 /// reminder sweep: in-process timers, never awaited, failures logged and
 /// retried on the next tick. Does nothing when the mode is `off` or no
@@ -65,7 +69,29 @@ void startProviderSyncScheduler(CompositionRoot root) {
     }
   }
 
+  final live = root.refreshLiveScores;
+  var liveRunning = false;
+  Future<void> runLive() async {
+    if (live == null || liveRunning) return;
+    liveRunning = true;
+    try {
+      final result = await live(now: DateTime.now().toUtc());
+      if (result case Err<int>(:final error)) {
+        _log(tag, 'live scores failed: ${error.code} ${error.message}');
+      }
+    } on Object catch (error) {
+      _log(tag, 'live scores threw: $error');
+    } finally {
+      liveRunning = false;
+    }
+  }
+
   _log(tag, 'provider sync started');
+  if (live != null) {
+    Timer.periodic(providerLiveTick, (_) {
+      unawaited(runLive());
+    });
+  }
   Timer(providerFixturesFirstRunDelay, () {
     unawaited(runFixtures(includeToday: true));
   });
