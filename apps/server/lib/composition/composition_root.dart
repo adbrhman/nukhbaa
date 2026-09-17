@@ -1619,6 +1619,18 @@ final class CompositionRoot {
               if (scored is Err<List<ParticipantFixtureScore>>) {
                 return Result.err(scored.error);
               }
+              // Third step, the one the admin flow also runs:
+              // ScoreFixture only fills scoring.fixture_scores, and a
+              // leaderboard reads the ledger. Without this the sync
+              // recorded results that stood at zero points for
+              // everyone. PostFixtureToLedger is idempotent.
+              final posted = await root.postFixtureToLedger(
+                principal: systemPrincipal,
+                fixtureId: fixtureId,
+              );
+              if (posted is Err<List<FixturePointEntry>>) {
+                return Result.err(posted.error);
+              }
               return const Result.ok(null);
             },
       );
