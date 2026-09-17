@@ -2736,6 +2736,15 @@ this (`FootballDataOrgProvider.finalScore`, Highlightly
 rule (hint under the admin result form). Shown to users on the sign-in
 rules card and on the new "كيف تلعب؟" page (Account -> الإعدادات).
 
+### Sync query resilience (2026-09-17)
+
+`provider-sync [on] live scores failed: db.query_timeout` came from the
+pool's first statement after an idle stretch exceeding the 10 s statement
+limit, which cost a whole poll. `PostgresProviderSyncStore` now retries once
+after 500 ms (background jobs only; request paths keep the single-shot
+behaviour), and migration 0049 indexes `competition.fixture_schedules
+(kickoff_at)`, the range every sync query filters on.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

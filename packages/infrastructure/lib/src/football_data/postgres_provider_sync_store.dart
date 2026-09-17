@@ -79,6 +79,23 @@ ORDER BY c.kickoff_at
 LIMIT 1
 ''';
 
+  /// One retry for background sync queries: the pool's first
+  /// statement after an idle stretch can exceed the 10 s limit, and a
+  /// lost poll would wait a whole tick. Request paths keep the
+  /// single-shot behaviour.
+  Future<Result<List<Map<String, dynamic>>>> _queryWithRetry(
+    String sql, {
+    Map<String, Object?> parameters = const <String, Object?>{},
+  }) async {
+    final first = await _connection.query(sql, parameters: parameters);
+    if (first is Err<List<Map<String, dynamic>>> &&
+        first.error.code == 'db.query_timeout') {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      return _connection.query(sql, parameters: parameters);
+    }
+    return first;
+  }
+
   @override
   Future<Result<String?>> findExistingFixture({
     required String homeTeamId,
@@ -88,7 +105,7 @@ LIMIT 1
     required DateTime from,
     required DateTime to,
   }) async {
-    final result = await _connection.query(
+    final result = await _queryWithRetry(
       _existingSql,
       parameters: {
         'home_id': homeTeamId,
@@ -116,7 +133,7 @@ LIMIT 1
     if (externalIds.isEmpty) {
       return const Result.ok(<String, String>{});
     }
-    final result = await _connection.query(
+    final result = await _queryWithRetry(
       _canonicalSql,
       parameters: {
         'source': source,
@@ -140,7 +157,7 @@ LIMIT 1
     required String externalId,
     required String canonicalId,
   }) async {
-    final result = await _connection.query(
+    final result = await _queryWithRetry(
       _linkSql,
       parameters: {
         'source': source,
@@ -161,7 +178,7 @@ LIMIT 1
     required DateTime kickedOffFrom,
     required DateTime kickedOffBefore,
   }) async {
-    final result = await _connection.query(
+    final result = await _queryWithRetry(
       _pendingSql,
       parameters: {
         'source': source,
