@@ -1178,4 +1178,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backToSignIn => 'Back to sign in';
+
+  @override
+  String get rulesRegularTime =>
+      'Regular matches: the score after 90 minutes plus stoppage time counts.';
+
+  @override
+  String get rulesKnockout =>
+      'Knockout matches: the score after extra time counts when it is played; a match decided on penalties counts as a draw.';
+
+  @override
+  String get rulesKnockoutExample =>
+      'Example: 1-1 after 120 minutes, then a shoot-out win → the result is 1-1, and picking either side to win scores nothing.';
+
+  @override
+  String get accountRules => 'How to play';
+
+  @override
+  String get adminResultRuleHint =>
+      'Enter the score after extra time when it was played, without shoot-out goals.';
 }

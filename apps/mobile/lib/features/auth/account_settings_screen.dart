@@ -13,6 +13,7 @@ import '../groups/join_group_screen.dart';
 import '../groups/my_groups_screen.dart';
 import '../record/my_seasons_screen.dart';
 import '../record/season_record_screen.dart';
+import 'rules_screen.dart';
 import 'widgets/account_menu.dart';
 
 /// The settings page.
@@ -62,6 +63,18 @@ class AccountSettingsScreen extends StatelessWidget {
                       icon: Icons.calendar_month_outlined,
                       title: l10n.mySeasonsLabel,
                       onTap: () => open(const MySeasonsScreen()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                AccountSectionTitle(l10n.rulesTitle),
+                AccountMenuCard(
+                  children: <Widget>[
+                    AccountMenuRow(
+                      key: const Key('account.rules'),
+                      icon: Icons.menu_book_outlined,
+                      title: l10n.accountRules,
+                      onTap: () => open(const RulesScreen()),
                     ),
                   ],
                 ),

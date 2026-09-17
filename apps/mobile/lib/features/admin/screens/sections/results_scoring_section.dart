@@ -199,6 +199,14 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                l10n.adminResultRuleHint,
+                key: const Key('admin.results.ruleHint'),
+                style: context.text.bodySmall?.copyWith(
+                  color: context.tokens.textMuted,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               if (resultState is AsyncError)
                 AdminErrorBanner(

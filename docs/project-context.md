@@ -2724,6 +2724,18 @@ stay for results.
 - Upgrade path: Highlightly paid plan -> add `highlightly` to `liveSources`
   in `composition_root.dart`.
 
+### Knockout rule: extra time and penalties (2026-09-17)
+
+Adopted the UEFA Predict Six rule (also Superbru's): the result that
+counts is the score at the end of open play -- after 90 minutes plus
+stoppage time, or after 120 minutes when extra time is played. A match
+decided by a penalty shoot-out counts as a draw at the end of extra time;
+shoot-out goals never count. The provider adapters already record exactly
+this (`FootballDataOrgProvider.finalScore`, Highlightly
+`state.score.current`); admins entering a result by hand follow the same
+rule (hint under the admin result form). Shown to users on the sign-in
+rules card and on the new "كيف تلعب؟" page (Account -> الإعدادات).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

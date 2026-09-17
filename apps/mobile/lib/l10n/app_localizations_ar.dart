@@ -1187,4 +1187,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get backToSignIn => 'العودة لتسجيل الدخول';
+
+  @override
+  String get rulesRegularTime =>
+      'المباريات العادية: تُعتمد النتيجة بعد 90 دقيقة مع الوقت بدل الضائع.';
+
+  @override
+  String get rulesKnockout =>
+      'مباريات خروج المغلوب: تُعتمد النتيجة بعد الأشواط الإضافية إن لُعبت، والمباراة المحسومة بركلات الترجيح تُعد تعادلاً.';
+
+  @override
+  String get rulesKnockoutExample =>
+      'مثال: 1-1 بعد 120 دقيقة ثم فوز أحد الفريقين بالترجيح ← النتيجة المعتمدة 1-1، ومن توقّع فوز أي فريق لا ينال نقاطاً.';
+
+  @override
+  String get accountRules => 'قواعد اللعب';
+
+  @override
+  String get adminResultRuleHint =>
+      'أدخل النتيجة بعد الأشواط الإضافية إن لُعبت، دون أهداف ركلات الترجيح.';
 }

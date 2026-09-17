@@ -2153,6 +2153,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to sign in'**
   String get backToSignIn;
+
+  /// No description provided for @rulesRegularTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Regular matches: the score after 90 minutes plus stoppage time counts.'**
+  String get rulesRegularTime;
+
+  /// No description provided for @rulesKnockout.
+  ///
+  /// In en, this message translates to:
+  /// **'Knockout matches: the score after extra time counts when it is played; a match decided on penalties counts as a draw.'**
+  String get rulesKnockout;
+
+  /// No description provided for @rulesKnockoutExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: 1-1 after 120 minutes, then a shoot-out win → the result is 1-1, and picking either side to win scores nothing.'**
+  String get rulesKnockoutExample;
+
+  /// No description provided for @accountRules.
+  ///
+  /// In en, this message translates to:
+  /// **'How to play'**
+  String get accountRules;
+
+  /// No description provided for @adminResultRuleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the score after extra time when it was played, without shoot-out goals.'**
+  String get adminResultRuleHint;
 }
 
 class _AppLocalizationsDelegate

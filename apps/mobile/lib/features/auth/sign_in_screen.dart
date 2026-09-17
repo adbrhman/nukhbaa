@@ -451,6 +451,12 @@ class _RulesBox extends StatelessWidget {
             iconColor: tokens.gold,
             label: l10n.rulesDoubleMatch,
           ),
+          const SizedBox(height: AppSpacing.sm),
+          _RuleItem(
+            icon: Icons.sports_score_rounded,
+            iconColor: tokens.textSecondary,
+            label: l10n.rulesKnockout,
+          ),
         ],
       ),
     );
