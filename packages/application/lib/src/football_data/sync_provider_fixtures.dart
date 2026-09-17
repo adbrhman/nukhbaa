@@ -232,6 +232,7 @@ final class SyncProviderFixtures {
             awayTeamId: away.id.value,
             homeTeamName: home.name,
             awayTeamName: away.name,
+            kickoffAt: match.kickoffAt.toUtc(),
             from: match.kickoffAt.toUtc().subtract(duplicateWindow),
             to: match.kickoffAt.toUtc().add(duplicateWindow),
           );

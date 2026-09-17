@@ -663,6 +663,7 @@ class _ScorePill extends StatelessWidget {
       ),
       child: Text(
         '$home - $away',
+        textDirection: TextDirection.ltr,
         style: TextStyle(
           color: tokens.textPrimary,
           fontWeight: FontWeight.w700,

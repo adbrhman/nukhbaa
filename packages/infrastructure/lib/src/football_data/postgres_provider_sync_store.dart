@@ -75,6 +75,16 @@ WHERE (c.home_team_id = @home_id::uuid AND c.away_team_id = @away_id::uuid)
     AND (c.h = t.h OR strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0)
     AND (c.a = t.a OR strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0)
    )
+   OR (
+        abs(extract(epoch from (c.kickoff_at - @kickoff::timestamptz))) <= 10800
+    AND (
+          c.home_team_id = @home_id::uuid OR c.away_team_id = @away_id::uuid
+       OR (length(t.h) >= 3 AND length(c.h) >= 3
+           AND (c.h = t.h OR strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0))
+       OR (length(t.a) >= 3 AND length(c.a) >= 3
+           AND (c.a = t.a OR strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0))
+    )
+   )
 ORDER BY c.kickoff_at
 LIMIT 1
 ''';
@@ -102,6 +112,7 @@ LIMIT 1
     required String awayTeamId,
     required String homeTeamName,
     required String awayTeamName,
+    required DateTime kickoffAt,
     required DateTime from,
     required DateTime to,
   }) async {
@@ -112,6 +123,7 @@ LIMIT 1
         'away_id': awayTeamId,
         'home_name': homeTeamName.trim(),
         'away_name': awayTeamName.trim(),
+        'kickoff': kickoffAt.toUtc().toIso8601String(),
         'from': from.toUtc().toIso8601String(),
         'to': to.toUtc().toIso8601String(),
       },

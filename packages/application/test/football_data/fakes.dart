@@ -63,6 +63,7 @@ final class FakeProviderSyncStore implements ProviderSyncStore {
     required String awayTeamId,
     required String homeTeamName,
     required String awayTeamName,
+    required DateTime kickoffAt,
     required DateTime from,
     required DateTime to,
   }) async {

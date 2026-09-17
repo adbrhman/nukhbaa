@@ -595,6 +595,7 @@ class _HistoryData extends StatelessWidget {
         DataCell(
           Text(
             '${prediction.predictedHomeGoals} - ${prediction.predictedAwayGoals}',
+            textDirection: TextDirection.ltr,
           ),
         ),
         DataCell(
@@ -603,6 +604,7 @@ class _HistoryData extends StatelessWidget {
                     prediction.finalAwayGoals == null
                 ? '—'
                 : '${prediction.finalHomeGoals} - ${prediction.finalAwayGoals}',
+            textDirection: TextDirection.ltr,
           ),
         ),
         DataCell(

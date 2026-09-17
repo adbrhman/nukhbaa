@@ -6,6 +6,20 @@ import 'package:application/src/football_data/provider_sync_rules.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
+/// What one live refresh did: how many fixtures now show a running score,
+/// and which of them the provider reports finished -- the scheduler records
+/// those results at once instead of waiting for the next results tick.
+final class LiveScoreRefresh {
+  /// Creates the report.
+  const LiveScoreRefresh({required this.updated, required this.finished});
+
+  /// Fixtures whose score the board now holds.
+  final int updated;
+
+  /// Fixture ids the provider reports finished in this run.
+  final List<String> finished;
+}
+
 /// System use-case: refresh the running scores of the synced fixtures that
 /// are in play, for display in the fixtures feed.
 ///
@@ -25,7 +39,7 @@ final class RefreshLiveScores {
     required List<ProviderLeagueRule> rules,
     required LiveScoreBoard board,
     required Set<String> liveSources,
-    this.window = const Duration(minutes: 150),
+    this.window = const Duration(minutes: 180),
     this.maxCallsPerRun = 6,
   }) : _providers = providers,
        _store = store,
@@ -47,8 +61,9 @@ final class RefreshLiveScores {
   /// Provider calls allowed in one run.
   final int maxCallsPerRun;
 
-  /// Runs once at [now]; returns how many fixtures now show a score.
-  Future<Result<int>> call({required DateTime now}) async {
+  /// Runs once at [now]; reports the scores written and the fixtures the
+  /// provider now reports finished.
+  Future<Result<LiveScoreRefresh>> call({required DateTime now}) async {
     final nowUtc = now.toUtc();
     final sources = <String>{
       for (final rule in _rules)
@@ -57,9 +72,12 @@ final class RefreshLiveScores {
           rule.source,
     };
     if (sources.isEmpty) {
-      return const Result.ok(0);
+      return const Result.ok(
+        LiveScoreRefresh(updated: 0, finished: <String>[]),
+      );
     }
 
+    AppError? failure;
     final pendingBySource = <String, List<PendingProviderFixture>>{};
     for (final source in sources) {
       final pending = await _store.fixturesAwaitingResult(
@@ -68,7 +86,9 @@ final class RefreshLiveScores {
         kickedOffBefore: nowUtc,
       );
       if (pending is Err<List<PendingProviderFixture>>) {
-        return Result.err(pending.error);
+        // One source timing out must not blind the others this tick.
+        failure = pending.error;
+        continue;
       }
       final list = (pending as Ok<List<PendingProviderFixture>>).value;
       if (list.isNotEmpty) {
@@ -76,7 +96,10 @@ final class RefreshLiveScores {
       }
     }
     if (pendingBySource.isEmpty) {
-      return const Result.ok(0);
+      final lost = failure;
+      return lost == null
+          ? const Result.ok(LiveScoreRefresh(updated: 0, finished: <String>[]))
+          : Result.err(lost);
     }
 
     final leaguesResult = await _leagues.listAll();
@@ -112,6 +135,7 @@ final class RefreshLiveScores {
     }
 
     final fresh = <String, LiveScore>{};
+    final finishedIds = <String>[];
     final gone = <String>[];
     var calls = 0;
     for (final entry in groups.entries) {
@@ -165,6 +189,7 @@ final class RefreshLiveScores {
                   finished: true,
                   updatedAt: nowUtc,
                 );
+                finishedIds.add(fixture.fixtureId);
               }
             }
           case ProviderMatchStatus.scheduled:
@@ -179,6 +204,8 @@ final class RefreshLiveScores {
     _board
       ..remove(gone)
       ..put(fresh);
-    return Result.ok(fresh.length);
+    return Result.ok(
+      LiveScoreRefresh(updated: fresh.length, finished: finishedIds),
+    );
   }
 }

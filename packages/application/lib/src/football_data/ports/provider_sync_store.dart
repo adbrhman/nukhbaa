@@ -46,15 +46,18 @@ abstract interface class ProviderSyncStore {
     required String canonicalId,
   });
 
-  /// The id of a fixture already on the schedule between the same two
-  /// catalog teams kicking off in `[from, to)` -- one an admin added by hand,
-  /// or one another source created -- earliest first. Matches on team ids,
-  /// and on the exact team names for older rows that carry no ids.
+  /// The id of a fixture already on the schedule for the same match --
+  /// one an admin added by hand, or one another source created -- earliest
+  /// first. Both sides matching (by team id or by normalised name) counts
+  /// anywhere in `[from, to)`; a single side matching counts only within
+  /// three hours of [kickoffAt], since a club cannot play twice that
+  /// close, which catches a hand-typed spelling the catalog does not use.
   Future<Result<String?>> findExistingFixture({
     required String homeTeamId,
     required String awayTeamId,
     required String homeTeamName,
     required String awayTeamName,
+    required DateTime kickoffAt,
     required DateTime from,
     required DateTime to,
   });

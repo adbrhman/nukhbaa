@@ -13,7 +13,7 @@ const Duration providerFixturesTick = Duration(hours: 24);
 
 /// Results checks. Each run only calls the provider when a synced fixture is
 /// due, so most runs cost nothing.
-const Duration providerResultsTick = Duration(minutes: 20);
+const Duration providerResultsTick = Duration(minutes: 10);
 
 /// Live-score polls. Each run only calls a provider while a synced fixture
 /// of one of its competitions is in play.
@@ -76,8 +76,16 @@ void startProviderSyncScheduler(CompositionRoot root) {
     liveRunning = true;
     try {
       final result = await live(now: DateTime.now().toUtc());
-      if (result case Err<int>(:final error)) {
-        _log(tag, 'live scores failed: ${error.code} ${error.message}');
+      switch (result) {
+        case Err<LiveScoreRefresh>(:final error):
+          _log(tag, 'live scores failed: ${error.code} ${error.message}');
+        case Ok<LiveScoreRefresh>(:final value):
+          // Full time seen by the 2-minute live poll: record now instead
+          // of waiting for the next results tick.
+          if (value.finished.isNotEmpty) {
+            _log(tag, 'full time on ${value.finished.length} fixture(s)');
+            unawaited(runResults());
+          }
       }
     } on Object catch (error) {
       _log(tag, 'live scores threw: $error');

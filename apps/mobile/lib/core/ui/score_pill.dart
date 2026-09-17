@@ -25,6 +25,10 @@ class ScorePill extends StatelessWidget {
       ),
       child: Text(
         '$home - $away',
+        // Two LTR digit runs around a neutral separator: without an
+        // explicit direction the Arabic (RTL) paragraph reorders them and
+        // a 2-0 prediction reads as 0-2 on screen.
+        textDirection: TextDirection.ltr,
         style: TextStyle(
           color: tokens.textPrimary,
           fontWeight: FontWeight.w700,
