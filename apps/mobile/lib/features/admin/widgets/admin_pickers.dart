@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:shared/shared.dart';
 
 import '../../../core/error/error_presenter.dart';
@@ -353,21 +354,60 @@ class SeasonFixturePickerField extends ConsumerWidget {
         final String? value = list.any((f) => f.fixtureId == selectedId)
             ? selectedId
             : null;
+        // Newest first, under a day header: an admin settles today's and
+        // yesterday's matches, and a flat month-long list buried them.
+        final List<SeasonFixtureCardDto> ordered = <SeasonFixtureCardDto>[
+          ...list,
+        ]..sort((a, b) => _kickoffOf(b).compareTo(_kickoffOf(a)));
+        final String locale = Localizations.localeOf(context).toString();
+        final intl.DateFormat dayFormat = intl.DateFormat(
+          'EEEE d MMMM',
+          locale,
+        );
+        final intl.DateFormat timeFormat = intl.DateFormat.jm(locale);
+        final List<DropdownMenuItem<String>> items =
+            <DropdownMenuItem<String>>[];
+        String? currentDay;
+        for (final SeasonFixtureCardDto fixture in ordered) {
+          final DateTime? kickoff = _kickoffLocal(fixture);
+          final String day = kickoff == null
+              ? l10n.adminFixtureIncompleteDataLabel
+              : dayFormat.format(kickoff);
+          if (day != currentDay) {
+            currentDay = day;
+            items.add(
+              DropdownMenuItem<String>(
+                enabled: false,
+                value: '$keyPrefix.day.$day',
+                child: Text(
+                  day,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }
+          items.add(
+            DropdownMenuItem<String>(
+              key: Key('$keyPrefix.fixtureField.${fixture.fixtureId}'),
+              value: fixture.fixtureId,
+              child: Text(
+                kickoff == null
+                    ? _fixtureLabel(fixture, l10n)
+                    : '${timeFormat.format(kickoff)} - '
+                          '${_fixtureLabel(fixture, l10n)}',
+              ),
+            ),
+          );
+        }
         return DropdownButtonFormField<String>(
           key: Key('$keyPrefix.fixtureField'),
           initialValue: value,
+          isExpanded: true,
           decoration: InputDecoration(
             labelText: l10n.adminSelectFixtureLabel,
             border: const OutlineInputBorder(),
           ),
-          items: <DropdownMenuItem<String>>[
-            for (final SeasonFixtureCardDto fixture in list)
-              DropdownMenuItem<String>(
-                key: Key('$keyPrefix.fixtureField.${fixture.fixtureId}'),
-                value: fixture.fixtureId,
-                child: Text(_fixtureLabel(fixture, l10n)),
-              ),
-          ],
+          items: items,
           onChanged: !enabled
               ? null
               : (String? id) {
@@ -381,6 +421,19 @@ class SeasonFixturePickerField extends ConsumerWidget {
       },
     );
   }
+
+  /// Local kickoff, or null when the schedule carries none.
+  static DateTime? _kickoffLocal(SeasonFixtureCardDto fixture) {
+    final String? raw = fixture.kickoffAt;
+    if (raw == null) {
+      return null;
+    }
+    return DateTime.tryParse(raw)?.toLocal();
+  }
+
+  /// Sort key; a fixture with no kickoff sorts to the bottom.
+  static DateTime _kickoffOf(SeasonFixtureCardDto fixture) =>
+      _kickoffLocal(fixture) ?? DateTime.utc(1970);
 
   String _fixtureLabel(SeasonFixtureCardDto fixture, AppLocalizations l10n) {
     final String? home = fixture.homeTeam;
