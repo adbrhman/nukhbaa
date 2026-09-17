@@ -304,6 +304,43 @@ void main() {
     expect(report.notes.single, startsWith('no monthly contest'));
   });
 
+  test(
+    'a hand-added fixture is adopted even after the provider reports it finished',
+    () async {
+      const handAdded = 'e1000000-0000-0000-0000-0000000000ab';
+
+      final finishedKickoff = _now.subtract(const Duration(hours: 3));
+
+      store.existing['$_arsenal|$_chelsea'] = (finishedKickoff, handAdded);
+
+      provider.answer('PL', riyadhDayOf(finishedKickoff), [
+        providerMatch(
+          id: 'finished-1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: finishedKickoff,
+          status: ProviderMatchStatus.finished,
+          homeGoals: 2,
+          awayGoals: 1,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: _now,
+                    riyadhDays: [riyadhDayOf(finishedKickoff)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.applied, 0);
+      expect(report.alreadyKnown, 1);
+      expect(store.map['highlightly|fixture|finished-1'], handAdded);
+    },
+  );
+
   test('a fixture already added by hand is adopted, not duplicated', () async {
     const handAdded = 'e1000000-0000-0000-0000-0000000000aa';
     store.existing['$_arsenal|$_chelsea'] = (

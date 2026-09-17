@@ -44,16 +44,6 @@ const List<ProviderLeagueRule> phaseOneRules = [
     source: footballDataSource,
     externalLeagueId: 'PD',
     leagueName: 'الدوري الإسباني',
-    clubs: {
-      '80', // Espanyol
-      '86', // Real Madrid
-      '78', // Atletico Madrid
-      '559', // Sevilla
-      '81', // Barcelona
-      '90', // Real Betis
-      '263', // Alaves
-      '77', // Athletic Club
-    },
   ),
   ProviderLeagueRule(
     source: footballDataSource,
@@ -86,20 +76,6 @@ const List<ProviderLeagueRule> phaseOneRules = [
     source: highlightlySource,
     externalLeagueId: '3337',
     leagueName: 'الدوري الأوروبي',
-    clubs: {
-      '68864', // Lyon
-      '180345', // Benfica
-      '416923', // AC Milan
-      '143752', // Bayer Leverkusen
-      '69715', // Marseille
-      '142901', // Hoffenheim
-      '422880', // Juventus
-      '635630', // Sunderland
-      '171835', // AZ Alkmaar
-      '45036', // Crystal Palace
-      '30569', // Bournemouth
-      '467132', // Real Sociedad
-    },
   ),
   ProviderLeagueRule(
     source: highlightlySource,

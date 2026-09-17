@@ -147,14 +147,24 @@ final class SyncProviderFixtures {
           continue;
         }
 
-        final candidates = (fetched as Ok<List<ProviderMatch>>).value
+        final fetchedMatches = (fetched as Ok<List<ProviderMatch>>).value;
+
+        // Two categories are handled:
+        // 1. future scheduled matches may be added normally;
+        // 2. live/finished matches may adopt an already-existing fixture so
+        //    result sync can later record and score it. We never create a new
+        //    fixture after kickoff.
+        final candidates = fetchedMatches
             .where(
               (match) =>
-                  match.status == ProviderMatchStatus.scheduled &&
-                  match.kickoffAt.isAfter(nowUtc.add(minimumLead)) &&
-                  rule.admits(match),
+                  rule.admits(match) &&
+                  ((match.status == ProviderMatchStatus.scheduled &&
+                          match.kickoffAt.isAfter(nowUtc.add(minimumLead))) ||
+                      (match.status != ProviderMatchStatus.scheduled &&
+                          match.kickoffAt.isBefore(nowUtc))),
             )
             .toList(growable: false);
+
         if (candidates.isEmpty) {
           continue;
         }
@@ -227,6 +237,9 @@ final class SyncProviderFixtures {
               '${home.name} - ${away.name} '
               '${match.kickoffAt.toIso8601String()} -> ${month.label}';
 
+          // A provider match that has already started can only adopt an
+          // existing fixture. Never add a brand-new prediction fixture after
+          // kickoff.
           final existingResult = await _store.findExistingFixture(
             homeTeamId: home.id.value,
             awayTeamId: away.id.value,
@@ -262,6 +275,13 @@ final class SyncProviderFixtures {
                   ? 'adopt failed (${adopted.error.code}): $label'
                   : 'adopted existing $existing: $label',
             );
+            continue;
+          }
+
+          if (match.status != ProviderMatchStatus.scheduled) {
+            // Past kickoff with no fixture to adopt: adding it now
+            // would put a card nobody can predict in the contest.
+            skipped++;
             continue;
           }
 

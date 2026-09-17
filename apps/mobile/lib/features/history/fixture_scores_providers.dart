@@ -28,24 +28,32 @@ Future<FixtureScoresDto> fixtureScores(
   String seasonId,
   String fixtureId,
 ) async {
-  // PERF: this read is watched once per visible match card and once per
-  // history row. Left auto-disposing, every card the scroll pushes out of
-  // the viewport disposes its provider, and scrolling back re-issues the
-  // same GET -- a burst of identical requests on every flick. Hold the
-  // answer for two minutes instead: long enough that scrolling costs
-  // nothing, short enough that a fixture graded while the screen is open
-  // still refreshes on the next read.
-  final link = ref.keepAlive();
-  final Timer expiry = Timer(const Duration(minutes: 2), link.close);
-  ref.onDispose(expiry.cancel);
+  // A visible locked card keeps this provider watched, so a keepAlive timer
+  // cannot make an already-returned empty/pending value refresh by itself.
+  // Re-read only while scoring is still pending; once a real grade exists,
+  // polling stops. When the card leaves the tree, auto-dispose cancels the
+  // pending retry automatically.
+  const retryDelay = Duration(minutes: 2);
 
   final CompetitionApi api = ref.watch(competitionApiProvider);
   final result = await api.getFixtureScores(
     seasonId: seasonId,
     fixtureId: fixtureId,
   );
-  return switch (result) {
-    Ok<FixtureScoresDto>(:final value) => value,
-    Err<FixtureScoresDto>(:final error) => throw error,
-  };
+
+  switch (result) {
+    case Ok<FixtureScoresDto>(:final value):
+      final waitingForScore =
+          value.scores.isEmpty ||
+          value.scores.every((score) => score.grade == 'pending');
+
+      if (waitingForScore) {
+        final retry = Timer(retryDelay, ref.invalidateSelf);
+        ref.onDispose(retry.cancel);
+      }
+      return value;
+
+    case Err<FixtureScoresDto>(:final error):
+      throw error;
+  }
 }
