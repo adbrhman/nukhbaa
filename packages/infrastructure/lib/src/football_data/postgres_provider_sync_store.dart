@@ -46,18 +46,36 @@ ORDER BY s.kickoff_at
 LIMIT 200
 ''';
 
+  // Hand-added fixtures often carry free-text names whose spelling differs
+  // from the catalog (hamza forms, taa marbuta, spaces, a shorter name), so
+  // names are compared normalised, equal or one containing the other, and
+  // only when both normalised names have at least three letters.
   static const String _existingSql = '''
-SELECT fixture_id::text AS fixture_id
-FROM competition.fixture_schedules
-WHERE kickoff_at >= @from::timestamptz
-  AND kickoff_at < @to::timestamptz
-  AND (
-    (home_team_id = @home_id::uuid AND away_team_id = @away_id::uuid)
-    OR (home_team_id IS NULL
-        AND btrim(home_team) = @home_name
-        AND btrim(away_team) = @away_name)
-  )
-ORDER BY kickoff_at
+WITH target AS (
+  SELECT regexp_replace(translate(btrim(@home_name::text), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
+         regexp_replace(translate(btrim(@away_name::text), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a
+),
+candidates AS (
+  SELECT s.fixture_id,
+         s.kickoff_at,
+         s.home_team_id,
+         s.away_team_id,
+         regexp_replace(translate(btrim(s.home_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
+         regexp_replace(translate(btrim(s.away_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a
+  FROM competition.fixture_schedules s
+  WHERE s.kickoff_at >= @from::timestamptz
+    AND s.kickoff_at < @to::timestamptz
+)
+SELECT c.fixture_id::text AS fixture_id
+FROM candidates c, target t
+WHERE (c.home_team_id = @home_id::uuid AND c.away_team_id = @away_id::uuid)
+   OR (
+        length(t.h) >= 3 AND length(t.a) >= 3
+    AND length(c.h) >= 3 AND length(c.a) >= 3
+    AND (c.h = t.h OR strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0)
+    AND (c.a = t.a OR strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0)
+   )
+ORDER BY c.kickoff_at
 LIMIT 1
 ''';
 
