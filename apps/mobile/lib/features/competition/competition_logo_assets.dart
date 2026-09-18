@@ -64,6 +64,9 @@ const CompetitionLogoAsset _europaLeagueLogo = CompetitionLogoAsset(
 const CompetitionLogoAsset _saudiProLeagueLogo = CompetitionLogoAsset(
   assetPath: 'assets/league_logos/saudi-pro-league.png',
 );
+const CompetitionLogoAsset _clubWorldCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/fifa-club-world-cup.png',
+);
 
 /// Local league-logo catalog keyed by the football league name shown on the
 /// fixture. The aliases mirror the current football-data/provider seed names.
@@ -90,6 +93,10 @@ const Map<String, CompetitionLogoAsset> kLeagueLogoAssetsByName =
       'روشن السعودي': _saudiProLeagueLogo,
       'الدوري السعودي': _saudiProLeagueLogo,
       'Saudi Pro League': _saudiProLeagueLogo,
+      'كأس العالم للأندية': _clubWorldCupLogo,
+      'كأس العالم للأندية 2025': _clubWorldCupLogo,
+      'FIFA Club World Cup': _clubWorldCupLogo,
+      'FIFA Club World Cup 2025': _clubWorldCupLogo,
     };
 
 String _normaliseLeagueName(String value) =>

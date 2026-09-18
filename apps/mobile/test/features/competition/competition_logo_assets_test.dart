@@ -35,6 +35,14 @@ void main() {
       competitionLogoAsset(null, 'دوري روشن السعودي'),
       'assets/league_logos/saudi-pro-league.png',
     );
+    expect(
+      competitionLogoAsset(null, 'كأس العالم للأندية'),
+      'assets/league_logos/fifa-club-world-cup.png',
+    );
+    expect(
+      competitionLogoAsset(null, 'FIFA Club World Cup'),
+      'assets/league_logos/fifa-club-world-cup.png',
+    );
   });
 
   test('unknown or contest-only names keep the existing fallback', () {

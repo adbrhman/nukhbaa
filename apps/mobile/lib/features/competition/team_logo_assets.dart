@@ -375,13 +375,32 @@ String _normalizeArabic(String value) => value
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
+const Map<String, String> _clubWorldCupEnglishAliases = <String, String>{
+  'psg': 'paris-saint-germain',
+  'al-ain-fc': 'al-ain',
+  'inter-miami': 'inter-miami-cf',
+  'inter-miami-fc': 'inter-miami-cf',
+  'rb-salzburg': 'salzburg',
+  'red-bull-salzburg': 'salzburg',
+  'esp-rance': 'esperance',
+  'esp-rance-tunis': 'esperance',
+  'esp-rance-de-tunis': 'esperance',
+  'esperance-tunis': 'esperance',
+  'esperance-de-tunis': 'esperance',
+  'es-tunis': 'esperance',
+  'urawa-red-diamonds': 'urawa-reds',
+  'atl-tico-atlanta': 'atletico-atlanta',
+};
+
 String? teamLogoAssetPath(String? teamName) {
   if (teamName == null || teamName.trim().isEmpty) return null;
   final String trimmed = teamName.trim();
   final String? aliased =
       _arabicTeamLogoAliases[trimmed] ??
       _normalizedArabicTeamLogoAliases[_normalizeArabic(trimmed)];
-  final String slug = aliased ?? _slugifyTeamName(trimmed);
+  final String slugified = _slugifyTeamName(trimmed);
+  final String slug =
+      aliased ?? _clubWorldCupEnglishAliases[slugified] ?? slugified;
   if (slug.isEmpty || !_monthlyLogoSlugs.contains(slug)) return null;
   return 'assets/team_logos/$slug.png';
 }
@@ -396,8 +415,9 @@ String teamLogoLabel(String slug) => slug
 String _slugifyTeamName(String name) {
   final String normalized = name
       .toLowerCase()
-      .replaceAll(RegExp("['’` ]"), '')
-      .replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+      .replaceAll(RegExp("['’`]"), '')
+      .replaceAll(RegExp(r'\s+'), '-')
+      .replaceAll(RegExp(r'[^a-z0-9-]+'), '-');
   final String slug = normalized
       .replaceAll(RegExp(r'-+'), '-')
       .replaceAll(RegExp(r'^-+|-+$'), '');
@@ -417,6 +437,26 @@ String _slugifyTeamName(String name) {
 }
 
 const Set<String> _monthlyLogoSlugs = <String>{
+  'auckland-fc',
+  'al-ain',
+  'mamelodi-sundowns',
+  'seattle-sounders-fc',
+  'inter-miami-cf',
+  'esperance',
+  'pachuca',
+  'palmeiras',
+  'wydad-ac',
+  'boca-juniors',
+  'urawa-reds',
+  'los-angeles-fc',
+  'botafogo',
+  'ulsan-hd-fc',
+  'fluminense',
+  'flamengo',
+  'auckland-city-fc',
+  'monterrey',
+  'river-plate',
+  'atletico-atlanta',
   'al-ittihad',
   'al-nassr',
   'arsenal',
