@@ -240,5 +240,63 @@ void main() {
         'prediction.daily_double_exceeded',
       );
     });
+
+    test('records one prediction_placed event, and none on an amend', () async {
+      final events = _RecordingGamificationEventSink();
+      final withSink = SubmitFixturePrediction(
+        fixturePredictionRepository: fixturePredictions,
+        competitionRepository: competition,
+        fixtureScheduleRepository: schedules,
+        idGenerator: FakeIdGenerator(const <String>[
+          '66666666-6666-6666-6666-666666666666',
+          '77777777-7777-7777-7777-777777777777',
+        ]),
+        clock: FixedClock(DateTime.utc(2026, 8, 1, 10)),
+        gamificationEventSink: events,
+      );
+
+      await withSink(
+        principal: userPrincipal(userId),
+        seasonId: seasonId,
+        fixtureId: fixtureId,
+        homeGoals: 1,
+        awayGoals: 0,
+      );
+
+      expect(events.recorded, hasLength(1));
+      final event = events.recorded.single;
+      expect(event.type, GamificationEventType.predictionPlaced);
+      expect(event.userId.value, userId);
+      expect(event.refType, 'fixture');
+      expect(event.refId, fixtureId);
+      expect(event.ruleVersion, 1);
+      // Keyed on the prediction, so a replay can never place it twice.
+      expect(
+        event.dedupeKey,
+        'prediction_placed:66666666-6666-6666-6666-666666666666',
+      );
+
+      // An amendment is not a new placement.
+      await withSink(
+        principal: userPrincipal(userId),
+        seasonId: seasonId,
+        fixtureId: fixtureId,
+        homeGoals: 2,
+        awayGoals: 1,
+      );
+
+      expect(events.recorded, hasLength(1));
+    });
   });
+}
+
+/// Captures what the use-case appends to the gamification stream.
+final class _RecordingGamificationEventSink implements GamificationEventSink {
+  final List<GamificationEvent> recorded = <GamificationEvent>[];
+
+  @override
+  Future<Result<void>> record(GamificationEvent event) async {
+    recorded.add(event);
+    return const Result.ok(null);
+  }
 }

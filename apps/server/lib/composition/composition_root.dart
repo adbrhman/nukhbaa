@@ -1745,6 +1745,7 @@ final class CompositionRoot {
         fixtureScheduleRepository: fixtureScheduleRepository,
         idGenerator: idGenerator,
         clock: clock,
+        gamificationEventSink: PostgresGamificationEventSink(connection),
       ),
       getMyPrediction: GetMyPrediction(
         predictionRepository: predictionRepository,

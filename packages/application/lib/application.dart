@@ -115,6 +115,7 @@ export 'src/platform/check_health.dart';
 export 'src/platform/get_latest_build.dart';
 export 'src/platform/ports/build_info_repository.dart';
 export 'src/platform/ports/health_repository.dart';
+export 'src/gamification/ports/gamification_event_sink.dart';
 export 'src/prediction/fixture_prediction_view.dart';
 export 'src/prediction/get_fixture_prediction_distribution.dart';
 export 'src/prediction/get_my_prediction.dart';

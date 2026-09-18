@@ -2,6 +2,7 @@ import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
@@ -50,17 +51,23 @@ final class SubmitFixturePrediction {
     required FixtureScheduleRepository fixtureScheduleRepository,
     required IdGenerator idGenerator,
     required Clock clock,
+    GamificationEventSink? gamificationEventSink,
   }) : _fixturePredictions = fixturePredictionRepository,
        _competition = competitionRepository,
        _fixtureSchedules = fixtureScheduleRepository,
        _idGenerator = idGenerator,
-       _clock = clock;
+       _clock = clock,
+       _gamificationEvents = gamificationEventSink;
 
   final FixturePredictionRepository _fixturePredictions;
   final CompetitionRepository _competition;
   final FixtureScheduleRepository _fixtureSchedules;
   final IdGenerator _idGenerator;
   final Clock _clock;
+
+  /// Optional: absent in the unwired composition and in tests that do not
+  /// care about the stream. Tier-3 — see [GamificationEventSink].
+  final GamificationEventSink? _gamificationEvents;
 
   /// Submits (or amends) [homeGoals]-[awayGoals] as [principal]'s prediction
   /// for fixture [fixtureId] under season [seasonId].
@@ -211,6 +218,7 @@ final class SubmitFixturePrediction {
     return _insert(
       fixture,
       participant.id,
+      principal.userId,
       lock,
       homeGoals,
       awayGoals,
@@ -219,9 +227,34 @@ final class SubmitFixturePrediction {
     );
   }
 
+  /// Appends a `prediction_placed` event for a FIRST-time submission.
+  /// An amend is not a new placement and records nothing. Never returns an
+  /// error: the dedupe key makes a lost event recoverable by re-emitting.
+  Future<void> _recordPlacement(
+    UserId userId,
+    FixturePrediction prediction,
+    DateTime now,
+  ) async {
+    final sink = _gamificationEvents;
+    if (sink == null) {
+      return;
+    }
+    final event = GamificationEvent.predictionPlaced(
+      id: _idGenerator.newUuid(),
+      userId: userId,
+      predictionId: prediction.id,
+      fixture: prediction.fixture,
+      occurredAt: now,
+    );
+    if (event is Ok<GamificationEvent>) {
+      await sink.record(event.value);
+    }
+  }
+
   Future<Result<FixturePredictionView>> _insert(
     FixtureRef fixture,
     ParticipantId participantId,
+    UserId userId,
     FixtureLock lock,
     int homeGoals,
     int awayGoals,
@@ -248,6 +281,11 @@ final class SubmitFixturePrediction {
     final prediction = (predictionResult as Ok<FixturePrediction>).value;
 
     final saved = await _fixturePredictions.save(prediction, now);
+    if (saved is Ok<void>) {
+      // Tier-3: a first-time placement is recorded for the gamification
+      // stream, and its failure never fails the prediction that caused it.
+      await _recordPlacement(userId, prediction, now);
+    }
     return switch (saved) {
       Ok<void>() => Result.ok(
         FixturePredictionView(prediction: prediction, submittedAt: now),
