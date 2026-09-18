@@ -16,6 +16,7 @@ import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/team_picker_field.dart';
+import '../../widgets/team_picker_aliases.dart';
 
 /// سطر تحذير تحت حقل فريق لم يُطابق الكتالوج: نبرة تحذير لا خطأ، فالإرسال
 /// يبقى ممكنًا عمدًا.
@@ -93,21 +94,15 @@ class _FixtureScheduleSectionState
     required bool continental,
   }) {
     if (leagueId == null) return const <String>[];
-    // A continental competition has no clubs of its own -- its entrants
-    // are other leagues' clubs -- so the whole catalog is on offer,
-    // deduplicated by name because the seeds left a second row for some
-    // of them.
     final Set<String> seen = <String>{};
     final List<String> options = <String>[
       for (final TeamDto team in catalog)
         if ((continental || team.leagueId == leagueId) &&
-            seen.add(team.name.toLowerCase()))
+            seen.add(team.name.toLowerCase()) &&
+            teamPickerMatchesQuery(query, team.name))
           team.name,
     ]..sort();
-    final String trimmed = query.trim();
-    if (trimmed.isEmpty) return options;
-    final String needle = trimmed.toLowerCase();
-    return options.where((String t) => t.toLowerCase().contains(needle));
+    return options;
   }
 
   /// Resolves [text] to a team id *within* [leagueId].
@@ -123,11 +118,10 @@ class _FixtureScheduleSectionState
     String? leagueId, {
     bool continental = false,
   }) {
-    final String trimmed = text.trim();
-    if (trimmed.isEmpty || leagueId == null) return null;
+    if (text.trim().isEmpty || leagueId == null) return null;
     for (final TeamDto team in catalog) {
       if ((continental || team.leagueId == leagueId) &&
-          team.name.toLowerCase() == trimmed.toLowerCase()) {
+          teamPickerExactMatch(text, team.name)) {
         return team.id;
       }
     }

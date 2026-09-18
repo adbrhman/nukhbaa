@@ -15,6 +15,7 @@ import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/team_picker_field.dart';
+import '../../widgets/team_picker_aliases.dart';
 
 /// شاشة تعديل مباراة مسجّلة.
 ///
@@ -49,6 +50,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
   /// is how a fixture that migration 0035 could not recover a league for
   /// finally gets one.
   String? _leagueId;
+  bool _isContinentalLeague = false;
 
   /// The league name shown on the selected fixture, for context only.
   String? _currentLeagueName;
@@ -72,20 +74,24 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
   }) {
     final List<String> options = <String>[
       for (final TeamDto team in catalog)
-        if (_leagueId == null || team.leagueId == _leagueId) team.name,
+        if ((_leagueId == null ||
+                _isContinentalLeague ||
+                team.leagueId == _leagueId) &&
+            teamPickerMatchesQuery(query, team.name))
+          team.name,
     ]..sort();
-    final String trimmed = query.trim();
-    if (trimmed.isEmpty) return options;
-    final String needle = trimmed.toLowerCase();
-    return options.where((String t) => t.toLowerCase().contains(needle));
+    return options;
   }
 
   String? _resolveTeamId(List<TeamDto> catalog, String text) {
-    final String trimmed = text.trim();
-    if (trimmed.isEmpty) return null;
+    if (text.trim().isEmpty) return null;
     for (final TeamDto team in catalog) {
-      if (_leagueId != null && team.leagueId != _leagueId) continue;
-      if (team.name.toLowerCase() == trimmed.toLowerCase()) return team.id;
+      if (_leagueId != null &&
+          !_isContinentalLeague &&
+          team.leagueId != _leagueId) {
+        continue;
+      }
+      if (teamPickerExactMatch(text, team.name)) return team.id;
     }
     return null;
   }
@@ -131,6 +137,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   _awayTeamId = null;
                   _kickoffLocal = null;
                   _leagueId = null;
+                  _isContinentalLeague = false;
                   _currentLeagueName = null;
                 }),
               ),
@@ -152,6 +159,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                     )?.toLocal();
                     _currentLeagueName = fixture.leagueName;
                     _leagueId = null;
+                    _isContinentalLeague = false;
                   }),
                 ),
               ],
@@ -171,6 +179,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   selectedId: _leagueId,
                   onSelected: (LeagueDto league) => setState(() {
                     _leagueId = league.id;
+                    _isContinentalLeague = league.isContinental;
                     _homeTeamId = _resolveTeamId(
                       catalog,
                       _homeTeamController.text,
