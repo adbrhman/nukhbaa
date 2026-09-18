@@ -24,6 +24,9 @@ final class PendingProviderFixture {
   final String? leagueId;
 }
 
+/// The job name the fixtures sync records its last successful run under.
+const String fixturesSyncJob = 'fixtures';
+
 /// Persistence the automatic provider sync needs beyond the existing
 /// repositories: the identity map between provider ids and app ids
 /// (`football_data.external_identity_map`), and the list of provider-created
@@ -70,4 +73,10 @@ abstract interface class ProviderSyncStore {
     required DateTime kickedOffFrom,
     required DateTime kickedOffBefore,
   });
+
+  /// When [job] last completed successfully, or null when it never has.
+  Future<Result<DateTime?>> lastSyncAt(String job);
+
+  /// Records that [job] completed successfully at [at].
+  Future<Result<void>> markSyncAt(String job, DateTime at);
 }

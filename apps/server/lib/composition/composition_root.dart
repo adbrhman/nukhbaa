@@ -1582,6 +1582,9 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         idGenerator: idGenerator,
         rules: phaseOneRules,
+        // Highlightly allows 100 requests a day and they are wanted for
+        // results; two days of schedules still sees every day twice.
+        daysBySource: const <String, int>{highlightlySource: 2},
       );
       refreshLiveScores = RefreshLiveScores(
         providers: providers,

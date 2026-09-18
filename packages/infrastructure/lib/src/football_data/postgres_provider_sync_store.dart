@@ -89,6 +89,19 @@ ORDER BY c.kickoff_at
 LIMIT 1
 ''';
 
+  static const String _lastRunSql = '''
+SELECT last_success_at
+FROM football_data.sync_runs
+WHERE job = @job
+''';
+
+  static const String _markRunSql = '''
+INSERT INTO football_data.sync_runs (job, last_success_at)
+VALUES (@job, @at::timestamptz)
+ON CONFLICT (job) DO UPDATE
+  SET last_success_at = excluded.last_success_at, updated_at = now()
+''';
+
   /// One retry for background sync queries: the pool's first
   /// statement after an idle stretch can exceed the 10 s limit, and a
   /// lost poll would wait a whole tick. Request paths keep the
@@ -177,6 +190,31 @@ LIMIT 1
         'external_id': externalId,
         'canonical_id': canonicalId,
       },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>() => const Result.ok(null),
+    };
+  }
+
+  @override
+  Future<Result<DateTime?>> lastSyncAt(String job) async {
+    final result = await _queryWithRetry(_lastRunSql, parameters: {'job': job});
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isEmpty || value.first['last_success_at'] is! DateTime
+            ? null
+            : (value.first['last_success_at']! as DateTime).toUtc(),
+      ),
+    };
+  }
+
+  @override
+  Future<Result<void>> markSyncAt(String job, DateTime at) async {
+    final result = await _queryWithRetry(
+      _markRunSql,
+      parameters: {'job': job, 'at': at.toUtc().toIso8601String()},
     );
     return switch (result) {
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),

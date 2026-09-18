@@ -37,6 +37,8 @@ final class SyncProviderFixtures {
     required List<ProviderLeagueRule> rules,
     this.minimumLead = const Duration(minutes: 30),
     this.duplicateWindow = const Duration(hours: 12),
+    this.minimumInterval = const Duration(hours: 1),
+    this.daysBySource = const <String, int>{},
   }) : _providers = providers,
        _store = store,
        _leagues = leagueRepository,
@@ -64,6 +66,18 @@ final class SyncProviderFixtures {
   /// provider's kickoff is taken to be the same match.
   final Duration duplicateWindow;
 
+  /// A run this soon after the last successful one does nothing. The
+  /// scheduler starts a run three minutes after every boot, so without
+  /// this a burst of redeploys spent a whole provider daily quota on
+  /// schedules it had just read.
+  final Duration minimumInterval;
+
+  /// How many of the days offered a source is asked about, by source. A
+  /// source absent here is asked about every day. A day is seen more than
+  /// once before it arrives, so asking a small-quota provider about two
+  /// days instead of three still picks up a late schedule change.
+  final Map<String, int> daysBySource;
+
   static final RegExp _monthlyLabel = RegExp(r'^\d{2}/\d{4}$');
 
   /// Runs every rule over [riyadhDays] at [now]; writes only when [apply].
@@ -73,6 +87,27 @@ final class SyncProviderFixtures {
     required bool apply,
   }) async {
     final nowUtc = now.toUtc();
+
+    if (apply) {
+      final lastRun = await _store.lastSyncAt(fixturesSyncJob);
+      if (lastRun is Ok<DateTime?>) {
+        final last = lastRun.value;
+        if (last != null && nowUtc.difference(last) < minimumInterval) {
+          final minutes = nowUtc.difference(last).inMinutes;
+          return Result.ok(
+            ProviderSyncReport(
+              requests: 0,
+              applied: 0,
+              alreadyKnown: 0,
+              skipped: 0,
+              notes: <String>[
+                'skipped: the last fixtures sync ran ${minutes}m ago',
+              ],
+            ),
+          );
+        }
+      }
+    }
 
     final leaguesResult = await _leagues.listAll();
     if (leaguesResult is Err<List<League>>) {
@@ -128,7 +163,12 @@ final class SyncProviderFixtures {
         continue;
       }
 
-      for (final day in riyadhDays) {
+      final dayCap = daysBySource[rule.source] ?? riyadhDays.length;
+      for (var dayIndex = 0; dayIndex < riyadhDays.length; dayIndex++) {
+        if (dayIndex >= dayCap) {
+          break;
+        }
+        final day = riyadhDays[dayIndex];
         requests++;
         final fetched = await provider.matchesOn(
           leagueExternalId: rule.externalLeagueId,
@@ -308,6 +348,10 @@ final class SyncProviderFixtures {
           notes.add('added: $label');
         }
       }
+    }
+
+    if (apply) {
+      await _store.markSyncAt(fixturesSyncJob, nowUtc);
     }
 
     return Result.ok(

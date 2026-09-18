@@ -74,6 +74,19 @@ final class FakeProviderSyncStore implements ProviderSyncStore {
     return Result.ok(hit.$2);
   }
 
+  /// Job -> last successful run, as [markSyncAt] recorded it.
+  final Map<String, DateTime> runs = {};
+
+  @override
+  Future<Result<DateTime?>> lastSyncAt(String job) async =>
+      Result.ok(runs[job]);
+
+  @override
+  Future<Result<void>> markSyncAt(String job, DateTime at) async {
+    runs[job] = at.toUtc();
+    return const Result.ok(null);
+  }
+
   @override
   Future<Result<List<PendingProviderFixture>>> fixturesAwaitingResult({
     required String source,
