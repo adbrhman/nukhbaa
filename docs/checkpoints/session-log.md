@@ -810,3 +810,4 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - name_match dedup (d19eecc) verified already on origin/main from a prior session -- no action needed this session
 - REMAINING: verify tonight's Europa League fixtures auto-scored -- grep "recorded:" in sync logs after matches end
 2026-09-18T19:03:39Z | fix(migrations): CWC seed reuse-mapping guard only raises when the reuse source is populated (clean DB) | supabase/migrations/0050_club_world_cup_teams.sql | verify: CI clean-database run after push
+2026-09-18T19:10:35Z | fix(migrations): renumber 0050_provider_sync_runs -> 0051 (duplicate version 0050 broke supabase schema_migrations pkey) | supabase/migrations/0050_provider_sync_runs.sql -> supabase/migrations/0051_provider_sync_runs.sql | verify: CI clean-database run after push
