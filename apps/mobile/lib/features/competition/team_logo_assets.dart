@@ -428,6 +428,19 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'تركيا': 'turkey',
   'أوكرانيا': 'ukraine',
   'ويلز': 'wales',
+  // أندية الدوري الفرنسي بلا شعار سابق
+  'أنجيه': 'angers',
+  'موناكو': 'monaco',
+  'أوكسير': 'auxerre',
+  'بريست': 'brest',
+  'لوهافر': 'le-havre',
+  'لومان': 'le-mans',
+  'لوريان': 'lorient',
+  'نيس': 'nice',
+  'باريس إف سي': 'paris-fc',
+  'ستراسبورغ': 'strasbourg',
+  'تولوز': 'toulouse',
+  'تروا': 'troyes',
 };
 
 /// نسخة مُطبَّعة من [_arabicTeamLogoAliases] تُبنى مرّة واحدة.

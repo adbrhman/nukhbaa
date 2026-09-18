@@ -89,6 +89,25 @@ void main() {
     },
   );
 
+  test('every added Ligue 1 club crest loads from assets', () async {
+    for (final String slug in <String>[
+      'angers',
+      'monaco',
+      'auxerre',
+      'brest',
+      'le-havre',
+      'le-mans',
+      'lorient',
+      'nice',
+      'paris-fc',
+      'strasbourg',
+      'toulouse',
+      'troyes',
+    ]) {
+      await rootBundle.load('assets/team_logos/$slug.png');
+    }
+  });
+
   test('every UEFA national side crest loads from assets', () async {
     for (final String slug in <String>[
       'albania',
