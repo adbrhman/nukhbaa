@@ -76,7 +76,12 @@ begin
       where external_source = v_reuse_source
         and external_id = v_reuse_ext
         and canonical_table = 'team';
-      if v_team_id is null then
+      if v_team_id is null
+         and exists (
+           select 1
+           from football_data.external_identity_map
+           where external_source = v_reuse_source
+         ) then
         raise exception 'Required reuse mapping %:% is missing for %',
           v_reuse_source, v_reuse_ext, r.obj->>'ar';
       end if;

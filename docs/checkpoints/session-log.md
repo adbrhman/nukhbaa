@@ -809,3 +809,4 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - migration 0049 applied manually in Supabase SQL Editor: confirmed (Success. No rows returned)
 - name_match dedup (d19eecc) verified already on origin/main from a prior session -- no action needed this session
 - REMAINING: verify tonight's Europa League fixtures auto-scored -- grep "recorded:" in sync logs after matches end
+2026-09-18T19:03:39Z | fix(migrations): CWC seed reuse-mapping guard only raises when the reuse source is populated (clean DB) | supabase/migrations/0050_club_world_cup_teams.sql | verify: CI clean-database run after push
