@@ -12,8 +12,9 @@ const String footballDataSource = 'football-data';
 /// `supabase/seed/highlightly_team_map_2026_27.sql` and
 /// `supabase/seed/football_data_team_map_2026_27.sql`).
 ///
-/// * football-data.org: Premier League and Champions League (every match),
-///   Bundesliga, La Liga, Serie A (any match of a listed club).
+/// * football-data.org: Premier League, Champions League, La Liga and
+///   Ligue 1 (every match), Bundesliga and Serie A (any match of a listed
+///   club).
 /// * Highlightly: Roshan League and Europa League (any match of a listed
 ///   club), League Cup (only ties between two Premier League clubs).
 const List<ProviderLeagueRule> phaseOneRules = [
@@ -59,6 +60,11 @@ const List<ProviderLeagueRule> phaseOneRules = [
       '113', // Napoli
       '109', // Juventus
     },
+  ),
+  ProviderLeagueRule(
+    source: footballDataSource,
+    externalLeagueId: 'FL1',
+    leagueName: 'الدوري الفرنسي',
   ),
   ProviderLeagueRule(
     source: highlightlySource,
