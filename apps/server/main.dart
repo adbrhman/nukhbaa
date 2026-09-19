@@ -5,6 +5,7 @@ import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
+import 'package:server/scheduler/scheduler_switch.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
 /// intent): build the process-wide composition root — opening the Postgres
@@ -14,15 +15,23 @@ import 'package:server/scheduler/reminder_scheduler.dart';
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final root = await CompositionRoot.instance();
 
-  // The prediction reminder runs on a timer inside this process (see
-  // reminder_scheduler.dart for why not pg_cron).
-  startReminderScheduler(root);
-  // Keeps the next monthly contest in place without an admin (see
-  // monthly_season_scheduler.dart).
-  startMonthlySeasonScheduler(root);
-  // Automatic fixtures/results (off unless configured; see
-  // provider_sync_scheduler.dart).
-  startProviderSyncScheduler(root);
+  // In-process schedulers are ON by default. NUKHBA_SCHEDULERS=off skips
+  // all of them: a local server on a shared database must not race the
+  // deployed one (see scheduler_switch.dart).
+  if (schedulersEnabled(Platform.environment)) {
+    // The prediction reminder runs on a timer inside this process (see
+    // reminder_scheduler.dart for why not pg_cron).
+    startReminderScheduler(root);
+    // Keeps the next monthly contest in place without an admin (see
+    // monthly_season_scheduler.dart).
+    startMonthlySeasonScheduler(root);
+    // Automatic fixtures/results (off unless configured; see
+    // provider_sync_scheduler.dart).
+    startProviderSyncScheduler(root);
+  } else {
+    // ignore: avoid_print
+    print('schedulers: disabled by $schedulersEnvKey=off');
+  }
 
   return serve(handler, ip, port);
 }
