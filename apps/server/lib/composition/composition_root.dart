@@ -1760,6 +1760,7 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         clock: clock,
         gamificationEventSink: PostgresGamificationEventSink(connection),
+        dailyChallengeRepository: PostgresDailyChallengeRepository(connection),
       ),
       getMyPrediction: GetMyPrediction(
         predictionRepository: predictionRepository,

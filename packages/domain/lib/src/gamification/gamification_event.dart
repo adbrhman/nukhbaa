@@ -65,6 +65,65 @@ final class GamificationEvent {
     );
   }
 
+  /// A participant covered every fixture of the Riyadh match day [day].
+  ///
+  /// [day] is a UTC midnight carrying that Riyadh day's date; the caller
+  /// derives it (`riyadhDayOf`) because the domain has no clock and no zone.
+  ///
+  /// The dedupe key is the user and the day, which is what makes the rule
+  /// "what completes is never un-completed" hold mechanically: the day is
+  /// recorded once however many predictions complete it, a re-evaluation
+  /// after a late fixture is added writes nothing, and the stream rejects
+  /// UPDATE and DELETE for every role.
+  ///
+  /// [fixtureCount] is how many fixtures the day held at the moment it
+  /// completed — audit only, since a later count may legitimately differ.
+  static Result<GamificationEvent> dailyChallengeCompleted({
+    required String id,
+    required UserId userId,
+    required DateTime day,
+    required int fixtureCount,
+    required DateTime occurredAt,
+  }) {
+    final idResult = GamificationEventId.tryParse(id);
+    if (idResult is Err<GamificationEventId>) {
+      return Result.err(idResult.error);
+    }
+    if (fixtureCount <= 0) {
+      return const Result.err(
+        AppError.invariant(
+          'gamification.daily_challenge_empty_day',
+          'A day with no fixtures cannot be completed',
+        ),
+      );
+    }
+    final isoDay = _isoDay(day);
+    return Result.ok(
+      GamificationEvent._(
+        id: (idResult as Ok<GamificationEventId>).value,
+        userId: userId,
+        type: GamificationEventType.dailyChallengeCompleted,
+        dedupeKey:
+            '${GamificationEventType.dailyChallengeCompleted.wireName}:'
+            '${userId.value}:$isoDay',
+        occurredAt: occurredAt.toUtc(),
+        // About a day, which is not a row anywhere: ref_type and ref_id are
+        // both null, and the database enforces that they move together.
+        refType: null,
+        refId: null,
+        payload: <String, Object?>{'day': isoDay, 'fixtures': fixtureCount},
+        ruleVersion: currentRuleVersion,
+      ),
+    );
+  }
+
+  static String _isoDay(DateTime day) {
+    final utc = day.toUtc();
+    return '${utc.year.toString().padLeft(4, '0')}-'
+        '${utc.month.toString().padLeft(2, '0')}-'
+        '${utc.day.toString().padLeft(2, '0')}';
+  }
+
   /// This row's own identity.
   final GamificationEventId id;
 

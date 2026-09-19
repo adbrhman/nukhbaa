@@ -2,6 +2,9 @@ import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/football_data/provider_sync_rules.dart'
+    show riyadhDayOf;
+import 'package:application/src/gamification/ports/daily_challenge_repository.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
@@ -52,12 +55,14 @@ final class SubmitFixturePrediction {
     required IdGenerator idGenerator,
     required Clock clock,
     GamificationEventSink? gamificationEventSink,
+    DailyChallengeRepository? dailyChallengeRepository,
   }) : _fixturePredictions = fixturePredictionRepository,
        _competition = competitionRepository,
        _fixtureSchedules = fixtureScheduleRepository,
        _idGenerator = idGenerator,
        _clock = clock,
-       _gamificationEvents = gamificationEventSink;
+       _gamificationEvents = gamificationEventSink,
+       _dailyChallenges = dailyChallengeRepository;
 
   final FixturePredictionRepository _fixturePredictions;
   final CompetitionRepository _competition;
@@ -68,6 +73,11 @@ final class SubmitFixturePrediction {
   /// Optional: absent in the unwired composition and in tests that do not
   /// care about the stream. Tier-3 — see [GamificationEventSink].
   final GamificationEventSink? _gamificationEvents;
+
+  /// Optional, and useless without [_gamificationEvents]: the challenge is
+  /// recorded as an event, so a reading with nowhere to write is not taken.
+  /// Tier-3 — see [DailyChallengeRepository].
+  final DailyChallengeRepository? _dailyChallenges;
 
   /// Submits (or amends) [homeGoals]-[awayGoals] as [principal]'s prediction
   /// for fixture [fixtureId] under season [seasonId].
@@ -215,7 +225,7 @@ final class SubmitFixturePrediction {
         now,
       );
     }
-    return _insert(
+    final inserted = await _insert(
       fixture,
       participant.id,
       principal.userId,
@@ -225,6 +235,75 @@ final class SubmitFixturePrediction {
       isDouble,
       now,
     );
+    // Only a first-time submission can change coverage: an amend rewrites a
+    // score the participant already had, so the day is exactly as complete
+    // as it was a moment ago.
+    if (inserted is Ok<FixturePredictionView>) {
+      await _recordDailyProgress(
+        userId: principal.userId,
+        participantId: participant.id,
+        seasonId: sId,
+        kickoffAt: kickoffAt,
+        now: now,
+      );
+    }
+    return inserted;
+  }
+
+  /// Appends a `daily_challenge_completed` event when this submission was the
+  /// one that covered the fixture's whole Riyadh match day.
+  ///
+  /// **The day is the fixtures' day, not the submitter's.** A prediction for
+  /// tomorrow's match completes tomorrow, whenever it was typed; the day
+  /// boundary is the Riyadh day the fixture syncs and `reminder_sends`
+  /// already use (decided 2026-09-19), never the device's own clock.
+  ///
+  /// Evaluated per submission rather than at the end of the day, because
+  /// fixtures are added during the day: an end-of-day sweep would fail a day
+  /// the participant had in fact finished at noon. The append-only stream
+  /// makes that safe in the other direction too — a fixture added after the
+  /// day completed cannot retract the completion, because the dedupe key is
+  /// the user and the day and the database refuses UPDATE and DELETE.
+  ///
+  /// Tier-3 throughout: every failure is swallowed, and a lost event can be
+  /// re-emitted later without producing a second row.
+  Future<void> _recordDailyProgress({
+    required UserId userId,
+    required ParticipantId participantId,
+    required SeasonId seasonId,
+    required DateTime kickoffAt,
+    required DateTime now,
+  }) async {
+    final challenges = _dailyChallenges;
+    final sink = _gamificationEvents;
+    if (challenges == null || sink == null) {
+      return;
+    }
+
+    final day = riyadhDayOf(kickoffAt);
+    final progress = await challenges.progressOn(
+      seasonId: seasonId,
+      participantId: participantId,
+      day: day,
+    );
+    if (progress is! Ok<DailyChallengeProgress>) {
+      return;
+    }
+    final coverage = progress.value;
+    if (!coverage.isComplete) {
+      return;
+    }
+
+    final event = GamificationEvent.dailyChallengeCompleted(
+      id: _idGenerator.newUuid(),
+      userId: userId,
+      day: day,
+      fixtureCount: coverage.total,
+      occurredAt: now,
+    );
+    if (event is Ok<GamificationEvent>) {
+      await sink.record(event.value);
+    }
   }
 
   /// Appends a `prediction_placed` event for a FIRST-time submission.

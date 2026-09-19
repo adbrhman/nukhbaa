@@ -11,7 +11,15 @@
 enum GamificationEventType {
   /// A participant submitted a prediction for a fixture for the first time.
   /// An amendment is not a new placement and emits nothing.
-  predictionPlaced('prediction_placed');
+  predictionPlaced('prediction_placed'),
+
+  /// A participant holds a prediction for EVERY fixture of one Riyadh match
+  /// day. Emitted at the moment the last of them is submitted, never at the
+  /// end of the day: fixtures are added during the day by the provider sync
+  /// and by admins, so an end-of-day check would fail a day the participant
+  /// had in fact finished. Because the stream is append-only, a day that
+  /// completes stays complete even if a fixture appears afterwards.
+  dailyChallengeCompleted('daily_challenge_completed');
 
   const GamificationEventType(this.wireName);
 
