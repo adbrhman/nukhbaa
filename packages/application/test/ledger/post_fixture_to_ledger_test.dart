@@ -37,6 +37,24 @@ ParticipantFixtureScore fixtureScore({
             as Ok<ParticipantFixtureScore>)
         .value;
 
+/// A streak bonus stored against [_fixture] (the fixture that completed a
+/// match day), the way the award step will write it.
+FixturePointEntry streakBonus({
+  required String participantId,
+  required int amount,
+}) =>
+    (FixturePointEntry.create(
+              id: const PointEntryId('55555555-5555-5555-5555-555555555555'),
+              participantId: ParticipantId(participantId),
+              fixture: const FixtureRef(_fixture),
+              kind: EntryKind.streakBonus,
+              amount: amount,
+              sourceRef: 'streak:7',
+              occurredAt: DateTime.utc(2026, 7, 10, 12),
+            )
+            as Ok<FixturePointEntry>)
+        .value;
+
 void main() {
   late FakeFixtureScoreRepository scores;
   late FakeFixtureLedgerRepository ledger;
@@ -137,4 +155,68 @@ void main() {
     expect((r as Ok<List<FixturePointEntry>>).value, isEmpty);
     expect(ledger.count, 2);
   });
+
+  test('streak_bonus on the same fixture: first post is still a '
+      'fixture_score credit, not a correction', () async {
+    await ledger.appendEntries([streakBonus(participantId: _p1, amount: 5)]);
+    await scores.saveFixtureScores([
+      fixtureScore(participantId: _p1, points: 4),
+    ]);
+
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      fixtureId: _fixture,
+    );
+
+    final appended = (r as Ok<List<FixturePointEntry>>).value;
+    expect(appended.single.kind, EntryKind.fixtureScore);
+    expect(appended.single.amount, 4);
+    final entries =
+        (await ledger.listEntries(const ParticipantId(_p1))
+                as Ok<List<FixturePointEntry>>)
+            .value;
+    expect(entries.fold<int>(0, (sum, e) => sum + e.amount), 9);
+  });
+
+  test('streak_bonus equal to the score does not hide the credit', () async {
+    await ledger.appendEntries([streakBonus(participantId: _p1, amount: 5)]);
+    await scores.saveFixtureScores([
+      fixtureScore(participantId: _p1, points: 5),
+    ]);
+
+    final r = await useCase.call(
+      principal: adminPrincipal(_admin),
+      fixtureId: _fixture,
+    );
+
+    final appended = (r as Ok<List<FixturePointEntry>>).value;
+    expect(appended.single.kind, EntryKind.fixtureScore);
+    expect(appended.single.amount, 5);
+  });
+
+  test(
+    'a later correction is computed against the score, not the bonus',
+    () async {
+      await ledger.appendEntries([streakBonus(participantId: _p1, amount: 5)]);
+      await scores.saveFixtureScores([
+        fixtureScore(participantId: _p1, points: 4),
+      ]);
+      await useCase.call(
+        principal: adminPrincipal(_admin),
+        fixtureId: _fixture,
+      );
+
+      await scores.saveFixtureScores([
+        fixtureScore(participantId: _p1, points: 6),
+      ]);
+      final r = await useCase.call(
+        principal: adminPrincipal(_admin),
+        fixtureId: _fixture,
+      );
+
+      final appended = (r as Ok<List<FixturePointEntry>>).value;
+      expect(appended.single.kind, EntryKind.correction);
+      expect(appended.single.amount, 2);
+    },
+  );
 }

@@ -31,7 +31,17 @@ enum EntryKind {
   fixtureScore,
 
   /// A compensating adjustment to a previously posted amount (may be negative).
-  correction;
+  correction,
+
+  /// A bonus for reaching a streak threshold (P1-4). Never negative.
+  ///
+  /// Granted at most once per participant per threshold: its `source_ref` is
+  /// `streak:<threshold>` and a partial unique index on
+  /// `(participant_id, source_ref)` (migration 0057) enforces it. It is stored
+  /// against the fixture whose prediction completed the day, but it is NOT
+  /// part of that fixture's score: anything that sums a fixture's entries to
+  /// compare them with its score must skip this kind.
+  streakBonus;
 
   /// The stable wire/storage token for this kind, decoupled from the Dart
   /// identifier so a persisted value can never drift silently.
@@ -39,6 +49,7 @@ enum EntryKind {
     EntryKind.roundScore => 'round_score',
     EntryKind.fixtureScore => 'fixture_score',
     EntryKind.correction => 'correction',
+    EntryKind.streakBonus => 'streak_bonus',
   };
 
   /// Whether an entry of this kind must carry a **non-negative** amount.
@@ -47,7 +58,9 @@ enum EntryKind {
   /// non-negative — it mirrors `RoundScore.totalPoints`). A [correction] may be
   /// negative (it compensates), so it is exempt from the non-negativity rule.
   bool get requiresNonNegativeAmount =>
-      this == EntryKind.roundScore || this == EntryKind.fixtureScore;
+      this == EntryKind.roundScore ||
+      this == EntryKind.fixtureScore ||
+      this == EntryKind.streakBonus;
 
   /// Whether an entry of this kind participates in the append-only dedupe key
   /// so that re-posting cannot create a duplicate crediting row.

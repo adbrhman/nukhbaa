@@ -99,4 +99,36 @@ void main() {
       expect(EntryKind.fixtureScore.isDedupedPerRound, isFalse);
     });
   });
+
+  group('EntryKind.streakBonus', () {
+    Result<FixturePointEntry> bonus(int amount) => FixturePointEntry.create(
+      id: const PointEntryId('11111111-1111-1111-1111-111111111111'),
+      participantId: const ParticipantId('participant-1'),
+      fixture: const FixtureRef('22222222-2222-2222-2222-222222222222'),
+      kind: EntryKind.streakBonus,
+      amount: amount,
+      sourceRef: 'streak:7',
+      occurredAt: DateTime.utc(2026, 9, 19),
+    );
+
+    test('round-trips through wireValue/tryParse', () {
+      expect(EntryKind.streakBonus.wireValue, 'streak_bonus');
+      final parsed = EntryKind.tryParse('streak_bonus');
+      expect(parsed, isA<Ok<EntryKind>>());
+      expect((parsed as Ok<EntryKind>).value, EntryKind.streakBonus);
+    });
+
+    test('is not deduped per fixture: it is not part of a fixture score', () {
+      expect(EntryKind.streakBonus.isDedupedPerFixture, isFalse);
+      expect(EntryKind.streakBonus.isDedupedPerRound, isFalse);
+    });
+
+    test('a bonus credit is valid and a negative one is rejected', () {
+      expect(bonus(5), isA<Ok<FixturePointEntry>>());
+      expect(
+        (bonus(-1) as Err<FixturePointEntry>).error.code,
+        'ledger.entry_amount_negative',
+      );
+    });
+  });
 }

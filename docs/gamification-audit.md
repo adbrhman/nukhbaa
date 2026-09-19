@@ -57,9 +57,9 @@ constraint fixture_point_entries_fixture_score_uniq
   unique (participant_id, fixture_id, entry_kind, source_ref)
 ```
 
-- **إضافي فقط (append-only)**: التصحيح يتم بقيد `adjustment` موجب أو سالب،
+- **إضافي فقط (append-only)**: التصحيح يتم بقيد `correction` موجب أو سالب،
   لا بتعديل صف قائم. `EntryKind` في `packages/domain/lib/src/ledger/`
-  يضم `roundScore` و`fixtureScore` و`adjustment`.
+  يضم `roundScore` و`fixtureScore` و`correction`.
 - **منع الاحتساب المزدوج قائم**: القيد الفريد أعلاه هو بالضبط ما تطلبه
   P0-3 عبر `(event_id, reason)`. المحوّل يعتمد على اسم القيد لتحويل
   التضارب إلى لا-عملية.
@@ -176,3 +176,35 @@ SQL — وهو ما يناقض المبدأ الثالث في الخطة نفس�
 و`reminder_sends`. يوم واحد مشترك يعني مجموعة مباريات واحدة وجدول ترتيب
 واحد. `identity.users.utc_offset_minutes` يخدم توقيت الإشعار على ساعة
 القارئ (ساعات الهدوء، P3-2) ولا يُشتقّ منه أي حدّ يوم.
+
+---
+
+## 9. بونص السلسلة (P1-4) — قرار 2026-09-19
+
+**المسار أ (معتمد):** البونص قيد في `ledger.fixture_point_entries` بنوع جديد
+`streak_bonus`، ويظهر في كل ترتيب يراه المستخدم. العتبات: 7 = 5 نقاط،
+14 = 10، 30 = 20. مرة واحدة لكل عتبة لكل مشارك، والمنع من التكرار بفهرس فريد
+جزئي على `(participant_id, source_ref)` حيث `source_ref = streak:<العتبة>`
+(هجرة 0057).
+
+**تصحيح على §3:** القيمة الحية في الـenum هي `correction` لا `adjustment`
+(الدفتر والكود يستعملان `correction`؛ صُحّح النص أعلاه).
+
+**حرّاس اكتُشفت بتتبّع السلسلة كاملة:**
+
+- `PostFixtureToLedger` يجمع كل قيود المباراة الواحدة، من كل الأنواع، قبل أن
+  يقرّر «أول ترحيل» أم «تصحيح». بونص سابق على المباراة نفسها كان سيجعل الترحيل
+  الأول قيد `correction` يلغي البونص، أو يُسقط قيد النتيجة كلّه إن ساوى البونصُ
+  النتيجة. أُصلح بتجاهل `streak_bonus` في ذلك المجموع.
+- الترتيب المعروض لا يقرأ الدفتر: ثلاثة مواضع تجمع من `scoring.fixture_scores`
+  كلٌّ بتجميعه الخاص: `PostgresFixtureTotalsReader` (لوحة الشهر)،
+  `PostgresSportingSeasonStandingsReader` (لوحة الموسم الرياضي)، والعرض
+  `leaderboard.season_fixture_standings` (لقطات الأسهم وسجل المستخدم). بونص يُقيَّد
+  في الدفتر ولا يُضاف فيها لا يغيّر رقماً في أي ترتيب.
+- `hall_of_fame_standings` و`season_standings_with_movement` من إرث الجولات
+  (`round_scores` و`point_entries`) وخارج نطاق هذه المهمة.
+
+**ترتيب التنفيذ:** (1) الأساس: enum + قيد + فهرس + حارس `PostFixtureToLedger`
+[منجز في هذا الإصلاح]؛ (2) الاستحقاق: سياسة العتبات + حالة استخدام + ربطها بذيل
+`SubmitFixturePrediction`؛ (3) توسيع القراءات الثلاث؛ (4) تسجيل القرار المعماري
+في `docs/project-context.md`.

@@ -62,6 +62,13 @@ final class PostFixtureToLedger {
     // philosophy.
     final postedTotals = <String, int>{};
     for (final entry in existingEntries) {
+      // A streak bonus rides on the fixture that completed a match day, but
+      // it is not part of that fixture's score. Counting it here would make
+      // the first post look already posted and turn the fixture_score credit
+      // into a correction that nets the bonus away.
+      if (entry.kind == EntryKind.streakBonus) {
+        continue;
+      }
       final key = entry.participantId.value;
       postedTotals[key] = (postedTotals[key] ?? 0) + entry.amount;
     }
