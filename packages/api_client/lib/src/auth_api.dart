@@ -115,4 +115,21 @@ final class AuthApi {
       parse: DeviceTokenAckDto.fromJson,
     );
   }
+
+  /// `POST /me/time-zone` — reports this device's current offset from UTC, so
+  /// a later notification can respect the reader's own clock.
+  ///
+  /// Safe to call on every app start, and meant to be: an offset carries no
+  /// daylight-saving rule, so the freshest reading is the only correct one.
+  /// Unlike [registerDeviceToken] this is not Android-only — it is just as
+  /// true on the web build.
+  Future<Result<TimeZoneAckDto>> reportTimeZoneOffset({
+    required int offsetMinutes,
+  }) {
+    return _transport.postObject<TimeZoneAckDto>(
+      '/me/time-zone',
+      body: TimeZoneReportRequestDto(utcOffsetMinutes: offsetMinutes).toJson(),
+      parse: TimeZoneAckDto.fromJson,
+    );
+  }
 }

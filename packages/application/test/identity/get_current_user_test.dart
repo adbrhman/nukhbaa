@@ -35,6 +35,10 @@ final class _FakeUserDirectory implements UserDirectory {
       throw UnimplementedError();
 
   @override
+  Future<Result<void>> updateUtcOffsetMinutes(UserId userId, int minutes) =>
+      throw UnimplementedError();
+
+  @override
   Future<Result<User?>> findUser(UserId id) async =>
       throw StateError('findUser not wired in this test fake');
 }

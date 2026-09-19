@@ -35,6 +35,16 @@ abstract interface class UserDirectory {
   /// change a user's display name (`UpdateDisplayName` use-case).
   Future<Result<User>> updateDisplayName(UserId userId, String displayName);
 
+  /// Records [minutes] as [userId]'s current offset from UTC (already
+  /// validated by the caller — `UpdateTimeZoneOffset` use-case, migration
+  /// 0055).
+  ///
+  /// Returns nothing rather than a refreshed [User]: the offset is written by
+  /// the app on every launch and never read back by it, so there is no view to
+  /// redraw. It is notification-timing state, not a fact the domain reasons
+  /// about — no day boundary is derived from it.
+  Future<Result<void>> updateUtcOffsetMinutes(UserId userId, int minutes);
+
   /// Stores [bytes] as [userId]'s profile picture, replacing any current one,
   /// and stamps the update time.
   ///

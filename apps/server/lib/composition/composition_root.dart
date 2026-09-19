@@ -28,6 +28,7 @@ final class CompositionRoot {
     required this.requestPasswordReset,
     required this.updatePassword,
     required this.updateDisplayName,
+    required this.updateTimeZoneOffset,
     required this.setAvatar,
     required this.clearAvatar,
     required this.readAvatar,
@@ -147,6 +148,7 @@ final class CompositionRoot {
     GetCurrentUser? getCurrentUser,
     EnrolInOpenSeasons? enrolInOpenSeasons,
     UpdateDisplayName? updateDisplayName,
+    UpdateTimeZoneOffset? updateTimeZoneOffset,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
     ReadAvatar? readAvatar,
@@ -238,6 +240,8 @@ final class CompositionRoot {
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
        enrolInOpenSeasons = enrolInOpenSeasons ?? _absentEnrolInOpenSeasons(),
        updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
+       updateTimeZoneOffset =
+           updateTimeZoneOffset ?? _absentUpdateTimeZoneOffset(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
        clearAvatar = clearAvatar ?? _absentClearAvatar(),
        readAvatar = readAvatar ?? _absentReadAvatar(),
@@ -413,6 +417,11 @@ final class CompositionRoot {
   /// if a test reaches the display-name slice it never wired.
   static UpdateDisplayName _absentUpdateDisplayName() =>
       UpdateDisplayName(userDirectory: _UnwiredUserDirectory());
+
+  /// Builds an "absent" [UpdateTimeZoneOffset] over a directory that throws
+  /// if a test reaches the time-zone slice it never wired.
+  static UpdateTimeZoneOffset _absentUpdateTimeZoneOffset() =>
+      UpdateTimeZoneOffset(userDirectory: _UnwiredUserDirectory());
 
   /// A single throwing repository backing every "absent" competition use-case,
   /// so a test that reaches an unwired competition slice fails loudly.
@@ -976,6 +985,10 @@ final class CompositionRoot {
 
   /// Changes the caller's own display name (backs `PATCH /me/display-name`).
   final UpdateDisplayName updateDisplayName;
+
+  /// Records the caller's own offset from UTC (backs `POST /me/time-zone`).
+  /// Notification timing only — no day boundary is derived from it.
+  final UpdateTimeZoneOffset updateTimeZoneOffset;
 
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
@@ -1655,6 +1668,7 @@ final class CompositionRoot {
       requestPasswordReset: requestPasswordReset,
       updatePassword: updatePassword,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
+      updateTimeZoneOffset: UpdateTimeZoneOffset(userDirectory: directory),
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
@@ -2059,6 +2073,12 @@ final class _UnwiredUserDirectory implements UserDirectory {
   @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw StateError('UpdateDisplayName was not wired into this test root');
+
+  @override
+  Future<Result<void>> updateUtcOffsetMinutes(UserId userId, int minutes) =>
+      throw StateError(
+        'UpdateTimeZoneOffset was not wired into this test root',
+      );
 
   @override
   Future<Result<User>> setAvatar(UserId userId, List<int> bytes, String mime) =>

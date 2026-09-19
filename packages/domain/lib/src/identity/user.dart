@@ -91,6 +91,47 @@ final class User {
     'image/webp',
   };
 
+  /// The lowest reportable UTC offset, in minutes (UTC-12:00). Together with
+  /// [maxUtcOffsetMinutes] this is the real span of inhabited zones, and it
+  /// mirrors the CHECK in migration 0055 so a rejection here and a rejection
+  /// in Postgres always agree.
+  static const int minUtcOffsetMinutes = -720;
+
+  /// The highest reportable UTC offset, in minutes (UTC+14:00).
+  static const int maxUtcOffsetMinutes = 840;
+
+  /// Every inhabited zone is a whole number of quarter-hours from UTC
+  /// (Kathmandu is +5:45, Chatham +12:45), so a remainder means a broken
+  /// client rather than a place.
+  static const int utcOffsetStepMinutes = 15;
+
+  /// Validates a raw, untrusted offset from UTC in minutes, as reported by a
+  /// client device (`UpdateTimeZoneOffset` use-case).
+  ///
+  /// An offset is not a time zone: it carries no daylight-saving rule, which
+  /// is why the client re-reports it on every start rather than the platform
+  /// storing it once. Nothing about a day boundary follows from it -- the
+  /// challenge and the streak run on the Riyadh day.
+  static Result<int> validateUtcOffsetMinutes(int raw) {
+    if (raw < minUtcOffsetMinutes || raw > maxUtcOffsetMinutes) {
+      return const Result.err(
+        AppError.validation(
+          'identity.utc_offset_out_of_range',
+          'فرق التوقيت خارج المدى المسموح',
+        ),
+      );
+    }
+    if (raw % utcOffsetStepMinutes != 0) {
+      return const Result.err(
+        AppError.validation(
+          'identity.utc_offset_not_quarter_hour',
+          'فرق التوقيت يجب أن يكون من مضاعفات ربع الساعة',
+        ),
+      );
+    }
+    return Result.ok(raw);
+  }
+
   /// Validates a raw, untrusted display name: trims it, rejects empty/too-long
   /// input. Shared by registration (initial name) and [renameDisplayName]
   /// (later changes) so both paths enforce the same invariant.

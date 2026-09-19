@@ -51,6 +51,17 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     // have nobody to bind it to. Never awaited -- registration must not
     // delay the first frame.
     unawaited(ref.read(pushTokenServiceProvider).registerCurrentDevice());
+    // The device's own clock offset, for notification timing only -- no day
+    // boundary is derived from it. Re-sent on every start because an offset
+    // carries no daylight-saving rule, and sent on web too, unlike the push
+    // token: the web build is where the iPhone users are.
+    unawaited(
+      ref
+          .read(authApiProvider)
+          .reportTimeZoneOffset(
+            offsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
+          ),
+    );
   }
 
   /// The number of destinations in the bottom bar.

@@ -30,6 +30,17 @@ final class PostgresUserDirectory implements UserDirectory {
               avatar_mime, avatar_updated_at
   ''';
 
+  // RETURNING id, not the whole projection: the caller wants no User back,
+  // but an UPDATE that matched nothing must still be distinguishable from one
+  // that matched a row.
+  static const String _updateUtcOffsetSql = '''
+    UPDATE identity.users
+    SET utc_offset_minutes = @minutes,
+        updated_at = now()
+    WHERE id = @id
+    RETURNING id
+  ''';
+
   // The three avatar columns move together -- a row with bytes and no mime
   // would be unservable -- so one statement writes all three, and one clears
   // all three. The database CHECK from migration 0033 backs that up.
@@ -142,6 +153,33 @@ final class PostgresUserDirectory implements UserDirectory {
         avatarUpdatedAt: row['avatar_updated_at'] as DateTime?,
       ),
     );
+  }
+
+  /// Records [userId]'s already-validated offset from UTC, in minutes
+  /// (`UpdateTimeZoneOffset` use-case, migration 0055). The CHECK added by
+  /// that migration is the backstop behind `User.validateUtcOffsetMinutes`,
+  /// not the first line of defense.
+  @override
+  Future<Result<void>> updateUtcOffsetMinutes(
+    UserId userId,
+    int minutes,
+  ) async {
+    final queryResult = await _connection.query(
+      _updateUtcOffsetSql,
+      parameters: {'id': userId.value, 'minutes': minutes},
+    );
+    return switch (queryResult) {
+      Ok<List<Map<String, dynamic>>>(:final value) =>
+        value.isEmpty
+            ? const Result.err(
+                AppError.transient(
+                  'identity.utc_offset_no_row',
+                  'UTC offset update affected no user row',
+                ),
+              )
+            : const Result.ok(null),
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+    };
   }
 
   /// Persists a new, already-validated [displayName] for [userId]
