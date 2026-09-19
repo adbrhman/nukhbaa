@@ -26,16 +26,24 @@ typedef ProviderResultRecorder =
 /// given a result; it is logged for an admin. Results the admin already
 /// entered are never touched (such fixtures are not pending).
 ///
+/// A finished score is not recorded the first time a provider reports it: a
+/// provider can flip a match to finished with a score it corrects a little
+/// later (a goal ruled out by VAR, for one). The score is recorded only once
+/// the same finished score has been seen unchanged for [confirmAfter]; a
+/// changed score starts the wait again. The wait is kept in memory per
+/// provider and fixture, so a server restart just starts it over.
+///
 /// With `apply: false` (shadow mode) nothing is written. Never throws.
 final class SyncProviderResults {
   /// Creates the use-case.
-  const SyncProviderResults({
+  SyncProviderResults({
     required Map<String, FootballDataProvider> providers,
     required ProviderSyncStore store,
     required LeagueRepository leagueRepository,
     required List<ProviderLeagueRule> rules,
     required ProviderResultRecorder recorder,
     this.settleTime = const Duration(minutes: 90),
+    this.confirmAfter = const Duration(minutes: 15),
     this.lookback = const Duration(hours: 6),
     this.maxCallsPerRun = 8,
   }) : _providers = providers,
@@ -55,6 +63,15 @@ final class SyncProviderResults {
 
   /// How far back pending fixtures are still chased.
   final Duration lookback;
+
+  /// How long the same finished score must stand, seen on two runs at least
+  /// this far apart, before it is recorded. [Duration.zero] records at once.
+  final Duration confirmAfter;
+
+  /// The finished score last seen per `source|fixtureId`, and since when it
+  /// has stood.
+  final Map<String, _FinishedSighting> _sightings =
+      <String, _FinishedSighting>{};
 
   /// Provider calls allowed in one run.
   final int maxCallsPerRun;
@@ -88,6 +105,14 @@ final class SyncProviderResults {
         pendingBySource[source] = pending;
       }
     }
+    // Forget the sightings of fixtures that are no longer waiting (recorded,
+    // entered by an admin, or past the look-back).
+    final waitingKeys = <String>{
+      for (final entry in pendingBySource.entries)
+        for (final fixture in entry.value) '${entry.key}|${fixture.fixtureId}',
+    };
+    _sightings.removeWhere((key, _) => !waitingKeys.contains(key));
+
     if (pendingBySource.isEmpty) {
       return const Result.ok(
         ProviderSyncReport(
@@ -175,6 +200,10 @@ final class SyncProviderResults {
         if (recordedIds.contains(fixture.fixtureId)) {
           continue;
         }
+        // Whatever this run finds, the earlier sighting is taken out; only a
+        // finished score puts one back (below).
+        final sightingKey = '${rule.source}|${fixture.fixtureId}';
+        final previous = _sightings.remove(sightingKey);
         final match = byId[fixture.externalId];
         if (match == null) {
           skipped++;
@@ -209,6 +238,35 @@ final class SyncProviderResults {
         final label =
             '${match.homeTeamName} $homeGoals-$awayGoals '
             '${match.awayTeamName} (fixture ${fixture.fixtureId})';
+
+        // The same finished score must stand for [confirmAfter] before it is
+        // recorded; a different score starts the wait again.
+        final unchangedSince =
+            previous != null &&
+                previous.homeGoals == homeGoals &&
+                previous.awayGoals == awayGoals
+            ? previous.since
+            : null;
+        final since = unchangedSince ?? nowUtc;
+        _sightings[sightingKey] = _FinishedSighting(
+          homeGoals,
+          awayGoals,
+          since,
+        );
+        if (nowUtc.difference(since) < confirmAfter) {
+          waiting++;
+          if (unchangedSince == null) {
+            notes.add(
+              previous == null
+                  ? 'finished, confirming for ${confirmAfter.inMinutes} min: '
+                        '$label'
+                  : 'score changed from '
+                        '${previous.homeGoals}-${previous.awayGoals} before it '
+                        'was confirmed: $label',
+            );
+          }
+          continue;
+        }
         if (!apply) {
           applied++;
           recordedIds.add(fixture.fixtureId);
@@ -226,6 +284,7 @@ final class SyncProviderResults {
         }
         applied++;
         recordedIds.add(fixture.fixtureId);
+        _sightings.remove(sightingKey);
         notes.add('recorded: $label');
       }
     }
@@ -240,4 +299,13 @@ final class SyncProviderResults {
       ),
     );
   }
+}
+
+/// A finished score a provider reported, and since when it has stood.
+final class _FinishedSighting {
+  const _FinishedSighting(this.homeGoals, this.awayGoals, this.since);
+
+  final int homeGoals;
+  final int awayGoals;
+  final DateTime since;
 }

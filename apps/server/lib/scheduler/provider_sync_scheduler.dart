@@ -80,8 +80,10 @@ void startProviderSyncScheduler(CompositionRoot root) {
         case Err<LiveScoreRefresh>(:final error):
           _log(tag, 'live scores failed: ${error.code} ${error.message}');
         case Ok<LiveScoreRefresh>(:final value):
-          // Full time seen by the 2-minute live poll: record now instead
-          // of waiting for the next results tick.
+          // Full time seen by the 2-minute live poll: check results now
+          // instead of waiting for the next results tick. The score is still
+          // recorded only after it has stood unchanged for the confirmation
+          // time (SyncProviderResults.confirmAfter).
           if (value.finished.isNotEmpty) {
             _log(tag, 'full time on ${value.finished.length} fixture(s)');
             unawaited(runResults());

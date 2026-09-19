@@ -2745,6 +2745,25 @@ after 500 ms (background jobs only; request paths keep the single-shot
 behaviour), and migration 0049 indexes `competition.fixture_schedules
 (kickoff_at)`, the range every sync query filters on.
 
+### Result confirmation (2026-09-19)
+
+Everton 1-0 Ipswich Town (2026-09-19): a second Everton goal was ruled out
+for offside at 58', yet the sync recorded 2-0. The sync records what the
+provider reports the first time it sees a match finished and never looks
+again, and no code path counts goals itself -- the only writers of a result
+are the sync and the admin `PUT /fixtures/{id}/result`.
+
+`SyncProviderResults` now records a finished score only after the same score
+has been seen unchanged for `confirmAfter` (15 minutes; two runs at least that
+far apart). A changed score starts the wait again; a match that leaves
+finished starts it again too. The wait is kept in memory per provider and
+fixture, so a server restart starts it over. Shadow mode waits the same way.
+Nothing else moves: the 2-minute live poll still starts a results check at
+full time, admin-entered results are never touched, and a wrong figure that
+was already recorded is corrected by hand (record the result, then post to
+the ledger: compensating `correction` entries). Not covered: a provider that
+never corrects its figure.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

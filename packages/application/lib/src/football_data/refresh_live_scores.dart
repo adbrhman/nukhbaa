@@ -7,8 +7,8 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
 /// What one live refresh did: how many fixtures now show a running score,
-/// and which of them the provider reports finished -- the scheduler records
-/// those results at once instead of waiting for the next results tick.
+/// and which of them the provider reports finished -- the scheduler starts a
+/// results check at once instead of waiting for the next results tick.
 final class LiveScoreRefresh {
   /// Creates the report.
   const LiveScoreRefresh({required this.updated, required this.finished});

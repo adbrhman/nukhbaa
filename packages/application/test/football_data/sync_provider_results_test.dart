@@ -57,6 +57,9 @@ void main() {
           leagueName: 'الإنجليزي',
         ),
       ],
+      // Confirmation is off here, so these tests are about recording alone;
+      // the 'result confirmation' group below turns it on.
+      confirmAfter: Duration.zero,
       recorder:
           ({
             required String fixtureId,
@@ -160,5 +163,128 @@ void main() {
 
     expect(provider.calls, isEmpty);
     expect(report.requests, 0);
+  });
+
+  group('result confirmation', () {
+    final base = DateTime.utc(2026, 9, 19, 16);
+
+    // A use-case with the default confirmation time (15 minutes).
+    SyncProviderResults confirming() => SyncProviderResults(
+      providers: {'highlightly': provider},
+      store: store,
+      leagueRepository: FakeLeagueRepository(const [
+        League(
+          id: LeagueRef(_pl),
+          name: 'English',
+          shortName: null,
+          logoUrl: null,
+        ),
+      ]),
+      rules: const [
+        ProviderLeagueRule(
+          source: 'highlightly',
+          externalLeagueId: 'PL',
+          leagueName: 'English',
+        ),
+      ],
+      recorder:
+          ({
+            required String fixtureId,
+            required int homeGoals,
+            required int awayGoals,
+          }) async {
+            recorded.add((
+              fixtureId: fixtureId,
+              home: homeGoals,
+              away: awayGoals,
+            ));
+            return const Result.ok(null);
+          },
+    );
+
+    void provides(ProviderMatchStatus status, {int? home, int? away}) {
+      provider.answer('PL', _day, [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'a',
+          away: 'b',
+          kickoff: _kickoff,
+          status: status,
+          homeGoals: home,
+          awayGoals: away,
+        ),
+      ]);
+    }
+
+    Future<ProviderSyncReport> runAt(
+      SyncProviderResults use,
+      Duration afterBase,
+    ) async =>
+        ((await use.call(now: base.add(afterBase), apply: true))
+                as Ok<ProviderSyncReport>)
+            .value;
+
+    setUp(() {
+      store.pending = [store.pending.first];
+    });
+
+    test(
+      'a finished score is recorded only after it stands for 15 minutes',
+      () async {
+        final use = confirming();
+        provides(ProviderMatchStatus.finished, home: 2, away: 0);
+
+        final first = await runAt(use, Duration.zero);
+        expect(recorded, isEmpty);
+        expect(first.applied, 0);
+        expect(first.alreadyKnown, 1);
+        expect(
+          first.notes.single,
+          startsWith('finished, confirming for 15 min'),
+        );
+
+        await runAt(use, const Duration(minutes: 14));
+        expect(recorded, isEmpty);
+
+        final last = await runAt(use, const Duration(minutes: 15));
+        expect(recorded, [(fixtureId: _f1, home: 2, away: 0)]);
+        expect(last.applied, 1);
+      },
+    );
+
+    test('a score the provider corrects is recorded as corrected', () async {
+      final use = confirming();
+      provides(ProviderMatchStatus.finished, home: 2, away: 0);
+      await runAt(use, Duration.zero);
+
+      // The provider drops the goal that was ruled out.
+      provides(ProviderMatchStatus.finished, home: 1, away: 0);
+      final changed = await runAt(use, const Duration(minutes: 10));
+      expect(changed.notes.single, startsWith('score changed from 2-0'));
+
+      await runAt(use, const Duration(minutes: 20));
+      expect(recorded, isEmpty);
+
+      await runAt(use, const Duration(minutes: 25));
+      expect(recorded, [(fixtureId: _f1, home: 1, away: 0)]);
+    });
+
+    test('a match that leaves finished has to be confirmed again', () async {
+      final use = confirming();
+      provides(ProviderMatchStatus.finished, home: 1, away: 0);
+      await runAt(use, Duration.zero);
+
+      provides(ProviderMatchStatus.live);
+      await runAt(use, const Duration(minutes: 10));
+
+      provides(ProviderMatchStatus.finished, home: 1, away: 0);
+      await runAt(use, const Duration(minutes: 20));
+      await runAt(use, const Duration(minutes: 30));
+      expect(recorded, isEmpty);
+
+      await runAt(use, const Duration(minutes: 35));
+      expect(recorded, [(fixtureId: _f1, home: 1, away: 0)]);
+    });
   });
 }
