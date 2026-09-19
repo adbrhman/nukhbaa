@@ -10,21 +10,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/design/app_tokens.dart';
+import 'package:mobile/features/competition/team_registry.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/current_month_fixtures_harness.dart';
 
-Widget _host(CurrentMonthFixturesHarness harness, Widget child) =>
-    ProviderScope(
-      overrides: harness.overrides,
-      retry: (retryCount, error) => null,
-      child: MaterialApp(
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: child,
-      ),
-    );
+Widget _host(
+  CurrentMonthFixturesHarness harness,
+  Widget child, {
+  Locale? locale,
+}) => ProviderScope(
+  overrides: harness.overrides,
+  retry: (retryCount, error) => null,
+  child: MaterialApp(
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    locale: locale,
+    home: child,
+  ),
+);
 
 CurrentMonthFixturesHarness _harnessFor({
   required String kickoffAt,
@@ -92,7 +97,59 @@ String _futureIso() =>
 String _pastIso() =>
     DateTime.now().toUtc().subtract(const Duration(days: 1)).toIso8601String();
 
+/// Horizontal centre of the card's name for the team [englishName].
+double _teamX(WidgetTester tester, String englishName) =>
+    tester.getCenter(find.text(teamDisplayName(englishName)).first).dx;
+
 void main() {
+  testWidgets(
+    'graded state, Arabic: the stored 2-0 forecast puts the 2 on the home side',
+    (tester) async {
+      final harness = _harnessFor(
+        kickoffAt: _pastIso(),
+        myPredictions: [
+          FixturePredictionDto(
+            id: 'fp-1',
+            participantId: 'part-1',
+            fixtureId: 'f-1',
+            submittedAt: '2026-09-01T10:00:00.000Z',
+            homeGoals: 2,
+            awayGoals: 0,
+            isDouble: false,
+          ).toJson(),
+        ],
+        scores: [
+          ParticipantFixtureScoreDto(
+            fixtureId: 'f-1',
+            participantId: 'part-1',
+            rulesetVersion: 1,
+            grade: 'exact_scoreline',
+            points: 5,
+          ).toJson(),
+        ],
+      );
+      addTearDown(harness.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          harness,
+          const CurrentMonthFixturesScreen(),
+          locale: const Locale('ar'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        _teamX(tester, 'Al Hilal'),
+        greaterThan(_teamX(tester, 'Al Nassr')),
+        reason: 'RTL card: the home team is drawn on the right',
+      );
+      // The label reads left-to-right, so the home score comes last.
+      expect(find.text('0 - 2'), findsOneWidget);
+      expect(find.text('2 - 0'), findsNothing);
+    },
+  );
+
   testWidgets('open state: score changes auto-save and show a check', (
     tester,
   ) async {

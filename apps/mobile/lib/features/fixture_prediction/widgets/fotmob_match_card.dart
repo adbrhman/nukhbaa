@@ -1099,7 +1099,7 @@ class _LockedSlot extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
-            '$homeGoals - $awayGoals',
+            orientedScoreLabel(context, homeGoals, awayGoals),
             textDirection: TextDirection.ltr,
             style: TextStyle(
               color: tokens.textPrimary,

@@ -36,6 +36,7 @@ import '../../core/design/app_stroke.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/score_pill.dart' show orientedScoreLabel;
 import '../../core/ui/team_logo.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
@@ -662,7 +663,7 @@ class _ScorePill extends StatelessWidget {
         border: Border.all(color: tokens.border),
       ),
       child: Text(
-        '$home - $away',
+        orientedScoreLabel(context, home, away),
         textDirection: TextDirection.ltr,
         style: TextStyle(
           color: tokens.textPrimary,
