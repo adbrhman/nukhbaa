@@ -29,6 +29,7 @@ final class CompositionRoot {
     required this.updatePassword,
     required this.updateDisplayName,
     required this.updateTimeZoneOffset,
+    required this.getMyStreak,
     required this.setAvatar,
     required this.clearAvatar,
     required this.readAvatar,
@@ -149,6 +150,7 @@ final class CompositionRoot {
     EnrolInOpenSeasons? enrolInOpenSeasons,
     UpdateDisplayName? updateDisplayName,
     UpdateTimeZoneOffset? updateTimeZoneOffset,
+    GetMyStreak? getMyStreak,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
     ReadAvatar? readAvatar,
@@ -242,6 +244,7 @@ final class CompositionRoot {
        updateDisplayName = updateDisplayName ?? _absentUpdateDisplayName(),
        updateTimeZoneOffset =
            updateTimeZoneOffset ?? _absentUpdateTimeZoneOffset(),
+       getMyStreak = getMyStreak ?? _absentGetMyStreak(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
        clearAvatar = clearAvatar ?? _absentClearAvatar(),
        readAvatar = readAvatar ?? _absentReadAvatar(),
@@ -422,6 +425,11 @@ final class CompositionRoot {
   /// if a test reaches the time-zone slice it never wired.
   static UpdateTimeZoneOffset _absentUpdateTimeZoneOffset() =>
       UpdateTimeZoneOffset(userDirectory: _UnwiredUserDirectory());
+
+  /// Builds an "absent" [GetMyStreak] over a repository that throws if a
+  /// test reaches the streak slice it never wired.
+  static GetMyStreak _absentGetMyStreak() =>
+      GetMyStreak(streaks: _UnwiredStreakRepository(), clock: _unwiredClock);
 
   /// A single throwing repository backing every "absent" competition use-case,
   /// so a test that reaches an unwired competition slice fails loudly.
@@ -989,6 +997,10 @@ final class CompositionRoot {
   /// Records the caller's own offset from UTC (backs `POST /me/time-zone`).
   /// Notification timing only — no day boundary is derived from it.
   final UpdateTimeZoneOffset updateTimeZoneOffset;
+
+  /// Counts the caller's run of completed match days (backs
+  /// `GET /me/streak`). Derived from the event stream on every read.
+  final GetMyStreak getMyStreak;
 
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
@@ -1669,6 +1681,10 @@ final class CompositionRoot {
       updatePassword: updatePassword,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
       updateTimeZoneOffset: UpdateTimeZoneOffset(userDirectory: directory),
+      getMyStreak: GetMyStreak(
+        streaks: PostgresStreakRepository(connection),
+        clock: clock,
+      ),
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
@@ -2053,6 +2069,17 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
   @override
   Future<Result<LatestBuild>> fetchLatest() =>
       throw StateError('GetLatestBuild was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyStreak]: throws if a test reaches the streak slice
+/// it never wired.
+final class _UnwiredStreakRepository implements StreakRepository {
+  @override
+  Future<Result<List<MatchDayCompletion>>> completionCalendar({
+    required UserId userId,
+    required DateTime upToDay,
+    required int limitDays,
+  }) => throw StateError('GetMyStreak was not wired into this test root');
 }
 
 /// Backs an "absent" [AuthenticateRequest]: throws if a test reaches the auth

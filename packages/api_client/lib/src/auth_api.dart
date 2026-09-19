@@ -132,4 +132,15 @@ final class AuthApi {
       parse: TimeZoneAckDto.fromJson,
     );
   }
+
+  /// `GET /me/streak` — the caller's run of completed match days.
+  ///
+  /// Counted server-side on every call, so there is nothing to cache here
+  /// and nothing that can drift from the record.
+  Future<Result<MyStreakDto>> myStreak() {
+    return _transport.getObject<MyStreakDto>(
+      '/me/streak',
+      parse: MyStreakDto.fromJson,
+    );
+  }
 }
