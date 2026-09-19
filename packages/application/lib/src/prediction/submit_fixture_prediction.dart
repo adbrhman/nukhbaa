@@ -4,6 +4,7 @@ import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/award_streak_bonus.dart';
 import 'package:application/src/gamification/ports/daily_challenge_repository.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -56,13 +57,15 @@ final class SubmitFixturePrediction {
     required Clock clock,
     GamificationEventSink? gamificationEventSink,
     DailyChallengeRepository? dailyChallengeRepository,
+    AwardStreakBonus? awardStreakBonus,
   }) : _fixturePredictions = fixturePredictionRepository,
        _competition = competitionRepository,
        _fixtureSchedules = fixtureScheduleRepository,
        _idGenerator = idGenerator,
        _clock = clock,
        _gamificationEvents = gamificationEventSink,
-       _dailyChallenges = dailyChallengeRepository;
+       _dailyChallenges = dailyChallengeRepository,
+       _streakBonus = awardStreakBonus;
 
   final FixturePredictionRepository _fixturePredictions;
   final CompetitionRepository _competition;
@@ -78,6 +81,11 @@ final class SubmitFixturePrediction {
   /// recorded as an event, so a reading with nowhere to write is not taken.
   /// Tier-3 — see [DailyChallengeRepository].
   final DailyChallengeRepository? _dailyChallenges;
+
+  /// Optional: a run only grows on a submission that completes a match day,
+  /// and that is the one moment this is consulted. Tier-3 -- see
+  /// [AwardStreakBonus].
+  final AwardStreakBonus? _streakBonus;
 
   /// Submits (or amends) [homeGoals]-[awayGoals] as [principal]'s prediction
   /// for fixture [fixtureId] under season [seasonId].
@@ -239,13 +247,22 @@ final class SubmitFixturePrediction {
     // score the participant already had, so the day is exactly as complete
     // as it was a moment ago.
     if (inserted is Ok<FixturePredictionView>) {
-      await _recordDailyProgress(
+      final completedDay = await _recordDailyProgress(
         userId: principal.userId,
         participantId: participant.id,
         seasonId: sId,
         kickoffAt: kickoffAt,
         now: now,
       );
+      // A run can only grow on the submission that completes a match day.
+      if (completedDay) {
+        await _payStreakBonus(
+          principal: principal,
+          participantId: participant.id,
+          fixture: fixture,
+          now: now,
+        );
+      }
     }
     return inserted;
   }
@@ -267,7 +284,11 @@ final class SubmitFixturePrediction {
   ///
   /// Tier-3 throughout: every failure is swallowed, and a lost event can be
   /// re-emitted later without producing a second row.
-  Future<void> _recordDailyProgress({
+  ///
+  /// Returns whether the day is complete once this submission is counted,
+  /// whether or not the event could be written: the streak bonus is decided
+  /// on the coverage, and the streak itself is counted from the events.
+  Future<bool> _recordDailyProgress({
     required UserId userId,
     required ParticipantId participantId,
     required SeasonId seasonId,
@@ -277,7 +298,7 @@ final class SubmitFixturePrediction {
     final challenges = _dailyChallenges;
     final sink = _gamificationEvents;
     if (challenges == null || sink == null) {
-      return;
+      return false;
     }
 
     final day = riyadhDayOf(kickoffAt);
@@ -287,11 +308,11 @@ final class SubmitFixturePrediction {
       day: day,
     );
     if (progress is! Ok<DailyChallengeProgress>) {
-      return;
+      return false;
     }
     final coverage = progress.value;
     if (!coverage.isComplete) {
-      return;
+      return false;
     }
 
     final event = GamificationEvent.dailyChallengeCompleted(
@@ -304,6 +325,35 @@ final class SubmitFixturePrediction {
     if (event is Ok<GamificationEvent>) {
       await sink.record(event.value);
     }
+    return true;
+  }
+
+  /// Pays the streak bonus the participant's run has just earned (P1-4).
+  ///
+  /// Called only on the submission that completed a match day, because that
+  /// is the only moment a run can grow. The entry is stored against
+  /// [fixture], the fixture whose prediction completed the day.
+  ///
+  /// Tier-3: the prediction is already saved, so every failure is swallowed.
+  /// A bonus that misses here is paid the next time a day completes, since
+  /// [AwardStreakBonus] pays every rung the run has reached, and paying is
+  /// idempotent.
+  Future<void> _payStreakBonus({
+    required AuthenticatedUser principal,
+    required ParticipantId participantId,
+    required FixtureRef fixture,
+    required DateTime now,
+  }) async {
+    final bonus = _streakBonus;
+    if (bonus == null) {
+      return;
+    }
+    await bonus(
+      principal: principal,
+      participantId: participantId,
+      fixture: fixture,
+      now: now,
+    );
   }
 
   /// Appends a `prediction_placed` event for a FIRST-time submission.

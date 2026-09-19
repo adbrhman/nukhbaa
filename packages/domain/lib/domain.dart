@@ -47,6 +47,7 @@ export 'src/identity/user.dart';
 export 'src/gamification/gamification_event.dart';
 export 'src/gamification/gamification_event_id.dart';
 export 'src/gamification/gamification_event_type.dart';
+export 'src/gamification/streak_bonus_policy.dart';
 export 'src/gamification/streak_tally.dart';
 export 'src/identity/user_id.dart';
 export 'src/leaderboard/fixture_leaderboard.dart';

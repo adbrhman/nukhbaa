@@ -1777,6 +1777,14 @@ final class CompositionRoot {
         clock: clock,
         gamificationEventSink: PostgresGamificationEventSink(connection),
         dailyChallengeRepository: PostgresDailyChallengeRepository(connection),
+        awardStreakBonus: AwardStreakBonus(
+          getMyStreak: GetMyStreak(
+            streaks: PostgresStreakRepository(connection),
+            clock: clock,
+          ),
+          fixtureLedgerRepository: fixtureLedgerRepository,
+          idGenerator: idGenerator,
+        ),
       ),
       getMyPrediction: GetMyPrediction(
         predictionRepository: predictionRepository,

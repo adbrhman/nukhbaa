@@ -189,6 +189,12 @@ ORDER BY occurred_at ASC, id ASC
         'Participant not found',
       );
     }
+    if (constraint == 'fixture_point_entries_streak_bonus_once_idx') {
+      return const AppError.invariant(
+        'ledger.already_posted',
+        'This streak bonus was already granted',
+      );
+    }
     if (constraint == 'fixture_point_entries_fixture_score_uniq') {
       return const AppError.invariant(
         'ledger.already_posted',
