@@ -93,6 +93,7 @@ final class CompositionRoot {
     required this.sendPredictionReminders,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
+    required this.closeWeeklyLeague,
     required this.providerSyncMode,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -218,6 +219,7 @@ final class CompositionRoot {
     SendPredictionReminders? sendPredictionReminders,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
+    CloseWeeklyLeague? closeWeeklyLeague,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -354,6 +356,7 @@ final class CompositionRoot {
            ensureUpcomingMonthlySeasons ??
            _absentEnsureUpcomingMonthlySeasons(),
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
+       closeWeeklyLeague = closeWeeklyLeague ?? _absentCloseWeeklyLeague(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
@@ -880,6 +883,15 @@ final class CompositionRoot {
   static SettleMatchDays _absentSettleMatchDays() =>
       SettleMatchDays(store: _UnwiredMatchDaySettlementStore());
 
+  /// Backs the "absent" [CloseWeeklyLeague]: its store throws, so a test that
+  /// reaches it fails loudly.
+  static CloseWeeklyLeague _absentCloseWeeklyLeague() => CloseWeeklyLeague(
+    closures: _UnwiredWeeklyLeagueClosureStore(),
+    standings: _UnwiredWeeklyLeagueStandingsReader(),
+    events: _UnwiredGamificationEventSink(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
   /// Backs an "absent" [SendPredictionReminders]: the reminder sweep is
   /// never exercised by a route test, and a silent no-op would hide a
   /// wiring bug in the one test that does reach it.
@@ -1340,6 +1352,10 @@ final class CompositionRoot {
   /// by the scheduler, never by a request.
   final SettleMatchDays settleMatchDays;
 
+  /// Judges each finished weekly-league week and writes its standings into
+  /// the event stream. Driven by the scheduler, never by a request.
+  final CloseWeeklyLeague closeWeeklyLeague;
+
   /// Automatic fixtures/results mode (`NUKHBA_PROVIDER_SYNC`); `off` when
   /// no provider key is configured.
   final ProviderSyncMode providerSyncMode;
@@ -1780,6 +1796,12 @@ final class CompositionRoot {
       ),
       settleMatchDays: SettleMatchDays(
         store: PostgresMatchDaySettlementStore(connection),
+      ),
+      closeWeeklyLeague: CloseWeeklyLeague(
+        closures: PostgresWeeklyLeagueClosureStore(connection),
+        standings: PostgresWeeklyLeagueStandingsReader(connection),
+        events: PostgresGamificationEventSink(connection),
+        idGenerator: idGenerator,
       ),
       providerSyncMode: providerSyncMode,
       syncProviderFixtures: syncProviderFixtures,
@@ -2262,6 +2284,33 @@ final class _UnwiredMatchDaySettlementStore implements MatchDaySettlementStore {
     required DateTime from,
     required DateTime through,
   }) => throw StateError('SettleMatchDays was not wired into this test root');
+}
+
+/// Backs an "absent" [CloseWeeklyLeague]: throws if a test reaches the
+/// weekly-league closing slice it never wired.
+final class _UnwiredWeeklyLeagueClosureStore
+    implements WeeklyLeagueClosureStore {
+  @override
+  Future<Result<DateTime?>> nextUnclosedWeek() =>
+      throw StateError('CloseWeeklyLeague was not wired into this test root');
+
+  @override
+  Future<Result<List<WeeklyLeagueGroupRef>>> groupsOf(DateTime weekStart) =>
+      throw StateError('CloseWeeklyLeague was not wired into this test root');
+
+  @override
+  Future<Result<void>> markClosed({
+    required DateTime weekStart,
+    required int memberCount,
+  }) => throw StateError('CloseWeeklyLeague was not wired into this test root');
+}
+
+/// Backs an "absent" [CloseWeeklyLeague]: throws if a test reaches the event
+/// stream it never wired.
+final class _UnwiredGamificationEventSink implements GamificationEventSink {
+  @override
+  Future<Result<void>> record(GamificationEvent event) =>
+      throw StateError('CloseWeeklyLeague was not wired into this test root');
 }
 
 /// Backs an "absent" [AuthenticateRequest]: throws if a test reaches the auth

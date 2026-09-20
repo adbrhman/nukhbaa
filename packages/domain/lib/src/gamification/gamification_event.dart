@@ -1,6 +1,8 @@
 import 'package:domain/src/competition/fixture_ref.dart';
 import 'package:domain/src/gamification/gamification_event_id.dart';
 import 'package:domain/src/gamification/gamification_event_type.dart';
+import 'package:domain/src/gamification/weekly_league_id.dart';
+import 'package:domain/src/gamification/weekly_league_policy.dart';
 import 'package:domain/src/identity/user_id.dart';
 import 'package:domain/src/prediction/prediction_id.dart';
 import 'package:shared/shared.dart';
@@ -112,6 +114,69 @@ final class GamificationEvent {
         refType: null,
         refId: null,
         payload: <String, Object?>{'day': isoDay, 'fixtures': fixtureCount},
+        ruleVersion: currentRuleVersion,
+      ),
+    );
+  }
+
+  /// One member's week of the weekly league was judged (P2-5).
+  ///
+  /// [weekStart] is the Monday that opened the judged week (a UTC midnight
+  /// carrying that Riyadh day's date); any day of the week is accepted and
+  /// keys on that week's Monday. The dedupe key is the user and the week,
+  /// which is what makes closing a week replayable: a second run writes
+  /// nothing, and the stream rejects UPDATE and DELETE, so a result
+  /// corrected after the week was judged cannot rewrite the standing.
+  ///
+  /// [occurredAt] is the END of that week, not the moment the job ran. The
+  /// tier ladder reads the newest of these events per user, so a late or
+  /// catch-up run must not let an older week look newer than a later one.
+  ///
+  /// The payload is the standing and nothing else: `{tier, rank, points,
+  /// outcome}`. `WeeklyLeagueRepository.lastFinishOf` reads the tier and the
+  /// outcome; the points are an audit copy. An award is a ledger entry,
+  /// never this event. The event points at the group through [leagueId].
+  static Result<GamificationEvent> weeklyLeagueFinished({
+    required String id,
+    required UserId userId,
+    required WeeklyLeagueId leagueId,
+    required DateTime weekStart,
+    required WeeklyLeagueTier tier,
+    required int rank,
+    required int points,
+    required WeeklyLeagueOutcome outcome,
+    required DateTime occurredAt,
+  }) {
+    final idResult = GamificationEventId.tryParse(id);
+    if (idResult is Err<GamificationEventId>) {
+      return Result.err(idResult.error);
+    }
+    if (rank < 1) {
+      return const Result.err(
+        AppError.invariant(
+          'gamification.weekly_league_rank_invalid',
+          'A weekly league rank starts at 1',
+        ),
+      );
+    }
+    final isoWeek = _isoDay(WeeklyLeaguePolicy.weekStartOf(weekStart));
+    return Result.ok(
+      GamificationEvent._(
+        id: (idResult as Ok<GamificationEventId>).value,
+        userId: userId,
+        type: GamificationEventType.weeklyLeagueFinished,
+        dedupeKey:
+            '${GamificationEventType.weeklyLeagueFinished.wireName}:'
+            '${userId.value}:$isoWeek',
+        occurredAt: occurredAt.toUtc(),
+        refType: 'weekly_league',
+        refId: leagueId.value,
+        payload: <String, Object?>{
+          'tier': tier.level,
+          'rank': rank,
+          'points': points,
+          'outcome': outcome.wireName,
+        },
         ruleVersion: currentRuleVersion,
       ),
     );

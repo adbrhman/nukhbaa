@@ -47,6 +47,7 @@ export 'src/gamification/postgres_experiment_repository.dart';
 export 'src/gamification/postgres_gamification_event_sink.dart';
 export 'src/gamification/postgres_match_day_settlement_store.dart';
 export 'src/gamification/postgres_streak_repository.dart';
+export 'src/gamification/postgres_weekly_league_closure_store.dart';
 export 'src/gamification/postgres_weekly_league_repository.dart';
 export 'src/gamification/postgres_weekly_league_standings_reader.dart';
 export 'src/notification/postgres_prediction_reminder_repository.dart';

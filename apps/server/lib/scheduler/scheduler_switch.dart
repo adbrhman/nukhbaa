@@ -2,7 +2,8 @@
 const String schedulersEnvKey = 'NUKHBA_SCHEDULERS';
 
 /// Whether the in-process schedulers (prediction reminders, monthly seasons,
-/// provider sync, match-day settlement) should start.
+/// provider sync, match-day settlement, weekly-league closure) should
+/// start.
 ///
 /// They are ON unless [schedulersEnvKey] is explicitly `off`, so a deployed
 /// server that never sets it behaves exactly as before. The opt-out exists for

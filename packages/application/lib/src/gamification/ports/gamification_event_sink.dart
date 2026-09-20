@@ -11,6 +11,11 @@ import 'package:shared/shared.dart';
 /// written. Callers therefore ignore the returned error deliberately, and
 /// the loss is recoverable — [GamificationEvent.dedupeKey] is unique, so the
 /// same event can be re-emitted later without creating a second row.
+///
+/// The one caller that must NOT ignore the error is `CloseWeeklyLeague`: for
+/// it the event is the work, and it marks a week closed only after every
+/// event of that week was recorded, because a closed week is never judged
+/// again.
 abstract interface class GamificationEventSink {
   /// Appends [event] to the stream.
   ///

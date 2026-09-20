@@ -7,6 +7,7 @@ import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
+import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
 /// intent): build the process-wide composition root — opening the Postgres
@@ -27,6 +28,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // monthly_season_scheduler.dart).
     startMonthlySeasonScheduler(root);
     startMatchDaySettlementScheduler(root);
+    // Judges each weekly-league week once it has ended (see
+    // weekly_league_closure_scheduler.dart).
+    startWeeklyLeagueClosureScheduler(root);
     // Automatic fixtures/results (off unless configured; see
     // provider_sync_scheduler.dart).
     startProviderSyncScheduler(root);
