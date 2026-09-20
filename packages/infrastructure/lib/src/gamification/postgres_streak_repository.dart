@@ -5,11 +5,15 @@ import 'package:shared/shared.dart';
 
 /// Postgres-backed [StreakRepository].
 ///
-/// One statement: the CTE lists the match days (a day exists because a
-/// fixture kicks off in it), and the EXISTS marks the ones this user
-/// completed. The lookup is on `dedupe_key`, which carries a unique index
-/// from migration 0053, so the per-day probe is an index hit rather than a
-/// scan of the stream.
+/// One statement: the CTE lists the match days, and the EXISTS marks the ones
+/// this user completed. Settled days (`gamification.settled_days`, P1-5) are
+/// read exactly as they were frozen; only the days after the newest settled
+/// one are still derived live from the fixture schedule (a day exists because
+/// a fixture kicks off in it), so a fixture moved later cannot rewrite a day
+/// that is over. With nothing settled the live branch covers every day, as it
+/// always did. The completion lookup is on `dedupe_key`, which carries a
+/// unique index from migration 0053, so the per-day probe is an index hit
+/// rather than a scan of the stream.
 ///
 /// The user id is bound twice — once as a uuid for the equality, once as
 /// text for the key — rather than once and cast, so neither binding depends
@@ -25,11 +29,25 @@ final class PostgresStreakRepository implements StreakRepository {
 
   static const String _calendarSql = '''
 WITH days AS (
-  SELECT DISTINCT (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date AS d
-  FROM competition.season_fixtures sf
-  JOIN competition.fixture_schedules fs
-    ON fs.fixture_id = sf.fixture_id
-  WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date <= @up_to::date
+  (
+    SELECT sd.day AS d
+    FROM gamification.settled_days sd
+    WHERE sd.fixture_count > 0
+      AND sd.day <= @up_to::date
+  )
+  UNION
+  (
+    SELECT DISTINCT (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date AS d
+    FROM competition.season_fixtures sf
+    JOIN competition.fixture_schedules fs
+      ON fs.fixture_id = sf.fixture_id
+    WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date <= @live_up_to::date
+      AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date >
+        COALESCE(
+          (SELECT max(s2.day) FROM gamification.settled_days s2),
+          '-infinity'::date
+        )
+  )
   ORDER BY d DESC
   LIMIT @limit_days
 )
@@ -64,6 +82,7 @@ ORDER BY days.d DESC
       _calendarSql,
       parameters: {
         'up_to': isoDay,
+        'live_up_to': isoDay,
         'limit_days': limitDays,
         'user_id': userId.value,
         'user_key': userId.value,

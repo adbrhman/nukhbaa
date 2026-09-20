@@ -44,6 +44,7 @@ export 'src/notification/fcm_push_sender.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/gamification/postgres_daily_challenge_repository.dart';
 export 'src/gamification/postgres_gamification_event_sink.dart';
+export 'src/gamification/postgres_match_day_settlement_store.dart';
 export 'src/gamification/postgres_streak_repository.dart';
 export 'src/notification/postgres_prediction_reminder_repository.dart';
 export 'src/notification/postgres_score_announcement_repository.dart';

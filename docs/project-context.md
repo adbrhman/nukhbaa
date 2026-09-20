@@ -2818,6 +2818,35 @@ Binding rules for the whole gamification plan (decided 2026-09-19):
   day; it does not become incomplete if a match is added later, and a day
   without matches does not count.
 
+### Settled match days (P1-5, 2026-09-20)
+
+The streak calendar used to derive match days live from the current fixture
+schedule, so a fixture that was moved, added or removed re-wrote days that
+were already over (a postponed match hid its old day and shortened every
+streak that ran through it). A Riyadh day that has ended is now settled once
+and frozen.
+
+- **Table**: `gamification.settled_days` (migration 0059), one row per Riyadh
+  day, including days with no fixture (`fixture_count = 0`), so the newest
+  row is the watermark "settled through here". Append-only, server-only.
+- **Job**: `SettleMatchDays` (application), run hourly by
+  `startMatchDaySettlementScheduler` (it respects `NUKHBA_SCHEDULERS=off`).
+  It settles every day after the watermark through the last day that ended at
+  least 3 hours ago (Riyadh), at most 120 days per run; the first run starts
+  at the earliest scheduled fixture. Idempotent (`ON CONFLICT (day) DO
+  NOTHING`), so a missed run is made good by the next one.
+- **Calendar**: `PostgresStreakRepository` reads settled days with
+  `fixture_count > 0` as frozen and derives only the days after the
+  watermark live. With an empty table, or if the job stops, it behaves
+  exactly as before.
+- **A moved fixture** does not change a settled day: the day stays a match
+  day with its frozen count, and the new day is a live match day until it is
+  settled in turn. Completion events are untouched.
+- **Not in scope**: a streak-freeze token (a day the user may skip). The
+  "freeze" of P1-5 is the freezing of days, decided 2026-09-20.
+- **Order**: apply 0059 to the live database BEFORE deploying the server code,
+  because the calendar query reads the table.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

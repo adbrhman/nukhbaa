@@ -89,6 +89,7 @@ final class CompositionRoot {
     required this.markNotificationRead,
     required this.sendPredictionReminders,
     required this.ensureUpcomingMonthlySeasons,
+    required this.settleMatchDays,
     required this.providerSyncMode,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -210,6 +211,7 @@ final class CompositionRoot {
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
+    SettleMatchDays? settleMatchDays,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -340,6 +342,7 @@ final class CompositionRoot {
        ensureUpcomingMonthlySeasons =
            ensureUpcomingMonthlySeasons ??
            _absentEnsureUpcomingMonthlySeasons(),
+       settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
@@ -836,6 +839,11 @@ final class CompositionRoot {
         idGenerator: _unwiredIdGenerator,
       );
 
+  /// Backs the "absent" [SettleMatchDays]: its store throws, so a test that
+  /// reaches it fails loudly.
+  static SettleMatchDays _absentSettleMatchDays() =>
+      SettleMatchDays(store: _UnwiredMatchDaySettlementStore());
+
   /// Backs an "absent" [SendPredictionReminders]: the reminder sweep is
   /// never exercised by a route test, and a silent no-op would hide a
   /// wiring bug in the one test that does reach it.
@@ -1274,6 +1282,10 @@ final class CompositionRoot {
   /// the scheduler, never by a request.
   final EnsureUpcomingMonthlySeasons ensureUpcomingMonthlySeasons;
 
+  /// Freezes each finished Riyadh match day for the streak calendar. Driven
+  /// by the scheduler, never by a request.
+  final SettleMatchDays settleMatchDays;
+
   /// Automatic fixtures/results mode (`NUKHBA_PROVIDER_SYNC`); `off` when
   /// no provider key is configured.
   final ProviderSyncMode providerSyncMode;
@@ -1696,6 +1708,9 @@ final class CompositionRoot {
         repository: competitionRepository,
         idGenerator: idGenerator,
       ),
+      settleMatchDays: SettleMatchDays(
+        store: PostgresMatchDaySettlementStore(connection),
+      ),
       providerSyncMode: providerSyncMode,
       syncProviderFixtures: syncProviderFixtures,
       syncProviderResults: syncProviderResults,
@@ -2088,6 +2103,22 @@ final class _UnwiredStreakRepository implements StreakRepository {
     required DateTime upToDay,
     required int limitDays,
   }) => throw StateError('GetMyStreak was not wired into this test root');
+}
+
+final class _UnwiredMatchDaySettlementStore implements MatchDaySettlementStore {
+  @override
+  Future<Result<DateTime?>> lastSettledDay() =>
+      throw StateError('SettleMatchDays was not wired into this test root');
+
+  @override
+  Future<Result<DateTime?>> firstFixtureDay() =>
+      throw StateError('SettleMatchDays was not wired into this test root');
+
+  @override
+  Future<Result<int>> settle({
+    required DateTime from,
+    required DateTime through,
+  }) => throw StateError('SettleMatchDays was not wired into this test root');
 }
 
 /// Backs an "absent" [AuthenticateRequest]: throws if a test reaches the auth

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
@@ -25,6 +26,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Keeps the next monthly contest in place without an admin (see
     // monthly_season_scheduler.dart).
     startMonthlySeasonScheduler(root);
+    startMatchDaySettlementScheduler(root);
     // Automatic fixtures/results (off unless configured; see
     // provider_sync_scheduler.dart).
     startProviderSyncScheduler(root);
