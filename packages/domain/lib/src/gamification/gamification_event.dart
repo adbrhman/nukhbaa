@@ -1,4 +1,5 @@
 import 'package:domain/src/competition/fixture_ref.dart';
+import 'package:domain/src/gamification/badge_code.dart';
 import 'package:domain/src/gamification/gamification_event_id.dart';
 import 'package:domain/src/gamification/gamification_event_type.dart';
 import 'package:domain/src/gamification/weekly_league_id.dart';
@@ -177,6 +178,44 @@ final class GamificationEvent {
           'points': points,
           'outcome': outcome.wireName,
         },
+        ruleVersion: currentRuleVersion,
+      ),
+    );
+  }
+
+  /// A player earned a badge of the catalog (P2-6).
+  ///
+  /// The dedupe key is the user and the badge, which is what makes a badge
+  /// held exactly once: a replayed evaluation writes nothing, and the stream
+  /// rejects UPDATE and DELETE, so an earned badge cannot be taken back.
+  ///
+  /// [occurredAt] is the moment of the award. The event points at nothing: a
+  /// badge is not a row anywhere, and `ref_id` is a UUID column, which a code
+  /// is not. So [refType] and [refId] are both null and the badge travels in
+  /// the payload as `{code}`. It carries no points: an award is a ledger
+  /// entry, never this event.
+  static Result<GamificationEvent> badgeUnlocked({
+    required String id,
+    required UserId userId,
+    required BadgeCode code,
+    required DateTime occurredAt,
+  }) {
+    final idResult = GamificationEventId.tryParse(id);
+    if (idResult is Err<GamificationEventId>) {
+      return Result.err(idResult.error);
+    }
+    return Result.ok(
+      GamificationEvent._(
+        id: (idResult as Ok<GamificationEventId>).value,
+        userId: userId,
+        type: GamificationEventType.badgeUnlocked,
+        dedupeKey:
+            '${GamificationEventType.badgeUnlocked.wireName}:'
+            '${userId.value}:${code.wireName}',
+        occurredAt: occurredAt.toUtc(),
+        refType: null,
+        refId: null,
+        payload: <String, Object?>{'code': code.wireName},
         ruleVersion: currentRuleVersion,
       ),
     );

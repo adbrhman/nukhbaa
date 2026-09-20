@@ -44,6 +44,8 @@ export 'src/group/invite_code.dart';
 export 'src/identity/authenticated_user.dart';
 export 'src/identity/platform_role.dart';
 export 'src/identity/user.dart';
+export 'src/gamification/badge_code.dart';
+export 'src/gamification/badge_progress.dart';
 export 'src/gamification/gamification_event.dart';
 export 'src/gamification/gamification_event_id.dart';
 export 'src/gamification/gamification_event_type.dart';

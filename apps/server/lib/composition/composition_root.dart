@@ -94,6 +94,7 @@ final class CompositionRoot {
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
     required this.closeWeeklyLeague,
+    required this.evaluateBadges,
     required this.providerSyncMode,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -220,6 +221,7 @@ final class CompositionRoot {
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
     CloseWeeklyLeague? closeWeeklyLeague,
+    EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
     this.syncProviderResults,
@@ -357,6 +359,7 @@ final class CompositionRoot {
            _absentEnsureUpcomingMonthlySeasons(),
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
        closeWeeklyLeague = closeWeeklyLeague ?? _absentCloseWeeklyLeague(),
+       evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
        suspendUser = suspendUser ?? _absentSuspendUser(),
@@ -892,6 +895,14 @@ final class CompositionRoot {
     idGenerator: _unwiredIdGenerator,
   );
 
+  /// Backs the "absent" [EvaluateBadges]: its reader throws, so a test that
+  /// reaches it fails loudly.
+  static EvaluateBadges _absentEvaluateBadges() => EvaluateBadges(
+    progress: _UnwiredBadgeProgressReader(),
+    events: _UnwiredGamificationEventSink(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
   /// Backs an "absent" [SendPredictionReminders]: the reminder sweep is
   /// never exercised by a route test, and a silent no-op would hide a
   /// wiring bug in the one test that does reach it.
@@ -1356,6 +1367,10 @@ final class CompositionRoot {
   /// the event stream. Driven by the scheduler, never by a request.
   final CloseWeeklyLeague closeWeeklyLeague;
 
+  /// Awards each catalog badge a player has earned and not yet been given.
+  /// Driven by the scheduler, never by a request.
+  final EvaluateBadges evaluateBadges;
+
   /// Automatic fixtures/results mode (`NUKHBA_PROVIDER_SYNC`); `off` when
   /// no provider key is configured.
   final ProviderSyncMode providerSyncMode;
@@ -1800,6 +1815,11 @@ final class CompositionRoot {
       closeWeeklyLeague: CloseWeeklyLeague(
         closures: PostgresWeeklyLeagueClosureStore(connection),
         standings: PostgresWeeklyLeagueStandingsReader(connection),
+        events: PostgresGamificationEventSink(connection),
+        idGenerator: idGenerator,
+      ),
+      evaluateBadges: EvaluateBadges(
+        progress: PostgresBadgeProgressReader(connection),
         events: PostgresGamificationEventSink(connection),
         idGenerator: idGenerator,
       ),
@@ -2311,6 +2331,14 @@ final class _UnwiredGamificationEventSink implements GamificationEventSink {
   @override
   Future<Result<void>> record(GamificationEvent event) =>
       throw StateError('CloseWeeklyLeague was not wired into this test root');
+}
+
+/// Backs an "absent" [EvaluateBadges]: throws if a test reaches the badge
+/// slice it never wired.
+final class _UnwiredBadgeProgressReader implements BadgeProgressReader {
+  @override
+  Future<Result<List<UserBadgeStanding>>> readAll() =>
+      throw StateError('EvaluateBadges was not wired into this test root');
 }
 
 /// Backs an "absent" [AuthenticateRequest]: throws if a test reaches the auth

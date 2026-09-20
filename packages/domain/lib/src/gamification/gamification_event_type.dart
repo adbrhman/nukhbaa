@@ -29,7 +29,16 @@ enum GamificationEventType {
   /// Read by `WeeklyLeagueRepository.lastFinishOf` from P2-3; emitted by the
   /// week-closing job in P2-5. A reader landing first is not a promise: the
   /// value is already consulted the moment this ships.
-  weeklyLeagueFinished('weekly_league_finished');
+  weeklyLeagueFinished('weekly_league_finished'),
+
+  /// A player earned a badge of the catalog (P2-6). The payload carries the
+  /// badge as `{code}`, and the dedupe key is the user and the code, so a
+  /// badge is held once and cannot be granted twice or taken back. It carries
+  /// no points: a badge is a record, not an award.
+  ///
+  /// Emitted by `EvaluateBadges`; read back by the badge reader, which
+  /// treats the stored codes as the badges already held.
+  badgeUnlocked('badge_unlocked');
 
   const GamificationEventType(this.wireName);
 
