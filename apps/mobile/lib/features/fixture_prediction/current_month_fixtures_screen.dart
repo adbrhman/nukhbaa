@@ -28,6 +28,9 @@
 /// A fixture with no `kickoffAt` cannot be filed under any day, so it stays
 /// visible on every day rather than disappearing from the app entirely.
 ///
+/// Within a day the cards run in kickoff order, earliest first, across every
+/// competition; a fixture with no kickoff comes last (`_byKickoff`).
+///
 /// Per-fixture rendering is still [FotmobMatchCard]
 /// (`widgets/fotmob_match_card.dart`, `match-card-fotmob-spec.md`) — this
 /// screen itself only owns the read/loading/empty/error states.
@@ -123,6 +126,42 @@ class _CurrentMonthFixturesScreenState
     final DateTime? parsed = DateTime.tryParse(raw);
     if (parsed == null) return null;
     return fixtureDayOnly(parsed.toLocal());
+  }
+
+  /// [items] in kickoff order, earliest first -- the order a day is drawn in.
+  ///
+  /// The feed arrives grouped by competition (name order, then
+  /// `display_order`), so a 20:30 Bundesliga match used to sit above a 17:15
+  /// La Liga one. Kickoffs are compared as UTC instants, so the device's
+  /// offset can never reorder anything. Equal kickoffs keep the feed's own
+  /// order, and a fixture with no readable kickoff goes last (same rule as
+  /// `admin_pickers.dart`). `List.sort` is not stable, hence the index.
+  static List<CurrentMonthFixtureItemDto> _byKickoff(
+    List<CurrentMonthFixtureItemDto> items,
+  ) {
+    final List<(int, DateTime?, CurrentMonthFixtureItemDto)> keyed =
+        <(int, DateTime?, CurrentMonthFixtureItemDto)>[
+          for (int i = 0; i < items.length; i++)
+            (
+              i,
+              DateTime.tryParse(items[i].fixture.kickoffAt ?? '')?.toUtc(),
+              items[i],
+            ),
+        ];
+    keyed.sort((a, b) {
+      final DateTime? ta = a.$2;
+      final DateTime? tb = b.$2;
+      if (ta != null && tb != null) {
+        final int byTime = ta.compareTo(tb);
+        if (byTime != 0) return byTime;
+      } else if (ta != null) {
+        return -1;
+      } else if (tb != null) {
+        return 1;
+      }
+      return a.$1.compareTo(b.$1);
+    });
+    return <CurrentMonthFixtureItemDto>[for (final k in keyed) k.$3];
   }
 
   /// The day the list should show: the user's pick once they have made one,
@@ -276,13 +315,16 @@ class _CurrentMonthFixturesScreenState
                 message: l10n.matchesEmpty,
               );
             }
-            final List<CurrentMonthFixtureItemDto> dayItems = items
+            final List<CurrentMonthFixtureItemDto> dayFiltered = items
                 .where((item) {
                   if (liveOnly) return isFixtureLive(item.fixture.kickoffAt);
                   final DateTime? kickoff = _kickoffDay(item);
                   return kickoff == null || isSameFixtureDay(kickoff, day);
                 })
                 .toList(growable: false);
+            final List<CurrentMonthFixtureItemDto> dayItems = _byKickoff(
+              dayFiltered,
+            );
             if (dayItems.isEmpty) {
               return _EmptyMessage(
                 messageKey: const Key('currentMonthFixtures.dayEmpty.message'),
