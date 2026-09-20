@@ -31,6 +31,7 @@ final class CompositionRoot {
     required this.updateTimeZoneOffset,
     required this.getMyStreak,
     required this.getMyDailyChallenge,
+    required this.resolveExperimentVariant,
     required this.setAvatar,
     required this.clearAvatar,
     required this.readAvatar,
@@ -154,6 +155,7 @@ final class CompositionRoot {
     UpdateTimeZoneOffset? updateTimeZoneOffset,
     GetMyStreak? getMyStreak,
     GetMyDailyChallenge? getMyDailyChallenge,
+    ResolveExperimentVariant? resolveExperimentVariant,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
     ReadAvatar? readAvatar,
@@ -251,6 +253,8 @@ final class CompositionRoot {
        getMyStreak = getMyStreak ?? _absentGetMyStreak(),
        getMyDailyChallenge =
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
+       resolveExperimentVariant =
+           resolveExperimentVariant ?? _absentResolveExperimentVariant(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
        clearAvatar = clearAvatar ?? _absentClearAvatar(),
        readAvatar = readAvatar ?? _absentReadAvatar(),
@@ -446,6 +450,11 @@ final class CompositionRoot {
         dailyChallenges: _UnwiredDailyChallengeRepository(),
         clock: _unwiredClock,
       );
+
+  /// Builds an "absent" [ResolveExperimentVariant] over a repository that
+  /// throws if a test reaches the experiment slice it never wired.
+  static ResolveExperimentVariant _absentResolveExperimentVariant() =>
+      ResolveExperimentVariant(experiments: _UnwiredExperimentRepository());
 
   /// A single throwing repository backing every "absent" competition use-case,
   /// so a test that reaches an unwired competition slice fails loudly.
@@ -1027,6 +1036,14 @@ final class CompositionRoot {
   /// `GET /me/daily-challenge`). Computed per request over the caller's
   /// active seasons; nothing is stored.
   final GetMyDailyChallenge getMyDailyChallenge;
+
+  /// Decides which arm of a flagged experiment a user is in (P1-8).
+  ///
+  /// Backend-only and, as of P1-8, deliberately unreferenced: the
+  /// machinery ships before the first experiment so that starting one is a
+  /// flag row and a call site, not a three-layer change. Do not delete it
+  /// as dead code.
+  final ResolveExperimentVariant resolveExperimentVariant;
 
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
@@ -1720,6 +1737,9 @@ final class CompositionRoot {
         dailyChallenges: PostgresDailyChallengeRepository(connection),
         clock: clock,
       ),
+      resolveExperimentVariant: ResolveExperimentVariant(
+        experiments: PostgresExperimentRepository(connection),
+      ),
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
@@ -2139,6 +2159,32 @@ final class _UnwiredDailyChallengeRepository
     required DateTime day,
   }) =>
       throw StateError('GetMyDailyChallenge was not wired into this test root');
+}
+
+/// Backs an "absent" [ResolveExperimentVariant]: throws if a test reaches
+/// the experiment slice it never wired.
+final class _UnwiredExperimentRepository implements ExperimentRepository {
+  @override
+  Future<Result<bool>> isFlagEnabled(String flagKey) => throw StateError(
+    'ResolveExperimentVariant was not wired into this test root',
+  );
+
+  @override
+  Future<Result<String?>> readAssignment({
+    required UserId userId,
+    required String flagKey,
+  }) => throw StateError(
+    'ResolveExperimentVariant was not wired into this test root',
+  );
+
+  @override
+  Future<Result<String>> assign({
+    required UserId userId,
+    required String flagKey,
+    required String variant,
+  }) => throw StateError(
+    'ResolveExperimentVariant was not wired into this test root',
+  );
 }
 
 final class _UnwiredMatchDaySettlementStore implements MatchDaySettlementStore {

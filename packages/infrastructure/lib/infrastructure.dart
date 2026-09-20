@@ -43,6 +43,7 @@ export 'src/notification/postgres_device_token_repository.dart';
 export 'src/notification/fcm_push_sender.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/gamification/postgres_daily_challenge_repository.dart';
+export 'src/gamification/postgres_experiment_repository.dart';
 export 'src/gamification/postgres_gamification_event_sink.dart';
 export 'src/gamification/postgres_match_day_settlement_store.dart';
 export 'src/gamification/postgres_streak_repository.dart';

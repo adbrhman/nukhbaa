@@ -2948,6 +2948,52 @@ above the overview card.
   change.
 - **No migration, no server change.** Deployable with the app alone.
 
+### Experiment assignment (P1-8, 2026-09-20)
+
+The machinery that splits a population, over the two tables migration 0054
+already created. **No migration, no route, and -- deliberately -- no call
+site yet.**
+
+- **Three pieces.** `VariantAllocator` (domain, pure) decides an arm from
+  `flag_key:user_id` alone; `ExperimentRepository` (application port) reads
+  the flag and reads or stores the assignment;
+  `PostgresExperimentRepository` (infrastructure) speaks to 0054's tables.
+  `ResolveExperimentVariant` joins them and is wired into the composition
+  root.
+- **The stored row is the truth.** `(user_id, flag_key)` is the primary key,
+  so a user keeps the arm they were first given. The allocator only decides
+  the arm of a user who has no row. Changing the hash, the arm order or the
+  weights re-buckets only the unassigned; an experiment's population may
+  grow, it is never re-drawn.
+- **Deterministic, not random.** FNV-1a over `flag_key:user_id`, because
+  `hashCode` is not stable across processes and an allocation that moves
+  between restarts is not an allocation. Two servers racing on the same first
+  exposure therefore compute the same answer, and the single `INSERT ... ON
+  CONFLICT DO NOTHING ... UNION ALL SELECT` statement makes the loser read
+  the winner's row instead of raising 23505.
+- **It cannot fail.** `ResolveExperimentVariant` returns a bare `String`, not
+  a `Result` -- the one use-case in the codebase that does. A flag that is
+  off, a flag that does not exist and a database that did not answer all mean
+  the same thing downstream: behave as yesterday. Each answers `control`, and
+  nothing is written.
+- **The flag is read first**, so a stopped experiment writes no assignment:
+  the assignments are the record of who was measured.
+- **Why no experiment yet.** The streak bonus was rejected as the first
+  split: its points are real, the ledger is append-only, and a monthly
+  competition with a prize cannot have two users' standings decided by a coin
+  flip that cannot be undone. Reminder timing was rejected for now because
+  the KPIs that would read it (`challenge_completion_rate`,
+  `streak_participation`, deferred in 0054) do not exist yet, and a split
+  nobody can measure is a split not worth running.
+- **Starting one** is a flag row and a call site, no deploy of new layers:
+
+      insert into gamification.feature_flags (flag_key, description, enabled)
+      values ('<key>', '<what it gates>', false);
+      -- then flip enabled to true when the call site is live.
+
+  A flag is retired with `enabled = false`, never by deleting the row: the
+  assignments that measured it must survive it.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
