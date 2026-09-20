@@ -19,7 +19,17 @@ enum GamificationEventType {
   /// and by admins, so an end-of-day check would fail a day the participant
   /// had in fact finished. Because the stream is append-only, a day that
   /// completes stays complete even if a fixture appears afterwards.
-  dailyChallengeCompleted('daily_challenge_completed');
+  dailyChallengeCompleted('daily_challenge_completed'),
+
+  /// A judged week of the weekly league ended for one member, carrying
+  /// `{tier, rank, points, outcome}` in its payload (P2). It is the frozen
+  /// standing of that week and the only record of which tier a player is
+  /// promoted or relegated to, which is why no results table exists.
+  ///
+  /// Read by `WeeklyLeagueRepository.lastFinishOf` from P2-3; emitted by the
+  /// week-closing job in P2-5. A reader landing first is not a promise: the
+  /// value is already consulted the moment this ships.
+  weeklyLeagueFinished('weekly_league_finished');
 
   const GamificationEventType(this.wireName);
 
