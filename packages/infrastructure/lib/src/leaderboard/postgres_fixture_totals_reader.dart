@@ -5,12 +5,12 @@ import 'package:shared/shared.dart';
 
 /// Postgres adapter for [FixtureTotalsReader].
 ///
-/// Sums `scoring.fixture_scores` per participant inside the database, so the
-/// monthly board costs one row per player on the wire instead of one row
-/// per player per fixture. The grade buckets are exactly the ones
-/// `FixtureLeaderboard.rank` and `leaderboard.season_fixture_standings`
-/// (migration 0034) use: `decided` excludes `pending`. The primary key
-/// `(fixture_id, participant_id)` serves the `ANY` filter.
+/// Sums scored fixture points and already-awarded streak bonuses per
+/// participant inside the database, so the monthly board costs one row per
+/// player on the wire instead of one row per fixture. The grade buckets are
+/// exactly the ones `FixtureLeaderboard.rank` and
+/// `leaderboard.season_fixture_standings` use: `decided` excludes `pending`.
+/// The primary key `(fixture_id, participant_id)` serves the `ANY` filter.
 final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   /// Creates the reader over [_connection].
   const PostgresFixtureTotalsReader(this._connection);
@@ -18,17 +18,43 @@ final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   final PostgresConnection _connection;
 
   static const String _totalsSql = '''
-SELECT participant_id::text                                  AS participant_id,
-       sum(points)::bigint                                   AS total_points,
-       count(*)::bigint                                      AS fixtures_scored,
-       count(*) FILTER (WHERE grade = 'exact_scoreline')::bigint
-                                                             AS exact_count,
-       count(*) FILTER (
-         WHERE grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
-       )::bigint                                             AS decided_count
-FROM scoring.fixture_scores
-WHERE fixture_id = ANY(@fixture_ids::uuid[])
-GROUP BY participant_id
+WITH scores AS (
+  SELECT participant_id,
+         sum(points)::bigint AS score_points,
+         count(*)::bigint AS fixtures_scored,
+         count(*) FILTER (WHERE grade = 'exact_scoreline')::bigint
+           AS exact_count,
+         count(*) FILTER (
+           WHERE grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
+         )::bigint AS decided_count
+  FROM scoring.fixture_scores
+  WHERE fixture_id = ANY(@fixture_ids::uuid[])
+  GROUP BY participant_id
+),
+bonuses AS (
+  SELECT participant_id,
+         sum(amount)::bigint AS bonus_points
+  FROM ledger.fixture_point_entries
+  WHERE fixture_id = ANY(@fixture_ids::uuid[])
+    AND entry_kind = 'streak_bonus'
+  GROUP BY participant_id
+),
+population AS (
+  SELECT participant_id FROM scores
+  UNION
+  SELECT participant_id FROM bonuses
+)
+SELECT p.participant_id::text AS participant_id,
+       (COALESCE(s.score_points, 0) + COALESCE(b.bonus_points, 0))::bigint
+         AS total_points,
+       COALESCE(s.fixtures_scored, 0)::bigint AS fixtures_scored,
+       COALESCE(s.exact_count, 0)::bigint AS exact_count,
+       COALESCE(s.decided_count, 0)::bigint AS decided_count
+FROM population p
+LEFT JOIN scores s
+  ON s.participant_id = p.participant_id
+LEFT JOIN bonuses b
+  ON b.participant_id = p.participant_id
 ''';
 
   @override
