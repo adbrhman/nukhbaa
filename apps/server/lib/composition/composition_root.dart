@@ -30,6 +30,7 @@ final class CompositionRoot {
     required this.updateDisplayName,
     required this.updateTimeZoneOffset,
     required this.getMyStreak,
+    required this.getMyDailyChallenge,
     required this.setAvatar,
     required this.clearAvatar,
     required this.readAvatar,
@@ -152,6 +153,7 @@ final class CompositionRoot {
     UpdateDisplayName? updateDisplayName,
     UpdateTimeZoneOffset? updateTimeZoneOffset,
     GetMyStreak? getMyStreak,
+    GetMyDailyChallenge? getMyDailyChallenge,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
     ReadAvatar? readAvatar,
@@ -247,6 +249,8 @@ final class CompositionRoot {
        updateTimeZoneOffset =
            updateTimeZoneOffset ?? _absentUpdateTimeZoneOffset(),
        getMyStreak = getMyStreak ?? _absentGetMyStreak(),
+       getMyDailyChallenge =
+           getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
        clearAvatar = clearAvatar ?? _absentClearAvatar(),
        readAvatar = readAvatar ?? _absentReadAvatar(),
@@ -433,6 +437,15 @@ final class CompositionRoot {
   /// test reaches the streak slice it never wired.
   static GetMyStreak _absentGetMyStreak() =>
       GetMyStreak(streaks: _UnwiredStreakRepository(), clock: _unwiredClock);
+
+  /// Builds an "absent" [GetMyDailyChallenge] over repositories that throw
+  /// if a test reaches the daily-challenge slice it never wired.
+  static GetMyDailyChallenge _absentGetMyDailyChallenge() =>
+      GetMyDailyChallenge(
+        competitionRepository: _unwiredCompetitionRepository,
+        dailyChallenges: _UnwiredDailyChallengeRepository(),
+        clock: _unwiredClock,
+      );
 
   /// A single throwing repository backing every "absent" competition use-case,
   /// so a test that reaches an unwired competition slice fails loudly.
@@ -1009,6 +1022,11 @@ final class CompositionRoot {
   /// Counts the caller's run of completed match days (backs
   /// `GET /me/streak`). Derived from the event stream on every read.
   final GetMyStreak getMyStreak;
+
+  /// Reports how much of today's match day the caller has covered (backs
+  /// `GET /me/daily-challenge`). Computed per request over the caller's
+  /// active seasons; nothing is stored.
+  final GetMyDailyChallenge getMyDailyChallenge;
 
   /// Establishes the request principal from an `Authorization` header.
   final AuthenticateRequest authenticateRequest;
@@ -1697,6 +1715,11 @@ final class CompositionRoot {
         streaks: PostgresStreakRepository(connection),
         clock: clock,
       ),
+      getMyDailyChallenge: GetMyDailyChallenge(
+        competitionRepository: competitionRepository,
+        dailyChallenges: PostgresDailyChallengeRepository(connection),
+        clock: clock,
+      ),
       setAvatar: SetAvatar(userDirectory: directory),
       clearAvatar: ClearAvatar(userDirectory: directory),
       readAvatar: ReadAvatar(userDirectory: directory),
@@ -2103,6 +2126,19 @@ final class _UnwiredStreakRepository implements StreakRepository {
     required DateTime upToDay,
     required int limitDays,
   }) => throw StateError('GetMyStreak was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyDailyChallenge]: throws if a test reaches the
+/// daily-challenge slice it never wired.
+final class _UnwiredDailyChallengeRepository
+    implements DailyChallengeRepository {
+  @override
+  Future<Result<DailyChallengeProgress>> progressOn({
+    required SeasonId seasonId,
+    required ParticipantId participantId,
+    required DateTime day,
+  }) =>
+      throw StateError('GetMyDailyChallenge was not wired into this test root');
 }
 
 final class _UnwiredMatchDaySettlementStore implements MatchDaySettlementStore {

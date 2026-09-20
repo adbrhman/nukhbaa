@@ -11,6 +11,7 @@ export 'src/announcement_dto.dart';
 export 'src/admin_user_prediction_dto.dart';
 export 'src/auth_dto.dart';
 export 'src/competition_dto.dart';
+export 'src/daily_challenge_dto.dart';
 export 'src/device_token_dto.dart';
 export 'src/streak_dto.dart';
 export 'src/time_zone_dto.dart';

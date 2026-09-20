@@ -2883,6 +2883,39 @@ number on a screen.
 - **Order**: apply 0060 to the live database BEFORE deploying the server
   code, because both the calendar and the settlement job read the table.
 
+### GET /me/daily-challenge (P1-6, 2026-09-20)
+
+The read half of the challenge the write path already computes.
+`SubmitFixturePrediction` asks `DailyChallengeRepository.progressOn`
+after a prediction lands, to decide whether to raise
+`daily_challenge_completed`; `GetMyDailyChallenge` asks the same port the
+same question on demand, so the card and the event cannot disagree.
+
+- **Route**: `GET /me/daily-challenge`, behind the `/me` bearer
+  middleware. Answers `{day, total, predicted, complete}`
+  (`MyDailyChallengeDto`). `day` is a `YYYY-MM-DD` Riyadh date, not an
+  instant: the boundary is the server's, and a timestamp would invite the
+  client to re-derive it in its own zone.
+- **Scope**: the caller's ACTIVE seasons, summed -- the same scoping
+  migration 0060 gave the streak calendar. One extra round trip per
+  active season resolves the participant; the platform runs one monthly
+  season at a time, so that is one.
+- **No fixture list**: the client already has the day's fixtures from the
+  season feed. A card that draws "2 of 3" does not need them twice.
+- **An empty day**: `total: 0, complete: false`. A rest day is a
+  legitimate answer, never an error, and is never an achievement --
+  the same rule `DailyChallengeProgress.isComplete` applies on the write
+  path.
+- **No migration**: this task adds no table and no column. Deployable on
+  its own.
+- **Decided, not changed**: the completion event's dedupe key stays
+  `daily_challenge_completed:<user>:<date>`, with no season in it. It is
+  raised per season, so a user in two seasons at once could mark a day
+  complete by covering one of them -- but seasons here are monthly and
+  sequential, never concurrent, so the case does not arise. Re-open it
+  the day two seasons overlap; changing the key of an append-only stream
+  without a live reason is not free.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
