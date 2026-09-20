@@ -69,6 +69,28 @@ void main() {
       },
     );
 
+    test('counts only the days the reader own seasons played', () async {
+      final connection = _rows(const <Map<String, dynamic>>[]);
+
+      await PostgresStreakRepository(connection).completionCalendar(
+        userId: const UserId('user-1'),
+        upToDay: DateTime.utc(2026, 9, 19),
+        limitDays: 400,
+      );
+
+      final sql = connection.sqls.single;
+      // Both branches -- the frozen one and the live one -- are joined to the
+      // reader own active participations, so a day only other seasons played
+      // is not a match day for this reader.
+      expect(sql, contains('competition.participants'));
+      expect(
+        sql,
+        contains("p.status = 'active'::competition.participant_status"),
+      );
+      expect(sql, contains('gamification.settled_day_seasons'));
+      expect('ON ms.season_id'.allMatches(sql).length, 2);
+    });
+
     test('passes a query failure through', () async {
       final result = await PostgresStreakRepository(_fails())
           .completionCalendar(

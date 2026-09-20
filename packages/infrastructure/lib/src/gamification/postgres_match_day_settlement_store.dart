@@ -11,6 +11,15 @@ import 'package:shared/shared.dart';
 /// was frozen with. Days are plain `date` arithmetic, never a timestamp, so
 /// the session time zone cannot shift one.
 ///
+/// The same statement freezes the per-season breakdown into
+/// `gamification.settled_day_seasons` (migration 0060), which is what the
+/// streak calendar reads so that a day counts only for the seasons the
+/// reader took part in. A data-modifying CTE runs to completion whether or
+/// not the outer query reads it, and both halves share one snapshot and one
+/// transaction: either the day and its seasons are both frozen, or neither
+/// is. Only days that had fixtures get a per-season row; `settled_days`
+/// alone carries the empty days, so it stays the watermark.
+///
 /// The day columns are projected as `YYYY-MM-DD` text so the adapter does not
 /// depend on how the driver decodes a `date`.
 ///
@@ -51,6 +60,24 @@ counts AS (
   WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date
         BETWEEN @from::date AND @through::date
   GROUP BY 1
+),
+season_counts AS (
+  SELECT (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date AS d,
+         sf.season_id AS season_id,
+         count(DISTINCT sf.fixture_id)::int AS n
+  FROM competition.season_fixtures sf
+  JOIN competition.fixture_schedules fs
+    ON fs.fixture_id = sf.fixture_id
+  WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date
+        BETWEEN @from::date AND @through::date
+  GROUP BY 1, 2
+),
+settled_seasons AS (
+  INSERT INTO gamification.settled_day_seasons (day, season_id, fixture_count)
+  SELECT sc.d, sc.season_id, sc.n
+  FROM season_counts sc
+  ON CONFLICT (day, season_id) DO NOTHING
+  RETURNING day
 )
 INSERT INTO gamification.settled_days (day, fixture_count)
 SELECT span.d, COALESCE(counts.n, 0)

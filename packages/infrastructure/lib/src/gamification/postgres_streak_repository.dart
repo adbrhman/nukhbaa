@@ -6,12 +6,19 @@ import 'package:shared/shared.dart';
 /// Postgres-backed [StreakRepository].
 ///
 /// One statement: the CTE lists the match days, and the EXISTS marks the ones
-/// this user completed. Settled days (`gamification.settled_days`, P1-5) are
-/// read exactly as they were frozen; only the days after the newest settled
-/// one are still derived live from the fixture schedule (a day exists because
-/// a fixture kicks off in it), so a fixture moved later cannot rewrite a day
-/// that is over. With nothing settled the live branch covers every day, as it
-/// always did. The completion lookup is on `dedupe_key`, which carries a
+/// this user completed. Settled days (`gamification.settled_day_seasons`,
+/// migration 0060) are read exactly as they were frozen; only the days after
+/// the newest settled one -- the watermark is still `settled_days` -- are
+/// derived live from the fixture schedule (a day exists because a fixture
+/// kicks off in it), so a fixture moved later cannot rewrite a day that is
+/// over. With nothing settled the live branch covers every day, as it always
+/// did.
+///
+/// Both branches are restricted to the seasons the reader is an ACTIVE
+/// participant in. A participant row is created when a user joins a season,
+/// never implicitly, so a day only other seasons played is not a day this
+/// user could have played, and counting it would break a streak the user had
+/// no way to keep. The completion lookup is on `dedupe_key`, which carries a
 /// unique index from migration 0053, so the per-day probe is an index hit
 /// rather than a scan of the stream.
 ///
@@ -28,17 +35,27 @@ final class PostgresStreakRepository implements StreakRepository {
   final PostgresConnection _connection;
 
   static const String _calendarSql = '''
-WITH days AS (
+WITH my_seasons AS (
+  SELECT p.season_id
+  FROM competition.participants p
+  WHERE p.user_id = @user_id
+    AND p.status = 'active'::competition.participant_status
+),
+days AS (
   (
-    SELECT sd.day AS d
-    FROM gamification.settled_days sd
-    WHERE sd.fixture_count > 0
-      AND sd.day <= @up_to::date
+    SELECT sds.day AS d
+    FROM gamification.settled_day_seasons sds
+    JOIN my_seasons ms
+      ON ms.season_id = sds.season_id
+    WHERE sds.fixture_count > 0
+      AND sds.day <= @up_to::date
   )
   UNION
   (
     SELECT DISTINCT (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date AS d
     FROM competition.season_fixtures sf
+    JOIN my_seasons ms
+      ON ms.season_id = sf.season_id
     JOIN competition.fixture_schedules fs
       ON fs.fixture_id = sf.fixture_id
     WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date <= @live_up_to::date

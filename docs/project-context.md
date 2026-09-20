@@ -2847,6 +2847,42 @@ and frozen.
 - **Order**: apply 0059 to the live database BEFORE deploying the server code,
   because the calendar query reads the table.
 
+### Match days are per season (P1-5 correction, 2026-09-20)
+
+0059 settled one row per Riyadh day for the whole platform, and the calendar
+read it that way: any season playing made the day a match day for every user.
+A participant row is created only when a user joins a season, so a user in one
+season lost the streak on days only other seasons played -- days they could
+not have played. `GET /me/streak` would have shown it the moment P1-6 put the
+number on a screen.
+
+- **Table**: `gamification.settled_day_seasons` (migration 0060) -- one row
+  per settled day per season that played in it, with that season's frozen
+  fixture count. Only days that had fixtures; append-only and server-only,
+  like 0059.
+- **Watermark unchanged**: `settled_days` still carries every ended day,
+  including empty ones, and is still what "settled through here" means.
+- **One statement**: `PostgresMatchDaySettlementStore.settle` writes both
+  tables in one transaction through a data-modifying CTE, so they cannot
+  disagree. Both are `ON CONFLICT DO NOTHING`, so the job stays idempotent.
+- **Calendar**: `PostgresStreakRepository` joins both the frozen and the live
+  branch to the reader's ACTIVE participations
+  (`competition.participants.status = 'active'`).
+- **Scope of the day**: a Riyadh day, unchanged. What changed is whose day it
+  is. The daily challenge already worked this way -- it was raised per season
+  (`DailyChallengeRepository.progressOn`) -- so the calendar now agrees with
+  the event that fills it.
+- **Backfill**: 0060 rebuilds the per-season rows for the days 0059 already
+  settled, from the current schedule. Those days were frozen from that same
+  schedule the day before, so this is a faithful replay, not a re-derivation
+  of old history.
+- **Known gap, not closed here**: the completion event's dedupe key is
+  `daily_challenge_completed:<user>:<date>`, with no season in it, so
+  covering one season's fixtures marks the whole day complete for a user who
+  is in several. Deciding that is P1-6 work, not this correction.
+- **Order**: apply 0060 to the live database BEFORE deploying the server
+  code, because both the calendar and the settlement job read the table.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -99,6 +99,16 @@ void main() {
 
       expect((result as Ok<int>).value, 0);
       expect(connection.sqls.single, contains('ON CONFLICT (day) DO NOTHING'));
+      // The same statement freezes the per-season breakdown the streak
+      // calendar reads (migration 0060).
+      expect(
+        connection.sqls.single,
+        contains('INSERT INTO gamification.settled_day_seasons'),
+      );
+      expect(
+        connection.sqls.single,
+        contains('ON CONFLICT (day, season_id) DO NOTHING'),
+      );
       expect(connection.sqls.single, contains('RETURNING day'));
     });
 
