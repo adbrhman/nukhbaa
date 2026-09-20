@@ -31,6 +31,7 @@ final class CompositionRoot {
     required this.updateTimeZoneOffset,
     required this.getMyStreak,
     required this.getMyDailyChallenge,
+    required this.getMyWeeklyLeague,
     required this.resolveExperimentVariant,
     required this.setAvatar,
     required this.clearAvatar,
@@ -155,6 +156,7 @@ final class CompositionRoot {
     UpdateTimeZoneOffset? updateTimeZoneOffset,
     GetMyStreak? getMyStreak,
     GetMyDailyChallenge? getMyDailyChallenge,
+    GetMyWeeklyLeague? getMyWeeklyLeague,
     ResolveExperimentVariant? resolveExperimentVariant,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
@@ -253,6 +255,7 @@ final class CompositionRoot {
        getMyStreak = getMyStreak ?? _absentGetMyStreak(),
        getMyDailyChallenge =
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
+       getMyWeeklyLeague = getMyWeeklyLeague ?? _absentGetMyWeeklyLeague(),
        resolveExperimentVariant =
            resolveExperimentVariant ?? _absentResolveExperimentVariant(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
@@ -450,6 +453,17 @@ final class CompositionRoot {
         dailyChallenges: _UnwiredDailyChallengeRepository(),
         clock: _unwiredClock,
       );
+
+  /// Builds an "absent" [GetMyWeeklyLeague] over ports that throw if a test
+  /// reaches the weekly-league slice it never wired.
+  static GetMyWeeklyLeague _absentGetMyWeeklyLeague() => GetMyWeeklyLeague(
+    join: JoinWeeklyLeague(
+      leagues: _UnwiredWeeklyLeagueRepository(),
+      idGenerator: _unwiredIdGenerator,
+      clock: _unwiredClock,
+    ),
+    standings: _UnwiredWeeklyLeagueStandingsReader(),
+  );
 
   /// Builds an "absent" [ResolveExperimentVariant] over a repository that
   /// throws if a test reaches the experiment slice it never wired.
@@ -1036,6 +1050,11 @@ final class CompositionRoot {
   /// `GET /me/daily-challenge`). Computed per request over the caller's
   /// active seasons; nothing is stored.
   final GetMyDailyChallenge getMyDailyChallenge;
+
+  /// Reads the caller's own weekly-league group, ranked (backs
+  /// `GET /me/weekly-league`). Seats the caller on first sight; computed per
+  /// request from the one source of points, nothing weekly is stored.
+  final GetMyWeeklyLeague getMyWeeklyLeague;
 
   /// Decides which arm of a flagged experiment a user is in (P1-8).
   ///
@@ -1737,6 +1756,14 @@ final class CompositionRoot {
         dailyChallenges: PostgresDailyChallengeRepository(connection),
         clock: clock,
       ),
+      getMyWeeklyLeague: GetMyWeeklyLeague(
+        join: JoinWeeklyLeague(
+          leagues: PostgresWeeklyLeagueRepository(connection),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        standings: PostgresWeeklyLeagueStandingsReader(connection),
+      ),
       resolveExperimentVariant: ResolveExperimentVariant(
         experiments: PostgresExperimentRepository(connection),
       ),
@@ -2159,6 +2186,40 @@ final class _UnwiredDailyChallengeRepository
     required DateTime day,
   }) =>
       throw StateError('GetMyDailyChallenge was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
+/// weekly-league slice it never wired.
+final class _UnwiredWeeklyLeagueRepository implements WeeklyLeagueRepository {
+  @override
+  Future<Result<WeeklyLeagueSeat?>> seatFor({
+    required UserId userId,
+    required DateTime weekStart,
+  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
+
+  @override
+  Future<Result<WeeklyLeagueSeat>> place({
+    required UserId userId,
+    required DateTime weekStart,
+    required WeeklyLeagueTier tier,
+    required WeeklyLeagueId newLeagueId,
+    required int capacity,
+  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
+
+  @override
+  Future<Result<WeeklyLeagueFinish?>> lastFinishOf({required UserId userId}) =>
+      throw StateError('GetMyWeeklyLeague was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
+/// weekly-league standings it never wired.
+final class _UnwiredWeeklyLeagueStandingsReader
+    implements WeeklyLeagueStandingsReader {
+  @override
+  Future<Result<List<WeeklyLeagueEntry>>> entriesOf({
+    required WeeklyLeagueId leagueId,
+    required DateTime weekStart,
+  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
 }
 
 /// Backs an "absent" [ResolveExperimentVariant]: throws if a test reaches

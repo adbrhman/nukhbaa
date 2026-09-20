@@ -32,3 +32,4 @@ export 'src/participant_fixture_score_dto.dart';
 export 'src/prediction_dto.dart';
 export 'src/scoring_dto.dart';
 export 'src/social_dto.dart';
+export 'src/weekly_league_dto.dart';
