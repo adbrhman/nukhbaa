@@ -2764,6 +2764,60 @@ was already recorded is corrected by hand (record the result, then post to
 the ledger: compensating `correction` entries). Not covered: a provider that
 never corrects its figure.
 
+### Streak bonus (P1-4, 2026-09-19)
+
+Gamification adds no second points store. A streak bonus is a `streak_bonus`
+entry in `ledger.fixture_point_entries`, the append-only ledger that already
+holds fixture points (`user_points_summary`, P0-4, was cancelled).
+
+- **Ladder**: a run of 7 match days pays 5 points, 14 pays 10, 30 pays 20
+  (`StreakBonusPolicy`, domain).
+- **Once per participant per rung**: `source_ref = streak:<threshold>`, and a
+  partial unique index on `(participant_id, source_ref)` where
+  `entry_kind = 'streak_bonus'` (migration 0057) refuses a second one. A
+  participant belongs to one season, so this is once per rung per season.
+- **Eligibility is the CURRENT run, never the longest.** A rung is due when
+  `current >= threshold` and it has not been paid; `longest` is a record to
+  show, never a source of points. Accepted cost: a user who completes the
+  deciding day early and breaks the run before the next first-time submission
+  loses that rung.
+- **When**: `SubmitFixturePrediction`, on the first-time submission that
+  completes a Riyadh match day (`AwardStreakBonus`, application). Tier-3: a
+  failure never fails the prediction, and `ledger.already_posted` (a lost
+  race on the index) counts as paid. The run is read through `GetMyStreak`,
+  so the bonus counts it exactly as `GET /me/streak` shows it.
+- **Where it hangs**: the entry is stored against the fixture whose
+  prediction completed the day, so it counts in that fixture's day and month
+  boards. It is not part of that fixture's score: `PostFixtureToLedger`
+  ignores `streak_bonus` when it sums a fixture's entries.
+- **Boards**: the displayed standings never read the ledger, so three
+  aggregates add the bonus explicitly: `PostgresFixtureTotalsReader` (day and
+  month board), `PostgresSportingSeasonStandingsReader` (sporting-season
+  board) and the view `leaderboard.season_fixture_standings` (migration 0058;
+  rank snapshots and the personal season record). `hall_of_fame_standings` and
+  `season_standings_with_movement` are round-era views over
+  `ledger.point_entries`, unreachable since fixtures moved to seasons, and
+  were left alone.
+- **Migrations**: 0056 adds the enum value (its own transaction: Postgres
+  refuses to use a new enum value in the transaction that added it, SQLSTATE
+  55P04), 0057 adds the non-negative check and the unique index, 0058
+  replaces the standings view. Apply 0058 to the live database before
+  deploying the server code that reads it.
+- **Open**: at the time of writing the mobile ledger screen shows the raw
+  `streak_bonus` kind token; a label is not part of P1-4.
+
+Binding rules for the whole gamification plan (decided 2026-09-19):
+
+- `rule_version = 1`; no retroactive change to predictions made before
+  2026-09-05.
+- The Riyadh day (city time: neither UTC nor the user's own offset) is the
+  boundary of both the daily challenge and the streak.
+- The per-user UTC offset (migration 0055) is used only to time
+  notifications (quiet hours).
+- A day is complete when the participant has predicted every match of that
+  day; it does not become incomplete if a match is added later, and a day
+  without matches does not count.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
