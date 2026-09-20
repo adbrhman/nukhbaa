@@ -1,17 +1,12 @@
-import 'dart:async';
-
-import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:shared/shared.dart';
 
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
-import '../../core/providers.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
@@ -19,6 +14,7 @@ import '../competition/competition_providers.dart';
 import '../competition/team_catalog_index.dart';
 import '../competition/team_identity.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../gamification/daily_challenge_card.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'pending_predictions_provider.dart';
@@ -85,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
                 style: TextStyle(color: tokens.textSecondary),
               ),
               const SizedBox(height: 12),
-              const _StreakLine(),
+              DailyChallengeCard(onOpenMatches: onOpenMatches),
               const SizedBox(height: 18),
               _OverviewCard(
                 fixtures: fixtures,
@@ -118,92 +114,6 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-/// The caller's run of completed match days, or nothing at all.
-///
-/// Deliberately silent in three cases — still loading, the request failed,
-/// and a run of zero — because a home page is not the place to tell someone
-/// they have no streak. It appears when there is something to celebrate.
-///
-/// Fetched once per mount through [AuthApi] rather than a provider: the
-/// number changes only when a prediction completes a day, and a pull to
-/// refresh rebuilds this line with the rest of the page.
-class _StreakLine extends ConsumerStatefulWidget {
-  const _StreakLine();
-
-  @override
-  ConsumerState<_StreakLine> createState() => _StreakLineState();
-}
-
-class _StreakLineState extends ConsumerState<_StreakLine> {
-  MyStreakDto? _streak;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_load());
-  }
-
-  Future<void> _load() async {
-    final result = await ref.read(authApiProvider).myStreak();
-    if (!mounted) {
-      return;
-    }
-    if (result is Ok<MyStreakDto>) {
-      setState(() => _streak = result.value);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final streak = _streak;
-    if (streak == null || streak.current <= 0) {
-      return const SizedBox.shrink();
-    }
-    final tokens = context.tokens;
-    return Row(
-      key: const Key('home.streak'),
-      children: <Widget>[
-        Icon(
-          Icons.local_fire_department_rounded,
-          size: 18,
-          color: tokens.primary,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          _streakLabel(streak.current),
-          style: TextStyle(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
-        ),
-        if (streak.longest > streak.current) ...<Widget>[
-          const SizedBox(width: 8),
-          Text(
-            'الأطول ${streak.longest}',
-            style: TextStyle(color: tokens.textSecondary, fontSize: 12),
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// Arabic counts its own way: two has a dual form, three to ten take the
-  /// plural, and eleven upward takes the singular again.
-  static String _streakLabel(int days) {
-    if (days == 1) {
-      return 'سلسلتك: يوم واحد';
-    }
-    if (days == 2) {
-      return 'سلسلتك: يومان';
-    }
-    if (days <= 10) {
-      return 'سلسلتك: $days أيام';
-    }
-    return 'سلسلتك: $days يومًا';
   }
 }
 

@@ -729,5 +729,39 @@
   "rulesKnockout": "Knockout matches: the score after extra time counts when it is played; a match decided on penalties counts as a draw.",
   "rulesKnockoutExample": "Example: 1-1 after 120 minutes, then a shoot-out win → the result is 1-1, and picking either side to win scores nothing.",
   "accountRules": "How to play",
-  "adminResultRuleHint": "Enter the score after extra time when it was played, without shoot-out goals."
+  "adminResultRuleHint": "Enter the score after extra time when it was played, without shoot-out goals.",
+  "dailyChallengeTitle": "Today's challenge",
+  "dailyChallengeProgress": "{predicted} of {total}",
+  "@dailyChallengeProgress": {
+    "description": "How many of today's fixtures the reader has predicted.",
+    "placeholders": {
+      "predicted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyChallengeCta": "Predict every match of the day",
+  "dailyChallengeComplete": "Today is complete. Well played.",
+  "dailyChallengeEmpty": "No matches today.",
+  "streakBadgeLabel": "Streak: {days}",
+  "@streakBadgeLabel": {
+    "description": "The reader's run of completed match days, shown as a badge.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "streakLongestLabel": "Longest: {days}",
+  "@streakLongestLabel": {
+    "description": "The longest run of completed match days on record.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

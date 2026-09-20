@@ -1197,4 +1197,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminResultRuleHint =>
       'Enter the score after extra time when it was played, without shoot-out goals.';
+
+  @override
+  String get dailyChallengeTitle => 'Today\'s challenge';
+
+  @override
+  String dailyChallengeProgress(int predicted, int total) {
+    return '$predicted of $total';
+  }
+
+  @override
+  String get dailyChallengeCta => 'Predict every match of the day';
+
+  @override
+  String get dailyChallengeComplete => 'Today is complete. Well played.';
+
+  @override
+  String get dailyChallengeEmpty => 'No matches today.';
+
+  @override
+  String streakBadgeLabel(int days) {
+    return 'Streak: $days';
+  }
+
+  @override
+  String streakLongestLabel(int days) {
+    return 'Longest: $days';
+  }
 }

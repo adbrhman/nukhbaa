@@ -1206,4 +1206,31 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adminResultRuleHint =>
       'أدخل النتيجة بعد الأشواط الإضافية إن لُعبت، دون أهداف ركلات الترجيح.';
+
+  @override
+  String get dailyChallengeTitle => 'تحدي اليوم';
+
+  @override
+  String dailyChallengeProgress(int predicted, int total) {
+    return '$predicted من $total';
+  }
+
+  @override
+  String get dailyChallengeCta => 'توقّع كل مباريات اليوم';
+
+  @override
+  String get dailyChallengeComplete => 'أكملت مباريات اليوم. أحسنت.';
+
+  @override
+  String get dailyChallengeEmpty => 'لا مباريات اليوم.';
+
+  @override
+  String streakBadgeLabel(int days) {
+    return 'السلسلة: $days';
+  }
+
+  @override
+  String streakLongestLabel(int days) {
+    return 'الأطول: $days';
+  }
 }

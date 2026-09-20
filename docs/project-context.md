@@ -2916,6 +2916,38 @@ same question on demand, so the card and the event cannot disagree.
   the day two seasons overlap; changing the key of an append-only stream
   without a live reason is not free.
 
+### The daily challenge on screen (P1-7, 2026-09-20)
+
+`GET /me/daily-challenge` (P1-6) and `GET /me/streak` (P1-2) reach the home
+page as one card, `DailyChallengeCard`
+(`apps/mobile/lib/features/gamification/`), mounted under the greeting and
+above the overview card.
+
+- **One card, not two.** The old `_StreakLine` in `home_screen.dart` is gone:
+  a bare run of days without the day it belongs to said nothing, and two
+  gamification lines competing for the same corner said it twice. The streak
+  is now a badge on the card's title row.
+- **The home page, not the matches screen.** The matches screen is where the
+  day is played; repeating its own fixture count above it would be the same
+  list twice. The home page is the summary, and it already carries the
+  greeting, the overview and the pending-predictions card.
+- **Silent by default.** Nothing while it loads, nothing when either request
+  fails, and nothing on a rest day with no run to show (`total == 0 &&
+  current == 0`). A home page does not tell someone they have nothing.
+- **Fetched per mount, not through a provider.** Both numbers move only when a
+  prediction lands, and the page's pull-to-refresh rebuilds the card. No
+  `build_runner` step is added for this.
+- **No plural in the badge.** `streakBadgeLabel` reads "the streak: 12" with no
+  counted noun, because Arabic changes the noun past ten and a number in a
+  badge is understood without one. The progress line is "{predicted} of
+  {total}" for the same reason.
+- **l10n**: `dailyChallengeTitle`, `dailyChallengeProgress`,
+  `dailyChallengeCta`, `dailyChallengeComplete`, `dailyChallengeEmpty`,
+  `streakBadgeLabel`, `streakLongestLabel` in both ARBs. The generated
+  `app_localizations*.dart` are committed, so they are edited in the same
+  change.
+- **No migration, no server change.** Deployable with the app alone.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

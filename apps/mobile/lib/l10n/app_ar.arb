@@ -363,5 +363,12 @@
   "rulesKnockout": "مباريات خروج المغلوب: تُعتمد النتيجة بعد الأشواط الإضافية إن لُعبت، والمباراة المحسومة بركلات الترجيح تُعد تعادلاً.",
   "rulesKnockoutExample": "مثال: 1-1 بعد 120 دقيقة ثم فوز أحد الفريقين بالترجيح ← النتيجة المعتمدة 1-1، ومن توقّع فوز أي فريق لا ينال نقاطاً.",
   "accountRules": "قواعد اللعب",
-  "adminResultRuleHint": "أدخل النتيجة بعد الأشواط الإضافية إن لُعبت، دون أهداف ركلات الترجيح."
+  "adminResultRuleHint": "أدخل النتيجة بعد الأشواط الإضافية إن لُعبت، دون أهداف ركلات الترجيح.",
+  "dailyChallengeTitle": "تحدي اليوم",
+  "dailyChallengeProgress": "{predicted} من {total}",
+  "dailyChallengeCta": "توقّع كل مباريات اليوم",
+  "dailyChallengeComplete": "أكملت مباريات اليوم. أحسنت.",
+  "dailyChallengeEmpty": "لا مباريات اليوم.",
+  "streakBadgeLabel": "السلسلة: {days}",
+  "streakLongestLabel": "الأطول: {days}"
 }

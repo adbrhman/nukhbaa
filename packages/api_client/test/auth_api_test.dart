@@ -119,4 +119,46 @@ void main() {
       },
     );
   });
+
+  group('AuthApi.myDailyChallenge', () {
+    test('200 -> Ok(MyDailyChallengeDto), GET /me/daily-challenge', () async {
+      const expected = MyDailyChallengeDto(
+        day: '2026-09-20',
+        total: 3,
+        predicted: 2,
+        complete: false,
+      );
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).myDailyChallenge();
+
+      expect(result, const Result<MyDailyChallengeDto>.ok(expected));
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/daily-challenge');
+      expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+
+    test('a day with no fixtures parses as total 0, not an error', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(
+          const MyDailyChallengeDto(
+            day: '2026-09-21',
+            total: 0,
+            predicted: 0,
+            complete: false,
+          ).toJson(),
+        ),
+      );
+
+      final result = await AuthApi(ctx.transport).myDailyChallenge();
+
+      final value = (result as Ok<MyDailyChallengeDto>).value;
+      expect(value.total, 0);
+      expect(value.complete, isFalse);
+    });
+  });
 }

@@ -143,4 +143,17 @@ final class AuthApi {
       parse: MyStreakDto.fromJson,
     );
   }
+
+  /// `GET /me/daily-challenge` -- how much of today's match day the caller
+  /// has covered.
+  ///
+  /// Counts only: the day's fixtures already arrive with the season feed,
+  /// so a card that draws "2 of 3" never fetches them twice. The day is the
+  /// server's Riyadh day, never re-derived here.
+  Future<Result<MyDailyChallengeDto>> myDailyChallenge() {
+    return _transport.getObject<MyDailyChallengeDto>(
+      '/me/daily-challenge',
+      parse: MyDailyChallengeDto.fromJson,
+    );
+  }
 }

@@ -2183,6 +2183,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter the score after extra time when it was played, without shoot-out goals.'**
   String get adminResultRuleHint;
+
+  /// No description provided for @dailyChallengeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s challenge'**
+  String get dailyChallengeTitle;
+
+  /// How many of today's fixtures the reader has predicted.
+  ///
+  /// In en, this message translates to:
+  /// **'{predicted} of {total}'**
+  String dailyChallengeProgress(int predicted, int total);
+
+  /// No description provided for @dailyChallengeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict every match of the day'**
+  String get dailyChallengeCta;
+
+  /// No description provided for @dailyChallengeComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Today is complete. Well played.'**
+  String get dailyChallengeComplete;
+
+  /// No description provided for @dailyChallengeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches today.'**
+  String get dailyChallengeEmpty;
+
+  /// The reader's run of completed match days, shown as a badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak: {days}'**
+  String streakBadgeLabel(int days);
+
+  /// The longest run of completed match days on record.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest: {days}'**
+  String streakLongestLabel(int days);
 }
 
 class _AppLocalizationsDelegate
