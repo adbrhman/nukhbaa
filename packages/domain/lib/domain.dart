@@ -50,6 +50,7 @@ export 'src/gamification/gamification_event_type.dart';
 export 'src/gamification/streak_bonus_policy.dart';
 export 'src/gamification/streak_tally.dart';
 export 'src/gamification/variant_allocator.dart';
+export 'src/gamification/weekly_league_policy.dart';
 export 'src/identity/user_id.dart';
 export 'src/leaderboard/fixture_leaderboard.dart';
 export 'src/leaderboard/fixture_leaderboard_entry.dart';
