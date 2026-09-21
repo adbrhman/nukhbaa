@@ -1221,6 +1221,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get leaderboardScopeLeague => 'League';
+
+  @override
+  String get leaderboardSubtitleLeague => 'Climb a tier before the week ends';
+
+  @override
+  String get weeklyLeagueTierBronze => 'Bronze';
+
+  @override
+  String get weeklyLeagueTierSilver => 'Silver';
+
+  @override
+  String get weeklyLeagueTierGold => 'Gold';
+
+  @override
+  String get weeklyLeagueTierPlatinum => 'Platinum';
+
+  @override
+  String get weeklyLeagueTierElite => 'Elite';
+
+  @override
+  String weeklyLeagueGroup(int group) {
+    return 'Group $group';
+  }
+
+  @override
+  String weeklyLeaguePeriod(String start, String end) {
+    return '$start to $end';
+  }
+
+  @override
+  String weeklyLeaguePromotionZone(int count) {
+    return 'Top $count go up';
+  }
+
+  @override
+  String weeklyLeagueRelegationZone(int count) {
+    return 'Bottom $count go down';
+  }
+
+  @override
+  String get weeklyLeagueOutcomePromoted => 'Going up';
+
+  @override
+  String get weeklyLeagueOutcomeHeld => 'Staying';
+
+  @override
+  String get weeklyLeagueOutcomeRelegated => 'Going down';
+
+  @override
+  String get weeklyLeagueEmpty => 'Nobody is in your group yet.';
+
+  @override
+  String get weeklyLeagueUnnamedMember => 'Player';
+
+  @override
   String streakLongestLabel(int days) {
     return 'Longest: $days';
   }

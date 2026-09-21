@@ -2225,6 +2225,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longest: {days}'**
   String streakLongestLabel(int days);
+
+  /// The weekly-league pill on the leaderboards tab.
+  ///
+  /// In en, this message translates to:
+  /// **'League'**
+  String get leaderboardScopeLeague;
+
+  /// Subtitle of the leaderboards tab while the weekly league is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb a tier before the week ends'**
+  String get leaderboardSubtitleLeague;
+
+  /// Weekly league tier 1, the lowest rung.
+  ///
+  /// In en, this message translates to:
+  /// **'Bronze'**
+  String get weeklyLeagueTierBronze;
+
+  /// Weekly league tier 2.
+  ///
+  /// In en, this message translates to:
+  /// **'Silver'**
+  String get weeklyLeagueTierSilver;
+
+  /// Weekly league tier 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get weeklyLeagueTierGold;
+
+  /// Weekly league tier 4.
+  ///
+  /// In en, this message translates to:
+  /// **'Platinum'**
+  String get weeklyLeagueTierPlatinum;
+
+  /// Weekly league tier 5, the top rung.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite'**
+  String get weeklyLeagueTierElite;
+
+  /// The 1-based number of the caller's group within its tier.
+  ///
+  /// In en, this message translates to:
+  /// **'Group {group}'**
+  String weeklyLeagueGroup(int group);
+
+  /// The Monday-to-Sunday week of the weekly league, both days already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} to {end}'**
+  String weeklyLeaguePeriod(String start, String end);
+
+  /// How many places at the top of the group move up a tier.
+  ///
+  /// In en, this message translates to:
+  /// **'Top {count} go up'**
+  String weeklyLeaguePromotionZone(int count);
+
+  /// How many places at the bottom of the group move down a tier.
+  ///
+  /// In en, this message translates to:
+  /// **'Bottom {count} go down'**
+  String weeklyLeagueRelegationZone(int count);
+
+  /// A member currently inside the promotion zone.
+  ///
+  /// In en, this message translates to:
+  /// **'Going up'**
+  String get weeklyLeagueOutcomePromoted;
+
+  /// A member currently between the two zones.
+  ///
+  /// In en, this message translates to:
+  /// **'Staying'**
+  String get weeklyLeagueOutcomeHeld;
+
+  /// A member currently inside the relegation zone.
+  ///
+  /// In en, this message translates to:
+  /// **'Going down'**
+  String get weeklyLeagueOutcomeRelegated;
+
+  /// Shown when the weekly-league group has no lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is in your group yet.'**
+  String get weeklyLeagueEmpty;
+
+  /// Name drawn for a weekly-league member the server holds no profile for.
+  ///
+  /// In en, this message translates to:
+  /// **'Player'**
+  String get weeklyLeagueUnnamedMember;
 }
 
 class _AppLocalizationsDelegate

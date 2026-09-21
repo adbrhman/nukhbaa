@@ -115,3 +115,15 @@ final sportingSeasonLeaderboardProvider =
       final api = ref.watch(leaderboardsApiProvider);
       return _unwrap(await api.sportingSeasonLeaderboard());
     });
+
+/// `GET /me/weekly-league` -- the caller's own group for the Riyadh week
+/// that is open now, ranked by the server.
+///
+/// The first read of a week seats the caller (the server places them
+/// lazily), so this is only watched while the league board is on screen.
+final myWeeklyLeagueProvider = FutureProvider.autoDispose<MyWeeklyLeagueDto>((
+  ref,
+) async {
+  final api = ref.watch(authApiProvider);
+  return _unwrap(await api.myWeeklyLeague());
+});

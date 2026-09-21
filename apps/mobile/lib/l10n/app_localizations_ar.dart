@@ -1230,6 +1230,62 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get leaderboardScopeLeague => 'الدوري';
+
+  @override
+  String get leaderboardSubtitleLeague => 'اصعد طبقة قبل نهاية الأسبوع';
+
+  @override
+  String get weeklyLeagueTierBronze => 'برونزي';
+
+  @override
+  String get weeklyLeagueTierSilver => 'فضي';
+
+  @override
+  String get weeklyLeagueTierGold => 'ذهبي';
+
+  @override
+  String get weeklyLeagueTierPlatinum => 'بلاتيني';
+
+  @override
+  String get weeklyLeagueTierElite => 'نخبة';
+
+  @override
+  String weeklyLeagueGroup(int group) {
+    return 'المجموعة $group';
+  }
+
+  @override
+  String weeklyLeaguePeriod(String start, String end) {
+    return 'من $start إلى $end';
+  }
+
+  @override
+  String weeklyLeaguePromotionZone(int count) {
+    return 'يصعد أول $count';
+  }
+
+  @override
+  String weeklyLeagueRelegationZone(int count) {
+    return 'يهبط آخر $count';
+  }
+
+  @override
+  String get weeklyLeagueOutcomePromoted => 'صاعد';
+
+  @override
+  String get weeklyLeagueOutcomeHeld => 'باقٍ';
+
+  @override
+  String get weeklyLeagueOutcomeRelegated => 'هابط';
+
+  @override
+  String get weeklyLeagueEmpty => 'لا أحد في مجموعتك بعد.';
+
+  @override
+  String get weeklyLeagueUnnamedMember => 'لاعب';
+
+  @override
   String streakLongestLabel(int days) {
     return 'الأطول: $days';
   }

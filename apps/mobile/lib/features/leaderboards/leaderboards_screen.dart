@@ -14,6 +14,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import 'leaderboards_providers.dart';
 import 'widgets/fixture_standings_board.dart';
 import 'widgets/sporting_season_standings_board.dart';
+import 'widgets/weekly_league_board.dart';
 
 /// What the leaderboard tab ranks.
 enum LeaderboardScope {
@@ -25,6 +26,9 @@ enum LeaderboardScope {
 
   /// The sporting season, September to August, summed per user.
   season,
+
+  /// The caller's weekly-league group for the Riyadh week open now.
+  league,
 }
 
 /// The bottom-tab leaderboard surface.
@@ -194,6 +198,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       LeaderboardScope.month => l10n.leaderboardSubtitleMonth,
       LeaderboardScope.day => l10n.leaderboardSubtitleDay,
       LeaderboardScope.season => l10n.leaderboardSubtitleSeason,
+      LeaderboardScope.league => l10n.leaderboardSubtitleLeague,
     };
     final String period = switch (_scope) {
       LeaderboardScope.month => widget.season.seasonLabel,
@@ -201,6 +206,16 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         'EEEE d MMMM yyyy',
         locale,
       ).format(_day),
+      LeaderboardScope.league => switch (ref
+          .watch(myWeeklyLeagueProvider)
+          .value) {
+        final MyWeeklyLeagueDto league => weeklyLeaguePeriodLabel(
+          l10n,
+          league,
+          locale,
+        ),
+        null => l10n.leaderboardScopeLeague,
+      },
       LeaderboardScope.season =>
         ref.watch(sportingSeasonLeaderboardProvider).value?.label ?? '—',
     };
@@ -220,6 +235,12 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         showHeader: true,
         day: _day,
         emptyMessage: l10n.leaderboardDayEmpty,
+      ),
+      LeaderboardScope.league => WeeklyLeagueBoard(
+        key: const ValueKey<String>('leaderboards.board.league'),
+        keyPrefix: 'leaderboards.league',
+        myUserId: widget.userId,
+        showHeader: true,
       ),
       LeaderboardScope.season => SportingSeasonStandingsBoard(
         key: const ValueKey<String>('leaderboards.board.season'),
@@ -271,6 +292,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
                 l10n.leaderboardScopeMonth,
                 l10n.leaderboardScopeDay,
                 l10n.leaderboardScopeSeason,
+                l10n.leaderboardScopeLeague,
               ],
               selectedIndex: _scope.index,
               onSelected: (index) =>

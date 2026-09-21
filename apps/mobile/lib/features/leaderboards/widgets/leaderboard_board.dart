@@ -25,6 +25,8 @@ class BoardEntry {
     this.movement,
     this.accuracyLabel,
     this.avatarUrl,
+    this.outcome,
+    this.outcomeLabel,
   });
 
   final String participantId;
@@ -36,6 +38,27 @@ class BoardEntry {
   final int? movement;
   final String? accuracyLabel;
   final String? avatarUrl;
+
+  /// Where the week would leave this line if it closed now, as the server
+  /// projected it (weekly league only). Null on every other board, which
+  /// keeps its movement arrows.
+  final BoardOutcome? outcome;
+
+  /// The words for [outcome], read out by the mark's tooltip.
+  final String? outcomeLabel;
+}
+
+/// A weekly-league line's projected result, drawn from the server's
+/// `projected_outcome`; the board never decides it.
+enum BoardOutcome {
+  /// Inside the promotion zone.
+  promoted,
+
+  /// Between the zones.
+  held,
+
+  /// Inside the relegation zone.
+  relegated,
 }
 
 class LeaderboardBoard extends StatelessWidget {
@@ -356,6 +379,10 @@ class _PodiumTile extends StatelessWidget {
                       color: t.textMuted,
                     ),
                   ),
+                if (entry.outcome != null) ...<Widget>[
+                  const SizedBox(height: 2),
+                  _OutcomeMark(entry: entry, keyPrefix: keyPrefix),
+                ],
               ],
             ),
           ),
@@ -633,11 +660,13 @@ class _BoardRow extends StatelessWidget {
           ),
           SizedBox(
             width: 30,
-            child: _MovementChip(
-              movement: entry.movement,
-              keyPrefix: keyPrefix,
-              participantId: entry.participantId,
-            ),
+            child: entry.outcome != null
+                ? _OutcomeMark(entry: entry, keyPrefix: keyPrefix)
+                : _MovementChip(
+                    movement: entry.movement,
+                    keyPrefix: keyPrefix,
+                    participantId: entry.participantId,
+                  ),
           ),
         ],
       ),
@@ -686,6 +715,37 @@ class _MovementChip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The weekly-league mark in the movement column: an up arrow inside the
+/// promotion zone, a down arrow inside the relegation zone, a dash between.
+class _OutcomeMark extends StatelessWidget {
+  const _OutcomeMark({required this.entry, required this.keyPrefix});
+
+  final BoardEntry entry;
+  final String keyPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final (IconData icon, Color color) = switch (entry.outcome) {
+      BoardOutcome.promoted => (Icons.arrow_upward_rounded, t.success),
+      BoardOutcome.relegated => (Icons.arrow_downward_rounded, t.error),
+      _ => (Icons.remove_rounded, t.textMuted),
+    };
+    final Widget mark = Icon(
+      icon,
+      key: Key(
+        '$keyPrefix.outcome.${entry.participantId}.${entry.outcome?.name}',
+      ),
+      size: 16,
+      color: color,
+    );
+    final String? label = entry.outcomeLabel;
+    return Center(
+      child: label == null ? mark : Tooltip(message: label, child: mark),
     );
   }
 }

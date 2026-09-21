@@ -755,6 +755,93 @@
       }
     }
   },
+  "leaderboardScopeLeague": "League",
+  "@leaderboardScopeLeague": {
+    "description": "The weekly-league pill on the leaderboards tab."
+  },
+  "leaderboardSubtitleLeague": "Climb a tier before the week ends",
+  "@leaderboardSubtitleLeague": {
+    "description": "Subtitle of the leaderboards tab while the weekly league is shown."
+  },
+  "weeklyLeagueTierBronze": "Bronze",
+  "@weeklyLeagueTierBronze": {
+    "description": "Weekly league tier 1, the lowest rung."
+  },
+  "weeklyLeagueTierSilver": "Silver",
+  "@weeklyLeagueTierSilver": {
+    "description": "Weekly league tier 2."
+  },
+  "weeklyLeagueTierGold": "Gold",
+  "@weeklyLeagueTierGold": {
+    "description": "Weekly league tier 3."
+  },
+  "weeklyLeagueTierPlatinum": "Platinum",
+  "@weeklyLeagueTierPlatinum": {
+    "description": "Weekly league tier 4."
+  },
+  "weeklyLeagueTierElite": "Elite",
+  "@weeklyLeagueTierElite": {
+    "description": "Weekly league tier 5, the top rung."
+  },
+  "weeklyLeagueGroup": "Group {group}",
+  "@weeklyLeagueGroup": {
+    "description": "The 1-based number of the caller's group within its tier.",
+    "placeholders": {
+      "group": {
+        "type": "int"
+      }
+    }
+  },
+  "weeklyLeaguePeriod": "{start} to {end}",
+  "@weeklyLeaguePeriod": {
+    "description": "The Monday-to-Sunday week of the weekly league, both days already formatted.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "weeklyLeaguePromotionZone": "Top {count} go up",
+  "@weeklyLeaguePromotionZone": {
+    "description": "How many places at the top of the group move up a tier.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weeklyLeagueRelegationZone": "Bottom {count} go down",
+  "@weeklyLeagueRelegationZone": {
+    "description": "How many places at the bottom of the group move down a tier.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weeklyLeagueOutcomePromoted": "Going up",
+  "@weeklyLeagueOutcomePromoted": {
+    "description": "A member currently inside the promotion zone."
+  },
+  "weeklyLeagueOutcomeHeld": "Staying",
+  "@weeklyLeagueOutcomeHeld": {
+    "description": "A member currently between the two zones."
+  },
+  "weeklyLeagueOutcomeRelegated": "Going down",
+  "@weeklyLeagueOutcomeRelegated": {
+    "description": "A member currently inside the relegation zone."
+  },
+  "weeklyLeagueEmpty": "Nobody is in your group yet.",
+  "@weeklyLeagueEmpty": {
+    "description": "Shown when the weekly-league group has no lines."
+  },
+  "weeklyLeagueUnnamedMember": "Player",
+  "@weeklyLeagueUnnamedMember": {
+    "description": "Name drawn for a weekly-league member the server holds no profile for."
+  },
   "streakLongestLabel": "Longest: {days}",
   "@streakLongestLabel": {
     "description": "The longest run of completed match days on record.",
