@@ -10,13 +10,21 @@ import 'package:shared/shared.dart';
 /// whole purpose is a push and which therefore skip device-less users.
 final class AnnouncementRecipient {
   /// Creates a recipient.
-  const AnnouncementRecipient({required this.userId, required this.tokens});
+  const AnnouncementRecipient({
+    required this.userId,
+    required this.tokens,
+    this.utcOffsetMinutes,
+  });
 
   /// The user who receives the notification.
   final UserId userId;
 
   /// Their registered FCM tokens; empty when they have no device on file.
   final List<String> tokens;
+
+  /// Minutes the user's clock is ahead of UTC, as the app last reported it,
+  /// or null if it never did. Read by `QuietHours` (P3-2) and nothing else.
+  final int? utcOffsetMinutes;
 }
 
 /// Persistence port for admin announcements (migration 0043).

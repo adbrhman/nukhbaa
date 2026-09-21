@@ -6,6 +6,11 @@ import 'package:test/test.dart';
 import 'fakes.dart';
 
 final class _FakeAnnouncements implements ScoreAnnouncementRepository {
+  _FakeAnnouncements({this.utcOffsetMinutes});
+
+  /// The clock the fake target reports; null: it never reported one.
+  final int? utcOffsetMinutes;
+
   List<ParticipantId> asked = const <ParticipantId>[];
 
   @override
@@ -19,6 +24,7 @@ final class _FakeAnnouncements implements ScoreAnnouncementRepository {
             (ParticipantId.tryParse(uuidB) as Ok<ParticipantId>).value,
         userId: (UserId.tryParse(uuidD) as Ok<UserId>).value,
         tokens: const <String>['token-1'],
+        utcOffsetMinutes: utcOffsetMinutes,
       ),
     ]);
   }
@@ -42,6 +48,23 @@ final class _FakeSender implements PushSender {
     bodies.add(body);
     return const Result.ok(<String>[]);
   }
+}
+
+/// A [NotificationQueue] that records what it was asked to hold.
+final class _FakeQueue implements NotificationQueue {
+  final List<PushToQueue> queued = <PushToQueue>[];
+
+  @override
+  Future<Result<void>> enqueue(List<PushToQueue> pushes) async {
+    queued.addAll(pushes);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<QueuedPush>>> claimDue({
+    required DateTime now,
+    required int limit,
+  }) => throw StateError('the notifier never claims');
 }
 
 ParticipantFixtureScore _score({
@@ -68,12 +91,14 @@ void main() {
   late _FakeAnnouncements announcements;
   late _FakeSender sender;
   late InMemoryNotificationRepository notifications;
+  late _FakeQueue queue;
   late NotifyFixtureWinners useCase;
 
   setUp(() {
     announcements = _FakeAnnouncements();
     sender = _FakeSender();
     notifications = InMemoryNotificationRepository();
+    queue = _FakeQueue();
     useCase = NotifyFixtureWinners(
       announcements: announcements,
       sender: sender,
@@ -85,8 +110,29 @@ void main() {
         ]),
         clock: FakeClock(DateTime.utc(2026, 9, 12, 18)),
       ),
+      queue: queue,
+      idGenerator: FakeIdGenerator(<String>[uuidA]),
+      clock: FakeClock(DateTime.utc(2026, 9, 12, 18)),
     );
   });
+
+  // Builds the use-case at [now], for a target whose clock is [offset].
+  NotifyFixtureWinners useCaseAt(DateTime now, {int? offset}) {
+    return NotifyFixtureWinners(
+      announcements: _FakeAnnouncements(utcOffsetMinutes: offset),
+      sender: sender,
+      create: CreateNotification(
+        notifications: notifications,
+        idGenerator: FakeIdGenerator(<String>[
+          '55555555-5555-4555-8555-000000000003',
+        ]),
+        clock: FakeClock(now),
+      ),
+      queue: queue,
+      idGenerator: FakeIdGenerator(<String>[uuidA]),
+      clock: FakeClock(now),
+    );
+  }
 
   FixtureRef fixture() => (FixtureRef.tryParse(uuidA) as Ok<FixtureRef>).value;
 
@@ -113,6 +159,7 @@ void main() {
     expect(announcements.asked.first.value, uuidB);
     expect(sender.titles.single, NotifyFixtureWinners.exactTitle);
     expect(sender.bodies.single, contains('+3'));
+    expect(queue.queued, isEmpty);
   });
 
   test('a doubled hit gets its own title and its 6 points', () async {
@@ -165,5 +212,56 @@ void main() {
 
     expect((r as Ok<int>).value, 0);
     expect(sender.titles, isEmpty);
+  });
+
+  group('quiet hours', () {
+    final exactHit = <ParticipantFixtureScore>[
+      _score(
+        participantId: uuidB,
+        grade: FixtureScoreGrade.exactScoreline,
+        points: 3,
+      ),
+    ];
+
+    test('a winner in their quiet hours is queued until 08:00', () async {
+      // 21:00 UTC is 00:00 in Riyadh, and the target never reported a clock.
+      final r = await useCaseAt(DateTime.utc(2026, 9, 12, 21))(
+        fixture: fixture(),
+        scores: exactHit,
+      );
+
+      expect((r as Ok<int>).value, 1);
+      expect(sender.titles, isEmpty);
+      expect(notifications.countFor(uuidD), 1);
+      final push = queue.queued.single;
+      expect(push.id, uuidA);
+      expect(push.userId.value, uuidD);
+      expect(push.title, NotifyFixtureWinners.exactTitle);
+      expect(push.body, contains('+3'));
+      expect(push.deliverAfter, DateTime.utc(2026, 9, 13, 5));
+    });
+
+    test('the reported clock decides, not Riyadh', () async {
+      // 18:00 UTC is 21:00 in Riyadh (awake) but 02:00 at UTC+8 (quiet).
+      final r = await useCaseAt(DateTime.utc(2026, 9, 12, 18), offset: 480)(
+        fixture: fixture(),
+        scores: exactHit,
+      );
+
+      expect((r as Ok<int>).value, 1);
+      expect(sender.titles, isEmpty);
+      expect(queue.queued.single.deliverAfter, DateTime.utc(2026, 9, 13));
+    });
+
+    test('a winner who is awake is pushed at once, not queued', () async {
+      final r = await useCaseAt(DateTime.utc(2026, 9, 12, 12))(
+        fixture: fixture(),
+        scores: exactHit,
+      );
+
+      expect((r as Ok<int>).value, 1);
+      expect(sender.titles, hasLength(1));
+      expect(queue.queued, isEmpty);
+    });
   });
 }

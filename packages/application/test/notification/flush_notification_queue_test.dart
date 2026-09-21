@@ -26,6 +26,10 @@ final class _FakeQueue implements NotificationQueue {
   final List<(DateTime, int)> claims = [];
 
   @override
+  Future<Result<void>> enqueue(List<PushToQueue> pushes) =>
+      throw StateError('the flush job never enqueues');
+
+  @override
   Future<Result<List<QueuedPush>>> claimDue({
     required DateTime now,
     required int limit,

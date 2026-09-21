@@ -1,4 +1,5 @@
 import 'package:application/application.dart';
+import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:infrastructure/src/notification/postgres_notification_queue.dart';
 import 'package:shared/shared.dart';
@@ -52,6 +53,63 @@ Map<String, dynamic> _row(String id, String user, String? token) => {
 /// parameters. That the claim really is exclusive under two sweeps is a
 /// property of FOR UPDATE SKIP LOCKED, checked by hand on the live database.
 void main() {
+  group('enqueue', () {
+    UserId user(String raw) => (UserId.tryParse(raw) as Ok<UserId>).value;
+    final at = DateTime.utc(2026, 9, 24, 5);
+
+    PushToQueue push(String id, String userId, String title) => PushToQueue(
+      id: id,
+      userId: user(userId),
+      title: title,
+      body: 'body $title',
+      deliverAfter: at,
+    );
+
+    test('inserts one row per push, keyed on its id', () async {
+      final connection = _FakeConnection(const Result.ok([]));
+
+      final result = await PostgresNotificationQueue(connection).enqueue([
+        push(_p1, _userA, 't'),
+        push(_p2, _userB, 't2'),
+      ]);
+
+      expect(result, isA<Ok<void>>());
+      expect(connection.sqls, hasLength(2));
+      expect(connection.sqls.first, contains('ON CONFLICT (id) DO NOTHING'));
+      expect(connection.parameters.first, {
+        'id': _p1,
+        'user_id': _userA,
+        'title': 't',
+        'body': 'body t',
+        'deliver_after': at,
+      });
+      expect(connection.parameters.last['user_id'], _userB);
+    });
+
+    test('nothing to queue runs no statement', () async {
+      final connection = _FakeConnection(const Result.ok([]));
+
+      final result = await PostgresNotificationQueue(connection).enqueue([]);
+
+      expect(result, isA<Ok<void>>());
+      expect(connection.sqls, isEmpty);
+    });
+
+    test('a driver failure stops at the first push', () async {
+      final connection = _FakeConnection(
+        const Result.err(AppError.transient('db.down', 'down')),
+      );
+
+      final result = await PostgresNotificationQueue(connection).enqueue([
+        push(_p1, _userA, 't'),
+        push(_p2, _userB, 't2'),
+      ]);
+
+      expect((result as Err<void>).error.code, 'db.down');
+      expect(connection.sqls, hasLength(1));
+    });
+  });
+
   group('claimDue', () {
     test('claims in one statement and groups tokens per push', () async {
       final now = DateTime.utc(2026, 9, 24, 5);

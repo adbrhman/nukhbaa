@@ -1,4 +1,7 @@
+import 'package:application/src/common/clock.dart';
+import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/notification/create_notification.dart';
+import 'package:application/src/notification/ports/notification_queue.dart';
 import 'package:application/src/notification/ports/push_sender.dart';
 import 'package:application/src/notification/ports/score_announcement_repository.dart';
 import 'package:domain/domain.dart';
@@ -20,20 +23,35 @@ import 'package:shared/shared.dart';
 /// [Result.err] that the caller ([ScoreFixture]) drops on the floor: points
 /// are Tier-1 and must never fail because a phone was unreachable.
 ///
-/// Returns the number of users actually pushed to.
+/// **Quiet hours (P3-2c):** a winner whose own clock reads 23:00 to 08:00
+/// ([QuietHours]) still gets the in-app notification at once, but the push is
+/// queued for 08:00 there instead of ringing in the night. The queue is
+/// best effort like the send: if it cannot take the push, that push is lost
+/// and the fixture's other winners are unaffected.
+///
+/// Returns the number of users pushed to, or queued to be pushed to.
 final class NotifyFixtureWinners {
   /// Creates the use-case over its collaborators.
   const NotifyFixtureWinners({
     required ScoreAnnouncementRepository announcements,
     required PushSender sender,
     required CreateNotification create,
+    required NotificationQueue queue,
+    required IdGenerator idGenerator,
+    required Clock clock,
   }) : _announcements = announcements,
        _sender = sender,
-       _create = create;
+       _create = create,
+       _queue = queue,
+       _idGenerator = idGenerator,
+       _clock = clock;
 
   final ScoreAnnouncementRepository _announcements;
   final PushSender _sender;
   final CreateNotification _create;
+  final NotificationQueue _queue;
+  final IdGenerator _idGenerator;
+  final Clock _clock;
 
   /// The title of an ordinary exact hit.
   static const String exactTitle = 'توقع مطابق 🎯';
@@ -73,6 +91,7 @@ final class NotifyFixtureWinners {
     final labelResult = await _announcements.matchLabel(fixture);
     final String? label = labelResult is Ok<String?> ? labelResult.value : null;
 
+    final DateTime now = _clock.nowUtc();
     var pushed = 0;
     for (final target in targets) {
       final score = winners[target.participantId];
@@ -94,10 +113,34 @@ final class NotifyFixtureWinners {
         continue;
       }
 
+      final String title = score.points >= _doubleFrom
+          ? doubleTitle
+          : exactTitle;
+      final String body = _body(points: score.points, label: label);
+
+      if (QuietHours.covers(now, utcOffsetMinutes: target.utcOffsetMinutes)) {
+        final queued = await _queue.enqueue(<PushToQueue>[
+          PushToQueue(
+            id: _idGenerator.newUuid(),
+            userId: target.userId,
+            title: title,
+            body: body,
+            deliverAfter: QuietHours.endsAt(
+              now,
+              utcOffsetMinutes: target.utcOffsetMinutes,
+            ),
+          ),
+        ]);
+        if (queued is Ok<void>) {
+          pushed++;
+        }
+        continue;
+      }
+
       final sent = await _sender.send(
         tokens: target.tokens,
-        title: score.points >= _doubleFrom ? doubleTitle : exactTitle,
-        body: _body(points: score.points, label: label),
+        title: title,
+        body: body,
       );
       if (sent is Ok<List<String>>) {
         pushed++;

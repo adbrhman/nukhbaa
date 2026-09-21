@@ -4,8 +4,9 @@ import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:shared/shared.dart';
 
 /// Postgres-backed [ScoreAnnouncementRepository] over
-/// `competition.participants`, `notification.device_tokens` (migration 0039)
-/// and `competition.fixture_schedules` (migration 0012).
+/// `competition.participants`, `notification.device_tokens` (migration 0039),
+/// `identity.users` (the reader's clock, migration 0055) and
+/// `competition.fixture_schedules` (migration 0012).
 ///
 /// Total (Application ADR SS2): never throws, binds every value through a
 /// `@named` parameter, and speaks only in domain types.
@@ -23,9 +24,11 @@ final class PostgresScoreAnnouncementRepository
   static const String _targetsSql = '''
 SELECT p.id::text AS participant_id,
        p.user_id::text AS user_id,
-       dt.token AS token
+       dt.token AS token,
+       u.utc_offset_minutes AS utc_offset_minutes
 FROM competition.participants p
 JOIN notification.device_tokens dt ON dt.user_id = p.user_id
+JOIN identity.users u ON u.id = p.user_id
 WHERE p.id::text = ANY(string_to_array(@participant_ids, ','))
 ORDER BY p.id
 ''';
@@ -60,14 +63,17 @@ WHERE fixture_id = @fixture_id
   Result<List<ScoreNoticeTarget>> _targets(List<Map<String, dynamic>> rows) {
     final tokensByParticipant = <String, List<String>>{};
     final userByParticipant = <String, String>{};
+    final offsetByParticipant = <String, int?>{};
     for (final row in rows) {
       final participantId = row['participant_id'];
       final userId = row['user_id'];
       final token = row['token'];
+      final offset = row['utc_offset_minutes'];
       if (participantId is! String || userId is! String || token is! String) {
         continue;
       }
       userByParticipant[participantId] = userId;
+      offsetByParticipant[participantId] = offset is int ? offset : null;
       tokensByParticipant
           .putIfAbsent(participantId, () => <String>[])
           .add(token);
@@ -85,6 +91,7 @@ WHERE fixture_id = @fixture_id
           participantId: participant.value,
           userId: user.value,
           tokens: List<String>.unmodifiable(entry.value),
+          utcOffsetMinutes: offsetByParticipant[entry.key],
         ),
       );
     }

@@ -32,4 +32,28 @@ final class QuietHours {
     final int minute = local.hour * 60 + local.minute;
     return minute >= startMinute || minute < endMinute;
   }
+
+  /// The next 08:00 on the clock of a reader whose offset is
+  /// [utcOffsetMinutes] (null: [fallbackOffsetMinutes]), as a UTC instant:
+  /// the moment the quiet hours that cover [instant] end, and the earliest a
+  /// push held back from [instant] may go out.
+  ///
+  /// Before 08:00 local that is this morning; from 08:00 on it is tomorrow's,
+  /// so the answer is always after [instant]. Outside the quiet hours nothing
+  /// needs holding back, and callers check [covers] first.
+  static DateTime endsAt(DateTime instant, {int? utcOffsetMinutes}) {
+    final Duration offset = Duration(
+      minutes: utcOffsetMinutes ?? fallbackOffsetMinutes,
+    );
+    final DateTime local = instant.toUtc().add(offset);
+    final int minute = local.hour * 60 + local.minute;
+    final int days = minute < endMinute ? 0 : 1;
+    return DateTime.utc(
+      local.year,
+      local.month,
+      local.day + days,
+      endMinute ~/ 60,
+      endMinute % 60,
+    ).subtract(offset);
+  }
 }

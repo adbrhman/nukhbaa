@@ -994,6 +994,7 @@ final class CompositionRoot {
         sender: const NoopPushSender(),
         idGenerator: _unwiredIdGenerator,
         clock: _unwiredClock,
+        queue: _UnwiredNotificationQueue(),
       );
 
   static GetUnreadCount _absentGetUnreadCount() =>
@@ -1703,6 +1704,9 @@ final class CompositionRoot {
         const NoopPushSender();
     final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
     final announcementRepository = PostgresAnnouncementRepository(connection);
+    // The one deferred-push queue: the exact-hit announcement and the admin
+    // broadcast fill it in quiet hours, the flush sweep empties it.
+    final notificationQueue = PostgresNotificationQueue(connection);
 
     // Admin slice (phase 11). The ONE new stored surface is the append-only
     // `admin.audit_log` (migration 0010); the user sanction toggles the
@@ -1877,7 +1881,7 @@ final class CompositionRoot {
         preferences: PostgresNotificationPreferenceRepository(connection),
       ),
       flushNotificationQueue: FlushNotificationQueue(
-        queue: PostgresNotificationQueue(connection),
+        queue: notificationQueue,
         sender: pushSender,
       ),
       ensureUpcomingMonthlySeasons: EnsureUpcomingMonthlySeasons(
@@ -2027,6 +2031,9 @@ final class CompositionRoot {
             idGenerator: idGenerator,
             clock: clock,
           ),
+          queue: notificationQueue,
+          idGenerator: idGenerator,
+          clock: clock,
         ),
       ),
       adminGetParticipantDisplayNames: AdminGetParticipantDisplayNames(
@@ -2154,6 +2161,7 @@ final class CompositionRoot {
         sender: pushSender,
         idGenerator: idGenerator,
         clock: clock,
+        queue: notificationQueue,
       ),
       getUnreadCount: GetUnreadCount(notifications: notificationRepository),
       markNotificationRead: MarkNotificationRead(
@@ -3081,6 +3089,10 @@ final class _UnwiredNotificationPreferenceRepository
 
 /// Refuses every call: see [_absentFlushNotificationQueue].
 final class _UnwiredNotificationQueue implements NotificationQueue {
+  @override
+  Future<Result<void>> enqueue(List<PushToQueue> pushes) =>
+      throw StateError('The notification queue was not wired into this root');
+
   @override
   Future<Result<List<QueuedPush>>> claimDue({
     required DateTime now,

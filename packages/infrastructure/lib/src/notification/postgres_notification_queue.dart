@@ -13,6 +13,15 @@ final class PostgresNotificationQueue implements NotificationQueue {
 
   final PostgresConnection _connection;
 
+  // One row per push. The id is the caller's, so a repeated enqueue of the
+  // same push is skipped rather than doubled.
+  static const String _enqueueSql = '''
+INSERT INTO notification.notification_queue
+  (id, user_id, title, body, deliver_after)
+VALUES (@id, @user_id, @title, @body, @deliver_after)
+ON CONFLICT (id) DO NOTHING
+''';
+
   // One statement claims and reads: the UPDATE sets sent_at on the oldest
   // waiting rows that are due, skipping any row another sweep holds, and the
   // outer SELECT joins the users' devices as they are now. One row per
@@ -43,6 +52,26 @@ FROM claimed c
 LEFT JOIN notification.device_tokens dt ON dt.user_id = c.user_id
 ORDER BY c.deliver_after, c.id, dt.token
 ''';
+
+  @override
+  Future<Result<void>> enqueue(List<PushToQueue> pushes) async {
+    for (final push in pushes) {
+      final result = await _connection.query(
+        _enqueueSql,
+        parameters: {
+          'id': push.id,
+          'user_id': push.userId.value,
+          'title': push.title,
+          'body': push.body,
+          'deliver_after': push.deliverAfter.toUtc(),
+        },
+      );
+      if (result is Err<List<Map<String, dynamic>>>) {
+        return Result.err(result.error);
+      }
+    }
+    return const Result.ok(null);
+  }
 
   @override
   Future<Result<List<QueuedPush>>> claimDue({

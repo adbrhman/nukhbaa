@@ -3,6 +3,7 @@ import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/notification/create_notification.dart';
 import 'package:application/src/notification/ports/announcement_repository.dart';
+import 'package:application/src/notification/ports/notification_queue.dart';
 import 'package:application/src/notification/ports/push_sender.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -22,11 +23,13 @@ import 'package:shared/shared.dart';
 /// 3. fan out one idempotent [CreateNotification] per recipient, keyed on the
 ///    announcement id, so a retried publish of the SAME announcement never
 ///    doubles a user's inbox;
-/// 4. push to every device of the users who actually received a new row.
+/// 4. push to every device of the users who actually received a new row --
+///    except those in their quiet hours ([QuietHours], P3-2c), whose push is
+///    queued for 08:00 on their own clock instead of ringing in the night.
 ///
 /// Step 4 is **best effort**: an unreachable phone must never fail a publish
-/// that already landed in every inbox, so push failures are dropped and the
-/// use-case still answers `Ok`.
+/// that already landed in every inbox, so push and queue failures are dropped
+/// and the use-case still answers `Ok`.
 ///
 /// Returns the number of users whose inbox gained a new notification.
 final class PublishAnnouncement {
@@ -37,17 +40,20 @@ final class PublishAnnouncement {
     required PushSender sender,
     required IdGenerator idGenerator,
     required Clock clock,
+    required NotificationQueue queue,
   }) : _announcements = announcements,
        _create = create,
        _sender = sender,
        _idGenerator = idGenerator,
-       _clock = clock;
+       _clock = clock,
+       _queue = queue;
 
   final AnnouncementRepository _announcements;
   final CreateNotification _create;
   final PushSender _sender;
   final IdGenerator _idGenerator;
   final Clock _clock;
+  final NotificationQueue _queue;
 
   /// Publishes [title]/[body] on behalf of admin [principal].
   Future<Result<int>> call({
@@ -66,12 +72,13 @@ final class PublishAnnouncement {
     }
     final id = (idResult as Ok<AnnouncementId>).value;
 
+    final DateTime now = _clock.nowUtc();
     final built = Announcement.create(
       id: id,
       authorId: principal.userId,
       title: title,
       body: body,
-      createdAt: _clock.nowUtc(),
+      createdAt: now,
     );
     if (built is Err<Announcement>) {
       return Result.err(built.error);
@@ -91,6 +98,7 @@ final class PublishAnnouncement {
 
     final subject = NotificationSubject.adminAnnouncement(announcementId: id);
     final tokens = <String>[];
+    final deferred = <PushToQueue>[];
     var delivered = 0;
     for (final recipient in audience) {
       final created = await _create(
@@ -107,6 +115,27 @@ final class PublishAnnouncement {
         continue;
       }
       delivered++;
+      if (recipient.tokens.isEmpty) {
+        continue;
+      }
+      if (QuietHours.covers(
+        now,
+        utcOffsetMinutes: recipient.utcOffsetMinutes,
+      )) {
+        deferred.add(
+          PushToQueue(
+            id: _idGenerator.newUuid(),
+            userId: recipient.userId,
+            title: announcement.title,
+            body: announcement.body,
+            deliverAfter: QuietHours.endsAt(
+              now,
+              utcOffsetMinutes: recipient.utcOffsetMinutes,
+            ),
+          ),
+        );
+        continue;
+      }
       tokens.addAll(recipient.tokens);
     }
 
@@ -118,6 +147,10 @@ final class PublishAnnouncement {
         title: announcement.title,
         body: announcement.body,
       );
+    }
+    if (deferred.isNotEmpty) {
+      // Unchecked for the same reason: the inbox rows are already written.
+      await _queue.enqueue(deferred);
     }
 
     return Result.ok(delivered);

@@ -9,6 +9,7 @@ final class ScoreNoticeTarget {
     required this.participantId,
     required this.userId,
     required this.tokens,
+    this.utcOffsetMinutes,
   });
 
   /// The participant whose score is being announced.
@@ -20,6 +21,10 @@ final class ScoreNoticeTarget {
   /// Their registered push tokens. Never empty: a participant with no device
   /// is not a target at all.
   final List<String> tokens;
+
+  /// Minutes the user's clock is ahead of UTC, as the app last reported it,
+  /// or null if it never did. Read by `QuietHours` (P3-2) and nothing else.
+  final int? utcOffsetMinutes;
 }
 
 /// Read port for announcing fixture scores (migrations 0012, 0039).

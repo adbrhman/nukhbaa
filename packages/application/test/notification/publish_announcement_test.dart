@@ -49,11 +49,29 @@ final class _RecordingSender implements PushSender {
   }
 }
 
+/// A [NotificationQueue] that records what it was asked to hold.
+final class _FakeQueue implements NotificationQueue {
+  final List<PushToQueue> queued = [];
+
+  @override
+  Future<Result<void>> enqueue(List<PushToQueue> pushes) async {
+    queued.addAll(pushes);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<QueuedPush>>> claimDue({
+    required DateTime now,
+    required int limit,
+  }) => throw StateError('publishing never claims');
+}
+
 void main() {
   PublishAnnouncement build({
     required _FakeAnnouncements announcements,
     required InMemoryNotificationRepository notifications,
     required _RecordingSender sender,
+    _FakeQueue? queue,
   }) => PublishAnnouncement(
     announcements: announcements,
     create: CreateNotification(
@@ -64,6 +82,7 @@ void main() {
     sender: sender,
     idGenerator: FakeIdGenerator([uuidA]),
     clock: FakeClock(),
+    queue: queue ?? _FakeQueue(),
   );
 
   group('PublishAnnouncement', () {
@@ -136,6 +155,73 @@ void main() {
       expect(notifications.countFor(uuidD), 1);
       expect(sender.sent, hasLength(1));
       expect(sender.sent.single, ['t1']);
+    });
+
+    test('a recipient in their quiet hours gets the push at 08:00', () async {
+      // FakeClock is 12:00 UTC: 15:00 in Riyadh, 23:00 at UTC+11.
+      final announcements = _FakeAnnouncements([
+        const AnnouncementRecipient(
+          userId: UserId(uuidC),
+          tokens: ['t1'],
+          utcOffsetMinutes: 180,
+        ),
+        const AnnouncementRecipient(
+          userId: UserId(uuidD),
+          tokens: ['t2'],
+          utcOffsetMinutes: 660,
+        ),
+        // Quiet too, but no device to ring: the inbox row is all they get.
+        const AnnouncementRecipient(
+          userId: UserId(uuidA),
+          tokens: [],
+          utcOffsetMinutes: 660,
+        ),
+      ]);
+      final notifications = InMemoryNotificationRepository();
+      final sender = _RecordingSender();
+      final queue = _FakeQueue();
+
+      final result =
+          await build(
+            announcements: announcements,
+            notifications: notifications,
+            sender: sender,
+            queue: queue,
+          )(
+            principal: principalUser(userId: uuidB, role: PlatformRole.admin),
+            title: 'Notice',
+            body: 'Body',
+          );
+
+      expect((result as Ok<int>).value, 3);
+      expect(notifications.countFor(uuidD), 1);
+      expect(notifications.countFor(uuidA), 1);
+      expect(sender.sent.single, ['t1']);
+      final push = queue.queued.single;
+      expect(push.userId.value, uuidD);
+      expect(push.title, 'Notice');
+      expect(push.body, 'Body');
+      // 23:00 on 5 July at UTC+11; 08:00 on the 6th there is 21:00 UTC.
+      expect(push.deliverAfter, DateTime.utc(2026, 7, 5, 21));
+    });
+
+    test('a recipient who is awake queues nothing', () async {
+      final queue = _FakeQueue();
+
+      await build(
+        announcements: _FakeAnnouncements([
+          const AnnouncementRecipient(userId: UserId(uuidC), tokens: ['t1']),
+        ]),
+        notifications: InMemoryNotificationRepository(),
+        sender: _RecordingSender(),
+        queue: queue,
+      )(
+        principal: principalUser(userId: uuidB, role: PlatformRole.admin),
+        title: 'Notice',
+        body: 'Body',
+      );
+
+      expect(queue.queued, isEmpty);
     });
   });
 }

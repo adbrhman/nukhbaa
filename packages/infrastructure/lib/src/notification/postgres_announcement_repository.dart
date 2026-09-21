@@ -39,7 +39,8 @@ WHERE id::text = ANY(string_to_array(@ids, ','))
   // excluded; a sanctioned user is not addressed.
   static const String _audienceSql = '''
 SELECT u.id::text AS user_id,
-       dt.token AS token
+       dt.token AS token,
+       u.utc_offset_minutes AS utc_offset_minutes
 FROM identity.users u
 LEFT JOIN notification.device_tokens dt ON dt.user_id = u.id
 WHERE u.status = 'active'
@@ -129,11 +130,14 @@ ORDER BY u.id
 
   List<AnnouncementRecipient> _audience(List<Map<String, dynamic>> rows) {
     final tokensByUser = <String, List<String>>{};
+    final offsetByUser = <String, int?>{};
     for (final row in rows) {
       final userId = row['user_id'];
       if (userId is! String) {
         continue;
       }
+      final offset = row['utc_offset_minutes'];
+      offsetByUser[userId] = offset is int ? offset : null;
       final tokens = tokensByUser.putIfAbsent(userId, () => <String>[]);
       final token = row['token'];
       if (token is String && token.isNotEmpty) {
@@ -151,6 +155,7 @@ ORDER BY u.id
         AnnouncementRecipient(
           userId: user.value,
           tokens: List<String>.unmodifiable(entry.value),
+          utcOffsetMinutes: offsetByUser[entry.key],
         ),
       );
     }
