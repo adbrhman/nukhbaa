@@ -68,10 +68,9 @@ void main() {
     test('inserts one row per push, keyed on its id', () async {
       final connection = _FakeConnection(const Result.ok([]));
 
-      final result = await PostgresNotificationQueue(connection).enqueue([
-        push(_p1, _userA, 't'),
-        push(_p2, _userB, 't2'),
-      ]);
+      final result = await PostgresNotificationQueue(
+        connection,
+      ).enqueue([push(_p1, _userA, 't'), push(_p2, _userB, 't2')]);
 
       expect(result, isA<Ok<void>>());
       expect(connection.sqls, hasLength(2));
@@ -100,10 +99,9 @@ void main() {
         const Result.err(AppError.transient('db.down', 'down')),
       );
 
-      final result = await PostgresNotificationQueue(connection).enqueue([
-        push(_p1, _userA, 't'),
-        push(_p2, _userB, 't2'),
-      ]);
+      final result = await PostgresNotificationQueue(
+        connection,
+      ).enqueue([push(_p1, _userA, 't'), push(_p2, _userB, 't2')]);
 
       expect((result as Err<void>).error.code, 'db.down');
       expect(connection.sqls, hasLength(1));
