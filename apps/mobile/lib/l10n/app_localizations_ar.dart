@@ -1286,6 +1286,90 @@ class AppLocalizationsAr extends AppLocalizations {
   String get weeklyLeagueUnnamedMember => 'لاعب';
 
   @override
+  String get myBadges => 'شاراتي';
+
+  @override
+  String get accountBadgesSubtitle => 'ما حصلت عليه وما ينتظرك';
+
+  @override
+  String badgeWallSummary(int held, int total) {
+    return '$held من $total شارات';
+  }
+
+  @override
+  String badgeWallProgress(int current, int target) {
+    return '$current / $target';
+  }
+
+  @override
+  String badgeWallUnlockedOn(String date) {
+    return 'حصلت عليها في $date';
+  }
+
+  @override
+  String get badgeWallHeld => 'حصلت عليها';
+
+  @override
+  String get badgeWallFirstPredictionName => 'التوقّع الأول';
+
+  @override
+  String get badgeWallFirstPredictionHint => 'سجّل أول توقّع لك';
+
+  @override
+  String get badgeWallPredictions25Name => '25 توقعاً';
+
+  @override
+  String get badgeWallPredictions25Hint => 'سجّل 25 توقعاً';
+
+  @override
+  String get badgeWallPredictions100Name => '100 توقع';
+
+  @override
+  String get badgeWallPredictions100Hint => 'سجّل 100 توقع';
+
+  @override
+  String get badgeWallFirstPerfectDayName => 'يوم مكتمل';
+
+  @override
+  String get badgeWallFirstPerfectDayHint => 'توقّع كل مباريات يوم واحد';
+
+  @override
+  String get badgeWallPerfectDays7Name => '7 أيام مكتملة';
+
+  @override
+  String get badgeWallPerfectDays7Hint => 'أكمل 7 أيام مباريات';
+
+  @override
+  String get badgeWallPerfectDays30Name => '30 يوماً مكتملاً';
+
+  @override
+  String get badgeWallPerfectDays30Hint => 'أكمل 30 يوم مباريات';
+
+  @override
+  String get badgeWallLeagueFirstWeekName => 'أسبوعك الأول';
+
+  @override
+  String get badgeWallLeagueFirstWeekHint => 'أنهِ أسبوعاً في الدوري الأسبوعي';
+
+  @override
+  String get badgeWallLeaguePromotedName => 'الصعود';
+
+  @override
+  String get badgeWallLeaguePromotedHint => 'اصعد طبقة في الدوري الأسبوعي';
+
+  @override
+  String get badgeWallLeagueChampionName => 'بطل المجموعة';
+
+  @override
+  String get badgeWallLeagueChampionHint => 'تصدّر مجموعتك في الدوري الأسبوعي';
+
+  @override
+  String get badgeWallLeagueEliteName => 'النخبة';
+
+  @override
+  String get badgeWallLeagueEliteHint => 'أنهِ أسبوعاً في طبقة النخبة';
+
+  @override
   String streakLongestLabel(int days) {
     return 'الأطول: $days';
   }

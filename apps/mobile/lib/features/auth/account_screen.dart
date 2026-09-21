@@ -19,6 +19,7 @@ import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
+import '../gamification/my_badges_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
@@ -138,6 +139,13 @@ class AccountScreen extends ConsumerWidget {
                         title: l10n.eliteCard,
                         subtitle: l10n.accountEliteCardSubtitle,
                         onTap: () => open(EliteCardScreen(user: user)),
+                      ),
+                      AccountMenuRow(
+                        key: const Key('account.badges'),
+                        icon: Icons.military_tech_outlined,
+                        title: l10n.myBadges,
+                        subtitle: l10n.accountBadgesSubtitle,
+                        onTap: () => open(const MyBadgesScreen()),
                       ),
                     ],
                   ),

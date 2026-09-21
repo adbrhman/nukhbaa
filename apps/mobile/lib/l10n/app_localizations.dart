@@ -2226,6 +2226,162 @@ abstract class AppLocalizations {
   /// **'Longest: {days}'**
   String streakLongestLabel(int days);
 
+  /// Title of the badge wall and its row on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'My badges'**
+  String get myBadges;
+
+  /// Subtitle of the badge wall row on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'What you earned and what is next'**
+  String get accountBadgesSubtitle;
+
+  /// How many catalog badges the reader holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{held} of {total} badges'**
+  String badgeWallSummary(int held, int total);
+
+  /// Progress toward a badge not yet held.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {target}'**
+  String badgeWallProgress(int current, int target);
+
+  /// When a held badge was granted, the date already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned on {date}'**
+  String badgeWallUnlockedOn(String date);
+
+  /// A held badge whose grant date could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned'**
+  String get badgeWallHeld;
+
+  /// Badge first_prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'First prediction'**
+  String get badgeWallFirstPredictionName;
+
+  /// How to earn first_prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Place your first prediction'**
+  String get badgeWallFirstPredictionHint;
+
+  /// Badge predictions_25.
+  ///
+  /// In en, this message translates to:
+  /// **'25 predictions'**
+  String get badgeWallPredictions25Name;
+
+  /// How to earn predictions_25.
+  ///
+  /// In en, this message translates to:
+  /// **'Place 25 predictions'**
+  String get badgeWallPredictions25Hint;
+
+  /// Badge predictions_100.
+  ///
+  /// In en, this message translates to:
+  /// **'100 predictions'**
+  String get badgeWallPredictions100Name;
+
+  /// How to earn predictions_100.
+  ///
+  /// In en, this message translates to:
+  /// **'Place 100 predictions'**
+  String get badgeWallPredictions100Hint;
+
+  /// Badge first_perfect_day.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect day'**
+  String get badgeWallFirstPerfectDayName;
+
+  /// How to earn first_perfect_day.
+  ///
+  /// In en, this message translates to:
+  /// **'Predict every match of one day'**
+  String get badgeWallFirstPerfectDayHint;
+
+  /// Badge perfect_days_7.
+  ///
+  /// In en, this message translates to:
+  /// **'7 perfect days'**
+  String get badgeWallPerfectDays7Name;
+
+  /// How to earn perfect_days_7.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete 7 match days'**
+  String get badgeWallPerfectDays7Hint;
+
+  /// Badge perfect_days_30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 perfect days'**
+  String get badgeWallPerfectDays30Name;
+
+  /// How to earn perfect_days_30.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete 30 match days'**
+  String get badgeWallPerfectDays30Hint;
+
+  /// Badge league_first_week.
+  ///
+  /// In en, this message translates to:
+  /// **'First league week'**
+  String get badgeWallLeagueFirstWeekName;
+
+  /// How to earn league_first_week.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish a week of the weekly league'**
+  String get badgeWallLeagueFirstWeekHint;
+
+  /// Badge league_promoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Promoted'**
+  String get badgeWallLeaguePromotedName;
+
+  /// How to earn league_promoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up a tier in the weekly league'**
+  String get badgeWallLeaguePromotedHint;
+
+  /// Badge league_champion.
+  ///
+  /// In en, this message translates to:
+  /// **'Group champion'**
+  String get badgeWallLeagueChampionName;
+
+  /// How to earn league_champion.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish first in your league group'**
+  String get badgeWallLeagueChampionHint;
+
+  /// Badge league_elite.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite'**
+  String get badgeWallLeagueEliteName;
+
+  /// How to earn league_elite.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish a week in the Elite tier'**
+  String get badgeWallLeagueEliteHint;
+
   /// The weekly-league pill on the leaderboards tab.
   ///
   /// In en, this message translates to:

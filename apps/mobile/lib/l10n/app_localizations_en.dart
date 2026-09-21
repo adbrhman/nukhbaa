@@ -1277,6 +1277,92 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyLeagueUnnamedMember => 'Player';
 
   @override
+  String get myBadges => 'My badges';
+
+  @override
+  String get accountBadgesSubtitle => 'What you earned and what is next';
+
+  @override
+  String badgeWallSummary(int held, int total) {
+    return '$held of $total badges';
+  }
+
+  @override
+  String badgeWallProgress(int current, int target) {
+    return '$current / $target';
+  }
+
+  @override
+  String badgeWallUnlockedOn(String date) {
+    return 'Earned on $date';
+  }
+
+  @override
+  String get badgeWallHeld => 'Earned';
+
+  @override
+  String get badgeWallFirstPredictionName => 'First prediction';
+
+  @override
+  String get badgeWallFirstPredictionHint => 'Place your first prediction';
+
+  @override
+  String get badgeWallPredictions25Name => '25 predictions';
+
+  @override
+  String get badgeWallPredictions25Hint => 'Place 25 predictions';
+
+  @override
+  String get badgeWallPredictions100Name => '100 predictions';
+
+  @override
+  String get badgeWallPredictions100Hint => 'Place 100 predictions';
+
+  @override
+  String get badgeWallFirstPerfectDayName => 'Perfect day';
+
+  @override
+  String get badgeWallFirstPerfectDayHint => 'Predict every match of one day';
+
+  @override
+  String get badgeWallPerfectDays7Name => '7 perfect days';
+
+  @override
+  String get badgeWallPerfectDays7Hint => 'Complete 7 match days';
+
+  @override
+  String get badgeWallPerfectDays30Name => '30 perfect days';
+
+  @override
+  String get badgeWallPerfectDays30Hint => 'Complete 30 match days';
+
+  @override
+  String get badgeWallLeagueFirstWeekName => 'First league week';
+
+  @override
+  String get badgeWallLeagueFirstWeekHint =>
+      'Finish a week of the weekly league';
+
+  @override
+  String get badgeWallLeaguePromotedName => 'Promoted';
+
+  @override
+  String get badgeWallLeaguePromotedHint =>
+      'Move up a tier in the weekly league';
+
+  @override
+  String get badgeWallLeagueChampionName => 'Group champion';
+
+  @override
+  String get badgeWallLeagueChampionHint => 'Finish first in your league group';
+
+  @override
+  String get badgeWallLeagueEliteName => 'Elite';
+
+  @override
+  String get badgeWallLeagueEliteHint => 'Finish a week in the Elite tier';
+
+  @override
   String streakLongestLabel(int days) {
     return 'Longest: $days';
   }

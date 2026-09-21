@@ -842,6 +842,131 @@
   "@weeklyLeagueUnnamedMember": {
     "description": "Name drawn for a weekly-league member the server holds no profile for."
   },
+  "myBadges": "My badges",
+  "@myBadges": {
+    "description": "Title of the badge wall and its row on the account page."
+  },
+  "accountBadgesSubtitle": "What you earned and what is next",
+  "@accountBadgesSubtitle": {
+    "description": "Subtitle of the badge wall row on the account page."
+  },
+  "badgeWallSummary": "{held} of {total} badges",
+  "@badgeWallSummary": {
+    "description": "How many catalog badges the reader holds.",
+    "placeholders": {
+      "held": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeWallProgress": "{current} / {target}",
+  "@badgeWallProgress": {
+    "description": "Progress toward a badge not yet held.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeWallUnlockedOn": "Earned on {date}",
+  "@badgeWallUnlockedOn": {
+    "description": "When a held badge was granted, the date already formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "badgeWallHeld": "Earned",
+  "@badgeWallHeld": {
+    "description": "A held badge whose grant date could not be read."
+  },
+  "badgeWallFirstPredictionName": "First prediction",
+  "@badgeWallFirstPredictionName": {
+    "description": "Badge first_prediction."
+  },
+  "badgeWallFirstPredictionHint": "Place your first prediction",
+  "@badgeWallFirstPredictionHint": {
+    "description": "How to earn first_prediction."
+  },
+  "badgeWallPredictions25Name": "25 predictions",
+  "@badgeWallPredictions25Name": {
+    "description": "Badge predictions_25."
+  },
+  "badgeWallPredictions25Hint": "Place 25 predictions",
+  "@badgeWallPredictions25Hint": {
+    "description": "How to earn predictions_25."
+  },
+  "badgeWallPredictions100Name": "100 predictions",
+  "@badgeWallPredictions100Name": {
+    "description": "Badge predictions_100."
+  },
+  "badgeWallPredictions100Hint": "Place 100 predictions",
+  "@badgeWallPredictions100Hint": {
+    "description": "How to earn predictions_100."
+  },
+  "badgeWallFirstPerfectDayName": "Perfect day",
+  "@badgeWallFirstPerfectDayName": {
+    "description": "Badge first_perfect_day."
+  },
+  "badgeWallFirstPerfectDayHint": "Predict every match of one day",
+  "@badgeWallFirstPerfectDayHint": {
+    "description": "How to earn first_perfect_day."
+  },
+  "badgeWallPerfectDays7Name": "7 perfect days",
+  "@badgeWallPerfectDays7Name": {
+    "description": "Badge perfect_days_7."
+  },
+  "badgeWallPerfectDays7Hint": "Complete 7 match days",
+  "@badgeWallPerfectDays7Hint": {
+    "description": "How to earn perfect_days_7."
+  },
+  "badgeWallPerfectDays30Name": "30 perfect days",
+  "@badgeWallPerfectDays30Name": {
+    "description": "Badge perfect_days_30."
+  },
+  "badgeWallPerfectDays30Hint": "Complete 30 match days",
+  "@badgeWallPerfectDays30Hint": {
+    "description": "How to earn perfect_days_30."
+  },
+  "badgeWallLeagueFirstWeekName": "First league week",
+  "@badgeWallLeagueFirstWeekName": {
+    "description": "Badge league_first_week."
+  },
+  "badgeWallLeagueFirstWeekHint": "Finish a week of the weekly league",
+  "@badgeWallLeagueFirstWeekHint": {
+    "description": "How to earn league_first_week."
+  },
+  "badgeWallLeaguePromotedName": "Promoted",
+  "@badgeWallLeaguePromotedName": {
+    "description": "Badge league_promoted."
+  },
+  "badgeWallLeaguePromotedHint": "Move up a tier in the weekly league",
+  "@badgeWallLeaguePromotedHint": {
+    "description": "How to earn league_promoted."
+  },
+  "badgeWallLeagueChampionName": "Group champion",
+  "@badgeWallLeagueChampionName": {
+    "description": "Badge league_champion."
+  },
+  "badgeWallLeagueChampionHint": "Finish first in your league group",
+  "@badgeWallLeagueChampionHint": {
+    "description": "How to earn league_champion."
+  },
+  "badgeWallLeagueEliteName": "Elite",
+  "@badgeWallLeagueEliteName": {
+    "description": "Badge league_elite."
+  },
+  "badgeWallLeagueEliteHint": "Finish a week in the Elite tier",
+  "@badgeWallLeagueEliteHint": {
+    "description": "How to earn league_elite."
+  },
   "streakLongestLabel": "Longest: {days}",
   "@streakLongestLabel": {
     "description": "The longest run of completed match days on record.",
