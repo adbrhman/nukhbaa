@@ -8,7 +8,11 @@ import 'package:domain/src/identity/user_id.dart';
 /// is reminded once however many phones they carry.
 final class ReminderTarget {
   /// Creates a target.
-  const ReminderTarget({required this.userId, required this.tokens});
+  const ReminderTarget({
+    required this.userId,
+    required this.tokens,
+    this.utcOffsetMinutes,
+  });
 
   /// The user to remind.
   final UserId userId;
@@ -16,4 +20,8 @@ final class ReminderTarget {
   /// Their registered FCM tokens. Never empty -- a user with no device is not
   /// a target at all.
   final List<String> tokens;
+
+  /// Minutes the user's clock is ahead of UTC, as the app last reported it,
+  /// or null if it never did. Read by `QuietHours` (P3-2) and nothing else.
+  final int? utcOffsetMinutes;
 }

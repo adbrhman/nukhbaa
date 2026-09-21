@@ -55,9 +55,10 @@ due AS (
         AND rs.reminder_date = @reminder_date::date
     )
 )
-SELECT due.user_id AS user_id, dt.token AS token
+SELECT due.user_id AS user_id, dt.token AS token, u.utc_offset_minutes AS utc_offset_minutes
 FROM due
 JOIN notification.device_tokens dt ON dt.user_id = due.user_id
+JOIN identity.users u ON u.id = due.user_id
 ORDER BY due.user_id
 ''';
 
@@ -133,10 +134,14 @@ WHERE token = @token
   // is a single pass.
   Result<List<ReminderTarget>> _targets(List<Map<String, dynamic>> rows) {
     final byUser = <String, List<String>>{};
+    final offsets = <String, int?>{};
     for (final row in rows) {
       final userId = row['user_id'];
       final token = row['token'];
-      if (userId is! String || token is! String) {
+      final offset = row['utc_offset_minutes'];
+      if (userId is! String ||
+          token is! String ||
+          (offset != null && offset is! int)) {
         return const Result.err(
           AppError.transient(
             'reminder.row_corrupt',
@@ -145,6 +150,7 @@ WHERE token = @token
         );
       }
       byUser.putIfAbsent(userId, () => <String>[]).add(token);
+      offsets[userId] = offset is int ? offset : null;
     }
 
     final targets = <ReminderTarget>[];
@@ -157,6 +163,7 @@ WHERE token = @token
         ReminderTarget(
           userId: (parsed as Ok<UserId>).value,
           tokens: entry.value,
+          utcOffsetMinutes: offsets[entry.key],
         ),
       );
     }

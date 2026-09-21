@@ -27,6 +27,11 @@ import 'package:shared/shared.dart';
 /// sweep sends nothing and the next tick retries: a reminder a user asked
 /// not to get is worse than a late one.
 ///
+/// **Quiet hours (P3-2):** a user whose own clock reads 23:00 to 08:00
+/// ([QuietHours]) is skipped, not queued -- a reminder delivered after the
+/// quiet hours would arrive after the kickoff it was about. Like an
+/// opted-out user, a skipped one is not marked in `reminder_sends`.
+///
 /// Returns the number of users notified (`0` is the common, healthy answer).
 final class SendPredictionReminders {
   /// Creates the use-case over its collaborators.
@@ -113,7 +118,12 @@ final class SendPredictionReminders {
     final optedOut = (optOutsResult as Ok<Set<String>>).value;
     final targets = <ReminderTarget>[
       for (final target in pending)
-        if (!optedOut.contains(target.userId.value)) target,
+        if (!optedOut.contains(target.userId.value) &&
+            !QuietHours.covers(
+              utcNow,
+              utcOffsetMinutes: target.utcOffsetMinutes,
+            ))
+          target,
     ];
     if (targets.isEmpty) {
       return const Result.ok(0);

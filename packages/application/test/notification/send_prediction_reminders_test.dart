@@ -221,6 +221,65 @@ void main() {
       expect(reminders.markedUsers, [_userB]);
     });
 
+    test('skips users whose own clock is in the quiet hours', () async {
+      // 12:00 UTC is 15:00 in Riyadh but 23:00 at UTC+11.
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(
+            userId: _id(_userA),
+            tokens: const ['t1'],
+            utcOffsetMinutes: 660,
+          ),
+          ReminderTarget(
+            userId: _id(_userB),
+            tokens: const ['t3'],
+            utcOffsetMinutes: 180,
+          ),
+        ],
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Ok<int>).value, 1);
+      expect(sender.sentTo, ['t3']);
+      expect(reminders.markedUsers, [_userB]);
+    });
+
+    test('an unknown clock is read on Riyadh time', () async {
+      // 21:00 UTC is 00:00 in Riyadh: quiet for a user who never reported.
+      final lateKickoff = DateTime.utc(2026, 9, 16);
+      final reminders = _FakeReminders(
+        kickoff: lateKickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+          ReminderTarget(
+            userId: _id(_userB),
+            tokens: const ['t3'],
+            utcOffsetMinutes: 0,
+          ),
+        ],
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 21));
+
+      expect((result as Ok<int>).value, 1);
+      expect(sender.sentTo, ['t3']);
+      expect(reminders.markedUsers, [_userB]);
+    });
+
     test('everyone opted out -> nothing sent, nothing marked', () async {
       final reminders = _FakeReminders(
         kickoff: kickoff,
