@@ -10,7 +10,9 @@ import 'package:shared/shared.dart';
 /// is at most once, and a push whose send fails is not retried -- the next
 /// morning's push is a new row, never a replay of this one.
 ///
-/// A push for a user with no device left is claimed and dropped.
+/// A push for a user with no device left is claimed and dropped. Tokens the
+/// sender reports dead are deleted once the sweep has sent everything, best
+/// effort: a failed clean-up leaves them for the next send to report again.
 ///
 /// Returns the number of pushes handed to the sender successfully.
 final class FlushNotificationQueue {
@@ -34,6 +36,7 @@ final class FlushNotificationQueue {
   Future<Result<int>> call({required DateTime now}) async {
     final DateTime utcNow = now.toUtc();
     var delivered = 0;
+    final dead = <String>[];
     for (var batch = 0; batch < maxBatches; batch++) {
       final claimed = await _queue.claimDue(now: utcNow, limit: batchSize);
       if (claimed is Err<List<QueuedPush>>) {
@@ -51,11 +54,15 @@ final class FlushNotificationQueue {
         );
         if (sent is Ok<List<String>>) {
           delivered++;
+          dead.addAll(sent.value);
         }
       }
       if (pushes.length < batchSize) {
         break;
       }
+    }
+    if (dead.isNotEmpty) {
+      await _queue.forgetTokens(dead);
     }
     return Result.ok(delivered);
   }

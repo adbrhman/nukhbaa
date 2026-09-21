@@ -1377,6 +1377,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save the setting. Try again.';
 
   @override
+  String get favoriteTeamsTitle => 'Favorite teams';
+
+  @override
+  String get favoriteTeamsHint => 'Choose up to 3 teams to follow';
+
+  @override
+  String get favoriteTeamsLimitReached =>
+      'You follow 3 teams, the most allowed. Remove one to pick another';
+
+  @override
+  String get favoriteTeamsSearchHint => 'Search teams';
+
+  @override
   String streakLongestLabel(int days) {
     return 'Longest: $days';
   }

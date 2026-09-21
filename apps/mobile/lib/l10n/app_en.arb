@@ -983,6 +983,22 @@
   "@notificationSettingsSaveFailed": {
     "description": "Shown when writing a notification switch failed."
   },
+  "favoriteTeamsTitle": "Favorite teams",
+  "@favoriteTeamsTitle": {
+    "description": "Title of the favorite-teams page and its row on the account page."
+  },
+  "favoriteTeamsHint": "Choose up to 3 teams to follow",
+  "@favoriteTeamsHint": {
+    "description": "What the favorite-teams page is for."
+  },
+  "favoriteTeamsLimitReached": "You follow 3 teams, the most allowed. Remove one to pick another",
+  "@favoriteTeamsLimitReached": {
+    "description": "Shown once three teams are chosen."
+  },
+  "favoriteTeamsSearchHint": "Search teams",
+  "@favoriteTeamsSearchHint": {
+    "description": "Placeholder of the team search box."
+  },
   "streakLongestLabel": "Longest: {days}",
   "@streakLongestLabel": {
     "description": "The longest run of completed match days on record.",

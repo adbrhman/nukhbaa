@@ -17,6 +17,7 @@ export 'src/device_token_dto.dart';
 export 'src/streak_dto.dart';
 export 'src/time_zone_dto.dart';
 export 'src/error_dto.dart';
+export 'src/favorite_teams_dto.dart';
 export 'src/fixture_ledger_dto.dart';
 export 'src/fixture_prediction_dto.dart';
 export 'src/fixture_schedule_dto.dart';

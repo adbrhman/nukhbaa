@@ -35,6 +35,8 @@ final class CompositionRoot {
     required this.getMyBadges,
     required this.getMyNotificationPreferences,
     required this.updateMyNotificationPreferences,
+    required this.getMyFavoriteTeams,
+    required this.setMyFavoriteTeams,
     required this.resolveExperimentVariant,
     required this.setAvatar,
     required this.clearAvatar,
@@ -166,6 +168,8 @@ final class CompositionRoot {
     GetMyBadges? getMyBadges,
     GetMyNotificationPreferences? getMyNotificationPreferences,
     UpdateMyNotificationPreferences? updateMyNotificationPreferences,
+    GetMyFavoriteTeams? getMyFavoriteTeams,
+    SetMyFavoriteTeams? setMyFavoriteTeams,
     ResolveExperimentVariant? resolveExperimentVariant,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
@@ -275,6 +279,8 @@ final class CompositionRoot {
        updateMyNotificationPreferences =
            updateMyNotificationPreferences ??
            _absentUpdateMyNotificationPreferences(),
+       getMyFavoriteTeams = getMyFavoriteTeams ?? _absentGetMyFavoriteTeams(),
+       setMyFavoriteTeams = setMyFavoriteTeams ?? _absentSetMyFavoriteTeams(),
        resolveExperimentVariant =
            resolveExperimentVariant ?? _absentResolveExperimentVariant(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
@@ -507,6 +513,15 @@ final class CompositionRoot {
   _absentUpdateMyNotificationPreferences() => UpdateMyNotificationPreferences(
     preferences: _UnwiredNotificationPreferenceRepository(),
   );
+
+  /// Builds an "absent" [GetMyFavoriteTeams] over a repository that throws
+  /// if a test reaches the favorite-teams slice it never wired.
+  static GetMyFavoriteTeams _absentGetMyFavoriteTeams() =>
+      GetMyFavoriteTeams(favorites: _UnwiredFavoriteTeamRepository());
+
+  /// Builds an "absent" [SetMyFavoriteTeams]; see [_absentGetMyFavoriteTeams].
+  static SetMyFavoriteTeams _absentSetMyFavoriteTeams() =>
+      SetMyFavoriteTeams(favorites: _UnwiredFavoriteTeamRepository());
 
   /// Builds an "absent" [ResolveExperimentVariant] over a repository that
   /// throws if a test reaches the experiment slice it never wired.
@@ -1137,6 +1152,13 @@ final class CompositionRoot {
   /// Stores the caller's notification switches (backs
   /// `PUT /me/notification-preferences`). The reminder sweep reads them.
   final UpdateMyNotificationPreferences updateMyNotificationPreferences;
+
+  /// Reads the teams the caller follows (backs `GET /me/favorite-teams`).
+  final GetMyFavoriteTeams getMyFavoriteTeams;
+
+  /// Replaces the teams the caller follows, at most three (backs
+  /// `PUT /me/favorite-teams`).
+  final SetMyFavoriteTeams setMyFavoriteTeams;
 
   /// Decides which arm of a flagged experiment a user is in (P1-8).
   ///
@@ -1868,6 +1890,12 @@ final class CompositionRoot {
       ),
       updateMyNotificationPreferences: UpdateMyNotificationPreferences(
         preferences: PostgresNotificationPreferenceRepository(connection),
+      ),
+      getMyFavoriteTeams: GetMyFavoriteTeams(
+        favorites: PostgresFavoriteTeamRepository(connection),
+      ),
+      setMyFavoriteTeams: SetMyFavoriteTeams(
+        favorites: PostgresFavoriteTeamRepository(connection),
       ),
       resolveExperimentVariant: ResolveExperimentVariant(
         experiments: PostgresExperimentRepository(connection),
@@ -3087,6 +3115,20 @@ final class _UnwiredNotificationPreferenceRepository
   Future<Result<Set<String>>> predictionReminderOptOuts() => _unwired();
 }
 
+/// Backs the "absent" favorite-teams use-cases: throws if a test reaches the
+/// slice it never wired.
+final class _UnwiredFavoriteTeamRepository implements FavoriteTeamRepository {
+  static Never _unwired() =>
+      throw StateError('Favorite teams were not wired into this test root');
+
+  @override
+  Future<Result<FavoriteTeams>> favoritesOf(UserId userId) => _unwired();
+
+  @override
+  Future<Result<FavoriteTeams>> replace(UserId userId, FavoriteTeams teams) =>
+      _unwired();
+}
+
 /// Refuses every call: see [_absentFlushNotificationQueue].
 final class _UnwiredNotificationQueue implements NotificationQueue {
   @override
@@ -3098,6 +3140,10 @@ final class _UnwiredNotificationQueue implements NotificationQueue {
     required DateTime now,
     required int limit,
   }) => throw StateError('The notification queue was not wired into this root');
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) =>
+      throw StateError('The notification queue was not wired into this root');
 }
 
 /// Refuses every call: see [_absentSendPredictionReminders].

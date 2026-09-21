@@ -168,4 +168,19 @@ void main() {
       expect((result as Err<List<QueuedPush>>).error.code, 'db.down');
     });
   });
+
+  group('forgetTokens', () {
+    test('deletes each dead token by value', () async {
+      final connection = _FakeConnection(const Result.ok([]));
+
+      final result = await PostgresNotificationQueue(
+        connection,
+      ).forgetTokens(const ['t1', 't2']);
+
+      expect(result.isOk, isTrue);
+      expect(connection.sqls, hasLength(2));
+      expect(connection.sqls.first, contains('notification.device_tokens'));
+      expect(connection.parameters.map((p) => p['token']), ['t1', 't2']);
+    });
+  });
 }

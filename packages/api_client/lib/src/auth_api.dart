@@ -204,4 +204,24 @@ final class AuthApi {
       parse: NotificationPreferencesDto.fromJson,
     );
   }
+
+  /// `GET /me/favorite-teams` -- the ids of the teams the caller follows.
+  Future<Result<FavoriteTeamsDto>> myFavoriteTeams() {
+    return _transport.getObject<FavoriteTeamsDto>(
+      '/me/favorite-teams',
+      parse: FavoriteTeamsDto.fromJson,
+    );
+  }
+
+  /// `PUT /me/favorite-teams` -- replaces the whole set (at most three) and
+  /// answers what the server stored, which is what the page then shows.
+  Future<Result<FavoriteTeamsDto>> updateFavoriteTeams({
+    required List<String> teamIds,
+  }) {
+    return _transport.putObject<FavoriteTeamsDto>(
+      '/me/favorite-teams',
+      body: FavoriteTeamsDto(teamIds: teamIds).toJson(),
+      parse: FavoriteTeamsDto.fromJson,
+    );
+  }
 }

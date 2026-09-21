@@ -77,4 +77,9 @@ abstract interface class NotificationQueue {
     required DateTime now,
     required int limit,
   });
+
+  /// Deletes device tokens FCM reported as permanently invalid while a
+  /// claimed push was being delivered (P3-6: an invalid token is struck off
+  /// and never retried).
+  Future<Result<void>> forgetTokens(List<String> tokens);
 }

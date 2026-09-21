@@ -291,4 +291,45 @@ void main() {
       );
     });
   });
+
+  group('favorite teams', () {
+    const a = '11111111-1111-4111-8111-111111111111';
+    const b = '22222222-2222-4222-8222-222222222222';
+
+    test('GET reads the stored ids', () async {
+      const expected = FavoriteTeamsDto(teamIds: [a]);
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).myFavoriteTeams();
+
+      expect(result, const Result<FavoriteTeamsDto>.ok(expected));
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/favorite-teams');
+    });
+
+    test('PUT sends the whole set and answers what was stored', () async {
+      const stored = FavoriteTeamsDto(teamIds: [b, a]);
+      final ctx = buildTransport(
+        (_) async => okJson(stored.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(
+        ctx.transport,
+      ).updateFavoriteTeams(teamIds: const [b, a]);
+
+      expect(result, const Result<FavoriteTeamsDto>.ok(stored));
+      final req = ctx.captured.single;
+      expect(req.method, 'PUT');
+      expect(req.url.path, '/me/favorite-teams');
+      expect((jsonDecode(req.body) as Map<String, Object?>)['team_ids'], [
+        b,
+        a,
+      ]);
+    });
+  });
 }

@@ -53,6 +53,11 @@ LEFT JOIN notification.device_tokens dt ON dt.user_id = c.user_id
 ORDER BY c.deliver_after, c.id, dt.token
 ''';
 
+  static const String _forgetTokenSql = '''
+DELETE FROM notification.device_tokens
+WHERE token = @token
+''';
+
   @override
   Future<Result<void>> enqueue(List<PushToQueue> pushes) async {
     for (final push in pushes) {
@@ -65,6 +70,20 @@ ORDER BY c.deliver_after, c.id, dt.token
           'body': push.body,
           'deliver_after': push.deliverAfter.toUtc(),
         },
+      );
+      if (result is Err<List<Map<String, dynamic>>>) {
+        return Result.err(result.error);
+      }
+    }
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) async {
+    for (final token in tokens) {
+      final result = await _connection.query(
+        _forgetTokenSql,
+        parameters: {'token': token},
       );
       if (result is Err<List<Map<String, dynamic>>>) {
         return Result.err(result.error);

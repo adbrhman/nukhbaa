@@ -416,5 +416,9 @@
   "notificationSettingsReminderTitle": "تذكير التوقعات",
   "notificationSettingsReminderHint": "قبل أول مباراة في اليوم بثلاث ساعات، إن لم تسجّل توقعاتك",
   "notificationSettingsSaveFailed": "تعذّر حفظ الإعداد، حاول مرة أخرى.",
+  "favoriteTeamsTitle": "فرقك المفضلة",
+  "favoriteTeamsHint": "اختر حتى ٣ فرق تتابعها",
+  "favoriteTeamsLimitReached": "تتابع ٣ فرق وهو الحد الأقصى، أزل فريقاً لتختار غيره",
+  "favoriteTeamsSearchHint": "ابحث عن فريق",
   "streakLongestLabel": "الأطول: {days}"
 }

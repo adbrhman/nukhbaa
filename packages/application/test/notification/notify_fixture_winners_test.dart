@@ -65,6 +65,10 @@ final class _FakeQueue implements NotificationQueue {
     required DateTime now,
     required int limit,
   }) => throw StateError('the notifier never claims');
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) =>
+      throw StateError('the notifier never forgets tokens');
 }
 
 ParticipantFixtureScore _score({

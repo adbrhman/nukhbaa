@@ -1384,6 +1384,19 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حفظ الإعداد، حاول مرة أخرى.';
 
   @override
+  String get favoriteTeamsTitle => 'فرقك المفضلة';
+
+  @override
+  String get favoriteTeamsHint => 'اختر حتى ٣ فرق تتابعها';
+
+  @override
+  String get favoriteTeamsLimitReached =>
+      'تتابع ٣ فرق وهو الحد الأقصى، أزل فريقاً لتختار غيره';
+
+  @override
+  String get favoriteTeamsSearchHint => 'ابحث عن فريق';
+
+  @override
   String streakLongestLabel(int days) {
     return 'الأطول: $days';
   }

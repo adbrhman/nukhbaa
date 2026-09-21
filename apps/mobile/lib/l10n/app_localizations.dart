@@ -2250,6 +2250,30 @@ abstract class AppLocalizations {
   /// **'Could not save the setting. Try again.'**
   String get notificationSettingsSaveFailed;
 
+  /// Title of the favorite-teams page and its row on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite teams'**
+  String get favoriteTeamsTitle;
+
+  /// What the favorite-teams page is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to 3 teams to follow'**
+  String get favoriteTeamsHint;
+
+  /// Shown once three teams are chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'You follow 3 teams, the most allowed. Remove one to pick another'**
+  String get favoriteTeamsLimitReached;
+
+  /// Placeholder of the team search box.
+  ///
+  /// In en, this message translates to:
+  /// **'Search teams'**
+  String get favoriteTeamsSearchHint;
+
   /// Title of the badge wall and its row on the account page.
   ///
   /// In en, this message translates to:

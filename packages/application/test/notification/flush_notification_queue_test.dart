@@ -24,6 +24,13 @@ final class _FakeQueue implements NotificationQueue {
   final List<List<QueuedPush>> batches;
   final AppError? failWith;
   final List<(DateTime, int)> claims = [];
+  final List<String> forgotten = [];
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) async {
+    forgotten.addAll(tokens);
+    return const Result.ok(null);
+  }
 
   @override
   Future<Result<void>> enqueue(List<PushToQueue> pushes) =>
@@ -45,9 +52,10 @@ final class _FakeQueue implements NotificationQueue {
 }
 
 final class _FakeSender implements PushSender {
-  _FakeSender({this.failFor = const {}});
+  _FakeSender({this.failFor = const {}, this.dead = const {}});
 
   final Set<String> failFor;
+  final Set<String> dead;
   final List<(List<String>, String, String)> sent = [];
 
   @override
@@ -60,7 +68,10 @@ final class _FakeSender implements PushSender {
       return const Result.err(AppError.transient('fcm.down', 'down'));
     }
     sent.add((tokens, title, body));
-    return const Result.ok(<String>[]);
+    return Result.ok(<String>[
+      for (final token in tokens)
+        if (dead.contains(token)) token,
+    ]);
   }
 }
 
@@ -90,6 +101,23 @@ void main() {
         ['[t1, t2]|title p1|body p1', '[t3]|title p2|body p2'],
       );
       expect(queue.claims, [(now, FlushNotificationQueue.batchSize)]);
+    });
+
+    test('tokens the sender reports dead are forgotten', () async {
+      final queue = _FakeQueue([
+        [
+          _push('p1', _userA, ['t1', 'gone']),
+          _push('p2', _userB, ['t3']),
+        ],
+      ]);
+      final sender = _FakeSender(dead: {'gone'});
+
+      final result = await FlushNotificationQueue(queue: queue, sender: sender)(
+        now: now,
+      );
+
+      expect((result as Ok<int>).value, 2);
+      expect(queue.forgotten, ['gone']);
     });
 
     test('an empty queue claims once and sends nothing', () async {

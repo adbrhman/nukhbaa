@@ -3055,6 +3055,26 @@ The last piece of P3-2. **No migration, no route, no client change.**
   overtaken), the cap becomes one weekly budget shared by the reminder and
   those types. A user-set cap may only lower it, never raise it.
 
+### Favorite teams (plan P3-1, 2026-09-22)
+
+The teams a player follows: the audience of the pre-match push (plan
+P3-4a, batch 2). Migration 0065 (`identity.user_favorite_teams`).
+
+- **At most three, each once**, `FavoriteTeams.max` in the domain. Not a SQL
+  constraint: the server is the only writer.
+- **`GET` / `PUT /me/favorite-teams`**, body `{ "team_ids": [...] }`. PUT
+  sends the whole set every time (an empty list clears it) and answers what
+  was stored. A team id missing from the catalog trips the FK and answers
+  400 `identity.favorite_team_unknown`.
+- **Order is kept**: the adapter stamps each row with `clock_timestamp()`,
+  so the read comes back in the order chosen.
+- **The page** is `FavoriteTeamsScreen`, reached from the account page's
+  notifications card. Each tap writes; a failed write leaves the selection
+  and shows the save-failed message, like the notification switches.
+- **Dead tokens** (P3-2b gap closed in the same batch): the deferred-push
+  sweep now deletes the tokens FCM reports invalid, as the reminder sweep
+  already did, through `NotificationQueue.forgetTokens`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
