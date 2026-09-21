@@ -41,6 +41,7 @@ export 'src/ledger/postgres_participant_reader.dart';
 export 'src/notification/postgres_announcement_repository.dart';
 export 'src/notification/postgres_device_token_repository.dart';
 export 'src/notification/fcm_push_sender.dart';
+export 'src/notification/postgres_notification_preference_repository.dart';
 export 'src/notification/postgres_notification_repository.dart';
 export 'src/gamification/postgres_badge_progress_reader.dart';
 export 'src/gamification/postgres_daily_challenge_repository.dart';

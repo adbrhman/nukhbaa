@@ -53,6 +53,34 @@ final class _FakeReminders implements PredictionReminderRepository {
   }
 }
 
+final class _FakePreferences implements NotificationPreferenceRepository {
+  _FakePreferences({this.optOuts = const {}, this.failWith});
+
+  final Set<String> optOuts;
+  final AppError? failWith;
+  int reads = 0;
+
+  @override
+  Future<Result<NotificationPreferences>> preferencesOf(UserId userId) =>
+      throw StateError('the sweep never reads one user');
+
+  @override
+  Future<Result<NotificationPreferences>> save(
+    UserId userId,
+    NotificationPreferences preferences,
+  ) => throw StateError('the sweep never writes a preference');
+
+  @override
+  Future<Result<Set<String>>> predictionReminderOptOuts() async {
+    reads += 1;
+    final failure = failWith;
+    if (failure != null) {
+      return Result.err(failure);
+    }
+    return Result.ok(optOuts);
+  }
+}
+
 final class _FakeSender implements PushSender {
   _FakeSender({this.dead = const []});
 
@@ -87,6 +115,7 @@ void main() {
       final useCase = SendPredictionReminders(
         reminders: reminders,
         sender: sender,
+        preferences: _FakePreferences(),
       );
 
       final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
@@ -103,6 +132,7 @@ void main() {
       final useCase = SendPredictionReminders(
         reminders: reminders,
         sender: sender,
+        preferences: _FakePreferences(),
       );
 
       // Six hours ahead: too early.
@@ -122,6 +152,7 @@ void main() {
       final useCase = SendPredictionReminders(
         reminders: reminders,
         sender: sender,
+        preferences: _FakePreferences(),
       );
 
       final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
@@ -133,9 +164,11 @@ void main() {
     test('everyone predicted -> nothing sent, nothing marked', () async {
       final reminders = _FakeReminders(kickoff: kickoff);
       final sender = _FakeSender();
+      final preferences = _FakePreferences();
       final useCase = SendPredictionReminders(
         reminders: reminders,
         sender: sender,
+        preferences: preferences,
       );
 
       final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
@@ -143,6 +176,7 @@ void main() {
       expect((result as Ok<int>).value, 0);
       expect(reminders.pendingCalls, 1);
       expect(reminders.markedUsers, isEmpty);
+      expect(preferences.reads, 0);
     });
 
     test('retires the tokens the sender reported dead', () async {
@@ -156,12 +190,79 @@ void main() {
       final useCase = SendPredictionReminders(
         reminders: reminders,
         sender: sender,
+        preferences: _FakePreferences(),
       );
 
       await useCase(now: DateTime.utc(2026, 9, 15, 12));
 
       expect(reminders.forgotten, ['t2']);
       expect(reminders.markedUsers, [_userA]);
+    });
+
+    test('skips users who turned the reminder off, unmarked', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1', 't2']),
+          ReminderTarget(userId: _id(_userB), tokens: const ['t3']),
+        ],
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(optOuts: {_userA}),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Ok<int>).value, 1);
+      expect(sender.sentTo, ['t3']);
+      expect(reminders.markedUsers, [_userB]);
+    });
+
+    test('everyone opted out -> nothing sent, nothing marked', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+        ],
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(optOuts: {_userA}),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Ok<int>).value, 0);
+      expect(sender.sentTo, isEmpty);
+      expect(reminders.markedUsers, isEmpty);
+    });
+
+    test('unreadable switches -> nothing sent, the error surfaces', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+        ],
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(
+          failWith: const AppError.transient('db.down', 'down'),
+        ),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Err<int>).error.code, 'db.down');
+      expect(sender.sentTo, isEmpty);
+      expect(reminders.markedUsers, isEmpty);
     });
   });
 }

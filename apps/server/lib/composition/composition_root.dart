@@ -33,6 +33,8 @@ final class CompositionRoot {
     required this.getMyDailyChallenge,
     required this.getMyWeeklyLeague,
     required this.getMyBadges,
+    required this.getMyNotificationPreferences,
+    required this.updateMyNotificationPreferences,
     required this.resolveExperimentVariant,
     required this.setAvatar,
     required this.clearAvatar,
@@ -161,6 +163,8 @@ final class CompositionRoot {
     GetMyDailyChallenge? getMyDailyChallenge,
     GetMyWeeklyLeague? getMyWeeklyLeague,
     GetMyBadges? getMyBadges,
+    GetMyNotificationPreferences? getMyNotificationPreferences,
+    UpdateMyNotificationPreferences? updateMyNotificationPreferences,
     ResolveExperimentVariant? resolveExperimentVariant,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
@@ -263,6 +267,12 @@ final class CompositionRoot {
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
        getMyWeeklyLeague = getMyWeeklyLeague ?? _absentGetMyWeeklyLeague(),
        getMyBadges = getMyBadges ?? _absentGetMyBadges(),
+       getMyNotificationPreferences =
+           getMyNotificationPreferences ??
+           _absentGetMyNotificationPreferences(),
+       updateMyNotificationPreferences =
+           updateMyNotificationPreferences ??
+           _absentUpdateMyNotificationPreferences(),
        resolveExperimentVariant =
            resolveExperimentVariant ?? _absentResolveExperimentVariant(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
@@ -479,6 +489,20 @@ final class CompositionRoot {
   /// reaches the badge wall it never wired.
   static GetMyBadges _absentGetMyBadges() =>
       GetMyBadges(badges: _UnwiredPlayerBadgeReader());
+
+  /// Builds an "absent" [GetMyNotificationPreferences] over a repository
+  /// that throws if a test reaches the preference slice it never wired.
+  static GetMyNotificationPreferences _absentGetMyNotificationPreferences() =>
+      GetMyNotificationPreferences(
+        preferences: _UnwiredNotificationPreferenceRepository(),
+      );
+
+  /// Builds an "absent" [UpdateMyNotificationPreferences] over a repository
+  /// that throws if a test reaches the preference slice it never wired.
+  static UpdateMyNotificationPreferences
+  _absentUpdateMyNotificationPreferences() => UpdateMyNotificationPreferences(
+    preferences: _UnwiredNotificationPreferenceRepository(),
+  );
 
   /// Builds an "absent" [ResolveExperimentVariant] over a repository that
   /// throws if a test reaches the experiment slice it never wired.
@@ -919,6 +943,7 @@ final class CompositionRoot {
       SendPredictionReminders(
         reminders: _UnwiredPredictionReminderRepository(),
         sender: const NoopPushSender(),
+        preferences: _UnwiredNotificationPreferenceRepository(),
       );
 
   /// Backs an "absent" [RegisterDeviceToken]: a test that reaches the
@@ -1091,6 +1116,14 @@ final class CompositionRoot {
   /// Reads the caller's badge wall: every catalog badge, progress and grant
   /// moment (backs `GET /me/badges`). Read-only; the evaluator grants.
   final GetMyBadges getMyBadges;
+
+  /// Reads the caller's notification switches, defaults when never changed
+  /// (backs `GET /me/notification-preferences`).
+  final GetMyNotificationPreferences getMyNotificationPreferences;
+
+  /// Stores the caller's notification switches (backs
+  /// `PUT /me/notification-preferences`). The reminder sweep reads them.
+  final UpdateMyNotificationPreferences updateMyNotificationPreferences;
 
   /// Decides which arm of a flagged experiment a user is in (P1-8).
   ///
@@ -1810,6 +1843,12 @@ final class CompositionRoot {
         profiles: PostgresWeeklyLeagueProfileReader(connection),
       ),
       getMyBadges: GetMyBadges(badges: PostgresPlayerBadgeReader(connection)),
+      getMyNotificationPreferences: GetMyNotificationPreferences(
+        preferences: PostgresNotificationPreferenceRepository(connection),
+      ),
+      updateMyNotificationPreferences: UpdateMyNotificationPreferences(
+        preferences: PostgresNotificationPreferenceRepository(connection),
+      ),
       resolveExperimentVariant: ResolveExperimentVariant(
         experiments: PostgresExperimentRepository(connection),
       ),
@@ -1819,6 +1858,7 @@ final class CompositionRoot {
       sendPredictionReminders: SendPredictionReminders(
         reminders: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
+        preferences: PostgresNotificationPreferenceRepository(connection),
       ),
       ensureUpcomingMonthlySeasons: EnsureUpcomingMonthlySeasons(
         repository: competitionRepository,
@@ -2994,6 +3034,29 @@ final class _UnwiredDeviceTokenRepository implements DeviceTokenRepository {
   }) => throw StateError(
     'DeviceTokenRepository was not wired into this test root',
   );
+}
+
+/// Backs the "absent" notification-preference use-cases and the absent
+/// reminder sweep: throws if a test reaches a preference slice it never
+/// wired.
+final class _UnwiredNotificationPreferenceRepository
+    implements NotificationPreferenceRepository {
+  static Never _unwired() => throw StateError(
+    'Notification preferences were not wired into this test root',
+  );
+
+  @override
+  Future<Result<NotificationPreferences>> preferencesOf(UserId userId) =>
+      _unwired();
+
+  @override
+  Future<Result<NotificationPreferences>> save(
+    UserId userId,
+    NotificationPreferences preferences,
+  ) => _unwired();
+
+  @override
+  Future<Result<Set<String>>> predictionReminderOptOuts() => _unwired();
 }
 
 /// Refuses every call: see [_absentSendPredictionReminders].

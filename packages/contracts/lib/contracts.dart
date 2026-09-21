@@ -29,6 +29,7 @@ export 'src/leaderboard_dto.dart';
 export 'src/ledger_dto.dart';
 export 'src/me_dto.dart';
 export 'src/notification_dto.dart';
+export 'src/notification_preferences_dto.dart';
 export 'src/participant_fixture_score_dto.dart';
 export 'src/prediction_dto.dart';
 export 'src/scoring_dto.dart';

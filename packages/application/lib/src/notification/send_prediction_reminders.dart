@@ -1,3 +1,4 @@
+import 'package:application/src/notification/ports/notification_preference_repository.dart';
 import 'package:application/src/notification/ports/prediction_reminder_repository.dart';
 import 'package:application/src/notification/ports/push_sender.dart';
 import 'package:domain/domain.dart';
@@ -19,17 +20,27 @@ import 'package:shared/shared.dart';
 /// than the window is wide, so [PredictionReminderRepository.markSent] -- not
 /// the timing -- is what prevents a second notification.
 ///
+/// **Opt-out (P3-1):** a user who turned the reminder off in
+/// `notification_preferences` is dropped before anything is sent, and is
+/// not marked in `reminder_sends`, so turning it back on the same day still
+/// lets that day's reminder through. If the switches cannot be read the
+/// sweep sends nothing and the next tick retries: a reminder a user asked
+/// not to get is worse than a late one.
+///
 /// Returns the number of users notified (`0` is the common, healthy answer).
 final class SendPredictionReminders {
   /// Creates the use-case over its collaborators.
   const SendPredictionReminders({
     required PredictionReminderRepository reminders,
     required PushSender sender,
+    required NotificationPreferenceRepository preferences,
   }) : _reminders = reminders,
-       _sender = sender;
+       _sender = sender,
+       _preferences = preferences;
 
   final PredictionReminderRepository _reminders;
   final PushSender _sender;
+  final NotificationPreferenceRepository _preferences;
 
   /// The audience's zone. Fixed rather than per-user: the contest is one
   /// monthly table for one regional audience, and a per-user zone would need
@@ -90,7 +101,20 @@ final class SendPredictionReminders {
     if (targetsResult is Err<List<ReminderTarget>>) {
       return Result.err(targetsResult.error);
     }
-    final targets = (targetsResult as Ok<List<ReminderTarget>>).value;
+    final pending = (targetsResult as Ok<List<ReminderTarget>>).value;
+    if (pending.isEmpty) {
+      return const Result.ok(0);
+    }
+
+    final optOutsResult = await _preferences.predictionReminderOptOuts();
+    if (optOutsResult is Err<Set<String>>) {
+      return Result.err(optOutsResult.error);
+    }
+    final optedOut = (optOutsResult as Ok<Set<String>>).value;
+    final targets = <ReminderTarget>[
+      for (final target in pending)
+        if (!optedOut.contains(target.userId.value)) target,
+    ];
     if (targets.isEmpty) {
       return const Result.ok(0);
     }
