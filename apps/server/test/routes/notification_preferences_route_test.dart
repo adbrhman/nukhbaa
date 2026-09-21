@@ -20,6 +20,7 @@ final class _MemoryPreferences implements NotificationPreferenceRepository {
 
   final AppError? failWith;
   final Map<String, bool> stored = {};
+  final Map<String, bool> storedPreMatch = {};
 
   @override
   Future<Result<NotificationPreferences>> preferencesOf(UserId userId) async {
@@ -27,11 +28,11 @@ final class _MemoryPreferences implements NotificationPreferenceRepository {
     if (failure != null) {
       return Result.err(failure);
     }
-    final value = stored[userId.value];
     return Result.ok(
-      value == null
-          ? NotificationPreferences.defaults
-          : NotificationPreferences(predictionReminder: value),
+      NotificationPreferences(
+        predictionReminder: stored[userId.value] ?? true,
+        preMatch: storedPreMatch[userId.value] ?? true,
+      ),
     );
   }
 
@@ -45,6 +46,7 @@ final class _MemoryPreferences implements NotificationPreferenceRepository {
       return Result.err(failure);
     }
     stored[userId.value] = preferences.predictionReminder;
+    storedPreMatch[userId.value] = preferences.preMatch;
     return Result.ok(preferences);
   }
 
@@ -87,6 +89,7 @@ void main() {
       expect(await decodeBody(response), {
         'schema_version': 1,
         'prediction_reminder': true,
+        'pre_match': true,
       });
     });
 
@@ -128,11 +131,31 @@ void main() {
       expect(await decodeBody(response), {
         'schema_version': 1,
         'prediction_reminder': false,
+        'pre_match': true,
       });
       expect(preferences.stored, {kNonMemberUserId: false});
 
       final reread = await _call(preferences, HttpMethod.get);
       expect((await decodeBody(reread))['prediction_reminder'], false);
+    });
+
+    test('pre_match alone is stored and the reminder is kept', () async {
+      final preferences = _MemoryPreferences()
+        ..stored[kNonMemberUserId] = false;
+
+      final response = await _call(
+        preferences,
+        HttpMethod.put,
+        body: {'pre_match': false},
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(await decodeBody(response), {
+        'schema_version': 1,
+        'prediction_reminder': false,
+        'pre_match': false,
+      });
+      expect(preferences.storedPreMatch, {kNonMemberUserId: false});
     });
 
     test('turning it back on is stored too', () async {

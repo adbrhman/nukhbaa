@@ -67,7 +67,7 @@ final class SendPredictionReminders {
   static const Duration tolerance = Duration(minutes: 20);
 
   /// The most reminders one user receives in one Riyadh week.
-  static const int weeklyCap = 5;
+  static const int weeklyCap = NotificationGate.weeklyBudget;
 
   /// The notification title.
   static const String title = 'نُخبة';

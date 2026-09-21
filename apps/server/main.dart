@@ -6,6 +6,7 @@ import 'package:server/scheduler/badge_evaluation_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
+import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
@@ -26,6 +27,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // The prediction reminder runs on a timer inside this process (see
     // reminder_scheduler.dart for why not pg_cron).
     startReminderScheduler(root);
+    // Pushes the followers of a team whose match starts soon (see
+    // pre_match_scheduler.dart).
+    startPreMatchScheduler(root);
     // Delivers the pushes deferred out of quiet hours (see
     // notification_queue_scheduler.dart).
     startNotificationQueueScheduler(root);

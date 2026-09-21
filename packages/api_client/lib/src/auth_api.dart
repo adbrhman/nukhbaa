@@ -193,14 +193,21 @@ final class AuthApi {
 
   /// `PUT /me/notification-preferences` -- stores the caller's switches and
   /// answers what the server stored, which is what the page then shows.
+  ///
+  /// Only the switches given are sent; the server keeps the others as
+  /// stored.
   Future<Result<NotificationPreferencesDto>> updateNotificationPreferences({
-    required bool predictionReminder,
+    bool? predictionReminder,
+    bool? preMatch,
   }) {
     return _transport.putObject<NotificationPreferencesDto>(
       '/me/notification-preferences',
-      body: NotificationPreferencesDto(
-        predictionReminder: predictionReminder,
-      ).toJson(),
+      body: <String, Object?>{
+        'schema_version': NotificationPreferencesDto.currentSchemaVersion,
+        if (predictionReminder != null)
+          'prediction_reminder': predictionReminder,
+        if (preMatch != null) 'pre_match': preMatch,
+      },
       parse: NotificationPreferencesDto.fromJson,
     );
   }

@@ -10,11 +10,14 @@ import 'package:server/http/json_body.dart';
 import 'package:shared/shared.dart';
 
 /// `GET` / `PUT /me/notification-preferences` -- the caller's own
-/// notification switches (P3-1).
+/// notification switches (P3-1, pre_match from migration 0066).
 ///
 /// `GET` answers the stored switches, or the defaults (all on) for a caller
-/// who never changed anything. `PUT` takes `{ "prediction_reminder": bool }`
-/// and answers what was stored. The owner comes from the verified token,
+/// who never changed anything. `PUT` takes any of
+/// `{ "prediction_reminder": bool, "pre_match": bool }` -- at least one --
+/// keeps the stored value of a switch the body leaves out, and answers what
+/// was stored. An older client that only knows the reminder therefore never
+/// resets the pre-match switch. The owner comes from the verified token,
 /// never the body (Security ADR section 2).
 ///
 /// Inherits `bearerAuth` from `routes/me/_middleware.dart`, so an
@@ -37,17 +40,39 @@ Future<Response> onRequest(RequestContext context) async {
     }
     final body = (bodyResult as Ok<Map<String, Object?>>).value;
 
-    final reminder = _requireBool(body, 'prediction_reminder');
-    if (reminder is Err<bool>) {
+    final reminder = _optionalBool(body, 'prediction_reminder');
+    if (reminder is Err<bool?>) {
       return errorResponse(reminder.error);
+    }
+    final preMatch = _optionalBool(body, 'pre_match');
+    if (preMatch is Err<bool?>) {
+      return errorResponse(preMatch.error);
+    }
+    final bool? reminderValue = (reminder as Ok<bool?>).value;
+    final bool? preMatchValue = (preMatch as Ok<bool?>).value;
+    if (reminderValue == null && preMatchValue == null) {
+      return errorResponse(
+        const AppError.validation(
+          'request.field_missing',
+          'At least one of "prediction_reminder" and "pre_match" is required',
+        ),
+      );
     }
 
     final root = await context.read<Future<CompositionRoot>>();
     final principal = context.read<AuthenticatedUser>();
+    final current = await root.getMyNotificationPreferences(
+      principal: principal,
+    );
+    if (current is Err<NotificationPreferences>) {
+      return errorResponse(current.error);
+    }
+    final stored = (current as Ok<NotificationPreferences>).value;
     result = await root.updateMyNotificationPreferences(
       principal: principal,
       preferences: NotificationPreferences(
-        predictionReminder: (reminder as Ok<bool>).value,
+        predictionReminder: reminderValue ?? stored.predictionReminder,
+        preMatch: preMatchValue ?? stored.preMatch,
       ),
     );
   }
@@ -56,15 +81,20 @@ Future<Response> onRequest(RequestContext context) async {
     Ok<NotificationPreferences>(:final value) => Response.json(
       body: NotificationPreferencesDto(
         predictionReminder: value.predictionReminder,
+        preMatch: value.preMatch,
       ).toJson(),
     ),
     Err<NotificationPreferences>(:final error) => errorResponse(error),
   };
 }
 
-/// Extracts a required boolean field. A switch has no safe default on write:
-/// a body that forgot it must be refused, not read as "off" or "on".
-Result<bool> _requireBool(Map<String, Object?> body, String field) {
+/// Reads an optional boolean field: absent is `Ok(null)`, a boolean is
+/// itself, anything else is refused -- a switch is never guessed from a
+/// string or a number.
+Result<bool?> _optionalBool(Map<String, Object?> body, String field) {
+  if (!body.containsKey(field)) {
+    return const Result.ok(null);
+  }
   final value = body[field];
   if (value is bool) {
     return Result.ok(value);
@@ -72,7 +102,7 @@ Result<bool> _requireBool(Map<String, Object?> body, String field) {
   return Result.err(
     AppError.validation(
       'request.field_missing',
-      'Field "$field" is required and must be a boolean',
+      'Field "$field" must be a boolean',
     ),
   );
 }

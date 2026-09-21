@@ -15,7 +15,8 @@ final class PostgresNotificationPreferenceRepository
   final PostgresConnection _connection;
 
   static const String _readSql = '''
-SELECT np.prediction_reminder AS prediction_reminder
+SELECT np.prediction_reminder AS prediction_reminder,
+       np.pre_match AS pre_match
 FROM notification.notification_preferences np
 WHERE np.user_id = @user_id
 ''';
@@ -24,11 +25,12 @@ WHERE np.user_id = @user_id
   // updates it. RETURNING answers with what is stored, not what was sent.
   static const String _saveSql = '''
 INSERT INTO notification.notification_preferences
-  (user_id, prediction_reminder)
-VALUES (@user_id, @prediction_reminder)
+  (user_id, prediction_reminder, pre_match)
+VALUES (@user_id, @prediction_reminder, @pre_match)
 ON CONFLICT (user_id) DO UPDATE
-  SET prediction_reminder = EXCLUDED.prediction_reminder
-RETURNING prediction_reminder
+  SET prediction_reminder = EXCLUDED.prediction_reminder,
+      pre_match = EXCLUDED.pre_match
+RETURNING prediction_reminder, pre_match
 ''';
 
   static const String _reminderOptOutsSql = '''
@@ -62,6 +64,7 @@ WHERE np.prediction_reminder = false
       parameters: {
         'user_id': userId.value,
         'prediction_reminder': preferences.predictionReminder,
+        'pre_match': preferences.preMatch,
       },
     );
     return switch (result) {
@@ -91,15 +94,18 @@ WHERE np.prediction_reminder = false
     Map<String, dynamic> row,
   ) {
     final raw = row['prediction_reminder'];
-    if (raw is! bool) {
+    final preMatch = row['pre_match'];
+    if (raw is! bool || preMatch is! bool) {
       return const Result.err(
         AppError.transient(
           'notification_preferences.row_corrupt',
-          'prediction_reminder was not a boolean',
+          'a notification switch was not a boolean',
         ),
       );
     }
-    return Result.ok(NotificationPreferences(predictionReminder: raw));
+    return Result.ok(
+      NotificationPreferences(predictionReminder: raw, preMatch: preMatch),
+    );
   }
 
   static Result<Set<String>> _userIds(List<Map<String, dynamic>> rows) {

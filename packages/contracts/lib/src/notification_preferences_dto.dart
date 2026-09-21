@@ -8,6 +8,7 @@ final class NotificationPreferencesDto {
   /// Creates the switches.
   const NotificationPreferencesDto({
     required this.predictionReminder,
+    this.preMatch = true,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -16,6 +17,7 @@ final class NotificationPreferencesDto {
     return NotificationPreferencesDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       predictionReminder: (json['prediction_reminder'] as bool?) ?? true,
+      preMatch: (json['pre_match'] as bool?) ?? true,
     );
   }
 
@@ -25,6 +27,9 @@ final class NotificationPreferencesDto {
   /// Whether the daily prediction reminder may reach the caller.
   final bool predictionReminder;
 
+  /// Whether the pre-match push (plan P3-4a) may reach the caller.
+  final bool preMatch;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -32,14 +37,16 @@ final class NotificationPreferencesDto {
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'prediction_reminder': predictionReminder,
+    'pre_match': preMatch,
   };
 
   @override
   bool operator ==(Object other) =>
       other is NotificationPreferencesDto &&
       other.schemaVersion == schemaVersion &&
-      other.predictionReminder == predictionReminder;
+      other.predictionReminder == predictionReminder &&
+      other.preMatch == preMatch;
 
   @override
-  int get hashCode => Object.hash(schemaVersion, predictionReminder);
+  int get hashCode => Object.hash(schemaVersion, predictionReminder, preMatch);
 }

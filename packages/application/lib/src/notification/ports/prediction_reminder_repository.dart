@@ -1,3 +1,4 @@
+import 'package:application/src/notification/ports/push_budget_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -6,7 +7,8 @@ import 'package:shared/shared.dart';
 /// General contract (Application ADR §2): never throws, maps driver failures
 /// to [ErrorKind.transient]. Tier-3 -- a failure here is confined to the
 /// reminder use-case and never reaches the points path.
-abstract interface class PredictionReminderRepository {
+abstract interface class PredictionReminderRepository
+    implements PushBudgetReader {
   /// The earliest kickoff scheduled inside `[windowStart, windowEnd)` among
   /// fixtures actually linked to a season, or `Ok(null)` when the day has no
   /// programme at all.
@@ -35,10 +37,10 @@ abstract interface class PredictionReminderRepository {
     required DateTime now,
   });
 
-  /// How many reminders each of [userIds] was sent on or after [fromDate]
-  /// (`YYYY-MM-DD` in the reminder's zone), keyed by user id. A user with
-  /// none is absent from the map. Read by the weekly cap (P3-2) and nothing
-  /// else; `reminder_sends` (0040) is the record it counts.
+  /// See [PushBudgetReader.sentCountsSince]: since 0066 the count covers
+  /// every proactive type, so the reminder and the pre-match push share one
+  /// weekly budget.
+  @override
   Future<Result<Map<String, int>>> sentCountsSince({
     required List<UserId> userIds,
     required String fromDate,

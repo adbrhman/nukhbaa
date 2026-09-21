@@ -2250,6 +2250,18 @@ abstract class AppLocalizations {
   /// **'Could not save the setting. Try again.'**
   String get notificationSettingsSaveFailed;
 
+  /// The switch for the pre-match push.
+  ///
+  /// In en, this message translates to:
+  /// **'Before your team plays'**
+  String get notificationSettingsPreMatchTitle;
+
+  /// What the pre-match push does.
+  ///
+  /// In en, this message translates to:
+  /// **'About two hours before a match of a team you follow, if you have not predicted it'**
+  String get notificationSettingsPreMatchHint;
+
   /// Title of the favorite-teams page and its row on the account page.
   ///
   /// In en, this message translates to:

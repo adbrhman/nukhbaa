@@ -70,12 +70,22 @@ ON CONFLICT ON CONSTRAINT reminder_sends_pkey DO NOTHING
 
   // Reminders already sent from @from_date on, per user: the weekly cap
   // counts the rows of reminder_sends (0040), so it needs no table of its own.
+  // Since 0066 the weekly budget is shared by every proactive type: the
+  // reminders plus the rows of proactive_sends, both from the same Monday.
   static const String _sentCountsSql = '''
-SELECT rs.user_id::text AS user_id, COUNT(*)::int AS sent
-FROM notification.reminder_sends rs
-WHERE rs.user_id::text = ANY(string_to_array(@user_ids, ','))
-  AND rs.reminder_date >= @from_date::date
-GROUP BY rs.user_id
+SELECT s.user_id AS user_id, COUNT(*)::int AS sent
+FROM (
+  SELECT rs.user_id::text AS user_id
+  FROM notification.reminder_sends rs
+  WHERE rs.user_id::text = ANY(string_to_array(@user_ids, ','))
+    AND rs.reminder_date >= @from_date::date
+  UNION ALL
+  SELECT ps.user_id::text AS user_id
+  FROM notification.proactive_sends ps
+  WHERE ps.user_id::text = ANY(string_to_array(@user_ids, ','))
+    AND ps.send_date >= @from_date::date
+) s
+GROUP BY s.user_id
 ''';
 
   static const String _forgetTokenSql = '''

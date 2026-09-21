@@ -1384,6 +1384,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حفظ الإعداد، حاول مرة أخرى.';
 
   @override
+  String get notificationSettingsPreMatchTitle => 'قبل مباراة فريقك';
+
+  @override
+  String get notificationSettingsPreMatchHint =>
+      'قبل مباراة فريق تتابعه بنحو ساعتين، إن لم تسجّل توقعك';
+
+  @override
   String get favoriteTeamsTitle => 'فرقك المفضلة';
 
   @override

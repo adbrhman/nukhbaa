@@ -149,6 +149,42 @@ void main() {
     expect(find.text(ar.notificationSettingsSaveFailed), findsOneWidget);
   });
 
+  testWidgets('the pre-match switch writes pre_match alone', (tester) async {
+    final harness = buildAuthHarness((request) async {
+      if (request.url.path != _path) return http.Response('not found', 404);
+      if (request.method == 'PUT') {
+        final Map<String, Object?> sent =
+            (jsonDecode(request.body) as Map<Object?, Object?>)
+                .cast<String, Object?>();
+        return _okJson(<String, Object?>{
+          'schema_version': 1,
+          'prediction_reminder': true,
+          'pre_match': sent['pre_match'] == true,
+        });
+      }
+      return _okJson(_prefs(true));
+    }, seedToken: 'jwt');
+    addTearDown(harness.dispose);
+
+    await _pump(tester, harness, const NotificationSettingsScreen());
+    const Key preMatchKey = Key('notifications.settings.preMatch');
+    expect(tester.widget<Switch>(find.byKey(preMatchKey)).value, isTrue);
+
+    await tester.tap(find.byKey(preMatchKey));
+    await tester.pumpAndSettle();
+
+    final puts = harness.captured
+        .where((c) => c.request.method == 'PUT')
+        .toList();
+    expect(puts, hasLength(1));
+    final Map<Object?, Object?> body =
+        jsonDecode(puts.single.request.body) as Map<Object?, Object?>;
+    expect(body['pre_match'], false);
+    expect(body.containsKey('prediction_reminder'), isFalse);
+    expect(tester.widget<Switch>(find.byKey(preMatchKey)).value, isFalse);
+    expect(_switchValue(tester), isTrue);
+  });
+
   testWidgets('the settings page opens it', (tester) async {
     final harness = buildAuthHarness((request) async {
       if (request.url.path == _path) return _okJson(_prefs(true));

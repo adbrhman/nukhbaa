@@ -8,7 +8,10 @@ import 'package:shared/shared.dart';
 /// people it reached before the switch existed.
 final class NotificationPreferences {
   /// Creates a set of switches.
-  const NotificationPreferences({required this.predictionReminder});
+  const NotificationPreferences({
+    required this.predictionReminder,
+    this.preMatch = true,
+  });
 
   /// What a user who never changed anything has.
   static const NotificationPreferences defaults = NotificationPreferences(
@@ -18,13 +21,18 @@ final class NotificationPreferences {
   /// Whether the daily prediction reminder may reach this user.
   final bool predictionReminder;
 
+  /// Whether the pre-match push (plan P3-4a, migration 0066) may reach
+  /// this user.
+  final bool preMatch;
+
   @override
   bool operator ==(Object other) =>
       other is NotificationPreferences &&
-      other.predictionReminder == predictionReminder;
+      other.predictionReminder == predictionReminder &&
+      other.preMatch == preMatch;
 
   @override
-  int get hashCode => predictionReminder.hashCode;
+  int get hashCode => Object.hash(predictionReminder, preMatch);
 }
 
 /// Read/write port over `notification.notification_preferences` (0063).

@@ -3075,6 +3075,33 @@ P3-4a, batch 2). Migration 0065 (`identity.user_favorite_teams`).
   sweep now deletes the tokens FCM reports invalid, as the reminder sweep
   already did, through `NotificationQueue.forgetTokens`.
 
+### Proactive pushes: the gate and the pre-match push (plan P3-3, P3-4a, 2026-09-22)
+
+Migration 0066: `pre_match`, `streak_saver`, `overtaken` switches on
+`notification_preferences` (all default on), and
+`notification.proactive_sends`, one row per (user, kind, ref).
+**0066 must be on the live DB before this server is deployed**: the
+reminder sweep's budget query reads `proactive_sends`.
+
+- **`NotificationGate` (domain) is the one rule** for proactive pushes: the
+  type switch, the quiet hours on the reader's clock, and a weekly budget of
+  5 per Riyadh week shared by every proactive type. Rewards (exact hit) and
+  announcements are not proactive and never pass it.
+- **The budget is shared from now on.** `PushBudgetReader.sentCountsSince`
+  counts `reminder_sends` plus `proactive_sends` from the week's Monday;
+  `PostgresPredictionReminderRepository` implements it for both sweeps, and
+  `SendPredictionReminders.weeklyCap` is `NotificationGate.weeklyBudget`.
+- **Pre-match push (`SendPreMatchReminders`)**, every 10 minutes: fixtures
+  kicking off 90 to 120 minutes from now; followers (0065) of either side
+  who are active participants of a season owning the fixture, have not
+  predicted it, were not pushed about it, and own a device. Each push is
+  recorded right after it is sent; a failed record stops the sweep.
+- **Switches.** `PUT /me/notification-preferences` accepts either switch
+  and keeps the one left out, so an old client never resets `pre_match`.
+  The settings page shows both.
+- **Still to come (batch 3):** `streak_saver` and `overtaken` use the same
+  gate, table and budget; their columns already exist.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

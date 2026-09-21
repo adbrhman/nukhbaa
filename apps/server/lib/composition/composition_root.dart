@@ -96,6 +96,7 @@ final class CompositionRoot {
     required this.getUnreadCount,
     required this.markNotificationRead,
     required this.sendPredictionReminders,
+    required this.sendPreMatchReminders,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -229,6 +230,7 @@ final class CompositionRoot {
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
+    SendPreMatchReminders? sendPreMatchReminders,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -375,6 +377,8 @@ final class CompositionRoot {
            markNotificationRead ?? _absentMarkNotificationRead(),
        sendPredictionReminders =
            sendPredictionReminders ?? _absentSendPredictionReminders(),
+       sendPreMatchReminders =
+           sendPreMatchReminders ?? _absentSendPreMatchReminders(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -965,6 +969,15 @@ final class CompositionRoot {
         preferences: _UnwiredNotificationPreferenceRepository(),
       );
 
+  /// Backs an "absent" [SendPreMatchReminders]: like the reminder sweep,
+  /// never reached by a route test, and loud if one ever does.
+  static SendPreMatchReminders _absentSendPreMatchReminders() =>
+      SendPreMatchReminders(
+        reminders: _UnwiredPreMatchReminderRepository(),
+        budget: _UnwiredPredictionReminderRepository(),
+        sender: const NoopPushSender(),
+      );
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1435,6 +1448,10 @@ final class CompositionRoot {
   /// Reminds everyone who has not predicted, three hours before the day's
   /// first kickoff. Driven by the scheduler, never by a request.
   final SendPredictionReminders sendPredictionReminders;
+
+  /// Pushes the followers of a team whose match starts soon and who have
+  /// not predicted it (plan P3-4a). Driven by the scheduler.
+  final SendPreMatchReminders sendPreMatchReminders;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -1907,6 +1924,11 @@ final class CompositionRoot {
         reminders: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
         preferences: PostgresNotificationPreferenceRepository(connection),
+      ),
+      sendPreMatchReminders: SendPreMatchReminders(
+        reminders: PostgresPreMatchReminderRepository(connection),
+        budget: PostgresPredictionReminderRepository(connection),
+        sender: pushSender,
       ),
       flushNotificationQueue: FlushNotificationQueue(
         queue: notificationQueue,
@@ -3144,6 +3166,29 @@ final class _UnwiredNotificationQueue implements NotificationQueue {
   @override
   Future<Result<void>> forgetTokens(List<String> tokens) =>
       throw StateError('The notification queue was not wired into this root');
+}
+
+/// Refuses every call: see [_absentSendPreMatchReminders].
+final class _UnwiredPreMatchReminderRepository
+    implements PreMatchReminderRepository {
+  static Never _unwired() =>
+      throw StateError('The pre-match sweep was not wired into this root');
+
+  @override
+  Future<Result<List<PreMatchTarget>>> dueTargets({
+    required DateTime from,
+    required DateTime to,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markSent({
+    required PreMatchTarget target,
+    required String sendDate,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
 }
 
 /// Refuses every call: see [_absentSendPredictionReminders].

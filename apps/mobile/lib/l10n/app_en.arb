@@ -983,6 +983,14 @@
   "@notificationSettingsSaveFailed": {
     "description": "Shown when writing a notification switch failed."
   },
+  "notificationSettingsPreMatchTitle": "Before your team plays",
+  "@notificationSettingsPreMatchTitle": {
+    "description": "The switch for the pre-match push."
+  },
+  "notificationSettingsPreMatchHint": "About two hours before a match of a team you follow, if you have not predicted it",
+  "@notificationSettingsPreMatchHint": {
+    "description": "What the pre-match push does."
+  },
   "favoriteTeamsTitle": "Favorite teams",
   "@favoriteTeamsTitle": {
     "description": "Title of the favorite-teams page and its row on the account page."

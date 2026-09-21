@@ -1377,6 +1377,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save the setting. Try again.';
 
   @override
+  String get notificationSettingsPreMatchTitle => 'Before your team plays';
+
+  @override
+  String get notificationSettingsPreMatchHint =>
+      'About two hours before a match of a team you follow, if you have not predicted it';
+
+  @override
   String get favoriteTeamsTitle => 'Favorite teams';
 
   @override

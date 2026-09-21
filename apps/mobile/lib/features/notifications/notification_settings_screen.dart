@@ -1,10 +1,11 @@
 /// The notification settings page (P3-1): the switches the server keeps in
 /// `notification_preferences`, read from and written to
-/// `/me/notification-preferences`.
+/// `/me/notification-preferences` -- the daily reminder and, from 0066, the
+/// pre-match push.
 ///
-/// The server is the record. The switch shows what the server answered, and
-/// a write that fails leaves it where it was, with a message -- the page
-/// never shows a setting the server does not hold.
+/// The server is the record. A switch shows what the server answered, and a
+/// write that fails leaves it where it was, with a message -- the page never
+/// shows a setting the server does not hold.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -45,24 +46,27 @@ class _NotificationSettingsScreenState
     extends ConsumerState<NotificationSettingsScreen> {
   /// What the last successful write stored; null until one succeeds, when
   /// the page shows what the read answered.
-  bool? _stored;
+  NotificationPreferencesDto? _stored;
 
-  /// True while a write is in flight: the switch is disabled so two taps
+  /// True while a write is in flight: every switch is disabled so two taps
   /// cannot race each other to the server.
   bool _saving = false;
 
-  Future<void> _setReminder(bool on) async {
+  Future<void> _save({bool? reminder, bool? preMatch}) async {
     setState(() => _saving = true);
     final Result<NotificationPreferencesDto> result = await ref
         .read(authApiProvider)
-        .updateNotificationPreferences(predictionReminder: on);
+        .updateNotificationPreferences(
+          predictionReminder: reminder,
+          preMatch: preMatch,
+        );
     if (!mounted) {
       return;
     }
     switch (result) {
       case Ok<NotificationPreferencesDto>(:final value):
         setState(() {
-          _stored = value.predictionReminder;
+          _stored = value;
           _saving = false;
         });
       case Err<NotificationPreferencesDto>():
@@ -93,64 +97,96 @@ class _NotificationSettingsScreenState
       body: AsyncObjectView<NotificationPreferencesDto>(
         value: ref.watch(notificationPreferencesProvider),
         onRetry: () => ref.invalidate(notificationPreferencesProvider),
-        builder: (context, preferences) {
-          final bool reminderOn = _stored ?? preferences.predictionReminder;
+        builder: (context, read) {
+          final NotificationPreferencesDto shown = _stored ?? read;
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: <Widget>[
               AccountMenuCard(
                 children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
+                  _SwitchRow(
+                    switchKey: const Key(
+                      'notifications.settings.predictionReminder',
                     ),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.alarm_rounded,
-                          color: tokens.primary,
-                          size: AppSizes.iconLg,
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                l10n.notificationSettingsReminderTitle,
-                                style: context.text.bodyLarge?.copyWith(
-                                  color: tokens.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                l10n.notificationSettingsReminderHint,
-                                style: context.text.bodySmall?.copyWith(
-                                  color: tokens.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Switch(
-                          key: const Key(
-                            'notifications.settings.predictionReminder',
-                          ),
-                          value: reminderOn,
-                          onChanged: _saving ? null : _setReminder,
-                        ),
-                      ],
-                    ),
+                    icon: Icons.alarm_rounded,
+                    title: l10n.notificationSettingsReminderTitle,
+                    hint: l10n.notificationSettingsReminderHint,
+                    value: shown.predictionReminder,
+                    onChanged: _saving ? null : (on) => _save(reminder: on),
+                  ),
+                  _SwitchRow(
+                    switchKey: const Key('notifications.settings.preMatch'),
+                    icon: Icons.sports_soccer_rounded,
+                    title: l10n.notificationSettingsPreMatchTitle,
+                    hint: l10n.notificationSettingsPreMatchHint,
+                    value: shown.preMatch,
+                    onChanged: _saving ? null : (on) => _save(preMatch: on),
                   ),
                 ],
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// One switch with its icon, title and one-line explanation.
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.switchKey,
+    required this.icon,
+    required this.title,
+    required this.hint,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Key switchKey;
+  final IconData icon;
+  final String title;
+  final String hint;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: tokens.primary, size: AppSizes.iconLg),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: context.text.bodyLarge?.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hint,
+                  style: context.text.bodySmall?.copyWith(
+                    color: tokens.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Switch(key: switchKey, value: value, onChanged: onChanged),
+        ],
       ),
     );
   }
