@@ -3047,6 +3047,13 @@ The last piece of P3-2. **No migration, no route, no client change.**
   then the cap, so only users who would otherwise be sent to are counted.
 - **Fail closed.** If the counts cannot be read the sweep sends nothing and
   the next tick retries, as with the opt-outs.
+- **Kept as built, decided 2026-09-22** against the plan's "6, every type,
+  user-adjustable": the daily reminder is today the only push that is not a
+  reward (exact hit) or a human decision (announcement), so a budget shared
+  with those would let an admin broadcast silence the reminder. When plan
+  P3-4 adds the first new proactive type (pre-match, streak saver,
+  overtaken), the cap becomes one weekly budget shared by the reminder and
+  those types. A user-set cap may only lower it, never raise it.
 
 ## 3. Version-Verification Log
 
