@@ -156,4 +156,16 @@ final class AuthApi {
       parse: MyDailyChallengeDto.fromJson,
     );
   }
+
+  /// `GET /me/weekly-league` -- the caller's group in the Riyadh weekly
+  /// league that is open now, ranked.
+  ///
+  /// Computed on every call from the same points the monthly board reads;
+  /// nothing weekly is cached here, so there is nothing to invalidate.
+  Future<Result<MyWeeklyLeagueDto>> myWeeklyLeague() {
+    return _transport.getObject<MyWeeklyLeagueDto>(
+      '/me/weekly-league',
+      parse: MyWeeklyLeagueDto.fromJson,
+    );
+  }
 }

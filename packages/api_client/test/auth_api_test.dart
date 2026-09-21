@@ -161,4 +161,64 @@ void main() {
       expect(value.complete, isFalse);
     });
   });
+
+  group('AuthApi.myWeeklyLeague', () {
+    test('200 -> Ok(MyWeeklyLeagueDto), GET /me/weekly-league', () async {
+      const expected = MyWeeklyLeagueDto(
+        weekStart: '2026-09-21',
+        weekEnd: '2026-09-27',
+        tier: 1,
+        groupIndex: 0,
+        myRank: 3,
+        promotionZone: 5,
+        relegationZone: 5,
+        entries: [
+          WeeklyLeagueEntryDto(
+            rank: 3,
+            userId: 'u-1',
+            points: 7,
+            exactCount: 1,
+            decidedCount: 4,
+            projectedOutcome: 'held',
+            isMe: true,
+          ),
+        ],
+      );
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).myWeeklyLeague();
+
+      expect(result, const Result<MyWeeklyLeagueDto>.ok(expected));
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/weekly-league');
+      expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+
+    test('empty entries list parses without error', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(
+          const MyWeeklyLeagueDto(
+            weekStart: '2026-09-21',
+            weekEnd: '2026-09-27',
+            tier: 1,
+            groupIndex: 0,
+            myRank: 0,
+            promotionZone: 0,
+            relegationZone: 0,
+            entries: [],
+          ).toJson(),
+        ),
+      );
+
+      final result = await AuthApi(ctx.transport).myWeeklyLeague();
+
+      final value = (result as Ok<MyWeeklyLeagueDto>).value;
+      expect(value.entries, isEmpty);
+      expect(value.myRank, 0);
+    });
+  });
 }
