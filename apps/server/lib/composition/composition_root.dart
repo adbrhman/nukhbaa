@@ -3127,6 +3127,12 @@ final class _UnwiredPredictionReminderRepository
   }) => _unwired();
 
   @override
+  Future<Result<Map<String, int>>> sentCountsSince({
+    required List<UserId> userIds,
+    required String fromDate,
+  }) => _unwired();
+
+  @override
   Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
 }
 

@@ -32,6 +32,14 @@ import 'package:shared/shared.dart';
 /// quiet hours would arrive after the kickoff it was about. Like an
 /// opted-out user, a skipped one is not marked in `reminder_sends`.
 ///
+/// **Weekly cap (P3-2, decided 2026-09-22):** a user already reminded
+/// [weeklyCap] times in the current Riyadh week (Monday to Sunday, the week
+/// of the weekly league) is skipped, not queued, and not marked. Only this
+/// reminder counts toward the cap: an exact-hit push is a reward and an
+/// admin announcement is a deliberate human decision. If the counts cannot
+/// be read the sweep sends nothing and the next tick retries, as with the
+/// opt-outs.
+///
 /// Returns the number of users notified (`0` is the common, healthy answer).
 final class SendPredictionReminders {
   /// Creates the use-case over its collaborators.
@@ -57,6 +65,9 @@ final class SendPredictionReminders {
 
   /// How far either side of [leadTime] still counts as "now".
   static const Duration tolerance = Duration(minutes: 20);
+
+  /// The most reminders one user receives in one Riyadh week.
+  static const int weeklyCap = 5;
 
   /// The notification title.
   static const String title = 'نُخبة';
@@ -116,7 +127,7 @@ final class SendPredictionReminders {
       return Result.err(optOutsResult.error);
     }
     final optedOut = (optOutsResult as Ok<Set<String>>).value;
-    final targets = <ReminderTarget>[
+    final eligible = <ReminderTarget>[
       for (final target in pending)
         if (!optedOut.contains(target.userId.value) &&
             !QuietHours.covers(
@@ -124,6 +135,26 @@ final class SendPredictionReminders {
               utcOffsetMinutes: target.utcOffsetMinutes,
             ))
           target,
+    ];
+    if (eligible.isEmpty) {
+      return const Result.ok(0);
+    }
+
+    final today = DateTime.utc(local.year, local.month, local.day);
+    final monday = today.subtract(
+      Duration(days: today.weekday - DateTime.monday),
+    );
+    final countsResult = await _reminders.sentCountsSince(
+      userIds: [for (final target in eligible) target.userId],
+      fromDate: _dateOf(monday),
+    );
+    if (countsResult is Err<Map<String, int>>) {
+      return Result.err(countsResult.error);
+    }
+    final sentThisWeek = (countsResult as Ok<Map<String, int>>).value;
+    final targets = <ReminderTarget>[
+      for (final target in eligible)
+        if ((sentThisWeek[target.userId.value] ?? 0) < weeklyCap) target,
     ];
     if (targets.isEmpty) {
       return const Result.ok(0);
@@ -157,4 +188,9 @@ final class SendPredictionReminders {
 
     return Result.ok(targets.length);
   }
+
+  static String _dateOf(DateTime day) =>
+      '${day.year.toString().padLeft(4, '0')}-'
+      '${day.month.toString().padLeft(2, '0')}-'
+      '${day.day.toString().padLeft(2, '0')}';
 }

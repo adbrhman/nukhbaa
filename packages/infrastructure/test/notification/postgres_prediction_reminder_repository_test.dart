@@ -13,6 +13,7 @@ final class _FakeConnection implements PostgresConnection {
   final Result<List<Map<String, dynamic>>> _response;
 
   final List<String> sqls = [];
+  final List<Map<String, Object?>> params = [];
 
   @override
   Future<Result<List<Map<String, dynamic>>>> query(
@@ -20,6 +21,7 @@ final class _FakeConnection implements PostgresConnection {
     Map<String, Object?> parameters = const {},
   }) async {
     sqls.add(sql);
+    params.add(parameters);
     return _response;
   }
 
@@ -84,6 +86,54 @@ void main() {
         (result as Err<List<ReminderTarget>>).error.kind,
         ErrorKind.transient,
       );
+    });
+  });
+
+  group('sentCountsSince', () {
+    UserId id(String raw) => (UserId.tryParse(raw) as Ok<UserId>).value;
+
+    test('answers the count per user from the week start', () async {
+      final connection = _FakeConnection(
+        const Result.ok([
+          {'user_id': _userA, 'sent': 5},
+        ]),
+      );
+
+      final result = await PostgresPredictionReminderRepository(connection)
+          .sentCountsSince(
+            userIds: [id(_userA), id(_userB)],
+            fromDate: '2026-09-21',
+          );
+
+      expect((result as Ok<Map<String, int>>).value, {_userA: 5});
+      expect(connection.sqls.single, contains('notification.reminder_sends'));
+      expect(connection.params.single['user_ids'], '$_userA,$_userB');
+      expect(connection.params.single['from_date'], '2026-09-21');
+    });
+
+    test('no users -> no query', () async {
+      final connection = _FakeConnection(const Result.ok([]));
+
+      final result = await PostgresPredictionReminderRepository(
+        connection,
+      ).sentCountsSince(userIds: const [], fromDate: '2026-09-21');
+
+      expect((result as Ok<Map<String, int>>).value, isEmpty);
+      expect(connection.sqls, isEmpty);
+    });
+
+    test('a non-integer count is transient, not a guess', () async {
+      final connection = _FakeConnection(
+        const Result.ok([
+          {'user_id': _userA, 'sent': '5'},
+        ]),
+      );
+
+      final result = await PostgresPredictionReminderRepository(
+        connection,
+      ).sentCountsSince(userIds: [id(_userA)], fromDate: '2026-09-21');
+
+      expect((result as Err<Map<String, int>>).error.kind, ErrorKind.transient);
     });
   });
 }

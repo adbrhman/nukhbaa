@@ -35,6 +35,15 @@ abstract interface class PredictionReminderRepository {
     required DateTime now,
   });
 
+  /// How many reminders each of [userIds] was sent on or after [fromDate]
+  /// (`YYYY-MM-DD` in the reminder's zone), keyed by user id. A user with
+  /// none is absent from the map. Read by the weekly cap (P3-2) and nothing
+  /// else; `reminder_sends` (0040) is the record it counts.
+  Future<Result<Map<String, int>>> sentCountsSince({
+    required List<UserId> userIds,
+    required String fromDate,
+  });
+
   /// Deletes device tokens FCM reported as permanently invalid.
   ///
   /// It lives here rather than on [DeviceTokenRepository] because the only

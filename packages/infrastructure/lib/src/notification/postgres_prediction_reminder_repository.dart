@@ -68,6 +68,16 @@ VALUES (@user_id, @reminder_date::date, @sent_at)
 ON CONFLICT ON CONSTRAINT reminder_sends_pkey DO NOTHING
 ''';
 
+  // Reminders already sent from @from_date on, per user: the weekly cap
+  // counts the rows of reminder_sends (0040), so it needs no table of its own.
+  static const String _sentCountsSql = '''
+SELECT rs.user_id::text AS user_id, COUNT(*)::int AS sent
+FROM notification.reminder_sends rs
+WHERE rs.user_id::text = ANY(string_to_array(@user_ids, ','))
+  AND rs.reminder_date >= @from_date::date
+GROUP BY rs.user_id
+''';
+
   static const String _forgetTokenSql = '''
 DELETE FROM notification.device_tokens
 WHERE token = @token
@@ -192,6 +202,45 @@ WHERE token = @token
       }
     }
     return const Result<void>.ok(null);
+  }
+
+  @override
+  Future<Result<Map<String, int>>> sentCountsSince({
+    required List<UserId> userIds,
+    required String fromDate,
+  }) async {
+    if (userIds.isEmpty) {
+      return const Result.ok(<String, int>{});
+    }
+    final result = await _connection.query(
+      _sentCountsSql,
+      parameters: {
+        'user_ids': [for (final userId in userIds) userId.value].join(','),
+        'from_date': fromDate,
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _counts(value),
+    };
+  }
+
+  Result<Map<String, int>> _counts(List<Map<String, dynamic>> rows) {
+    final counts = <String, int>{};
+    for (final row in rows) {
+      final userId = row['user_id'];
+      final sent = row['sent'];
+      if (userId is! String || sent is! int) {
+        return const Result.err(
+          AppError.transient(
+            'reminder.row_corrupt',
+            'a reminder count row had unexpected column types',
+          ),
+        );
+      }
+      counts[userId] = sent;
+    }
+    return Result.ok(counts);
   }
 
   @override

@@ -3027,6 +3027,27 @@ the live DB.
   An announcement recipient with no device on file is not queued.
 - **Still open in P3-2:** the weekly cap (docs/gamification-audit.md s4).
 
+### Weekly reminder cap (P3-2, 2026-09-22)
+
+The last piece of P3-2. **No migration, no route, no client change.**
+
+- **The rule.** A user receives at most `SendPredictionReminders.weeklyCap`
+  (5) daily prediction reminders per Riyadh week, Monday 00:00 to Sunday
+  23:59 -- the week of the weekly league (0061).
+- **What counts.** The daily reminder only. The exact-hit push is a reward
+  and an admin announcement is a deliberate human decision; neither is
+  capped and neither counts toward the cap.
+- **At the cap the reminder is skipped**, not queued and not marked in
+  `reminder_sends`, exactly like an opted-out user or one in quiet hours.
+- **No new table.** `reminder_sends` (0040) already holds one row per user
+  per reminded day, so `PredictionReminderRepository.sentCountsSince` counts
+  its rows from the week's Monday. The cap is policy in Dart; SQL only
+  counts.
+- **Order in the sweep:** pending targets, then opt-outs and quiet hours,
+  then the cap, so only users who would otherwise be sent to are counted.
+- **Fail closed.** If the counts cannot be read the sweep sends nothing and
+  the next tick retries, as with the opt-outs.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -9,10 +9,19 @@ const _userB = 'bbbbbbbb-0000-0000-0000-000000000002';
 UserId _id(String raw) => (UserId.tryParse(raw) as Ok<UserId>).value;
 
 final class _FakeReminders implements PredictionReminderRepository {
-  _FakeReminders({this.kickoff, this.targets = const []});
+  _FakeReminders({
+    this.kickoff,
+    this.targets = const [],
+    this.sentThisWeek = const {},
+    this.countFailure,
+  });
 
   DateTime? kickoff;
   List<ReminderTarget> targets;
+  Map<String, int> sentThisWeek;
+  AppError? countFailure;
+  String? countedFrom;
+  List<String> countedUsers = const [];
 
   final List<String> markedUsers = [];
   final List<String> forgotten = [];
@@ -44,6 +53,20 @@ final class _FakeReminders implements PredictionReminderRepository {
     markedDate = reminderDate;
     markedUsers.addAll(userIds.map((u) => u.value));
     return const Result<void>.ok(null);
+  }
+
+  @override
+  Future<Result<Map<String, int>>> sentCountsSince({
+    required List<UserId> userIds,
+    required String fromDate,
+  }) async {
+    countedFrom = fromDate;
+    countedUsers = [for (final userId in userIds) userId.value];
+    final failure = countFailure;
+    if (failure != null) {
+      return Result.err(failure);
+    }
+    return Result.ok(sentThisWeek);
   }
 
   @override
@@ -297,6 +320,100 @@ void main() {
       final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
 
       expect((result as Ok<int>).value, 0);
+      expect(sender.sentTo, isEmpty);
+      expect(reminders.markedUsers, isEmpty);
+    });
+
+    test('a user at the weekly cap is skipped, unmarked', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+          ReminderTarget(userId: _id(_userB), tokens: const ['t3']),
+        ],
+        sentThisWeek: {_userA: SendPredictionReminders.weeklyCap, _userB: 4},
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(),
+      );
+
+      // Tuesday 2026-09-15: the week opened on Monday the 14th.
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Ok<int>).value, 1);
+      expect(sender.sentTo, ['t3']);
+      expect(reminders.markedUsers, [_userB]);
+      expect(reminders.countedFrom, '2026-09-14');
+      expect(reminders.countedUsers, [_userA, _userB]);
+    });
+
+    test('only users still eligible are counted', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+          ReminderTarget(userId: _id(_userB), tokens: const ['t3']),
+        ],
+      );
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: _FakeSender(),
+        preferences: _FakePreferences(optOuts: {_userA}),
+      );
+
+      await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect(reminders.countedUsers, [_userB]);
+    });
+
+    test('the week turns at midnight in Riyadh, not UTC', () async {
+      // Sunday 22:00 UTC is Monday 01:00 in Riyadh: a new week.
+      final reminders = _FakeReminders(
+        kickoff: DateTime.utc(2026, 9, 21, 1),
+        targets: [
+          ReminderTarget(
+            userId: _id(_userA),
+            tokens: const ['t1'],
+            utcOffsetMinutes: 0,
+          ),
+        ],
+        sentThisWeek: {_userA: SendPredictionReminders.weeklyCap - 1},
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 20, 22));
+
+      expect((result as Ok<int>).value, 1);
+      expect(reminders.countedFrom, '2026-09-21');
+      expect(sender.sentTo, ['t1']);
+    });
+
+    test('unreadable counts -> nothing sent, the error surfaces', () async {
+      final reminders = _FakeReminders(
+        kickoff: kickoff,
+        targets: [
+          ReminderTarget(userId: _id(_userA), tokens: const ['t1']),
+        ],
+        countFailure: const AppError.transient('db.down', 'down'),
+      );
+      final sender = _FakeSender();
+      final useCase = SendPredictionReminders(
+        reminders: reminders,
+        sender: sender,
+        preferences: _FakePreferences(),
+      );
+
+      final result = await useCase(now: DateTime.utc(2026, 9, 15, 12));
+
+      expect((result as Err<int>).error.code, 'db.down');
       expect(sender.sentTo, isEmpty);
       expect(reminders.markedUsers, isEmpty);
     });
