@@ -168,4 +168,16 @@ final class AuthApi {
       parse: MyWeeklyLeagueDto.fromJson,
     );
   }
+
+  /// `GET /me/badges` -- every catalog badge with the caller's progress and
+  /// the moment each held badge was granted.
+  ///
+  /// Read-only: badges are granted by the server on its own schedule, and
+  /// nothing the client sends can grant one.
+  Future<Result<MyBadgesDto>> myBadges() {
+    return _transport.getObject<MyBadgesDto>(
+      '/me/badges',
+      parse: MyBadgesDto.fromJson,
+    );
+  }
 }

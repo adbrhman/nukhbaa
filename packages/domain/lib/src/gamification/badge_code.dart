@@ -76,6 +76,36 @@ enum BadgeCode {
     BadgeCode.leagueElite => progress.eliteWeeks >= 1,
   };
 
+  /// The count this badge's rule reads from [progress].
+  int countIn(BadgeProgress progress) => switch (this) {
+    BadgeCode.firstPrediction ||
+    BadgeCode.predictions25 ||
+    BadgeCode.predictions100 => progress.predictionsPlaced,
+    BadgeCode.firstPerfectDay ||
+    BadgeCode.perfectDays7 ||
+    BadgeCode.perfectDays30 => progress.perfectDays,
+    BadgeCode.leagueFirstWeek => progress.weeksFinished,
+    BadgeCode.leaguePromoted => progress.promotions,
+    BadgeCode.leagueChampion => progress.weeksWon,
+    BadgeCode.leagueElite => progress.eliteWeeks,
+  };
+
+  /// The count at which the badge is earned (inclusive): [isEarnedBy] holds
+  /// exactly when `countIn(progress) >= target`. Shown to the player as the
+  /// far end of a progress bar.
+  int get target => switch (this) {
+    BadgeCode.firstPrediction => 1,
+    BadgeCode.predictions25 => 25,
+    BadgeCode.predictions100 => 100,
+    BadgeCode.firstPerfectDay => 1,
+    BadgeCode.perfectDays7 => 7,
+    BadgeCode.perfectDays30 => 30,
+    BadgeCode.leagueFirstWeek => 1,
+    BadgeCode.leaguePromoted => 1,
+    BadgeCode.leagueChampion => 1,
+    BadgeCode.leagueElite => 1,
+  };
+
   /// Every badge [progress] has earned, in catalog order.
   static List<BadgeCode> earnedBy(BadgeProgress progress) => <BadgeCode>[
     for (final code in BadgeCode.values)

@@ -222,4 +222,32 @@ void main() {
       expect(value.myRank, 0);
     });
   });
+
+  group('AuthApi.myBadges', () {
+    test('200 -> Ok(MyBadgesDto), GET /me/badges', () async {
+      const expected = MyBadgesDto(
+        badges: [
+          BadgeDto(
+            code: 'first_prediction',
+            current: 1,
+            target: 1,
+            unlockedAt: '2026-09-20T08:00:00.000Z',
+          ),
+          BadgeDto(code: 'predictions_25', current: 7, target: 25),
+        ],
+      );
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).myBadges();
+
+      expect(result, const Result<MyBadgesDto>.ok(expected));
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/badges');
+      expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+  });
 }

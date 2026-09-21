@@ -32,6 +32,7 @@ final class CompositionRoot {
     required this.getMyStreak,
     required this.getMyDailyChallenge,
     required this.getMyWeeklyLeague,
+    required this.getMyBadges,
     required this.resolveExperimentVariant,
     required this.setAvatar,
     required this.clearAvatar,
@@ -159,6 +160,7 @@ final class CompositionRoot {
     GetMyStreak? getMyStreak,
     GetMyDailyChallenge? getMyDailyChallenge,
     GetMyWeeklyLeague? getMyWeeklyLeague,
+    GetMyBadges? getMyBadges,
     ResolveExperimentVariant? resolveExperimentVariant,
     SetAvatar? setAvatar,
     ClearAvatar? clearAvatar,
@@ -260,6 +262,7 @@ final class CompositionRoot {
        getMyDailyChallenge =
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
        getMyWeeklyLeague = getMyWeeklyLeague ?? _absentGetMyWeeklyLeague(),
+       getMyBadges = getMyBadges ?? _absentGetMyBadges(),
        resolveExperimentVariant =
            resolveExperimentVariant ?? _absentResolveExperimentVariant(),
        setAvatar = setAvatar ?? _absentSetAvatar(),
@@ -471,6 +474,11 @@ final class CompositionRoot {
     standings: _UnwiredWeeklyLeagueStandingsReader(),
     profiles: _UnwiredWeeklyLeagueProfileReader(),
   );
+
+  /// Builds an "absent" [GetMyBadges] over a reader that throws if a test
+  /// reaches the badge wall it never wired.
+  static GetMyBadges _absentGetMyBadges() =>
+      GetMyBadges(badges: _UnwiredPlayerBadgeReader());
 
   /// Builds an "absent" [ResolveExperimentVariant] over a repository that
   /// throws if a test reaches the experiment slice it never wired.
@@ -1079,6 +1087,10 @@ final class CompositionRoot {
   /// `GET /me/weekly-league`). Seats the caller on first sight; computed per
   /// request from the one source of points, nothing weekly is stored.
   final GetMyWeeklyLeague getMyWeeklyLeague;
+
+  /// Reads the caller's badge wall: every catalog badge, progress and grant
+  /// moment (backs `GET /me/badges`). Read-only; the evaluator grants.
+  final GetMyBadges getMyBadges;
 
   /// Decides which arm of a flagged experiment a user is in (P1-8).
   ///
@@ -1797,6 +1809,7 @@ final class CompositionRoot {
         standings: PostgresWeeklyLeagueStandingsReader(connection),
         profiles: PostgresWeeklyLeagueProfileReader(connection),
       ),
+      getMyBadges: GetMyBadges(badges: PostgresPlayerBadgeReader(connection)),
       resolveExperimentVariant: ResolveExperimentVariant(
         experiments: PostgresExperimentRepository(connection),
       ),
@@ -2274,6 +2287,14 @@ final class _UnwiredWeeklyLeagueProfileReader
   Future<Result<Map<UserId, WeeklyLeagueMemberProfile>>> profilesOf(
     List<UserId> userIds,
   ) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyBadges]: throws if a test reaches the badge wall
+/// it never wired.
+final class _UnwiredPlayerBadgeReader implements PlayerBadgeReader {
+  @override
+  Future<Result<PlayerBadgeRecord>> recordOf(UserId userId) =>
+      throw StateError('GetMyBadges was not wired into this test root');
 }
 
 /// Backs an "absent" [ResolveExperimentVariant]: throws if a test reaches
