@@ -428,6 +428,15 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'تركيا': 'turkey',
   'أوكرانيا': 'ukraine',
   'ويلز': 'wales',
+  // منتخبات الخليج (كأس الخليج)
+  'البحرين': 'bahrain',
+  'قطر': 'qatar',
+  'اليمن': 'yemen',
+  'الإمارات': 'united-arab-emirates',
+  'السعودية': 'saudi-arabia',
+  'سلطنة عمان': 'oman',
+  'العراق': 'iraq',
+  'الكويت': 'kuwait',
   // أندية الدوري الفرنسي بلا شعار سابق
   'أنجيه': 'angers',
   'موناكو': 'monaco',
@@ -753,4 +762,13 @@ const Set<String> _monthlyLogoSlugs = <String>{
   'strasbourg',
   'toulouse',
   'troyes',
+  // منتخبات الخليج (كأس الخليج)
+  'bahrain',
+  'qatar',
+  'yemen',
+  'united-arab-emirates',
+  'saudi-arabia',
+  'oman',
+  'iraq',
+  'kuwait',
 };
