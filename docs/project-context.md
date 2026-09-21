@@ -2994,6 +2994,39 @@ site yet.**
   A flag is retired with `enabled = false`, never by deleting the row: the
   assignments that measured it must survive it.
 
+### Quiet-hours routing (P3-2c, 2026-09-21)
+
+Two pushes are still worth reading in the morning: the exact-hit
+announcement (`NotifyFixtureWinners`) and the admin broadcast
+(`PublishAnnouncement`). When the reader is in their quiet hours, both now
+go into `notification.notification_queue` (0064) instead of ringing in the
+night. **No migration**: 0055 (`utc_offset_minutes`) and 0064 are already on
+the live DB.
+
+- **The inbox row is not delayed, only the push.** Both use-cases write the
+  in-app notification at once, exactly as before; the queue holds the push
+  alone. `NotifyFixtureWinners` counts a queued push as delivered.
+- **When it goes out.** `QuietHours.endsAt` (domain) answers the next 08:00
+  on the reader's own clock as a UTC instant, always after the moment asked
+  about. A reader who never reported a clock falls back to Riyadh, the same
+  fallback `QuietHours.covers` uses.
+- **The readers carry the clock.** `ScoreNoticeTarget.utcOffsetMinutes` and
+  `AnnouncementRecipient.utcOffsetMinutes`, read from `identity.users` by
+  `PostgresScoreAnnouncementRepository` and `PostgresAnnouncementRepository`.
+  Nothing else reads the offset: it is still not a day boundary.
+- **`NotificationQueue.enqueue`.** The caller generates the row id and the
+  adapter inserts with `ON CONFLICT (id) DO NOTHING`, so a retried caller
+  never queues a push twice. It stops at the first failure.
+- **Best effort, like the send.** A failed enqueue loses that one push; it
+  never fails the scoring of a fixture or the publish of an announcement.
+- **One queue.** The composition root builds a single
+  `PostgresNotificationQueue` and hands it to both notifiers and to
+  `FlushNotificationQueue`.
+- **Unchanged.** The daily prediction reminder is still skipped in quiet
+  hours, not queued (P3-2a): after 08:00 it would arrive after its kickoff.
+  An announcement recipient with no device on file is not queued.
+- **Still open in P3-2:** the weekly cap (docs/gamification-audit.md s4).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
