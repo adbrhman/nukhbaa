@@ -469,6 +469,7 @@ final class CompositionRoot {
       clock: _unwiredClock,
     ),
     standings: _UnwiredWeeklyLeagueStandingsReader(),
+    profiles: _UnwiredWeeklyLeagueProfileReader(),
   );
 
   /// Builds an "absent" [ResolveExperimentVariant] over a repository that
@@ -1794,6 +1795,7 @@ final class CompositionRoot {
           clock: clock,
         ),
         standings: PostgresWeeklyLeagueStandingsReader(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
       ),
       resolveExperimentVariant: ResolveExperimentVariant(
         experiments: PostgresExperimentRepository(connection),
@@ -2262,6 +2264,16 @@ final class _UnwiredWeeklyLeagueStandingsReader
     required WeeklyLeagueId leagueId,
     required DateTime weekStart,
   }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
+/// weekly-league profiles it never wired.
+final class _UnwiredWeeklyLeagueProfileReader
+    implements WeeklyLeagueProfileReader {
+  @override
+  Future<Result<Map<UserId, WeeklyLeagueMemberProfile>>> profilesOf(
+    List<UserId> userIds,
+  ) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
 }
 
 /// Backs an "absent" [ResolveExperimentVariant]: throws if a test reaches

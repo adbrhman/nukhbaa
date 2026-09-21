@@ -176,6 +176,7 @@ void main() {
           WeeklyLeagueEntryDto(
             rank: 3,
             userId: 'u-1',
+            displayName: 'Nora',
             points: 7,
             exactCount: 1,
             decidedCount: 4,

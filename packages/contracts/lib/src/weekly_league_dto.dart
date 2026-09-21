@@ -1,20 +1,23 @@
 /// One member's line on the weekly-league table (P2-4).
 ///
-/// Names the member by user id only: the table is a projection of the
-/// server's ranking, and the client never orders, sums or promotes anyone
-/// (Axioms 2/5). [rank] is 1-based and distinct -- the tie-break chain is a
-/// total order, so no two members share a place. Versioned through the
-/// enclosing [MyWeeklyLeagueDto].
+/// Keys the member by user id and carries the [displayName] and
+/// [avatarUrl] the server resolved for the row (P2-7b): the table is a
+/// projection of the server's ranking, and the client never orders, sums
+/// or promotes anyone (Axioms 2/5). [rank] is 1-based and distinct -- the
+/// tie-break chain is a total order, so no two members share a place.
+/// Versioned through the enclosing [MyWeeklyLeagueDto].
 final class WeeklyLeagueEntryDto {
   /// Creates a table line.
   const WeeklyLeagueEntryDto({
     required this.rank,
     required this.userId,
+    required this.displayName,
     required this.points,
     required this.exactCount,
     required this.decidedCount,
     required this.projectedOutcome,
     required this.isMe,
+    this.avatarUrl,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -22,11 +25,13 @@ final class WeeklyLeagueEntryDto {
     return WeeklyLeagueEntryDto(
       rank: (json['rank'] as int?) ?? 0,
       userId: (json['user_id'] as String?) ?? '',
+      displayName: (json['display_name'] as String?) ?? '',
       points: (json['points'] as int?) ?? 0,
       exactCount: (json['exact_count'] as int?) ?? 0,
       decidedCount: (json['decided_count'] as int?) ?? 0,
       projectedOutcome: (json['projected_outcome'] as String?) ?? 'held',
       isMe: (json['is_me'] as bool?) ?? false,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -35,6 +40,12 @@ final class WeeklyLeagueEntryDto {
 
   /// The platform user this line belongs to (UUID string).
   final String userId;
+
+  /// The platform-owned display name of the member, or an empty string when
+  /// the server holds no profile for them (the client then draws its own
+  /// neutral label). Part of the payload from its first version, so no
+  /// reader meets a version-1 body without it.
+  final String displayName;
 
   /// Points earned inside the week: scored fixture points plus streak
   /// bonuses.
@@ -54,15 +65,25 @@ final class WeeklyLeagueEntryDto {
   /// Whether this line is the caller's own.
   final bool isMe;
 
+  /// The member's profile picture, as a **server-relative** URL, or null
+  /// when they have none. Relative because the server sits behind a proxy
+  /// and does not know its own public origin; the client resolves it
+  /// against the API base it used for this very request. The `v` query
+  /// parameter is the picture's version, so a replaced picture is a
+  /// different URL and no device keeps serving the old bytes.
+  final String? avatarUrl;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'rank': rank,
     'user_id': userId,
+    'display_name': displayName,
     'points': points,
     'exact_count': exactCount,
     'decided_count': decidedCount,
     'projected_outcome': projectedOutcome,
     'is_me': isMe,
+    'avatar_url': avatarUrl,
   };
 
   @override
@@ -70,21 +91,25 @@ final class WeeklyLeagueEntryDto {
       other is WeeklyLeagueEntryDto &&
       other.rank == rank &&
       other.userId == userId &&
+      other.displayName == displayName &&
       other.points == points &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.projectedOutcome == projectedOutcome &&
-      other.isMe == isMe;
+      other.isMe == isMe &&
+      other.avatarUrl == avatarUrl;
 
   @override
   int get hashCode => Object.hash(
     rank,
     userId,
+    displayName,
     points,
     exactCount,
     decidedCount,
     projectedOutcome,
     isMe,
+    avatarUrl,
   );
 }
 

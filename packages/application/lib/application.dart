@@ -130,6 +130,7 @@ export 'src/gamification/ports/gamification_event_sink.dart';
 export 'src/gamification/ports/match_day_settlement_store.dart';
 export 'src/gamification/ports/streak_repository.dart';
 export 'src/gamification/ports/weekly_league_closure_store.dart';
+export 'src/gamification/ports/weekly_league_profile_reader.dart';
 export 'src/gamification/ports/weekly_league_repository.dart';
 export 'src/gamification/ports/weekly_league_standings_reader.dart';
 export 'src/gamification/resolve_experiment_variant.dart';

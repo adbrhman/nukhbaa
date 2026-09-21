@@ -121,15 +121,59 @@ final class _FakeStandings implements WeeklyLeagueStandingsReader {
   }
 }
 
-GetMyWeeklyLeague _useCase(_FakeLeagues leagues, _FakeStandings standings) =>
-    GetMyWeeklyLeague(
-      join: JoinWeeklyLeague(
-        leagues: leagues,
-        idGenerator: FakeIdGenerator(<String>[_leagueB]),
-        clock: FixedClock(_wednesday),
-      ),
-      standings: standings,
-    );
+/// Scripted [WeeklyLeagueProfileReader] that records what it was asked and
+/// names everyone it is asked about, except the ids it is told not to know.
+final class _FakeProfiles implements WeeklyLeagueProfileReader {
+  _FakeProfiles({
+    this.avatars = const {},
+    this.unknown = const {},
+    this.failWith,
+  });
+
+  /// User id -> the version of that user's picture.
+  final Map<String, DateTime> avatars;
+
+  /// User ids the reader has no profile for.
+  final Set<String> unknown;
+  final AppError? failWith;
+
+  int calls = 0;
+  List<UserId>? askedFor;
+
+  @override
+  Future<Result<Map<UserId, WeeklyLeagueMemberProfile>>> profilesOf(
+    List<UserId> userIds,
+  ) async {
+    calls++;
+    askedFor = userIds;
+    final failure = failWith;
+    if (failure != null) {
+      return Result.err(failure);
+    }
+    return Result.ok({
+      for (final id in userIds)
+        if (!unknown.contains(id.value))
+          id: WeeklyLeagueMemberProfile(
+            displayName: 'name-${id.value}',
+            avatarUpdatedAt: avatars[id.value],
+          ),
+    });
+  }
+}
+
+GetMyWeeklyLeague _useCase(
+  _FakeLeagues leagues,
+  _FakeStandings standings, {
+  _FakeProfiles? profiles,
+}) => GetMyWeeklyLeague(
+  join: JoinWeeklyLeague(
+    leagues: leagues,
+    idGenerator: FakeIdGenerator(<String>[_leagueB]),
+    clock: FixedClock(_wednesday),
+  ),
+  standings: standings,
+  profiles: profiles ?? _FakeProfiles(),
+);
 
 Future<MyWeeklyLeague> _read({
   required WeeklyLeagueTier tier,
@@ -310,5 +354,87 @@ void main() {
       expect(result, isA<Err<MyWeeklyLeague>>());
       expect((result as Err<MyWeeklyLeague>).error.code, 'db.down');
     });
+
+    test(
+      'asks for the profiles of exactly the members it ranked, once',
+      () async {
+        final profiles = _FakeProfiles();
+
+        final result = await _useCase(
+          _FakeLeagues(existingSeat: _seat()),
+          _FakeStandings([
+            _entry(_me, points: 4),
+            _entry(_id(1)),
+            _entry(_id(2)),
+          ]),
+          profiles: profiles,
+        ).call(principal: _principal);
+
+        expect(result, isA<Ok<MyWeeklyLeague>>());
+        expect(profiles.calls, 1);
+        expect(profiles.askedFor?.map((id) => id.value).toSet(), {
+          _me,
+          _id(1),
+          _id(2),
+        });
+      },
+    );
+
+    test('hands back the name and picture version of each member', () async {
+      final version = DateTime.utc(2026, 9, 1, 8);
+
+      final result = await _useCase(
+        _FakeLeagues(existingSeat: _seat()),
+        _FakeStandings([_entry(_me, points: 4), _entry(_id(1))]),
+        profiles: _FakeProfiles(avatars: {_me: version}),
+      ).call(principal: _principal);
+
+      final league = (result as Ok<MyWeeklyLeague>).value;
+      expect(league.profiles[const UserId(_me)]?.displayName, 'name-$_me');
+      expect(league.profiles[const UserId(_me)]?.avatarUpdatedAt, version);
+      expect(league.profiles[UserId(_id(1))]?.avatarUpdatedAt, isNull);
+    });
+
+    test('a member the reader does not know stays on the table', () async {
+      final result = await _useCase(
+        _FakeLeagues(existingSeat: _seat()),
+        _FakeStandings([_entry(_me, points: 4), _entry(_id(1))]),
+        profiles: _FakeProfiles(unknown: {_id(1)}),
+      ).call(principal: _principal);
+
+      final league = (result as Ok<MyWeeklyLeague>).value;
+      expect(league.size, 2);
+      expect(league.profiles.containsKey(UserId(_id(1))), isFalse);
+      expect(league.profiles.containsKey(const UserId(_me)), isTrue);
+    });
+
+    test('a profile failure is returned, not swallowed', () async {
+      final result = await _useCase(
+        _FakeLeagues(existingSeat: _seat()),
+        _FakeStandings([_entry(_me, points: 4)]),
+        profiles: _FakeProfiles(
+          failWith: const AppError.transient('db.down', 'down'),
+        ),
+      ).call(principal: _principal);
+
+      expect(result, isA<Err<MyWeeklyLeague>>());
+      expect((result as Err<MyWeeklyLeague>).error.code, 'db.down');
+    });
+
+    test(
+      'the profiles are not read for a caller missing from the group',
+      () async {
+        final profiles = _FakeProfiles();
+
+        final result = await _useCase(
+          _FakeLeagues(existingSeat: _seat()),
+          _FakeStandings([_entry(_id(1), points: 3)]),
+          profiles: profiles,
+        ).call(principal: _principal);
+
+        expect(result, isA<Err<MyWeeklyLeague>>());
+        expect(profiles.calls, 0);
+      },
+    );
   });
 }

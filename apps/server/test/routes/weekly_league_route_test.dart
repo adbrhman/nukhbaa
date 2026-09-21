@@ -79,6 +79,26 @@ final class _FakeStandings implements WeeklyLeagueStandingsReader {
   }) async => Result.ok(_entries);
 }
 
+/// Names every member it is asked about `name-<id>`, and gives a picture
+/// version to the ids listed in [avatars].
+final class _FakeProfiles implements WeeklyLeagueProfileReader {
+  _FakeProfiles({this.avatars = const {}});
+
+  /// User id -> the version of that user's picture.
+  final Map<String, DateTime> avatars;
+
+  @override
+  Future<Result<Map<UserId, WeeklyLeagueMemberProfile>>> profilesOf(
+    List<UserId> userIds,
+  ) async => Result.ok({
+    for (final id in userIds)
+      id: WeeklyLeagueMemberProfile(
+        displayName: 'name-${id.value}',
+        avatarUpdatedAt: avatars[id.value],
+      ),
+  });
+}
+
 WeeklyLeagueSeat _seat() => WeeklyLeagueSeat(
   leagueId: const WeeklyLeagueId(_leagueId),
   weekStart: _mondayWeek,
@@ -98,17 +118,21 @@ WeeklyLeagueEntry _entry(String user, int points, {int exact = 0}) =>
 
 String _id(int n) => '00000000-0000-0000-0000-${n.toString().padLeft(12, '0')}';
 
-CompositionRoot _rootFor(_FakeLeagues leagues, _FakeStandings standings) =>
-    CompositionRoot.forTesting(
-      getMyWeeklyLeague: GetMyWeeklyLeague(
-        join: JoinWeeklyLeague(
-          leagues: leagues,
-          idGenerator: _FixedIds(),
-          clock: _FixedClock(_wednesday),
-        ),
-        standings: standings,
-      ),
-    );
+CompositionRoot _rootFor(
+  _FakeLeagues leagues,
+  _FakeStandings standings, {
+  _FakeProfiles? profiles,
+}) => CompositionRoot.forTesting(
+  getMyWeeklyLeague: GetMyWeeklyLeague(
+    join: JoinWeeklyLeague(
+      leagues: leagues,
+      idGenerator: _FixedIds(),
+      clock: _FixedClock(_wednesday),
+    ),
+    standings: standings,
+    profiles: profiles ?? _FakeProfiles(),
+  ),
+);
 
 void main() {
   group('GET /me/weekly-league', () {
@@ -172,6 +196,36 @@ void main() {
       final body = await decodeBody(response);
       final entries = (body['entries']! as List).cast<Map<Object?, Object?>>();
       expect([for (final e in entries) e['is_me']], [false, true]);
+    });
+
+    test('names every line and addresses the pictures that exist', () async {
+      final standings = _FakeStandings([
+        _entry(_id(1), 5),
+        _entry(kNonMemberUserId, 3),
+      ]);
+      final version = DateTime.utc(2026, 9, 1);
+
+      final response = await route.onRequest(
+        wireContext(
+          root: _rootFor(
+            _FakeLeagues(seat: _seat()),
+            standings,
+            profiles: _FakeProfiles(avatars: {_id(1): version}),
+          ),
+          principal: nonMemberPrincipal(),
+          method: HttpMethod.get,
+        ),
+      );
+
+      final body = await decodeBody(response);
+      final entries = (body['entries']! as List).cast<Map<Object?, Object?>>();
+      expect(entries.first['display_name'], 'name-${_id(1)}');
+      expect(
+        entries.first['avatar_url'],
+        '/users/${_id(1)}/avatar?v=${version.millisecondsSinceEpoch}',
+      );
+      expect(entries.last['display_name'], 'name-$kNonMemberUserId');
+      expect(entries.last['avatar_url'], isNull);
     });
 
     test('a failure is mapped through the error envelope', () async {

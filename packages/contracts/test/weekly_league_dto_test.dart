@@ -15,15 +15,18 @@ void main() {
         WeeklyLeagueEntryDto(
           rank: 1,
           userId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          displayName: 'Nora',
           points: 30,
           exactCount: 3,
           decidedCount: 6,
           projectedOutcome: 'promoted',
           isMe: false,
+          avatarUrl: '/users/aaaaaaaa/avatar?v=1',
         ),
         WeeklyLeagueEntryDto(
           rank: 2,
           userId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          displayName: 'Sami',
           points: 10,
           exactCount: 1,
           decidedCount: 3,
@@ -51,6 +54,9 @@ void main() {
       expect(entries.last['user_id'], 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
       expect(entries.last['projected_outcome'], 'held');
       expect(entries.last['is_me'], true);
+      expect(entries.first['display_name'], 'Nora');
+      expect(entries.first['avatar_url'], '/users/aaaaaaaa/avatar?v=1');
+      expect(entries.last['avatar_url'], isNull);
     });
 
     test('a payload with no entries and no keys still parses', () {
@@ -62,6 +68,26 @@ void main() {
 
     test('a different rank is a different reading', () {
       final other = MyWeeklyLeagueDto.fromJson({...dto.toJson(), 'my_rank': 1});
+      expect(other, isNot(dto));
+    });
+
+    test('an entry without a name or picture key still parses', () {
+      final parsed = WeeklyLeagueEntryDto.fromJson(const {
+        'rank': 1,
+        'user_id': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      });
+      expect(parsed.displayName, '');
+      expect(parsed.avatarUrl, isNull);
+    });
+
+    test('a different picture is a different line', () {
+      final other = MyWeeklyLeagueDto.fromJson({
+        ...dto.toJson(),
+        'entries': [
+          for (final e in dto.entries)
+            {...e.toJson(), 'avatar_url': '/users/other/avatar?v=2'},
+        ],
+      });
       expect(other, isNot(dto));
     });
   });

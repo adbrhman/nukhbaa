@@ -2,6 +2,7 @@
 library;
 
 import 'package:application/src/gamification/join_weekly_league.dart';
+import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
 import 'package:application/src/gamification/ports/weekly_league_repository.dart';
 import 'package:application/src/gamification/ports/weekly_league_standings_reader.dart';
 import 'package:domain/domain.dart';
@@ -28,6 +29,13 @@ import 'package:shared/shared.dart';
 /// scored nothing is promoted) therefore stays with the policy that owns it
 /// and is never re-derived in a client.
 ///
+/// **Names are asked, not carried.** The policy ranks user ids and holds no
+/// name, so each read asks [WeeklyLeagueProfileReader] once for exactly the
+/// members it ranked and hands the answer back beside the placings. A
+/// member the reader does not know stays on the table without a profile:
+/// the standings are the answer, the name is only how a row is drawn. A
+/// failure of the read itself is returned, not swallowed.
+///
 /// Only the caller's own group, always: there is no surface for reading
 /// another one, so the principal is the whole of the authority check
 /// ([JoinWeeklyLeague] enforces the role first).
@@ -38,11 +46,14 @@ final class GetMyWeeklyLeague {
   const GetMyWeeklyLeague({
     required JoinWeeklyLeague join,
     required WeeklyLeagueStandingsReader standings,
+    required WeeklyLeagueProfileReader profiles,
   }) : _join = join,
-       _standings = standings;
+       _standings = standings,
+       _profiles = profiles;
 
   final JoinWeeklyLeague _join;
   final WeeklyLeagueStandingsReader _standings;
+  final WeeklyLeagueProfileReader _profiles;
 
   /// Reads [principal]'s group for the Riyadh week that is open now.
   Future<Result<MyWeeklyLeague>> call({
@@ -87,12 +98,22 @@ final class GetMyWeeklyLeague {
       );
     }
 
+    final profilesResult = await _profiles.profilesOf([
+      for (final placing in placings) placing.entry.userId,
+    ]);
+    if (profilesResult is Err<Map<UserId, WeeklyLeagueMemberProfile>>) {
+      return Result.err(profilesResult.error);
+    }
+    final profiles =
+        (profilesResult as Ok<Map<UserId, WeeklyLeagueMemberProfile>>).value;
+
     final movement = WeeklyLeaguePolicy.movementCount(placings.length);
     return Result.ok(
       MyWeeklyLeague(
         seat: seat,
         readerId: principal.userId,
         placings: placings,
+        profiles: profiles,
         myRank: myRank,
         promotionZone: seat.tier.canPromote ? movement : 0,
         relegationZone: seat.tier.canRelegate ? movement : 0,
@@ -108,6 +129,7 @@ final class MyWeeklyLeague {
     required this.seat,
     required this.readerId,
     required this.placings,
+    required this.profiles,
     required this.myRank,
     required this.promotionZone,
     required this.relegationZone,
@@ -122,6 +144,11 @@ final class MyWeeklyLeague {
   /// Every member of the group, best first, each with a distinct rank and
   /// the outcome the week would give them if it closed now.
   final List<WeeklyLeaguePlacing> placings;
+
+  /// The name and picture version of each member, keyed by user. A member
+  /// the profile reader did not know is absent here, never dropped from
+  /// [placings].
+  final Map<UserId, WeeklyLeagueMemberProfile> profiles;
 
   /// The caller's 1-based rank in [placings].
   final int myRank;
