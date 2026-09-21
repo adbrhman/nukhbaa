@@ -967,6 +967,22 @@
   "@badgeWallLeagueEliteHint": {
     "description": "How to earn league_elite."
   },
+  "notificationSettingsTitle": "Notifications",
+  "@notificationSettingsTitle": {
+    "description": "Title of the notification settings page and its section in settings."
+  },
+  "notificationSettingsReminderTitle": "Prediction reminder",
+  "@notificationSettingsReminderTitle": {
+    "description": "The switch for the daily prediction reminder."
+  },
+  "notificationSettingsReminderHint": "Three hours before the first match of the day, if you have not predicted yet",
+  "@notificationSettingsReminderHint": {
+    "description": "What the prediction reminder does."
+  },
+  "notificationSettingsSaveFailed": "Could not save the setting. Try again.",
+  "@notificationSettingsSaveFailed": {
+    "description": "Shown when writing a notification switch failed."
+  },
   "streakLongestLabel": "Longest: {days}",
   "@streakLongestLabel": {
     "description": "The longest run of completed match days on record.",

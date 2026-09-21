@@ -2226,6 +2226,30 @@ abstract class AppLocalizations {
   /// **'Longest: {days}'**
   String streakLongestLabel(int days);
 
+  /// Title of the notification settings page and its section in settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationSettingsTitle;
+
+  /// The switch for the daily prediction reminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Prediction reminder'**
+  String get notificationSettingsReminderTitle;
+
+  /// What the prediction reminder does.
+  ///
+  /// In en, this message translates to:
+  /// **'Three hours before the first match of the day, if you have not predicted yet'**
+  String get notificationSettingsReminderHint;
+
+  /// Shown when writing a notification switch failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the setting. Try again.'**
+  String get notificationSettingsSaveFailed;
+
   /// Title of the badge wall and its row on the account page.
   ///
   /// In en, this message translates to:

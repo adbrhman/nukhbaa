@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -248,6 +250,45 @@ void main() {
       expect(req.method, 'GET');
       expect(req.url.path, '/me/badges');
       expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+  });
+
+  group('AuthApi notification preferences', () {
+    test('GET /me/notification-preferences -> Ok(dto)', () async {
+      const expected = NotificationPreferencesDto(predictionReminder: false);
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).myNotificationPreferences();
+
+      expect(result, const Result<NotificationPreferencesDto>.ok(expected));
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/notification-preferences');
+      expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+
+    test('PUT sends the switch and answers what was stored', () async {
+      const stored = NotificationPreferencesDto(predictionReminder: false);
+      final ctx = buildTransport(
+        (_) async => okJson(stored.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(
+        ctx.transport,
+      ).updateNotificationPreferences(predictionReminder: false);
+
+      expect(result, const Result<NotificationPreferencesDto>.ok(stored));
+      final req = ctx.captured.single;
+      expect(req.method, 'PUT');
+      expect(req.url.path, '/me/notification-preferences');
+      expect(
+        (jsonDecode(req.body) as Map<String, Object?>)['prediction_reminder'],
+        false,
+      );
     });
   });
 }

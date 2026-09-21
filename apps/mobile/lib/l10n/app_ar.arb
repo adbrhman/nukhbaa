@@ -412,5 +412,9 @@
   "badgeWallLeagueChampionHint": "تصدّر مجموعتك في الدوري الأسبوعي",
   "badgeWallLeagueEliteName": "النخبة",
   "badgeWallLeagueEliteHint": "أنهِ أسبوعاً في طبقة النخبة",
+  "notificationSettingsTitle": "الإشعارات",
+  "notificationSettingsReminderTitle": "تذكير التوقعات",
+  "notificationSettingsReminderHint": "قبل أول مباراة في اليوم بثلاث ساعات، إن لم تسجّل توقعاتك",
+  "notificationSettingsSaveFailed": "تعذّر حفظ الإعداد، حاول مرة أخرى.",
   "streakLongestLabel": "الأطول: {days}"
 }

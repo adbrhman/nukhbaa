@@ -180,4 +180,28 @@ final class AuthApi {
       parse: MyBadgesDto.fromJson,
     );
   }
+
+  /// `GET /me/notification-preferences` -- the caller's notification
+  /// switches; a caller who never changed anything reads the defaults,
+  /// all on.
+  Future<Result<NotificationPreferencesDto>> myNotificationPreferences() {
+    return _transport.getObject<NotificationPreferencesDto>(
+      '/me/notification-preferences',
+      parse: NotificationPreferencesDto.fromJson,
+    );
+  }
+
+  /// `PUT /me/notification-preferences` -- stores the caller's switches and
+  /// answers what the server stored, which is what the page then shows.
+  Future<Result<NotificationPreferencesDto>> updateNotificationPreferences({
+    required bool predictionReminder,
+  }) {
+    return _transport.putObject<NotificationPreferencesDto>(
+      '/me/notification-preferences',
+      body: NotificationPreferencesDto(
+        predictionReminder: predictionReminder,
+      ).toJson(),
+      parse: NotificationPreferencesDto.fromJson,
+    );
+  }
 }

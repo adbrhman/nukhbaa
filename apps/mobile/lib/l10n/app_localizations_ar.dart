@@ -1370,6 +1370,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgeWallLeagueEliteHint => 'أنهِ أسبوعاً في طبقة النخبة';
 
   @override
+  String get notificationSettingsTitle => 'الإشعارات';
+
+  @override
+  String get notificationSettingsReminderTitle => 'تذكير التوقعات';
+
+  @override
+  String get notificationSettingsReminderHint =>
+      'قبل أول مباراة في اليوم بثلاث ساعات، إن لم تسجّل توقعاتك';
+
+  @override
+  String get notificationSettingsSaveFailed =>
+      'تعذّر حفظ الإعداد، حاول مرة أخرى.';
+
+  @override
   String streakLongestLabel(int days) {
     return 'الأطول: $days';
   }

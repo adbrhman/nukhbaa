@@ -1363,6 +1363,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get badgeWallLeagueEliteHint => 'Finish a week in the Elite tier';
 
   @override
+  String get notificationSettingsTitle => 'Notifications';
+
+  @override
+  String get notificationSettingsReminderTitle => 'Prediction reminder';
+
+  @override
+  String get notificationSettingsReminderHint =>
+      'Three hours before the first match of the day, if you have not predicted yet';
+
+  @override
+  String get notificationSettingsSaveFailed =>
+      'Could not save the setting. Try again.';
+
+  @override
   String streakLongestLabel(int days) {
     return 'Longest: $days';
   }

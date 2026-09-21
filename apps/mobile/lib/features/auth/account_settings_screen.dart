@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/join_group_screen.dart';
 import '../groups/my_groups_screen.dart';
+import '../notifications/notification_settings_screen.dart';
 import '../record/my_seasons_screen.dart';
 import '../record/season_record_screen.dart';
 import 'rules_screen.dart';
@@ -75,6 +76,18 @@ class AccountSettingsScreen extends StatelessWidget {
                       icon: Icons.menu_book_outlined,
                       title: l10n.accountRules,
                       onTap: () => open(const RulesScreen()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                AccountSectionTitle(l10n.notificationSettingsTitle),
+                AccountMenuCard(
+                  children: <Widget>[
+                    AccountMenuRow(
+                      key: const Key('account.notifications'),
+                      icon: Icons.notifications_outlined,
+                      title: l10n.notificationSettingsReminderTitle,
+                      onTap: () => open(const NotificationSettingsScreen()),
                     ),
                   ],
                 ),
