@@ -23,6 +23,7 @@ export 'src/football_data/postgres_team_repository.dart';
 export 'src/group/postgres_group_repository.dart';
 export 'src/identity/auth_config.dart';
 export 'src/identity/jwks_client.dart';
+export 'src/identity/postgres_favorite_team_repository.dart';
 export 'src/identity/postgres_user_directory.dart';
 export 'src/identity/supabase_auth_client.dart';
 

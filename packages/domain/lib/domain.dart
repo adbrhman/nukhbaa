@@ -42,6 +42,7 @@ export 'src/group/group_membership_id.dart';
 export 'src/group/group_role.dart';
 export 'src/group/invite_code.dart';
 export 'src/identity/authenticated_user.dart';
+export 'src/identity/favorite_teams.dart';
 export 'src/identity/platform_role.dart';
 export 'src/identity/user.dart';
 export 'src/gamification/badge_code.dart';
