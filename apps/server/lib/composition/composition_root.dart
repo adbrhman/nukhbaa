@@ -94,6 +94,7 @@ final class CompositionRoot {
     required this.getUnreadCount,
     required this.markNotificationRead,
     required this.sendPredictionReminders,
+    required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
     required this.closeWeeklyLeague,
@@ -224,6 +225,7 @@ final class CompositionRoot {
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
+    FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
     CloseWeeklyLeague? closeWeeklyLeague,
@@ -367,6 +369,8 @@ final class CompositionRoot {
            markNotificationRead ?? _absentMarkNotificationRead(),
        sendPredictionReminders =
            sendPredictionReminders ?? _absentSendPredictionReminders(),
+       flushNotificationQueue =
+           flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
            ensureUpcomingMonthlySeasons ??
            _absentEnsureUpcomingMonthlySeasons(),
@@ -946,6 +950,14 @@ final class CompositionRoot {
         preferences: _UnwiredNotificationPreferenceRepository(),
       );
 
+  /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
+  /// never reached by a route test, and loud if one ever does.
+  static FlushNotificationQueue _absentFlushNotificationQueue() =>
+      FlushNotificationQueue(
+        queue: _UnwiredNotificationQueue(),
+        sender: const NoopPushSender(),
+      );
+
   /// Backs an "absent" [RegisterDeviceToken]: a test that reaches the
   /// device-token slice without wiring it has a wiring bug, and a silent
   /// no-op would hide it. Separate from the notification repository -- a
@@ -1400,6 +1412,10 @@ final class CompositionRoot {
   /// Reminds everyone who has not predicted, three hours before the day's
   /// first kickoff. Driven by the scheduler, never by a request.
   final SendPredictionReminders sendPredictionReminders;
+
+  /// Delivers the pushes deferred out of quiet hours once their time has
+  /// come (P3-2). Driven by the scheduler, never by a request.
+  final FlushNotificationQueue flushNotificationQueue;
 
   /// Creates the next monthly contest a week before it starts. Driven by
   /// the scheduler, never by a request.
@@ -1859,6 +1875,10 @@ final class CompositionRoot {
         reminders: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
         preferences: PostgresNotificationPreferenceRepository(connection),
+      ),
+      flushNotificationQueue: FlushNotificationQueue(
+        queue: PostgresNotificationQueue(connection),
+        sender: pushSender,
       ),
       ensureUpcomingMonthlySeasons: EnsureUpcomingMonthlySeasons(
         repository: competitionRepository,
@@ -3057,6 +3077,15 @@ final class _UnwiredNotificationPreferenceRepository
 
   @override
   Future<Result<Set<String>>> predictionReminderOptOuts() => _unwired();
+}
+
+/// Refuses every call: see [_absentFlushNotificationQueue].
+final class _UnwiredNotificationQueue implements NotificationQueue {
+  @override
+  Future<Result<List<QueuedPush>>> claimDue({
+    required DateTime now,
+    required int limit,
+  }) => throw StateError('The notification queue was not wired into this root');
 }
 
 /// Refuses every call: see [_absentSendPredictionReminders].
