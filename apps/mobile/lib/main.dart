@@ -3,15 +3,31 @@ library;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/error/crash_reporting.dart';
 import 'core/design/app_spacing.dart';
 import 'core/providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Crash reporting wraps everything that follows, so a failure while
+  // starting Firebase or reading the build configuration is reported too.
+  // A build without NUKHBA_SENTRY_DSN (local runs, tests) starts as before.
+  if (!crashReportingEnabled(sentryDsn)) {
+    await _startApp();
+    return;
+  }
+  await SentryFlutter.init(
+    (options) => configureCrashReporting(options, dsn: sentryDsn),
+    appRunner: _startApp,
+  );
+}
+
+Future<void> _startApp() async {
   // Android only. There is no Firebase configuration for the web build,
   // and initialising without one throws before the first frame -- which
   // would take down the GitHub Pages build with it.

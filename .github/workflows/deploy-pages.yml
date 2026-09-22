@@ -86,6 +86,7 @@ jobs:
           flutter build web --release
           --base-href "/${{ github.event.repository.name }}/"
           --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
+          --dart-define=NUKHBA_SENTRY_DSN=${{ vars.NUKHBA_SENTRY_DSN }}
 
       - name: SPA fallback
         run: cp apps/mobile/build/web/index.html apps/mobile/build/web/404.html

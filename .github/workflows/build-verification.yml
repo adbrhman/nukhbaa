@@ -16,6 +16,8 @@ concurrency:
 
 env:
   API_BASE_URL: ${{ vars.NUKHBA_API_BASE_URL || 'https://api.nukhba.example' }}
+  # Crash reporting DSN (repository variable). Empty leaves reporting off.
+  SENTRY_DSN: ${{ vars.NUKHBA_SENTRY_DSN || '' }}
 
 jobs:
   database_migrations:
@@ -620,7 +622,8 @@ jobs:
           # so the installed app can recognise its own release URL and tell
           # whether it is the newest build.
           BUILD_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\",\"NUKHBA_BUILD_SHA\":\"$BUILD_SHA\"}" > /tmp/dart_defines.json
+          CLEAN_SENTRY_DSN=$(printf '%s' "$SENTRY_DSN" | tr -d '\r\n')
+          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\",\"NUKHBA_BUILD_SHA\":\"$BUILD_SHA\",\"NUKHBA_SENTRY_DSN\":\"$CLEAN_SENTRY_DSN\"}" > /tmp/dart_defines.json
           flutter build apk --split-per-abi --dart-define-from-file=/tmp/dart_defines.json --release
 
       - name: Verify release signing (apksigner)
