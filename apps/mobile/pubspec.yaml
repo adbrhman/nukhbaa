@@ -55,6 +55,11 @@ dependencies:
   # that carry NUKHBA_SENTRY_DSN: see lib/core/error/crash_reporting.dart.
   sentry_flutter: ^9.16.0
 
+  # Optional fingerprint unlock (Issue #6 follow-up, approved 2026-09-22).
+  # Android only; the web build never calls it. CI makes MainActivity a
+  # FlutterFragmentActivity and declares USE_BIOMETRIC (build-verification).
+  local_auth: ^3.0.2
+
   image_picker: ^1.2.0
   intl: any
 

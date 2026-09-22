@@ -26,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mobile/core/auth/biometric_unlock.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/providers.dart';
 
@@ -72,6 +73,8 @@ final class AuthHarness {
 AuthHarness buildAuthHarness(
   Future<http.Response> Function(http.Request request) handler, {
   String? seedToken,
+  BiometricPreferenceStore? biometricStore,
+  BiometricAuthenticator? biometricAuthenticator,
 }) {
   final captured = <CapturedRequest>[];
   final store = InMemoryTokenStore(seedToken);
@@ -83,6 +86,11 @@ AuthHarness buildAuthHarness(
 
   final overrides = <Override>[
     tokenStoreProvider.overrideWithValue(store),
+    biometricPreferenceStoreProvider.overrideWithValue(
+      biometricStore ?? InMemoryBiometricPreferenceStore(),
+    ),
+    if (biometricAuthenticator != null)
+      biometricAuthenticatorProvider.overrideWithValue(biometricAuthenticator),
     apiTransportProvider.overrideWith(
       (ref) => ApiTransport(
         baseUri: Uri.parse('https://api.test.example/'),

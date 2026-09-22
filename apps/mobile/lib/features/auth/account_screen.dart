@@ -28,6 +28,7 @@ import '../record/elite_card_screen.dart';
 import '../record/my_points_screen.dart';
 import '../record/season_record_providers.dart';
 import 'account_settings_screen.dart';
+import 'app_lock.dart';
 import 'session_controller.dart';
 import 'widgets/account_menu.dart';
 
@@ -167,6 +168,7 @@ class AccountScreen extends ConsumerWidget {
                         onTap: () => open(const AccountSettingsScreen()),
                       ),
                       const _DarkModeRow(),
+                      const BiometricUnlockRow(),
                       AccountMenuRow(
                         key: const Key('account.notificationsRow'),
                         icon: Icons.notifications_none_rounded,

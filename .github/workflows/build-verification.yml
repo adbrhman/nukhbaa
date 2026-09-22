@@ -462,6 +462,59 @@ jobs:
           print("ota_update Android requirements injected (idempotent).")
           PYEOF
 
+      # local_auth (fingerprint unlock) needs a FragmentActivity, the
+      # USE_BIOMETRIC permission and Android 7+ (SDK 24). The android/ tree is
+      # regenerated on every build, so all three are applied here, each one
+      # checked so a template change fails the build instead of the phone.
+      - name: Inject local_auth Android requirements (idempotent)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import glob, os, re, sys
+
+          acts = glob.glob("android/app/src/main/kotlin/**/MainActivity.kt", recursive=True)
+          if len(acts) != 1:
+              sys.exit("::error::expected one MainActivity.kt, found %d" % len(acts))
+          a = open(acts[0], encoding="utf-8").read()
+          if "FlutterFragmentActivity" not in a:
+              a = a.replace(
+                  "io.flutter.embedding.android.FlutterActivity",
+                  "io.flutter.embedding.android.FlutterFragmentActivity",
+              )
+              a, n = re.subn(r"\bFlutterActivity\(\)", "FlutterFragmentActivity()", a)
+              if n != 1:
+                  sys.exit("::error::MainActivity does not extend FlutterActivity()")
+              open(acts[0], "w", encoding="utf-8").write(a)
+          print("MainActivity: FlutterFragmentActivity")
+
+          manifest = "android/app/src/main/AndroidManifest.xml"
+          m = open(manifest, encoding="utf-8").read()
+          if "USE_BIOMETRIC" not in m:
+              m, n = re.subn(
+                  r"(<manifest[^>]*>)",
+                  r'\1\n    <uses-permission android:name="android.permission.USE_BIOMETRIC" />',
+                  m,
+                  count=1,
+              )
+              if n != 1:
+                  sys.exit("::error::<manifest> not found in AndroidManifest.xml")
+              open(manifest, "w", encoding="utf-8").write(m)
+          print("AndroidManifest.xml: USE_BIOMETRIC declared")
+
+          gk = "android/app/build.gradle.kts"
+          gg = "android/app/build.gradle"
+          path = gk if os.path.exists(gk) else gg
+          g = open(path, encoding="utf-8").read()
+          floor = "maxOf(flutter.minSdkVersion, 24)" if path == gk else "Math.max(flutter.minSdkVersion, 24)"
+          if floor not in g:
+              g, n = re.subn(r"minSdk(Version)?\s*=?\s*flutter\.minSdkVersion", "minSdk = " + floor, g, count=1)
+              if n != 1:
+                  sys.exit("::error::minSdk = flutter.minSdkVersion not found in " + path)
+              open(path, "w", encoding="utf-8").write(g)
+          print(path + ": minSdk >= 24")
+          PYEOF
+
       # Firebase needs two things the generated android/ tree does not have:
       # the google-services.json for this app, and the Google Services Gradle
       # plugin that turns it into Android resources. Without BOTH, the APK
