@@ -264,7 +264,7 @@ void main() {
     }
   });
 
-  test('every UEFA national side crest loads from assets', () async {
+  test('every UEFA national side flag loads from assets', () async {
     for (final String slug in <String>[
       'albania',
       'andorra',
