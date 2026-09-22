@@ -768,7 +768,7 @@ class _QuickFillButton extends StatelessWidget {
     final Color bg = selected
         ? tokens.primary.withValues(alpha: 0.14)
         : tokens.surfaceElevated;
-    final Color border = selected ? tokens.primary : tokens.border;
+    final Color border = selected ? tokens.primary : tokens.controlBorder;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Tooltip(
@@ -831,7 +831,7 @@ class _DoubleChip extends StatelessWidget {
     final Color bg = selected
         ? tokens.gold.withValues(alpha: 0.16)
         : tokens.surfaceElevated;
-    final Color border = selected ? tokens.gold : tokens.border;
+    final Color border = selected ? tokens.gold : tokens.controlBorder;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       // Plain GestureDetector with opaque hit-test behavior instead of

@@ -417,7 +417,7 @@ class _SignOutCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.brLg,
-        side: BorderSide(color: tokens.border),
+        side: BorderSide(color: tokens.controlBorder),
       ),
       child: InkWell(
         key: const Key('account.signOut'),

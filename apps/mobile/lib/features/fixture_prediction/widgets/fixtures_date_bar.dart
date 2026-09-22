@@ -207,7 +207,7 @@ class _DayTab extends StatelessWidget {
               color: selected ? tokens.primary : tokens.surface,
               borderRadius: AppRadius.brMd,
               border: Border.all(
-                color: selected ? tokens.primary : tokens.border,
+                color: selected ? tokens.primary : tokens.controlBorder,
               ),
             ),
             child: Column(

@@ -14,6 +14,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.surfaceElevated,
     required this.surfaceHigh,
     required this.border,
+    required this.controlBorder,
     required this.primary,
     required this.primaryLight,
     required this.gold,
@@ -45,6 +46,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color surfaceElevated;
   final Color surfaceHigh;
   final Color border;
+  final Color controlBorder;
   final Color primary;
   final Color primaryLight;
   final Color gold;
@@ -82,6 +84,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     surfaceElevated: AppColors.surfaceElevated,
     surfaceHigh: AppColors.surfaceHigh,
     border: AppColors.border,
+    controlBorder: AppColors.textMuted,
     primary: AppColors.primary,
     primaryLight: AppColors.primaryLight,
     gold: AppColors.gold,
@@ -128,6 +131,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     surfaceElevated: AppColorsLight.surfaceElevated,
     surfaceHigh: AppColorsLight.surfaceHigh,
     border: AppColorsLight.border,
+    controlBorder: AppColorsLight.textMuted,
     primary: AppColorsLight.primary,
     primaryLight: AppColorsLight.primaryLight,
     gold: AppColorsLight.gold,
@@ -175,6 +179,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? surfaceElevated,
     Color? surfaceHigh,
     Color? border,
+    Color? controlBorder,
     Color? primary,
     Color? primaryLight,
     Color? gold,
@@ -206,6 +211,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       surfaceElevated: surfaceElevated ?? this.surfaceElevated,
       surfaceHigh: surfaceHigh ?? this.surfaceHigh,
       border: border ?? this.border,
+      controlBorder: controlBorder ?? this.controlBorder,
       primary: primary ?? this.primary,
       primaryLight: primaryLight ?? this.primaryLight,
       gold: gold ?? this.gold,
@@ -246,6 +252,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
       surfaceHigh: Color.lerp(surfaceHigh, other.surfaceHigh, t)!,
       border: Color.lerp(border, other.border, t)!,
+      controlBorder: Color.lerp(controlBorder, other.controlBorder, t)!,
       primary: Color.lerp(primary, other.primary, t)!,
       primaryLight: Color.lerp(primaryLight, other.primaryLight, t)!,
       gold: Color.lerp(gold, other.gold, t)!,

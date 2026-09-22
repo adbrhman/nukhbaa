@@ -48,7 +48,7 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.secondary => (
         Colors.transparent,
         tokens.textPrimary,
-        tokens.border,
+        tokens.controlBorder,
       ),
       AppButtonVariant.text => (Colors.transparent, tokens.primary, null),
     };

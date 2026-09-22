@@ -441,7 +441,7 @@ class _QuickFillButton extends StatelessWidget {
     final Color bg = selected
         ? tokens.primary.withValues(alpha: 0.14)
         : tokens.surfaceElevated;
-    final Color border = selected ? tokens.primary : tokens.border;
+    final Color border = selected ? tokens.primary : tokens.controlBorder;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Tooltip(

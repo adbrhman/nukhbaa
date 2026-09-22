@@ -126,7 +126,7 @@ abstract final class AppTheme {
           foregroundColor: scheme.onSurface,
           minimumSize: const Size.fromHeight(52),
           textStyle: textTheme.labelLarge,
-          side: BorderSide(color: tokens.border),
+          side: BorderSide(color: tokens.controlBorder),
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
         ),
       ),

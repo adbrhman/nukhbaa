@@ -90,7 +90,7 @@ class _Pill extends StatelessWidget {
               color: selected ? tokens.primary : tokens.surfaceElevated,
               borderRadius: AppRadius.brButton,
               border: Border.all(
-                color: selected ? tokens.primary : tokens.border,
+                color: selected ? tokens.primary : tokens.controlBorder,
               ),
             ),
             child: Text(
