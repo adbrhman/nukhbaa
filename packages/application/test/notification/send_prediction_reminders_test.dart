@@ -115,6 +115,7 @@ final class _FakeSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     sentTo.addAll(tokens);
     return Result.ok(dead);

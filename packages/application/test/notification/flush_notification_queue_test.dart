@@ -63,6 +63,7 @@ final class _FakeSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     if (tokens.any(failFor.contains)) {
       return const Result.err(AppError.transient('fcm.down', 'down'));

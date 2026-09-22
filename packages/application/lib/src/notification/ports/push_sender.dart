@@ -12,9 +12,13 @@ abstract interface class PushSender {
   /// them. A transient failure is NOT in that list -- it is a `Result.err`, or
   /// simply an absent entry, because retiring a token over a network blip
   /// would silently unsubscribe a real user.
+  ///
+  /// [link] (a `PushLink` name) travels in the data payload so a tap opens
+  /// the screen the push is about; null opens the app as it is.
   Future<Result<List<String>>> send({
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   });
 }

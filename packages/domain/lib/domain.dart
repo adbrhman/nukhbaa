@@ -80,6 +80,7 @@ export 'src/notification/notification_id.dart';
 export 'src/notification/notification_kind.dart';
 export 'src/notification/notification_subject.dart';
 export 'src/notification/notification_gate.dart';
+export 'src/notification/push_link.dart';
 export 'src/notification/quiet_hours.dart';
 export 'src/notification/reminder_target.dart';
 export 'src/platform/health.dart';

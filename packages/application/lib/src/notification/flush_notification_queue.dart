@@ -1,5 +1,6 @@
 import 'package:application/src/notification/ports/notification_queue.dart';
 import 'package:application/src/notification/ports/push_sender.dart';
+import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
 /// Scheduled use-case: deliver the pushes deferred out of quiet hours whose
@@ -51,6 +52,7 @@ final class FlushNotificationQueue {
           tokens: push.tokens,
           title: push.title,
           body: push.body,
+          link: PushLink.inbox,
         );
         if (sent is Ok<List<String>>) {
           delivered++;

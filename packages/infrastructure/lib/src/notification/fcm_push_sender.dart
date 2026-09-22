@@ -68,6 +68,7 @@ final class FcmPushSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     if (tokens.isEmpty) {
       return const Result.ok(<String>[]);
@@ -96,6 +97,7 @@ final class FcmPushSender implements PushSender {
             'message': {
               'token': token,
               'notification': {'title': title, 'body': body},
+              if (link != null) 'data': {'link': link},
               'android': {'priority': 'HIGH'},
             },
           }),
@@ -221,5 +223,6 @@ final class NoopPushSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async => const Result.ok(<String>[]);
 }

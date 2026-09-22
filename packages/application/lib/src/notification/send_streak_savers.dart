@@ -108,6 +108,7 @@ final class SendStreakSavers {
         tokens: target.tokens,
         title: title,
         body: bodyFor(run),
+        link: PushLink.fixtures,
       );
       if (result is! Ok<List<String>>) {
         continue;

@@ -146,6 +146,7 @@ final class PublishAnnouncement {
         tokens: tokens,
         title: announcement.title,
         body: announcement.body,
+        link: PushLink.inbox,
       );
     }
     if (deferred.isNotEmpty) {

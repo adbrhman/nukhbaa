@@ -3127,6 +3127,22 @@ before this server is deployed.**
 - **Still to come (batch 3b):** deep links from a push to its screen, and
   the in-app "overtaken" card (P2-7).
 
+### Deep links from a push (batch 3b, 2026-09-22)
+
+Every push now carries `data.link` in its FCM payload: `fixtures` (daily
+reminder, pre-match, streak saver), `league` (overtaken) or `inbox` (exact
+hit, announcement, and a push deferred out of the quiet hours). The names
+are `PushLink` in the domain and `PushLinks` in the app; the two sets must
+stay equal. `PushSender.send` takes the link as an optional argument.
+
+The app listens once, from `NukhbaaShell`: the push that launched it
+(`getInitialMessage`) and every later tap (`onMessageOpenedApp`). A link
+selects its tab; `inbox` also opens the inbox over the home tab. A link the
+build does not know opens the app as a plain tap. No new dependency.
+
+**P2-7's "overtaken" card moves to batches 4-5:** the server has to keep who
+passed whom (a column on 0067's marks) before the league screen can show it.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

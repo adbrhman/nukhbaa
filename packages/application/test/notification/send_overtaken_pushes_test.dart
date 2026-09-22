@@ -109,14 +109,17 @@ final class _FakeBudget implements PushBudgetReader {
 
 final class _FakeSender implements PushSender {
   final List<String> bodies = [];
+  final List<String?> links = [];
 
   @override
   Future<Result<List<String>>> send({
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     bodies.add(body);
+    links.add(link);
     return const Result.ok(<String>[]);
   }
 }
@@ -150,6 +153,7 @@ void main() {
       expect((result as Ok<int>).value, 1);
       expect(overtaken.told, [_a]);
       expect(sender.bodies.single, SendOvertakenPushes.bodyFor('name-b', 2));
+      expect(sender.links.single, PushLink.league);
       expect(overtaken.marks, {_b: 1, _a: 2});
       expect(overtaken.weekStart, DateTime.utc(2026, 9, 14));
     });

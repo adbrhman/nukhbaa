@@ -91,6 +91,7 @@ final class SendPreMatchReminders {
         tokens: target.tokens,
         title: title,
         body: bodyFor(target.homeTeam, target.awayTeam),
+        link: PushLink.fixtures,
       );
       if (result is! Ok<List<String>>) {
         continue;

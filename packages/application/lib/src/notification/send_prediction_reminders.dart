@@ -165,6 +165,7 @@ final class SendPredictionReminders {
       tokens: tokens,
       title: title,
       body: body,
+      link: PushLink.fixtures,
     );
     if (sendResult is Err<List<String>>) {
       return Result.err(sendResult.error);

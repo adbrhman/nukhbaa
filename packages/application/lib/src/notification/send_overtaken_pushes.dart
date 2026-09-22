@@ -172,6 +172,7 @@ final class SendOvertakenPushes {
         tokens: recipient.tokens,
         title: title,
         body: bodyFor(name, ranks[victim]!),
+        link: PushLink.league,
       );
       if (result is! Ok<List<String>>) {
         continue;

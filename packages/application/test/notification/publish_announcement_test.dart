@@ -43,6 +43,7 @@ final class _RecordingSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     sent.add(List<String>.unmodifiable(tokens));
     return const Result.ok(<String>[]);

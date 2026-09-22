@@ -141,6 +141,7 @@ final class NotifyFixtureWinners {
         tokens: target.tokens,
         title: title,
         body: body,
+        link: PushLink.inbox,
       );
       if (sent is Ok<List<String>>) {
         pushed++;

@@ -19,6 +19,8 @@ class PushTokenService {
 
   bool _listening = false;
 
+  bool _listeningForLinks = false;
+
   static String get _platform =>
       defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
 
@@ -49,6 +51,34 @@ class PushTokenService {
       if (kDebugMode) {
         debugPrint('PushTokenService: registration failed: $error');
         debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+  }
+
+  /// Calls [onLink] with the `link` of the push that opened the app: the
+  /// one that launched it, then every later tap while it runs. A push with
+  /// no link, and the web build, call nothing.
+  Future<void> listenForOpenedPushes(void Function(String link) onLink) async {
+    if (kIsWeb || _listeningForLinks) {
+      return;
+    }
+    try {
+      _listeningForLinks = true;
+      final messaging = FirebaseMessaging.instance;
+      final RemoteMessage? initial = await messaging.getInitialMessage();
+      final Object? first = initial?.data['link'];
+      if (first is String) {
+        onLink(first);
+      }
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        final Object? link = message.data['link'];
+        if (link is String) {
+          onLink(link);
+        }
+      });
+    } on Object catch (error) {
+      if (kDebugMode) {
+        debugPrint('PushTokenService: push links unavailable: $error');
       }
     }
   }

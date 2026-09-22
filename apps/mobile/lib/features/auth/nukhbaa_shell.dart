@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_tokens.dart';
+import '../../core/notifications/push_link.dart';
 import '../../core/providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import 'account_screen.dart';
 import 'home_screen.dart';
@@ -43,6 +45,23 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     });
   }
 
+  /// Opens what a tapped push is about (see push_link.dart): its tab, and
+  /// for the inbox the inbox itself on top of the home tab.
+  void _openLink(String link) {
+    final int? tab = shellTabForLink(link);
+    if (tab == null || !mounted) {
+      return;
+    }
+    _select(tab);
+    if (link == PushLinks.inbox) {
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +70,11 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     // have nobody to bind it to. Never awaited -- registration must not
     // delay the first frame.
     unawaited(ref.read(pushTokenServiceProvider).registerCurrentDevice());
+    // A push says where it should open: the tap that launched the app, then
+    // every later one while it runs.
+    unawaited(
+      ref.read(pushTokenServiceProvider).listenForOpenedPushes(_openLink),
+    );
     // The device's own clock offset, for notification timing only -- no day
     // boundary is derived from it. Re-sent on every start because an offset
     // carries no daylight-saving rule, and sent on web too, unlike the push

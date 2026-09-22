@@ -97,6 +97,7 @@ final class _FakeSender implements PushSender {
     required List<String> tokens,
     required String title,
     required String body,
+    String? link,
   }) async {
     bodies.add(body);
     return const Result.ok(<String>[]);
