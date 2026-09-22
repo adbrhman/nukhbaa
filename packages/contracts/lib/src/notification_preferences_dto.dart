@@ -9,6 +9,8 @@ final class NotificationPreferencesDto {
   const NotificationPreferencesDto({
     required this.predictionReminder,
     this.preMatch = true,
+    this.streakSaver = true,
+    this.overtaken = true,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -18,6 +20,8 @@ final class NotificationPreferencesDto {
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       predictionReminder: (json['prediction_reminder'] as bool?) ?? true,
       preMatch: (json['pre_match'] as bool?) ?? true,
+      streakSaver: (json['streak_saver'] as bool?) ?? true,
+      overtaken: (json['overtaken'] as bool?) ?? true,
     );
   }
 
@@ -30,6 +34,12 @@ final class NotificationPreferencesDto {
   /// Whether the pre-match push (plan P3-4a) may reach the caller.
   final bool preMatch;
 
+  /// Whether the streak saver (plan P3-4b) may reach the caller.
+  final bool streakSaver;
+
+  /// Whether the overtaken push (plan P3-4c) may reach the caller.
+  final bool overtaken;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -38,6 +48,8 @@ final class NotificationPreferencesDto {
     'schema_version': schemaVersion,
     'prediction_reminder': predictionReminder,
     'pre_match': preMatch,
+    'streak_saver': streakSaver,
+    'overtaken': overtaken,
   };
 
   @override
@@ -45,8 +57,16 @@ final class NotificationPreferencesDto {
       other is NotificationPreferencesDto &&
       other.schemaVersion == schemaVersion &&
       other.predictionReminder == predictionReminder &&
-      other.preMatch == preMatch;
+      other.preMatch == preMatch &&
+      other.streakSaver == streakSaver &&
+      other.overtaken == overtaken;
 
   @override
-  int get hashCode => Object.hash(schemaVersion, predictionReminder, preMatch);
+  int get hashCode => Object.hash(
+    schemaVersion,
+    predictionReminder,
+    preMatch,
+    streakSaver,
+    overtaken,
+  );
 }

@@ -3102,6 +3102,31 @@ reminder sweep's budget query reads `proactive_sends`.
 - **Still to come (batch 3):** `streak_saver` and `overtaken` use the same
   gate, table and budget; their columns already exist.
 
+### Streak saver and overtaken pushes (plan P3-4b, P3-4c, 2026-09-22)
+
+Both go through `NotificationGate` and the shared weekly budget of 5, and
+record what they send in `proactive_sends` (0066). Migration 0067 adds
+`gamification.weekly_league_rank_marks`. **0067 must be on the live DB
+before this server is deployed.**
+
+- **Streak saver (`SendStreakSavers`, every 10 minutes).** A day is lost the
+  moment its first unpredicted fixture kicks off; the saver fires when that
+  kickoff is 45 to 75 minutes away, for a player whose run -- counted as
+  `GET /me/streak` counts it -- is at least 2. At most one per player per
+  Riyadh day. No freeze was added: the saver is the answer to "one miss
+  breaks it" (decided 2026-09-19).
+- **Overtaken (`SendOvertakenPushes`, every 30 minutes).** Each sweep ranks
+  every group of the open week with `WeeklyLeaguePolicy.order`, compares
+  with the marks of the previous sweep (0067), saves the new marks first,
+  and `OvertakeDetector` (domain) names who passed whom: the nearest member
+  now above who was below before. At most one per member per group, so one
+  per week. A pass during the quiet hours is not told.
+- **Switches.** `streak_saver` and `overtaken` join
+  `PUT /me/notification-preferences` (any subset, the rest kept) and the
+  settings page.
+- **Still to come (batch 3b):** deep links from a push to its screen, and
+  the in-app "overtaken" card (P2-7).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

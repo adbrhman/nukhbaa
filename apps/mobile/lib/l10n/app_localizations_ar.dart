@@ -1391,6 +1391,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'قبل مباراة فريق تتابعه بنحو ساعتين، إن لم تسجّل توقعك';
 
   @override
+  String get notificationSettingsStreakSaverTitle => 'منقذ السلسلة';
+
+  @override
+  String get notificationSettingsStreakSaverHint =>
+      'قبل انقطاع سلسلتك بنحو ساعة، إن لم تكمل توقعات اليوم';
+
+  @override
+  String get notificationSettingsOvertakenTitle => 'تخطّاك زميل في الدوري';
+
+  @override
+  String get notificationSettingsOvertakenHint =>
+      'حين يتخطاك أحد في دوري الأسبوع، مرة في الأسبوع على الأكثر';
+
+  @override
   String get favoriteTeamsTitle => 'فرقك المفضلة';
 
   @override

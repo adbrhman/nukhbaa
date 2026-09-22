@@ -48,13 +48,26 @@ Future<Response> onRequest(RequestContext context) async {
     if (preMatch is Err<bool?>) {
       return errorResponse(preMatch.error);
     }
+    final streakSaver = _optionalBool(body, 'streak_saver');
+    if (streakSaver is Err<bool?>) {
+      return errorResponse(streakSaver.error);
+    }
+    final overtaken = _optionalBool(body, 'overtaken');
+    if (overtaken is Err<bool?>) {
+      return errorResponse(overtaken.error);
+    }
     final bool? reminderValue = (reminder as Ok<bool?>).value;
     final bool? preMatchValue = (preMatch as Ok<bool?>).value;
-    if (reminderValue == null && preMatchValue == null) {
+    final bool? streakSaverValue = (streakSaver as Ok<bool?>).value;
+    final bool? overtakenValue = (overtaken as Ok<bool?>).value;
+    if (reminderValue == null &&
+        preMatchValue == null &&
+        streakSaverValue == null &&
+        overtakenValue == null) {
       return errorResponse(
         const AppError.validation(
           'request.field_missing',
-          'At least one of "prediction_reminder" and "pre_match" is required',
+          'At least one notification switch is required',
         ),
       );
     }
@@ -73,6 +86,8 @@ Future<Response> onRequest(RequestContext context) async {
       preferences: NotificationPreferences(
         predictionReminder: reminderValue ?? stored.predictionReminder,
         preMatch: preMatchValue ?? stored.preMatch,
+        streakSaver: streakSaverValue ?? stored.streakSaver,
+        overtaken: overtakenValue ?? stored.overtaken,
       ),
     );
   }
@@ -82,6 +97,8 @@ Future<Response> onRequest(RequestContext context) async {
       body: NotificationPreferencesDto(
         predictionReminder: value.predictionReminder,
         preMatch: value.preMatch,
+        streakSaver: value.streakSaver,
+        overtaken: value.overtaken,
       ).toJson(),
     ),
     Err<NotificationPreferences>(:final error) => errorResponse(error),

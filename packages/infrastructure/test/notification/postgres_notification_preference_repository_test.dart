@@ -66,7 +66,12 @@ void main() {
     test('a stored row is read as stored', () async {
       final connection = _FakeConnection(
         const Result.ok([
-          {'prediction_reminder': false, 'pre_match': false},
+          {
+            'prediction_reminder': false,
+            'pre_match': false,
+            'streak_saver': true,
+            'overtaken': false,
+          },
         ]),
       );
       final repository = PostgresNotificationPreferenceRepository(connection);
@@ -114,7 +119,12 @@ void main() {
     test('upserts the caller row and answers what was stored', () async {
       final connection = _FakeConnection(
         const Result.ok([
-          {'prediction_reminder': false, 'pre_match': true},
+          {
+            'prediction_reminder': false,
+            'pre_match': true,
+            'streak_saver': true,
+            'overtaken': true,
+          },
         ]),
       );
       final repository = PostgresNotificationPreferenceRepository(connection);
@@ -132,6 +142,8 @@ void main() {
         'user_id': _user,
         'prediction_reminder': false,
         'pre_match': true,
+        'streak_saver': true,
+        'overtaken': true,
       });
       expect(connection.sqls.single, contains('ON CONFLICT (user_id)'));
       expect(connection.sqls.single, contains('RETURNING prediction_reminder'));

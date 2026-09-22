@@ -185,6 +185,40 @@ void main() {
     expect(_switchValue(tester), isTrue);
   });
 
+  testWidgets('the overtaken switch writes overtaken alone', (tester) async {
+    final harness = buildAuthHarness((request) async {
+      if (request.url.path != _path) return http.Response('not found', 404);
+      if (request.method == 'PUT') {
+        final Map<String, Object?> sent =
+            (jsonDecode(request.body) as Map<Object?, Object?>)
+                .cast<String, Object?>();
+        return _okJson(<String, Object?>{
+          'schema_version': 1,
+          'prediction_reminder': true,
+          'overtaken': sent['overtaken'] == true,
+        });
+      }
+      return _okJson(_prefs(true));
+    }, seedToken: 'jwt');
+    addTearDown(harness.dispose);
+
+    await _pump(tester, harness, const NotificationSettingsScreen());
+    const Key overtakenKey = Key('notifications.settings.overtaken');
+    await tester.ensureVisible(find.byKey(overtakenKey));
+    await tester.tap(find.byKey(overtakenKey));
+    await tester.pumpAndSettle();
+
+    final puts = harness.captured
+        .where((c) => c.request.method == 'PUT')
+        .toList();
+    expect(puts, hasLength(1));
+    final Map<Object?, Object?> body =
+        jsonDecode(puts.single.request.body) as Map<Object?, Object?>;
+    expect(body['overtaken'], false);
+    expect(body.keys.toSet(), {'schema_version', 'overtaken'});
+    expect(tester.widget<Switch>(find.byKey(overtakenKey)).value, isFalse);
+  });
+
   testWidgets('the settings page opens it', (tester) async {
     final harness = buildAuthHarness((request) async {
       if (request.url.path == _path) return _okJson(_prefs(true));

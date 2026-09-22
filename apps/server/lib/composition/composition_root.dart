@@ -97,6 +97,8 @@ final class CompositionRoot {
     required this.markNotificationRead,
     required this.sendPredictionReminders,
     required this.sendPreMatchReminders,
+    required this.sendStreakSavers,
+    required this.sendOvertakenPushes,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -231,6 +233,8 @@ final class CompositionRoot {
     MarkNotificationRead? markNotificationRead,
     SendPredictionReminders? sendPredictionReminders,
     SendPreMatchReminders? sendPreMatchReminders,
+    SendStreakSavers? sendStreakSavers,
+    SendOvertakenPushes? sendOvertakenPushes,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -379,6 +383,9 @@ final class CompositionRoot {
            sendPredictionReminders ?? _absentSendPredictionReminders(),
        sendPreMatchReminders =
            sendPreMatchReminders ?? _absentSendPreMatchReminders(),
+       sendStreakSavers = sendStreakSavers ?? _absentSendStreakSavers(),
+       sendOvertakenPushes =
+           sendOvertakenPushes ?? _absentSendOvertakenPushes(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -978,6 +985,24 @@ final class CompositionRoot {
         sender: const NoopPushSender(),
       );
 
+  /// Backs an "absent" [SendStreakSavers]: never reached by a route test.
+  static SendStreakSavers _absentSendStreakSavers() => SendStreakSavers(
+    savers: _UnwiredStreakSaverRepository(),
+    streaks: _UnwiredStreakRepository(),
+    budget: _UnwiredPredictionReminderRepository(),
+    sender: const NoopPushSender(),
+  );
+
+  /// Backs an "absent" [SendOvertakenPushes]: never reached by a route test.
+  static SendOvertakenPushes _absentSendOvertakenPushes() =>
+      SendOvertakenPushes(
+        overtaken: _UnwiredOvertakenRepository(),
+        standings: _UnwiredWeeklyLeagueStandingsReader(),
+        profiles: _UnwiredWeeklyLeagueProfileReader(),
+        budget: _UnwiredPredictionReminderRepository(),
+        sender: const NoopPushSender(),
+      );
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1453,6 +1478,14 @@ final class CompositionRoot {
   /// not predicted it (plan P3-4a). Driven by the scheduler.
   final SendPreMatchReminders sendPreMatchReminders;
 
+  /// Warns a player whose run breaks at the next kickoff (plan P3-4b).
+  /// Driven by the scheduler.
+  final SendStreakSavers sendStreakSavers;
+
+  /// Tells a weekly-league member who was just overtaken (plan P3-4c).
+  /// Driven by the scheduler.
+  final SendOvertakenPushes sendOvertakenPushes;
+
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
   final FlushNotificationQueue flushNotificationQueue;
@@ -1927,6 +1960,19 @@ final class CompositionRoot {
       ),
       sendPreMatchReminders: SendPreMatchReminders(
         reminders: PostgresPreMatchReminderRepository(connection),
+        budget: PostgresPredictionReminderRepository(connection),
+        sender: pushSender,
+      ),
+      sendStreakSavers: SendStreakSavers(
+        savers: PostgresStreakSaverRepository(connection),
+        streaks: PostgresStreakRepository(connection),
+        budget: PostgresPredictionReminderRepository(connection),
+        sender: pushSender,
+      ),
+      sendOvertakenPushes: SendOvertakenPushes(
+        overtaken: PostgresOvertakenRepository(connection),
+        standings: PostgresWeeklyLeagueStandingsReader(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
         budget: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
       ),
@@ -3166,6 +3212,68 @@ final class _UnwiredNotificationQueue implements NotificationQueue {
   @override
   Future<Result<void>> forgetTokens(List<String> tokens) =>
       throw StateError('The notification queue was not wired into this root');
+}
+
+/// Refuses every call: see [_absentSendStreakSavers].
+final class _UnwiredStreakSaverRepository implements StreakSaverRepository {
+  static Never _unwired() =>
+      throw StateError('The streak-saver sweep was not wired into this root');
+
+  @override
+  Future<Result<List<StreakSaverTarget>>> dueTargets({
+    required String today,
+    required DateTime from,
+    required DateTime to,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markSent({
+    required StreakSaverTarget target,
+    required String sendDate,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
+}
+
+/// Refuses every call: see [_absentSendOvertakenPushes].
+final class _UnwiredOvertakenRepository implements OvertakenRepository {
+  static Never _unwired() =>
+      throw StateError('The overtaken sweep was not wired into this root');
+
+  @override
+  Future<Result<List<WeeklyLeagueId>>> openLeagues({
+    required DateTime weekStart,
+  }) => _unwired();
+
+  @override
+  Future<Result<Map<UserId, int>>> rankMarks(WeeklyLeagueId leagueId) =>
+      _unwired();
+
+  @override
+  Future<Result<void>> saveRankMarks({
+    required WeeklyLeagueId leagueId,
+    required Map<UserId, int> ranks,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<Map<UserId, OvertakenRecipient>>> recipients({
+    required WeeklyLeagueId leagueId,
+    required List<UserId> userIds,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markSent({
+    required UserId userId,
+    required WeeklyLeagueId leagueId,
+    required String sendDate,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
 }
 
 /// Refuses every call: see [_absentSendPreMatchReminders].

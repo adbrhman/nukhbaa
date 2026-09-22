@@ -1384,6 +1384,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'About two hours before a match of a team you follow, if you have not predicted it';
 
   @override
+  String get notificationSettingsStreakSaverTitle => 'Streak saver';
+
+  @override
+  String get notificationSettingsStreakSaverHint =>
+      'About an hour before your run would break, if today is not predicted yet';
+
+  @override
+  String get notificationSettingsOvertakenTitle => 'Overtaken in your league';
+
+  @override
+  String get notificationSettingsOvertakenHint =>
+      'When someone passes you in this week\'s league, at most once a week';
+
+  @override
   String get favoriteTeamsTitle => 'Favorite teams';
 
   @override

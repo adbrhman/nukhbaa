@@ -2262,6 +2262,30 @@ abstract class AppLocalizations {
   /// **'About two hours before a match of a team you follow, if you have not predicted it'**
   String get notificationSettingsPreMatchHint;
 
+  /// The switch for the streak saver push.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak saver'**
+  String get notificationSettingsStreakSaverTitle;
+
+  /// What the streak saver does.
+  ///
+  /// In en, this message translates to:
+  /// **'About an hour before your run would break, if today is not predicted yet'**
+  String get notificationSettingsStreakSaverHint;
+
+  /// The switch for the overtaken push.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtaken in your league'**
+  String get notificationSettingsOvertakenTitle;
+
+  /// What the overtaken push does.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone passes you in this week's league, at most once a week'**
+  String get notificationSettingsOvertakenHint;
+
   /// Title of the favorite-teams page and its row on the account page.
   ///
   /// In en, this message translates to:

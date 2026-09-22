@@ -16,7 +16,9 @@ final class PostgresNotificationPreferenceRepository
 
   static const String _readSql = '''
 SELECT np.prediction_reminder AS prediction_reminder,
-       np.pre_match AS pre_match
+       np.pre_match AS pre_match,
+       np.streak_saver AS streak_saver,
+       np.overtaken AS overtaken
 FROM notification.notification_preferences np
 WHERE np.user_id = @user_id
 ''';
@@ -25,12 +27,14 @@ WHERE np.user_id = @user_id
   // updates it. RETURNING answers with what is stored, not what was sent.
   static const String _saveSql = '''
 INSERT INTO notification.notification_preferences
-  (user_id, prediction_reminder, pre_match)
-VALUES (@user_id, @prediction_reminder, @pre_match)
+  (user_id, prediction_reminder, pre_match, streak_saver, overtaken)
+VALUES (@user_id, @prediction_reminder, @pre_match, @streak_saver, @overtaken)
 ON CONFLICT (user_id) DO UPDATE
   SET prediction_reminder = EXCLUDED.prediction_reminder,
-      pre_match = EXCLUDED.pre_match
-RETURNING prediction_reminder, pre_match
+      pre_match = EXCLUDED.pre_match,
+      streak_saver = EXCLUDED.streak_saver,
+      overtaken = EXCLUDED.overtaken
+RETURNING prediction_reminder, pre_match, streak_saver, overtaken
 ''';
 
   static const String _reminderOptOutsSql = '''
@@ -65,6 +69,8 @@ WHERE np.prediction_reminder = false
         'user_id': userId.value,
         'prediction_reminder': preferences.predictionReminder,
         'pre_match': preferences.preMatch,
+        'streak_saver': preferences.streakSaver,
+        'overtaken': preferences.overtaken,
       },
     );
     return switch (result) {
@@ -95,7 +101,12 @@ WHERE np.prediction_reminder = false
   ) {
     final raw = row['prediction_reminder'];
     final preMatch = row['pre_match'];
-    if (raw is! bool || preMatch is! bool) {
+    final streakSaver = row['streak_saver'];
+    final overtaken = row['overtaken'];
+    if (raw is! bool ||
+        preMatch is! bool ||
+        streakSaver is! bool ||
+        overtaken is! bool) {
       return const Result.err(
         AppError.transient(
           'notification_preferences.row_corrupt',
@@ -104,7 +115,12 @@ WHERE np.prediction_reminder = false
       );
     }
     return Result.ok(
-      NotificationPreferences(predictionReminder: raw, preMatch: preMatch),
+      NotificationPreferences(
+        predictionReminder: raw,
+        preMatch: preMatch,
+        streakSaver: streakSaver,
+        overtaken: overtaken,
+      ),
     );
   }
 

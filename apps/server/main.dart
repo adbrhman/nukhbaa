@@ -6,10 +6,12 @@ import 'package:server/scheduler/badge_evaluation_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
+import 'package:server/scheduler/overtaken_scheduler.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
+import 'package:server/scheduler/streak_saver_scheduler.dart';
 import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
@@ -30,6 +32,12 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Pushes the followers of a team whose match starts soon (see
     // pre_match_scheduler.dart).
     startPreMatchScheduler(root);
+    // Warns a player whose run breaks at the next kickoff (see
+    // streak_saver_scheduler.dart).
+    startStreakSaverScheduler(root);
+    // Tells a weekly-league member who was just overtaken (see
+    // overtaken_scheduler.dart).
+    startOvertakenScheduler(root);
     // Delivers the pushes deferred out of quiet hours (see
     // notification_queue_scheduler.dart).
     startNotificationQueueScheduler(root);

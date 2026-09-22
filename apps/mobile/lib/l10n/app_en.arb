@@ -991,6 +991,22 @@
   "@notificationSettingsPreMatchHint": {
     "description": "What the pre-match push does."
   },
+  "notificationSettingsStreakSaverTitle": "Streak saver",
+  "@notificationSettingsStreakSaverTitle": {
+    "description": "The switch for the streak saver push."
+  },
+  "notificationSettingsStreakSaverHint": "About an hour before your run would break, if today is not predicted yet",
+  "@notificationSettingsStreakSaverHint": {
+    "description": "What the streak saver does."
+  },
+  "notificationSettingsOvertakenTitle": "Overtaken in your league",
+  "@notificationSettingsOvertakenTitle": {
+    "description": "The switch for the overtaken push."
+  },
+  "notificationSettingsOvertakenHint": "When someone passes you in this week's league, at most once a week",
+  "@notificationSettingsOvertakenHint": {
+    "description": "What the overtaken push does."
+  },
   "favoriteTeamsTitle": "Favorite teams",
   "@favoriteTeamsTitle": {
     "description": "Title of the favorite-teams page and its row on the account page."

@@ -52,13 +52,20 @@ class _NotificationSettingsScreenState
   /// cannot race each other to the server.
   bool _saving = false;
 
-  Future<void> _save({bool? reminder, bool? preMatch}) async {
+  Future<void> _save({
+    bool? reminder,
+    bool? preMatch,
+    bool? streakSaver,
+    bool? overtaken,
+  }) async {
     setState(() => _saving = true);
     final Result<NotificationPreferencesDto> result = await ref
         .read(authApiProvider)
         .updateNotificationPreferences(
           predictionReminder: reminder,
           preMatch: preMatch,
+          streakSaver: streakSaver,
+          overtaken: overtaken,
         );
     if (!mounted) {
       return;
@@ -121,6 +128,22 @@ class _NotificationSettingsScreenState
                     hint: l10n.notificationSettingsPreMatchHint,
                     value: shown.preMatch,
                     onChanged: _saving ? null : (on) => _save(preMatch: on),
+                  ),
+                  _SwitchRow(
+                    switchKey: const Key('notifications.settings.streakSaver'),
+                    icon: Icons.local_fire_department_rounded,
+                    title: l10n.notificationSettingsStreakSaverTitle,
+                    hint: l10n.notificationSettingsStreakSaverHint,
+                    value: shown.streakSaver,
+                    onChanged: _saving ? null : (on) => _save(streakSaver: on),
+                  ),
+                  _SwitchRow(
+                    switchKey: const Key('notifications.settings.overtaken'),
+                    icon: Icons.trending_down_rounded,
+                    title: l10n.notificationSettingsOvertakenTitle,
+                    hint: l10n.notificationSettingsOvertakenHint,
+                    value: shown.overtaken,
+                    onChanged: _saving ? null : (on) => _save(overtaken: on),
                   ),
                 ],
               ),

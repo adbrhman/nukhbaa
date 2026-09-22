@@ -90,6 +90,8 @@ void main() {
         'schema_version': 1,
         'prediction_reminder': true,
         'pre_match': true,
+        'streak_saver': true,
+        'overtaken': true,
       });
     });
 
@@ -132,6 +134,8 @@ void main() {
         'schema_version': 1,
         'prediction_reminder': false,
         'pre_match': true,
+        'streak_saver': true,
+        'overtaken': true,
       });
       expect(preferences.stored, {kNonMemberUserId: false});
 
@@ -154,6 +158,8 @@ void main() {
         'schema_version': 1,
         'prediction_reminder': false,
         'pre_match': false,
+        'streak_saver': true,
+        'overtaken': true,
       });
       expect(preferences.storedPreMatch, {kNonMemberUserId: false});
     });

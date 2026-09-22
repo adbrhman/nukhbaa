@@ -11,6 +11,8 @@ final class NotificationPreferences {
   const NotificationPreferences({
     required this.predictionReminder,
     this.preMatch = true,
+    this.streakSaver = true,
+    this.overtaken = true,
   });
 
   /// What a user who never changed anything has.
@@ -25,14 +27,25 @@ final class NotificationPreferences {
   /// this user.
   final bool preMatch;
 
+  /// Whether the streak saver (plan P3-4b, migration 0066) may reach this
+  /// user.
+  final bool streakSaver;
+
+  /// Whether the overtaken push (plan P3-4c, migration 0066) may reach this
+  /// user.
+  final bool overtaken;
+
   @override
   bool operator ==(Object other) =>
       other is NotificationPreferences &&
       other.predictionReminder == predictionReminder &&
-      other.preMatch == preMatch;
+      other.preMatch == preMatch &&
+      other.streakSaver == streakSaver &&
+      other.overtaken == overtaken;
 
   @override
-  int get hashCode => Object.hash(predictionReminder, preMatch);
+  int get hashCode =>
+      Object.hash(predictionReminder, preMatch, streakSaver, overtaken);
 }
 
 /// Read/write port over `notification.notification_preferences` (0063).

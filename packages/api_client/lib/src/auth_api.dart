@@ -199,6 +199,8 @@ final class AuthApi {
   Future<Result<NotificationPreferencesDto>> updateNotificationPreferences({
     bool? predictionReminder,
     bool? preMatch,
+    bool? streakSaver,
+    bool? overtaken,
   }) {
     return _transport.putObject<NotificationPreferencesDto>(
       '/me/notification-preferences',
@@ -207,6 +209,8 @@ final class AuthApi {
         if (predictionReminder != null)
           'prediction_reminder': predictionReminder,
         if (preMatch != null) 'pre_match': preMatch,
+        if (streakSaver != null) 'streak_saver': streakSaver,
+        if (overtaken != null) 'overtaken': overtaken,
       },
       parse: NotificationPreferencesDto.fromJson,
     );
