@@ -3,6 +3,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
+import '../design/app_radius.dart';
 import '../design/app_sizes.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
@@ -75,6 +76,8 @@ class _AppTextFieldState extends State<AppTextField> {
           style: text.bodyLarge?.copyWith(color: tokens.textPrimary),
           decoration: InputDecoration(
             hintText: widget.hint,
+            filled: true,
+            fillColor: tokens.surfaceElevated,
             prefixIcon: widget.prefixIcon != null
                 ? Icon(
                     widget.prefixIcon,
@@ -97,6 +100,20 @@ class _AppTextFieldState extends State<AppTextField> {
                     onPressed: () => setState(() => _obscured = !_obscured),
                   )
                 : null,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.brButton,
+              borderSide: BorderSide(color: tokens.primary, width: 1.6),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.brButton,
+              borderSide: BorderSide(color: tokens.error),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.brButton,
+              borderSide: BorderSide(
+                color: tokens.textMuted.withValues(alpha: 0.35),
+              ),
+            ),
           ),
         ),
       ],

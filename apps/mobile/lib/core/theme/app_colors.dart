@@ -90,7 +90,7 @@ abstract final class AppColors {
   /// greys look dirty on Navy; these are the same lightness, just in the
   /// palette's own hue.
   static const Color textSecondary = Color(0xFFD7E1EF);
-  static const Color textMuted = Color(0xFF8B9CB5);
+  static const Color textMuted = Color(0xFFA8B5C7);
 
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onGold = Color(0xFF2A1E04);
@@ -99,7 +99,7 @@ abstract final class AppColors {
   /// DERIVED -- a blue hairline, not a white one. With Surface this close to
   /// Navy, the stroke is what makes a card a card; the sheet draws exactly
   /// this, and a 6% white line would leave every card edgeless.
-  static const Color border = Color(0x382F6BFF);
+  static const Color border = Color(0xE02F6BFF);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,

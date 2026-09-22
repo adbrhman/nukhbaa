@@ -31,7 +31,7 @@ abstract final class AppColorsLight {
   static const Color primaryLight = Color(0xFF2F6BFF);
 
   /// Gold at a lightness that holds >=4.5:1 for white content placed on it.
-  static const Color gold = Color(0xFF8A6D00);
+  static const Color gold = Color(0xFF755D00);
   static const Color goldDark = Color(0xFF6B5300);
   static const Color silver = Color(0xFF64748B);
   static const Color bronze = Color(0xFF9B5E1E);
@@ -53,14 +53,14 @@ abstract final class AppColorsLight {
 
   static const Color textPrimary = Color(0xFF0A1420);
   static const Color textSecondary = Color(0xFF3F4C5E);
-  static const Color textMuted = Color(0xFF647080);
+  static const Color textMuted = Color(0xFF596473);
 
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onGold = Color(0xFFFFFFFF);
   static const Color onError = Color(0xFFFFFFFF);
 
   /// A cool hairline, the light-mode counterpart of the dark blue stroke.
-  static const Color border = Color(0x1F0A1420);
+  static const Color border = Color(0x800A1420);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
