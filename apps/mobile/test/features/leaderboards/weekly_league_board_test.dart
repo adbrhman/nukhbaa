@@ -197,6 +197,27 @@ void main() {
     expect(_textOf(tester, '$_p.tier'), ar.weeklyLeagueTierSilver);
   });
 
+  testWidgets('the overtaken card names who passed the reader', (tester) async {
+    final harness = buildAuthHarness(
+      _serve(<String, Object?>{..._silver, 'overtaken_by': 'Ali'}),
+      seedToken: 'jwt',
+    );
+    addTearDown(harness.dispose);
+
+    await _pump(tester, harness);
+
+    expect(_textOf(tester, '$_p.overtaken'), ar.weeklyLeagueOvertakenBy('Ali'));
+  });
+
+  testWidgets('no pass, no card', (tester) async {
+    final harness = buildAuthHarness(_serve(_silver), seedToken: 'jwt');
+    addTearDown(harness.dispose);
+
+    await _pump(tester, harness);
+
+    expect(find.byKey(const Key('$_p.overtaken')), findsNothing);
+  });
+
   testWidgets('a group with no lines says so instead of an empty table', (
     tester,
   ) async {

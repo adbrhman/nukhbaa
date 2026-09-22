@@ -8,7 +8,8 @@ import 'package:shared/shared.dart';
 ///
 /// Total (Application ADR section 2): never throws, binds every value
 /// through a `@named` parameter, and speaks only in application types.
-final class PostgresOvertakenRepository implements OvertakenRepository {
+final class PostgresOvertakenRepository
+    implements OvertakenRepository, OvertakenNoticeReader {
   /// Creates the repository over an open [PostgresConnection].
   const PostgresOvertakenRepository(this._connection);
 
@@ -29,11 +30,27 @@ WHERE m.league_id = @league_id
 
   static const String _saveMarkSql = '''
 INSERT INTO gamification.weekly_league_rank_marks
-  (league_id, user_id, rank, marked_at)
-VALUES (@league_id, @user_id, @rank, @marked_at)
+  (league_id, user_id, rank, marked_at, passed_by, passed_at)
+VALUES (
+  @league_id, @user_id, @rank, @marked_at,
+  @passed_by::uuid, @passed_at::timestamptz
+)
 ON CONFLICT (league_id, user_id) DO UPDATE
   SET rank = EXCLUDED.rank,
-      marked_at = EXCLUDED.marked_at
+      marked_at = EXCLUDED.marked_at,
+      passed_by = COALESCE(
+        EXCLUDED.passed_by, weekly_league_rank_marks.passed_by
+      ),
+      passed_at = COALESCE(
+        EXCLUDED.passed_at, weekly_league_rank_marks.passed_at
+      )
+''';
+
+  static const String _passedBySql = '''
+SELECT m.passed_by::text AS passed_by
+FROM gamification.weekly_league_rank_marks m
+WHERE m.league_id = @league_id
+  AND m.user_id = @user_id
 ''';
 
   static const String _recipientsSql = '''
@@ -127,10 +144,12 @@ WHERE token = @token
   Future<Result<void>> saveRankMarks({
     required WeeklyLeagueId leagueId,
     required Map<UserId, int> ranks,
+    required Map<UserId, UserId> passedBy,
     required DateTime now,
   }) {
     return _connection.runInTransaction<void>((tx) async {
       for (final entry in ranks.entries) {
+        final UserId? passer = passedBy[entry.key];
         final result = await tx.query(
           _saveMarkSql,
           parameters: {
@@ -138,6 +157,8 @@ WHERE token = @token
             'user_id': entry.key.value,
             'rank': entry.value,
             'marked_at': now.toUtc(),
+            'passed_by': passer?.value,
+            'passed_at': passer == null ? null : now.toUtc(),
           },
         );
         if (result is Err<List<Map<String, dynamic>>>) {
@@ -146,6 +167,33 @@ WHERE token = @token
       }
       return const Result<void>.ok(null);
     });
+  }
+
+  @override
+  Future<Result<UserId?>> passedBy({
+    required WeeklyLeagueId leagueId,
+    required UserId userId,
+  }) async {
+    final result = await _connection.query(
+      _passedBySql,
+      parameters: {'league_id': leagueId.value, 'user_id': userId.value},
+    );
+    if (result is Err<List<Map<String, dynamic>>>) {
+      return Result.err(result.error);
+    }
+    final rows = (result as Ok<List<Map<String, dynamic>>>).value;
+    if (rows.isEmpty) {
+      return const Result.ok(null);
+    }
+    final raw = rows.first['passed_by'];
+    if (raw == null) {
+      return const Result.ok(null);
+    }
+    final parsed = UserId.tryParse(raw is String ? raw : null);
+    if (parsed is Err<UserId>) {
+      return const Result.err(_corrupt);
+    }
+    return Result.ok((parsed as Ok<UserId>).value);
   }
 
   @override

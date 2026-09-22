@@ -1951,6 +1951,7 @@ final class CompositionRoot {
         ),
         standings: PostgresWeeklyLeagueStandingsReader(connection),
         profiles: PostgresWeeklyLeagueProfileReader(connection),
+        notices: PostgresOvertakenRepository(connection),
       ),
       getMyBadges: GetMyBadges(badges: PostgresPlayerBadgeReader(connection)),
       getMyNotificationPreferences: GetMyNotificationPreferences(
@@ -3293,6 +3294,7 @@ final class _UnwiredOvertakenRepository implements OvertakenRepository {
   Future<Result<void>> saveRankMarks({
     required WeeklyLeagueId leagueId,
     required Map<UserId, int> ranks,
+    required Map<UserId, UserId> passedBy,
     required DateTime now,
   }) => _unwired();
 

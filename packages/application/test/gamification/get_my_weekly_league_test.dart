@@ -161,6 +161,18 @@ final class _FakeProfiles implements WeeklyLeagueProfileReader {
   }
 }
 
+final class _FakeNotices implements OvertakenNoticeReader {
+  const _FakeNotices(this.passer);
+
+  final UserId? passer;
+
+  @override
+  Future<Result<UserId?>> passedBy({
+    required WeeklyLeagueId leagueId,
+    required UserId userId,
+  }) async => Result.ok(passer);
+}
+
 GetMyWeeklyLeague _useCase(
   _FakeLeagues leagues,
   _FakeStandings standings, {
@@ -436,5 +448,42 @@ void main() {
         expect(profiles.calls, 0);
       },
     );
+  });
+
+  group('overtaken notice (P2-7)', () {
+    Future<MyWeeklyLeague> readWith(
+      String passer,
+      List<WeeklyLeagueEntry> entries,
+    ) async {
+      final result = await GetMyWeeklyLeague(
+        join: JoinWeeklyLeague(
+          leagues: _FakeLeagues(existingSeat: _seat()),
+          idGenerator: FakeIdGenerator(<String>[_leagueB]),
+          clock: FixedClock(_wednesday),
+        ),
+        standings: _FakeStandings(entries),
+        profiles: _FakeProfiles(),
+        notices: _FakeNotices(UserId(passer)),
+      ).call(principal: _principal);
+      return (result as Ok<MyWeeklyLeague>).value;
+    }
+
+    test('names a passer who still ranks above the reader', () async {
+      final league = await readWith(_id(1), [
+        _entry(_id(1), points: 9),
+        _entry(_me, points: 4),
+      ]);
+
+      expect(league.overtakenBy, UserId(_id(1)));
+    });
+
+    test('a passer the reader has overtaken back is not named', () async {
+      final league = await readWith(_id(1), [
+        _entry(_me, points: 9),
+        _entry(_id(1), points: 4),
+      ]);
+
+      expect(league.overtakenBy, isNull);
+    });
   });
 }

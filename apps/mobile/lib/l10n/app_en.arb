@@ -1007,6 +1007,121 @@
   "@notificationSettingsOvertakenHint": {
     "description": "What the overtaken push does."
   },
+  "insightsTitle": "Learn from your predictions",
+  "@insightsTitle": {
+    "description": "Title of the insights page and its account row."
+  },
+  "insightsSubtitle": "Your accuracy, your patterns, your week",
+  "@insightsSubtitle": {
+    "description": "Subtitle of the insights row on the account page."
+  },
+  "insightsMonthLine": "{correct} right of {decided} this month",
+  "@insightsMonthLine": {
+    "description": "This month's right and decided predictions.",
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "decided": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsCommunity": "Everyone: {percent}%",
+  "@insightsCommunity": {
+    "description": "Every player's accuracy this month.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsWeeksTitle": "The last weeks",
+  "@insightsWeeksTitle": {
+    "description": "Title of the weekly accuracy bars."
+  },
+  "insightsLastWeek": "Last week: {correct} right of {decided}, {points} points",
+  "@insightsLastWeek": {
+    "description": "Last week's recap.",
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "decided": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsBestPrediction": "Best call: {home} - {away} (+{points})",
+  "@insightsBestPrediction": {
+    "description": "Last week's best prediction.",
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsBestLeague": "Your best league: {name}",
+  "@insightsBestLeague": {
+    "description": "The league with the best accuracy.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsWorstLeague": "Your hardest league: {name}",
+  "@insightsWorstLeague": {
+    "description": "The league with the worst accuracy.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsFollowedBias": "Your teams: {followed}% - others: {others}%",
+  "@insightsFollowedBias": {
+    "description": "Accuracy on followed teams against the rest.",
+    "placeholders": {
+      "followed": {
+        "type": "int"
+      },
+      "others": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsLongestRun": "Longest run of right calls: {count}",
+  "@insightsLongestRun": {
+    "description": "The longest run of right predictions.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsEmpty": "Nothing to learn yet: your first results will show here",
+  "@insightsEmpty": {
+    "description": "Shown before any prediction is decided."
+  },
+  "weeklyLeagueOvertakenBy": "{name} passed you this week",
+  "@weeklyLeagueOvertakenBy": {
+    "description": "The overtaken card on the weekly league.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "favoriteTeamsTitle": "Favorite teams",
   "@favoriteTeamsTitle": {
     "description": "Title of the favorite-teams page and its row on the account page."

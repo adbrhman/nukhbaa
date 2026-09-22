@@ -107,10 +107,19 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(
-                complete ? Icons.task_alt_rounded : Icons.today_rounded,
-                size: 18,
-                color: complete ? tokens.success : tokens.primary,
+              // P1-7: a completed day lands with a small pop.
+              TweenAnimationBuilder<double>(
+                key: ValueKey<bool>(complete),
+                tween: Tween<double>(begin: complete ? 0.4 : 1, end: 1),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.elasticOut,
+                builder: (context, scale, child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: Icon(
+                  complete ? Icons.task_alt_rounded : Icons.today_rounded,
+                  size: 18,
+                  color: complete ? tokens.success : tokens.primary,
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(

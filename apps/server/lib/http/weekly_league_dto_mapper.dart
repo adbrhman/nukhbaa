@@ -30,6 +30,9 @@ MyWeeklyLeagueDto myWeeklyLeagueToDto(MyWeeklyLeague league) {
     myRank: league.myRank,
     promotionZone: league.promotionZone,
     relegationZone: league.relegationZone,
+    overtakenBy: league.overtakenBy == null
+        ? null
+        : league.profiles[league.overtakenBy]?.displayName,
     entries: [
       for (final placing in league.placings)
         WeeklyLeagueEntryDto(

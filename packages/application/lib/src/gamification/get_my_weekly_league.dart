@@ -2,6 +2,7 @@
 library;
 
 import 'package:application/src/gamification/join_weekly_league.dart';
+import 'package:application/src/gamification/ports/overtaken_notice_reader.dart';
 import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
 import 'package:application/src/gamification/ports/weekly_league_repository.dart';
 import 'package:application/src/gamification/ports/weekly_league_standings_reader.dart';
@@ -47,13 +48,19 @@ final class GetMyWeeklyLeague {
     required JoinWeeklyLeague join,
     required WeeklyLeagueStandingsReader standings,
     required WeeklyLeagueProfileReader profiles,
+    OvertakenNoticeReader? notices,
   }) : _join = join,
        _standings = standings,
-       _profiles = profiles;
+       _profiles = profiles,
+       _notices = notices;
 
   final JoinWeeklyLeague _join;
   final WeeklyLeagueStandingsReader _standings;
   final WeeklyLeagueProfileReader _profiles;
+
+  /// Who passed the reader (plan P2-7). Optional and best effort: the card
+  /// is a courtesy, and a failure to read it never costs the table.
+  final OvertakenNoticeReader? _notices;
 
   /// Reads [principal]'s group for the Riyadh week that is open now.
   Future<Result<MyWeeklyLeague>> call({
@@ -107,6 +114,24 @@ final class GetMyWeeklyLeague {
     final profiles =
         (profilesResult as Ok<Map<UserId, WeeklyLeagueMemberProfile>>).value;
 
+    UserId? overtakenBy;
+    final notices = _notices;
+    if (notices != null) {
+      final passedResult = await notices.passedBy(
+        leagueId: seat.leagueId,
+        userId: principal.userId,
+      );
+      if (passedResult is Ok<UserId?>) {
+        final UserId? passer = passedResult.value;
+        for (final placing in placings) {
+          if (placing.entry.userId == passer && placing.rank < myRank) {
+            overtakenBy = passer;
+            break;
+          }
+        }
+      }
+    }
+
     final movement = WeeklyLeaguePolicy.movementCount(placings.length);
     return Result.ok(
       MyWeeklyLeague(
@@ -117,6 +142,7 @@ final class GetMyWeeklyLeague {
         myRank: myRank,
         promotionZone: seat.tier.canPromote ? movement : 0,
         relegationZone: seat.tier.canRelegate ? movement : 0,
+        overtakenBy: overtakenBy,
       ),
     );
   }
@@ -133,7 +159,12 @@ final class MyWeeklyLeague {
     required this.myRank,
     required this.promotionZone,
     required this.relegationZone,
+    this.overtakenBy,
   });
+
+  /// The member who last passed the reader and still ranks above them
+  /// (plan P2-7), or null.
+  final UserId? overtakenBy;
 
   /// The seat the caller holds: group, tier and week.
   final WeeklyLeagueSeat seat;

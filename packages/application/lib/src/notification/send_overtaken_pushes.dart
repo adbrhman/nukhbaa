@@ -102,19 +102,19 @@ final class SendOvertakenPushes {
     final Map<UserId, int> ranks = <UserId, int>{
       for (var i = 0; i < ordered.length; i++) ordered[i]: i + 1,
     };
+    final passed = OvertakeDetector.detect(
+      previous: previous,
+      ordered: ordered,
+    );
     final saved = await _overtaken.saveRankMarks(
       leagueId: leagueId,
       ranks: ranks,
+      passedBy: passed,
       now: now,
     );
     if (saved is Err<void>) {
       return Result.err(saved.error);
     }
-
-    final passed = OvertakeDetector.detect(
-      previous: previous,
-      ordered: ordered,
-    );
     if (passed.isEmpty) {
       return const Result.ok(0);
     }

@@ -1405,6 +1405,63 @@ class AppLocalizationsAr extends AppLocalizations {
       'حين يتخطاك أحد في دوري الأسبوع، مرة في الأسبوع على الأكثر';
 
   @override
+  String get insightsTitle => 'تعلّم من توقعاتك';
+
+  @override
+  String get insightsSubtitle => 'دقتك وأنماطك وأسبوعك';
+
+  @override
+  String insightsMonthLine(int correct, int decided) {
+    return '$correct صحيحة من $decided هذا الشهر';
+  }
+
+  @override
+  String insightsCommunity(int percent) {
+    return 'متوسط الجميع: $percent%';
+  }
+
+  @override
+  String get insightsWeeksTitle => 'الأسابيع الأخيرة';
+
+  @override
+  String insightsLastWeek(int correct, int decided, int points) {
+    return 'الأسبوع الماضي: $correct صحيحة من $decided، $points نقطة';
+  }
+
+  @override
+  String insightsBestPrediction(String home, String away, int points) {
+    return 'أفضل توقع: $home - $away (+$points)';
+  }
+
+  @override
+  String insightsBestLeague(String name) {
+    return 'أفضل دوري لك: $name';
+  }
+
+  @override
+  String insightsWorstLeague(String name) {
+    return 'أصعب دوري عليك: $name';
+  }
+
+  @override
+  String insightsFollowedBias(int followed, int others) {
+    return 'فرقك: $followed% - غيرها: $others%';
+  }
+
+  @override
+  String insightsLongestRun(int count) {
+    return 'أطول سلسلة توقعات صحيحة: $count';
+  }
+
+  @override
+  String get insightsEmpty => 'لا شيء بعد: ستظهر هنا نتائجك الأولى';
+
+  @override
+  String weeklyLeagueOvertakenBy(String name) {
+    return '$name تخطّاك هذا الأسبوع';
+  }
+
+  @override
   String get favoriteTeamsTitle => 'فرقك المفضلة';
 
   @override

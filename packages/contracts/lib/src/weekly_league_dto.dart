@@ -132,6 +132,7 @@ final class MyWeeklyLeagueDto {
     required this.promotionZone,
     required this.relegationZone,
     required this.entries,
+    this.overtakenBy,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -147,6 +148,7 @@ final class MyWeeklyLeagueDto {
       myRank: (json['my_rank'] as int?) ?? 0,
       promotionZone: (json['promotion_zone'] as int?) ?? 0,
       relegationZone: (json['relegation_zone'] as int?) ?? 0,
+      overtakenBy: json['overtaken_by'] as String?,
       entries: raw
           .map(
             (e) => WeeklyLeagueEntryDto.fromJson(
@@ -189,6 +191,10 @@ final class MyWeeklyLeagueDto {
   /// Every member, best first.
   final List<WeeklyLeagueEntryDto> entries;
 
+  /// The display name of the member who last passed the caller and still
+  /// ranks above them (plan P2-7), or null.
+  final String? overtakenBy;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -203,6 +209,7 @@ final class MyWeeklyLeagueDto {
     'promotion_zone': promotionZone,
     'relegation_zone': relegationZone,
     'entries': [for (final e in entries) e.toJson()],
+    if (overtakenBy != null) 'overtaken_by': overtakenBy,
   };
 
   @override
@@ -216,6 +223,7 @@ final class MyWeeklyLeagueDto {
       other.promotionZone == promotionZone &&
       other.relegationZone == relegationZone &&
       _listEquals(other.entries, entries) &&
+      other.overtakenBy == overtakenBy &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -228,6 +236,7 @@ final class MyWeeklyLeagueDto {
     promotionZone,
     relegationZone,
     Object.hashAll(entries),
+    overtakenBy,
     schemaVersion,
   );
 

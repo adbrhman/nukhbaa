@@ -131,6 +131,25 @@ class WeeklyLeagueBoard extends ConsumerWidget {
               ),
               child: _TierBanner(league: league, keyPrefix: keyPrefix),
             ),
+            if (league.overtakenBy != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: const Icon(Icons.trending_down_rounded),
+                    title: Text(
+                      l10n.weeklyLeagueOvertakenBy(league.overtakenBy!),
+                      key: Key('$keyPrefix.overtaken'),
+                    ),
+                  ),
+                ),
+              ),
             Expanded(
               child: league.entries.isEmpty
                   ? Center(

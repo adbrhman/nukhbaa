@@ -22,6 +22,7 @@ final class _FakeOvertaken implements OvertakenRepository {
   _FakeOvertaken({this.marks = const {}, this.alreadySent = false});
 
   Map<UserId, int> marks;
+  Map<UserId, UserId> passedBy = const {};
   final bool alreadySent;
   final List<UserId> told = [];
   DateTime? weekStart;
@@ -42,9 +43,11 @@ final class _FakeOvertaken implements OvertakenRepository {
   Future<Result<void>> saveRankMarks({
     required WeeklyLeagueId leagueId,
     required Map<UserId, int> ranks,
+    required Map<UserId, UserId> passedBy,
     required DateTime now,
   }) async {
     marks = ranks;
+    this.passedBy = passedBy;
     return const Result.ok(null);
   }
 
@@ -155,6 +158,7 @@ void main() {
       expect(sender.bodies.single, SendOvertakenPushes.bodyFor('name-b', 2));
       expect(sender.links.single, PushLink.league);
       expect(overtaken.marks, {_b: 1, _a: 2});
+      expect(overtaken.passedBy, {_a: _b});
       expect(overtaken.weekStart, DateTime.utc(2026, 9, 14));
     });
 

@@ -145,6 +145,7 @@ export 'src/gamification/ports/daily_challenge_repository.dart';
 export 'src/gamification/ports/experiment_repository.dart';
 export 'src/gamification/ports/gamification_event_sink.dart';
 export 'src/gamification/ports/match_day_settlement_store.dart';
+export 'src/gamification/ports/overtaken_notice_reader.dart';
 export 'src/gamification/ports/player_badge_reader.dart';
 export 'src/gamification/ports/prediction_outcome_reader.dart';
 export 'src/gamification/ports/streak_repository.dart';

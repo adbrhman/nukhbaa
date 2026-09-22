@@ -39,9 +39,13 @@ abstract interface class OvertakenRepository {
   Future<Result<Map<UserId, int>>> rankMarks(WeeklyLeagueId leagueId);
 
   /// Overwrites the marks of [leagueId] with [ranks].
+  ///
+  /// [passedBy] names, for each member passed since the last sweep, who
+  /// passed them (0068); a member absent from it keeps what was stored.
   Future<Result<void>> saveRankMarks({
     required WeeklyLeagueId leagueId,
     required Map<UserId, int> ranks,
+    required Map<UserId, UserId> passedBy,
     required DateTime now,
   });
 

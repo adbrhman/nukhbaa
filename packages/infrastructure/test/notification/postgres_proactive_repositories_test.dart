@@ -120,6 +120,29 @@ void main() {
       expect(connection.params.single['league_id'], _league);
     });
 
+    test('reads who passed the reader, or nobody', () async {
+      final passed = _FakeConnection(
+        const Result.ok([
+          {'passed_by': _userA},
+        ]),
+      );
+      final nobody = _FakeConnection(
+        const Result.ok([
+          {'passed_by': null},
+        ]),
+      );
+
+      final a = await PostgresOvertakenRepository(
+        passed,
+      ).passedBy(leagueId: _leagueId(), userId: const UserId(_userA));
+      final b = await PostgresOvertakenRepository(
+        nobody,
+      ).passedBy(leagueId: _leagueId(), userId: const UserId(_userA));
+
+      expect((a as Ok<UserId?>).value, const UserId(_userA));
+      expect((b as Ok<UserId?>).value, isNull);
+    });
+
     test('the week is bound as a date', () async {
       final connection = _FakeConnection(const Result.ok([]));
 

@@ -3168,6 +3168,25 @@ best prediction. **No migration, no table, no weekly job.**
 - **Next (batch 5):** the screen (P4-5), the P2-7 overtaken card, the P1-7
   celebration.
 
+### The insights screen, the overtaken card, the celebration (plan P4-5, P2-7, P1-7, 2026-09-22)
+
+- **Insights page (P4-5)**, `InsightsScreen`, from the account page: the
+  month's accuracy against everyone's, 8 weekly bars, last week's recap and
+  best call, and the patterns (best/worst league, followed teams against the
+  rest, longest right run). Every number is the server's (`GET /me/insights`);
+  a percent the server left null shows as a dash.
+- **Overtaken card (P2-7).** Migration 0068 keeps who passed a member on
+  their rank mark (`passed_by`, `passed_at`); the overtaken sweep writes it
+  whether or not a push goes out. `GetMyWeeklyLeague` reads it through the
+  optional `OvertakenNoticeReader` and names the passer only while they
+  still rank above the reader; `GET /me/weekly-league` carries
+  `overtaken_by` (a display name) only when set. Best effort: a failed read
+  never costs the table. **0068 must be on the live DB before deploying.**
+- **Celebration (P1-7).** The daily-challenge card's icon lands with a
+  short elastic pop when the day is complete. No new dependency.
+- **Still to do (batch 6):** measurement (P2-8, P3-8, P4-6) and closing the
+  plan.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

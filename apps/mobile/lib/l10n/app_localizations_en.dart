@@ -1398,6 +1398,64 @@ class AppLocalizationsEn extends AppLocalizations {
       'When someone passes you in this week\'s league, at most once a week';
 
   @override
+  String get insightsTitle => 'Learn from your predictions';
+
+  @override
+  String get insightsSubtitle => 'Your accuracy, your patterns, your week';
+
+  @override
+  String insightsMonthLine(int correct, int decided) {
+    return '$correct right of $decided this month';
+  }
+
+  @override
+  String insightsCommunity(int percent) {
+    return 'Everyone: $percent%';
+  }
+
+  @override
+  String get insightsWeeksTitle => 'The last weeks';
+
+  @override
+  String insightsLastWeek(int correct, int decided, int points) {
+    return 'Last week: $correct right of $decided, $points points';
+  }
+
+  @override
+  String insightsBestPrediction(String home, String away, int points) {
+    return 'Best call: $home - $away (+$points)';
+  }
+
+  @override
+  String insightsBestLeague(String name) {
+    return 'Your best league: $name';
+  }
+
+  @override
+  String insightsWorstLeague(String name) {
+    return 'Your hardest league: $name';
+  }
+
+  @override
+  String insightsFollowedBias(int followed, int others) {
+    return 'Your teams: $followed% - others: $others%';
+  }
+
+  @override
+  String insightsLongestRun(int count) {
+    return 'Longest run of right calls: $count';
+  }
+
+  @override
+  String get insightsEmpty =>
+      'Nothing to learn yet: your first results will show here';
+
+  @override
+  String weeklyLeagueOvertakenBy(String name) {
+    return '$name passed you this week';
+  }
+
+  @override
   String get favoriteTeamsTitle => 'Favorite teams';
 
   @override

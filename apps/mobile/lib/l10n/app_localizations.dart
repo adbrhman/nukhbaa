@@ -2286,6 +2286,84 @@ abstract class AppLocalizations {
   /// **'When someone passes you in this week's league, at most once a week'**
   String get notificationSettingsOvertakenHint;
 
+  /// Title of the insights page and its account row.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn from your predictions'**
+  String get insightsTitle;
+
+  /// Subtitle of the insights row on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Your accuracy, your patterns, your week'**
+  String get insightsSubtitle;
+
+  /// This month's right and decided predictions.
+  ///
+  /// In en, this message translates to:
+  /// **'{correct} right of {decided} this month'**
+  String insightsMonthLine(int correct, int decided);
+
+  /// Every player's accuracy this month.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone: {percent}%'**
+  String insightsCommunity(int percent);
+
+  /// Title of the weekly accuracy bars.
+  ///
+  /// In en, this message translates to:
+  /// **'The last weeks'**
+  String get insightsWeeksTitle;
+
+  /// Last week's recap.
+  ///
+  /// In en, this message translates to:
+  /// **'Last week: {correct} right of {decided}, {points} points'**
+  String insightsLastWeek(int correct, int decided, int points);
+
+  /// Last week's best prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Best call: {home} - {away} (+{points})'**
+  String insightsBestPrediction(String home, String away, int points);
+
+  /// The league with the best accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your best league: {name}'**
+  String insightsBestLeague(String name);
+
+  /// The league with the worst accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your hardest league: {name}'**
+  String insightsWorstLeague(String name);
+
+  /// Accuracy on followed teams against the rest.
+  ///
+  /// In en, this message translates to:
+  /// **'Your teams: {followed}% - others: {others}%'**
+  String insightsFollowedBias(int followed, int others);
+
+  /// The longest run of right predictions.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest run of right calls: {count}'**
+  String insightsLongestRun(int count);
+
+  /// Shown before any prediction is decided.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to learn yet: your first results will show here'**
+  String get insightsEmpty;
+
+  /// The overtaken card on the weekly league.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} passed you this week'**
+  String weeklyLeagueOvertakenBy(String name);
+
   /// Title of the favorite-teams page and its row on the account page.
   ///
   /// In en, this message translates to:

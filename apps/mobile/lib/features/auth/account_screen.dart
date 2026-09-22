@@ -19,6 +19,7 @@ import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
+import '../gamification/insights_screen.dart';
 import '../gamification/my_badges_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -146,6 +147,13 @@ class AccountScreen extends ConsumerWidget {
                         title: l10n.myBadges,
                         subtitle: l10n.accountBadgesSubtitle,
                         onTap: () => open(const MyBadgesScreen()),
+                      ),
+                      AccountMenuRow(
+                        key: const Key('account.insights'),
+                        icon: Icons.insights_rounded,
+                        title: l10n.insightsTitle,
+                        subtitle: l10n.insightsSubtitle,
+                        onTap: () => open(const InsightsScreen()),
                       ),
                     ],
                   ),
