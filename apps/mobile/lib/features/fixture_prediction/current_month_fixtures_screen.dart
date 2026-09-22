@@ -47,6 +47,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/ui/app_skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/prediction_history_providers.dart';
 import 'current_month_fixtures_providers.dart';
@@ -296,12 +297,9 @@ class _CurrentMonthFixturesScreenState
         top: false,
         child: feed.when(
           skipLoadingOnRefresh: true,
-          loading: () => const Center(
+          loading: () => const AppSkeletonCardList(
             key: Key('currentMonthFixtures.loading'),
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
+            itemHeight: 96,
           ),
           error: (error, _) => _CurrentMonthFixturesError(
             error: error,

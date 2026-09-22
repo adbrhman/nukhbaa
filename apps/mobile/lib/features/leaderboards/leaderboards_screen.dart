@@ -7,6 +7,8 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/ui/app_error_state.dart';
+import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
@@ -58,12 +60,16 @@ class LeaderboardsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: tokens.background,
       body: seasons.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Text(
-            l10n.leaderboardsLoadFailed,
-            style: TextStyle(color: tokens.textSecondary),
-          ),
+        loading: () => const AppSkeletonCardList(
+          key: Key('leaderboards.loading'),
+          itemCount: 6,
+          itemHeight: 64,
+        ),
+        error: (error, stackTrace) => AppErrorState(
+          key: const Key('leaderboards.error'),
+          message: l10n.leaderboardsLoadFailed,
+          retryLabel: l10n.retry,
+          onRetry: () => ref.invalidate(activeSeasonsProvider),
         ),
         data: (items) {
           final Set<String>? seasonsWithFixtures = monthFixtures.hasValue

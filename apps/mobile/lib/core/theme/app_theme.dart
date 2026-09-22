@@ -75,6 +75,19 @@ abstract final class AppTheme {
     required Color appBarBg,
     required Color divider,
   }) {
+    // WCAG AA on the dark palette: the plain `primary` blue reads at 4.1:1 on
+    // the background, under the 4.5:1 text needs, so text buttons and links
+    // take the lighter blue there (5.4:1). Light mode keeps `primary` (6.2:1).
+    final Color linkColor = brightness == Brightness.dark
+        ? tokens.primaryLight
+        : scheme.primary;
+    // A field's outline must reach 3:1 against what surrounds it (WCAG
+    // 1.4.11). The shared hairline `border` token sits near 1.3:1, which
+    // left text fields almost invisible on the dark background.
+    final Color fieldOutline = brightness == Brightness.dark
+        ? tokens.textMuted.withValues(alpha: 0.7)
+        : tokens.textMuted;
+
     final TextTheme textTheme = AppTypography.textTheme.apply(
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
@@ -119,7 +132,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: scheme.primary,
+          foregroundColor: linkColor,
           textStyle: textTheme.labelLarge,
         ),
       ),
@@ -134,11 +147,11 @@ abstract final class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.brButton,
-          borderSide: BorderSide(color: tokens.border),
+          borderSide: BorderSide(color: fieldOutline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.brButton,
-          borderSide: BorderSide(color: tokens.border),
+          borderSide: BorderSide(color: fieldOutline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.brButton,

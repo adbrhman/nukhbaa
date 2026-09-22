@@ -8,6 +8,8 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/ui/app_error_state.dart';
+import '../../core/ui/app_skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/leaderboards_providers.dart';
@@ -45,7 +47,10 @@ class MyPointsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: records.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppSkeletonCardList(
+            key: Key('myPoints.loading'),
+            itemHeight: 72,
+          ),
           error: (error, _) {
             final appError = error is AppError
                 ? error
@@ -53,28 +58,13 @@ class MyPointsScreen extends ConsumerWidget {
                     'client.unexpected',
                     'Something went wrong. Please try again.',
                   );
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 44,
-                      color: tokens.error,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      ErrorPresenter.message(appError),
-                      textAlign: TextAlign.center,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: tokens.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return AppErrorState(
+              key: const Key('myPoints.error'),
+              message: ErrorPresenter.message(appError),
+              retryLabel: l10n.retry,
+              onRetry: ErrorPresenter.isRetryable(appError)
+                  ? () => ref.invalidate(mySeasonRecordsProvider)
+                  : null,
             );
           },
           data: (rows) {
