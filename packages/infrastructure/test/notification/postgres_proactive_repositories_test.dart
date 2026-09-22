@@ -2,6 +2,7 @@ import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:infrastructure/src/notification/postgres_overtaken_repository.dart';
+import 'package:infrastructure/src/notification/postgres_push_open_repository.dart';
 import 'package:infrastructure/src/notification/postgres_streak_saver_repository.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
@@ -79,6 +80,23 @@ void main() {
       expect(targets.single.optedIn, isTrue);
       expect(connection.params.single['today'], '2026-09-15');
     });
+  });
+
+  test('PostgresPushOpenRepository records the tap', () async {
+    final connection = _FakeConnection(const Result.ok([]));
+    final at = DateTime.utc(2026, 9, 23, 12);
+
+    final result = await PostgresPushOpenRepository(
+      connection,
+    ).record(userId: const UserId(_userA), link: 'league', openedAt: at);
+
+    expect(result.isOk, isTrue);
+    expect(connection.params.single, {
+      'user_id': _userA,
+      'link': 'league',
+      'opened_at': at,
+    });
+    expect(connection.sqls.single, contains('notification.push_opens'));
   });
 
   group('PostgresOvertakenRepository', () {

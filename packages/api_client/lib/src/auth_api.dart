@@ -144,6 +144,17 @@ final class AuthApi {
     );
   }
 
+  /// `POST /me/push-opened` -- the caller tapped a push carrying [link]
+  /// (plan P3-8). Fire-and-forget from the app: the answer is never waited
+  /// on by anything the user sees.
+  Future<Result<PushOpenedAckDto>> reportPushOpened({required String link}) {
+    return _transport.postObject<PushOpenedAckDto>(
+      '/me/push-opened',
+      body: <String, Object?>{'link': link},
+      parse: PushOpenedAckDto.fromJson,
+    );
+  }
+
   /// `GET /me/insights` -- accuracy, patterns and last week's recap (plan
   /// P4-4), computed server-side on every call.
   Future<Result<InsightsDto>> myInsights() {

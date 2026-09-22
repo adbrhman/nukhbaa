@@ -292,6 +292,23 @@ void main() {
     });
   });
 
+  test('POST /me/push-opened sends the link', () async {
+    final ctx = buildTransport(
+      (_) async => okJson(const {'schema_version': 1, 'recorded': true}),
+      token: 'jwt-abc',
+    );
+
+    final result = await AuthApi(
+      ctx.transport,
+    ).reportPushOpened(link: 'league');
+
+    expect((result as Ok<PushOpenedAckDto>).value.recorded, isTrue);
+    final req = ctx.captured.single;
+    expect(req.method, 'POST');
+    expect(req.url.path, '/me/push-opened');
+    expect((jsonDecode(req.body) as Map<String, Object?>)['link'], 'league');
+  });
+
   test('GET /me/insights reads the insights', () async {
     final ctx = buildTransport(
       (_) async => okJson(const {

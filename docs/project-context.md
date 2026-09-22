@@ -3187,6 +3187,33 @@ best prediction. **No migration, no table, no weekly job.**
 - **Still to do (batch 6):** measurement (P2-8, P3-8, P4-6) and closing the
   plan.
 
+### Measurement and the close of the gamification plan (plan P2-8, P3-8, P4-6, 2026-09-22)
+
+Migration 0069: `notification.push_opens` (one row per tap on a push, via
+`POST /me/push-opened`, sent by the app from `NukhbaaShell._openLink`) and
+read-only views, server-only like 0054 and 0062:
+
+| View | Plan | What it answers |
+|---|---|---|
+| `gamification.user_active_days` | - | distinct (user, Riyadh day) with any event |
+| `gamification.kpi_weekly_engagement` | P2-8 | per week, league members vs others: active, active 3+ days, rate |
+| `gamification.kpi_league_retention` | P2-8 | members holding a seat the next week |
+| `notification.kpi_push_funnel` | P3-8 | per day and kind: sent, opened, back within the day or the next |
+| `notification.kpi_push_opt_outs` | P3-8 | users with a device, and each switch turned off |
+| `gamification.kpi_retention` | P4-6 | by first active day: active on day 14, in week 4 |
+| `gamification.kpi_accuracy_trend` | P4-6 | every player's accuracy per month |
+
+"Opened" is a tap with the push's link on the day it was sent; "back
+within 24 hours" is activity that day or the next. Both are day-grained on
+purpose: the sends are recorded by day. **0069 must be on the live DB
+before deploying.**
+
+**The plan is closed.** What was built differently from the plan, and why,
+is recorded in the sections above and summarised in
+`docs/gamification-audit.md` section 10. A/B experiments (P1-8's machinery)
+are ready and deliberately not running: read these views for a few weeks
+first, then decide what to test.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

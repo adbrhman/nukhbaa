@@ -100,6 +100,7 @@ final class CompositionRoot {
     required this.sendPreMatchReminders,
     required this.sendStreakSavers,
     required this.sendOvertakenPushes,
+    required this.recordPushOpen,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -237,6 +238,7 @@ final class CompositionRoot {
     SendPreMatchReminders? sendPreMatchReminders,
     SendStreakSavers? sendStreakSavers,
     SendOvertakenPushes? sendOvertakenPushes,
+    RecordPushOpen? recordPushOpen,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -389,6 +391,7 @@ final class CompositionRoot {
        sendStreakSavers = sendStreakSavers ?? _absentSendStreakSavers(),
        sendOvertakenPushes =
            sendOvertakenPushes ?? _absentSendOvertakenPushes(),
+       recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -1013,6 +1016,11 @@ final class CompositionRoot {
         sender: const NoopPushSender(),
       );
 
+  /// Builds an "absent" [RecordPushOpen] over a repository that throws if a
+  /// test reaches the slice it never wired.
+  static RecordPushOpen _absentRecordPushOpen() =>
+      RecordPushOpen(opens: _UnwiredPushOpenRepository(), clock: _unwiredClock);
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1499,6 +1507,9 @@ final class CompositionRoot {
   /// Tells a weekly-league member who was just overtaken (plan P3-4c).
   /// Driven by the scheduler.
   final SendOvertakenPushes sendOvertakenPushes;
+
+  /// Records a tap on a push (backs `POST /me/push-opened`, plan P3-8).
+  final RecordPushOpen recordPushOpen;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -1987,6 +1998,10 @@ final class CompositionRoot {
         streaks: PostgresStreakRepository(connection),
         budget: PostgresPredictionReminderRepository(connection),
         sender: pushSender,
+      ),
+      recordPushOpen: RecordPushOpen(
+        opens: PostgresPushOpenRepository(connection),
+        clock: clock,
       ),
       sendOvertakenPushes: SendOvertakenPushes(
         overtaken: PostgresOvertakenRepository(connection),
@@ -3251,6 +3266,16 @@ final class _UnwiredNotificationQueue implements NotificationQueue {
   @override
   Future<Result<void>> forgetTokens(List<String> tokens) =>
       throw StateError('The notification queue was not wired into this root');
+}
+
+/// Refuses every call: see [_absentRecordPushOpen].
+final class _UnwiredPushOpenRepository implements PushOpenRepository {
+  @override
+  Future<Result<void>> record({
+    required UserId userId,
+    required String link,
+    required DateTime openedAt,
+  }) => throw StateError('RecordPushOpen was not wired into this test root');
 }
 
 /// Refuses every call: see [_absentSendStreakSavers].

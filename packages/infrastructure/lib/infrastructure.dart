@@ -59,6 +59,7 @@ export 'src/gamification/postgres_weekly_league_repository.dart';
 export 'src/gamification/postgres_weekly_league_standings_reader.dart';
 export 'src/notification/postgres_overtaken_repository.dart';
 export 'src/notification/postgres_pre_match_reminder_repository.dart';
+export 'src/notification/postgres_push_open_repository.dart';
 export 'src/notification/postgres_prediction_reminder_repository.dart';
 export 'src/notification/postgres_score_announcement_repository.dart';
 export 'src/notification/postgres_streak_saver_repository.dart';

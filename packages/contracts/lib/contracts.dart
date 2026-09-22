@@ -19,6 +19,7 @@ export 'src/time_zone_dto.dart';
 export 'src/error_dto.dart';
 export 'src/favorite_teams_dto.dart';
 export 'src/insights_dto.dart';
+export 'src/push_opened_dto.dart';
 export 'src/fixture_ledger_dto.dart';
 export 'src/fixture_prediction_dto.dart';
 export 'src/fixture_schedule_dto.dart';

@@ -52,6 +52,8 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     if (tab == null || !mounted) {
       return;
     }
+    // P3-8: the open rate per push. Never awaited: the tap must not wait.
+    unawaited(ref.read(authApiProvider).reportPushOpened(link: link));
     _select(tab);
     if (link == PushLinks.inbox) {
       unawaited(
