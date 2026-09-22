@@ -30,6 +30,7 @@ final class CompositionRoot {
     required this.updateDisplayName,
     required this.updateTimeZoneOffset,
     required this.getMyStreak,
+    required this.getMyInsights,
     required this.getMyDailyChallenge,
     required this.getMyWeeklyLeague,
     required this.getMyBadges,
@@ -166,6 +167,7 @@ final class CompositionRoot {
     UpdateDisplayName? updateDisplayName,
     UpdateTimeZoneOffset? updateTimeZoneOffset,
     GetMyStreak? getMyStreak,
+    GetMyInsights? getMyInsights,
     GetMyDailyChallenge? getMyDailyChallenge,
     GetMyWeeklyLeague? getMyWeeklyLeague,
     GetMyBadges? getMyBadges,
@@ -275,6 +277,7 @@ final class CompositionRoot {
        updateTimeZoneOffset =
            updateTimeZoneOffset ?? _absentUpdateTimeZoneOffset(),
        getMyStreak = getMyStreak ?? _absentGetMyStreak(),
+       getMyInsights = getMyInsights ?? _absentGetMyInsights(),
        getMyDailyChallenge =
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
        getMyWeeklyLeague = getMyWeeklyLeague ?? _absentGetMyWeeklyLeague(),
@@ -484,6 +487,13 @@ final class CompositionRoot {
   /// test reaches the streak slice it never wired.
   static GetMyStreak _absentGetMyStreak() =>
       GetMyStreak(streaks: _UnwiredStreakRepository(), clock: _unwiredClock);
+
+  /// Builds an "absent" [GetMyInsights] over a reader that throws if a
+  /// test reaches the insights slice it never wired.
+  static GetMyInsights _absentGetMyInsights() => GetMyInsights(
+    outcomes: _UnwiredPredictionOutcomeReader(),
+    clock: _unwiredClock,
+  );
 
   /// Builds an "absent" [GetMyDailyChallenge] over repositories that throw
   /// if a test reaches the daily-challenge slice it never wired.
@@ -1168,6 +1178,10 @@ final class CompositionRoot {
   /// Counts the caller's run of completed match days (backs
   /// `GET /me/streak`). Derived from the event stream on every read.
   final GetMyStreak getMyStreak;
+
+  /// The caller's accuracy, patterns and last week's recap (backs
+  /// `GET /me/insights`, plan P4-4).
+  final GetMyInsights getMyInsights;
 
   /// Reports how much of today's match day the caller has covered (backs
   /// `GET /me/daily-challenge`). Computed per request over the caller's
@@ -1920,6 +1934,10 @@ final class CompositionRoot {
         streaks: PostgresStreakRepository(connection),
         clock: clock,
       ),
+      getMyInsights: GetMyInsights(
+        outcomes: PostgresPredictionOutcomeReader(connection),
+        clock: clock,
+      ),
       getMyDailyChallenge: GetMyDailyChallenge(
         competitionRepository: competitionRepository,
         dailyChallenges: PostgresDailyChallengeRepository(connection),
@@ -2383,6 +2401,26 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
   @override
   Future<Result<LatestBuild>> fetchLatest() =>
       throw StateError('GetLatestBuild was not wired into this test root');
+}
+
+/// Backs an "absent" [GetMyInsights]: throws if a test reaches the insights
+/// slice it never wired.
+final class _UnwiredPredictionOutcomeReader implements PredictionOutcomeReader {
+  static Never _unwired() =>
+      throw StateError('GetMyInsights was not wired into this test root');
+
+  @override
+  Future<Result<List<PredictionOutcome>>> outcomesOf({
+    required UserId userId,
+    required DateTime from,
+    required DateTime to,
+  }) => _unwired();
+
+  @override
+  Future<Result<AccuracyTally>> communityTally({
+    required DateTime from,
+    required DateTime to,
+  }) => _unwired();
 }
 
 /// Backs an "absent" [GetMyStreak]: throws if a test reaches the streak slice

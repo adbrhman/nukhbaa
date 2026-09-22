@@ -3143,6 +3143,31 @@ build does not know opens the app as a plain tap. No new dependency.
 **P2-7's "overtaken" card moves to batches 4-5:** the server has to keep who
 passed whom (a column on 0067's marks) before the league screen can show it.
 
+### Learn from your predictions (plan P4-1..P4-4, 2026-09-22)
+
+`GET /me/insights` answers the caller's accuracy this Riyadh month against
+every player's, accuracy per league with the best and worst named (5
+decided each at least), followed teams against the rest (3 each at least),
+the longest right run, the last 8 weeks, and last week's recap with its
+best prediction. **No migration, no table, no weekly job.**
+
+- **Derived on every read** from `scoring.fixture_scores` (decided grades
+  only), for the reason there is no streak table: a stored insight or recap
+  would be a second truth, wrong after a corrected result. The plan's
+  `user_prediction_insights` and `weekly_recaps` tables and their weekly
+  job are dropped for that reason (decided 2026-09-22).
+- **One endpoint** instead of the plan's three: the three read the same
+  rows and the screen shows them together.
+- `PredictionInsights` (domain) holds every rule; `GetMyInsights` only picks
+  the window (the earlier of the month's first day and the oldest of the
+  8 weeks, Riyadh days) and the community tally of the month.
+- A percent is null when nothing was decided: never a division by zero,
+  never a "0%" for someone who has not played.
+- **Not in the recap:** the rank change and the badges of the week (the
+  plan's `rank_delta`, `badges_unlocked`); both have their own screens.
+- **Next (batch 5):** the screen (P4-5), the P2-7 overtaken card, the P1-7
+  celebration.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -144,6 +144,15 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/insights` -- accuracy, patterns and last week's recap (plan
+  /// P4-4), computed server-side on every call.
+  Future<Result<InsightsDto>> myInsights() {
+    return _transport.getObject<InsightsDto>(
+      '/me/insights',
+      parse: InsightsDto.fromJson,
+    );
+  }
+
   /// `GET /me/daily-challenge` -- how much of today's match day the caller
   /// has covered.
   ///

@@ -292,6 +292,26 @@ void main() {
     });
   });
 
+  test('GET /me/insights reads the insights', () async {
+    final ctx = buildTransport(
+      (_) async => okJson(const {
+        'schema_version': 1,
+        'month': {'decided': 4, 'correct': 3, 'exact': 1, 'percent': 75},
+        'leagues': <Object?>[],
+        'weeks': <Object?>[],
+        'longest_correct_run': 2,
+      }),
+      token: 'jwt-abc',
+    );
+
+    final result = await AuthApi(ctx.transport).myInsights();
+
+    final dto = (result as Ok<InsightsDto>).value;
+    expect(dto.month.percent, 75);
+    expect(dto.longestCorrectRun, 2);
+    expect(ctx.captured.single.url.path, '/me/insights');
+  });
+
   group('favorite teams', () {
     const a = '11111111-1111-4111-8111-111111111111';
     const b = '22222222-2222-4222-8222-222222222222';
