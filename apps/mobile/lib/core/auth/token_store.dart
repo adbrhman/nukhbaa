@@ -25,7 +25,13 @@ abstract interface class TokenStore {
   /// Persists [token] as the current access token, replacing any previous one.
   Future<void> write(String token);
 
-  /// Removes any persisted token (sign-out).
+  /// Returns the persisted refresh token, or `null` if none is stored.
+  Future<String?> readRefreshToken();
+
+  /// Persists [token] as the refresh token that renews the session.
+  Future<void> writeRefreshToken(String token);
+
+  /// Removes the persisted access and refresh tokens (sign-out).
   Future<void> clear();
 }
 
@@ -52,6 +58,9 @@ final class SecureTokenStore implements TokenStore {
   /// The storage key under which the access token is persisted.
   static const String tokenKey = 'nukhba.access_token';
 
+  /// The storage key under which the refresh token is persisted.
+  static const String refreshTokenKey = 'nukhba.refresh_token';
+
   @override
   Future<String?> read() async {
     // A read failure (e.g. a corrupted keystore entry) is treated as "no
@@ -75,11 +84,27 @@ final class SecureTokenStore implements TokenStore {
     return _storage.write(key: tokenKey, value: token);
   }
 
+  // Read only when a renewal runs, so not cached: a keystore read there
+  // costs nothing next to the network round trip that follows.
   @override
-  Future<void> clear() {
+  Future<String?> readRefreshToken() async {
+    try {
+      return await _storage.read(key: refreshTokenKey);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> writeRefreshToken(String token) =>
+      _storage.write(key: refreshTokenKey, value: token);
+
+  @override
+  Future<void> clear() async {
     _cached = null;
     _loaded = true;
-    return _storage.delete(key: tokenKey);
+    await _storage.delete(key: tokenKey);
+    await _storage.delete(key: refreshTokenKey);
   }
 }
 
@@ -97,6 +122,17 @@ final class InMemoryTokenStore implements TokenStore {
   @override
   Future<void> write(String token) async => _token = token;
 
+  String? _refreshToken;
+
   @override
-  Future<void> clear() async => _token = null;
+  Future<String?> readRefreshToken() async => _refreshToken;
+
+  @override
+  Future<void> writeRefreshToken(String token) async => _refreshToken = token;
+
+  @override
+  Future<void> clear() async {
+    _token = null;
+    _refreshToken = null;
+  }
 }

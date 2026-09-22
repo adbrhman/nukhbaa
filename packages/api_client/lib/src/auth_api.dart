@@ -35,6 +35,15 @@ final class AuthApi {
     );
   }
 
+  /// Renews a session from its [refreshToken] via `POST /auth/refresh`.
+  Future<Result<AuthResponseDto>> refresh({required String refreshToken}) {
+    return _transport.postObject<AuthResponseDto>(
+      '/auth/refresh',
+      body: RefreshSessionRequestDto(refreshToken: refreshToken).toJson(),
+      parse: AuthResponseDto.fromJson,
+    );
+  }
+
   Future<Result<PasswordResetResponseDto>> requestPasswordReset({
     required String email,
   }) {

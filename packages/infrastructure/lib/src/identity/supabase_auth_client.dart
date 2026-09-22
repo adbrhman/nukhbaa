@@ -77,6 +77,18 @@ final class SupabaseAuthClient {
     );
   }
 
+  /// Renews a session via POST /token?grant_type=refresh_token. GoTrue
+  /// rotates the refresh token: the response carries a new one, and the
+  /// old one stops working after the project's reuse interval.
+  Future<Result<SupabaseSession>> refresh({required String refreshToken}) {
+    return _post(
+      path: 'token',
+      query: {'grant_type': 'refresh_token'},
+      body: {'refresh_token': refreshToken},
+      onSuccess: _sessionFromLogin,
+    );
+  }
+
   /// Creates an account via POST /signup and returns the resulting session (or
   /// a confirmation-pending marker when the project requires email
   /// confirmation).

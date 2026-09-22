@@ -15,6 +15,24 @@ import 'package:shared/shared.dart';
 /// from secure storage / a refresh flow without this layer knowing how.
 typedef TokenProvider = Future<String?> Function();
 
+/// What a session renewal achieved, as reported by a [SessionRenewer].
+enum SessionRenewal {
+  /// A fresh access token is now stored; the request is worth repeating.
+  renewed,
+
+  /// The session cannot be renewed (no refresh token, or the identity
+  /// provider refused it): the user has to sign in again.
+  rejected,
+
+  /// The renewal could not be attempted right now (offline, timeout): the
+  /// session is kept, and the call fails as a retryable network error.
+  unavailable,
+}
+
+/// Renews the session after a `401`. Owned by the app like [TokenProvider]:
+/// this transport never stores or exchanges a token itself.
+typedef SessionRenewer = Future<SessionRenewal> Function();
+
 /// The single low-level HTTP transport every domain client is built on.
 ///
 /// Responsibilities (and ONLY these — no business logic, ADR-002 §2.8):
@@ -56,17 +74,24 @@ final class ApiTransport {
   /// with `401` — the auth layer uses this hook to react to a revoked or
   /// expired session (e.g. force a sign-out) without this transport knowing
   /// anything about session/auth state itself.
+  ///
+  /// [renewSession], if provided, runs first on a `401` for a call made with
+  /// the stored credential: a renewed session repeats the call once, a
+  /// rejected one falls through to [onUnauthorized], and an unavailable one
+  /// fails as a retryable network error without ending the session.
   ApiTransport({
     required Uri baseUri,
     required http.Client httpClient,
     required TokenProvider tokenProvider,
     Duration? requestTimeout = const Duration(seconds: 15),
     Future<void> Function()? onUnauthorized,
+    SessionRenewer? renewSession,
   }) : _baseUri = baseUri,
        _httpClient = httpClient,
        _tokenProvider = tokenProvider,
        _requestTimeout = requestTimeout,
-       _onUnauthorized = onUnauthorized;
+       _onUnauthorized = onUnauthorized,
+       _renewSession = renewSession;
 
   final Uri _baseUri;
   final http.Client _httpClient;
@@ -74,6 +99,8 @@ final class ApiTransport {
   final Duration? _requestTimeout;
 
   final Future<void> Function()? _onUnauthorized;
+
+  final SessionRenewer? _renewSession;
 
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
@@ -233,7 +260,10 @@ final class ApiTransport {
   /// URL), so a widget that reached for the network directly could not
   /// authenticate at all there.
   Future<Result<Uint8List?>> getBytes(String path) async {
-    final sent = await _rawSend(method: 'GET', path: path);
+    final sent = await _sendRenewing(
+      path: path,
+      send: () => _rawSend(method: 'GET', path: path),
+    );
     if (sent is Err<http.Response>) return Result.err(sent.error);
     final response = (sent as Ok<http.Response>).value;
     final status = response.statusCode;
@@ -255,14 +285,18 @@ final class ApiTransport {
     String? overrideToken,
     required Result<T> Function(String body) decode,
   }) async {
-    final sent = await _rawSend(
-      method: method,
+    final sent = await _sendRenewing(
       path: path,
-      query: query,
-      requestBody: requestBody,
-      requestBytes: requestBytes,
-      requestContentType: requestContentType,
       overrideToken: overrideToken,
+      send: () => _rawSend(
+        method: method,
+        path: path,
+        query: query,
+        requestBody: requestBody,
+        requestBytes: requestBytes,
+        requestContentType: requestContentType,
+        overrideToken: overrideToken,
+      ),
     );
     if (sent is Err<http.Response>) return Result.err(sent.error);
     final response = (sent as Ok<http.Response>).value;
@@ -275,6 +309,36 @@ final class ApiTransport {
       await _onUnauthorized?.call();
     }
     return Result.err(decodeError(status, response.body));
+  }
+
+  /// Sends via [send]; when that draws a `401` on a call made with the stored
+  /// credential, asks [_renewSession] once for a fresh token and repeats the
+  /// call. Auth routes and explicit-token calls are never renewed: the
+  /// renewal itself goes through `/auth/refresh`, so this is also what keeps
+  /// it from recursing.
+  Future<Result<http.Response>> _sendRenewing({
+    required String path,
+    String? overrideToken,
+    required Future<Result<http.Response>> Function() send,
+  }) async {
+    final Result<http.Response> first = await send();
+    final SessionRenewer? renew = _renewSession;
+    if (renew == null || overrideToken != null || path.startsWith('/auth/')) {
+      return first;
+    }
+    if (first case Ok<http.Response>(
+      :final value,
+    ) when value.statusCode == 401) {
+      switch (await renew()) {
+        case SessionRenewal.renewed:
+          return send();
+        case SessionRenewal.unavailable:
+          return Result.err(networkError('session renewal unavailable'));
+        case SessionRenewal.rejected:
+          return first;
+      }
+    }
+    return first;
   }
 
   // The wire itself: URL, headers, method, timeout. Status interpretation is

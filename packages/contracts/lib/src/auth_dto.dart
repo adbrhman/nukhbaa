@@ -173,6 +173,23 @@ final class AuthResponseDto {
   );
 }
 
+/// Request body for POST /auth/refresh: the refresh token issued with the
+/// session being renewed.
+final class RefreshSessionRequestDto {
+  /// Creates a refresh request.
+  const RefreshSessionRequestDto({required this.refreshToken});
+
+  /// Deserializes from a JSON map.
+  factory RefreshSessionRequestDto.fromJson(Map<String, dynamic> json) =>
+      RefreshSessionRequestDto(refreshToken: json['refresh_token']! as String);
+
+  /// The refresh token (never logged; forwarded to Supabase Auth only).
+  final String refreshToken;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, dynamic> toJson() => {'refresh_token': refreshToken};
+}
+
 /// Request body for POST /auth/password-reset/request.
 final class PasswordResetRequestDto {
   const PasswordResetRequestDto({required this.email});

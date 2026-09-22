@@ -146,6 +146,10 @@ class SessionController extends _$SessionController {
           );
         }
         await _store.write(token);
+        final refreshToken = value.refreshToken;
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await _store.writeRefreshToken(refreshToken);
+        }
         return _validateHeldToken(clearOnAuthFailure: true);
       case Err<AuthResponseDto>(:final error):
         await _store.clear();

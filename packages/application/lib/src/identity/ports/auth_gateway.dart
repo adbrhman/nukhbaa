@@ -48,6 +48,12 @@ abstract class AuthGateway {
     required String displayName,
   });
 
+  /// Exchanges a live [refreshToken] for a fresh session; the provider
+  /// rotates the refresh token too. A spent or revoked token is a
+  /// validation-class rejection, and the client then asks the user to
+  /// sign in again.
+  Future<Result<IssuedSession>> refreshSession({required String refreshToken});
+
   /// Sends a password-reset email without revealing whether the address exists.
   Future<Result<void>> requestPasswordReset({required String email});
 

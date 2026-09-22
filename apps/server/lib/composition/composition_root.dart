@@ -27,6 +27,7 @@ final class CompositionRoot {
     required this.register,
     required this.requestPasswordReset,
     required this.updatePassword,
+    required this.refreshSession,
     required this.updateDisplayName,
     required this.updateTimeZoneOffset,
     required this.getMyStreak,
@@ -162,6 +163,7 @@ final class CompositionRoot {
     RegisterWithPassword? register,
     RequestPasswordReset? requestPasswordReset,
     UpdatePassword? updatePassword,
+    RefreshSession? refreshSession,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
     EnrolInOpenSeasons? enrolInOpenSeasons,
@@ -271,6 +273,7 @@ final class CompositionRoot {
        requestPasswordReset =
            requestPasswordReset ?? _absentRequestPasswordReset(),
        updatePassword = updatePassword ?? _absentUpdatePassword(),
+       refreshSession = refreshSession ?? _absentRefreshSession(),
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
        getCurrentUser = getCurrentUser ?? _absentGetCurrentUser(),
@@ -441,6 +444,9 @@ final class CompositionRoot {
 
   static UpdatePassword _absentUpdatePassword() =>
       UpdatePassword(_UnwiredAuthGateway());
+
+  static RefreshSession _absentRefreshSession() =>
+      RefreshSession(_UnwiredAuthGateway());
 
   static CheckHealth _absentCheckHealth() =>
       CheckHealth(_UnwiredHealthRepository());
@@ -1176,6 +1182,9 @@ final class CompositionRoot {
   final RequestPasswordReset requestPasswordReset;
   final UpdatePassword updatePassword;
 
+  /// Renews a session from its refresh token (backs `POST /auth/refresh`).
+  final RefreshSession refreshSession;
+
   /// Changes the caller's own display name (backs `PATCH /me/display-name`).
   final UpdateDisplayName updateDisplayName;
 
@@ -1663,6 +1672,7 @@ final class CompositionRoot {
     final register = RegisterWithPassword(authGateway);
     final requestPasswordReset = RequestPasswordReset(authGateway);
     final updatePassword = UpdatePassword(authGateway);
+    final refreshSession = RefreshSession(authGateway);
 
     // Competition slice: the Postgres-backed repository, the configured
     // ruleset provider (the placeholder-free Scoring seam), and the shared
@@ -1948,6 +1958,7 @@ final class CompositionRoot {
       register: register,
       requestPasswordReset: requestPasswordReset,
       updatePassword: updatePassword,
+      refreshSession: refreshSession,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
       updateTimeZoneOffset: UpdateTimeZoneOffset(userDirectory: directory),
       getMyStreak: GetMyStreak(
@@ -3468,6 +3479,11 @@ final class _UnwiredAuthGateway implements AuthGateway {
     required String email,
     required String password,
     required String displayName,
+  }) => throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<IssuedSession>> refreshSession({
+    required String refreshToken,
   }) => throw StateError('An auth use-case was not wired into this root');
 
   @override

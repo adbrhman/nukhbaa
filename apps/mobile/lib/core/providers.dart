@@ -24,6 +24,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'config/app_config.dart';
+import 'auth/session_refresher.dart';
 import 'auth/token_store.dart';
 import 'network/http_client.dart';
 import 'notifications/push_token_service.dart';
@@ -54,12 +55,11 @@ ApiTransport apiTransport(Ref ref) {
   final store = ref.watch(tokenStoreProvider);
   final client = createHttpClient();
   ref.onDispose(client.close);
-  return ApiTransport(
+  return buildSessionTransport(
     baseUri: config.apiBaseUrl,
     httpClient: client,
-    tokenProvider: store.read,
-    requestTimeout: const Duration(seconds: 35),
-    onUnauthorized: () async {
+    store: store,
+    onSessionEnded: () async {
       await store.clear();
       ref.read(sessionExpiryProvider.notifier).signal();
     },
