@@ -53,7 +53,7 @@ abstract final class AppColorsLight {
 
   static const Color textPrimary = Color(0xFF0A1420);
   static const Color textSecondary = Color(0xFF3F4C5E);
-  static const Color textMuted = Color(0xFF6B7889);
+  static const Color textMuted = Color(0xFF647080);
 
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onGold = Color(0xFFFFFFFF);
