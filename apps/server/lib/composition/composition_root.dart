@@ -1652,7 +1652,7 @@ final class CompositionRoot {
       );
     }
     final verifier = SupabaseJwtVerifier(authConfig, jwksClient);
-    final directory = PostgresUserDirectory(connection);
+    final directory = CachedUserDirectory(PostgresUserDirectory(connection));
 
     // Identity slice (continued): email/password auth proxy, backed by
     // the existing SupabaseAuthClient adapted to the AuthGateway port.
@@ -1690,8 +1690,8 @@ final class CompositionRoot {
     // The batched win-share read behind the current-month feed. Its own tiny
     // adapter rather than another method on the repository above -- see
     // FixturePredictionTallyReader for why.
-    final fixturePredictionTallyReader = PostgresFixturePredictionTallyReader(
-      connection,
+    final fixturePredictionTallyReader = CachedFixturePredictionTallyReader(
+      PostgresFixturePredictionTallyReader(connection),
     );
 
     // Scoring slice: its own Postgres-backed adapters over the scoring.* tables
@@ -1704,17 +1704,21 @@ final class CompositionRoot {
 
     // Axiom 4 Amendment: the per-fixture Scoring context, its own
     // Postgres-backed repository.
-    final fixtureScoreRepository = PostgresFixtureScoreRepository(connection);
+    final fixtureScoreRepository = CachedFixtureScoreRepository(
+      PostgresFixtureScoreRepository(connection),
+    );
 
-    final fixtureScheduleRepository = PostgresFixtureScheduleRepository(
-      connection,
+    final fixtureScheduleRepository = CachedFixtureScheduleRepository(
+      PostgresFixtureScheduleRepository(connection),
     );
 
     // Football Data slice: read-only team catalog backing `GET /teams`
     // (previously unwired schema — `football_data.teams`, migration
     // `0013_football_data.sql`), so a client can resolve a fixture's team ids
     // into a display name + crest without hardcoding either client-side.
-    final teamRepository = PostgresTeamRepository(connection);
+    final teamRepository = CachedTeamRepository(
+      PostgresTeamRepository(connection),
+    );
 
     // Ledger slice: its own Postgres-backed adapters over the ledger.* tables
     // (the append-only PointEntry stream). PostRoundToLedger reads the scored
@@ -1815,7 +1819,12 @@ final class CompositionRoot {
     // + `ledgerRepository` already built for the Ledger slice above (decision
     // §2 #1); it is a DIFFERENT gate from `ReadParticipantLedger` (admin cross-
     // user read, itself audited — decision OPEN-A #3), never a duplicate.
-    final userAdminRepository = PostgresUserAdminRepository(connection);
+    // Suspend/reinstate write identity.users through this repository, so it
+    // drops the user from the per-request cache in `directory` at once.
+    final userAdminRepository = UserCacheEvictingAdminRepository(
+      PostgresUserAdminRepository(connection),
+      onUserChanged: directory.forget,
+    );
     final auditLogRepository = PostgresAuditLogRepository(connection);
     final auditRecorder = AuditRecorder(
       auditLog: auditLogRepository,
