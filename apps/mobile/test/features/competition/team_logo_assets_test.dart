@@ -1,9 +1,66 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/competition/team_identity.dart';
 import 'package:mobile/features/competition/team_logo_assets.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const Map<String, String> expectedCafAssets = <String, String>{
+    'الجزائر': 'algeria',
+    'أنغولا': 'angola',
+    'بنين': 'benin',
+    'بوتسوانا': 'botswana',
+    'بوركينا فاسو': 'burkina-faso',
+    'بوروندي': 'burundi',
+    'الكاميرون': 'cameroon',
+    'الرأس الأخضر': 'cape-verde',
+    'أفريقيا الوسطى': 'central-african-republic',
+    'تشاد': 'chad',
+    'جزر القمر': 'comoros',
+    'الكونغو': 'congo',
+    'الكونغو الديمقراطية': 'democratic-republic-of-congo',
+    'جيبوتي': 'djibouti',
+    'مصر': 'egypt',
+    'غينيا الاستوائية': 'equatorial-guinea',
+    'إريتريا': 'eritrea',
+    'إسواتيني': 'eswatini',
+    'إثيوبيا': 'ethiopia',
+    'الغابون': 'gabon',
+    'غامبيا': 'gambia',
+    'غانا': 'ghana',
+    'غينيا': 'guinea',
+    'غينيا بيساو': 'guinea-bissau',
+    'ساحل العاج': 'ivory-coast',
+    'كينيا': 'kenya',
+    'ليسوتو': 'lesotho',
+    'ليبيريا': 'liberia',
+    'ليبيا': 'libya',
+    'مدغشقر': 'madagascar',
+    'مالاوي': 'malawi',
+    'مالي': 'mali',
+    'موريتانيا': 'mauritania',
+    'موريشيوس': 'mauritius',
+    'المغرب': 'morocco',
+    'موزمبيق': 'mozambique',
+    'ناميبيا': 'namibia',
+    'النيجر': 'niger',
+    'نيجيريا': 'nigeria',
+    'رواندا': 'rwanda',
+    'ساو تومي وبرينسيبي': 'sao-tome-and-principe',
+    'السنغال': 'senegal',
+    'سيشل': 'seychelles',
+    'سيراليون': 'sierra-leone',
+    'الصومال': 'somalia',
+    'جنوب أفريقيا': 'south-africa',
+    'جنوب السودان': 'south-sudan',
+    'السودان': 'sudan',
+    'تنزانيا': 'tanzania',
+    'توغو': 'togo',
+    'تونس': 'tunisia',
+    'أوغندا': 'uganda',
+    'زامبيا': 'zambia',
+    'زيمبابوي': 'zimbabwe',
+  };
 
   const Map<String, String> expectedAssets = <String, String>{
     'Juventus': 'juventus',
@@ -182,6 +239,27 @@ void main() {
       'toulouse',
       'troyes',
     ]) {
+      await rootBundle.load('assets/team_logos/$slug.png');
+    }
+  });
+
+  test('resolves CAF national sides through the fixture identity resolver', () {
+    for (final MapEntry<String, String> entry in expectedCafAssets.entries) {
+      final ResolvedTeamIdentity identity = resolveTeamIdentity(
+        catalog: null,
+        teamId: null,
+        teamName: entry.key,
+      );
+      expect(
+        identity.assetPath,
+        'assets/team_logos/${entry.value}.png',
+        reason: entry.key,
+      );
+    }
+  });
+
+  test('every CAF national-team flag loads from bundled assets', () async {
+    for (final String slug in expectedCafAssets.values) {
       await rootBundle.load('assets/team_logos/$slug.png');
     }
   });
