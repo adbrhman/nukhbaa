@@ -14,6 +14,7 @@ import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
+import 'app_lock.dart';
 import 'session_controller.dart';
 import 'password_reset_screen.dart';
 import 'session_state.dart';
@@ -273,6 +274,32 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   ? null
                                   : () => _submit(session),
                             ),
+                            if (ref.watch(fingerprintSignInProvider).value ??
+                                false) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              FilledButton.tonalIcon(
+                                key: const Key('signIn.fingerprint'),
+                                onPressed: inFlight
+                                    ? null
+                                    : () => unawaited(
+                                        ref
+                                            .read(
+                                              sessionControllerProvider
+                                                  .notifier,
+                                            )
+                                            .signInWithFingerprint()
+                                            .whenComplete(() {
+                                              if (mounted) {
+                                                ref.invalidate(
+                                                  fingerprintSignInProvider,
+                                                );
+                                              }
+                                            }),
+                                      ),
+                                icon: const Icon(Icons.fingerprint_rounded),
+                                label: const Text('الدخول بالبصمة'),
+                              ),
+                            ],
                             if (ref
                                 .watch(googleIdTokenSourceProvider)
                                 .isSupported) ...[

@@ -34,6 +34,16 @@ abstract interface class BiometricPreferenceStore {
 
   /// Records that the one-time offer was shown.
   Future<void> markOffered();
+
+  /// The refresh token kept across a sign-out for fingerprint sign-in, or
+  /// `null` when none is kept.
+  Future<String?> readSavedRefreshToken();
+
+  /// Keeps [token] across a sign-out, for fingerprint sign-in.
+  Future<void> saveRefreshToken(String token);
+
+  /// Drops the kept refresh token.
+  Future<void> clearSavedRefreshToken();
 }
 
 /// [BiometricPreferenceStore] over the platform secure storage.
@@ -47,6 +57,25 @@ class SecureBiometricPreferenceStore implements BiometricPreferenceStore {
   static const String _offeredKey = 'nukhba.biometric.offered';
 
   final FlutterSecureStorage _storage;
+
+  static const String _savedRefreshKey = 'nukhba.biometric.refresh_token';
+
+  @override
+  Future<String?> readSavedRefreshToken() async {
+    try {
+      return await _storage.read(key: _savedRefreshKey);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> saveRefreshToken(String token) =>
+      _storage.write(key: _savedRefreshKey, value: token);
+
+  @override
+  Future<void> clearSavedRefreshToken() =>
+      _storage.delete(key: _savedRefreshKey);
 
   @override
   Future<bool> isEnabled() async =>
@@ -73,6 +102,16 @@ class InMemoryBiometricPreferenceStore implements BiometricPreferenceStore {
 
   bool _enabled;
   bool _offered;
+  String? _savedRefresh;
+
+  @override
+  Future<String?> readSavedRefreshToken() async => _savedRefresh;
+
+  @override
+  Future<void> saveRefreshToken(String token) async => _savedRefresh = token;
+
+  @override
+  Future<void> clearSavedRefreshToken() async => _savedRefresh = null;
 
   @override
   Future<bool> isEnabled() async => _enabled;

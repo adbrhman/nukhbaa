@@ -64,6 +64,22 @@ Future<bool> _readEnabled(BiometricPreferenceStore store) async {
   }
 }
 
+/// Whether the sign-in screen offers the fingerprint: unlock is on, a
+/// refresh token was kept across the sign-out, and the device can prompt.
+final fingerprintSignInProvider = FutureProvider.autoDispose<bool>((ref) async {
+  try {
+    final BiometricPreferenceStore prefs = ref.read(
+      biometricPreferenceStoreProvider,
+    );
+    if (!await prefs.isEnabled()) return false;
+    final String? kept = await prefs.readSavedRefreshToken();
+    if (kept == null || kept.isEmpty) return false;
+    return await ref.read(biometricAuthenticatorProvider).isAvailable();
+  } on Object {
+    return false;
+  }
+});
+
 /// Owns [AppLockState].
 class AppLockController extends Notifier<AppLockState> {
   @override
@@ -122,6 +138,8 @@ class AppLockController extends Notifier<AppLockState> {
 
   /// Switches fingerprint unlock off.
   Future<void> disable() async {
+    // Off means off: nothing is kept for a fingerprint sign-in either.
+    await ref.read(biometricPreferenceStoreProvider).clearSavedRefreshToken();
     await ref.read(biometricPreferenceStoreProvider).setEnabled(enabled: false);
     state = AppLockState.open;
   }

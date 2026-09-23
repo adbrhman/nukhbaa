@@ -33,6 +33,7 @@ import 'package:contracts/contracts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/auth/biometric_unlock.dart';
 import '../../core/auth/google_id_token_source.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
@@ -152,6 +153,58 @@ class SessionController extends _$SessionController {
     }
   }
 
+  /// Signs back in with the fingerprint after a sign-out: the refresh token
+  /// [signOut] kept (fingerprint unlock on) is exchanged for a session once
+  /// the fingerprint passes. A declined fingerprint leaves the form as it
+  /// was; a token the provider no longer accepts is dropped, with a message
+  /// to use the password; an offline attempt keeps it for the next try.
+  Future<void> signInWithFingerprint() async {
+    final BiometricPreferenceStore prefs = ref.read(
+      biometricPreferenceStoreProvider,
+    );
+    final String? kept = await prefs.readSavedRefreshToken();
+    if (kept == null || kept.isEmpty) return;
+    final bool passed = await ref
+        .read(biometricAuthenticatorProvider)
+        .authenticate(reason: 'ضع بصمتك للدخول إلى نُخبة');
+    if (!passed) return;
+    state = const AsyncData(SessionAuthenticating());
+    final Result<AuthResponseDto> result = await _authApi.refresh(
+      refreshToken: kept,
+    );
+    switch (result) {
+      case Ok<AuthResponseDto>():
+        await prefs.clearSavedRefreshToken();
+        state = AsyncData(await _onAuthResponse(result));
+      case Err<AuthResponseDto>(:final error)
+          when error.kind == ErrorKind.transient:
+        state = AsyncData(SessionFailed(error));
+      case Err<AuthResponseDto>():
+        await prefs.clearSavedRefreshToken();
+        state = const AsyncData(
+          SessionFailed(
+            AppError.validation(
+              'auth.fingerprint_expired',
+              'انتهت صلاحية الدخول بالبصمة. سجّل الدخول بكلمة المرور.',
+            ),
+          ),
+        );
+    }
+  }
+
+  /// With fingerprint unlock on, the refresh token outlives a sign-out in
+  /// its own slot, so the sign-in screen can offer the fingerprint.
+  Future<void> _keepForFingerprint() async {
+    final BiometricPreferenceStore prefs = ref.read(
+      biometricPreferenceStoreProvider,
+    );
+    if (!await prefs.isEnabled()) return;
+    final String? token = await _store.readRefreshToken();
+    if (token != null && token.isNotEmpty) {
+      await prefs.saveRefreshToken(token);
+    }
+  }
+
   /// Maps a login/register [Result] to the resulting [SessionState].
   Future<SessionState> _onAuthResponse(Result<AuthResponseDto> result) async {
     switch (result) {
@@ -223,6 +276,11 @@ class SessionController extends _$SessionController {
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {
+    try {
+      await _keepForFingerprint();
+    } on Object {
+      // Losing the fingerprint slot only costs a password sign-in.
+    }
     try {
       await _store.clear();
     } on Object {
