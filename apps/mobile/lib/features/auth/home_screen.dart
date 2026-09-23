@@ -8,6 +8,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_button.dart';
+import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
 import '../competition/competition_providers.dart';
@@ -393,7 +394,7 @@ class _PendingPredictionsCard extends StatelessWidget {
           AppButton(
             key: const Key('home.pendingPredictions.cta'),
             label: 'تفاصيل المباريات',
-            icon: Icons.arrow_back_rounded,
+            icon: Icons.arrow_forward_rounded,
             onPressed: onPredict,
           ),
         ],
@@ -574,7 +575,7 @@ class _SectionHeader extends StatelessWidget {
             children: <Widget>[
               Text(action),
               const SizedBox(width: AppSpacing.xs),
-              const Icon(Icons.arrow_back_rounded, size: AppSizes.iconSm),
+              const ForwardChevron(size: AppSizes.iconSm),
             ],
           ),
         ),

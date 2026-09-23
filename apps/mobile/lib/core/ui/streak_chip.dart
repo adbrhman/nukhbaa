@@ -14,7 +14,7 @@ class StreakChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: tokens.onPrimary.withValues(alpha: 0.16),
+        color: tokens.isDark ? tokens.surfaceElevated : tokens.primary,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

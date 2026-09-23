@@ -990,7 +990,7 @@ class _ConfirmBadge extends StatelessWidget {
 
   final bool confirmed;
 
-  static const double _size = 48;
+  static const double _size = 56;
 
   @override
   Widget build(BuildContext context) {
@@ -1297,7 +1297,7 @@ class _WinPercentage extends StatelessWidget {
   final int percentage;
 
   static const double _percentageWidth = 48;
-  static const double _labelWidth = 32;
+  static const double _labelWidth = 40;
   static const double _height = 36;
 
   @override
@@ -1348,7 +1348,7 @@ class _WinPercentage extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'ف',
+                  '\u0641\u0648\u0632',
                   style: TextStyle(
                     color: tokens.textPrimary,
                     fontSize: 14,

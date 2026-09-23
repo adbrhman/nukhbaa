@@ -175,6 +175,7 @@ void main() {
     );
     expect(find.text('68%'), findsOneWidget);
     expect(find.text('32%'), findsOneWidget);
+    expect(find.text('\u0641\u0648\u0632'), findsNWidgets(2));
 
     await tester.tap(
       find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
@@ -201,7 +202,7 @@ void main() {
     );
     expect(
       badge.constraints,
-      const BoxConstraints.tightFor(width: 48, height: 48),
+      const BoxConstraints.tightFor(width: 56, height: 56),
     );
     expect((badge.decoration! as BoxDecoration).color, AppTokens.dark.primary);
   });
