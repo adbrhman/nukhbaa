@@ -112,11 +112,9 @@ class FixtureStandingsBoard extends ConsumerWidget {
               // predictions made, not attendance. Nothing decided yet means
               // no accuracy at all, so the label is omitted rather than
               // showing a 0% nobody earned.
-              accuracyLabel: e.decidedCount <= 0
+              accuracyPercent: e.decidedCount <= 0
                   ? null
-                  : l10n.leaderboardAccuracy(
-                      (e.exactCount * 100 / e.decidedCount).round(),
-                    ),
+                  : (e.exactCount * 100 / e.decidedCount).round(),
               // previousRank is null until the season's first daily capture,
               // and for anyone absent from it. The subtraction is the one
               // place movement is derived, so the arrow and the place can

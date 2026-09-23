@@ -75,11 +75,9 @@ class SeasonStandingsBoard extends ConsumerWidget {
               // Accuracy is exact_scoreline alone, over settled fixtures. No
               // settled fixture means no accuracy -- not 0% -- so the label is
               // omitted rather than showing a zero nobody earned.
-              accuracyLabel: e.settledCount <= 0
+              accuracyPercent: e.settledCount <= 0
                   ? null
-                  : l10n.leaderboardAccuracy(
-                      (e.exactCount * 100 / e.settledCount).round(),
-                    ),
+                  : (e.exactCount * 100 / e.settledCount).round(),
             ),
         ],
       ),

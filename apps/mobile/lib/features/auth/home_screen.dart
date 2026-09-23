@@ -479,7 +479,20 @@ class _OverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final fixtureCount = fixtures.value?.length;
+    // Only kickoffs still ahead can be predicted -- the lock rule of the
+    // prediction card and [pendingPredictionsProvider]. The feed also
+    // carries the month's played fixtures, which the label must not call
+    // available.
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final int? fixtureCount = fixtures.value
+        ?.where(
+          (item) =>
+              DateTime.tryParse(
+                item.fixture.kickoffAt ?? '',
+              )?.toUtc().isAfter(nowUtc) ??
+              false,
+        )
+        .length;
     final seasonCount = seasons.value?.length;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),

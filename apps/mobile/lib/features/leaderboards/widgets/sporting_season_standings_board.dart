@@ -65,11 +65,9 @@ class SportingSeasonStandingsBoard extends ConsumerWidget {
               matchesCount: e.fixturesScored,
               // Same rule as the monthly board: exact_scoreline over decided
               // fixtures, and no label at all before anything is decided.
-              accuracyLabel: e.decidedCount <= 0
+              accuracyPercent: e.decidedCount <= 0
                   ? null
-                  : l10n.leaderboardAccuracy(
-                      (e.exactCount * 100 / e.decidedCount).round(),
-                    ),
+                  : (e.exactCount * 100 / e.decidedCount).round(),
             ),
         ],
       ),

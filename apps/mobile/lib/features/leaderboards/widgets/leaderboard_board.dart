@@ -24,7 +24,7 @@ class BoardEntry {
     this.subtitle,
     this.matchesCount,
     this.movement,
-    this.accuracyLabel,
+    this.accuracyPercent,
     this.avatarUrl,
     this.outcome,
     this.outcomeLabel,
@@ -43,7 +43,11 @@ class BoardEntry {
   /// and two carry no digit at all, so those rows printed a dash.
   final int? matchesCount;
   final int? movement;
-  final String? accuracyLabel;
+
+  /// Exact scorelines over decided fixtures, as a whole percentage; null
+  /// before anything is decided. The board prints the bare figure: the
+  /// column header and the summary label already say what it measures.
+  final int? accuracyPercent;
   final String? avatarUrl;
 
   /// Where the week would leave this line if it closed now, as the server
@@ -126,9 +130,6 @@ class LeaderboardBoard extends StatelessWidget {
           targetRank: entries.first.rank,
           isLeader: viewerLeads,
         ),
-      ] else if (showHeader && entries.isNotEmpty) ...<Widget>[
-        const SizedBox(height: AppSpacing.sm),
-        const _BoardMetaStrip(),
       ],
       if (rest.isNotEmpty) ...<Widget>[
         const SizedBox(height: AppSpacing.sm),
@@ -190,7 +191,8 @@ class _SummaryCard extends StatelessWidget {
     final BoardEntry? item = viewer;
     final String rank = item?.rank.toString() ?? '—';
     final String points = item?.points.toString() ?? '—';
-    final String accuracy = item?.accuracyLabel ?? '—';
+    final int? accuracyPercent = item?.accuracyPercent;
+    final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
 
     Widget metric(String label, String value, IconData icon) {
       return Expanded(
@@ -472,14 +474,11 @@ class _BoardMetaStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
+    // No "last updated" line: the board does not know when its data was
+    // fetched, and a fixed "now" was a claim it could not back.
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        Expanded(
-          child: Text(
-            'آخر تحديث: الآن',
-            style: context.text.labelSmall?.copyWith(color: t.textMuted),
-          ),
-        ),
         if (isLeader || (gapPoints != null && targetRank != null))
           Container(
             padding: const EdgeInsets.symmetric(
@@ -506,44 +505,50 @@ class _BoardMetaStrip extends StatelessWidget {
   }
 }
 
+// Column widths shared by the table header and every row, so each header
+// label sits over its own figures.
+const double _accuracyColumnWidth = 42;
+const double _matchesColumnWidth = 44;
+const double _pointsColumnWidth = 42;
+const double _movementColumnWidth = 30;
+
 class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
+    Widget cell(String name, String label, double width) => SizedBox(
+      key: Key('boardHeader.$name'),
+      width: width,
+      child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)),
+    );
+    // Mirrors _BoardRow: rank, a gap, the player (avatar and name), a 4px
+    // gap, then the four fixed columns.
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 7,
       ),
-      child: Row(
-        children: <Widget>[
-          const SizedBox(
-            width: 28,
-            child: Text('المركز', textAlign: TextAlign.center),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          const Expanded(child: Text('اللاعب')),
-          const SizedBox(
-            width: 48,
-            child: Text('الدقة', textAlign: TextAlign.center),
-          ),
-          const SizedBox(
-            width: 52,
-            child: Text('المباريات', textAlign: TextAlign.center),
-          ),
-          const SizedBox(
-            width: 48,
-            child: Text('النقاط', textAlign: TextAlign.center),
-          ),
-          const SizedBox(
-            width: 40,
-            child: Text('الحركة', textAlign: TextAlign.center),
-          ),
-        ],
-      ),
       decoration: BoxDecoration(
         color: t.surfaceElevated.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: DefaultTextStyle.merge(
+        style: context.text.labelSmall?.copyWith(
+          color: t.textMuted,
+          fontWeight: FontWeight.w700,
+        ),
+        child: Row(
+          children: <Widget>[
+            cell('rank', 'المركز', 28),
+            const SizedBox(width: AppSpacing.sm),
+            const Expanded(child: Text('اللاعب')),
+            const SizedBox(width: 4),
+            cell('accuracy', 'الدقة', _accuracyColumnWidth),
+            cell('matches', 'المباريات', _matchesColumnWidth),
+            cell('points', 'النقاط', _pointsColumnWidth),
+            cell('movement', 'الحركة', _movementColumnWidth),
+          ],
+        ),
       ),
     );
   }
@@ -564,7 +569,8 @@ class _BoardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final Color accent = isMe ? t.primary : t.border;
-    final String accuracy = entry.accuracyLabel ?? '—';
+    final int? accuracyPercent = entry.accuracyPercent;
+    final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
     final String matches = entry.matchesCount?.toString() ?? '—';
 
     return Container(
@@ -632,9 +638,10 @@ class _BoardRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           SizedBox(
-            width: 42,
+            width: _accuracyColumnWidth,
             child: Text(
               accuracy,
+              key: Key('$keyPrefix.accuracy.${entry.participantId}'),
               textAlign: TextAlign.center,
               style: context.text.labelSmall?.copyWith(
                 color: t.textMuted,
@@ -643,7 +650,7 @@ class _BoardRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 44,
+            width: _matchesColumnWidth,
             child: Text(
               matches,
               key: Key('$keyPrefix.matches.${entry.participantId}'),
@@ -655,7 +662,7 @@ class _BoardRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 42,
+            width: _pointsColumnWidth,
             child: Text(
               entry.points.toString(),
               key: Key('$keyPrefix.points.${entry.participantId}'),
@@ -667,7 +674,7 @@ class _BoardRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 30,
+            width: _movementColumnWidth,
             child: entry.outcome != null
                 ? _OutcomeMark(entry: entry, keyPrefix: keyPrefix)
                 : _MovementChip(
@@ -696,8 +703,19 @@ class _MovementChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int? m = movement;
-    if (m == null || m == 0) return const SizedBox.shrink();
     final AppTokens t = context.tokens;
+    // No move, or no earlier snapshot: the same muted dash the weekly league
+    // draws for "held", so the column never reads as an empty cell.
+    if (m == null || m == 0) {
+      return Center(
+        child: Icon(
+          Icons.remove_rounded,
+          key: Key('$keyPrefix.movement.$participantId.none'),
+          size: 16,
+          color: t.textMuted,
+        ),
+      );
+    }
     final bool up = m > 0;
     final Color color = up ? t.success : t.error;
     return Row(
