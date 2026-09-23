@@ -64,6 +64,7 @@ class SeasonStandingsBoard extends ConsumerWidget {
               points: e.totalPoints,
               pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
               subtitle: l10n.leaderboardEntriesCounted(e.entryCount),
+              matchesCount: e.entryCount,
               // previousRank is null until the season's first daily snapshot
               // exists; the subtraction is the one place movement is derived,
               // so the arrow and the place can never come from different

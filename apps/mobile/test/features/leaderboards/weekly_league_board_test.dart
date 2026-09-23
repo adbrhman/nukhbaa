@@ -218,6 +218,34 @@ void main() {
     expect(find.byKey(const Key('$_p.overtaken')), findsNothing);
   });
 
+  testWidgets('the matches column shows the count for 0, 1 and 2 too', (
+    tester,
+  ) async {
+    // The Arabic words for zero, one and two carry no digit; the column
+    // must still print the number, never a dash.
+    final Map<String, Object?> body = _league(
+      tier: 1,
+      up: 1,
+      down: 0,
+      entries: <Map<String, Object?>>[
+        _entry(1, 'u-a', 'Ali', 6, 'promoted', exact: 1, decided: 3),
+        _entry(2, 'u-b', 'Badr', 3, 'held', decided: 3),
+        _entry(3, 'u-c', 'Sara', 2, 'held', decided: 3),
+        _entry(4, 'u-one', 'One', 0, 'held', decided: 1),
+        _entry(5, 'u-two', 'Two', 0, 'held', decided: 2),
+        _entry(6, 'u-zero', 'Zero', 0, 'held'),
+      ],
+    );
+    final harness = buildAuthHarness(_serve(body), seedToken: 'jwt');
+    addTearDown(harness.dispose);
+
+    await _pump(tester, harness);
+
+    expect(_textOf(tester, '$_p.matches.u-one'), '1');
+    expect(_textOf(tester, '$_p.matches.u-two'), '2');
+    expect(_textOf(tester, '$_p.matches.u-zero'), '0');
+  });
+
   testWidgets('a group with no lines says so instead of an empty table', (
     tester,
   ) async {

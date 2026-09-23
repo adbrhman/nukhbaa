@@ -70,6 +70,7 @@ BoardEntry _entryOf(AppLocalizations l10n, WeeklyLeagueEntryDto e) {
     points: e.points,
     pointsLabel: l10n.pointsAbbreviated(e.points),
     subtitle: l10n.leaderboardEntriesCounted(e.decidedCount),
+    matchesCount: e.decidedCount,
     // Same rule as the other boards: exact scorelines over decided
     // fixtures, and no label at all before anything is decided.
     accuracyLabel: e.decidedCount <= 0

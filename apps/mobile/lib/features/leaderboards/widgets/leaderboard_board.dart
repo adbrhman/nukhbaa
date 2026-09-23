@@ -22,6 +22,7 @@ class BoardEntry {
     required this.points,
     required this.pointsLabel,
     this.subtitle,
+    this.matchesCount,
     this.movement,
     this.accuracyLabel,
     this.avatarUrl,
@@ -35,6 +36,12 @@ class BoardEntry {
   final int points;
   final String pointsLabel;
   final String? subtitle;
+
+  /// The counted-matches figure for the table's matches column. Carried as
+  /// a number beside [subtitle]: the column used to pull the first digit
+  /// out of the localized subtitle, and the Arabic forms for zero, one
+  /// and two carry no digit at all, so those rows printed a dash.
+  final int? matchesCount;
   final int? movement;
   final String? accuracyLabel;
   final String? avatarUrl;
@@ -558,7 +565,7 @@ class _BoardRow extends StatelessWidget {
     final AppTokens t = context.tokens;
     final Color accent = isMe ? t.primary : t.border;
     final String accuracy = entry.accuracyLabel ?? '—';
-    final String matches = _matchesFromSubtitle(entry.subtitle);
+    final String matches = entry.matchesCount?.toString() ?? '—';
 
     return Container(
       key: Key('$keyPrefix.item.${entry.participantId}'),
@@ -639,6 +646,7 @@ class _BoardRow extends StatelessWidget {
             width: 44,
             child: Text(
               matches,
+              key: Key('$keyPrefix.matches.${entry.participantId}'),
               textAlign: TextAlign.center,
               style: context.text.labelSmall?.copyWith(
                 color: t.textMuted,
@@ -671,12 +679,6 @@ class _BoardRow extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _matchesFromSubtitle(String? subtitle) {
-    if (subtitle == null || subtitle.isEmpty) return '—';
-    final Match? match = RegExp(r'\d+').firstMatch(subtitle);
-    return match?.group(0) ?? '—';
   }
 }
 

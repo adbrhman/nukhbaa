@@ -62,6 +62,7 @@ class SportingSeasonStandingsBoard extends ConsumerWidget {
               points: e.totalPoints,
               pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
               subtitle: l10n.leaderboardEntriesCounted(e.fixturesScored),
+              matchesCount: e.fixturesScored,
               // Same rule as the monthly board: exact_scoreline over decided
               // fixtures, and no label at all before anything is decided.
               accuracyLabel: e.decidedCount <= 0

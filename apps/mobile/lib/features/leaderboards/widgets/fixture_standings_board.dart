@@ -106,6 +106,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
               points: e.totalPoints,
               pointsLabel: l10n.pointsAbbreviated(e.totalPoints),
               subtitle: l10n.leaderboardEntriesCounted(e.fixturesScored),
+              matchesCount: e.fixturesScored,
               // Accuracy is exact_scoreline over DECIDED fixtures -- missed
               // and pending ones are excluded, so the figure measures
               // predictions made, not attendance. Nothing decided yet means
