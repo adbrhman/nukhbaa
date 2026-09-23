@@ -2220,173 +2220,101 @@ abstract class AppLocalizations {
   /// **'Streak: {days}'**
   String streakBadgeLabel(int days);
 
-  /// The longest run of completed match days on record.
+  /// The weekly-league pill on the leaderboards tab.
   ///
   /// In en, this message translates to:
-  /// **'Longest: {days}'**
-  String streakLongestLabel(int days);
+  /// **'League'**
+  String get leaderboardScopeLeague;
 
-  /// Title of the notification settings page and its section in settings.
+  /// Subtitle of the leaderboards tab while the weekly league is shown.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notificationSettingsTitle;
+  /// **'Climb a tier before the week ends'**
+  String get leaderboardSubtitleLeague;
 
-  /// The switch for the daily prediction reminder.
+  /// Weekly league tier 1, the lowest rung.
   ///
   /// In en, this message translates to:
-  /// **'Prediction reminder'**
-  String get notificationSettingsReminderTitle;
+  /// **'Bronze'**
+  String get weeklyLeagueTierBronze;
 
-  /// What the prediction reminder does.
+  /// Weekly league tier 2.
   ///
   /// In en, this message translates to:
-  /// **'Three hours before the first match of the day, if you have not predicted yet'**
-  String get notificationSettingsReminderHint;
+  /// **'Silver'**
+  String get weeklyLeagueTierSilver;
 
-  /// Shown when writing a notification switch failed.
+  /// Weekly league tier 3.
   ///
   /// In en, this message translates to:
-  /// **'Could not save the setting. Try again.'**
-  String get notificationSettingsSaveFailed;
+  /// **'Gold'**
+  String get weeklyLeagueTierGold;
 
-  /// The switch for the pre-match push.
+  /// Weekly league tier 4.
   ///
   /// In en, this message translates to:
-  /// **'Before your team plays'**
-  String get notificationSettingsPreMatchTitle;
+  /// **'Platinum'**
+  String get weeklyLeagueTierPlatinum;
 
-  /// What the pre-match push does.
+  /// Weekly league tier 5, the top rung.
   ///
   /// In en, this message translates to:
-  /// **'About two hours before a match of a team you follow, if you have not predicted it'**
-  String get notificationSettingsPreMatchHint;
+  /// **'Elite'**
+  String get weeklyLeagueTierElite;
 
-  /// The switch for the streak saver push.
+  /// The 1-based number of the caller's group within its tier.
   ///
   /// In en, this message translates to:
-  /// **'Streak saver'**
-  String get notificationSettingsStreakSaverTitle;
+  /// **'Group {group}'**
+  String weeklyLeagueGroup(int group);
 
-  /// What the streak saver does.
+  /// The Monday-to-Sunday week of the weekly league, both days already formatted.
   ///
   /// In en, this message translates to:
-  /// **'About an hour before your run would break, if today is not predicted yet'**
-  String get notificationSettingsStreakSaverHint;
+  /// **'{start} to {end}'**
+  String weeklyLeaguePeriod(String start, String end);
 
-  /// The switch for the overtaken push.
+  /// How many places at the top of the group move up a tier.
   ///
   /// In en, this message translates to:
-  /// **'Overtaken in your league'**
-  String get notificationSettingsOvertakenTitle;
+  /// **'Top {count} go up'**
+  String weeklyLeaguePromotionZone(int count);
 
-  /// What the overtaken push does.
+  /// How many places at the bottom of the group move down a tier.
   ///
   /// In en, this message translates to:
-  /// **'When someone passes you in this week's league, at most once a week'**
-  String get notificationSettingsOvertakenHint;
+  /// **'Bottom {count} go down'**
+  String weeklyLeagueRelegationZone(int count);
 
-  /// Title of the insights page and its account row.
+  /// A member currently inside the promotion zone.
   ///
   /// In en, this message translates to:
-  /// **'Learn from your predictions'**
-  String get insightsTitle;
+  /// **'Going up'**
+  String get weeklyLeagueOutcomePromoted;
 
-  /// Subtitle of the insights row on the account page.
+  /// A member currently between the two zones.
   ///
   /// In en, this message translates to:
-  /// **'Your accuracy, your patterns, your week'**
-  String get insightsSubtitle;
+  /// **'Staying'**
+  String get weeklyLeagueOutcomeHeld;
 
-  /// This month's right and decided predictions.
+  /// A member currently inside the relegation zone.
   ///
   /// In en, this message translates to:
-  /// **'{correct} right of {decided} this month'**
-  String insightsMonthLine(int correct, int decided);
+  /// **'Going down'**
+  String get weeklyLeagueOutcomeRelegated;
 
-  /// Every player's accuracy this month.
+  /// Shown when the weekly-league group has no lines.
   ///
   /// In en, this message translates to:
-  /// **'Everyone: {percent}%'**
-  String insightsCommunity(int percent);
+  /// **'Nobody is in your group yet.'**
+  String get weeklyLeagueEmpty;
 
-  /// Title of the weekly accuracy bars.
+  /// Name drawn for a weekly-league member the server holds no profile for.
   ///
   /// In en, this message translates to:
-  /// **'The last weeks'**
-  String get insightsWeeksTitle;
-
-  /// Last week's recap.
-  ///
-  /// In en, this message translates to:
-  /// **'Last week: {correct} right of {decided}, {points} points'**
-  String insightsLastWeek(int correct, int decided, int points);
-
-  /// Last week's best prediction.
-  ///
-  /// In en, this message translates to:
-  /// **'Best call: {home} - {away} (+{points})'**
-  String insightsBestPrediction(String home, String away, int points);
-
-  /// The league with the best accuracy.
-  ///
-  /// In en, this message translates to:
-  /// **'Your best league: {name}'**
-  String insightsBestLeague(String name);
-
-  /// The league with the worst accuracy.
-  ///
-  /// In en, this message translates to:
-  /// **'Your hardest league: {name}'**
-  String insightsWorstLeague(String name);
-
-  /// Accuracy on followed teams against the rest.
-  ///
-  /// In en, this message translates to:
-  /// **'Your teams: {followed}% - others: {others}%'**
-  String insightsFollowedBias(int followed, int others);
-
-  /// The longest run of right predictions.
-  ///
-  /// In en, this message translates to:
-  /// **'Longest run of right calls: {count}'**
-  String insightsLongestRun(int count);
-
-  /// Shown before any prediction is decided.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing to learn yet: your first results will show here'**
-  String get insightsEmpty;
-
-  /// The overtaken card on the weekly league.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} passed you this week'**
-  String weeklyLeagueOvertakenBy(String name);
-
-  /// Title of the favorite-teams page and its row on the account page.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorite teams'**
-  String get favoriteTeamsTitle;
-
-  /// What the favorite-teams page is for.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose up to 3 teams to follow'**
-  String get favoriteTeamsHint;
-
-  /// Shown once three teams are chosen.
-  ///
-  /// In en, this message translates to:
-  /// **'You follow 3 teams, the most allowed. Remove one to pick another'**
-  String get favoriteTeamsLimitReached;
-
-  /// Placeholder of the team search box.
-  ///
-  /// In en, this message translates to:
-  /// **'Search teams'**
-  String get favoriteTeamsSearchHint;
+  /// **'Player'**
+  String get weeklyLeagueUnnamedMember;
 
   /// Title of the badge wall and its row on the account page.
   ///
@@ -2544,101 +2472,173 @@ abstract class AppLocalizations {
   /// **'Finish a week in the Elite tier'**
   String get badgeWallLeagueEliteHint;
 
-  /// The weekly-league pill on the leaderboards tab.
+  /// Title of the notification settings page and its section in settings.
   ///
   /// In en, this message translates to:
-  /// **'League'**
-  String get leaderboardScopeLeague;
+  /// **'Notifications'**
+  String get notificationSettingsTitle;
 
-  /// Subtitle of the leaderboards tab while the weekly league is shown.
+  /// The switch for the daily prediction reminder.
   ///
   /// In en, this message translates to:
-  /// **'Climb a tier before the week ends'**
-  String get leaderboardSubtitleLeague;
+  /// **'Prediction reminder'**
+  String get notificationSettingsReminderTitle;
 
-  /// Weekly league tier 1, the lowest rung.
+  /// What the prediction reminder does.
   ///
   /// In en, this message translates to:
-  /// **'Bronze'**
-  String get weeklyLeagueTierBronze;
+  /// **'Three hours before the first match of the day, if you have not predicted yet'**
+  String get notificationSettingsReminderHint;
 
-  /// Weekly league tier 2.
+  /// Shown when writing a notification switch failed.
   ///
   /// In en, this message translates to:
-  /// **'Silver'**
-  String get weeklyLeagueTierSilver;
+  /// **'Could not save the setting. Try again.'**
+  String get notificationSettingsSaveFailed;
 
-  /// Weekly league tier 3.
+  /// The switch for the pre-match push.
   ///
   /// In en, this message translates to:
-  /// **'Gold'**
-  String get weeklyLeagueTierGold;
+  /// **'Before your team plays'**
+  String get notificationSettingsPreMatchTitle;
 
-  /// Weekly league tier 4.
+  /// What the pre-match push does.
   ///
   /// In en, this message translates to:
-  /// **'Platinum'**
-  String get weeklyLeagueTierPlatinum;
+  /// **'About two hours before a match of a team you follow, if you have not predicted it'**
+  String get notificationSettingsPreMatchHint;
 
-  /// Weekly league tier 5, the top rung.
+  /// The switch for the streak saver push.
   ///
   /// In en, this message translates to:
-  /// **'Elite'**
-  String get weeklyLeagueTierElite;
+  /// **'Streak saver'**
+  String get notificationSettingsStreakSaverTitle;
 
-  /// The 1-based number of the caller's group within its tier.
+  /// What the streak saver does.
   ///
   /// In en, this message translates to:
-  /// **'Group {group}'**
-  String weeklyLeagueGroup(int group);
+  /// **'About an hour before your run would break, if today is not predicted yet'**
+  String get notificationSettingsStreakSaverHint;
 
-  /// The Monday-to-Sunday week of the weekly league, both days already formatted.
+  /// The switch for the overtaken push.
   ///
   /// In en, this message translates to:
-  /// **'{start} to {end}'**
-  String weeklyLeaguePeriod(String start, String end);
+  /// **'Overtaken in your league'**
+  String get notificationSettingsOvertakenTitle;
 
-  /// How many places at the top of the group move up a tier.
+  /// What the overtaken push does.
   ///
   /// In en, this message translates to:
-  /// **'Top {count} go up'**
-  String weeklyLeaguePromotionZone(int count);
+  /// **'When someone passes you in this week\'s league, at most once a week'**
+  String get notificationSettingsOvertakenHint;
 
-  /// How many places at the bottom of the group move down a tier.
+  /// Title of the insights page and its account row.
   ///
   /// In en, this message translates to:
-  /// **'Bottom {count} go down'**
-  String weeklyLeagueRelegationZone(int count);
+  /// **'Learn from your predictions'**
+  String get insightsTitle;
 
-  /// A member currently inside the promotion zone.
+  /// Subtitle of the insights row on the account page.
   ///
   /// In en, this message translates to:
-  /// **'Going up'**
-  String get weeklyLeagueOutcomePromoted;
+  /// **'Your accuracy, your patterns, your week'**
+  String get insightsSubtitle;
 
-  /// A member currently between the two zones.
+  /// This month's right and decided predictions.
   ///
   /// In en, this message translates to:
-  /// **'Staying'**
-  String get weeklyLeagueOutcomeHeld;
+  /// **'{correct} right of {decided} this month'**
+  String insightsMonthLine(int correct, int decided);
 
-  /// A member currently inside the relegation zone.
+  /// Every player's accuracy this month.
   ///
   /// In en, this message translates to:
-  /// **'Going down'**
-  String get weeklyLeagueOutcomeRelegated;
+  /// **'Everyone: {percent}%'**
+  String insightsCommunity(int percent);
 
-  /// Shown when the weekly-league group has no lines.
+  /// Title of the weekly accuracy bars.
   ///
   /// In en, this message translates to:
-  /// **'Nobody is in your group yet.'**
-  String get weeklyLeagueEmpty;
+  /// **'The last weeks'**
+  String get insightsWeeksTitle;
 
-  /// Name drawn for a weekly-league member the server holds no profile for.
+  /// Last week's recap.
   ///
   /// In en, this message translates to:
-  /// **'Player'**
-  String get weeklyLeagueUnnamedMember;
+  /// **'Last week: {correct} right of {decided}, {points} points'**
+  String insightsLastWeek(int correct, int decided, int points);
+
+  /// Last week's best prediction.
+  ///
+  /// In en, this message translates to:
+  /// **'Best call: {home} - {away} (+{points})'**
+  String insightsBestPrediction(String home, String away, int points);
+
+  /// The league with the best accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your best league: {name}'**
+  String insightsBestLeague(String name);
+
+  /// The league with the worst accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your hardest league: {name}'**
+  String insightsWorstLeague(String name);
+
+  /// Accuracy on followed teams against the rest.
+  ///
+  /// In en, this message translates to:
+  /// **'Your teams: {followed}% - others: {others}%'**
+  String insightsFollowedBias(int followed, int others);
+
+  /// The longest run of right predictions.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest run of right calls: {count}'**
+  String insightsLongestRun(int count);
+
+  /// Shown before any prediction is decided.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to learn yet: your first results will show here'**
+  String get insightsEmpty;
+
+  /// The overtaken card on the weekly league.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} passed you this week'**
+  String weeklyLeagueOvertakenBy(String name);
+
+  /// Title of the favorite-teams page and its row on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite teams'**
+  String get favoriteTeamsTitle;
+
+  /// What the favorite-teams page is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to 3 teams to follow'**
+  String get favoriteTeamsHint;
+
+  /// Shown once three teams are chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'You follow 3 teams, the most allowed. Remove one to pick another'**
+  String get favoriteTeamsLimitReached;
+
+  /// Placeholder of the team search box.
+  ///
+  /// In en, this message translates to:
+  /// **'Search teams'**
+  String get favoriteTeamsSearchHint;
+
+  /// The longest run of completed match days on record.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest: {days}'**
+  String streakLongestLabel(int days);
 }
 
 class _AppLocalizationsDelegate
