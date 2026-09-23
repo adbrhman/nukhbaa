@@ -1,14 +1,12 @@
-/// Optional fingerprint unlock: a user who switched it on opens the app with
-/// a fingerprint instead of seeing their session straight away.
+/// Optional fingerprint sign-in: a user who switched it on signs back in
+/// with a fingerprint after signing out, instead of typing the password.
 ///
-/// The session itself never changes here. It persists week after week
-/// through the refresh token; this layer only decides whether a cold start
-/// opens onto it directly ([AppLockState.open]) or behind the fingerprint
-/// prompt ([AppLockState.locked]). A password sign-in never meets the lock:
-/// any signed-out state opens it, so it only guards a restored session.
+/// It never stands between a live session and the app. The session
+/// persists through the refresh token, so reopening the app -- after
+/// closing it or clearing it from recents -- lands straight in it. The
+/// fingerprint is met only on the sign-in screen after an explicit sign-out,
+/// where [fingerprintSignInProvider] offers it.
 library;
-
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,24 +15,10 @@ import '../../core/auth/biometric_unlock.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
-import 'session_controller.dart';
-import 'session_state.dart';
 
-/// Where the app stands against the fingerprint lock.
-enum AppLockState {
-  /// The saved choice is still being read.
-  checking,
-
-  /// Fingerprint unlock is on and this restored session is not unlocked yet.
-  locked,
-
-  /// Nothing stands between the user and the app.
-  open,
-}
-
-/// The app-wide lock state; lives for the whole process, so the lock is met
-/// once per cold start.
-final appLockProvider = NotifierProvider<AppLockController, AppLockState>(
+/// Switches fingerprint sign-in on and off. It holds no state: whether it
+/// is on is read from [biometricPreferenceStoreProvider] where needed.
+final appLockProvider = NotifierProvider<AppLockController, void>(
   AppLockController.new,
 );
 
@@ -80,41 +64,10 @@ final fingerprintSignInProvider = FutureProvider.autoDispose<bool>((ref) async {
   }
 });
 
-/// Owns [AppLockState].
-class AppLockController extends Notifier<AppLockState> {
+/// Switches fingerprint sign-in on and off.
+class AppLockController extends Notifier<void> {
   @override
-  AppLockState build() {
-    // Signed out, by choice or by a refused renewal: there is no session to
-    // guard, and the next sign-in is a password one that must not meet the
-    // lock.
-    ref.listen<AsyncValue<SessionState>>(sessionControllerProvider, (_, next) {
-      final SessionState? session = next.value;
-      if (session is SessionUnauthenticated ||
-          (session is SessionFailed && !session.canRetryRestore)) {
-        state = AppLockState.open;
-      }
-    });
-    unawaited(_load());
-    return AppLockState.checking;
-  }
-
-  Future<void> _load() async {
-    final bool enabled = await _readEnabled(
-      ref.read(biometricPreferenceStoreProvider),
-    );
-    if (state == AppLockState.checking) {
-      state = enabled ? AppLockState.locked : AppLockState.open;
-    }
-  }
-
-  /// Shows the fingerprint prompt; opens the app when it is passed.
-  Future<bool> unlock() async {
-    final bool passed = await ref
-        .read(biometricAuthenticatorProvider)
-        .authenticate(reason: 'ضع بصمتك للدخول إلى نُخبة');
-    if (passed) state = AppLockState.open;
-    return passed;
-  }
+  void build() {}
 
   /// Switches fingerprint unlock on, after the user proves the fingerprint
   /// works. False when the device cannot, or the prompt was not passed.
@@ -132,7 +85,6 @@ class AppLockController extends Notifier<AppLockState> {
     );
     await store.setEnabled(enabled: true);
     await store.markOffered();
-    state = AppLockState.open;
     return true;
   }
 
@@ -141,7 +93,6 @@ class AppLockController extends Notifier<AppLockState> {
     // Off means off: nothing is kept for a fingerprint sign-in either.
     await ref.read(biometricPreferenceStoreProvider).clearSavedRefreshToken();
     await ref.read(biometricPreferenceStoreProvider).setEnabled(enabled: false);
-    state = AppLockState.open;
   }
 }
 
@@ -167,7 +118,7 @@ Future<void> offerBiometricUnlock(BuildContext context, WidgetRef ref) async {
       icon: const Icon(Icons.fingerprint_rounded, size: 40),
       title: const Text('الدخول بالبصمة'),
       content: const Text(
-        'افتح نُخبة ببصمتك فقط، بدون كلمة مرور. '
+        'بعد تسجيل الخروج، ادخل ببصمتك بدل كلمة المرور. '
         'يمكنك إيقافها في أي وقت من صفحة الحساب.',
       ),
       actions: <Widget>[
@@ -186,82 +137,6 @@ Future<void> offerBiometricUnlock(BuildContext context, WidgetRef ref) async {
   );
   if (accepted ?? false) {
     await ref.read(appLockProvider.notifier).enable();
-  }
-}
-
-/// The lock a restored session meets on a cold start when fingerprint
-/// unlock is on. The prompt opens by itself; the password stays one tap
-/// away for a sensor that fails.
-class AppLockScreen extends ConsumerStatefulWidget {
-  /// Creates the lock screen.
-  const AppLockScreen({super.key});
-
-  @override
-  ConsumerState<AppLockScreen> createState() => _AppLockScreenState();
-}
-
-class _AppLockScreenState extends ConsumerState<AppLockScreen> {
-  bool _busy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_unlock()));
-  }
-
-  Future<void> _unlock() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await ref.read(appLockProvider.notifier).unlock();
-    if (mounted) setState(() => _busy = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens tokens = context.tokens;
-    return Scaffold(
-      key: const Key('appLock.screen'),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  Icons.fingerprint_rounded,
-                  size: AppSizes.iconStateLg,
-                  color: tokens.primary,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'ضع بصمتك للدخول',
-                  style: context.text.titleLarge?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                FilledButton.icon(
-                  key: const Key('appLock.unlock'),
-                  onPressed: _busy ? null : () => unawaited(_unlock()),
-                  icon: const Icon(Icons.fingerprint_rounded),
-                  label: const Text('الدخول بالبصمة'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextButton(
-                  key: const Key('appLock.usePassword'),
-                  onPressed: () => unawaited(
-                    ref.read(sessionControllerProvider.notifier).signOut(),
-                  ),
-                  child: const Text('الدخول بكلمة المرور'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

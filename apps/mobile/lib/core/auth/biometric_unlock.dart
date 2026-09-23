@@ -2,8 +2,8 @@
 /// on, and the platform prompt itself.
 ///
 /// Nothing here holds a credential. The session lives in the [TokenStore]
-/// and renews itself through the refresh token; the fingerprint only decides
-/// whether this app opens straight onto that session.
+/// and renews itself through the refresh token; the fingerprint only trades
+/// a refresh token kept across a sign-out back for a session.
 library;
 
 import 'package:flutter/foundation.dart' show kIsWeb;

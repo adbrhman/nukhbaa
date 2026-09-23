@@ -41,9 +41,6 @@ class SessionGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncSession = ref.watch(sessionControllerProvider);
-    // Watched from the first frame, so the lock sees every sign-out.
-    final AppLockState lock = ref.watch(appLockProvider);
-
     // A session that ends while the user is deep inside a pushed route (a
     // leaderboard, the admin panel, an open dialog) used to leave them
     // exactly there: only `home:` swapped underneath, while every request on
@@ -88,16 +85,12 @@ class SessionGate extends ConsumerWidget {
     final session = asyncSession.value ?? const SessionUnauthenticated();
     return switch (session) {
       SessionUnknown() => const _Splash(),
-      SessionAuthenticated(:final user) => switch (lock) {
-        AppLockState.checking => const _Splash(),
-        AppLockState.locked => const AppLockScreen(),
-        // An account that never chose a name (a first Google sign-in)
-        // chooses it before anything else, as registration would have.
-        AppLockState.open =>
-          hasAutomaticDisplayName(user)
-              ? NameSetupScreen(user: user)
-              : NukhbaaShell(user: user),
-      },
+      // An account that never chose a name (a first Google sign-in)
+      // chooses it before anything else, as registration would have.
+      SessionAuthenticated(:final user) =>
+        hasAutomaticDisplayName(user)
+            ? NameSetupScreen(user: user)
+            : NukhbaaShell(user: user),
       // Still holding a token the server never rejected: offline, not signed
       // out. Dropping such a user onto the password form was the bug.
       SessionFailed(canRetryRestore: true, :final error) => _ConnectionRetry(

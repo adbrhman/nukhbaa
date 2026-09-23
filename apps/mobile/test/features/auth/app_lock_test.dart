@@ -1,6 +1,7 @@
 /// Fingerprint unlock through the real [SessionGate]: a restored session
-/// behind the lock opens after the fingerprint, the password stays one tap
-/// away, and a password sign-in never meets the lock but is offered it once.
+/// opens straight into the app with no prompt, even with unlock on (the
+/// fingerprint is met only after a sign-out; see fingerprint_sign_in_test),
+/// and a password sign-in is offered fingerprint unlock once.
 library;
 
 import 'dart:async';
@@ -70,8 +71,8 @@ Future<void> _signInWithPassword(WidgetTester tester) async {
 }
 
 void main() {
-  _lockTest('a restored session behind the lock opens after the '
-      'fingerprint', (tester) async {
+  _lockTest('a restored session opens straight into the app with '
+      'fingerprint unlock on, and no prompt', (tester) async {
     final fake = _FakeAuthenticator();
     final harness = buildAuthHarness(
       (_) async => okMe(sampleUser),
@@ -87,47 +88,13 @@ void main() {
     await tester.pumpWidget(_appUnder(harness));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('appLock.screen')), findsOneWidget);
-    expect(fake.prompts, 1, reason: 'the prompt opens by itself');
-    expect(find.byType(NukhbaaShell), findsNothing);
-
-    fake.pending!.complete(true);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('appLock.screen')), findsNothing);
+    expect(fake.prompts, 0, reason: 'reopening the app never asks');
     expect(find.byType(NukhbaaShell), findsOneWidget);
+    expect(find.byKey(const Key('signIn.title')), findsNothing);
+    expect(await harness.store.read(), 'saved-jwt');
   });
 
-  _lockTest('a failed fingerprint keeps the lock, and the password is one '
-      'tap away', (tester) async {
-    final fake = _FakeAuthenticator();
-    final harness = buildAuthHarness(
-      (_) async => okMe(sampleUser),
-      seedToken: 'saved-jwt',
-      biometricStore: InMemoryBiometricPreferenceStore(
-        enabled: true,
-        offered: true,
-      ),
-      biometricAuthenticator: fake,
-    );
-    addTearDown(harness.dispose);
-
-    await tester.pumpWidget(_appUnder(harness));
-    await tester.pumpAndSettle();
-    fake.pending!.complete(false);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('appLock.screen')), findsOneWidget);
-    expect(find.byType(NukhbaaShell), findsNothing);
-
-    await tester.tap(find.byKey(const Key('appLock.usePassword')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('signIn.title')), findsOneWidget);
-    expect(await harness.store.read(), isNull);
-  });
-
-  _lockTest('a password sign-in never meets the lock and is offered '
+  _lockTest('a password sign-in is offered '
       'fingerprint unlock once', (tester) async {
     final fake = _FakeAuthenticator()..autoPass = true;
     final store = InMemoryBiometricPreferenceStore();
@@ -144,7 +111,6 @@ void main() {
     await tester.pumpAndSettle();
     await _signInWithPassword(tester);
 
-    expect(find.byKey(const Key('appLock.screen')), findsNothing);
     expect(find.byKey(const Key('appLock.offer')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('appLock.offer.enable')));
@@ -153,7 +119,6 @@ void main() {
     expect(await store.isEnabled(), isTrue);
     expect(await store.wasOffered(), isTrue);
     expect(find.byType(NukhbaaShell), findsOneWidget);
-    expect(find.byKey(const Key('appLock.screen')), findsNothing);
   });
 
   _lockTest('with unlock already on, a password sign-in goes straight in', (
