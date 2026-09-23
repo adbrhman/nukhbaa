@@ -27,6 +27,7 @@ final class CompositionRoot {
     required this.register,
     required this.requestPasswordReset,
     required this.updatePassword,
+    required this.signInWithGoogle,
     required this.refreshSession,
     required this.updateDisplayName,
     required this.updateTimeZoneOffset,
@@ -163,6 +164,7 @@ final class CompositionRoot {
     RegisterWithPassword? register,
     RequestPasswordReset? requestPasswordReset,
     UpdatePassword? updatePassword,
+    SignInWithGoogle? signInWithGoogle,
     RefreshSession? refreshSession,
     AuthenticateRequest? authenticateRequest,
     GetCurrentUser? getCurrentUser,
@@ -273,6 +275,7 @@ final class CompositionRoot {
        requestPasswordReset =
            requestPasswordReset ?? _absentRequestPasswordReset(),
        updatePassword = updatePassword ?? _absentUpdatePassword(),
+       signInWithGoogle = signInWithGoogle ?? _absentSignInWithGoogle(),
        refreshSession = refreshSession ?? _absentRefreshSession(),
        authenticateRequest =
            authenticateRequest ?? _absentAuthenticateRequest(),
@@ -444,6 +447,9 @@ final class CompositionRoot {
 
   static UpdatePassword _absentUpdatePassword() =>
       UpdatePassword(_UnwiredAuthGateway());
+
+  static SignInWithGoogle _absentSignInWithGoogle() =>
+      SignInWithGoogle(_UnwiredAuthGateway());
 
   static RefreshSession _absentRefreshSession() =>
       RefreshSession(_UnwiredAuthGateway());
@@ -1182,6 +1188,9 @@ final class CompositionRoot {
   final RequestPasswordReset requestPasswordReset;
   final UpdatePassword updatePassword;
 
+  /// Signs in with a Google ID token (backs `POST /auth/google`).
+  final SignInWithGoogle signInWithGoogle;
+
   /// Renews a session from its refresh token (backs `POST /auth/refresh`).
   final RefreshSession refreshSession;
 
@@ -1672,6 +1681,7 @@ final class CompositionRoot {
     final register = RegisterWithPassword(authGateway);
     final requestPasswordReset = RequestPasswordReset(authGateway);
     final updatePassword = UpdatePassword(authGateway);
+    final signInWithGoogle = SignInWithGoogle(authGateway);
     final refreshSession = RefreshSession(authGateway);
 
     // Competition slice: the Postgres-backed repository, the configured
@@ -1958,6 +1968,7 @@ final class CompositionRoot {
       register: register,
       requestPasswordReset: requestPasswordReset,
       updatePassword: updatePassword,
+      signInWithGoogle: signInWithGoogle,
       refreshSession: refreshSession,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
       updateTimeZoneOffset: UpdateTimeZoneOffset(userDirectory: directory),
@@ -3484,6 +3495,12 @@ final class _UnwiredAuthGateway implements AuthGateway {
   @override
   Future<Result<IssuedSession>> refreshSession({
     required String refreshToken,
+  }) => throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<IssuedSession>> signInWithIdToken({
+    required String provider,
+    required String idToken,
   }) => throw StateError('An auth use-case was not wired into this root');
 
   @override

@@ -81,6 +81,7 @@ export 'src/identity/request_password_reset.dart';
 export 'src/identity/update_password.dart';
 export 'src/identity/set_avatar.dart';
 export 'src/identity/set_my_favorite_teams.dart';
+export 'src/identity/sign_in_with_google.dart';
 export 'src/identity/update_display_name.dart';
 export 'src/identity/update_time_zone_offset.dart';
 export 'src/leaderboard/get_hall_of_fame.dart';

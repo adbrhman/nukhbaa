@@ -89,6 +89,22 @@ final class SupabaseAuthClient {
     );
   }
 
+  /// Signs in with an external provider's ID token via
+  /// POST /token?grant_type=id_token. GoTrue verifies the token against the
+  /// provider's client ids configured in the dashboard, creates the user on
+  /// first use and links a verified email to an existing account.
+  Future<Result<SupabaseSession>> signInWithIdToken({
+    required String provider,
+    required String idToken,
+  }) {
+    return _post(
+      path: 'token',
+      query: {'grant_type': 'id_token'},
+      body: {'provider': provider, 'id_token': idToken},
+      onSuccess: _sessionFromLogin,
+    );
+  }
+
   /// Creates an account via POST /signup and returns the resulting session (or
   /// a confirmation-pending marker when the project requires email
   /// confirmation).

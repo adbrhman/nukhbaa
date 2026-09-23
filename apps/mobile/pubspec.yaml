@@ -60,6 +60,10 @@ dependencies:
   # FlutterFragmentActivity and declares USE_BIOMETRIC (build-verification).
   local_auth: ^3.0.2
 
+  # "Continue with Google" (Issue #6, approved 2026-09-22). Android only for
+  # now; the ID token goes to POST /auth/google (Supabase id_token grant).
+  google_sign_in: ^7.2.0
+
   image_picker: ^1.2.0
   intl: any
 

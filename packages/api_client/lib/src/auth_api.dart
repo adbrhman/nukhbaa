@@ -44,6 +44,15 @@ final class AuthApi {
     );
   }
 
+  /// Exchanges a Google [idToken] for a session via `POST /auth/google`.
+  Future<Result<AuthResponseDto>> signInWithGoogle({required String idToken}) {
+    return _transport.postObject<AuthResponseDto>(
+      '/auth/google',
+      body: GoogleSignInRequestDto(idToken: idToken).toJson(),
+      parse: AuthResponseDto.fromJson,
+    );
+  }
+
   Future<Result<PasswordResetResponseDto>> requestPasswordReset({
     required String email,
   }) {

@@ -190,6 +190,23 @@ final class RefreshSessionRequestDto {
   Map<String, dynamic> toJson() => {'refresh_token': refreshToken};
 }
 
+/// Request body for POST /auth/google: the ID token the device's Google
+/// account picker minted for the project's Web OAuth client.
+final class GoogleSignInRequestDto {
+  /// Creates a Google sign-in request.
+  const GoogleSignInRequestDto({required this.idToken});
+
+  /// Deserializes from a JSON map.
+  factory GoogleSignInRequestDto.fromJson(Map<String, dynamic> json) =>
+      GoogleSignInRequestDto(idToken: json['id_token']! as String);
+
+  /// The Google ID token (never logged; forwarded to Supabase Auth only).
+  final String idToken;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, dynamic> toJson() => {'id_token': idToken};
+}
+
 /// Request body for POST /auth/password-reset/request.
 final class PasswordResetRequestDto {
   const PasswordResetRequestDto({required this.email});

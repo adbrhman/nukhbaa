@@ -11,10 +11,10 @@ import 'package:test/test.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a
 // relative import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
-import '../../routes/auth/refresh/index.dart' as route;
+import '../../routes/auth/google/index.dart' as route;
 
-/// An [AuthGateway] that answers renewals with [_response] and records the
-/// refresh tokens it was handed.
+/// An [AuthGateway] that answers ID-token sign-ins with [_response] and
+/// records what it was handed.
 final class _FakeGateway implements AuthGateway {
   _FakeGateway(this._response);
 
@@ -25,15 +25,15 @@ final class _FakeGateway implements AuthGateway {
   Future<Result<IssuedSession>> signInWithIdToken({
     required String provider,
     required String idToken,
-  }) => throw UnimplementedError();
+  }) async {
+    received.add('$provider:$idToken');
+    return _response;
+  }
 
   @override
   Future<Result<IssuedSession>> refreshSession({
     required String refreshToken,
-  }) async {
-    received.add(refreshToken);
-    return _response;
-  }
+  }) => throw UnimplementedError();
 
   @override
   Future<Result<IssuedSession>> signInWithPassword({
@@ -69,7 +69,7 @@ _MockRequestContext _wire(
   String body = '',
 }) {
   final root = Future<CompositionRoot>.value(
-    CompositionRoot.forTesting(refreshSession: RefreshSession(gateway)),
+    CompositionRoot.forTesting(signInWithGoogle: SignInWithGoogle(gateway)),
   );
   final request = _MockRequest();
   when(() => request.method).thenReturn(method);
@@ -85,60 +85,62 @@ Future<Map<String, Object?>> _decode(Response response) async {
   return decoded.cast<String, Object?>();
 }
 
-const _renewed = IssuedSession(
-  accessToken: 'access-2',
-  refreshToken: 'refresh-2',
+const _session = IssuedSession(
+  accessToken: 'access-g',
+  refreshToken: 'refresh-g',
   emailConfirmationRequired: false,
 );
 
 void main() {
-  group('POST /auth/refresh', () {
-    test('returns the renewed pair for a live refresh token', () async {
-      final gateway = _FakeGateway(const Result.ok(_renewed));
+  group('POST /auth/google', () {
+    test('returns a session for a Google ID token', () async {
+      final gateway = _FakeGateway(const Result.ok(_session));
       final context = _wire(
         gateway,
-        body: jsonEncode({'refresh_token': 'refresh-1'}),
+        body: jsonEncode({'id_token': 'google-id-token'}),
       );
 
       final response = await route.onRequest(context);
 
       expect(response.statusCode, HttpStatus.ok);
       final body = await _decode(response);
-      expect(body['access_token'], 'access-2');
-      expect(body['refresh_token'], 'refresh-2');
-      expect(gateway.received, ['refresh-1']);
+      expect(body['access_token'], 'access-g');
+      expect(body['refresh_token'], 'refresh-g');
+      expect(gateway.received, ['google:google-id-token']);
     });
 
-    test('answers a refused token with 400, never 401', () async {
+    test('a refused token becomes one readable 400', () async {
       final gateway = _FakeGateway(
         const Result.err(
-          AppError.validation('auth.rejected', 'Invalid Refresh Token'),
+          AppError.validation('auth.rejected', 'Provider is not enabled'),
         ),
       );
       final context = _wire(
         gateway,
-        body: jsonEncode({'refresh_token': 'spent'}),
+        body: jsonEncode({'id_token': 'google-id-token'}),
       );
 
       final response = await route.onRequest(context);
 
       expect(response.statusCode, HttpStatus.badRequest);
-      expect((await _decode(response))['code'], 'auth.rejected');
+      expect((await _decode(response))['code'], 'auth.google_rejected');
     });
 
-    test('rejects a body without a refresh token before any upstream '
-        'call', () async {
-      final gateway = _FakeGateway(const Result.ok(_renewed));
-      final context = _wire(gateway, body: jsonEncode(<String, Object?>{}));
+    test(
+      'rejects a body without an ID token before any upstream call',
+      () async {
+        final gateway = _FakeGateway(const Result.ok(_session));
+        final context = _wire(gateway, body: jsonEncode(<String, Object?>{}));
 
-      final response = await route.onRequest(context);
+        final response = await route.onRequest(context);
 
-      expect(response.statusCode, HttpStatus.badRequest);
-      expect(gateway.received, isEmpty);
-    });
+        expect(response.statusCode, HttpStatus.badRequest);
+        expect(gateway.received, isEmpty);
+      },
+    );
 
     test('rejects non-POST methods with 405', () async {
-      final gateway = _FakeGateway(const Result.ok(_renewed));
+      final gateway = _FakeGateway(const Result.ok(_session));
       final context = _wire(gateway, method: HttpMethod.get);
 
       final response = await route.onRequest(context);

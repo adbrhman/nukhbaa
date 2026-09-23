@@ -33,6 +33,7 @@ import 'package:contracts/contracts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/auth/google_id_token_source.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
 import 'session_state.dart';
@@ -130,6 +131,25 @@ class SessionController extends _$SessionController {
       password: password,
     );
     state = AsyncData(await _onAuthResponse(result));
+  }
+
+  /// Signs in with Google: the device's account picker supplies an ID
+  /// token, which `POST /auth/google` exchanges for a session (created on
+  /// first use). Closing the picker returns to the form without an error.
+  Future<void> signInWithGoogle() async {
+    state = const AsyncData(SessionAuthenticating());
+    final Result<String?> picked = await ref
+        .read(googleIdTokenSourceProvider)
+        .pickIdToken();
+    switch (picked) {
+      case Ok<String?>(value: final String idToken):
+        final result = await _authApi.signInWithGoogle(idToken: idToken);
+        state = AsyncData(await _onAuthResponse(result));
+      case Ok<String?>():
+        state = const AsyncData(SessionUnauthenticated());
+      case Err<String?>(:final error):
+        state = AsyncData(SessionFailed(error));
+    }
   }
 
   /// Maps a login/register [Result] to the resulting [SessionState].

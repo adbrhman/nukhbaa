@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/auth/google_id_token_source.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -272,6 +273,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   ? null
                                   : () => _submit(session),
                             ),
+                            if (ref
+                                .watch(googleIdTokenSourceProvider)
+                                .isSupported) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              OutlinedButton.icon(
+                                key: const Key('signIn.google'),
+                                onPressed: inFlight
+                                    ? null
+                                    : () => unawaited(
+                                        ref
+                                            .read(
+                                              sessionControllerProvider
+                                                  .notifier,
+                                            )
+                                            .signInWithGoogle(),
+                                      ),
+                                icon: const Icon(
+                                  Icons.g_mobiledata_rounded,
+                                  size: AppSizes.iconXl,
+                                ),
+                                label: const Text('المتابعة بحساب Google'),
+                              ),
+                            ],
                           ],
                         ),
                       ),

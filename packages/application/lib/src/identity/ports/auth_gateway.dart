@@ -54,6 +54,14 @@ abstract class AuthGateway {
   /// sign in again.
   Future<Result<IssuedSession>> refreshSession({required String refreshToken});
 
+  /// Signs in (or signs up) with an ID token minted by an external
+  /// [provider] such as `google`. The identity provider verifies it and
+  /// links it to an existing account with the same verified email.
+  Future<Result<IssuedSession>> signInWithIdToken({
+    required String provider,
+    required String idToken,
+  });
+
   /// Sends a password-reset email without revealing whether the address exists.
   Future<Result<void>> requestPasswordReset({required String email});
 

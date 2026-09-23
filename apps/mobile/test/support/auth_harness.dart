@@ -27,6 +27,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/core/auth/biometric_unlock.dart';
+import 'package:mobile/core/auth/google_id_token_source.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/providers.dart';
 
@@ -73,6 +74,7 @@ final class AuthHarness {
 AuthHarness buildAuthHarness(
   Future<http.Response> Function(http.Request request) handler, {
   String? seedToken,
+  GoogleIdTokenSource? googleIdTokenSource,
   BiometricPreferenceStore? biometricStore,
   BiometricAuthenticator? biometricAuthenticator,
 }) {
@@ -86,6 +88,8 @@ AuthHarness buildAuthHarness(
 
   final overrides = <Override>[
     tokenStoreProvider.overrideWithValue(store),
+    if (googleIdTokenSource != null)
+      googleIdTokenSourceProvider.overrideWithValue(googleIdTokenSource),
     biometricPreferenceStoreProvider.overrideWithValue(
       biometricStore ?? InMemoryBiometricPreferenceStore(),
     ),

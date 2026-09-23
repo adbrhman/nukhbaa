@@ -45,6 +45,18 @@ final class SupabaseAuthGateway implements AuthGateway {
   }
 
   @override
+  Future<Result<IssuedSession>> signInWithIdToken({
+    required String provider,
+    required String idToken,
+  }) async {
+    final result = await _client.signInWithIdToken(
+      provider: provider,
+      idToken: idToken,
+    );
+    return result.map(_toIssuedSession);
+  }
+
+  @override
   Future<Result<void>> requestPasswordReset({required String email}) {
     return _client.requestPasswordReset(email: email);
   }
