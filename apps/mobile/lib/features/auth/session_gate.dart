@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../core/error/error_presenter.dart';
+import '../../core/session/session_scope.dart';
 
 import 'app_lock.dart';
 import 'name_setup_screen.dart';
@@ -63,9 +64,16 @@ class SessionGate extends ConsumerWidget {
       if (previous?.value is! SessionAuthenticated) return;
       if (next.value is SessionAuthenticated) return;
       final NavigatorState navigator = Navigator.of(context);
+      final bool signedOut = next.value is SessionUnauthenticated;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (navigator.mounted) {
           navigator.popUntil((Route<dynamic> route) => route.isFirst);
+        }
+        // Signed out (by choice or by an expired session): everything cached
+        // belonged to the account that just left, so the next one starts from
+        // a fresh container instead of seeing that account's predictions.
+        if (signedOut && context.mounted) {
+          SessionScope.maybeOf(context)?.reset();
         }
       });
     });

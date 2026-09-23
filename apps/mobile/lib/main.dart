@@ -2,7 +2,6 @@ library;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'app.dart';
@@ -10,6 +9,7 @@ import 'core/config/app_config.dart';
 import 'core/error/crash_reporting.dart';
 import 'core/design/app_spacing.dart';
 import 'core/providers.dart';
+import 'core/session/session_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,8 +42,10 @@ Future<void> _startApp() async {
     runApp(_ConfigErrorApp(message: e.message));
     return;
   }
+  // SessionScope hosts the root ProviderScope and replaces it on sign-out,
+  // so one account's cached reads never reach the next account.
   runApp(
-    ProviderScope(
+    SessionScope(
       overrides: [appConfigProvider.overrideWithValue(config)],
       child: const NukhbaApp(),
     ),
