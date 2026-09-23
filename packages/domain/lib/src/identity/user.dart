@@ -132,6 +132,18 @@ final class User {
     return Result.ok(raw);
   }
 
+  /// The name the database assigns when none was chosen (migration 0016's
+  /// `identity.default_display_name` trigger): the email's local part, or
+  /// `Player` for an account without an email.
+  String get automaticDisplayName {
+    final String local = (email ?? '').split('@').first;
+    return local.isEmpty ? 'Player' : local;
+  }
+
+  /// Whether this account still carries [automaticDisplayName], i.e. never
+  /// chose a display name (a first Google sign-in skips registration).
+  bool get hasAutomaticDisplayName => displayName == automaticDisplayName;
+
   /// Validates a raw, untrusted display name: trims it, rejects empty/too-long
   /// input. Shared by registration (initial name) and [renameDisplayName]
   /// (later changes) so both paths enforce the same invariant.

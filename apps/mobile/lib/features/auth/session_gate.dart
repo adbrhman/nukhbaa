@@ -26,6 +26,7 @@ import 'package:shared/shared.dart';
 import '../../core/error/error_presenter.dart';
 
 import 'app_lock.dart';
+import 'name_setup_screen.dart';
 import 'nukhbaa_shell.dart';
 import 'session_controller.dart';
 import 'session_state.dart';
@@ -82,7 +83,12 @@ class SessionGate extends ConsumerWidget {
       SessionAuthenticated(:final user) => switch (lock) {
         AppLockState.checking => const _Splash(),
         AppLockState.locked => const AppLockScreen(),
-        AppLockState.open => NukhbaaShell(user: user),
+        // An account that never chose a name (a first Google sign-in)
+        // chooses it before anything else, as registration would have.
+        AppLockState.open =>
+          hasAutomaticDisplayName(user)
+              ? NameSetupScreen(user: user)
+              : NukhbaaShell(user: user),
       },
       // Still holding a token the server never rejected: offline, not signed
       // out. Dropping such a user onto the password form was the bug.

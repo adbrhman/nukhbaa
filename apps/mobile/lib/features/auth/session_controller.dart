@@ -177,6 +177,18 @@ class SessionController extends _$SessionController {
     }
   }
 
+  /// Chooses the caller's display name, once (`PUT /me/display-name`), then
+  /// re-validates the held token so every watcher sees the new name (the
+  /// same shape as [setAvatar]).
+  Future<Result<void>> chooseDisplayName({required String displayName}) async {
+    final result = await _authApi.chooseDisplayName(displayName: displayName);
+    if (result is Err<MeResponseDto>) {
+      return Result.err(result.error);
+    }
+    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
+    return const Result.ok(null);
+  }
+
   /// Sets the caller's profile picture to [bytes] under [contentType].
   ///
   /// Performs, then re-validates the held token so every watcher sees the new

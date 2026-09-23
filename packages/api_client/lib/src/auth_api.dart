@@ -99,6 +99,18 @@ final class AuthApi {
     );
   }
 
+  /// `PUT /me/display-name` — the one-time choice of a display name, for
+  /// an account that never chose one.
+  Future<Result<MeResponseDto>> chooseDisplayName({
+    required String displayName,
+  }) {
+    return _transport.putObject<MeResponseDto>(
+      '/me/display-name',
+      body: DisplayNameRequestDto(displayName: displayName).toJson(),
+      parse: MeResponseDto.fromJson,
+    );
+  }
+
   /// `GET /users/{id}/avatar` — the stored picture's bytes, for any user.
   ///
   /// [avatarPath] is the server-relative URL the server already built and put

@@ -207,6 +207,23 @@ final class GoogleSignInRequestDto {
   Map<String, dynamic> toJson() => {'id_token': idToken};
 }
 
+/// Request body for PUT /me/display-name: the display name an account that
+/// never chose one chooses, once.
+final class DisplayNameRequestDto {
+  /// Creates a display-name request.
+  const DisplayNameRequestDto({required this.displayName});
+
+  /// Deserializes from a JSON map.
+  factory DisplayNameRequestDto.fromJson(Map<String, dynamic> json) =>
+      DisplayNameRequestDto(displayName: json['display_name']! as String);
+
+  /// The chosen display name.
+  final String displayName;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, dynamic> toJson() => {'display_name': displayName};
+}
+
 /// Request body for POST /auth/password-reset/request.
 final class PasswordResetRequestDto {
   const PasswordResetRequestDto({required this.email});
