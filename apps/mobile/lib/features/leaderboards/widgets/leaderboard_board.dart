@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_radius.dart';
+import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
@@ -87,9 +88,10 @@ class LeaderboardBoard extends StatelessWidget {
   final String? myParticipantId;
   final String? myDisplayName;
 
-  /// Whether the viewer summary (rank / points / accuracy) and the gap strip
-  /// lead the list. The page title, period and scope switch live above the
-  /// board in the leaderboards tab, so they stay put while a board loads.
+  /// Whether the viewer summary (rank / points / accuracy, with the gap to
+  /// the leader inside it) leads the list. The page title, period and scope
+  /// switch live above the board in the leaderboards tab, so they stay put
+  /// while a board loads.
   final bool showHeader;
 
   @override
@@ -106,7 +108,11 @@ class LeaderboardBoard extends StatelessWidget {
         viewer != null && !viewerLeads && entries.isNotEmpty
         ? entries.first.points - viewer.points
         : null;
-    final bool showGap = gapToLeader != null && gapToLeader > 0;
+    final String? standing = viewerLeads
+        ? 'أنت في الصدارة 🥇'
+        : gapToLeader != null && gapToLeader > 0
+        ? '${_arabicPoints(gapToLeader)} للوصول للمرتبة ${entries.first.rank}'
+        : null;
 
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -114,27 +120,33 @@ class LeaderboardBoard extends StatelessWidget {
     // front, and a monthly board is the entire user base -- every row below
     // the fold was built for nothing. The fixed header block stays eager (a
     // handful of widgets); only the ranked rows become lazy.
+    //
+    // Order is the reading order: where am I and how far is the top (the
+    // summary), who leads (the podium), then everyone else (the table).
     final List<Widget> leading = <Widget>[
-      if (showHeader) _SummaryCard(viewer: viewer),
-      if (showHeader) const SizedBox(height: AppSpacing.sm),
+      if (showHeader)
+        _SummaryCard(
+          viewer: viewer,
+          standing: standing,
+          standingIsLead: viewerLeads,
+        ),
+      if (showHeader) const SizedBox(height: AppSpacing.lg),
       if (podium.isNotEmpty)
         _Podium(
           entries: podium,
           keyPrefix: keyPrefix,
           myParticipantId: viewer?.participantId,
         ),
-      if (viewerLeads || showGap) ...<Widget>[
+      if (!showHeader && standing != null) ...<Widget>[
         const SizedBox(height: AppSpacing.sm),
-        _BoardMetaStrip(
-          gapPoints: showGap ? gapToLeader : null,
-          targetRank: entries.first.rank,
-          isLeader: viewerLeads,
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: _StandingPill(text: standing, isLead: viewerLeads),
         ),
       ],
       if (rest.isNotEmpty) ...<Widget>[
-        const SizedBox(height: AppSpacing.sm),
-        _TableHeader(),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.md),
+        const _TableHeader(),
       ],
     ];
 
@@ -148,11 +160,13 @@ class LeaderboardBoard extends StatelessWidget {
       itemCount: leading.length + rest.length,
       itemBuilder: (BuildContext context, int index) {
         if (index < leading.length) return leading[index];
-        final BoardEntry entry = rest[index - leading.length];
+        final int row = index - leading.length;
+        final BoardEntry entry = rest[row];
         return _BoardRow(
           entry: entry,
           keyPrefix: keyPrefix,
           isMe: entry.participantId == viewer?.participantId,
+          isLast: row == rest.length - 1,
         );
       },
     );
@@ -181,9 +195,18 @@ class LeaderboardBoard extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.viewer});
+  const _SummaryCard({
+    required this.viewer,
+    required this.standing,
+    required this.standingIsLead,
+  });
 
   final BoardEntry? viewer;
+
+  /// The gap-to-leader line, or the "you lead" line; null when neither
+  /// applies (no viewer on the board, or a viewer level with no one ahead).
+  final String? standing;
+  final bool standingIsLead;
 
   @override
   Widget build(BuildContext context) {
@@ -193,44 +216,123 @@ class _SummaryCard extends StatelessWidget {
     final String points = item?.points.toString() ?? '—';
     final int? accuracyPercent = item?.accuracyPercent;
     final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
+    final String? line = standing;
 
-    Widget metric(String label, String value, IconData icon) {
-      return Expanded(
-        child: Column(
-          children: <Widget>[
-            Icon(icon, size: 17, color: t.textMuted),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: context.text.titleMedium?.copyWith(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+    final TextStyle? labelStyle = context.text.labelSmall?.copyWith(
+      color: t.textMuted,
+      fontWeight: FontWeight.w600,
+    );
+
+    Widget metric(String label, String value) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(label, style: labelStyle),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: context.text.titleLarge?.copyWith(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
             ),
-            Text(
-              label,
-              style: context.text.labelSmall?.copyWith(color: t.textMuted),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: t.border),
+    final String semantics = item == null
+        ? 'لست في هذا الترتيب بعد'
+        : <String>[
+            'مركزك ${item.rank}',
+            _arabicPoints(item.points),
+            if (accuracyPercent != null) 'الدقة $accuracyPercent%',
+            if (line != null) line,
+          ].join('، ');
+
+    return Semantics(
+      container: true,
+      label: semantics,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: AppRadius.brLg,
+          border: Border.all(color: t.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('مركزك', style: labelStyle),
+                      Text(
+                        rank,
+                        style: context.text.displaySmall?.copyWith(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          height: 1.05,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                metric('النقاط', points),
+                const SizedBox(width: AppSpacing.xl),
+                metric('الدقة', accuracy),
+              ],
+            ),
+            if (line != null) ...<Widget>[
+              const SizedBox(height: AppSpacing.md),
+              Container(height: 1, color: t.border),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _StandingPill(text: line, isLead: standingIsLead),
+              ),
+            ],
+          ],
+        ),
       ),
-      child: Row(
-        children: <Widget>[
-          metric('المركز', rank, Icons.person_outline_rounded),
-          Container(width: 1, height: 40, color: t.border),
-          metric('النقاط', points, Icons.star_outline_rounded),
-          Container(width: 1, height: 40, color: t.border),
-          metric('الدقة', accuracy, Icons.track_changes_rounded),
-        ],
+    );
+  }
+}
+
+/// The one line that says how far the viewer is from the top: blue while
+/// chasing, gold once leading. Gold is kept for achievement only.
+class _StandingPill extends StatelessWidget {
+  const _StandingPill({required this.text, required this.isLead});
+
+  final String text;
+  final bool isLead;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final Color fg = isLead ? t.gold : t.primaryText;
+    final Color wash = (isLead ? t.gold : t.primary).withValues(alpha: 0.14);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: wash,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+      ),
+      child: Text(
+        text,
+        style: context.text.labelMedium?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -253,10 +355,12 @@ class _Podium extends StatelessWidget {
     final BoardEntry? second = entries.length > 1 ? entries[1] : null;
     final BoardEntry? third = entries.length > 2 ? entries[2] : null;
 
+    // Second, first, third from left to right in either reading direction:
+    // the podium is a picture, not a sentence.
     return Directionality(
       textDirection: TextDirection.ltr,
       child: SizedBox(
-        height: 216,
+        height: 212,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
@@ -266,7 +370,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: second,
                       keyPrefix: keyPrefix,
-                      height: 136,
+                      height: 144,
                       isMe: second.participantId == myParticipantId,
                     ),
             ),
@@ -286,7 +390,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: third,
                       keyPrefix: keyPrefix,
-                      height: 126,
+                      height: 136,
                       isMe: third.participantId == myParticipantId,
                     ),
             ),
@@ -305,6 +409,8 @@ class _PodiumTile extends StatelessWidget {
     required this.isMe,
   });
 
+  static const double _avatar = 52;
+
   final BoardEntry entry;
   final String keyPrefix;
   final double height;
@@ -315,6 +421,8 @@ class _PodiumTile extends StatelessWidget {
     final AppTokens t = context.tokens;
     final Color medal = _medal(t, entry.rank);
 
+    // Flat tile: the medal lives in the avatar ring and the rank pill only,
+    // so three tiles never turn into three differently coloured cards.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Stack(
@@ -327,35 +435,29 @@ class _PodiumTile extends StatelessWidget {
             constraints: BoxConstraints(minHeight: height),
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xs,
-              26,
+              _avatar / 2 + AppSpacing.sm,
               AppSpacing.xs,
-              AppSpacing.sm,
+              AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: t.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              color: isMe
+                  ? Color.alphaBlend(
+                      t.primary.withValues(alpha: 0.12),
+                      t.surface,
+                    )
+                  : t.surface,
+              borderRadius: AppRadius.brLg,
               border: Border.all(
-                color: medal.withValues(alpha: isMe ? 1.0 : 0.58),
-                width: isMe ? 1.6 : 1,
+                color: isMe ? t.primaryText : t.border,
+                width: isMe ? 1.5 : 1,
               ),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: <Color>[medal.withValues(alpha: 0.10), t.surface],
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: medal.withValues(alpha: 0.18),
-                  blurRadius: 20,
-                  spreadRadius: -6,
-                ),
-              ],
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
                 _RankPill(rank: entry.rank, color: medal),
-                const SizedBox(height: 5),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   entry.displayName,
                   key: Key('$keyPrefix.participant.${entry.participantId}'),
@@ -364,7 +466,7 @@ class _PodiumTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: context.text.labelMedium?.copyWith(
                     color: t.textPrimary,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -373,8 +475,8 @@ class _PodiumTile extends StatelessWidget {
                   key: Key('$keyPrefix.points.${entry.participantId}'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.text.labelSmall?.copyWith(
-                    color: medal,
+                  style: context.text.titleSmall?.copyWith(
+                    color: t.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -396,7 +498,7 @@ class _PodiumTile extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 0,
+            top: -_avatar / 2,
             child: Stack(
               alignment: Alignment.topCenter,
               clipBehavior: Clip.none,
@@ -404,18 +506,18 @@ class _PodiumTile extends StatelessWidget {
                 UserAvatar(
                   displayName: entry.displayName,
                   avatarUrl: entry.avatarUrl,
-                  size: 56,
+                  size: _avatar,
                   gradient: false,
                   borderColor: medal,
                   borderWidth: 2.5,
                 ),
                 if (entry.rank == 1)
                   Positioned(
-                    top: -12,
+                    top: -14,
                     child: Icon(
                       Icons.workspace_premium_rounded,
                       color: t.gold,
-                      size: 22,
+                      size: AppSizes.iconMd,
                     ),
                   ),
               ],
@@ -443,11 +545,10 @@ class _RankPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: color.withValues(alpha: 0.72)),
       ),
       child: Text(
         '$rank',
@@ -460,59 +561,22 @@ class _RankPill extends StatelessWidget {
   }
 }
 
-class _BoardMetaStrip extends StatelessWidget {
-  const _BoardMetaStrip({
-    this.gapPoints,
-    this.targetRank,
-    this.isLeader = false,
-  });
-
-  final int? gapPoints;
-  final int? targetRank;
-  final bool isLeader;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    // No "last updated" line: the board does not know when its data was
-    // fetched, and a fixed "now" was a claim it could not back.
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: <Widget>[
-        if (isLeader || (gapPoints != null && targetRank != null))
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 7,
-            ),
-            decoration: BoxDecoration(
-              color: t.primary.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
-              border: Border.all(color: t.primary.withValues(alpha: 0.45)),
-            ),
-            child: Text(
-              isLeader
-                  ? 'أنت في الصدارة 🥇'
-                  : '${_arabicPoints(gapPoints!)} للوصول للمرتبة $targetRank',
-              style: context.text.labelSmall?.copyWith(
-                color: t.primary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 // Column widths shared by the table header and every row, so each header
-// label sits over its own figures.
+// label sits over its own figures. Header and rows share one horizontal
+// padding and neither carries a side border, so the columns line up exactly.
+const double _rankColumnWidth = 28;
 const double _accuracyColumnWidth = 42;
 const double _matchesColumnWidth = 44;
 const double _pointsColumnWidth = 42;
 const double _movementColumnWidth = 30;
+const EdgeInsets _tableCellPadding = EdgeInsets.symmetric(
+  horizontal: AppSpacing.sm,
+  vertical: 10,
+);
 
 class _TableHeader extends StatelessWidget {
+  const _TableHeader();
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
@@ -523,31 +587,32 @@ class _TableHeader extends StatelessWidget {
     );
     // Mirrors _BoardRow: rank, a gap, the player (avatar and name), a 4px
     // gap, then the four fixed columns.
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 7,
-      ),
-      decoration: BoxDecoration(
-        color: t.surfaceElevated.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: DefaultTextStyle.merge(
-        style: context.text.labelSmall?.copyWith(
-          color: t.textMuted,
-          fontWeight: FontWeight.w700,
+    return ExcludeSemantics(
+      child: Container(
+        padding: _tableCellPadding,
+        decoration: BoxDecoration(
+          color: t.surfaceElevated,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
+          ),
         ),
-        child: Row(
-          children: <Widget>[
-            cell('rank', 'المركز', 28),
-            const SizedBox(width: AppSpacing.sm),
-            const Expanded(child: Text('اللاعب')),
-            const SizedBox(width: 4),
-            cell('accuracy', 'الدقة', _accuracyColumnWidth),
-            cell('matches', 'المباريات', _matchesColumnWidth),
-            cell('points', 'النقاط', _pointsColumnWidth),
-            cell('movement', 'الحركة', _movementColumnWidth),
-          ],
+        child: DefaultTextStyle.merge(
+          style: context.text.labelSmall?.copyWith(
+            color: t.textMuted,
+            fontWeight: FontWeight.w700,
+          ),
+          child: Row(
+            children: <Widget>[
+              cell('rank', 'المركز', _rankColumnWidth),
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(child: Text('اللاعب')),
+              const SizedBox(width: 4),
+              cell('accuracy', 'الدقة', _accuracyColumnWidth),
+              cell('matches', 'المباريات', _matchesColumnWidth),
+              cell('points', 'النقاط', _pointsColumnWidth),
+              cell('movement', 'الحركة', _movementColumnWidth),
+            ],
+          ),
         ),
       ),
     );
@@ -559,131 +624,137 @@ class _BoardRow extends StatelessWidget {
     required this.entry,
     required this.keyPrefix,
     required this.isMe,
+    required this.isLast,
   });
 
   final BoardEntry entry;
   final String keyPrefix;
   final bool isMe;
 
+  /// The table's last row rounds the bottom corners and drops the divider.
+  final bool isLast;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
-    final Color accent = isMe ? t.primary : t.border;
     final int? accuracyPercent = entry.accuracyPercent;
     final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
     final String matches = entry.matchesCount?.toString() ?? '—';
+    final Color strong = isMe ? t.primaryText : t.textPrimary;
 
-    return Container(
-      key: Key('$keyPrefix.item.${entry.participantId}'),
-      margin: const EdgeInsets.only(bottom: 5),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 9,
-      ),
-      decoration: BoxDecoration(
-        color: isMe ? t.surfaceElevated : t.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: accent, width: isMe ? 1.4 : 1),
-        boxShadow: isMe
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: t.primary.withValues(alpha: 0.20),
-                  blurRadius: 16,
-                  spreadRadius: -6,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 28,
-            child: Text(
-              '${entry.rank}',
-              textAlign: TextAlign.center,
-              style: context.text.labelMedium?.copyWith(
-                color: isMe ? t.primary : t.textMuted,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          UserAvatar(
-            displayName: entry.displayName,
-            avatarUrl: entry.avatarUrl,
-            size: 34,
-            gradient: false,
-            borderColor: isMe ? t.primary : t.border,
-            borderWidth: 1.8,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 2),
+    final TextStyle? figure = context.text.labelSmall?.copyWith(
+      color: t.textMuted,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Semantics(
+      container: true,
+      label: <String>[
+        'المركز ${entry.rank}',
+        entry.displayName,
+        _arabicPoints(entry.points),
+        if (accuracyPercent != null) 'الدقة $accuracyPercent%',
+        if (isMe) 'أنت',
+      ].join('، '),
+      excludeSemantics: true,
+      child: Container(
+        key: Key('$keyPrefix.item.${entry.participantId}'),
+        padding: _tableCellPadding,
+        decoration: BoxDecoration(
+          color: isMe
+              ? Color.alphaBlend(t.primary.withValues(alpha: 0.14), t.surface)
+              : t.surface,
+          borderRadius: isLast
+              ? const BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.lg),
+                )
+              : null,
+          border: isLast ? null : Border(bottom: BorderSide(color: t.border)),
+        ),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: _rankColumnWidth,
               child: Text(
-                entry.displayName,
-                key: Key('$keyPrefix.participant.${entry.participantId}'),
-                maxLines: 2,
-                softWrap: true,
-                overflow: TextOverflow.visible,
-                textAlign: TextAlign.right,
-                style: context.text.bodySmall?.copyWith(
-                  color: t.textPrimary,
-                  fontWeight: isMe ? FontWeight.w800 : FontWeight.w600,
-                  height: 1.15,
+                '${entry.rank}',
+                textAlign: TextAlign.center,
+                style: context.text.labelMedium?.copyWith(
+                  color: isMe ? t.primaryText : t.textMuted,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
-          SizedBox(
-            width: _accuracyColumnWidth,
-            child: Text(
-              accuracy,
-              key: Key('$keyPrefix.accuracy.${entry.participantId}'),
-              textAlign: TextAlign.center,
-              style: context.text.labelSmall?.copyWith(
-                color: t.textMuted,
-                fontWeight: FontWeight.w700,
-              ),
+            const SizedBox(width: AppSpacing.sm),
+            UserAvatar(
+              displayName: entry.displayName,
+              avatarUrl: entry.avatarUrl,
+              size: 32,
+              gradient: false,
+              borderColor: isMe ? t.primaryText : t.border,
+              borderWidth: 1.5,
             ),
-          ),
-          SizedBox(
-            width: _matchesColumnWidth,
-            child: Text(
-              matches,
-              key: Key('$keyPrefix.matches.${entry.participantId}'),
-              textAlign: TextAlign.center,
-              style: context.text.labelSmall?.copyWith(
-                color: t.textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: _pointsColumnWidth,
-            child: Text(
-              entry.points.toString(),
-              key: Key('$keyPrefix.points.${entry.participantId}'),
-              textAlign: TextAlign.center,
-              style: context.text.labelMedium?.copyWith(
-                color: isMe ? t.primary : t.textPrimary,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: _movementColumnWidth,
-            child: entry.outcome != null
-                ? _OutcomeMark(entry: entry, keyPrefix: keyPrefix)
-                : _MovementChip(
-                    movement: entry.movement,
-                    keyPrefix: keyPrefix,
-                    participantId: entry.participantId,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(end: 2),
+                child: Text(
+                  entry.displayName,
+                  key: Key('$keyPrefix.participant.${entry.participantId}'),
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: context.text.bodyMedium?.copyWith(
+                    color: t.textPrimary,
+                    fontWeight: isMe ? FontWeight.w800 : FontWeight.w600,
+                    height: 1.2,
                   ),
-          ),
-        ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            SizedBox(
+              width: _accuracyColumnWidth,
+              child: Text(
+                accuracy,
+                key: Key('$keyPrefix.accuracy.${entry.participantId}'),
+                textAlign: TextAlign.center,
+                style: figure,
+              ),
+            ),
+            SizedBox(
+              width: _matchesColumnWidth,
+              child: Text(
+                matches,
+                key: Key('$keyPrefix.matches.${entry.participantId}'),
+                textAlign: TextAlign.center,
+                style: figure,
+              ),
+            ),
+            SizedBox(
+              width: _pointsColumnWidth,
+              child: Text(
+                entry.points.toString(),
+                key: Key('$keyPrefix.points.${entry.participantId}'),
+                textAlign: TextAlign.center,
+                style: context.text.titleSmall?.copyWith(
+                  color: strong,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: _movementColumnWidth,
+              child: entry.outcome != null
+                  ? _OutcomeMark(entry: entry, keyPrefix: keyPrefix)
+                  : _MovementChip(
+                      movement: entry.movement,
+                      keyPrefix: keyPrefix,
+                      participantId: entry.participantId,
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

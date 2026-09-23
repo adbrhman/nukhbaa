@@ -27,7 +27,7 @@ class AppBadge extends StatelessWidget {
     final (Color bg, Color fg) = switch (tone) {
       AppBadgeTone.primary => (
         tokens.primary.withValues(alpha: 0.14),
-        tokens.primary,
+        tokens.primaryText,
       ),
       AppBadgeTone.gold => (tokens.gold.withValues(alpha: 0.16), tokens.gold),
       AppBadgeTone.success => (

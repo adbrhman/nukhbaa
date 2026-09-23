@@ -108,7 +108,7 @@ class AdminNavList extends StatelessWidget {
               title: Text(
                 adminSectionLabel(section, l10n),
                 style: context.text.bodyMedium?.copyWith(
-                  color: section == selected ? t.primary : t.textPrimary,
+                  color: section == selected ? t.primaryText : t.textPrimary,
                   fontWeight: section == selected
                       ? FontWeight.w700
                       : FontWeight.w400,

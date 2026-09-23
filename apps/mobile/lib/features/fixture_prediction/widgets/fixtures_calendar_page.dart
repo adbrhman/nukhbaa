@@ -207,7 +207,7 @@ class _MonthBlock extends StatelessWidget {
                 color: isSelected
                     ? tokens.onPrimary
                     : isToday
-                    ? tokens.primary
+                    ? tokens.primaryText
                     : tokens.textPrimary,
               ),
             ),

@@ -17,6 +17,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.controlBorder,
     required this.primary,
     required this.primaryLight,
+    required this.primaryText,
     required this.gold,
     required this.silver,
     required this.bronze,
@@ -49,6 +50,10 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color controlBorder;
   final Color primary;
   final Color primaryLight;
+
+  /// Blue for text, figures and links: AA (4.5:1) on every surface and blue
+  /// wash of its theme, which [primary] -- a fill colour -- is not.
+  final Color primaryText;
   final Color gold;
   final Color silver;
   final Color bronze;
@@ -87,6 +92,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     controlBorder: AppColors.textMuted,
     primary: AppColors.primary,
     primaryLight: AppColors.primaryLight,
+    primaryText: AppColors.primaryText,
     gold: AppColors.gold,
     silver: AppColors.silver,
     bronze: AppColors.bronze,
@@ -134,6 +140,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     controlBorder: AppColorsLight.textMuted,
     primary: AppColorsLight.primary,
     primaryLight: AppColorsLight.primaryLight,
+    primaryText: AppColorsLight.primary,
     gold: AppColorsLight.gold,
     silver: AppColorsLight.silver,
     bronze: AppColorsLight.bronze,
@@ -182,6 +189,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? controlBorder,
     Color? primary,
     Color? primaryLight,
+    Color? primaryText,
     Color? gold,
     Color? silver,
     Color? bronze,
@@ -214,6 +222,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       controlBorder: controlBorder ?? this.controlBorder,
       primary: primary ?? this.primary,
       primaryLight: primaryLight ?? this.primaryLight,
+      primaryText: primaryText ?? this.primaryText,
       gold: gold ?? this.gold,
       silver: silver ?? this.silver,
       bronze: bronze ?? this.bronze,
@@ -255,6 +264,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       controlBorder: Color.lerp(controlBorder, other.controlBorder, t)!,
       primary: Color.lerp(primary, other.primary, t)!,
       primaryLight: Color.lerp(primaryLight, other.primaryLight, t)!,
+      primaryText: Color.lerp(primaryText, other.primaryText, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
       silver: Color.lerp(silver, other.silver, t)!,
       bronze: Color.lerp(bronze, other.bronze, t)!,

@@ -50,7 +50,7 @@ class AppButton extends StatelessWidget {
         tokens.textPrimary,
         tokens.controlBorder,
       ),
-      AppButtonVariant.text => (Colors.transparent, tokens.primary, null),
+      AppButtonVariant.text => (Colors.transparent, tokens.primaryText, null),
     };
 
     final Widget child = loading

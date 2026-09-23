@@ -1,6 +1,9 @@
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design/app_motion.dart';
 import '../design/app_radius.dart';
@@ -49,7 +52,13 @@ class SegmentedPills extends StatelessWidget {
               label: labels[index],
               selected: index == selectedIndex,
               tokens: tokens,
-              onTap: () => onSelected(index),
+              onTap: () {
+                // A light tick only when the choice actually changes.
+                if (index != selectedIndex) {
+                  unawaited(HapticFeedback.selectionClick());
+                }
+                onSelected(index);
+              },
             ),
           ),
         ],

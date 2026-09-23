@@ -73,7 +73,10 @@ class _GroupLeaderboardRow extends StatelessWidget {
       trailing: Text(
         l10n.pointsAbbreviated(entry.totalPoints),
         key: Key('groupLeaderboard.points.${entry.participantId}'),
-        style: TextStyle(fontWeight: FontWeight.bold, color: tokens.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: tokens.primaryText,
+        ),
       ),
     );
   }

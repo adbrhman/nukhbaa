@@ -262,34 +262,31 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l10n.leaderboardsHeading,
-            key: const Key('leaderboards.title'),
-            textAlign: TextAlign.center,
-            style: context.text.titleLarge?.copyWith(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w800,
+          const SizedBox(height: AppSpacing.lg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              l10n.leaderboardsHeading,
+              key: const Key('leaderboards.title'),
+              textAlign: TextAlign.start,
+              style: context.text.headlineSmall?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            subtitle,
-            key: const Key('leaderboards.subtitle'),
-            textAlign: TextAlign.center,
-            style: context.text.bodySmall?.copyWith(
-              color: tokens.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: _PeriodBar(
-              label: period,
-              onTap: _scope == LeaderboardScope.day ? _pickDay : null,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              subtitle,
+              key: const Key('leaderboards.subtitle'),
+              textAlign: TextAlign.start,
+              style: context.text.bodySmall?.copyWith(color: tokens.textMuted),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.lg),
+          // What is ranked first, then which stretch of time.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: SegmentedPills(
@@ -303,6 +300,14 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
               selectedIndex: _scope.index,
               onSelected: (index) =>
                   setState(() => _scope = LeaderboardScope.values[index]),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: _PeriodBar(
+              label: period,
+              onTap: _scope == LeaderboardScope.day ? _pickDay : null,
             ),
           ),
           Expanded(child: board),
@@ -336,10 +341,6 @@ class _PeriodBar extends StatelessWidget {
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm,
           ),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.brLg,
-            border: Border.all(color: tokens.border),
-          ),
           child: Row(
             children: <Widget>[
               if (tap != null) ...<Widget>[
@@ -370,7 +371,7 @@ class _PeriodBar extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.calendar_month_rounded,
-                  color: tokens.primary,
+                  color: tokens.primaryText,
                   size: AppSizes.iconMd,
                 ),
               ),

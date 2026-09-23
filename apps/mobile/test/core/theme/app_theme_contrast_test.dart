@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/design/app_tokens.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 
 /// WCAG 2.x contrast ratio between two opaque colours.
@@ -38,6 +39,26 @@ void main() {
           _contrast(Color.alphaBlend(outline, fill), fill),
           greaterThanOrEqualTo(3),
         );
+      });
+
+      test('blue text reaches 4.5:1 on every surface and blue wash', () {
+        final AppTokens tokens = theme.extension<AppTokens>()!;
+        for (final Color under in <Color>[
+          background,
+          tokens.surface,
+          tokens.surfaceElevated,
+          tokens.surfaceHigh,
+          Color.alphaBlend(
+            tokens.primary.withValues(alpha: 0.14),
+            tokens.surfaceElevated,
+          ),
+        ]) {
+          expect(
+            _contrast(tokens.primaryText, under),
+            greaterThanOrEqualTo(4.5),
+            reason: under.toString(),
+          );
+        }
       });
     });
   }

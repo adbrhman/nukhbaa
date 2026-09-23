@@ -73,7 +73,7 @@ class _BalanceHeader extends StatelessWidget {
             key: const Key('ledger.balance'),
             style: text.displaySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: tokens.primary,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -115,7 +115,7 @@ class _EntryRow extends StatelessWidget {
         key: Key('ledger.entry.amount.${entry.id}'),
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: negative ? tokens.error : tokens.primary,
+          color: negative ? tokens.error : tokens.primaryText,
         ),
       ),
     );

@@ -37,7 +37,19 @@ class _AppSkeletonState extends State<AppSkeleton>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: AppMotion.shimmer,
-  )..repeat();
+  );
+
+  /// The shimmer is endless motion, so it honours the system "remove
+  /// animations" setting: with it on, the placeholder holds still.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
 
   @override
   void dispose() {

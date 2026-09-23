@@ -224,7 +224,7 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
       AsyncData<SeasonDto?>(value: final SeasonDto season?) => Text(
         season.label,
         style: context.text.labelMedium?.copyWith(
-          color: t.primary,
+          color: t.primaryText,
           fontWeight: FontWeight.w700,
         ),
       ),

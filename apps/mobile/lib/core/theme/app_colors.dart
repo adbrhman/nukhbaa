@@ -17,6 +17,12 @@ import 'package:flutter/material.dart';
 /// that was sampled from a screenshot rather than a design. Greys read as an
 /// absence of choice next to the sheet's navy; the app now carries one
 /// foundation everywhere.
+///
+/// Surfaces and the hairline later moved off the sheet on purpose
+/// (2026-09-24): a near-black card on a navy page read as a hole rather than
+/// a raised plane, and a blue stroke round every card spent the action colour
+/// on decoration. Cards now sit one navy step above the page behind a quiet
+/// navy hairline, and blue is kept for what the user can act on.
 abstract final class AppColors {
   /// SHEET Navy -- the page. Cards sit only a shade off it and are separated
   /// by the blue stroke below, exactly as the sheet draws them.
@@ -26,13 +32,15 @@ abstract final class AppColors {
   /// chrome recedes instead of competing with the content.
   static const Color backgroundElevated = Color(0xFF000000);
 
-  /// SHEET Surface -- every card.
-  static const Color surface = Color(0xFF0A0A0A);
+  /// DERIVED -- every card: one navy step above [background], so a card
+  /// reads as a raised plane. The sheet's Surface `#0A0A0A` sat below the
+  /// page and read as a hole.
+  static const Color surface = Color(0xFF0D1B30);
 
-  /// DERIVED -- one and two steps up from [surface], tinted toward Navy so a
-  /// raised control reads as lifted rather than merely lighter.
-  static const Color surfaceElevated = Color(0xFF0E1A2E);
-  static const Color surfaceHigh = Color(0xFF16253C);
+  /// DERIVED -- one and two further steps up from [surface], in the same
+  /// navy hue, for raised controls and table headers.
+  static const Color surfaceElevated = Color(0xFF14253D);
+  static const Color surfaceHigh = Color(0xFF1C2F4B);
 
   /// SHEET Blue -- the action colour.
   static const Color primary = Color(0xFF2F6BFF);
@@ -43,6 +51,13 @@ abstract final class AppColors {
   /// SHEET Bright Blue -- the highlight: active tab, kickoff time, the accent
   /// that has to carry over a near-black card.
   static const Color primaryLight = Color(0xFF008BFF);
+
+  /// DERIVED -- blue as TEXT. [primary] carries white at 4.5:1 as a fill but
+  /// reads only 3.8-4.1:1 as text on the navy surfaces, and [primaryLight]
+  /// drops under 4.5:1 on a raised surface or a blue wash. This one holds
+  /// 5:1 or better on every dark surface and wash, so blue labels and
+  /// figures meet WCAG AA wherever they sit.
+  static const Color primaryText = Color(0xFF66B0FF);
 
   /// SHEET Gold -- achievement.
   static const Color gold = Color(0xFFF5C451);
@@ -96,10 +111,10 @@ abstract final class AppColors {
   static const Color onGold = Color(0xFF2A1E04);
   static const Color onError = Color(0xFFFFFFFF);
 
-  /// DERIVED -- a blue hairline, not a white one. With Surface this close to
-  /// Navy, the stroke is what makes a card a card; the sheet draws exactly
-  /// this, and a 6% white line would leave every card edgeless.
-  static const Color border = Color(0xE02F6BFF);
+  /// DERIVED -- a quiet navy hairline. The surface step already lifts a card
+  /// off the page; the line only finishes the edge, so it no longer spends
+  /// the action blue on decoration.
+  static const Color border = Color(0xFF22354F);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,

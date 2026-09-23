@@ -137,7 +137,7 @@ class AdminCountedFixturesSection extends ConsumerWidget {
                           Text(
                             l10n.adminCountedLabel,
                             style: context.text.labelMedium?.copyWith(
-                              color: context.tokens.primary,
+                              color: context.tokens.primaryText,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

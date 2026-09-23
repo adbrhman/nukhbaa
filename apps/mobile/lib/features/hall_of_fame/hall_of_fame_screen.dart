@@ -63,7 +63,7 @@ class _HallOfFameRow extends StatelessWidget {
         key: Key('hallOfFame.points.${entry.userId}'),
         style: text.labelLarge?.copyWith(
           fontWeight: FontWeight.bold,
-          color: tokens.primary,
+          color: tokens.primaryText,
         ),
       ),
     );

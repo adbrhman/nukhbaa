@@ -82,7 +82,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
-                              color: tokens.primary,
+                              color: tokens.primaryText,
                               letterSpacing: 2,
                               fontWeight: FontWeight.bold,
                             ),

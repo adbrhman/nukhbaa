@@ -106,7 +106,7 @@ class _GroupRow extends StatelessWidget {
                 entry.group.inviteCode,
                 key: const Key('myGroups.item.inviteCode'),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: tokens.primary,
+                  color: tokens.primaryText,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.bold,
                 ),
@@ -152,7 +152,7 @@ class _RoleBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: isOwner ? tokens.primary : tokens.textSecondary,
+          color: isOwner ? tokens.primaryText : tokens.textSecondary,
         ),
       ),
     );

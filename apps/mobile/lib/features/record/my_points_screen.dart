@@ -205,7 +205,7 @@ class _SeasonPointsCard extends ConsumerWidget {
                   child: Text(
                     '${l10n.myPointsRank}: #$displayRank',
                     style: context.text.labelMedium?.copyWith(
-                      color: tokens.primary,
+                      color: tokens.primaryText,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

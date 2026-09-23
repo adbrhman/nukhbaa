@@ -467,7 +467,7 @@ class _FixturePredictionCardState
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Text(
                     l10n.fixturePredictionSavedMessage,
-                    style: TextStyle(color: tokens.primary, fontSize: 12),
+                    style: TextStyle(color: tokens.primaryText, fontSize: 12),
                   ),
                 ),
               if (submission is FixtureSubmissionFailed)
@@ -764,7 +764,7 @@ class _QuickFillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final Color fg = selected ? tokens.primary : tokens.textSecondary;
+    final Color fg = selected ? tokens.primaryText : tokens.textSecondary;
     final Color bg = selected
         ? tokens.primary.withValues(alpha: 0.14)
         : tokens.surfaceElevated;

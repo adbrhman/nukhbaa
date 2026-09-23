@@ -105,7 +105,7 @@ class _MonthCard extends StatelessWidget {
                 percentText(insights.month.percent),
                 key: const Key('insights.month.percent'),
                 style: context.text.headlineMedium?.copyWith(
-                  color: tokens.primary,
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w800,
                 ),
               ),
