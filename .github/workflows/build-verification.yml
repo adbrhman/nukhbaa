@@ -49,18 +49,38 @@ jobs:
       # The full local stack, not a bare Postgres: 0001 references auth.users
       # and 0026 references storage.buckets/storage.objects, so gotrue and
       # storage-api must have created their schemas first.
+      #
+      # supabase/setup-cli exports SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io,
+      # which pins every image pull to ghcr.io alone; when ghcr.io throttles
+      # the shared runners (toomanyrequests) the start fails outright. Unset,
+      # the CLI falls back public.ecr.aws -> ghcr.io -> Docker Hub. Three
+      # attempts ride out a short throttle window.
       - name: Start a clean local Supabase stack
         shell: bash
         run: |
           set -euo pipefail
+          unset SUPABASE_INTERNAL_IMAGE_REGISTRY
           test -f supabase/config.toml || supabase init < /dev/null
-          supabase start
+          for attempt in 1 2 3; do
+            if supabase start; then exit 0; fi
+            echo "::warning::supabase start failed (attempt $attempt of 3)"
+            supabase stop --no-backup || true
+            sleep $((attempt * 30))
+          done
+          echo "::error::supabase start failed after 3 attempts"
+          exit 1
 
       # Recreates the database and applies EVERY file in supabase/migrations
       # in order. This is the check CI never had: a SQL error, a bad RLS
       # policy or a mis-ordered migration now fails the build.
+      # Same registry as the start step, so the reset finds the images the
+      # start pulled instead of asking ghcr.io for them again.
       - name: Apply every migration to the clean database
-        run: supabase db reset --no-seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SUPABASE_INTERNAL_IMAGE_REGISTRY
+          supabase db reset --no-seed
 
       - name: Show applied migration history
         run: supabase migration list --local
