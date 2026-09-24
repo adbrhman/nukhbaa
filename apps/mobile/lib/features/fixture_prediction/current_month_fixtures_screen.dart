@@ -298,6 +298,10 @@ class _CurrentMonthFixturesScreenState
         top: false,
         child: feed.when(
           skipLoadingOnRefresh: true,
+          // A refresh that fails (the minute tick fires the moment the app
+          // comes back from the background) keeps the list on screen; only
+          // a first load with nothing to show falls back to the error.
+          skipError: true,
           loading: () => const AppSkeletonCardList(
             key: Key('currentMonthFixtures.loading'),
             itemHeight: 96,

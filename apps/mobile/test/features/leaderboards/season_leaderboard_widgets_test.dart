@@ -176,7 +176,10 @@ void main() {
     ) async {
       // The retry counter is scoped to the season-leaderboard endpoint only,
       // so the fixture tab's own (always-successful) read never consumes it.
-      var leaderboardCalls = 0;
+      // Offline until the user taps retry. (A single dropped request is now
+      // absorbed by the transport's one GET retry, batch 54, so the failure
+      // has to persist for the error state to show at all.)
+      var offline = true;
       final harness = buildLeaderboardsHarness((request) async {
         if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
           return okJsonObject(emptyFixtureBoard.toJson());
@@ -187,8 +190,7 @@ void main() {
         if (request.url.path != '/seasons/s-1/leaderboard') {
           return errorEnvelope(404, 'not_found', 'unexpected request');
         }
-        leaderboardCalls++;
-        if (leaderboardCalls == 1) throw Exception('offline');
+        if (offline) throw Exception('offline');
         return okJsonObject(sampleBoard.toJson());
       });
       addTearDown(harness.dispose);
@@ -206,7 +208,8 @@ void main() {
       final retry = find.byKey(const Key('browse.error.retry'));
       expect(retry, findsOneWidget);
 
-      // Tapping retry re-reads and, this time, shows the standings.
+      // Back online: tapping retry re-reads and shows the standings.
+      offline = false;
       await tester.tap(retry);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('browse.error')), findsNothing);

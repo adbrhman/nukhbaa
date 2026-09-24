@@ -202,10 +202,12 @@ void main() {
     test(
       're-validates the kept token and can succeed the second time',
       () async {
-        var attempt = 0;
+        // Offline until the retry below. (One dropped GET is now absorbed by
+        // the transport's single retry, batch 54, so the boot attempt only
+        // fails if the connection stays down.)
+        var online = false;
         final harness = buildAuthHarness((_) async {
-          attempt++;
-          if (attempt == 1) throw Exception('offline');
+          if (!online) throw Exception('offline');
           return okMe(sampleUser);
         }, seedToken: 'kept-jwt');
         addTearDown(harness.dispose);
@@ -219,6 +221,7 @@ void main() {
         expect(await harness.store.read(), 'kept-jwt');
 
         // Retry: the connection is back, /me succeeds.
+        online = true;
         await harness.container
             .read(sessionControllerProvider.notifier)
             .retry();

@@ -285,18 +285,33 @@ final class ApiTransport {
     String? overrideToken,
     required Result<T> Function(String body) decode,
   }) async {
+    Future<Result<http.Response>> once() => _rawSend(
+      method: method,
+      path: path,
+      query: query,
+      requestBody: requestBody,
+      requestBytes: requestBytes,
+      requestContentType: requestContentType,
+      overrideToken: overrideToken,
+    );
     final sent = await _sendRenewing(
       path: path,
       overrideToken: overrideToken,
-      send: () => _rawSend(
-        method: method,
-        path: path,
-        query: query,
-        requestBody: requestBody,
-        requestBytes: requestBytes,
-        requestContentType: requestContentType,
-        overrideToken: overrideToken,
-      ),
+      send: () async {
+        final Result<http.Response> first = await once();
+        // A GET that never reached the server is tried once more, at once.
+        // Back from the background, the pooled keep-alive socket may have
+        // been closed by the server's proxy meanwhile: the first request
+        // dies on it, the second opens a fresh connection. GET only --
+        // repeating it changes nothing server-side -- and never after a
+        // timeout, which already waited its full length.
+        if (method == 'GET' &&
+            first is Err<http.Response> &&
+            first.error.code == apiErrorNetworkUnreachable) {
+          return once();
+        }
+        return first;
+      },
     );
     if (sent is Err<http.Response>) return Result.err(sent.error);
     final response = (sent as Ok<http.Response>).value;

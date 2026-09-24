@@ -3276,6 +3276,19 @@ name is placed at the start of its row, clear of the figures.
   with its label. Its order (profile, actions, settings, sign-out) already
   fit and is unchanged.
 
+### Back from the background: no "could not reach the server" (batch 54)
+
+Reported 2026-09-24: leaving the app for another and coming back showed
+the matches tab's full-screen "تعذّر الاتصال بالخادم" with a retry button.
+Two causes, both fixed. (1) `ApiTransport` had no retry, and the first
+request after resuming dies on the pooled keep-alive socket the server's
+proxy closed meanwhile: a GET that fails as `network_unreachable` is now
+sent once more, at once, on a fresh connection (never a POST, never after
+a timeout). (2) The matches screen rendered `feed.when` without
+`skipError`, so one failed refresh -- the minute tick fires as soon as
+the app resumes -- replaced the list with the error; it now keeps the
+list and shows the error only when there is nothing to show.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
