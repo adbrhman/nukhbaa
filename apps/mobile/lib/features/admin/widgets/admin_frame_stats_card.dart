@@ -107,7 +107,7 @@ class _Body extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           'متجمّدة ${_percent(all.frozenPercent)} • أبطأ إطار '
-          '${all.worstFrameMs} ms',
+          '${_ltr('${all.worstFrameMs} ms')}',
           style: context.text.bodyMedium?.copyWith(color: t.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -133,17 +133,14 @@ class _Body extends StatelessWidget {
                 key: Key('admin.frameStats.device.${d.deviceModel}'),
                 children: [
                   Expanded(
-                    child: Text(
+                    child: _Label(
                       d.deviceModel,
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.start,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: context.text.bodySmall?.copyWith(
                         color: t.textSecondary,
                       ),
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     _percent(d.slowPercent),
                     style: context.text.labelMedium?.copyWith(
@@ -165,14 +162,8 @@ class _Body extends StatelessWidget {
               child: Row(
                 key: Key('admin.frameStats.build.${b.build}'),
                 children: [
-                  Expanded(
-                    child: Text(
-                      b.build ?? '—',
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.start,
-                      style: muted,
-                    ),
-                  ),
+                  Expanded(child: _Label(b.build ?? '—', style: muted)),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     _percent(b.slowPercent),
                     style: context.text.labelMedium?.copyWith(
@@ -191,9 +182,38 @@ class _Body extends StatelessWidget {
   }
 }
 
+/// A Latin label -- a build sha, a device model -- read left to right but
+/// placed at the start of the row in either reading direction, clear of
+/// the figures beside it.
+class _Label extends StatelessWidget {
+  const _Label(this.text, {required this.style});
+
+  final String text;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Text(
+        text,
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
+    );
+  }
+}
+
+/// Wraps [text] in a left-to-right isolate (U+2066 ... U+2069), so a
+/// figure with its unit -- `0%`, `77 ms` -- keeps its order inside an
+/// Arabic sentence instead of reading `%0` or `ms 77`.
+String _ltr(String text) => '\u2066$text\u2069';
+
 String _percent(double value) {
   final String text = value == value.roundToDouble()
       ? value.toStringAsFixed(0)
       : value.toString();
-  return '$text%';
+  return _ltr('$text%');
 }

@@ -87,6 +87,7 @@ jobs:
           --base-href "/${{ github.event.repository.name }}/"
           --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
           --dart-define=NUKHBA_SENTRY_DSN=${{ vars.NUKHBA_SENTRY_DSN }}
+          --dart-define=NUKHBA_BUILD_SHA=$(git rev-parse HEAD | cut -c1-7)
 
       - name: SPA fallback
         run: cp apps/mobile/build/web/index.html apps/mobile/build/web/404.html

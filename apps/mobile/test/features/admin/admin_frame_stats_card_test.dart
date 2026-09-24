@@ -1,7 +1,8 @@
 /// The admin dashboard's smoothness card, through the real
 /// [AdminFrameStatsCard] and [adminFrameStatsProvider]: the share of slow
 /// frames leads, coloured by verdict; each build gets a line; an empty
-/// week says so instead of showing zeros.
+/// week says so instead of showing zeros; a figure keeps its order inside
+/// an Arabic sentence, and a build or device name sits clear of the figures.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -41,6 +42,9 @@ Future<void> _pump(WidgetTester tester, AdminFrameStatsDto stats) async {
   await tester.pumpAndSettle();
 }
 
+/// A figure as the card writes it: inside a left-to-right isolate.
+String _iso(String text) => '\u2066$text\u2069';
+
 void main() {
   testWidgets('leads with the slow share, one line per build', (tester) async {
     await _pump(
@@ -68,7 +72,7 @@ void main() {
     final Text lead = tester.widget<Text>(
       find.byKey(const Key('admin.frameStats.slow')),
     );
-    expect(lead.data, '2.5% إطارات بطيئة');
+    expect(lead.data, '${_iso('2.5%')} إطارات بطيئة');
     expect(lead.style?.color, AppTokens.dark.success);
     expect(
       find.byKey(const Key('admin.frameStats.build.new1234')),
@@ -79,7 +83,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('20%'),
+      find.text(_iso('20%')),
       findsNWidgets(2),
       reason: 'the old build (600 of 3000) and the device (1800 of 9000)',
     );
@@ -91,6 +95,15 @@ void main() {
       find.descendant(of: device, matching: find.text('4 مستخدم')),
       findsOneWidget,
     );
+    expect(
+      find.text('متجمّدة ${_iso('0.04%')} • أبطأ إطار ${_iso('1500 ms')}'),
+      findsOneWidget,
+      reason: '3 of 8000 frames frozen is 0.04%',
+    );
+    final Align label = tester.widget<Align>(
+      find.ancestor(of: find.text('new1234'), matching: find.byType(Align)),
+    );
+    expect(label.alignment, AlignmentDirectional.centerStart);
   });
 
   testWidgets('an empty week says so', (tester) async {

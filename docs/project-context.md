@@ -3241,6 +3241,15 @@ five least smooth models, each only once **three distinct players** report
 it, so no row describes one person's phone. **0071 must be on the live DB
 before deploying.**
 
+The web build (`deploy-pages.yml`) injects `NUKHBA_BUILD_SHA` too -- the
+first seven characters of the commit it checked out, as the APK does --
+so web sessions report as well; before batch 51 they carried no sha and
+the reporter, by design, sent nothing. The update gate returns early on
+the web, so the sha changes nothing there. On the admin card a figure
+with its unit sits in a left-to-right isolate (U+2066 ... U+2069) so it
+reads `0%` and `77 ms` inside the Arabic sentence, and a build or device
+name is placed at the start of its row, clear of the figures.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
