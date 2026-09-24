@@ -32,9 +32,12 @@ class NukhbaApp extends ConsumerWidget {
       ],
       builder: (context, child) {
         final MediaQueryData mq = MediaQuery.of(context);
+        // Up to 200% (WCAG 1.4.4). The main tabs were measured at 2.0 by
+        // the text-scale probe and fixed where they broke; the regression
+        // tests hold them there.
         final TextScaler capped = mq.textScaler.clamp(
           minScaleFactor: 1,
-          maxScaleFactor: 1.3,
+          maxScaleFactor: 2,
         );
         return MediaQuery(
           data: mq.copyWith(textScaler: capped),

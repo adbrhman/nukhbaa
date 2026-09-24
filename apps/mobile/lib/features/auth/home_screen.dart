@@ -424,22 +424,31 @@ class _HomeHeader extends ConsumerWidget {
     final int unread = ref.watch(unreadCountProvider).value ?? 0;
     return Row(
       children: <Widget>[
-        ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (Rect bounds) =>
-              tokens.primaryGradient.createShader(bounds),
-          child: const Text(
-            'NUKHBAA',
-            key: Key('home.brand'),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.6,
+        // The wordmark gives way first: at large system text it scales
+        // down beside the two icons instead of pushing them off screen.
+        Expanded(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (Rect bounds) =>
+                    tokens.primaryGradient.createShader(bounds),
+                child: const Text(
+                  'NUKHBAA',
+                  key: Key('home.brand'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-        const Spacer(),
         IconButton(
           key: const Key('home.notifications'),
           onPressed: () => Navigator.of(context).push(
@@ -504,25 +513,38 @@ class _OverviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  'لوحة النخبة',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: tokens.onPrimary,
-                    fontWeight: FontWeight.w800,
+          LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    'لوحة النخبة',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: tokens.onPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
-              const SizedBox(width: AppSpacing.sm),
-              StreakChip(
-                label: seasonCount == null
-                    ? '...'
-                    : _activeSeasonsLabel(seasonCount),
-              ),
-            ],
+                Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
+                const SizedBox(width: AppSpacing.sm),
+                // At large system text the chip used to push past the
+                // card's edge; it now shrinks inside at most 60% of the
+                // row, and at normal size it is never near that.
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.6,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: StreakChip(
+                      label: seasonCount == null
+                          ? '...'
+                          : _activeSeasonsLabel(seasonCount),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
