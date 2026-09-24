@@ -1536,4 +1536,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boardColMovement => 'Move';
+
+  @override
+  String get historyFinished => 'Full time';
 }

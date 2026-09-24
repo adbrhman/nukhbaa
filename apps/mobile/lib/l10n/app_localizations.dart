@@ -2735,6 +2735,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move'**
   String get boardColMovement;
+
+  /// No description provided for @historyFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Full time'**
+  String get historyFinished;
 }
 
 class _AppLocalizationsDelegate

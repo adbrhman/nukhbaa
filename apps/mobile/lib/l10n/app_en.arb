@@ -1167,5 +1167,6 @@
   "boardColAccuracy": "Accuracy",
   "boardColMatches": "Matches",
   "boardColPoints": "Points",
-  "boardColMovement": "Move"
+  "boardColMovement": "Move",
+  "historyFinished": "Full time"
 }

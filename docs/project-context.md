@@ -3289,6 +3289,18 @@ a timeout). (2) The matches screen rendered `feed.when` without
 the app resumes -- replaced the list with the error; it now keeps the
 list and shows the error only when there is nothing to show.
 
+### The final score on a finished prediction (batch 55)
+
+Requested 2026-09-24. Scoring is untouched. `GET .../fixtures/{id}/scores`
+now also carries `result_home_goals` / `result_away_goals` -- the recorded
+final score scoring compared the predictions against -- once a result is
+recorded (`GetFixtureResult`, read only, over `FixtureResultRepository`;
+best effort: a failed read drops only the result). A finished card in
+"my predictions" shows it on a line under the call: "انتهت", the final
+score under the predicted one, and the verdict with the server's points
+(❌ none, ✅ points, 🔥 a double that scored). That line then carries the
+verdict, so the first line keeps the kickoff alone.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

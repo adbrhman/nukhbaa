@@ -73,6 +73,7 @@ final class CompositionRoot {
     required this.listMySeasonRecords,
     required this.getSeasonFixtureLeaderboard,
     required this.getFixtureScores,
+    required this.getFixtureResult,
     required this.getFixturePredictionDistribution,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
@@ -215,6 +216,7 @@ final class CompositionRoot {
     ListMySeasonRecords? listMySeasonRecords,
     GetSeasonFixtureLeaderboard? getSeasonFixtureLeaderboard,
     GetFixtureScores? getFixtureScores,
+    GetFixtureResult? getFixtureResult,
     GetFixturePredictionDistribution? getFixturePredictionDistribution,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
@@ -355,6 +357,7 @@ final class CompositionRoot {
        getSeasonFixtureLeaderboard =
            getSeasonFixtureLeaderboard ?? _absentGetSeasonFixtureLeaderboard(),
        getFixtureScores = getFixtureScores ?? _absentGetFixtureScores(),
+       getFixtureResult = getFixtureResult ?? _absentGetFixtureResult(),
        getFixturePredictionDistribution =
            getFixturePredictionDistribution ??
            _absentGetFixturePredictionDistribution(),
@@ -823,6 +826,12 @@ final class CompositionRoot {
     fixturePredictionRepository: _unwiredFixturePredictionRepository,
     fixtureScoreRepository: _unwiredFixtureScoreRepository,
   );
+
+  /// Unlike the other absent use-cases this one is quiet: the result is an
+  /// optional enrichment of the scores read, so a test root that did not
+  /// wire it simply sees no recorded result (never a real database).
+  static GetFixtureResult _absentGetFixtureResult() =>
+      GetFixtureResult(results: _NoFixtureResults());
 
   /// Backs the "absent" [AdminGetFixtureScores]: throws so a test that
   /// reaches this admin-bypass path fails loudly instead of silently
@@ -1414,6 +1423,10 @@ final class CompositionRoot {
   /// gated on the season being finished; season-membership gated only).
   final GetSeasonFixtureLeaderboard getSeasonFixtureLeaderboard;
   final GetFixtureScores getFixtureScores;
+
+  /// The recorded final score of a fixture, for display beside the scores
+  /// (backs the `result_*` fields of `GET .../fixtures/{id}/scores`).
+  final GetFixtureResult getFixtureResult;
 
   /// Reads the aggregated home/away win shares displayed on fixture cards.
   final GetFixturePredictionDistribution getFixturePredictionDistribution;
@@ -2262,6 +2275,7 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScoreRepository: fixtureScoreRepository,
       ),
+      getFixtureResult: GetFixtureResult(results: fixtureResultRepository),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
         fixturePredictionRepository: fixturePredictionRepository,
       ),
@@ -2937,6 +2951,22 @@ final class _UnwiredFixturePredictionRepository
 /// Backs every "absent" scoring use-case's fixture-result port: any method
 /// throws so a test that reaches an unwired scoring slice fails loudly instead
 /// of touching a real database.
+/// Holds no result: backs the quiet absent [GetFixtureResult].
+final class _NoFixtureResults implements FixtureResultRepository {
+  @override
+  Future<Result<FixtureResult?>> findByFixture(FixtureRef fixture) async =>
+      const Result.ok(null);
+
+  @override
+  Future<Result<List<FixtureResult>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) async => const Result.ok([]);
+
+  @override
+  Future<Result<void>> upsert(FixtureResult result, DateTime recordedAt) =>
+      throw StateError('results were not wired into this test root');
+}
+
 final class _UnwiredFixtureResultRepository implements FixtureResultRepository {
   static Never _unwired() =>
       throw StateError('A scoring use-case was not wired into this root');

@@ -121,6 +121,8 @@ final class FixtureScoresDto {
   const FixtureScoresDto({
     required this.fixtureId,
     required this.scores,
+    this.resultHomeGoals,
+    this.resultAwayGoals,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -138,6 +140,8 @@ final class FixtureScoresDto {
             ),
           )
           .toList(growable: false),
+      resultHomeGoals: json['result_home_goals'] as int?,
+      resultAwayGoals: json['result_away_goals'] as int?,
     );
   }
 
@@ -146,6 +150,14 @@ final class FixtureScoresDto {
 
   /// The fixture this read is for (UUID string).
   final String fixtureId;
+
+  /// The recorded final score -- the one scoring compared the predictions
+  /// against -- once a result is recorded; null until then. Display only:
+  /// the points in [scores] are the server's, never re-derived from it.
+  final int? resultHomeGoals;
+
+  /// The away side of the recorded final score; see [resultHomeGoals].
+  final int? resultAwayGoals;
 
   /// Every participant's scored result for this fixture. Empty is
   /// legitimate (no predictions covered this fixture).
@@ -159,6 +171,8 @@ final class FixtureScoresDto {
     'schema_version': schemaVersion,
     'fixture_id': fixtureId,
     'scores': [for (final s in scores) s.toJson()],
+    if (resultHomeGoals != null) 'result_home_goals': resultHomeGoals,
+    if (resultAwayGoals != null) 'result_away_goals': resultAwayGoals,
   };
 
   @override
@@ -166,11 +180,18 @@ final class FixtureScoresDto {
       other is FixtureScoresDto &&
       other.fixtureId == fixtureId &&
       _listEquals(other.scores, scores) &&
+      other.resultHomeGoals == resultHomeGoals &&
+      other.resultAwayGoals == resultAwayGoals &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(fixtureId, Object.hashAll(scores), schemaVersion);
+  int get hashCode => Object.hash(
+    fixtureId,
+    Object.hashAll(scores),
+    resultHomeGoals,
+    resultAwayGoals,
+    schemaVersion,
+  );
 
   static bool _listEquals(
     List<ParticipantFixtureScoreDto> a,

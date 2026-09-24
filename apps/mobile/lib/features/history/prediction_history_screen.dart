@@ -184,12 +184,19 @@ class _FixturePredictionCard extends ConsumerWidget {
       }
     }
 
-    final AppBadge? status = _statusBadge(
-      l10n,
-      grade: grade,
-      points: points,
-      kickoffAt: kickoffAt,
-    );
+    final int? resultHome = scoresAsync?.value?.resultHomeGoals;
+    final int? resultAway = scoresAsync?.value?.resultAwayGoals;
+    final bool finished = resultHome != null && resultAway != null;
+    // Once the final score is recorded its line carries the verdict and the
+    // points; the first line then keeps the kickoff alone.
+    final AppBadge? status = finished
+        ? null
+        : _statusBadge(
+            l10n,
+            grade: grade,
+            points: points,
+            kickoffAt: kickoffAt,
+          );
     final TextStyle? metaStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(color: tokens.textSecondary);
@@ -248,6 +255,16 @@ class _FixturePredictionCard extends ConsumerWidget {
                 fixture: fixture,
               ),
             ),
+            if (finished) ...<Widget>[
+              const SizedBox(height: AppSpacing.xs),
+              _FinalLine(
+                key: Key('history.final.${prediction.id}'),
+                home: resultHome,
+                away: resultAway,
+                points: points,
+                isDouble: prediction.isDouble,
+              ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             Text(
               l10n.historySubmittedAt(
@@ -389,6 +406,70 @@ class _ScoreLine extends StatelessWidget {
           ),
         ),
         Expanded(child: _TeamMini(name: f.awayTeam, alignEnd: true)),
+      ],
+    );
+  }
+}
+
+/// The line under a finished prediction, as the player asked for it:
+/// "انتهت" under the home side, the recorded final score under the call,
+/// and the verdict with the points scoring gave -- ❌ for none, ✅ for
+/// points, 🔥 for a double that scored. The points are the server's own
+/// (`fixtureScoresProvider`); nothing here works a score out.
+class _FinalLine extends StatelessWidget {
+  const _FinalLine({
+    required this.home,
+    required this.away,
+    required this.points,
+    required this.isDouble,
+    super.key,
+  });
+
+  final int home;
+  final int away;
+
+  /// Null while the result is recorded but not scored yet.
+  final int? points;
+  final bool isDouble;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppTokens tokens = context.tokens;
+    final int? scored = points;
+    final String verdict = scored == null
+        ? ''
+        : '${scored == 0 ? '❌' : (isDouble ? '🔥' : '✅')} '
+              '${l10n.boardPoints(scored)}';
+    final TextStyle? style = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: tokens.textSecondary,
+      fontWeight: FontWeight.w700,
+    );
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            l10n.historyFinished,
+            textAlign: TextAlign.start,
+            style: style,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          child: ScorePill(home: home, away: away),
+        ),
+        Expanded(
+          child: Text(
+            verdict,
+            key: const Key('history.final.verdict'),
+            textAlign: TextAlign.end,
+            style: style?.copyWith(
+              color: scored == null
+                  ? null
+                  : (scored > 0 ? tokens.success : tokens.error),
+            ),
+          ),
+        ),
       ],
     );
   }

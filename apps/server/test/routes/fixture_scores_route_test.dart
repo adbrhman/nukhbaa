@@ -159,6 +159,76 @@ void main() {
       expect(response.statusCode, HttpStatus.methodNotAllowed);
     });
   });
+
+  group('the recorded final score rides along (batch 55)', () {
+    test('a recorded result is returned beside the scores', () async {
+      final setup = scoresRootFor();
+      final root = CompositionRoot.forTesting(
+        getFixtureScores: setup.root.getFixtureScores,
+        getFixtureResult: GetFixtureResult(
+          results: _OneResult(
+            const FixtureResult.fromStored(
+              fixture: FixtureRef(kFixtureId),
+              homeGoals: 1,
+              awayGoals: 1,
+            ),
+          ),
+        ),
+      );
+      final response = await scores_route.onRequest(
+        wireContext(
+          root: root,
+          principal: userPrincipal(),
+          method: HttpMethod.get,
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      expect(body['result_home_goals'], 1);
+      expect(body['result_away_goals'], 1);
+      expect(body['scores'], hasLength(1));
+    });
+
+    test('no recorded result: the keys are simply absent', () async {
+      final setup = scoresRootFor();
+      final response = await scores_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          method: HttpMethod.get,
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      final body = await decodeBody(response);
+      expect(body.containsKey('result_home_goals'), isFalse);
+      expect(body['scores'], hasLength(1));
+    });
+  });
+}
+
+/// A result store holding exactly one recorded result.
+final class _OneResult implements FixtureResultRepository {
+  _OneResult(this.result);
+
+  final FixtureResult result;
+
+  @override
+  Future<Result<FixtureResult?>> findByFixture(FixtureRef fixture) async =>
+      Result.ok(fixture == result.fixture ? result : null);
+
+  @override
+  Future<Result<List<FixtureResult>>> findByFixtures(
+    List<FixtureRef> fixtures,
+  ) async => Result.ok([result]);
+
+  @override
+  Future<Result<void>> upsert(FixtureResult result, DateTime recordedAt) =>
+      throw StateError('a read never writes');
 }
 
 /// A minimal in-memory [FixturePredictionRepository] for these route tests

@@ -175,6 +175,7 @@ export 'src/prediction/submit_fixture_prediction.dart';
 export 'src/prediction/submit_prediction.dart';
 export 'src/scoring/admin_get_fixture_scores.dart';
 export 'src/scoring/admin_get_participant_display_names.dart';
+export 'src/scoring/get_fixture_result.dart';
 export 'src/scoring/get_fixture_scores.dart';
 export 'src/scoring/ports/fixture_result_repository.dart';
 export 'src/scoring/ports/fixture_score_repository.dart';

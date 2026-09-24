@@ -1546,4 +1546,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get boardColMovement => 'الحركة';
+
+  @override
+  String get historyFinished => 'انتهت';
 }

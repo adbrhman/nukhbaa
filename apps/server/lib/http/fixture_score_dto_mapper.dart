@@ -34,9 +34,12 @@ Map<String, Object?> fixtureScoresToJson(
   String fixtureId,
   List<ParticipantFixtureScore> scores, {
   Map<String, String> displayNames = const {},
+  FixtureResult? result,
 }) {
   return FixtureScoresDto(
     fixtureId: fixtureId,
+    resultHomeGoals: result?.homeGoals,
+    resultAwayGoals: result?.awayGoals,
     scores: [
       for (final score in scores)
         fixtureScoreToDto(

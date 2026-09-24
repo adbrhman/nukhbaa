@@ -455,5 +455,6 @@
   "boardColAccuracy": "الدقة",
   "boardColMatches": "المباريات",
   "boardColPoints": "النقاط",
-  "boardColMovement": "الحركة"
+  "boardColMovement": "الحركة",
+  "historyFinished": "انتهت"
 }

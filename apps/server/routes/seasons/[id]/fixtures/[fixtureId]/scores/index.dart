@@ -46,10 +46,23 @@ Future<Response> onRequest(
     fixtureId: fixtureId,
   );
 
-  return switch (result) {
-    Ok<List<ParticipantFixtureScore>>(:final value) => Response.json(
-      body: fixtureScoresToJson(fixtureId, value),
-    ),
-    Err<List<ParticipantFixtureScore>>(:final error) => errorResponse(error),
+  if (result is Err<List<ParticipantFixtureScore>>) {
+    return errorResponse(result.error);
+  }
+  final scores = (result as Ok<List<ParticipantFixtureScore>>).value;
+
+  // The recorded final score rides along for display (the finished card in
+  // "my predictions"). Best effort: a failed read of it drops only it.
+  final recorded = await root.getFixtureResult(
+    principal: principal,
+    fixtureId: fixtureId,
+  );
+  final FixtureResult? finalScore = switch (recorded) {
+    Ok<FixtureResult?>(:final value) => value,
+    Err<FixtureResult?>() => null,
   };
+
+  return Response.json(
+    body: fixtureScoresToJson(fixtureId, scores, result: finalScore),
+  );
 }
