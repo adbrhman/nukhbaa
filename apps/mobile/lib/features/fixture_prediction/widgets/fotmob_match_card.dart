@@ -58,6 +58,7 @@ import 'dart:async';
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // intl is already a transitive dependency (pulled in by the SDK's
 // flutter_localizations, the same package the generated l10n files import
@@ -272,6 +273,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
           saved.awayGoals != _awayGoals.value ||
           saved.isDouble != _isDouble) {
         _scheduleAutoSave(isRetry: true);
+      } else {
+        // The server holds exactly what is on screen: one light tap, the
+        // same moment the check badge turns blue. Auto-save has no button,
+        // so this is the only "saved" the hand feels.
+        unawaited(HapticFeedback.lightImpact());
       }
     }
   }
@@ -1266,7 +1272,8 @@ class _StepperZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final bool enabled = onTap != null;
+    final VoidCallback? tap = onTap;
+    final bool enabled = tap != null;
     return Opacity(
       opacity: enabled ? 1 : AppOpacity.disabled,
       child: Tooltip(
@@ -1274,7 +1281,14 @@ class _StepperZone extends StatelessWidget {
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
-            onTap: onTap,
+            // A selection tick per step, so a fast run of taps can be
+            // counted by feel.
+            onTap: tap == null
+                ? null
+                : () {
+                    unawaited(HapticFeedback.selectionClick());
+                    tap();
+                  },
             child: SizedBox(
               height: height,
               width: double.infinity,
@@ -1365,8 +1379,10 @@ class _WinPercentage extends StatelessWidget {
 }
 
 /// The "make it double" toggle, in the action blue: a solid blue button by
-/// default, and once selected a brighter blue gradient with a gold rim, a
-/// filled gold bolt and a soft glow. The state is never colour-alone -- the
+/// default, and once selected a deeper blue gradient with a gold rim, a
+/// filled gold bolt and a soft glow. The gradient runs from the action blue
+/// DOWN, never up to the brighter blue: white on `primaryLight` is 3.6:1,
+/// under WCAG AA for a 12px label. The state is never colour-alone -- the
 /// rim and the icon change with it (accessibility). Reuses the same key the
 /// prior chip design used (`currentMonthFixtures.double.$fixtureId`).
 class _DoubleGlowButton extends StatelessWidget {
@@ -1399,7 +1415,12 @@ class _DoubleGlowButton extends StatelessWidget {
         child: GestureDetector(
           key: Key('currentMonthFixtures.double.$fixtureId'),
           behavior: HitTestBehavior.opaque,
-          onTap: enabled ? onTap : null,
+          onTap: enabled
+              ? () {
+                  unawaited(HapticFeedback.selectionClick());
+                  onTap();
+                }
+              : null,
           child: AnimatedContainer(
             duration: AppMotion.fast,
             height: _height,
@@ -1408,7 +1429,16 @@ class _DoubleGlowButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: AppRadius.brButton,
               color: selected ? null : tokens.primary,
-              gradient: selected ? tokens.primaryGradient : null,
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        tokens.primary,
+                        Color.lerp(tokens.primary, Colors.black, 0.25)!,
+                      ],
+                    )
+                  : null,
               border: Border.all(
                 color: selected ? tokens.gold : tokens.primary,
                 width: selected ? 1.5 : AppStroke.hairline,

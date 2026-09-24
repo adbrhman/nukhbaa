@@ -42,8 +42,11 @@ abstract final class AppColors {
   static const Color surfaceElevated = Color(0xFF14253D);
   static const Color surfaceHigh = Color(0xFF1C2F4B);
 
-  /// SHEET Blue -- the action colour.
-  static const Color primary = Color(0xFF2F6BFF);
+  /// SHEET Blue -- the action colour, one step deeper than the sheet's
+  /// `#2F6BFF`: white on that measured 4.499:1, a hair under WCAG AA, and
+  /// white is the label on every blue fill. `#2E6AFF` reads 4.54:1 and is
+  /// not a visible change.
+  static const Color primary = Color(0xFF2E6AFF);
 
   /// DERIVED -- a pressed/container depth for [primary].
   static const Color primaryDark = Color(0xFF1D4ED8);
