@@ -103,6 +103,8 @@ final class CompositionRoot {
     required this.sendStreakSavers,
     required this.sendOvertakenPushes,
     required this.recordPushOpen,
+    required this.recordFrameReport,
+    required this.adminGetFrameStats,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -243,6 +245,8 @@ final class CompositionRoot {
     SendStreakSavers? sendStreakSavers,
     SendOvertakenPushes? sendOvertakenPushes,
     RecordPushOpen? recordPushOpen,
+    RecordFrameReport? recordFrameReport,
+    AdminGetFrameStats? adminGetFrameStats,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -398,6 +402,8 @@ final class CompositionRoot {
        sendOvertakenPushes =
            sendOvertakenPushes ?? _absentSendOvertakenPushes(),
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
+       recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
+       adminGetFrameStats = adminGetFrameStats ?? _absentAdminGetFrameStats(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -1033,6 +1039,20 @@ final class CompositionRoot {
   static RecordPushOpen _absentRecordPushOpen() =>
       RecordPushOpen(opens: _UnwiredPushOpenRepository(), clock: _unwiredClock);
 
+  /// Builds an "absent" [RecordFrameReport]: loud if a test reaches it
+  /// without wiring it.
+  static RecordFrameReport _absentRecordFrameReport() => RecordFrameReport(
+    reports: _UnwiredFrameReportRepository(),
+    clock: _unwiredClock,
+  );
+
+  /// Builds an "absent" [AdminGetFrameStats]: loud if a test reaches it
+  /// without wiring it.
+  static AdminGetFrameStats _absentAdminGetFrameStats() => AdminGetFrameStats(
+    reports: _UnwiredFrameReportRepository(),
+    clock: _unwiredClock,
+  );
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1528,6 +1548,14 @@ final class CompositionRoot {
 
   /// Records a tap on a push (backs `POST /me/push-opened`, plan P3-8).
   final RecordPushOpen recordPushOpen;
+
+  /// Keeps one app session's frame counts (backs `POST /me/frame-report`,
+  /// migration 0070).
+  final RecordFrameReport recordFrameReport;
+
+  /// Frame smoothness across every device, for the admin dashboard (backs
+  /// `GET /admin/frame-stats`, migration 0070).
+  final AdminGetFrameStats adminGetFrameStats;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -2032,6 +2060,14 @@ final class CompositionRoot {
       ),
       recordPushOpen: RecordPushOpen(
         opens: PostgresPushOpenRepository(connection),
+        clock: clock,
+      ),
+      recordFrameReport: RecordFrameReport(
+        reports: PostgresFrameReportRepository(connection),
+        clock: clock,
+      ),
+      adminGetFrameStats: AdminGetFrameStats(
+        reports: PostgresFrameReportRepository(connection),
         clock: clock,
       ),
       sendOvertakenPushes: SendOvertakenPushes(
@@ -3307,6 +3343,22 @@ final class _UnwiredPushOpenRepository implements PushOpenRepository {
     required String link,
     required DateTime openedAt,
   }) => throw StateError('RecordPushOpen was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentRecordFrameReport].
+final class _UnwiredFrameReportRepository implements FrameReportRepository {
+  @override
+  Future<Result<void>> record({
+    required UserId userId,
+    required FrameReport report,
+    required DateTime reportedAt,
+  }) => throw StateError('frame reports were not wired into this test root');
+
+  @override
+  Future<Result<List<FrameTotals>>> totals({
+    required DateTime since,
+    required int maxBuilds,
+  }) => throw StateError('frame reports were not wired into this test root');
 }
 
 /// Refuses every call: see [_absentSendStreakSavers].

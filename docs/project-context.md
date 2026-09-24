@@ -3214,6 +3214,24 @@ is recorded in the sections above and summarised in
 are ready and deliberately not running: read these views for a few weeks
 first, then decide what to test.
 
+### Frame smoothness from every device (2026-09-24)
+
+Migration 0070: schema `ops` ("how the app runs on devices, not what
+players do") and `ops.frame_reports`, one row per app session: frames
+drawn, slow (build or raster past one refresh interval of that display --
+16.7 ms at 60 Hz, 8.3 ms at 120 Hz), frozen (past 700 ms, a subset of
+slow), the slowest, the build's short sha, platform and refresh rate. No
+screen names, content or device identifiers; rows go with their user.
+Server-only like 0069; CHECK constraints mirror `RecordFrameReport`'s
+validation, which refuses a report that cannot be true.
+
+- `POST /me/frame-report` (`RecordFrameReport`, player) keeps one report.
+- `GET /admin/frame-stats?days=` (`AdminGetFrameStats`, admin; default 7
+  days, at most 30) returns totals overall and for the five newest builds.
+
+Batch 48 is the server; the app's collector and the admin dashboard card
+follow in batch 49. **0070 must be on the live DB before deploying.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

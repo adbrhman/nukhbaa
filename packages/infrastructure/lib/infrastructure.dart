@@ -68,6 +68,7 @@ export 'src/notification/postgres_prediction_reminder_repository.dart';
 export 'src/notification/postgres_score_announcement_repository.dart';
 export 'src/notification/postgres_streak_saver_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
+export 'src/platform/postgres_frame_report_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_tally_reader.dart';
