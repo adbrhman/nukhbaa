@@ -789,23 +789,28 @@ class _MovementChip extends StatelessWidget {
     }
     final bool up = m > 0;
     final Color color = up ? t.success : t.error;
-    return Row(
-      key: Key('$keyPrefix.movement.$participantId'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Icon(
-          up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-          size: 12,
-          color: color,
-        ),
-        Text(
-          '${m.abs()}',
-          style: context.text.labelSmall?.copyWith(
+    // A two-digit move (or larger system text) overflowed the 30px column;
+    // the chip now scales down to fit it instead.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        key: Key('$keyPrefix.movement.$participantId'),
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+            size: 12,
             color: color,
-            fontWeight: FontWeight.w800,
           ),
-        ),
-      ],
+          Text(
+            '${m.abs()}',
+            style: context.text.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -210,55 +210,62 @@ class _DayTab extends StatelessWidget {
                 color: selected ? tokens.primary : tokens.controlBorder,
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                SizedBox(
-                  height: _badgeHeight,
-                  child: relative == null
-                      ? null
-                      : Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: tokens.gold,
-                            borderRadius: AppRadius.brSm,
-                          ),
-                          child: Text(
-                            relative,
-                            maxLines: 1,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              height: 1.1,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.onBronze,
+            // The chip keeps its fixed height; its three lines scale down
+            // together when the system text is larger than they fit (they
+            // overflowed from a 1.3 text scale upward).
+            alignment: Alignment.center,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  SizedBox(
+                    height: _badgeHeight,
+                    child: relative == null
+                        ? null
+                        : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: tokens.gold,
+                              borderRadius: AppRadius.brSm,
+                            ),
+                            child: Text(
+                              relative,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                height: 1.1,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.onBronze,
+                              ),
                             ),
                           ),
-                        ),
-                ),
-                Text(
-                  weekday,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.2,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-                    color: primaryText,
                   ),
-                ),
-                Text(
-                  date,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    color: secondaryText,
+                  Text(
+                    weekday,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.2,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                      color: primaryText,
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    date,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      color: secondaryText,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
