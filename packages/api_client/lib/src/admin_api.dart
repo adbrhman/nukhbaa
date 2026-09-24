@@ -41,6 +41,17 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/frame-stats` -- frame smoothness across every device over
+  /// the last [days] days (server default 7, at most 30), overall and for
+  /// the newest builds (migration 0070).
+  Future<Result<AdminFrameStatsDto>> frameStats({int? days}) {
+    return _transport.getObject<AdminFrameStatsDto>(
+      '/admin/frame-stats',
+      query: days == null ? null : {'days': '$days'},
+      parse: AdminFrameStatsDto.fromJson,
+    );
+  }
+
   /// `GET /admin/users` — browse users by an optional display-name or
   /// email-contains [search]; [limit] is an optional page cap, clamped
   /// server-side.

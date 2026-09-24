@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/notifications/push_link.dart';
+import '../../core/perf/frame_reporter.dart';
 import '../../core/providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../history/prediction_history_screen.dart';
@@ -89,6 +90,25 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
             offsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
           ),
     );
+    // Frame smoothness from every device (migration 0070): one report per
+    // session, sent when the app leaves the foreground. The API is taken
+    // now, so a report never reaches for ref after the shell is gone.
+    final authApi = ref.read(authApiProvider);
+    _frames = FrameReporter(
+      send: (report) async {
+        await authApi.reportFrames(report);
+      },
+      build: const String.fromEnvironment('NUKHBA_BUILD_SHA'),
+      platform: FrameReporter.currentPlatform,
+    )..start();
+  }
+
+  late final FrameReporter _frames;
+
+  @override
+  void dispose() {
+    _frames.stop();
+    super.dispose();
   }
 
   /// The number of destinations in the bottom bar.

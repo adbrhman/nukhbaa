@@ -185,6 +185,16 @@ final class AuthApi {
     );
   }
 
+  /// `POST /me/frame-report` -- one app session's frame counts (migration
+  /// 0070). Fire-and-forget from the app: nothing the user sees waits on it.
+  Future<Result<FrameReportAckDto>> reportFrames(FrameReportDto report) {
+    return _transport.postObject<FrameReportAckDto>(
+      '/me/frame-report',
+      body: report.toJson(),
+      parse: FrameReportAckDto.fromJson,
+    );
+  }
+
   /// `GET /me/insights` -- accuracy, patterns and last week's recap (plan
   /// P4-4), computed server-side on every call.
   Future<Result<InsightsDto>> myInsights() {

@@ -40,6 +40,12 @@ T _unwrap<T>(Result<T> result) => switch (result) {
   Err<T>(:final error) => throw error,
 };
 
+/// `GET /admin/frame-stats` -- frame smoothness across every device over
+/// the last week (migration 0070). A plain provider: no code generation.
+final adminFrameStatsProvider = FutureProvider<AdminFrameStatsDto>((ref) async {
+  return _unwrap(await ref.watch(adminApiProvider).frameStats());
+});
+
 /// Current-month fixtures whose server-side per-fixture score projection is
 /// non-empty. This is intentionally lazy: it runs only when the admin opens
 /// the "المباريات المحتسبة" section, keeping the main dashboard fast.

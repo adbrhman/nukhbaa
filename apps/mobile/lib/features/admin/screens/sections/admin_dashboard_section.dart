@@ -12,6 +12,7 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
 import '../../admin_sections.dart';
+import '../../widgets/admin_frame_stats_card.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 /// مركز التحكم الرئيسي داخل التطبيق نفسه.
@@ -30,7 +31,10 @@ class AdminDashboardSection extends ConsumerWidget {
     final state = ref.watch(adminDashboardProvider);
 
     return RefreshIndicator(
-      onRefresh: () => ref.refresh(adminDashboardProvider.future),
+      onRefresh: () {
+        ref.invalidate(adminFrameStatsProvider);
+        return ref.refresh(adminDashboardProvider.future);
+      },
       child: state.when(
         loading: () => ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -229,6 +233,8 @@ class _DashboardContent extends StatelessWidget {
           fixtures: snapshot.currentMonthFixtures,
           onNavigate: () => onNavigate(AdminSection.fixtures),
         ),
+        const SizedBox(height: AppSpacing.md),
+        const AdminFrameStatsCard(),
       ],
     );
   }
