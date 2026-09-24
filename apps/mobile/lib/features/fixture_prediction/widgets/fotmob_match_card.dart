@@ -68,6 +68,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart' as intl;
 
+import '../../../core/design/app_typography.dart';
 import '../../../core/design/app_motion.dart';
 import '../../../core/design/app_opacity.dart';
 import '../../../core/design/app_radius.dart';
@@ -629,7 +630,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       key: Key(
                         'currentMonthFixtures.failure.message.$fixtureId',
                       ),
-                      style: TextStyle(color: tokens.error, fontSize: 12),
+                      style: TextStyle(
+                        color: tokens.error,
+                        fontSize: AppFontSize.s12,
+                      ),
                     ),
                   ),
               ],
@@ -704,7 +708,7 @@ class _CardHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.s12,
                     fontWeight: FontWeight.w600,
                     color: tokens.textSecondary,
                   ),
@@ -722,7 +726,7 @@ class _CardHeader extends StatelessWidget {
                         Localizations.localeOf(context).toString(),
                       ).format(kickoffLocal),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFontSize.s13,
                         fontWeight: FontWeight.w600,
                         color: tokens.textSecondary,
                       ),
@@ -864,7 +868,7 @@ class _TeamColumn extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.s13,
             fontWeight: FontWeight.w700,
             color: tokens.textPrimary,
           ),
@@ -1109,7 +1113,7 @@ class _LockedSlot extends StatelessWidget {
             textDirection: TextDirection.ltr,
             style: TextStyle(
               color: tokens.textPrimary,
-              fontSize: 26,
+              fontSize: AppFontSize.s26,
               fontWeight: FontWeight.w800,
               height: 1.1,
             ),
@@ -1131,7 +1135,7 @@ class _LockedSlot extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textDirection: over || clock == null ? null : TextDirection.ltr,
-                style: TextStyle(color: accent, fontSize: 11),
+                style: TextStyle(color: accent, fontSize: AppFontSize.s11),
               ),
             ],
           ),
@@ -1153,7 +1157,7 @@ class _LockedSlot extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: TextStyle(color: color, fontSize: 11),
+          style: TextStyle(color: color, fontSize: AppFontSize.s11),
         ),
       ],
     );
@@ -1230,7 +1234,7 @@ class _ScoreStepper extends StatelessWidget {
                 value?.toString() ?? '?',
                 key: Key('currentMonthFixtures.$side.value.$fixtureId'),
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.s20,
                   fontWeight: FontWeight.w800,
                   color: value == null ? tokens.textMuted : tokens.textPrimary,
                 ),
@@ -1343,7 +1347,7 @@ class _WinPercentage extends StatelessWidget {
                   '$percentage%',
                   style: TextStyle(
                     color: tokens.textPrimary,
-                    fontSize: 14,
+                    fontSize: AppFontSize.s14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1365,7 +1369,7 @@ class _WinPercentage extends StatelessWidget {
                   '\u0641\u0648\u0632',
                   style: TextStyle(
                     color: tokens.textPrimary,
-                    fontSize: 14,
+                    fontSize: AppFontSize.s14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1470,7 +1474,7 @@ class _DoubleGlowButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontSize: AppFontSize.s12,
                       color: tokens.onPrimary,
                     ),
                   ),

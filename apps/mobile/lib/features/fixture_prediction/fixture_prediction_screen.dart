@@ -29,6 +29,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -467,7 +468,10 @@ class _FixturePredictionCardState
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Text(
                     l10n.fixturePredictionSavedMessage,
-                    style: TextStyle(color: tokens.primaryText, fontSize: 12),
+                    style: TextStyle(
+                      color: tokens.primaryText,
+                      fontSize: AppFontSize.s12,
+                    ),
                   ),
                 ),
               if (submission is FixtureSubmissionFailed)
@@ -477,7 +481,10 @@ class _FixturePredictionCardState
                   child: Text(
                     ErrorPresenter.message(submission.error),
                     key: Key('fixturePrediction.failure.message.$fixtureId'),
-                    style: TextStyle(color: tokens.error, fontSize: 12),
+                    style: TextStyle(
+                      color: tokens.error,
+                      fontSize: AppFontSize.s12,
+                    ),
                   ),
                 ),
             ],
@@ -530,7 +537,7 @@ class _TeamHeader extends ConsumerWidget {
       style: TextStyle(
         color: tokens.textPrimary,
         fontWeight: FontWeight.w600,
-        fontSize: 13,
+        fontSize: AppFontSize.s13,
       ),
     );
     final List<Widget> children = alignEnd
@@ -597,7 +604,7 @@ class _CenterStatus extends StatelessWidget {
         children: <Widget>[
           _ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
-          Text(_badge ?? '', style: const TextStyle(fontSize: 12)),
+          Text(_badge ?? '', style: const TextStyle(fontSize: AppFontSize.s12)),
         ],
       );
     }
@@ -611,7 +618,10 @@ class _CenterStatus extends StatelessWidget {
             l10n.predictionPendingResultLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: tokens.textMuted, fontSize: 10),
+            style: TextStyle(
+              color: tokens.textMuted,
+              fontSize: AppFontSize.s10,
+            ),
           ),
         ],
       );
@@ -631,7 +641,10 @@ class _CenterStatus extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: TextStyle(color: tokens.textMuted, fontSize: 10),
+            style: TextStyle(
+              color: tokens.textMuted,
+              fontSize: AppFontSize.s10,
+            ),
           ),
         ],
       );
@@ -668,7 +681,7 @@ class _ScorePill extends StatelessWidget {
         style: TextStyle(
           color: tokens.textPrimary,
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppFontSize.s13,
         ),
       ),
     );
@@ -794,7 +807,7 @@ class _QuickFillButton extends StatelessWidget {
                 style: TextStyle(
                   color: fg,
                   fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  fontSize: AppFontSize.s15,
                 ),
               ),
             ),
@@ -876,7 +889,7 @@ class _DoubleChip extends StatelessWidget {
                 style: TextStyle(
                   color: fg,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12,
+                  fontSize: AppFontSize.s12,
                 ),
               ),
             ],

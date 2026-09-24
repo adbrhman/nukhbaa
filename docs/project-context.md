@@ -3250,6 +3250,19 @@ with its unit sits in a left-to-right isolate (U+2066 ... U+2069) so it
 reads `0%` and `77 ms` inside the Arabic sentence, and a build or device
 name is placed at the start of its row, clear of the figures.
 
+### Design-system consistency (batch 52, 2026-09-24)
+
+- Every font size comes from the type scale: a `AppTypography.textTheme`
+  role or a named step of `AppFontSize` (9..26). The 57 bare `fontSize:`
+  numbers became `AppFontSize.sN` of the same value -- nothing moved on
+  screen, the match card included -- and
+  `test/core/design/font_size_scale_test.dart` rejects a new bare number.
+- `LeaderboardBoard` speaks through `AppLocalizations` (`board*` keys): the
+  headers, the summary, the gap and leader lines, the spoken row labels,
+  and Arabic points agreement as an ICU plural (`boardPoints`: one, two,
+  few 3-10, many 11+) replacing the hand-written `_arabicPoints`. The
+  Arabic strings are the ones the board showed before.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

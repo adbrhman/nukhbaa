@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
@@ -128,7 +129,7 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
                   style: TextStyle(
                     color: tokens.textPrimary,
                     fontWeight: FontWeight.w800,
-                    fontSize: 14,
+                    fontSize: AppFontSize.s14,
                   ),
                 ),
               ),
@@ -166,7 +167,10 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
               Expanded(
                 child: Text(
                   line,
-                  style: TextStyle(color: tokens.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                    color: tokens.textSecondary,
+                    fontSize: AppFontSize.s12,
+                  ),
                 ),
               ),
               if (!empty)
@@ -179,7 +183,7 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
                   style: TextStyle(
                     color: tokens.textPrimary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: AppFontSize.s13,
                   ),
                 ),
             ],
@@ -188,7 +192,10 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               l10n.streakLongestLabel(streak.longest),
-              style: TextStyle(color: tokens.textMuted, fontSize: 11),
+              style: TextStyle(
+                color: tokens.textMuted,
+                fontSize: AppFontSize.s11,
+              ),
             ),
           ],
         ],
@@ -230,7 +237,7 @@ class _StreakBadge extends StatelessWidget {
             style: TextStyle(
               color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
-              fontSize: 11,
+              fontSize: AppFontSize.s11,
             ),
           ),
         ],

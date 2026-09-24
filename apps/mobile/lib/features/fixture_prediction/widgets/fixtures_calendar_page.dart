@@ -59,7 +59,7 @@ class FixturesCalendarPage extends StatelessWidget {
                 shape: const StadiumBorder(),
                 textStyle: const TextStyle(
                   fontFamily: AppTypography.fontFamily,
-                  fontSize: 14,
+                  fontSize: AppFontSize.s14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -117,7 +117,10 @@ class _WeekdayHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: tokens.textMuted),
+                style: TextStyle(
+                  fontSize: AppFontSize.s12,
+                  color: tokens.textMuted,
+                ),
               ),
             ),
         ],
@@ -157,7 +160,7 @@ class _MonthBlock extends StatelessWidget {
             intl.DateFormat.yMMMM(locale).format(month),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: AppFontSize.s18,
               fontWeight: FontWeight.w800,
               color: tokens.textPrimary,
             ),
@@ -202,7 +205,7 @@ class _MonthBlock extends StatelessWidget {
             child: Text(
               '$dayNumber',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: AppFontSize.s16,
                 fontWeight: isSelected || isToday
                     ? FontWeight.w800
                     : FontWeight.w500,

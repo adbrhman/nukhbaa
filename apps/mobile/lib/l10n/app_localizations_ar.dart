@@ -1478,4 +1478,72 @@ class AppLocalizationsAr extends AppLocalizations {
   String streakLongestLabel(int days) {
     return 'الأطول: $days';
   }
+
+  @override
+  String get boardYouLead => 'أنت في الصدارة 🥇';
+
+  @override
+  String boardGapToRank(String points, int rank) {
+    return '$points للوصول للمرتبة $rank';
+  }
+
+  @override
+  String boardPoints(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نقطة',
+      many: '$count نقطة',
+      few: '$count نقاط',
+      two: 'نقطتان',
+      one: 'نقطة واحدة',
+      zero: '$count نقطة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get boardNotRanked => 'لست في هذا الترتيب بعد';
+
+  @override
+  String get boardYourRank => 'مركزك';
+
+  @override
+  String boardYourRankIs(int rank) {
+    return 'مركزك $rank';
+  }
+
+  @override
+  String boardRankIs(int rank) {
+    return 'المركز $rank';
+  }
+
+  @override
+  String boardAccuracyIs(int percent) {
+    return 'الدقة $percent%';
+  }
+
+  @override
+  String get boardYou => 'أنت';
+
+  @override
+  String get boardListSeparator => '، ';
+
+  @override
+  String get boardColRank => 'المركز';
+
+  @override
+  String get boardColPlayer => 'اللاعب';
+
+  @override
+  String get boardColAccuracy => 'الدقة';
+
+  @override
+  String get boardColMatches => 'المباريات';
+
+  @override
+  String get boardColPoints => 'النقاط';
+
+  @override
+  String get boardColMovement => 'الحركة';
 }

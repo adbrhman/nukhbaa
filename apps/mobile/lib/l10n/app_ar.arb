@@ -439,5 +439,21 @@
   "favoriteTeamsHint": "اختر حتى ٣ فرق تتابعها",
   "favoriteTeamsLimitReached": "تتابع ٣ فرق وهو الحد الأقصى، أزل فريقاً لتختار غيره",
   "favoriteTeamsSearchHint": "ابحث عن فريق",
-  "streakLongestLabel": "الأطول: {days}"
+  "streakLongestLabel": "الأطول: {days}",
+  "boardYouLead": "أنت في الصدارة 🥇",
+  "boardGapToRank": "{points} للوصول للمرتبة {rank}",
+  "boardPoints": "{count, plural, =0{{count} نقطة} =1{نقطة واحدة} =2{نقطتان} few{{count} نقاط} many{{count} نقطة} other{{count} نقطة}}",
+  "boardNotRanked": "لست في هذا الترتيب بعد",
+  "boardYourRank": "مركزك",
+  "boardYourRankIs": "مركزك {rank}",
+  "boardRankIs": "المركز {rank}",
+  "boardAccuracyIs": "الدقة {percent}%",
+  "boardYou": "أنت",
+  "boardListSeparator": "، ",
+  "boardColRank": "المركز",
+  "boardColPlayer": "اللاعب",
+  "boardColAccuracy": "الدقة",
+  "boardColMatches": "المباريات",
+  "boardColPoints": "النقاط",
+  "boardColMovement": "الحركة"
 }

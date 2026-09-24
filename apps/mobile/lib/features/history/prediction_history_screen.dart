@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/format/timestamps.dart';
 import '../../core/design/app_tokens.dart';
@@ -413,7 +414,7 @@ class _TeamMini extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-      style: TextStyle(color: tokens.textPrimary, fontSize: 13),
+      style: TextStyle(color: tokens.textPrimary, fontSize: AppFontSize.s13),
     );
 
     final List<Widget> children = alignEnd

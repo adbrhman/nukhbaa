@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -120,7 +121,10 @@ class _NotificationRow extends ConsumerWidget {
           Text(
             _formatDate(notification.createdAt),
             key: Key('notifications.createdAt.${notification.id}'),
-            style: TextStyle(color: tokens.textSecondary, fontSize: 12),
+            style: TextStyle(
+              color: tokens.textSecondary,
+              fontSize: AppFontSize.s12,
+            ),
           ),
         ],
       ),

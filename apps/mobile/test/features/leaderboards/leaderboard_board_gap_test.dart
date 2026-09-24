@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 BoardEntry _entry(String id, int rank, int points) => BoardEntry(
   participantId: id,
@@ -21,6 +22,9 @@ Future<void> _pump(WidgetTester tester, List<BoardEntry> entries, String me) =>
     tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          locale: const Locale('ar'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: LeaderboardBoard(
               entries: entries,

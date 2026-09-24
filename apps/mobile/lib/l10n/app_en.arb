@@ -1146,5 +1146,26 @@
         "type": "int"
       }
     }
-  }
+  },
+  "boardYouLead": "You lead 🥇",
+  "boardGapToRank": "{points} to reach rank {rank}",
+  "@boardGapToRank": {"placeholders": {"points": {"type": "String"}, "rank": {"type": "int"}}},
+  "boardPoints": "{count, plural, =1{1 point} other{{count} points}}",
+  "@boardPoints": {"placeholders": {"count": {"type": "int"}}},
+  "boardNotRanked": "You are not on this board yet",
+  "boardYourRank": "Your rank",
+  "boardYourRankIs": "Your rank {rank}",
+  "@boardYourRankIs": {"placeholders": {"rank": {"type": "int"}}},
+  "boardRankIs": "Rank {rank}",
+  "@boardRankIs": {"placeholders": {"rank": {"type": "int"}}},
+  "boardAccuracyIs": "Accuracy {percent}%",
+  "@boardAccuracyIs": {"placeholders": {"percent": {"type": "int"}}},
+  "boardYou": "You",
+  "boardListSeparator": ", ",
+  "boardColRank": "Rank",
+  "boardColPlayer": "Player",
+  "boardColAccuracy": "Accuracy",
+  "boardColMatches": "Matches",
+  "boardColPoints": "Points",
+  "boardColMovement": "Move"
 }

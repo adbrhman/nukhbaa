@@ -18,6 +18,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -211,7 +212,7 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
                 style: TextStyle(
                   color: tokens.textPrimary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 16,
+                  fontSize: AppFontSize.s16,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -333,7 +334,10 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Text(
                     l10n.fixturePredictionSavedMessage,
-                    style: TextStyle(color: tokens.primaryText, fontSize: 12),
+                    style: TextStyle(
+                      color: tokens.primaryText,
+                      fontSize: AppFontSize.s12,
+                    ),
                   ),
                 ),
               if (submission is FixtureSubmissionFailed)
@@ -342,7 +346,10 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
                   child: Text(
                     ErrorPresenter.message(submission.error),
                     key: Key('fixturePredictSheet.failure.$fixtureId'),
-                    style: TextStyle(color: tokens.error, fontSize: 12),
+                    style: TextStyle(
+                      color: tokens.error,
+                      fontSize: AppFontSize.s12,
+                    ),
                   ),
                 ),
             ],
@@ -467,7 +474,7 @@ class _QuickFillButton extends StatelessWidget {
                 style: TextStyle(
                   color: fg,
                   fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  fontSize: AppFontSize.s15,
                 ),
               ),
             ),
@@ -519,7 +526,7 @@ class _ScoreStepper extends StatelessWidget {
             style: TextStyle(
               color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
-              fontSize: 20,
+              fontSize: AppFontSize.s20,
             ),
           ),
         ),

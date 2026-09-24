@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../../core/design/app_typography.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
@@ -363,7 +364,10 @@ class _SelectedUserSummary extends StatelessWidget {
             backgroundColor: tokens.primary,
             child: Text(
               user.displayName.isEmpty ? '؟' : user.displayName.substring(0, 1),
-              style: const TextStyle(color: Colors.white, fontSize: 24),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppFontSize.s24,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),

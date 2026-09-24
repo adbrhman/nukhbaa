@@ -43,6 +43,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -266,7 +267,7 @@ class _CurrentMonthFixturesScreenState
             key: Key('currentMonthFixtures.title'),
             style: TextStyle(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: AppFontSize.s22,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.6,
             ),

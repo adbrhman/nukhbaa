@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_typography.dart';
 import '../design/app_tokens.dart';
 
 class StreakChip extends StatelessWidget {
@@ -28,7 +29,7 @@ class StreakChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: tokens.onPrimary,
-              fontSize: 10,
+              fontSize: AppFontSize.s10,
               fontWeight: FontWeight.w700,
             ),
           ),

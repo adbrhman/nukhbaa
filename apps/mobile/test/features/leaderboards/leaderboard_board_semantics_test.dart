@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 const String _p = 'sem';
 
@@ -37,6 +38,11 @@ Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
+        // The board speaks through the app's localizations; the labels
+        // below are the Arabic ones.
+        locale: const Locale('ar'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.dark,
         home: Scaffold(
           body: LeaderboardBoard(

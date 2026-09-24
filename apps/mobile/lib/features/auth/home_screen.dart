@@ -225,7 +225,7 @@ class _HighlightRow extends ConsumerWidget {
       textAlign: align,
       style: TextStyle(
         color: tokens.textPrimary,
-        fontSize: 13,
+        fontSize: AppFontSize.s13,
         fontWeight: FontWeight.w700,
       ),
     );
@@ -249,7 +249,10 @@ class _HighlightRow extends ConsumerWidget {
                 meta,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: tokens.textSecondary, fontSize: 12),
+                style: TextStyle(
+                  color: tokens.textSecondary,
+                  fontSize: AppFontSize.s12,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(
@@ -377,7 +380,7 @@ class _PendingPredictionsCard extends StatelessWidget {
                       key: const Key('home.pendingPredictions.count'),
                       style: TextStyle(
                         color: tokens.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFontSize.s13,
                       ),
                     ),
                   ],
@@ -441,7 +444,7 @@ class _HomeHeader extends ConsumerWidget {
                   key: Key('home.brand'),
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: AppFontSize.s22,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.6,
                   ),
@@ -554,7 +557,7 @@ class _OverviewCard extends StatelessWidget {
                 : _monthFixturesLabel(fixtureCount),
             style: TextStyle(
               color: tokens.onPrimary.withValues(alpha: 0.9),
-              fontSize: 13,
+              fontSize: AppFontSize.s13,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -570,7 +573,7 @@ class _OverviewCard extends StatelessWidget {
               // back to the system font.
               textStyle: const TextStyle(
                 fontFamily: AppTypography.fontFamily,
-                fontSize: 16,
+                fontSize: AppFontSize.s16,
                 fontWeight: FontWeight.w800,
               ),
             ),

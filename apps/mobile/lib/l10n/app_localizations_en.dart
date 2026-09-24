@@ -1472,4 +1472,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String streakLongestLabel(int days) {
     return 'Longest: $days';
   }
+
+  @override
+  String get boardYouLead => 'You lead 🥇';
+
+  @override
+  String boardGapToRank(String points, int rank) {
+    return '$points to reach rank $rank';
+  }
+
+  @override
+  String boardPoints(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count points',
+      one: '1 point',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get boardNotRanked => 'You are not on this board yet';
+
+  @override
+  String get boardYourRank => 'Your rank';
+
+  @override
+  String boardYourRankIs(int rank) {
+    return 'Your rank $rank';
+  }
+
+  @override
+  String boardRankIs(int rank) {
+    return 'Rank $rank';
+  }
+
+  @override
+  String boardAccuracyIs(int percent) {
+    return 'Accuracy $percent%';
+  }
+
+  @override
+  String get boardYou => 'You';
+
+  @override
+  String get boardListSeparator => ', ';
+
+  @override
+  String get boardColRank => 'Rank';
+
+  @override
+  String get boardColPlayer => 'Player';
+
+  @override
+  String get boardColAccuracy => 'Accuracy';
+
+  @override
+  String get boardColMatches => 'Matches';
+
+  @override
+  String get boardColPoints => 'Points';
+
+  @override
+  String get boardColMovement => 'Move';
 }

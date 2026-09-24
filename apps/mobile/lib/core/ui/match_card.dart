@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_typography.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
 import '../design/app_tokens.dart';
@@ -91,7 +92,7 @@ class MatchCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: tokens.textSecondary,
-                        fontSize: 11,
+                        fontSize: AppFontSize.s11,
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -116,7 +117,7 @@ class MatchCard extends StatelessWidget {
                 style: TextStyle(
                   color: tokens.primaryLight,
                   fontWeight: FontWeight.w800,
-                  fontSize: 12,
+                  fontSize: AppFontSize.s12,
                 ),
               ),
               const SizedBox(width: AppSpacing.xs),

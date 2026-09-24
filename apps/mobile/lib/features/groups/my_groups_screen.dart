@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -150,7 +151,7 @@ class _RoleBadge extends StatelessWidget {
       child: Text(
         isOwner ? l10n.groupRoleOwner : l10n.groupRoleMember,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.s12,
           fontWeight: FontWeight.bold,
           color: isOwner ? tokens.primaryText : tokens.textSecondary,
         ),

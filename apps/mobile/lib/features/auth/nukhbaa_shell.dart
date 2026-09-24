@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/notifications/push_link.dart';
@@ -258,7 +259,7 @@ class NukhbaaBottomNav extends StatelessWidget {
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
+                fontSize: AppFontSize.s10,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
               ),
             ),

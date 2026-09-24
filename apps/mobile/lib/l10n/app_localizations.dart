@@ -2639,6 +2639,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longest: {days}'**
   String streakLongestLabel(int days);
+
+  /// No description provided for @boardYouLead.
+  ///
+  /// In en, this message translates to:
+  /// **'You lead 🥇'**
+  String get boardYouLead;
+
+  /// No description provided for @boardGapToRank.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} to reach rank {rank}'**
+  String boardGapToRank(String points, int rank);
+
+  /// No description provided for @boardPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 point} other{{count} points}}'**
+  String boardPoints(int count);
+
+  /// No description provided for @boardNotRanked.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not on this board yet'**
+  String get boardNotRanked;
+
+  /// No description provided for @boardYourRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rank'**
+  String get boardYourRank;
+
+  /// No description provided for @boardYourRankIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rank {rank}'**
+  String boardYourRankIs(int rank);
+
+  /// No description provided for @boardRankIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank {rank}'**
+  String boardRankIs(int rank);
+
+  /// No description provided for @boardAccuracyIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy {percent}%'**
+  String boardAccuracyIs(int percent);
+
+  /// No description provided for @boardYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get boardYou;
+
+  /// No description provided for @boardListSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get boardListSeparator;
+
+  /// No description provided for @boardColRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get boardColRank;
+
+  /// No description provided for @boardColPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Player'**
+  String get boardColPlayer;
+
+  /// No description provided for @boardColAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get boardColAccuracy;
+
+  /// No description provided for @boardColMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get boardColMatches;
+
+  /// No description provided for @boardColPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get boardColPoints;
+
+  /// No description provided for @boardColMovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get boardColMovement;
 }
 
 class _AppLocalizationsDelegate

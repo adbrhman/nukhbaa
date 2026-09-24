@@ -13,6 +13,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/design/app_typography.dart';
 import '../../../core/design/app_motion.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
@@ -143,7 +144,7 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
               Text(
                 l10n.fixturesLiveLabel,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.s13,
                   fontWeight: FontWeight.w700,
                   color: foreground,
                 ),

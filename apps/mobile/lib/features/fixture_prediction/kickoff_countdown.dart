@@ -21,6 +21,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/design/app_typography.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -138,7 +139,7 @@ class _KickoffCountdownState extends State<KickoffCountdown>
     return Text(
       _format(l10n),
       key: const Key('kickoffCountdown.text'),
-      style: TextStyle(color: tokens.textSecondary, fontSize: 12),
+      style: TextStyle(color: tokens.textSecondary, fontSize: AppFontSize.s12),
     );
   }
 }

@@ -14,6 +14,7 @@ import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
+import '../../../l10n/app_localizations.dart';
 
 class BoardEntry {
   const BoardEntry({
@@ -108,10 +109,11 @@ class LeaderboardBoard extends StatelessWidget {
         viewer != null && !viewerLeads && entries.isNotEmpty
         ? entries.first.points - viewer.points
         : null;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final String? standing = viewerLeads
-        ? 'أنت في الصدارة 🥇'
+        ? l10n.boardYouLead
         : gapToLeader != null && gapToLeader > 0
-        ? '${_arabicPoints(gapToLeader)} للوصول للمرتبة ${entries.first.rank}'
+        ? l10n.boardGapToRank(l10n.boardPoints(gapToLeader), entries.first.rank)
         : null;
 
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -242,14 +244,15 @@ class _SummaryCard extends StatelessWidget {
       );
     }
 
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final String semantics = item == null
-        ? 'لست في هذا الترتيب بعد'
+        ? l10n.boardNotRanked
         : <String>[
-            'مركزك ${item.rank}',
-            _arabicPoints(item.points),
-            if (accuracyPercent != null) 'الدقة $accuracyPercent%',
+            l10n.boardYourRankIs(item.rank),
+            l10n.boardPoints(item.points),
+            if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
             if (line != null) line,
-          ].join('، ');
+          ].join(l10n.boardListSeparator);
 
     return Semantics(
       container: true,
@@ -272,7 +275,7 @@ class _SummaryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text('مركزك', style: labelStyle),
+                      Text(l10n.boardYourRank, style: labelStyle),
                       Text(
                         rank,
                         style: context.text.displaySmall?.copyWith(
@@ -284,9 +287,9 @@ class _SummaryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                metric('النقاط', points),
+                metric(l10n.boardColPoints, points),
                 const SizedBox(width: AppSpacing.xl),
-                metric('الدقة', accuracy),
+                metric(l10n.boardColAccuracy, accuracy),
               ],
             ),
             if (line != null) ...<Widget>[
@@ -580,6 +583,7 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     Widget cell(String name, String label, double width) => SizedBox(
       key: Key('boardHeader.$name'),
       width: width,
@@ -603,14 +607,14 @@ class _TableHeader extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              cell('rank', 'المركز', _rankColumnWidth),
+              cell('rank', l10n.boardColRank, _rankColumnWidth),
               const SizedBox(width: AppSpacing.sm),
-              const Expanded(child: Text('اللاعب')),
+              Expanded(child: Text(l10n.boardColPlayer)),
               const SizedBox(width: 4),
-              cell('accuracy', 'الدقة', _accuracyColumnWidth),
-              cell('matches', 'المباريات', _matchesColumnWidth),
-              cell('points', 'النقاط', _pointsColumnWidth),
-              cell('movement', 'الحركة', _movementColumnWidth),
+              cell('accuracy', l10n.boardColAccuracy, _accuracyColumnWidth),
+              cell('matches', l10n.boardColMatches, _matchesColumnWidth),
+              cell('points', l10n.boardColPoints, _pointsColumnWidth),
+              cell('movement', l10n.boardColMovement, _movementColumnWidth),
             ],
           ),
         ),
@@ -636,6 +640,7 @@ class _BoardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens t = context.tokens;
     final int? accuracyPercent = entry.accuracyPercent;
     final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
@@ -650,12 +655,12 @@ class _BoardRow extends StatelessWidget {
     return Semantics(
       container: true,
       label: <String>[
-        'المركز ${entry.rank}',
+        l10n.boardRankIs(entry.rank),
         entry.displayName,
-        _arabicPoints(entry.points),
-        if (accuracyPercent != null) 'الدقة $accuracyPercent%',
-        if (isMe) 'أنت',
-      ].join('، '),
+        l10n.boardPoints(entry.points),
+        if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
+        if (isMe) l10n.boardYou,
+      ].join(l10n.boardListSeparator),
       excludeSemantics: true,
       child: Container(
         key: Key('$keyPrefix.item.${entry.participantId}'),
@@ -844,14 +849,4 @@ class _OutcomeMark extends StatelessWidget {
       child: label == null ? mark : Tooltip(message: label, child: mark),
     );
   }
-}
-
-/// Arabic number agreement for a points figure: one, two, few (3-10) and
-/// many (11+) are different words, not a plural suffix.
-String _arabicPoints(int count) {
-  final int tail = count % 100;
-  if (count == 1) return 'نقطة واحدة';
-  if (count == 2) return 'نقطتان';
-  if (tail >= 3 && tail <= 10) return '$count نقاط';
-  return '$count نقطة';
 }

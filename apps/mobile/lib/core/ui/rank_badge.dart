@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_typography.dart';
 import '../design/app_tokens.dart';
 
 class RankBadge extends StatelessWidget {
@@ -24,7 +25,7 @@ class RankBadge extends StatelessWidget {
         medal ?? '$rank',
         style: TextStyle(
           color: tokens.textPrimary,
-          fontSize: medal == null ? 14 : 18,
+          fontSize: medal == null ? AppFontSize.s14 : AppFontSize.s18,
         ),
       ),
     );

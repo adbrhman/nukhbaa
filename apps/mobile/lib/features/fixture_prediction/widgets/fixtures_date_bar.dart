@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart' as intl;
 
+import '../../../core/design/app_typography.dart';
 import '../../../core/design/app_motion.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
@@ -234,7 +235,7 @@ class _DayTab extends StatelessWidget {
                               relative,
                               maxLines: 1,
                               style: const TextStyle(
-                                fontSize: 9,
+                                fontSize: AppFontSize.s9,
                                 height: 1.1,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.onBronze,
@@ -247,7 +248,7 @@ class _DayTab extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.s13,
                       height: 1.2,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
                       color: primaryText,
@@ -258,7 +259,7 @@ class _DayTab extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: AppFontSize.s10,
                       height: 1.2,
                       fontWeight: FontWeight.w600,
                       color: secondaryText,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../../core/design/app_typography.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
@@ -38,7 +39,7 @@ class _UnresolvedTeamHint extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(fontSize: 12, color: tokens.gold),
+              style: TextStyle(fontSize: AppFontSize.s12, color: tokens.gold),
             ),
           ),
         ],

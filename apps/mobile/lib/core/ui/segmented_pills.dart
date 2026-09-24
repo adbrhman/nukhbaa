@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../design/app_typography.dart';
 import '../design/app_motion.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
@@ -107,7 +108,7 @@ class _Pill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.s14,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: selected ? tokens.onPrimary : tokens.textSecondary,
               ),
