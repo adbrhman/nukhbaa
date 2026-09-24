@@ -3232,6 +3232,15 @@ validation, which refuses a report that cannot be true.
 Batch 48 is the server; the app's collector and the admin dashboard card
 follow in batch 49. **0070 must be on the live DB before deploying.**
 
+Migration 0071 (batch 50) adds `device_model` (nullable; `samsung
+SM-A105F`), read through `device_info_plus` -- already a direct dependency
+of the in-app updater, so nothing was added to pubspec. The app cleans the
+name to `^[0-9A-Za-z ._()+-]{1,60}$`, which the use-case and a CHECK both
+enforce; the web sends none. `GET /admin/frame-stats` gains `devices`: the
+five least smooth models, each only once **three distinct players** report
+it, so no row describes one person's phone. **0071 must be on the live DB
+before deploying.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

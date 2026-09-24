@@ -41,6 +41,13 @@ final class RecordFrameReport {
 
   static final RegExp _build = RegExp(r'^[0-9A-Za-z._-]{1,40}$');
 
+  /// What a device model may look like (migration 0071): letters, digits,
+  /// spaces and `._()+-`, at most 60 characters. The app cleans the name to
+  /// this shape before sending.
+  static final RegExp deviceModelPattern = RegExp(
+    r'^[0-9A-Za-z ._()+-]{1,60}$',
+  );
+
   /// Keeps [report] from [principal].
   Future<Result<void>> call({
     required AuthenticatedUser principal,
@@ -62,7 +69,9 @@ final class RecordFrameReport {
         report.frozenFrames >= 0 &&
         report.frozenFrames <= report.slowFrames &&
         report.worstFrameMs >= 0 &&
-        report.worstFrameMs <= maxFrameMs;
+        report.worstFrameMs <= maxFrameMs &&
+        (report.deviceModel == null ||
+            deviceModelPattern.hasMatch(report.deviceModel!));
     if (!valid) {
       return const Result.err(
         AppError.validation('perf.invalid_report', 'Invalid frame report'),

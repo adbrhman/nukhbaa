@@ -19,6 +19,9 @@ final class _FakeReports implements FrameReportRepository {
   DateTime? since;
   int? maxBuilds;
   List<FrameTotals> answer = const [];
+  List<DeviceTotals> deviceAnswer = const [];
+  int? minUsers;
+  bool failDevices = false;
 
   @override
   Future<Result<void>> record({
@@ -39,6 +42,19 @@ final class _FakeReports implements FrameReportRepository {
     this.maxBuilds = maxBuilds;
     return Result.ok(answer);
   }
+
+  @override
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
+  }) async {
+    this.minUsers = minUsers;
+    if (failDevices) {
+      return const Result.err(AppError.transient('db.down', 'down'));
+    }
+    return Result.ok(deviceAnswer);
+  }
 }
 
 const _player = AuthenticatedUser(
@@ -58,6 +74,7 @@ FrameReport _report({
   int slow = 30,
   int frozen = 1,
   int worst = 900,
+  String? model,
 }) => FrameReport(
   build: build,
   platform: platform,
@@ -66,6 +83,7 @@ FrameReport _report({
   slowFrames: slow,
   frozenFrames: frozen,
   worstFrameMs: worst,
+  deviceModel: model,
 );
 
 FrameTotals _totals(String? build, int frames) => FrameTotals(
@@ -112,6 +130,9 @@ void main() {
         _report(build: 'x' * 41),
         _report(build: 'drop table'),
         _report(worst: -1),
+        _report(model: 'Galaxy/A10'),
+        _report(model: 'x' * 61),
+        _report(model: ''),
       ]) {
         final result = await use(principal: _player, report: bad);
         expect(result.isErr, isTrue);
@@ -119,6 +140,19 @@ void main() {
       }
       expect(reports.kept, isEmpty);
     });
+  });
+
+  test('a device model in the allowed shape is kept', () async {
+    final reports = _FakeReports();
+
+    final result =
+        await RecordFrameReport(reports: reports, clock: _FixedClock(now))(
+          principal: _player,
+          report: _report(model: 'samsung SM-A105F'),
+        );
+
+    expect(result.isOk, isTrue);
+    expect(reports.kept.single.$2.deviceModel, 'samsung SM-A105F');
   });
 
   group('AdminGetFrameStats', () {
@@ -155,6 +189,39 @@ void main() {
       final zero = await use(principal: _admin, days: 0);
       expect((zero as Ok<FrameStats>).value.windowDays, 7);
     });
+
+    test(
+      'lists devices with enough players; a failed list costs only it',
+      () async {
+        const device = DeviceTotals(
+          deviceModel: 'samsung SM-A105F',
+          reports: 9,
+          users: 4,
+          frames: 9000,
+          slowFrames: 1800,
+          frozenFrames: 2,
+        );
+        final reports = _FakeReports()
+          ..answer = [_totals(null, 5000)]
+          ..deviceAnswer = [device];
+        final use = AdminGetFrameStats(
+          reports: reports,
+          clock: _FixedClock(now),
+        );
+
+        final ok = await use(principal: _admin);
+        expect(
+          (ok as Ok<FrameStats>).value.devices.single.deviceModel,
+          'samsung SM-A105F',
+        );
+        expect(reports.minUsers, AdminGetFrameStats.minUsersPerDevice);
+
+        reports.failDevices = true;
+        final partial = await use(principal: _admin);
+        expect((partial as Ok<FrameStats>).value.devices, isEmpty);
+        expect(partial.value.overall.frames, 5000);
+      },
+    );
 
     test('a player is refused', () async {
       final result = await AdminGetFrameStats(

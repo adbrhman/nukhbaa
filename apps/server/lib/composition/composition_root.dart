@@ -3348,6 +3348,13 @@ final class _UnwiredPushOpenRepository implements PushOpenRepository {
 /// Refuses every call: see [_absentRecordFrameReport].
 final class _UnwiredFrameReportRepository implements FrameReportRepository {
   @override
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
+  }) => throw StateError('frame reports were not wired into this test root');
+
+  @override
   Future<Result<void>> record({
     required UserId userId,
     required FrameReport report,

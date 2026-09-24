@@ -77,6 +77,49 @@ void main() {
     expect(sent, isEmpty);
   });
 
+  test('the device model read at start rides on the report', () async {
+    final sent = <FrameReportDto>[];
+    final r = FrameReporter(
+      send: (report) async => sent.add(report),
+      build: 'abc1234',
+      platform: 'android',
+      refreshRateHz: () => 60,
+      readDeviceModel: () async => 'samsung SM-A105F',
+    )..start();
+    addTearDown(r.stop);
+    await Future<void>.delayed(Duration.zero);
+    for (int i = 0; i < 150; i++) {
+      r.addFrame(build: _ms(4), raster: _ms(4));
+    }
+
+    await r.flush();
+
+    expect(r.deviceModel, 'samsung SM-A105F');
+    expect(sent.single.deviceModel, 'samsung SM-A105F');
+  });
+
+  test('a model the platform will not give is simply absent', () async {
+    final r = FrameReporter(
+      send: (_) async {},
+      build: 'abc1234',
+      platform: 'android',
+      refreshRateHz: () => 60,
+      readDeviceModel: () async => throw StateError('no plugin'),
+    )..start();
+    addTearDown(r.stop);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(r.deviceModel, isNull);
+  });
+
+  test('model names are cleaned to what the server accepts', () {
+    expect(FrameReporter.cleanModel('Galaxy/A10  (2019)'), 'Galaxy A10 (2019)');
+    expect(FrameReporter.cleanModel('   '), isNull);
+    expect(FrameReporter.cleanModel(null), isNull);
+    expect(FrameReporter.cleanModel('x' * 80)!.length, 60);
+    expect(FrameReporter.cleanModel('Redmi Note 8 Pro'), 'Redmi Note 8 Pro');
+  });
+
   test('a failing send never throws', () async {
     final r = FrameReporter(
       send: (_) async => throw StateError('offline'),

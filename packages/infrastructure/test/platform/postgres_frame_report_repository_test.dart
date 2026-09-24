@@ -70,7 +70,38 @@ void main() {
       'slow_frames': 30,
       'frozen_frames': 1,
       'worst_frame_ms': 900,
+      'device_model': null,
     });
+  });
+
+  test('devices map rows and pass the privacy floor', () async {
+    final connection = _FakeConnection(
+      const Result.ok([
+        {
+          'device_model': 'samsung SM-A105F',
+          'reports': 9,
+          'users': 4,
+          'frames': 9000,
+          'slow_frames': 1800,
+          'frozen_frames': 2,
+        },
+      ]),
+    );
+    final since = DateTime.utc(2026, 9, 17, 12);
+
+    final result = await PostgresFrameReportRepository(
+      connection,
+    ).devices(since: since, minUsers: 3, limit: 5);
+
+    final rows = (result as Ok<List<DeviceTotals>>).value;
+    expect(rows.single.deviceModel, 'samsung SM-A105F');
+    expect(rows.single.slowFrames, 1800);
+    expect(connection.params.single, {
+      'since': since,
+      'min_users': 3,
+      'limit': 5,
+    });
+    expect(connection.sqls.single, contains('count(DISTINCT user_id) >='));
   });
 
   test('totals map rows, overall first, empty window as zeros', () async {

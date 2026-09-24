@@ -21,6 +21,7 @@ final class _FixedClock implements Clock {
 
 final class _MemoryReports implements FrameReportRepository {
   final List<FrameReport> kept = [];
+  final List<DeviceTotals> deviceAnswer = const [];
 
   @override
   Future<Result<void>> record({
@@ -31,6 +32,13 @@ final class _MemoryReports implements FrameReportRepository {
     kept.add(report);
     return const Result.ok(null);
   }
+
+  @override
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
+  }) async => Result.ok(deviceAnswer);
 
   @override
   Future<Result<List<FrameTotals>>> totals({
@@ -65,6 +73,7 @@ Map<String, Object?> _body({int slow = 30}) => {
   'slow_frames': slow,
   'frozen_frames': 1,
   'worst_frame_ms': 900,
+  'device_model': 'samsung SM-A105F',
 };
 
 void main() {
@@ -78,6 +87,20 @@ void main() {
       expect((await decodeBody(response))['recorded'], true);
       expect(reports.kept.single.slowFrames, 30);
       expect(reports.kept.single.refreshRateHz, 120);
+      expect(reports.kept.single.deviceModel, 'samsung SM-A105F');
+    });
+
+    test('an app from before 0071 sends no model and is still kept', () async {
+      final reports = _MemoryReports();
+
+      final response = await _call(
+        reports,
+        HttpMethod.post,
+        body: Map<String, Object?>.of(_body())..remove('device_model'),
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(reports.kept.single.deviceModel, isNull);
     });
 
     test('an impossible or incomplete report is 400, nothing kept', () async {

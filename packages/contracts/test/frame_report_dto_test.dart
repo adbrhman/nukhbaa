@@ -13,6 +13,7 @@ void main() {
       slowFrames: 30,
       frozenFrames: 1,
       worstFrameMs: 900,
+      deviceModel: 'samsung SM-A105F',
     );
 
     final back = FrameReportDto.fromJson(
@@ -37,6 +38,16 @@ void main() {
       windowDays: 7,
       overall: totals,
       builds: [totals],
+      devices: [
+        DeviceTotalsDto(
+          deviceModel: 'samsung SM-A105F',
+          reports: 9,
+          users: 4,
+          frames: 9000,
+          slowFrames: 1800,
+          frozenFrames: 2,
+        ),
+      ],
     );
 
     final back = AdminFrameStatsDto.fromJson(
@@ -46,6 +57,7 @@ void main() {
     expect(back.toJson(), dto.toJson());
     expect(back.overall.slowPercent, 2.5);
     expect(back.overall.frozenPercent, 0.04);
+    expect(back.devices.single.slowPercent, 20);
     expect(
       const FrameTotalsDto(
         build: null,

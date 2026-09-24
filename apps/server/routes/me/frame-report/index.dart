@@ -14,7 +14,8 @@ import 'package:shared/shared.dart';
 ///
 /// Inherits `bearerAuth` from `routes/me/_middleware.dart`, so an
 /// unauthenticated request never arrives here. Every field is required; the
-/// use-case refuses a report that cannot be true.
+/// use-case refuses a report that cannot be true. `device_model` is the
+/// one optional field (migration 0071): an app from before it omits it.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -49,6 +50,15 @@ Future<Response> onRequest(RequestContext context) async {
     }
   }
   int value(String field) => (ints[field]! as Ok<int>).value;
+  final Object? rawModel = body['device_model'];
+  if (rawModel != null && rawModel is! String) {
+    return errorResponse(
+      const AppError.validation(
+        'request.field_invalid',
+        'Field "device_model" must be a string',
+      ),
+    );
+  }
 
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
@@ -63,6 +73,7 @@ Future<Response> onRequest(RequestContext context) async {
       slowFrames: value('slow_frames'),
       frozenFrames: value('frozen_frames'),
       worstFrameMs: value('worst_frame_ms'),
+      deviceModel: rawModel as String?,
     ),
   );
 

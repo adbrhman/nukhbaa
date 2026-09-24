@@ -20,7 +20,8 @@ const double _jankyFrom = 15;
 /// Smoothness over the last week: the share of slow and frozen frames, the
 /// slowest frame, how many sessions and players it rests on, and the same
 /// per build, newest first, so a regression shows against the build that
-/// brought it.
+/// brought it; and the device models that suffer most, each only once
+/// several players report it (migration 0071).
 class AdminFrameStatsCard extends ConsumerWidget {
   /// Creates the card.
   const AdminFrameStatsCard({super.key});
@@ -115,6 +116,47 @@ class _Body extends StatelessWidget {
           '${stats.windowDays} أيام',
           style: muted,
         ),
+        if (stats.devices.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'أكثر الأجهزة معاناة',
+            style: context.text.labelLarge?.copyWith(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (final DeviceTotalsDto d in stats.devices)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                key: Key('admin.frameStats.device.${d.deviceModel}'),
+                children: [
+                  Expanded(
+                    child: Text(
+                      d.deviceModel,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.start,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall?.copyWith(
+                        color: t.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _percent(d.slowPercent),
+                    style: context.text.labelMedium?.copyWith(
+                      color: verdict(d.slowPercent),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Text('${d.users} مستخدم', style: muted),
+                ],
+              ),
+            ),
+        ],
         if (stats.builds.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
           for (final FrameTotalsDto b in stats.builds)

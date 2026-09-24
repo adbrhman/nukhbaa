@@ -52,6 +52,16 @@ void main() {
           _totals('new1234', frames: 5000, slow: 50),
           _totals('old1234', frames: 3000, slow: 600),
         ],
+        devices: const [
+          DeviceTotalsDto(
+            deviceModel: 'samsung SM-A105F',
+            reports: 9,
+            users: 4,
+            frames: 9000,
+            slowFrames: 1800,
+            frozenFrames: 2,
+          ),
+        ],
       ),
     );
 
@@ -68,7 +78,19 @@ void main() {
       find.byKey(const Key('admin.frameStats.build.old1234')),
       findsOneWidget,
     );
-    expect(find.text('20%'), findsOneWidget, reason: 'old build: 600 of 3000');
+    expect(
+      find.text('20%'),
+      findsNWidgets(2),
+      reason: 'the old build (600 of 3000) and the device (1800 of 9000)',
+    );
+    final Finder device = find.byKey(
+      const Key('admin.frameStats.device.samsung SM-A105F'),
+    );
+    expect(device, findsOneWidget);
+    expect(
+      find.descendant(of: device, matching: find.text('4 مستخدم')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('an empty week says so', (tester) async {

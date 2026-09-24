@@ -24,6 +24,7 @@ final class _Reports implements FrameReportRepository {
 
   final List<FrameTotals> answer;
   DateTime? since;
+  List<DeviceTotals> deviceAnswer = const [];
 
   @override
   Future<Result<void>> record({
@@ -31,6 +32,13 @@ final class _Reports implements FrameReportRepository {
     required FrameReport report,
     required DateTime reportedAt,
   }) async => const Result.ok(null);
+
+  @override
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
+  }) async => Result.ok(deviceAnswer);
 
   @override
   Future<Result<List<FrameTotals>>> totals({
@@ -75,7 +83,17 @@ Future<Response> _call(
 void main() {
   group('GET /admin/frame-stats', () {
     test('an admin reads the totals, overall and per build', () async {
-      final reports = _Reports([_t(null), _t('abc1234')]);
+      final reports = _Reports([_t(null), _t('abc1234')])
+        ..deviceAnswer = const [
+          DeviceTotals(
+            deviceModel: 'samsung SM-A105F',
+            reports: 9,
+            users: 4,
+            frames: 9000,
+            slowFrames: 1800,
+            frozenFrames: 2,
+          ),
+        ];
 
       final response = await _call(
         reports,
@@ -93,6 +111,10 @@ void main() {
       final builds = body['builds']! as List<Object?>;
       expect((builds.single! as Map<String, Object?>)['build'], 'abc1234');
       expect(reports.since, DateTime.utc(2026, 9, 10, 12));
+      final devices = body['devices']! as List<Object?>;
+      final device = devices.single! as Map<String, Object?>;
+      expect(device['device_model'], 'samsung SM-A105F');
+      expect(device['users'], 4);
     });
 
     test('a player is refused', () async {

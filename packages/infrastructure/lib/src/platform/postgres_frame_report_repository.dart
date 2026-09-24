@@ -3,7 +3,7 @@ import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:shared/shared.dart';
 
-/// Postgres-backed [FrameReportRepository] (migration 0070).
+/// Postgres-backed [FrameReportRepository] (migrations 0070, 0071).
 ///
 /// Total (Application ADR section 2): never throws, binds every value
 /// through a `@named` parameter.
@@ -16,11 +16,11 @@ final class PostgresFrameReportRepository implements FrameReportRepository {
   static const String _insertSql = '''
 INSERT INTO ops.frame_reports (
   user_id, reported_at, build, platform, refresh_rate_hz,
-  frames, slow_frames, frozen_frames, worst_frame_ms
+  frames, slow_frames, frozen_frames, worst_frame_ms, device_model
 )
 VALUES (
   @user_id, @reported_at, @build, @platform, @refresh_rate_hz,
-  @frames, @slow_frames, @frozen_frames, @worst_frame_ms
+  @frames, @slow_frames, @frozen_frames, @worst_frame_ms, @device_model
 )
 ''';
 
@@ -63,6 +63,27 @@ SELECT * FROM (
 ORDER BY ord, last_reported_at DESC NULLS LAST
 ''';
 
+  // Least smooth first: the share of slow frames, then the most sessions.
+  // A model only with enough distinct users that no row is one person.
+  static const String _devicesSql = '''
+SELECT
+  device_model,
+  count(*)::bigint AS reports,
+  count(DISTINCT user_id)::bigint AS users,
+  sum(frames)::bigint AS frames,
+  sum(slow_frames)::bigint AS slow_frames,
+  sum(frozen_frames)::bigint AS frozen_frames
+FROM ops.frame_reports
+WHERE reported_at >= @since
+  AND device_model IS NOT NULL
+GROUP BY device_model
+HAVING count(DISTINCT user_id) >= @min_users
+ORDER BY
+  sum(slow_frames)::float8 / nullif(sum(frames), 0) DESC NULLS LAST,
+  count(*) DESC
+LIMIT @limit
+''';
+
   @override
   Future<Result<void>> record({
     required UserId userId,
@@ -81,6 +102,7 @@ ORDER BY ord, last_reported_at DESC NULLS LAST
         'slow_frames': report.slowFrames,
         'frozen_frames': report.frozenFrames,
         'worst_frame_ms': report.worstFrameMs,
+        'device_model': report.deviceModel,
       },
     );
     return switch (result) {
@@ -111,6 +133,36 @@ ORDER BY ord, last_reported_at DESC NULLS LAST
             frozenFrames: (row['frozen_frames'] as num).toInt(),
             worstFrameMs: (row['worst_frame_ms'] as num).toInt(),
             lastReportedAt: (row['last_reported_at'] as DateTime?)?.toUtc(),
+          ),
+      ]),
+    };
+  }
+
+  @override
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
+  }) async {
+    final result = await _connection.query(
+      _devicesSql,
+      parameters: {
+        'since': since.toUtc(),
+        'min_users': minUsers,
+        'limit': limit,
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok([
+        for (final row in value)
+          DeviceTotals(
+            deviceModel: row['device_model'] as String,
+            reports: (row['reports'] as num).toInt(),
+            users: (row['users'] as num).toInt(),
+            frames: (row['frames'] as num).toInt(),
+            slowFrames: (row['slow_frames'] as num).toInt(),
+            frozenFrames: (row['frozen_frames'] as num).toInt(),
           ),
       ]),
     };

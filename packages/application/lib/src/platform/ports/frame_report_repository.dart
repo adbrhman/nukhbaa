@@ -16,6 +16,7 @@ final class FrameReport {
     required this.slowFrames,
     required this.frozenFrames,
     required this.worstFrameMs,
+    this.deviceModel,
   });
 
   /// The build's short commit sha, as the OTA check knows it.
@@ -38,6 +39,10 @@ final class FrameReport {
 
   /// The slowest frame's longer phase, in milliseconds.
   final int worstFrameMs;
+
+  /// The device's maker and model (`samsung SM-A105F`); null when the app
+  /// could not read it or predates migration 0071.
+  final String? deviceModel;
 }
 
 /// Summed [FrameReport]s over a window: for every build ([build] is null),
@@ -80,7 +85,38 @@ final class FrameTotals {
   final DateTime? lastReportedAt;
 }
 
-/// Port over `ops.frame_reports` (migration 0070).
+/// Summed [FrameReport]s of one device model over a window.
+final class DeviceTotals {
+  /// Creates the totals.
+  const DeviceTotals({
+    required this.deviceModel,
+    required this.reports,
+    required this.users,
+    required this.frames,
+    required this.slowFrames,
+    required this.frozenFrames,
+  });
+
+  /// The maker and model.
+  final String deviceModel;
+
+  /// Session reports summed.
+  final int reports;
+
+  /// Distinct users behind them.
+  final int users;
+
+  /// Frames drawn.
+  final int frames;
+
+  /// Frames over one refresh interval.
+  final int slowFrames;
+
+  /// Frames over 700 ms.
+  final int frozenFrames;
+}
+
+/// Port over `ops.frame_reports` (migrations 0070, 0071).
 ///
 /// General contract (Application ADR section 2): never throws, maps driver
 /// failures to [ErrorKind.transient].
@@ -97,5 +133,14 @@ abstract interface class FrameReportRepository {
   Future<Result<List<FrameTotals>>> totals({
     required DateTime since,
     required int maxBuilds,
+  });
+
+  /// Per device model since [since], the least smooth first, at most
+  /// [limit]; a model only when at least [minUsers] distinct users report
+  /// it, so no row describes one person's phone.
+  Future<Result<List<DeviceTotals>>> devices({
+    required DateTime since,
+    required int minUsers,
+    required int limit,
   });
 }

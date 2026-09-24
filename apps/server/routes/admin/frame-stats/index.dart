@@ -33,6 +33,17 @@ Future<Response> onRequest(RequestContext context) async {
         windowDays: value.windowDays,
         overall: _totals(value.overall),
         builds: [for (final b in value.builds) _totals(b)],
+        devices: [
+          for (final d in value.devices)
+            DeviceTotalsDto(
+              deviceModel: d.deviceModel,
+              reports: d.reports,
+              users: d.users,
+              frames: d.frames,
+              slowFrames: d.slowFrames,
+              frozenFrames: d.frozenFrames,
+            ),
+        ],
       ).toJson(),
     ),
     Err<FrameStats>(:final error) => errorResponse(error),

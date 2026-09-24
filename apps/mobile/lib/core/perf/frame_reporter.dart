@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'dart:ui' show FrameTiming;
 
 import 'package:contracts/contracts.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -28,8 +29,10 @@ class FrameReporter with WidgetsBindingObserver {
     required this.build,
     required this.platform,
     int Function()? refreshRateHz,
+    Future<String?> Function()? readDeviceModel,
   }) : _send = send,
-       _refreshRateHz = refreshRateHz ?? _displayRefreshRate;
+       _refreshRateHz = refreshRateHz ?? _displayRefreshRate,
+       _readDeviceModel = readDeviceModel ?? _deviceModelFromPlatform;
 
   /// The build's short commit sha; empty in local and test builds.
   final String build;
@@ -39,6 +42,12 @@ class FrameReporter with WidgetsBindingObserver {
 
   final Future<void> Function(FrameReportDto report) _send;
   final int Function() _refreshRateHz;
+  final Future<String?> Function() _readDeviceModel;
+
+  /// The device's maker and model, read once at [start]; null until then,
+  /// on the web, or when the platform would not say.
+  String? get deviceModel => _deviceModel;
+  String? _deviceModel;
 
   /// Past this, a frame counts as frozen.
   static const Duration frozenAfter = Duration(milliseconds: 700);
@@ -67,10 +76,49 @@ class FrameReporter with WidgetsBindingObserver {
     return hz.isFinite && hz >= 1 ? hz.round().clamp(1, 480) : 60;
   }
 
+  /// Cleans a platform's model name to what the server accepts (migration
+  /// 0071): letters, digits, spaces and `._()+-`, at most 60 characters.
+  /// Anything else becomes a space; nothing left means no model.
+  static String? cleanModel(String? raw) {
+    if (raw == null) return null;
+    final String cleaned = raw
+        .replaceAll(RegExp(r'[^0-9A-Za-z ._()+-]'), ' ')
+        .replaceAll(RegExp(r' +'), ' ')
+        .trim();
+    if (cleaned.isEmpty) return null;
+    return cleaned.length > 60 ? cleaned.substring(0, 60).trim() : cleaned;
+  }
+
+  /// The maker and model from the OS (`samsung SM-A105F`), through the
+  /// device_info_plus the in-app updater already depends on. The web has
+  /// no model, only a user agent, so it reports none.
+  static Future<String?> _deviceModelFromPlatform() async {
+    if (kIsWeb) return null;
+    final DeviceInfoPlugin plugin = DeviceInfoPlugin();
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return (await plugin.iosInfo).utsname.machine;
+    }
+    final AndroidDeviceInfo info = await plugin.androidInfo;
+    final String maker = info.manufacturer;
+    final String model = info.model;
+    return model.toLowerCase().startsWith(maker.toLowerCase())
+        ? model
+        : '$maker $model';
+  }
+
+  Future<void> _loadDeviceModel() async {
+    try {
+      _deviceModel = cleanModel(await _readDeviceModel());
+    } on Object catch (_) {
+      _deviceModel = null;
+    }
+  }
+
   /// Starts counting and listening for the app leaving the foreground.
   void start() {
     if (_started) return;
     _started = true;
+    unawaited(_loadDeviceModel());
     SchedulerBinding.instance.addTimingsCallback(_onTimings);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -119,6 +167,7 @@ class FrameReporter with WidgetsBindingObserver {
       slowFrames: _slow,
       frozenFrames: _frozen,
       worstFrameMs: (_worstMicros / 1000).round(),
+      deviceModel: _deviceModel,
     );
     _frames = 0;
     _slow = 0;
