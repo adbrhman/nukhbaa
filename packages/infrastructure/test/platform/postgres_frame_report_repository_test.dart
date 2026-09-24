@@ -146,6 +146,61 @@ void main() {
     expect(connection.params.single, {'since': since, 'max_builds': 5});
   });
 
+  test('totals keep the platform of each build row', () async {
+    final at = DateTime.utc(2026, 9, 24, 9);
+    final connection = _FakeConnection(
+      Result.ok([
+        {
+          'build': null,
+          'platform': null,
+          'reports': 3,
+          'users': 2,
+          'frames': 6000,
+          'slow_frames': 120,
+          'frozen_frames': 2,
+          'worst_frame_ms': 1200,
+          'last_reported_at': at,
+          'ord': 0,
+        },
+        {
+          'build': 'abc1234',
+          'platform': 'android',
+          'reports': 2,
+          'users': 1,
+          'frames': 5000,
+          'slow_frames': 110,
+          'frozen_frames': 2,
+          'worst_frame_ms': 1200,
+          'last_reported_at': at,
+          'ord': 1,
+        },
+        {
+          'build': 'abc1234',
+          'platform': 'web',
+          'reports': 1,
+          'users': 1,
+          'frames': 1000,
+          'slow_frames': 10,
+          'frozen_frames': 0,
+          'worst_frame_ms': 90,
+          'last_reported_at': at,
+          'ord': 1,
+        },
+      ]),
+    );
+
+    final result = await PostgresFrameReportRepository(
+      connection,
+    ).totals(since: DateTime.utc(2026, 9, 17, 12), maxBuilds: 5);
+
+    final rows = (result as Ok<List<FrameTotals>>).value;
+    expect(rows.map((r) => r.build), [null, 'abc1234', 'abc1234']);
+    expect(rows.map((r) => r.platform), [null, 'android', 'web']);
+    expect(rows[1].slowFrames, 110);
+    expect(rows[2].slowFrames, 10);
+    expect(connection.sqls.single, contains('GROUP BY build, platform'));
+  });
+
   test('a driver failure comes back as an error, never a throw', () async {
     final connection = _FakeConnection(
       const Result.err(AppError.transient('db.down', 'down')),

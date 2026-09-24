@@ -3301,6 +3301,18 @@ score under the predicted one, and the verdict with the server's points
 (❌ none, ✅ points, 🔥 a double that scored). That line then carries the
 verdict, so the first line keeps the kickoff alone.
 
+### Frame smoothness: a build reads once per platform (batch 56)
+
+Requested 2026-09-24. The admin card mixed the web with the phones: on the
+live data a build's 10.3% slow frames were all Android while the web
+builds beside it sat at 2%, and the per-build lines could not tell them
+apart. `GET /admin/frame-stats` now returns one row per build **and
+platform** (`builds[].platform`, omitted on the overall row), for the five
+newest builds -- the limit counts builds, so a build's platforms never
+crowd another build out. The card writes `sha · platform`. The overall
+line above is unchanged (every platform together). No migration: the
+column already exists.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

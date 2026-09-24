@@ -52,6 +52,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 FrameTotalsDto _totals(FrameTotals t) => FrameTotalsDto(
   build: t.build,
+  platform: t.platform,
   reports: t.reports,
   users: t.users,
   frames: t.frames,

@@ -24,13 +24,17 @@ VALUES (
 )
 ''';
 
-  // The first row is every build together (build is null, ord 0); then
-  // one row per build, newest report first. Counts are cast to bigint so
-  // the driver hands back plain ints.
+  // The first row is every build together (build and platform are null,
+  // ord 0); then one row per build and platform, newest report first, for
+  // the @max_builds newest builds. The same build on the web and on a
+  // phone reads as two rows: the two do not draw alike, and mixed they
+  // hide which one is slow. Counts are cast to bigint so the driver
+  // hands back plain ints.
   static const String _totalsSql = '''
 SELECT * FROM (
   SELECT
     NULL::text AS build,
+    NULL::text AS platform,
     count(*)::bigint AS reports,
     count(DISTINCT user_id)::bigint AS users,
     coalesce(sum(frames), 0)::bigint AS frames,
@@ -45,6 +49,7 @@ SELECT * FROM (
   (
     SELECT
       build,
+      platform,
       count(*)::bigint,
       count(DISTINCT user_id)::bigint,
       coalesce(sum(frames), 0)::bigint,
@@ -55,9 +60,16 @@ SELECT * FROM (
       1
     FROM ops.frame_reports
     WHERE reported_at >= @since
-    GROUP BY build
+      AND build IN (
+        SELECT build
+        FROM ops.frame_reports
+        WHERE reported_at >= @since
+        GROUP BY build
+        ORDER BY max(reported_at) DESC
+        LIMIT @max_builds
+      )
+    GROUP BY build, platform
     ORDER BY max(reported_at) DESC
-    LIMIT @max_builds
   )
 ) totals
 ORDER BY ord, last_reported_at DESC NULLS LAST
@@ -126,6 +138,7 @@ LIMIT @limit
         for (final row in value)
           FrameTotals(
             build: row['build'] as String?,
+            platform: row['platform'] as String?,
             reports: (row['reports'] as num).toInt(),
             users: (row['users'] as num).toInt(),
             frames: (row['frames'] as num).toInt(),

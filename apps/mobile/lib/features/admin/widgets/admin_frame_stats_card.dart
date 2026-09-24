@@ -19,8 +19,9 @@ const double _jankyFrom = 15;
 
 /// Smoothness over the last week: the share of slow and frozen frames, the
 /// slowest frame, how many sessions and players it rests on, and the same
-/// per build, newest first, so a regression shows against the build that
-/// brought it; and the device models that suffer most, each only once
+/// per build and platform (a phone and the web do not draw alike), newest
+/// first, so a regression shows against the build that brought it; and
+/// the device models that suffer most, each only once
 /// several players report it (migration 0071).
 class AdminFrameStatsCard extends ConsumerWidget {
   /// Creates the card.
@@ -160,9 +161,9 @@ class _Body extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: Row(
-                key: Key('admin.frameStats.build.${b.build}'),
+                key: Key(_buildKey(b)),
                 children: [
-                  Expanded(child: _Label(b.build ?? '—', style: muted)),
+                  Expanded(child: _Label(_buildLabel(b), style: muted)),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     _percent(b.slowPercent),
@@ -217,3 +218,16 @@ String _percent(double value) {
       : value.toString();
   return _ltr('$text%');
 }
+
+/// A build's line: its sha, and the platform when the row is one
+/// platform's (`34eed55 · android`).
+String _buildLabel(FrameTotalsDto b) {
+  final String sha = b.build ?? '—';
+  final String? platform = b.platform;
+  return platform == null ? sha : '$sha · $platform';
+}
+
+/// The row's key: the build alone, or the build and its platform.
+String _buildKey(FrameTotalsDto b) => b.platform == null
+    ? 'admin.frameStats.build.${b.build}'
+    : 'admin.frameStats.build.${b.build}.${b.platform}';

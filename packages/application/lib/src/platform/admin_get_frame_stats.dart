@@ -24,7 +24,7 @@ final class FrameStats {
   /// Every build together.
   final FrameTotals overall;
 
-  /// One entry per build, newest first.
+  /// One entry per build and platform, newest first.
   final List<FrameTotals> builds;
 
   /// The least smooth device models, each reported by several players.
@@ -51,7 +51,7 @@ final class AdminGetFrameStats {
   /// The longest window a read may scan.
   static const int maxDays = 30;
 
-  /// How many builds are broken out.
+  /// How many builds are broken out (each once per platform it ran on).
   static const int maxBuilds = 5;
 
   /// How many device models are listed.

@@ -46,7 +46,7 @@ final class FrameReport {
 }
 
 /// Summed [FrameReport]s over a window: for every build ([build] is null),
-/// or for one build.
+/// or for one build on one platform.
 final class FrameTotals {
   /// Creates the totals.
   const FrameTotals({
@@ -58,10 +58,15 @@ final class FrameTotals {
     required this.frozenFrames,
     required this.worstFrameMs,
     required this.lastReportedAt,
+    this.platform,
   });
 
   /// The build these totals cover; null for all builds together.
   final String? build;
+
+  /// The platform of this row (`android`, `ios` or `web`), so one build
+  /// reads once for each platform it ran on; null for all builds together.
+  final String? platform;
 
   /// Session reports summed.
   final int reports;
@@ -129,7 +134,8 @@ abstract interface class FrameReportRepository {
   });
 
   /// Totals of the reports received since [since]: first all builds
-  /// together, then one row per build, newest first, at most [maxBuilds].
+  /// together, then one row per build and platform, newest first, for the
+  /// [maxBuilds] newest builds (a build's platforms count as one build).
   Future<Result<List<FrameTotals>>> totals({
     required DateTime since,
     required int maxBuilds,

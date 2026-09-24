@@ -72,4 +72,27 @@ void main() {
       0,
     );
   });
+
+  test('FrameTotalsDto carries the platform only when it has one', () {
+    const withPlatform = FrameTotalsDto(
+      build: 'abc1234',
+      platform: 'android',
+      reports: 4,
+      users: 3,
+      frames: 8000,
+      slowFrames: 200,
+      frozenFrames: 3,
+      worstFrameMs: 1500,
+      lastReportedAt: null,
+    );
+
+    expect(withPlatform.toJson()['platform'], 'android');
+    expect(FrameTotalsDto.fromJson(withPlatform.toJson()).platform, 'android');
+
+    final without = FrameTotalsDto.fromJson(const <String, Object?>{
+      'build': 'abc1234',
+    });
+    expect(without.platform, isNull);
+    expect(without.toJson().containsKey('platform'), isFalse);
+  });
 }

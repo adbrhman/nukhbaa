@@ -86,16 +86,18 @@ FrameReport _report({
   deviceModel: model,
 );
 
-FrameTotals _totals(String? build, int frames) => FrameTotals(
-  build: build,
-  reports: 2,
-  users: 1,
-  frames: frames,
-  slowFrames: 10,
-  frozenFrames: 0,
-  worstFrameMs: 40,
-  lastReportedAt: DateTime.utc(2026, 9, 24),
-);
+FrameTotals _totals(String? build, int frames, {String? platform}) =>
+    FrameTotals(
+      build: build,
+      platform: platform,
+      reports: 2,
+      users: 1,
+      frames: frames,
+      slowFrames: 10,
+      frozenFrames: 0,
+      worstFrameMs: 40,
+      lastReportedAt: DateTime.utc(2026, 9, 24),
+    );
 
 void main() {
   final now = DateTime.utc(2026, 9, 24, 12);
@@ -175,6 +177,25 @@ void main() {
       expect(stats.builds.map((b) => b.build), ['new1234', 'old1234']);
       expect(reports.since, now.subtract(const Duration(days: 7)));
       expect(reports.maxBuilds, AdminGetFrameStats.maxBuilds);
+    });
+
+    test('a build on two platforms stays as two rows', () async {
+      final reports = _FakeReports()
+        ..answer = [
+          _totals(null, 5000),
+          _totals('new1234', 3000, platform: 'android'),
+          _totals('new1234', 2000, platform: 'web'),
+        ];
+
+      final result = await AdminGetFrameStats(
+        reports: reports,
+        clock: _FixedClock(now),
+      )(principal: _admin);
+
+      final stats = (result as Ok<FrameStats>).value;
+      expect(stats.builds.map((b) => b.build), ['new1234', 'new1234']);
+      expect(stats.builds.map((b) => b.platform), ['android', 'web']);
+      expect(stats.overall.platform, isNull);
     });
 
     test('clamps the window and survives an empty table', () async {

@@ -102,7 +102,8 @@ final class FrameReportAckDto {
   };
 }
 
-/// Frame totals for every build together ([build] null) or one build.
+/// Frame totals for every build together ([build] null) or one build on
+/// one platform.
 final class FrameTotalsDto {
   /// Creates the totals.
   const FrameTotalsDto({
@@ -114,6 +115,7 @@ final class FrameTotalsDto {
     required this.frozenFrames,
     required this.worstFrameMs,
     required this.lastReportedAt,
+    this.platform,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -126,10 +128,15 @@ final class FrameTotalsDto {
     frozenFrames: (json['frozen_frames'] as int?) ?? 0,
     worstFrameMs: (json['worst_frame_ms'] as int?) ?? 0,
     lastReportedAt: json['last_reported_at'] as String?,
+    platform: json['platform'] as String?,
   );
 
   /// The build, or null for every build together.
   final String? build;
+
+  /// The platform of this row (`android`, `ios` or `web`); null for every
+  /// build together.
+  final String? platform;
 
   /// Session reports summed.
   final int reports;
@@ -170,6 +177,7 @@ final class FrameTotalsDto {
     'frozen_frames': frozenFrames,
     'worst_frame_ms': worstFrameMs,
     'last_reported_at': lastReportedAt,
+    if (platform != null) 'platform': platform,
   };
 }
 
@@ -276,7 +284,7 @@ final class AdminFrameStatsDto {
   /// Every build together.
   final FrameTotalsDto overall;
 
-  /// The newest builds, newest first.
+  /// The newest builds, one entry per platform each ran on, newest first.
   final List<FrameTotalsDto> builds;
 
   /// The least smooth device models, each reported by several players.

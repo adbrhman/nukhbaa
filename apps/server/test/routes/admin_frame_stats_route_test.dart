@@ -50,8 +50,9 @@ final class _Reports implements FrameReportRepository {
   }
 }
 
-FrameTotals _t(String? build) => FrameTotals(
+FrameTotals _t(String? build, {String? platform}) => FrameTotals(
   build: build,
+  platform: platform,
   reports: 4,
   users: 3,
   frames: 8000,
@@ -115,6 +116,27 @@ void main() {
       final device = devices.single! as Map<String, Object?>;
       expect(device['device_model'], 'samsung SM-A105F');
       expect(device['users'], 4);
+    });
+
+    test('a build on two platforms reads as two rows', () async {
+      final reports = _Reports([
+        _t(null),
+        _t('abc1234', platform: 'android'),
+        _t('abc1234', platform: 'web'),
+      ]);
+
+      final response = await _call(reports, adminPrincipal());
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      final builds = (body['builds']! as List<Object?>)
+          .cast<Map<String, Object?>>();
+      expect(builds.map((b) => b['platform']), ['android', 'web']);
+      expect(
+        (body['overall']! as Map<String, Object?>).containsKey('platform'),
+        isFalse,
+        reason: 'the overall row spans every platform',
+      );
     });
 
     test('a player is refused', () async {

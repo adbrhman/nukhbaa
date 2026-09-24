@@ -18,8 +18,10 @@ FrameTotalsDto _totals(
   String? build, {
   required int frames,
   required int slow,
+  String? platform,
 }) => FrameTotalsDto(
   build: build,
+  platform: platform,
   reports: 4,
   users: 3,
   frames: frames,
@@ -104,6 +106,50 @@ void main() {
       find.ancestor(of: find.text('new1234'), matching: find.byType(Align)),
     );
     expect(label.alignment, AlignmentDirectional.centerStart);
+  });
+
+  testWidgets('one build on two platforms reads as two lines', (tester) async {
+    await _pump(
+      tester,
+      AdminFrameStatsDto(
+        windowDays: 7,
+        overall: _totals(null, frames: 8000, slow: 830),
+        builds: [
+          _totals('abc1234', frames: 5000, slow: 800, platform: 'android'),
+          _totals('abc1234', frames: 3000, slow: 30, platform: 'web'),
+        ],
+      ),
+    );
+
+    final Finder android = find.byKey(
+      const Key('admin.frameStats.build.abc1234.android'),
+    );
+    final Finder web = find.byKey(
+      const Key('admin.frameStats.build.abc1234.web'),
+    );
+    expect(android, findsOneWidget);
+    expect(web, findsOneWidget);
+    expect(
+      find.descendant(of: android, matching: find.text('abc1234 · android')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: web, matching: find.text('abc1234 · web')),
+      findsOneWidget,
+    );
+    final Text androidShare = tester.widget<Text>(
+      find.descendant(of: android, matching: find.text(_iso('16%'))),
+    );
+    expect(
+      androidShare.style?.color,
+      AppTokens.dark.error,
+      reason: '800 of 5000 frames is 16%: janky, on the phone alone',
+    );
+    expect(
+      find.descendant(of: web, matching: find.text(_iso('1%'))),
+      findsOneWidget,
+      reason: 'the web line is its own, not averaged into the phone',
+    );
   });
 
   testWidgets('an empty week says so', (tester) async {
