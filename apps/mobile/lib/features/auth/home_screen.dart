@@ -82,13 +82,16 @@ class HomeScreen extends ConsumerWidget {
                 'تابع مبارياتك وأثبت أنك من النخبة.',
                 style: TextStyle(color: tokens.textSecondary),
               ),
-              const SizedBox(height: 12),
-              DailyChallengeCard(onOpenMatches: onOpenMatches),
-              const SizedBox(height: 18),
-              _OverviewCard(
-                fixtures: fixtures,
-                seasons: seasons,
-                onOpenMatches: onOpenMatches,
+              const SizedBox(height: 16),
+              // Reading order: what to do now -- the predictions still open,
+              // with the one action -- then the matches they are about, then
+              // the day's challenge, then the season overview. Each card
+              // reads to a screen reader as one sentence.
+              MergeSemantics(
+                child: _PendingPredictionsCard(
+                  pending: ref.watch(pendingPredictionsProvider),
+                  onPredict: onOpenMatches,
+                ),
               ),
               if (highlights.items.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 24),
@@ -102,14 +105,23 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 for (final CurrentMonthFixtureItemDto item
                     in highlights.items) ...<Widget>[
-                  _HighlightRow(item: item, onTap: onOpenMatches),
+                  MergeSemantics(
+                    child: _HighlightRow(item: item, onTap: onOpenMatches),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                 ],
               ],
-              const SizedBox(height: 16),
-              _PendingPredictionsCard(
-                pending: ref.watch(pendingPredictionsProvider),
-                onPredict: onOpenMatches,
+              const SizedBox(height: 24),
+              MergeSemantics(
+                child: DailyChallengeCard(onOpenMatches: onOpenMatches),
+              ),
+              const SizedBox(height: 18),
+              MergeSemantics(
+                child: _OverviewCard(
+                  fixtures: fixtures,
+                  seasons: seasons,
+                  onOpenMatches: onOpenMatches,
+                ),
               ),
             ],
           ),

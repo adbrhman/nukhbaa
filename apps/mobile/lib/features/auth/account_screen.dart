@@ -280,23 +280,26 @@ class _ProfileCard extends StatelessWidget {
     final MySeasonRecordDto? row = record;
     final int? accuracy = row?.accuracyPercent;
 
+    // Each figure is read with its label, as one node.
     Widget stat(String value, String label, Key valueKey) => Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            key: valueKey,
-            style: text.titleLarge?.copyWith(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w800,
+      child: MergeSemantics(
+        child: Column(
+          children: [
+            Text(
+              value,
+              key: valueKey,
+              style: text.titleLarge?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: text.bodySmall?.copyWith(color: tokens.textSecondary),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: text.bodySmall?.copyWith(color: tokens.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -314,18 +317,23 @@ class _ProfileCard extends StatelessWidget {
             children: [
               // The picture is its own affordance: tapping the avatar is how
               // you change it.
-              InkWell(
-                key: const Key('account.changeAvatar'),
-                customBorder: const CircleBorder(),
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  builder: (_) =>
-                      _AvatarSheet(hasAvatar: user.avatarUrl != null),
-                ),
-                child: UserAvatar(
-                  displayName: user.displayName,
-                  avatarUrl: user.avatarUrl,
-                  size: _avatarSize,
+              // The avatar is a button with no text of its own: name it.
+              Semantics(
+                button: true,
+                label: l10n.avatarChange,
+                child: InkWell(
+                  key: const Key('account.changeAvatar'),
+                  customBorder: const CircleBorder(),
+                  onTap: () => showModalBottomSheet<void>(
+                    context: context,
+                    builder: (_) =>
+                        _AvatarSheet(hasAvatar: user.avatarUrl != null),
+                  ),
+                  child: UserAvatar(
+                    displayName: user.displayName,
+                    avatarUrl: user.avatarUrl,
+                    size: _avatarSize,
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),

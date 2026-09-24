@@ -101,7 +101,10 @@ class _PredictionHistoryScreenState
                     : l10n.predictionHistoryEmpty,
                 onRetry: () => ref.invalidate(myFixturePredictionsProvider),
                 itemBuilder: (context, prediction) =>
-                    _FixturePredictionCard(prediction: prediction),
+                    // One spoken node per prediction.
+                    MergeSemantics(
+                      child: _FixturePredictionCard(prediction: prediction),
+                    ),
               ),
             ),
           ],
@@ -202,14 +205,31 @@ class _FixturePredictionCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            if (kickoffAt != null) ...<Widget>[
-              Text(
-                l10n.historyKickoffAt(formatDayAndTime(context, kickoffAt)),
-                key: Key('history.kickoffAt.${prediction.id}'),
-                style: metaStyle?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
+            // Reading order: when it kicks off and how it went (the verdict,
+            // with its points) on the first line, the call itself below,
+            // and when it was made last, as the least needed detail.
+            if (kickoffAt != null || status != null) ...<Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: kickoffAt == null
+                        ? const SizedBox.shrink()
+                        : Text(
+                            l10n.historyKickoffAt(
+                              formatDayAndTime(context, kickoffAt),
+                            ),
+                            key: Key('history.kickoffAt.${prediction.id}'),
+                            style: metaStyle?.copyWith(
+                              color: tokens.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                  if (status != null) ...<Widget>[
+                    const SizedBox(width: AppSpacing.sm),
+                    status,
+                  ],
+                ],
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -229,20 +249,12 @@ class _FixturePredictionCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                Text(
-                  l10n.historySubmittedAt(
-                    formatDayAndTime(context, prediction.submittedAt),
-                  ),
-                  key: Key('history.submittedAt.${prediction.id}'),
-                  style: metaStyle,
-                ),
-                if (status != null) status,
-              ],
+            Text(
+              l10n.historySubmittedAt(
+                formatDayAndTime(context, prediction.submittedAt),
+              ),
+              key: Key('history.submittedAt.${prediction.id}'),
+              style: metaStyle,
             ),
           ],
         ),

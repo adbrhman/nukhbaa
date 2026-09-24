@@ -3263,6 +3263,19 @@ name is placed at the start of its row, clear of the figures.
   few 3-10, many 11+) replacing the hand-written `_arabicPoints`. The
   Arabic strings are the ones the board showed before.
 
+### Reading order and screen reader: home, my predictions, account (batch 53)
+
+- Home reads in the order of what to do: the predictions still open (the
+  one primary action) first, then the matches they are about, then the
+  day's challenge, then the season overview (was: challenge, overview,
+  matches, open predictions last). Each card is one `MergeSemantics` node.
+- A prediction card leads with its kickoff and verdict (the status badge,
+  with points once graded) on one line, then the call, then when it was
+  made (the status used to trail the submission time). One node per card.
+- Account: the avatar button is named (`avatarChange`); each stat is read
+  with its label. Its order (profile, actions, settings, sign-out) already
+  fit and is unchanged.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
