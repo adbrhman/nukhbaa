@@ -135,13 +135,18 @@ class _Loading extends StatelessWidget {
       horizontal: AppSpacing.lg,
       vertical: AppSpacing.sm,
     ),
-    child: Column(
-      children: <Widget>[
-        AppSkeletonListTile(),
-        AppSkeletonListTile(),
-        AppSkeletonListTile(),
-        AppSkeletonListTile(),
-      ],
+    // Four placeholder rows are taller than a phone held sideways leaves
+    // under a screen header; they clip instead of overflowing.
+    child: SingleChildScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      child: Column(
+        children: <Widget>[
+          AppSkeletonListTile(),
+          AppSkeletonListTile(),
+          AppSkeletonListTile(),
+          AppSkeletonListTile(),
+        ],
+      ),
     ),
   );
 }

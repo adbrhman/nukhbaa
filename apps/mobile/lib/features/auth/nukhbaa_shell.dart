@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/notifications/push_link.dart';
 import '../../core/providers.dart';
@@ -116,12 +117,25 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
       child: Scaffold(
         backgroundColor: context.tokens.background,
         extendBody: true,
-        body: IndexedStack(
-          index: currentIndex,
-          children: <Widget>[
-            for (int i = 0; i < tabCount; i++)
-              if (_built.contains(i)) _pageAt(i) else const SizedBox.shrink(),
-          ],
+        // On a tablet the tabs keep a phone-like reading width, centred,
+        // instead of stretching cards and tables edge to edge. A phone is
+        // narrower than the cap, so nothing changes there.
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: AppSizes.maxContentWidth,
+            ),
+            child: IndexedStack(
+              index: currentIndex,
+              children: <Widget>[
+                for (int i = 0; i < tabCount; i++)
+                  if (_built.contains(i))
+                    _pageAt(i)
+                  else
+                    const SizedBox.shrink(),
+              ],
+            ),
+          ),
         ),
         bottomNavigationBar: NukhbaaBottomNav(
           index: currentIndex,

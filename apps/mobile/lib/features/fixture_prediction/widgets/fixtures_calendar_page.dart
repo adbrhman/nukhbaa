@@ -13,6 +13,7 @@ import 'package:intl/intl.dart' as intl;
 
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/design/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import 'fixtures_date_bar.dart';
 
@@ -57,6 +58,7 @@ class FixturesCalendarPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 shape: const StadiumBorder(),
                 textStyle: const TextStyle(
+                  fontFamily: AppTypography.fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),

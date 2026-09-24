@@ -7,6 +7,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/design/app_typography.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/streak_chip.dart';
@@ -564,7 +565,11 @@ class _OverviewCard extends StatelessWidget {
               backgroundColor: tokens.onPrimary,
               foregroundColor: tokens.primary,
               minimumSize: const Size.fromHeight(AppSizes.controlMd),
+              // A button's textStyle replaces the theme's instead of merging
+              // with it, so the family has to be named or the label falls
+              // back to the system font.
               textStyle: const TextStyle(
+                fontFamily: AppTypography.fontFamily,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
