@@ -13,6 +13,10 @@ import 'package:shared/shared.dart';
 /// ones `FixtureLeaderboard.rank` and `leaderboard.season_fixture_standings`
 /// use: `decided` excludes `pending`. The primary key
 /// `(fixture_id, participant_id)` serves the `ANY` filter.
+///
+/// Each line also carries the month's invitation points of the user behind
+/// the participant (`gamification.referral_month_points`, migration 0073):
+/// a tie-break only, never added to `total_points`.
 final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   /// Creates the reader over [_connection].
   const PostgresFixtureTotalsReader(this._connection);
@@ -20,17 +24,23 @@ final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   final PostgresConnection _connection;
 
   static const String _totalsSql = '''
-SELECT participant_id::text AS participant_id,
-       sum(points)::bigint AS total_points,
+SELECT fs.participant_id::text AS participant_id,
+       sum(fs.points)::bigint AS total_points,
        count(*)::bigint AS fixtures_scored,
-       count(*) FILTER (WHERE grade = 'exact_scoreline')::bigint
+       count(*) FILTER (WHERE fs.grade = 'exact_scoreline')::bigint
          AS exact_count,
        count(*) FILTER (
-         WHERE grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
-       )::bigint AS decided_count
-FROM scoring.fixture_scores
-WHERE fixture_id = ANY(@fixture_ids::uuid[])
-GROUP BY participant_id
+         WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
+       )::bigint AS decided_count,
+       COALESCE(max(rm.referral_points), 0)::bigint AS referral_points
+FROM scoring.fixture_scores fs
+JOIN competition.participants p
+  ON p.id = fs.participant_id
+LEFT JOIN gamification.referral_month_points rm
+  ON rm.season_id = p.season_id
+ AND rm.user_id = p.user_id
+WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
+GROUP BY fs.participant_id
 ''';
 
   @override
@@ -79,6 +89,7 @@ GROUP BY participant_id
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
+        referralPoints: _readInt(row['referral_points']) ?? 0,
       );
       if (totals is Err<ParticipantFixtureTotals>) {
         return Result.err(totals.error);

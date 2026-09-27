@@ -175,6 +175,9 @@ final class GetSeasonFixtureLeaderboard {
     return FixtureLeaderboard.rankTotals(
       seasonId: sId,
       totals: totals,
+      // Invitation points break ties on the month only; a day board
+      // (a window) ranks without them.
+      breakTiesByReferrals: !windowed,
       displayNames: displayNames,
       previousRanks: previousRanks,
       avatarUserIds: {

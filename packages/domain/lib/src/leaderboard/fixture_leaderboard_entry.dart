@@ -31,6 +31,7 @@ final class FixtureLeaderboardEntry {
     required this.fixturesScored,
     required this.exactCount,
     required this.decidedCount,
+    required this.referralPoints,
     required this.previousRank,
     required this.avatarUserId,
     required this.avatarUpdatedAt,
@@ -49,6 +50,7 @@ final class FixtureLeaderboardEntry {
     required int fixturesScored,
     int exactCount = 0,
     int decidedCount = 0,
+    int referralPoints = 0,
     int? previousRank,
     UserId? avatarUserId,
     DateTime? avatarUpdatedAt,
@@ -60,6 +62,7 @@ final class FixtureLeaderboardEntry {
       fixturesScored: fixturesScored,
       exactCount: exactCount,
       decidedCount: decidedCount,
+      referralPoints: referralPoints,
       previousRank: previousRank,
       avatarUserId: avatarUserId,
       avatarUpdatedAt: avatarUpdatedAt,
@@ -104,6 +107,11 @@ final class FixtureLeaderboardEntry {
   /// played. The denominator is therefore predictions actually made and
   /// actually settled.
   final int decidedCount;
+
+  /// The month's invitation points (migration 0073, capped at 20): the
+  /// first tie-break after [totalPoints], never added to it. Zero on a
+  /// board that does not break ties by invitations (the day board).
+  final int referralPoints;
 
   /// The share of decided fixtures called exactly right, in `0.0..1.0`, or
   /// `null` when nothing has been decided yet. A participant with no decided
@@ -170,6 +178,7 @@ final class FixtureLeaderboardEntry {
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
+        referralPoints: referralPoints,
         previousRank: previousRank,
         avatarUserId: avatarUserId,
         avatarUpdatedAt: avatarUpdatedAt,
@@ -187,6 +196,7 @@ final class FixtureLeaderboardEntry {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
+      other.referralPoints == referralPoints &&
       other.previousRank == previousRank &&
       other.avatarUserId == avatarUserId &&
       other.avatarUpdatedAt == avatarUpdatedAt &&
@@ -200,6 +210,7 @@ final class FixtureLeaderboardEntry {
     fixturesScored,
     exactCount,
     decidedCount,
+    referralPoints,
     previousRank,
     avatarUserId,
     avatarUpdatedAt,

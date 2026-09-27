@@ -25,10 +25,15 @@ import 'package:shared/shared.dart';
 ///
 /// **Total order (deterministic, reproducible — never arbitrary DB order):**
 /// 1. [FixtureLeaderboardEntry.totalPoints] descending;
-/// 2. tie-break: participant id value ascending — mirrors `RoundLeaderboard`.
+/// 2. [FixtureLeaderboardEntry.referralPoints] descending -- the month's
+///    invitation points break a points tie and are never added to the
+///    points (decided 2026-09-27, migration 0073);
+/// 3. [FixtureLeaderboardEntry.exactCount] descending;
+/// 4. participant id value ascending, for a stable display order only.
 ///
-/// **Rank rule:** identical to `RoundLeaderboard`/`SeasonLeaderboard` —
-/// standard competition ("1224") ranking.
+/// **Rank rule:** standard competition ("1224") ranking over steps 1-3:
+/// entries level on points, invitation points AND exact scorelines share a
+/// rank. The daily snapshot (migration 0074) ranks the same way.
 final class FixtureLeaderboard {
   const FixtureLeaderboard._({required this.seasonId, required this.entries});
 
@@ -112,7 +117,7 @@ final class FixtureLeaderboard {
       final entry = ordered[i];
       final int position = i + 1;
       final int assigned;
-      if (i > 0 && ordered[i - 1].totalPoints == entry.totalPoints) {
+      if (i > 0 && _level(ordered[i - 1], entry)) {
         assigned = ranked[i - 1].rank;
       } else {
         assigned = position;
@@ -146,6 +151,7 @@ final class FixtureLeaderboard {
     Map<String, int> previousRanks = const <String, int>{},
     Map<String, UserId> avatarUserIds = const <String, UserId>{},
     Map<String, DateTime> avatarUpdatedAt = const <String, DateTime>{},
+    bool breakTiesByReferrals = true,
   }) {
     final seen = <String>{};
     for (final line in totals) {
@@ -169,6 +175,7 @@ final class FixtureLeaderboard {
           fixturesScored: line.fixturesScored,
           exactCount: line.exactCount,
           decidedCount: line.decidedCount,
+          referralPoints: breakTiesByReferrals ? line.referralPoints : 0,
           previousRank: previousRanks[line.participantId.value],
           avatarUserId: avatarUserIds[line.participantId.value],
           avatarUpdatedAt: avatarUpdatedAt[line.participantId.value],
@@ -178,8 +185,7 @@ final class FixtureLeaderboard {
     final ranked = <FixtureLeaderboardEntry>[];
     for (var i = 0; i < ordered.length; i++) {
       final entry = ordered[i];
-      final int assigned =
-          i > 0 && ordered[i - 1].totalPoints == entry.totalPoints
+      final int assigned = i > 0 && _level(ordered[i - 1], entry)
           ? ranked[i - 1].rank
           : i + 1;
       final placed = entry.withRank(assigned);
@@ -202,8 +208,23 @@ final class FixtureLeaderboard {
     if (byPoints != 0) {
       return byPoints;
     }
+    final byReferrals = b.referralPoints.compareTo(a.referralPoints);
+    if (byReferrals != 0) {
+      return byReferrals;
+    }
+    final byExact = b.exactCount.compareTo(a.exactCount);
+    if (byExact != 0) {
+      return byExact;
+    }
     return a.participantId.value.compareTo(b.participantId.value);
   }
+
+  /// Whether two neighbours share a rank: level on points, invitation points
+  /// and exact scorelines.
+  static bool _level(FixtureLeaderboardEntry a, FixtureLeaderboardEntry b) =>
+      a.totalPoints == b.totalPoints &&
+      a.referralPoints == b.referralPoints &&
+      a.exactCount == b.exactCount;
 
   /// The season these standings are for.
   final SeasonId seasonId;

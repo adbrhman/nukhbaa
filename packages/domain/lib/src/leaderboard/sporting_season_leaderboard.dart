@@ -57,6 +57,7 @@ final class SportingSeasonStanding {
     required this.exactCount,
     required this.decidedCount,
     required this.monthsPlayed,
+    required this.referralPoints,
     required this.rank,
   });
 
@@ -69,11 +70,13 @@ final class SportingSeasonStanding {
     required int exactCount,
     required int decidedCount,
     required int monthsPlayed,
+    int referralPoints = 0,
   }) {
     if (fixturesScored < 0 ||
         exactCount < 0 ||
         decidedCount < 0 ||
-        monthsPlayed < 0) {
+        monthsPlayed < 0 ||
+        referralPoints < 0) {
       return const Result.err(
         AppError.invariant(
           'sporting_season.count_negative',
@@ -98,6 +101,7 @@ final class SportingSeasonStanding {
         exactCount: exactCount,
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
+        referralPoints: referralPoints,
         rank: _unassignedRank,
       ),
     );
@@ -126,6 +130,11 @@ final class SportingSeasonStanding {
   /// How many of the season's months contributed.
   final int monthsPlayed;
 
+  /// The season's invitation points: the capped monthly points added up
+  /// (migration 0073). The first tie-break after [totalPoints], never
+  /// added to it.
+  final int referralPoints;
+
   /// Standard-competition ("1224") rank; 0 until ranked.
   final int rank;
 
@@ -148,6 +157,7 @@ final class SportingSeasonStanding {
         exactCount: exactCount,
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
+        referralPoints: referralPoints,
         rank: assignedRank,
       ),
     );
@@ -163,6 +173,7 @@ final class SportingSeasonStanding {
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.monthsPlayed == monthsPlayed &&
+      other.referralPoints == referralPoints &&
       other.rank == rank;
 
   @override
@@ -174,13 +185,15 @@ final class SportingSeasonStanding {
     exactCount,
     decidedCount,
     monthsPlayed,
+    referralPoints,
     rank,
   );
 }
 
-/// The ranked sporting-season board: most points first, ties sharing a rank
-/// (standard competition ranking), ties broken for display by user id so the
-/// order is total and stable.
+/// The ranked sporting-season board: most points first; a points tie is
+/// broken by the season's invitation points, then by exact scorelines
+/// (decided 2026-09-27). Entries level on all three share a rank (standard
+/// competition ranking); the user id only makes the display order stable.
 final class SportingSeasonLeaderboard {
   const SportingSeasonLeaderboard._({
     required this.season,
@@ -210,8 +223,7 @@ final class SportingSeasonLeaderboard {
     final ranked = <SportingSeasonStanding>[];
     for (var i = 0; i < ordered.length; i++) {
       final standing = ordered[i];
-      final assigned =
-          i > 0 && ordered[i - 1].totalPoints == standing.totalPoints
+      final assigned = i > 0 && _level(ordered[i - 1], standing)
           ? ranked[i - 1].rank
           : i + 1;
       final placed = standing.withRank(assigned);
@@ -234,8 +246,23 @@ final class SportingSeasonLeaderboard {
     if (byPoints != 0) {
       return byPoints;
     }
+    final byReferrals = b.referralPoints.compareTo(a.referralPoints);
+    if (byReferrals != 0) {
+      return byReferrals;
+    }
+    final byExact = b.exactCount.compareTo(a.exactCount);
+    if (byExact != 0) {
+      return byExact;
+    }
     return a.userId.value.compareTo(b.userId.value);
   }
+
+  /// Whether two neighbours share a rank: level on points, invitation points
+  /// and exact scorelines.
+  static bool _level(SportingSeasonStanding a, SportingSeasonStanding b) =>
+      a.totalPoints == b.totalPoints &&
+      a.referralPoints == b.referralPoints &&
+      a.exactCount == b.exactCount;
 
   /// The season this board ranks.
   final SportingSeason season;

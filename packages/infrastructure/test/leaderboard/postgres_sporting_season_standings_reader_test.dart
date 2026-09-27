@@ -77,7 +77,13 @@ void main() {
       expect(sql, contains('JOIN scoring.fixture_scores fs'));
       expect(sql, isNot(contains('ledger.fixture_point_entries')));
       expect(sql, isNot(contains('streak_bonus')));
-      expect(conn.parameters.single, {'first_key': 202609, 'last_key': 202708});
+      expect(sql, contains('gamification.referral_season_points'));
+      expect(conn.parameters.single, {
+        'first_key': 202609,
+        'last_key': 202708,
+        'season_start_year': 2026,
+      });
+      expect(standings.single.referralPoints, 0);
     },
   );
 

@@ -138,6 +138,7 @@ FixtureLeaderboardEntryDto fixtureLeaderboardEntryToDto(
     exactCount: entry.exactCount,
     decidedCount: entry.decidedCount,
     previousRank: entry.previousRank,
+    referralPoints: entry.referralPoints,
     // The one field this mapper builds rather than echoes -- and it is not a
     // computed fact, it is the route shape applied to two facts the domain
     // already holds. A participant with no stored picture gets null, and the
@@ -183,6 +184,7 @@ Map<String, Object?> sportingSeasonLeaderboardToJson(
           exactCount: entry.exactCount,
           decidedCount: entry.decidedCount,
           monthsPlayed: entry.monthsPlayed,
+          referralPoints: entry.referralPoints,
         ),
     ],
   ).toJson();

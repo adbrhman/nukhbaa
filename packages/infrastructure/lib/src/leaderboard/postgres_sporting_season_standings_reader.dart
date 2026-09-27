@@ -7,7 +7,9 @@ import 'package:shared/shared.dart';
 ///
 /// Sums scored fixture points across every monthly contest of the sporting
 /// season, per user. Streak bonuses are NOT summed (decided 2026-09-27,
-/// migration 0072): they count in the weekly league only. Months are
+/// migration 0072): they count in the weekly league only. Each line carries
+/// the season's invitation points (`gamification.referral_season_points`,
+/// migration 0073), a tie-break never added to the points. Months are
 /// selected first so only their participants and scores are touched. A
 /// monthly contest is identified by its `MM/YYYY` label -- the same rule
 /// `GET /months` applies -- and the label, not the stored instants, decides
@@ -59,8 +61,12 @@ SELECT s.user_id::text AS user_id,
        sum(s.fixtures_scored)::bigint AS fixtures_scored,
        sum(s.exact_count)::bigint AS exact_count,
        sum(s.decided_count)::bigint AS decided_count,
-       count(DISTINCT s.season_id)::bigint AS months_played
+       count(DISTINCT s.season_id)::bigint AS months_played,
+       COALESCE(max(rp.referral_points), 0)::bigint AS referral_points
 FROM scores s
+LEFT JOIN gamification.referral_season_points rp
+  ON rp.user_id = s.user_id
+ AND rp.season_start_year = @season_start_year::int
 GROUP BY s.user_id
 ''';
 
@@ -73,6 +79,7 @@ GROUP BY s.user_id
       parameters: {
         'first_key': season.firstMonthKey,
         'last_key': season.lastMonthKey,
+        'season_start_year': season.startYear,
       },
     );
     return switch (result) {
@@ -112,6 +119,7 @@ GROUP BY s.user_id
         exactCount: exactCount,
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
+        referralPoints: _readInt(row['referral_points']) ?? 0,
       );
       if (standing is Err<SportingSeasonStanding>) {
         return Result.err(standing.error);

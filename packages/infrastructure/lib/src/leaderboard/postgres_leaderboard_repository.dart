@@ -96,11 +96,16 @@ board AS (
          COALESCE(f.decided_count, 0)::bigint AS settled_count,
          rank() OVER (
            PARTITION BY p.season_id
-           ORDER BY COALESCE(f.total_points, 0) DESC
+           ORDER BY COALESCE(f.total_points, 0) DESC,
+                    COALESCE(rm.referral_points, 0) DESC,
+                    COALESCE(f.exact_count, 0) DESC
          ) AS current_rank
   FROM competition.participants p
   LEFT JOIN leaderboard.season_fixture_standings f
     ON f.participant_id = p.id
+  LEFT JOIN gamification.referral_month_points rm
+    ON rm.season_id = p.season_id
+   AND rm.user_id = p.user_id
   WHERE p.season_id IN (SELECT m.season_id FROM mine m)
 )
 SELECT c.id AS competition_id, c.name AS competition_name,

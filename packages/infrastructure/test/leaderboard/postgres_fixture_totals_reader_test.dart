@@ -92,6 +92,9 @@ void main() {
     expect(sql, contains('FROM scoring.fixture_scores'));
     expect(sql, isNot(contains('ledger.fixture_point_entries')));
     expect(sql, isNot(contains('streak_bonus')));
+    expect(sql, contains('gamification.referral_month_points'));
+    // A row without the column (an older fake) reads as no invitations.
+    expect(totals.single.referralPoints, 0);
     expect(conn.parameters.single, {
       'fixture_ids': [_fixtureId, _fixtureId2],
     });
@@ -115,7 +118,7 @@ void main() {
     expect(totals.single.fixturesScored, 0);
     expect(totals.single.exactCount, 0);
     expect(totals.single.decidedCount, 0);
-    expect(conn.sqls.single, contains('GROUP BY participant_id'));
+    expect(conn.sqls.single, contains('GROUP BY fs.participant_id'));
   });
 
   test('preserves every mapped total in order', () async {
@@ -141,6 +144,25 @@ void main() {
     final totals = (result as Ok<List<ParticipantFixtureTotals>>).value;
     expect(totals[0].totalPoints, 11);
     expect(totals[1].totalPoints, 9);
+  });
+
+  test('maps the month invitation points beside the points', () async {
+    final conn = _rows([
+      {
+        'participant_id': _participantId,
+        'total_points': BigInt.from(120),
+        'fixtures_scored': BigInt.from(40),
+        'exact_count': BigInt.from(12),
+        'decided_count': BigInt.from(38),
+        'referral_points': BigInt.from(7),
+      },
+    ]);
+    final result = await PostgresFixtureTotalsReader(
+      conn,
+    ).totalsFor(const [FixtureRef(_fixtureId)]);
+    final totals = (result as Ok<List<ParticipantFixtureTotals>>).value;
+    expect(totals.single.totalPoints, 120);
+    expect(totals.single.referralPoints, 7);
   });
 
   test('passes a transient query failure through unchanged', () async {

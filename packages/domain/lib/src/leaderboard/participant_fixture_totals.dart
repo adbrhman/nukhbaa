@@ -13,6 +13,7 @@ final class ParticipantFixtureTotals {
     required this.fixturesScored,
     required this.exactCount,
     required this.decidedCount,
+    required this.referralPoints,
   });
 
   /// Builds the totals, refusing numbers no set of fixture scores can sum to.
@@ -22,11 +23,13 @@ final class ParticipantFixtureTotals {
     required int fixturesScored,
     required int exactCount,
     required int decidedCount,
+    int referralPoints = 0,
   }) {
     if (totalPoints < 0 ||
         fixturesScored < 0 ||
         exactCount < 0 ||
-        decidedCount < 0) {
+        decidedCount < 0 ||
+        referralPoints < 0) {
       return const Result.err(
         AppError.invariant(
           'fixture_totals.negative',
@@ -49,6 +52,7 @@ final class ParticipantFixtureTotals {
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
+        referralPoints: referralPoints,
       ),
     );
   }
@@ -68,6 +72,11 @@ final class ParticipantFixtureTotals {
   /// Decided fixtures (pending excluded).
   final int decidedCount;
 
+  /// The month's invitation points of the user behind this participant
+  /// (migration 0073, capped at 20). A tie-break only: never part of
+  /// [totalPoints].
+  final int referralPoints;
+
   @override
   bool operator ==(Object other) =>
       other is ParticipantFixtureTotals &&
@@ -75,7 +84,8 @@ final class ParticipantFixtureTotals {
       other.totalPoints == totalPoints &&
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
-      other.decidedCount == decidedCount;
+      other.decidedCount == decidedCount &&
+      other.referralPoints == referralPoints;
 
   @override
   int get hashCode => Object.hash(
@@ -84,5 +94,6 @@ final class ParticipantFixtureTotals {
     fixturesScored,
     exactCount,
     decidedCount,
+    referralPoints,
   );
 }

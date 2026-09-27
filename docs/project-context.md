@@ -3384,6 +3384,28 @@ and decision outcome is `200` with its `status`; malformed input is `400`,
 a non-admin on the admin routes `401`. **0073 must be on the live DB
 before this server is deployed.**
 
+### Invitations break ties on the month and the season (batch 60, 2026-09-27)
+
+The order on the monthly board, the sporting-season board, the rank arrows
+and the personal record:
+
+1. prediction points, most first;
+2. invitation points, most first -- the month's (`referral_month_points`,
+   capped at 20) on the monthly board, the season's total
+   (`referral_season_points`) on the season board; never added to the points;
+3. exact scorelines, most first;
+4. level on all three: the same rank ("1224").
+
+A day board (a window) ranks without invitation points
+(`FixtureLeaderboard.rankTotals(breakTiesByReferrals: false)`). The totals
+and season readers carry `referral_points`; the DTOs gain `referral_points`
+(`FixtureLeaderboardEntryDto` v5, `SportingSeasonEntryDto` v2). Migration
+0074 redefines `capture_season_rank_snapshots` with the same order and adds
+a partial index for paid invitations. Step 3 applies as soon as this is
+deployed, even while no one has invitation points yet: two players level on
+points are no longer level unless their exact scorelines are equal too.
+**0074 must be on the live DB before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
