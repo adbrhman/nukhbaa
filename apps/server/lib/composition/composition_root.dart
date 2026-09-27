@@ -111,6 +111,8 @@ final class CompositionRoot {
     required this.qualifyReferrals,
     required this.adminListHeldReferrals,
     required this.adminReviewReferral,
+    required this.adminGetReferralOverview,
+    required this.adminSetReferralsEnabled,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -259,6 +261,8 @@ final class CompositionRoot {
     QualifyReferrals? qualifyReferrals,
     AdminListHeldReferrals? adminListHeldReferrals,
     AdminReviewReferral? adminReviewReferral,
+    AdminGetReferralOverview? adminGetReferralOverview,
+    AdminSetReferralsEnabled? adminSetReferralsEnabled,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -424,6 +428,10 @@ final class CompositionRoot {
            adminListHeldReferrals ?? _absentAdminListHeldReferrals(),
        adminReviewReferral =
            adminReviewReferral ?? _absentAdminReviewReferral(),
+       adminGetReferralOverview =
+           adminGetReferralOverview ?? _absentAdminGetReferralOverview(),
+       adminSetReferralsEnabled =
+           adminSetReferralsEnabled ?? _absentAdminSetReferralsEnabled(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -1112,6 +1120,19 @@ final class CompositionRoot {
         clock: _unwiredClock,
       );
 
+  /// Builds an "absent" [AdminGetReferralOverview]: loud if a test reaches
+  /// it without wiring it.
+  static AdminGetReferralOverview _absentAdminGetReferralOverview() =>
+      AdminGetReferralOverview(
+        referrals: _UnwiredReferralAdminRepository(),
+        clock: _unwiredClock,
+      );
+
+  /// Builds an "absent" [AdminSetReferralsEnabled]: loud if a test reaches
+  /// it without wiring it.
+  static AdminSetReferralsEnabled _absentAdminSetReferralsEnabled() =>
+      AdminSetReferralsEnabled(referrals: _UnwiredReferralAdminRepository());
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1637,6 +1658,13 @@ final class CompositionRoot {
   /// An admin decision on an invitation (backs
   /// `POST /admin/referrals/{inviteeId}`).
   final AdminReviewReferral adminReviewReferral;
+
+  /// The invitation system for the admin page (backs
+  /// `GET /admin/referral-overview`, migration 0075).
+  final AdminGetReferralOverview adminGetReferralOverview;
+
+  /// The invitation system's switch (backs `PUT /admin/referral-switch`).
+  final AdminSetReferralsEnabled adminSetReferralsEnabled;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -2169,6 +2197,13 @@ final class CompositionRoot {
       adminReviewReferral: AdminReviewReferral(
         referrals: PostgresReferralRepository(connection),
         clock: clock,
+      ),
+      adminGetReferralOverview: AdminGetReferralOverview(
+        referrals: PostgresReferralAdminRepository(connection),
+        clock: clock,
+      ),
+      adminSetReferralsEnabled: AdminSetReferralsEnabled(
+        referrals: PostgresReferralAdminRepository(connection),
       ),
       sendOvertakenPushes: SendOvertakenPushes(
         overtaken: PostgresOvertakenRepository(connection),
@@ -3460,6 +3495,23 @@ final class _UnwiredPushOpenRepository implements PushOpenRepository {
     required String link,
     required DateTime openedAt,
   }) => throw StateError('RecordPushOpen was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentAdminGetReferralOverview].
+final class _UnwiredReferralAdminRepository implements ReferralAdminRepository {
+  static Never _unwired() => throw StateError(
+    'the invitation admin was not wired into this test root',
+  );
+
+  @override
+  Future<Result<ReferralOverview>> overview({
+    required DateTime now,
+    required int referrerLimit,
+    required int invitationLimit,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> setEnabled({required bool enabled}) => _unwired();
 }
 
 /// Refuses every call: see [_absentGetMyReferral].

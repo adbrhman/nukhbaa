@@ -3430,6 +3430,29 @@ it, in the Supabase SQL editor:
 `select gamification.review_referral('<invitee uuid>', 'approve', '<admin uuid>', '<reason>');`
 (`reject` / `revoke` likewise). The list: `GET /admin/referrals`.
 
+### Invitations: idle invitees and the admin controls (batch 62, 2026-09-27)
+
+- **Idle invitee** (migration 0075, `gamification.expire_idle_referrals`,
+  called at the end of `qualify_referrals`, same 30-minute sweep and same
+  switch): a paid invitation whose invitee sent no prediction for 7 days
+  since the later of the payment and the last prediction is revoked
+  (`referral_revoked`, reason `inactive_7_days`) and the invitee's account is
+  SUSPENDED -- never deleted (the 2026-09-09 no-delete rule stands). An
+  admin account is never suspended by the sweep. An admin can reinstate the
+  account from the user-sanction screen; the invitation stays revoked, so
+  the account is not suspended again for it.
+- **`gamification.referral_invitations`** (view): one row per invitation
+  with its state (`pending`, `held`, `paid`, `revoked`, `rejected`), the
+  hold reasons, the revoke reason, the invitee's status and last prediction.
+- **`GET /admin/referral-overview`** (`AdminGetReferralOverview`): the
+  switch, totals per state, the inviters (100) and the newest invitations
+  (300). **`PUT /admin/referral-switch`** (`AdminSetReferralsEnabled`):
+  `{enabled}`; off stops claims, payments and revocations, and keeps every
+  point already paid. Decisions stay on `POST /admin/referrals/{inviteeId}`.
+
+**0075 must be on the live DB before this server is deployed.** The admin
+page in the app follows in batch 63.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
