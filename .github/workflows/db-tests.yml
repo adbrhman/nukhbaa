@@ -1,0 +1,62 @@
+name: db-tests
+
+# Applies every migration to an ephemeral Postgres and runs the SQL
+# end-to-end tests in supabase/tests. Nothing here touches the live
+# database: the Supabase-only objects come from supabase_stubs.sql.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  migrations-and-sql-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Supabase stubs
+        run: psql -v ON_ERROR_STOP=1 -q -f supabase/tests/supabase_stubs.sql
+
+      - name: Apply every migration in order
+        run: |
+          set -euo pipefail
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "== $f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      - name: SQL end-to-end tests
+        run: |
+          set -euo pipefail
+          for t in $(ls supabase/tests/*_test.sql | sort); do
+            echo "== $t"
+            psql -v ON_ERROR_STOP=1 -q -f "$t" 2>&1 | sed -n 's/.*NOTICE:  //p'
+            test "${PIPESTATUS[0]}" -eq 0
+          done

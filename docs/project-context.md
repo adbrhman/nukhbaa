@@ -3332,6 +3332,40 @@ first daily rank snapshot after it may show a one-day move for a player
 whose bonus left the total. **0072 must be on the live DB before
 deploying.**
 
+### Invitations: the database layer and the SQL test job (batch 58, 2026-09-27)
+
+Decisions: invitations live inside gamification, never in the ledger.
+Invitation points only break ties -- the month by that month's points, the
+sporting season by the season total -- and never add to prediction points.
+
+Migration 0073 (inert until `gamification.feature_flags` row `referrals` is
+switched on):
+
+| Object | What it holds |
+|---|---|
+| `gamification.referral_codes` | one fixed 8-character code per user, never changed |
+| `gamification.referrals` | who invited whom; `invitee_id` is the primary key (one inviter, forever), CHECK no self-invitation, trigger: claim within 24 h of the invitee's account and the inviter older than the invitee |
+| `gamification.referral_install_marks` | hashed installs an inviter was seen with |
+| `referral_held` / `referral_qualified` / `referral_rejected` / `referral_revoked` in `gamification.events` | the life cycle; dedupe key `<type>:<invitee_id>`, so one payment per invitee; a guard trigger refuses any referral event without a real invitation |
+| `gamification.referral_month_points` | paid, not revoked, counted in the monthly contest that holds the payment, capped at 20 |
+| `gamification.referral_season_points` | the capped monthly points summed per sporting season (Sept-Aug) |
+
+Functions (server-only): `ensure_referral_code`, `claim_referral`,
+`mark_referral_install`, `qualify_referrals` (pays or holds; safe to
+re-run), `review_referral` (admin: approve / reject / revoke, reason
+mandatory). An invitation qualifies when the invitee's account is
+confirmed, it holds a monthly participation, sent a prediction and that
+prediction was graded on a decided fixture. It is HELD for an admin, never
+paid or rejected automatically, on a shared network or install with
+another invitee of the same inviter, the inviter's own install, or more
+than ten claims for one inviter within 24 hours. IP addresses and install
+ids are stored only as salted SHA-256 hashes.
+
+CI: `.github/workflows/db-tests.yml` applies `supabase/tests/supabase_stubs.sql`
+and every migration to an ephemeral Postgres 16, then runs
+`supabase/tests/*_test.sql` (0072: 2 checks, 0073: 61 checks). **0073 must
+be on the live DB before the invitations server (batch 59) is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
