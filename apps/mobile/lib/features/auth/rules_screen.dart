@@ -85,6 +85,22 @@ class RulesScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                _RulesCard(
+                  children: <Widget>[
+                    _RuleRow(
+                      key: const Key('rules.tieBreak'),
+                      icon: Icons.group_add_rounded,
+                      color: tokens.gold,
+                      label:
+                          'عند تساوي النقاط يتقدم صاحب نقاط الدعوة الأكثر، '
+                          'ثم صاحب التوقعات الدقيقة الأكثر.',
+                      detail:
+                          'نقاط الدعوة لا تُضاف إلى نقاط التوقعات. في الشهر '
+                          'تُحسب دعوات ذلك الشهر (حتى 20)، وفي الموسم مجموعها.',
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

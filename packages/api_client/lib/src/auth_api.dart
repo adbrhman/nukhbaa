@@ -295,4 +295,29 @@ final class AuthApi {
       parse: FavoriteTeamsDto.fromJson,
     );
   }
+
+  /// `GET /me/referral` -- the caller's fixed invitation code and counters
+  /// (migration 0073). [installId] is the app's install id, sent so the
+  /// server can hold an invitation made on the inviter's own install.
+  Future<Result<ReferralSummaryDto>> myReferral({String? installId}) {
+    return _transport.getObject<ReferralSummaryDto>(
+      '/me/referral',
+      query: installId == null ? null : <String, String>{'install': installId},
+      parse: ReferralSummaryDto.fromJson,
+    );
+  }
+
+  /// `POST /me/referral/claim` -- names the friend who invited this new
+  /// account. Every outcome is a `status` (`claimed`, `already_claimed`,
+  /// `unknown_code`, `window_closed`, ...); the server decides them all.
+  Future<Result<ReferralStatusDto>> claimReferral({
+    required String code,
+    String? installId,
+  }) {
+    return _transport.postObject<ReferralStatusDto>(
+      '/me/referral/claim',
+      body: ReferralClaimRequestDto(code: code, installId: installId).toJson(),
+      parse: ReferralStatusDto.fromJson,
+    );
+  }
 }

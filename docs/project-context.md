@@ -3406,6 +3406,30 @@ deployed, even while no one has invitation points yet: two players level on
 points are no longer level unless their exact scorelines are equal too.
 **0074 must be on the live DB before this server is deployed.**
 
+### Invitations in the app (batch 61, 2026-09-27)
+
+- **Invitation page** (`InviteFriendsScreen`, from the account page, row
+  `account.invite`): the fixed code, "copy link"
+  (`https://adbrhman.github.io/nukhbaa/?ref=CODE`) and "copy code", the
+  month's points out of 20, the season's points, invited and pending
+  counts, how they count, and a field to name one's inviter within 24 hours.
+- **Registration**: an optional code field (`signIn.referralField`); a web
+  link with `?ref=` opens the registration tab with the code filled in. The
+  claim is sent right after the account exists
+  (`SessionController.register(referralCode:)`), and never fails the
+  sign-up. A first Google sign-in has the same field on the name screen
+  (`nameSetup.referralField`).
+- **Install id** (`core/auth/install_id.dart`): a random id in the secure
+  store, sent with `GET /me/referral` and the claim; the server keeps it
+  hashed, as one signal for review.
+- **Rules page**: the tie-break order (`rules.tieBreak`).
+
+Held invitations are reviewed by an admin through
+`POST /admin/referrals/{inviteeId}` or, until the dashboard has a page for
+it, in the Supabase SQL editor:
+`select gamification.review_referral('<invitee uuid>', 'approve', '<admin uuid>', '<reason>');`
+(`reject` / `revoke` likewise). The list: `GET /admin/referrals`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -20,6 +20,7 @@ import '../admin/admin_hub_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../gamification/insights_screen.dart';
+import '../gamification/invite_friends_screen.dart';
 import '../gamification/my_badges_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -155,6 +156,13 @@ class AccountScreen extends ConsumerWidget {
                         title: l10n.insightsTitle,
                         subtitle: l10n.insightsSubtitle,
                         onTap: () => open(const InsightsScreen()),
+                      ),
+                      AccountMenuRow(
+                        key: const Key('account.invite'),
+                        icon: Icons.group_add_outlined,
+                        title: 'ادعُ أصدقاءك',
+                        subtitle: 'نقاط الدعوة تكسر التعادل في الترتيب',
+                        onTap: () => open(const InviteFriendsScreen()),
                       ),
                     ],
                   ),

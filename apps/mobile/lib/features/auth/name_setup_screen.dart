@@ -15,6 +15,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../gamification/invite_friends_screen.dart';
 import 'session_controller.dart';
 
 /// The longest display name the platform accepts (`User.maxDisplayNameLength`
@@ -47,12 +48,16 @@ class NameSetupScreen extends ConsumerStatefulWidget {
 
 class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
   final TextEditingController _name = TextEditingController();
+  final TextEditingController _referral = TextEditingController(
+    text: referralCodeFromLaunchUrl(),
+  );
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
     _name.dispose();
+    _referral.dispose();
     super.dispose();
   }
 
@@ -75,7 +80,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
     });
     final Result<void> result = await ref
         .read(sessionControllerProvider.notifier)
-        .chooseDisplayName(displayName: name);
+        .chooseDisplayName(displayName: name, referralCode: _referral.text);
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -132,6 +137,18 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                   decoration: InputDecoration(
                     labelText: 'الاسم',
                     errorText: _error,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  key: const Key('nameSetup.referralField'),
+                  controller: _referral,
+                  enabled: !_busy,
+                  textCapitalization: TextCapitalization.characters,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'رمز الدعوة (اختياري)',
+                    helperText: 'إن دعاك صديق، اكتب رمزه هنا',
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),

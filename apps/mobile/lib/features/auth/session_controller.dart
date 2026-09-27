@@ -35,6 +35,7 @@ import 'package:shared/shared.dart';
 
 import '../../core/auth/biometric_unlock.dart';
 import '../../core/auth/google_id_token_source.dart';
+import '../../core/auth/install_id.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
 import 'session_state.dart';
@@ -124,6 +125,7 @@ class SessionController extends _$SessionController {
     required String displayName,
     required String email,
     required String password,
+    String? referralCode,
   }) async {
     state = const AsyncData(SessionAuthenticating());
     final result = await _authApi.register(
@@ -131,7 +133,27 @@ class SessionController extends _$SessionController {
       email: email,
       password: password,
     );
-    state = AsyncData(await _onAuthResponse(result));
+    final SessionState next = await _onAuthResponse(result);
+    if (next is SessionAuthenticated) {
+      await _claimReferral(referralCode);
+    }
+    state = AsyncData(next);
+  }
+
+  /// Names the friend who invited this new account (migration 0073), when
+  /// a code was typed. The outcome is not shown here: a code refused now
+  /// can still be entered on the invitation page within 24 hours of the
+  /// account's creation, and an invitation is never worth failing a
+  /// sign-up over.
+  Future<void> _claimReferral(String? code) async {
+    final String trimmed = (code ?? '').trim();
+    if (trimmed.isEmpty) return;
+    try {
+      final String? installId = await ref.read(installIdStoreProvider).read();
+      await _authApi.claimReferral(code: trimmed, installId: installId);
+    } on Object {
+      // See above: the sign-up stands whatever happens to the claim.
+    }
   }
 
   /// Signs in with Google: the device's account picker supplies an ID
@@ -233,11 +255,15 @@ class SessionController extends _$SessionController {
   /// Chooses the caller's display name, once (`PUT /me/display-name`), then
   /// re-validates the held token so every watcher sees the new name (the
   /// same shape as [setAvatar]).
-  Future<Result<void>> chooseDisplayName({required String displayName}) async {
+  Future<Result<void>> chooseDisplayName({
+    required String displayName,
+    String? referralCode,
+  }) async {
     final result = await _authApi.chooseDisplayName(displayName: displayName);
     if (result is Err<MeResponseDto>) {
       return Result.err(result.error);
     }
+    await _claimReferral(referralCode);
     state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
     return const Result.ok(null);
   }
