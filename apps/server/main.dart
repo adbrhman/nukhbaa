@@ -9,6 +9,7 @@ import 'package:server/scheduler/notification_queue_scheduler.dart';
 import 'package:server/scheduler/overtaken_scheduler.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
+import 'package:server/scheduler/referral_qualification_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
@@ -51,6 +52,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Awards the badges players have earned (see
     // badge_evaluation_scheduler.dart).
     startBadgeEvaluationScheduler(root);
+    // Pays or holds the invitations that became eligible (see
+    // referral_qualification_scheduler.dart).
+    startReferralQualificationScheduler(root);
     // Automatic fixtures/results (off unless configured; see
     // provider_sync_scheduler.dart).
     startProviderSyncScheduler(root);

@@ -106,6 +106,11 @@ final class CompositionRoot {
     required this.recordPushOpen,
     required this.recordFrameReport,
     required this.adminGetFrameStats,
+    required this.getMyReferral,
+    required this.claimReferral,
+    required this.qualifyReferrals,
+    required this.adminListHeldReferrals,
+    required this.adminReviewReferral,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -249,6 +254,11 @@ final class CompositionRoot {
     RecordPushOpen? recordPushOpen,
     RecordFrameReport? recordFrameReport,
     AdminGetFrameStats? adminGetFrameStats,
+    GetMyReferral? getMyReferral,
+    ClaimReferral? claimReferral,
+    QualifyReferrals? qualifyReferrals,
+    AdminListHeldReferrals? adminListHeldReferrals,
+    AdminReviewReferral? adminReviewReferral,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -407,6 +417,13 @@ final class CompositionRoot {
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
        recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
        adminGetFrameStats = adminGetFrameStats ?? _absentAdminGetFrameStats(),
+       getMyReferral = getMyReferral ?? _absentGetMyReferral(),
+       claimReferral = claimReferral ?? _absentClaimReferral(),
+       qualifyReferrals = qualifyReferrals ?? _absentQualifyReferrals(),
+       adminListHeldReferrals =
+           adminListHeldReferrals ?? _absentAdminListHeldReferrals(),
+       adminReviewReferral =
+           adminReviewReferral ?? _absentAdminReviewReferral(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -1062,6 +1079,39 @@ final class CompositionRoot {
     clock: _unwiredClock,
   );
 
+  /// Builds an "absent" [GetMyReferral]: loud if a test reaches it without
+  /// wiring it.
+  static GetMyReferral _absentGetMyReferral() => GetMyReferral(
+    referrals: _UnwiredReferralRepository(),
+    clock: _unwiredClock,
+  );
+
+  /// Builds an "absent" [ClaimReferral]: loud if a test reaches it without
+  /// wiring it.
+  static ClaimReferral _absentClaimReferral() => ClaimReferral(
+    referrals: _UnwiredReferralRepository(),
+    userDirectory: _UnwiredUserDirectory(),
+    clock: _unwiredClock,
+  );
+
+  /// Builds an "absent" [QualifyReferrals]: driven by the scheduler, never
+  /// by a route test, and loud if one ever does.
+  static QualifyReferrals _absentQualifyReferrals() =>
+      QualifyReferrals(referrals: _UnwiredReferralRepository());
+
+  /// Builds an "absent" [AdminListHeldReferrals]: loud if a test reaches it
+  /// without wiring it.
+  static AdminListHeldReferrals _absentAdminListHeldReferrals() =>
+      AdminListHeldReferrals(referrals: _UnwiredReferralRepository());
+
+  /// Builds an "absent" [AdminReviewReferral]: loud if a test reaches it
+  /// without wiring it.
+  static AdminReviewReferral _absentAdminReviewReferral() =>
+      AdminReviewReferral(
+        referrals: _UnwiredReferralRepository(),
+        clock: _unwiredClock,
+      );
+
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
   static FlushNotificationQueue _absentFlushNotificationQueue() =>
@@ -1569,6 +1619,24 @@ final class CompositionRoot {
   /// Frame smoothness across every device, for the admin dashboard (backs
   /// `GET /admin/frame-stats`, migration 0070).
   final AdminGetFrameStats adminGetFrameStats;
+
+  /// The caller's invitation code and counters (backs `GET /me/referral`,
+  /// migration 0073).
+  final GetMyReferral getMyReferral;
+
+  /// A new account names its inviter (backs `POST /me/referral/claim`).
+  final ClaimReferral claimReferral;
+
+  /// Pays or holds the invitations that became eligible. Driven by the
+  /// scheduler, never by a request.
+  final QualifyReferrals qualifyReferrals;
+
+  /// The invitations held for review (backs `GET /admin/referrals`).
+  final AdminListHeldReferrals adminListHeldReferrals;
+
+  /// An admin decision on an invitation (backs
+  /// `POST /admin/referrals/{inviteeId}`).
+  final AdminReviewReferral adminReviewReferral;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -2081,6 +2149,25 @@ final class CompositionRoot {
       ),
       adminGetFrameStats: AdminGetFrameStats(
         reports: PostgresFrameReportRepository(connection),
+        clock: clock,
+      ),
+      getMyReferral: GetMyReferral(
+        referrals: PostgresReferralRepository(connection),
+        clock: clock,
+      ),
+      claimReferral: ClaimReferral(
+        referrals: PostgresReferralRepository(connection),
+        userDirectory: directory,
+        clock: clock,
+      ),
+      qualifyReferrals: QualifyReferrals(
+        referrals: PostgresReferralRepository(connection),
+      ),
+      adminListHeldReferrals: AdminListHeldReferrals(
+        referrals: PostgresReferralRepository(connection),
+      ),
+      adminReviewReferral: AdminReviewReferral(
+        referrals: PostgresReferralRepository(connection),
         clock: clock,
       ),
       sendOvertakenPushes: SendOvertakenPushes(
@@ -3373,6 +3460,53 @@ final class _UnwiredPushOpenRepository implements PushOpenRepository {
     required String link,
     required DateTime openedAt,
   }) => throw StateError('RecordPushOpen was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentGetMyReferral].
+final class _UnwiredReferralRepository implements ReferralRepository {
+  static Never _unwired() =>
+      throw StateError('invitations were not wired into this test root');
+
+  @override
+  Future<Result<String>> ensureCode(UserId userId) => _unwired();
+
+  @override
+  Future<Result<void>> markInstall({
+    required UserId userId,
+    required String installId,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<ReferralCounts>> counts({
+    required UserId userId,
+    required DateTime now,
+    required int seasonStartYear,
+  }) => _unwired();
+
+  @override
+  Future<Result<ReferralClaimOutcome>> claim({
+    required UserId invitee,
+    required String code,
+    required String? ip,
+    required String? installId,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> qualify({required DateTime now}) => _unwired();
+
+  @override
+  Future<Result<List<HeldReferral>>> held({required int limit}) => _unwired();
+
+  @override
+  Future<Result<ReferralReviewOutcome>> review({
+    required UserId invitee,
+    required ReferralDecision decision,
+    required UserId admin,
+    required String reason,
+    required DateTime now,
+  }) => _unwired();
 }
 
 /// Refuses every call: see [_absentRecordFrameReport].

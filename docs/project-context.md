@@ -3366,6 +3366,24 @@ and every migration to an ephemeral Postgres 16, then runs
 `supabase/tests/*_test.sql` (0072: 2 checks, 0073: 61 checks). **0073 must
 be on the live DB before the invitations server (batch 59) is deployed.**
 
+### Invitations: the server (batch 59, 2026-09-27)
+
+Every rule stays in the 0073 functions; the Dart layers carry values.
+
+| Route | Use-case | Who |
+|---|---|---|
+| `GET /me/referral?install=` | `GetMyReferral` | player: fixed code, month and season points, invited, pending; remembers the install id (hashed) |
+| `POST /me/referral/claim` | `ClaimReferral` | player: `{code, install_id}` -> `status`; ensures the platform row first; the address is the last `X-Forwarded-For` hop |
+| `GET /admin/referrals?limit=` | `AdminListHeldReferrals` | admin: held invitations, oldest first |
+| `POST /admin/referrals/{inviteeId}` | `AdminReviewReferral` | admin: `{decision: approve|reject|revoke, reason}` |
+
+`QualifyReferrals` runs every 30 minutes in-process
+(`referral_qualification_scheduler.dart`, first run 4 minutes after boot);
+a repeat writes nothing. Adapter: `PostgresReferralRepository`. Every claim
+and decision outcome is `200` with its `status`; malformed input is `400`,
+a non-admin on the admin routes `401`. **0073 must be on the live DB
+before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
