@@ -20,7 +20,8 @@ enum AdminSection {
   users(icon: Icons.people_alt_rounded),
   announcements(icon: Icons.campaign_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
-  audit(icon: Icons.receipt_long_rounded);
+  audit(icon: Icons.receipt_long_rounded),
+  referrals(icon: Icons.group_add_rounded);
 
   const AdminSection({required this.icon});
 

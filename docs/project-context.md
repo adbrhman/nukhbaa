@@ -3453,6 +3453,22 @@ it, in the Supabase SQL editor:
 **0075 must be on the live DB before this server is deployed.** The admin
 page in the app follows in batch 63.
 
+### Invitations: the admin page (batch 63, 2026-09-27)
+
+Admin hub section **نظام الدعوات** (`AdminSection.referrals`, group
+"المستخدمون والتفاعل", `ReferralAdminSection`):
+
+- the on/off switch (`admin.referrals.switch`, `PUT /admin/referral-switch`);
+- counts per state (held, pending, paid, revoked, rejected);
+- every invitation with its state, dates, last prediction, hold reason,
+  revoke reason (`inactive_7_days` = idle 7 days) and a "suspended" mark,
+  filterable by state; held ones can be approved or rejected, paid ones
+  revoked, each with a mandatory reason (`POST /admin/referrals/{inviteeId}`);
+- every inviter: invited, paid, pending, held, refused, and this month's
+  invitation points out of 20.
+
+A suspended idle account is reinstated from the existing users section.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
