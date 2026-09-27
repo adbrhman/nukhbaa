@@ -8,10 +8,12 @@ import 'package:shared/shared.dart';
 /// One statement, one row per member of the group, so a group of twenty costs
 /// twenty rows on the wire and one round trip.
 ///
-/// **The points are the monthly board's points over a different fixture
-/// list.** The sums are the ones `PostgresFixtureTotalsReader` computes --
-/// `scoring.fixture_scores` plus `ledger.fixture_point_entries` of kind
-/// `streak_bonus` -- and the grade buckets are the same: `decided` excludes
+/// **The points are the monthly board's points plus the streak bonus, over a
+/// different fixture list.** `scoring.fixture_scores` plus
+/// `ledger.fixture_point_entries` of kind `streak_bonus`. The weekly league is
+/// the ONLY board that counts the bonus (decided 2026-09-27, migration 0072):
+/// the monthly and sporting-season boards read scored points alone. The grade
+/// buckets are the same as the monthly board's: `decided` excludes
 /// `pending`. What changes is the fixture list: for each participation the
 /// user holds, the fixtures of THAT season that kicked off on a Riyadh day of
 /// the week. Going through `season_fixtures` keeps the week consistent with

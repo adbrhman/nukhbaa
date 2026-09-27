@@ -3313,6 +3313,25 @@ crowd another build out. The card writes `sha · platform`. The overall
 line above is unchanged (every platform together). No migration: the
 column already exists.
 
+### Streak bonus counts in the weekly league only (batch 57, 2026-09-27)
+
+Decision: gamification rewards never touch the monthly board or the
+sporting-season board. The `streak_bonus` entries stay in
+`ledger.fixture_point_entries` exactly as written (append-only, nothing
+deleted); only the readers change:
+
+| Board | Reader | Streak bonus |
+|---|---|---|
+| Month and day | `PostgresFixtureTotalsReader` | no |
+| Sporting season | `PostgresSportingSeasonStandingsReader` | no |
+| Rank arrows, personal record | `leaderboard.season_fixture_standings` (0072) | no |
+| Weekly league | `PostgresWeeklyLeagueStandingsReader` | yes |
+
+Migration 0072 redefines the view without the bonus (same columns). The
+first daily rank snapshot after it may show a one-day move for a player
+whose bonus left the total. **0072 must be on the live DB before
+deploying.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

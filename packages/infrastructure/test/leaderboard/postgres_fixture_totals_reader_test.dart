@@ -63,7 +63,7 @@ void main() {
     expect(conn.sqls, isEmpty);
   });
 
-  test('reads combined score and streak-bonus totals', () async {
+  test('reads scored-fixture totals without the streak bonus', () async {
     final conn = _rows([
       {
         'participant_id': _participantId,
@@ -89,15 +89,15 @@ void main() {
     expect(totals.single.decidedCount, 2);
 
     final sql = conn.sqls.single;
-    expect(sql, contains('ledger.fixture_point_entries'));
-    expect(sql, contains("entry_kind = 'streak_bonus'"));
-    expect(sql, contains('LEFT JOIN bonuses'));
+    expect(sql, contains('FROM scoring.fixture_scores'));
+    expect(sql, isNot(contains('ledger.fixture_point_entries')));
+    expect(sql, isNot(contains('streak_bonus')));
     expect(conn.parameters.single, {
       'fixture_ids': [_fixtureId, _fixtureId2],
     });
   });
 
-  test('maps a bonus-only participant with zero score counters', () async {
+  test('maps a zero-counter row as read', () async {
     final conn = _rows([
       {
         'participant_id': _participantId,
@@ -115,11 +115,10 @@ void main() {
     expect(totals.single.fixturesScored, 0);
     expect(totals.single.exactCount, 0);
     expect(totals.single.decidedCount, 0);
-    expect(conn.sqls.single, contains('population AS'));
-    expect(conn.sqls.single, contains('SELECT participant_id FROM bonuses'));
+    expect(conn.sqls.single, contains('GROUP BY participant_id'));
   });
 
-  test('preserves score-only and multiple-bonus mapped totals', () async {
+  test('preserves every mapped total in order', () async {
     final conn = _rows([
       {
         'participant_id': _participantId,

@@ -45,7 +45,7 @@ _FakeConnection _rows(List<Map<String, dynamic>> rows) =>
 
 void main() {
   test(
-    'reads combined score and streak-bonus points for a sporting season',
+    'reads scored points without the streak bonus for a sporting season',
     () async {
       final conn = _rows([
         {
@@ -74,15 +74,14 @@ void main() {
       expect(standings.single.monthsPlayed, 2);
 
       final sql = conn.sqls.single;
-      expect(sql, contains('ledger.fixture_point_entries'));
-      expect(sql, contains("e.entry_kind = 'streak_bonus'"));
-      expect(sql, contains('competition.season_fixtures'));
-      expect(sql, contains('LEFT JOIN bonuses'));
+      expect(sql, contains('JOIN scoring.fixture_scores fs'));
+      expect(sql, isNot(contains('ledger.fixture_point_entries')));
+      expect(sql, isNot(contains('streak_bonus')));
       expect(conn.parameters.single, {'first_key': 202609, 'last_key': 202708});
     },
   );
 
-  test('preserves score-only and multiple-bonus mapped totals', () async {
+  test('preserves every mapped total in order', () async {
     final conn = _rows([
       {
         'user_id': _userId,
@@ -111,7 +110,7 @@ void main() {
     expect(standings[1].totalPoints, 9);
   });
 
-  test('maps a bonus-only user with zero score counters', () async {
+  test('maps a zero-counter row as read', () async {
     final conn = _rows([
       {
         'user_id': _userId,
@@ -131,10 +130,6 @@ void main() {
     expect(standings.single.fixturesScored, 0);
     expect(standings.single.exactCount, 0);
     expect(standings.single.decidedCount, 0);
-    expect(conn.sqls.single, contains('population AS'));
-    expect(
-      conn.sqls.single,
-      contains('SELECT user_id, season_id FROM bonuses'),
-    );
+    expect(conn.sqls.single, contains('FROM scores s'));
   });
 }
