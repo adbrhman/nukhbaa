@@ -231,6 +231,8 @@ jobs:
 
       # Android platform files are generated in CI, so the launcher icon must be
       # copied into the generated mipmap folders on every Android build.
+      # Android 8+ gets an adaptive icon (white background + logo foreground),
+      # so the launcher masks it into its own shape instead of a hard square.
       - name: Install NUKHBAA launcher icon
         working-directory: apps/mobile
         shell: bash
@@ -255,9 +257,18 @@ jobs:
             android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png; do
             if test -e "$f"; then cp "${f%/*}/ic_launcher.png" "$f"; fi
           done
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          echo "NUKHBAA Android launcher icon installed"
+          adp="$src/adaptive"
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            test -s "$adp/ic_launcher_foreground_$d.png"
+            cp "$adp/ic_launcher_foreground_$d.png" "android/app/src/main/res/mipmap-$d/ic_launcher_foreground.png"
+          done
+          test -s "$adp/ic_launcher.xml"
+          test -s "$adp/ic_launcher_background.xml"
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/values
+          cp "$adp/ic_launcher.xml" android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          cp "$adp/ic_launcher.xml" android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          cp "$adp/ic_launcher_background.xml" android/app/src/main/res/values/ic_launcher_background.xml
+          echo "NUKHBAA Android launcher icon installed (adaptive)"
 
       - name: Decode release keystore
         working-directory: apps/mobile
