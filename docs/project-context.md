@@ -3576,6 +3576,41 @@ No server change, no migration, no new dependency.
 - **Sign-out** asks first (`signOutConfirmMessage`).
 - New l10n keys: `matchCardYourCall`, `signOutConfirmMessage`.
 
+### The champion of the month (batch 70, 2026-09-29)
+
+Decided 2026-09-29: when a month has ended and its results are in, an admin
+crowns its champion from a preview; when two players are level on every
+tie-break the admin decides between one and two champions. The admin adds
+the champion's picture from the dashboard. The app celebrates for 48 hours
+at the top of the leaderboard (the picture faint behind, crown, light and
+confetti, the picture in a gold frame, name, points and accuracy, then the
+rest of the board); afterwards the crown stays beside the name and in the
+records. This batch is the server; the app follows in batch 71.
+
+Migration 0077 (`competition.month_champions`, server-only, additive): one
+row per champion, two at most per month, crowned once (one `crowned_at`),
+with the final figures frozen (points, exact, decided, invitation points)
+and an optional inline picture (like 0033: 512 KB, JPEG / PNG / WEBP).
+Triggers refuse a champion who did not play the month, a third champion, a
+second crowning, any change but the picture, and every delete.
+`supabase/tests/0077_month_champions_test.sql`: 11 checks.
+
+| Route | Use-case | Who |
+|---|---|---|
+| `GET /admin/champions/{seasonId}` | `AdminGetChampionCandidates` | admin: over or not, fixtures without a result, already crowned, the top of the final board (everyone first included) |
+| `POST /admin/champions/{seasonId}` | `AdminCrownMonthChampions` | admin: `{user_ids, force}`; 409 `champion.month_not_over` / `already_crowned` / `fixtures_unscored` (unless `force`) / `not_first` |
+| `POST /admin/champions/{seasonId}/photos/{userId}` | `AdminSetChampionPhoto` | admin: the image bytes, `Content-Type` named |
+| `GET /champions` | `ListMonthChampions` | player: every champion, newest first, with `celebrate_until` (crowned + 48 h), `photo_url`, `avatar_url` |
+| `GET /champions/{seasonId}/photos/{userId}` | `ReadChampionPhoto` | player: the picture bytes (404 without one) |
+
+The final board is built exactly like the live monthly board
+(`MonthFinalBoard`: the stored fixture totals of the month's fixtures,
+`FixtureLeaderboard.rankTotals`, invitation points then exact scorelines
+breaking ties), read uncached. A fixture counts as unscored while
+`scoring.fixture_results` has no result for it. Adapter:
+`PostgresMonthChampionRepository`. **0077 must be on the live DB before
+this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

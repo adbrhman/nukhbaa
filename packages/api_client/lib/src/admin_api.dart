@@ -270,4 +270,46 @@ final class AdminApi {
       parse: ReferralStatusDto.fromJson,
     );
   }
+
+  /// `GET /admin/champions/{seasonId}` -- the crowning preview of a month
+  /// (migration 0077): whether it is over, its fixtures without a result,
+  /// who is already crowned and the top of its final board.
+  Future<Result<ChampionCandidatesDto>> championCandidates(String seasonId) {
+    return _transport.getObject<ChampionCandidatesDto>(
+      '/admin/champions/$seasonId',
+      parse: ChampionCandidatesDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/champions/{seasonId}` -- crowns one player, or two level
+  /// on every tie-break; [force] confirms crowning while some fixture has no
+  /// result. Answers the month's champions.
+  Future<Result<MonthChampionsDto>> crownChampions({
+    required String seasonId,
+    required List<String> userIds,
+    bool force = false,
+  }) {
+    return _transport.postObject<MonthChampionsDto>(
+      '/admin/champions/$seasonId',
+      body: CrownChampionsDto(userIds: userIds, force: force).toJson(),
+      parse: MonthChampionsDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/champions/{seasonId}/photos/{userId}` -- sets or replaces a
+  /// champion's celebration picture (the image bytes, named by
+  /// [contentType]). Answers the month's champions.
+  Future<Result<MonthChampionsDto>> setChampionPhoto({
+    required String seasonId,
+    required String userId,
+    required List<int> bytes,
+    required String contentType,
+  }) {
+    return _transport.postBytes<MonthChampionsDto>(
+      '/admin/champions/$seasonId/photos/$userId',
+      bytes: bytes,
+      contentType: contentType,
+      parse: MonthChampionsDto.fromJson,
+    );
+  }
 }

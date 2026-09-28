@@ -108,6 +108,11 @@ final class CompositionRoot {
     required this.recordFrameReport,
     required this.adminGetFrameStats,
     required this.adminGetRetention,
+    required this.adminGetChampionCandidates,
+    required this.adminCrownMonthChampions,
+    required this.adminSetChampionPhoto,
+    required this.listMonthChampions,
+    required this.readChampionPhoto,
     required this.getMyReferral,
     required this.claimReferral,
     required this.qualifyReferrals,
@@ -261,6 +266,11 @@ final class CompositionRoot {
     RecordFrameReport? recordFrameReport,
     AdminGetFrameStats? adminGetFrameStats,
     AdminGetRetention? adminGetRetention,
+    AdminGetChampionCandidates? adminGetChampionCandidates,
+    AdminCrownMonthChampions? adminCrownMonthChampions,
+    AdminSetChampionPhoto? adminSetChampionPhoto,
+    ListMonthChampions? listMonthChampions,
+    ReadChampionPhoto? readChampionPhoto,
     GetMyReferral? getMyReferral,
     ClaimReferral? claimReferral,
     QualifyReferrals? qualifyReferrals,
@@ -430,6 +440,14 @@ final class CompositionRoot {
        recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
        adminGetFrameStats = adminGetFrameStats ?? _absentAdminGetFrameStats(),
        adminGetRetention = adminGetRetention ?? _absentAdminGetRetention(),
+       adminGetChampionCandidates =
+           adminGetChampionCandidates ?? _absentAdminGetChampionCandidates(),
+       adminCrownMonthChampions =
+           adminCrownMonthChampions ?? _absentAdminCrownMonthChampions(),
+       adminSetChampionPhoto =
+           adminSetChampionPhoto ?? _absentAdminSetChampionPhoto(),
+       listMonthChampions = listMonthChampions ?? _absentListMonthChampions(),
+       readChampionPhoto = readChampionPhoto ?? _absentReadChampionPhoto(),
        getMyReferral = getMyReferral ?? _absentGetMyReferral(),
        claimReferral = claimReferral ?? _absentClaimReferral(),
        qualifyReferrals = qualifyReferrals ?? _absentQualifyReferrals(),
@@ -1115,6 +1133,49 @@ final class CompositionRoot {
     clock: _unwiredClock,
   );
 
+  /// The final board behind the "absent" champion use-cases: loud if a test
+  /// reaches it without wiring it.
+  static MonthFinalBoard _unwiredChampionBoard() => MonthFinalBoard(
+    fixtureTotalsReader: _UnwiredFixtureTotalsReader(),
+    participantReader: _unwiredParticipantReader,
+  );
+
+  /// Builds an "absent" [AdminGetChampionCandidates]: loud if a test reaches
+  /// it without wiring it.
+  static AdminGetChampionCandidates _absentAdminGetChampionCandidates() =>
+      AdminGetChampionCandidates(
+        champions: _UnwiredMonthChampionRepository(),
+        board: _unwiredChampionBoard(),
+        clock: _unwiredClock,
+      );
+
+  /// Builds an "absent" [AdminCrownMonthChampions]: loud if a test reaches
+  /// it without wiring it.
+  static AdminCrownMonthChampions _absentAdminCrownMonthChampions() =>
+      AdminCrownMonthChampions(
+        champions: _UnwiredMonthChampionRepository(),
+        board: _unwiredChampionBoard(),
+        clock: _unwiredClock,
+      );
+
+  /// Builds an "absent" [AdminSetChampionPhoto]: loud if a test reaches it
+  /// without wiring it.
+  static AdminSetChampionPhoto _absentAdminSetChampionPhoto() =>
+      AdminSetChampionPhoto(
+        champions: _UnwiredMonthChampionRepository(),
+        clock: _unwiredClock,
+      );
+
+  /// Builds an "absent" [ListMonthChampions]: loud if a test reaches it
+  /// without wiring it.
+  static ListMonthChampions _absentListMonthChampions() =>
+      ListMonthChampions(champions: _UnwiredMonthChampionRepository());
+
+  /// Builds an "absent" [ReadChampionPhoto]: loud if a test reaches it
+  /// without wiring it.
+  static ReadChampionPhoto _absentReadChampionPhoto() =>
+      ReadChampionPhoto(champions: _UnwiredMonthChampionRepository());
+
   /// Builds an "absent" [GetMyReferral]: loud if a test reaches it without
   /// wiring it.
   static GetMyReferral _absentGetMyReferral() => GetMyReferral(
@@ -1680,6 +1741,24 @@ final class CompositionRoot {
   /// first active day (backs `GET /admin/retention`, migration 0069).
   final AdminGetRetention adminGetRetention;
 
+  /// The crowning preview of a month (backs `GET /admin/champions/{id}`,
+  /// migration 0077).
+  final AdminGetChampionCandidates adminGetChampionCandidates;
+
+  /// Crowns a month's champion(s) (backs `POST /admin/champions/{id}`).
+  final AdminCrownMonthChampions adminCrownMonthChampions;
+
+  /// A champion's celebration picture (backs
+  /// `POST /admin/champions/{id}/photos/{userId}`).
+  final AdminSetChampionPhoto adminSetChampionPhoto;
+
+  /// Every crowned champion (backs `GET /champions`).
+  final ListMonthChampions listMonthChampions;
+
+  /// A champion's picture bytes (backs
+  /// `GET /champions/{id}/photos/{userId}`).
+  final ReadChampionPhoto readChampionPhoto;
+
   /// The caller's invitation code and counters (backs `GET /me/referral`,
   /// migration 0073).
   final GetMyReferral getMyReferral;
@@ -2225,6 +2304,34 @@ final class CompositionRoot {
       adminGetRetention: AdminGetRetention(
         reader: PostgresRetentionReader(connection),
         clock: clock,
+      ),
+      // The final board reads the totals uncached: a crowning must never
+      // stand on a figure up to 30 seconds old.
+      adminGetChampionCandidates: AdminGetChampionCandidates(
+        champions: PostgresMonthChampionRepository(connection),
+        board: MonthFinalBoard(
+          fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+          participantReader: participantReader,
+        ),
+        clock: clock,
+      ),
+      adminCrownMonthChampions: AdminCrownMonthChampions(
+        champions: PostgresMonthChampionRepository(connection),
+        board: MonthFinalBoard(
+          fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+          participantReader: participantReader,
+        ),
+        clock: clock,
+      ),
+      adminSetChampionPhoto: AdminSetChampionPhoto(
+        champions: PostgresMonthChampionRepository(connection),
+        clock: clock,
+      ),
+      listMonthChampions: ListMonthChampions(
+        champions: PostgresMonthChampionRepository(connection),
+      ),
+      readChampionPhoto: ReadChampionPhoto(
+        champions: PostgresMonthChampionRepository(connection),
       ),
       getMyReferral: GetMyReferral(
         referrals: PostgresReferralRepository(connection),
@@ -3616,6 +3723,41 @@ final class _UnwiredReferralRepository implements ReferralRepository {
     required UserId admin,
     required String reason,
     required DateTime now,
+  }) => _unwired();
+}
+
+/// Refuses every call: see [_absentListMonthChampions].
+final class _UnwiredMonthChampionRepository implements MonthChampionRepository {
+  static Never _unwired() =>
+      throw StateError('the champions were not wired into this test root');
+
+  @override
+  Future<Result<ChampionMonth?>> month(SeasonId season) => _unwired();
+
+  @override
+  Future<Result<void>> crown({
+    required SeasonId season,
+    required List<ChampionToCrown> champions,
+    required UserId crownedBy,
+    required DateTime crownedAt,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<MonthChampion>>> list({required int limit}) => _unwired();
+
+  @override
+  Future<Result<bool>> setPhoto({
+    required SeasonId season,
+    required UserId user,
+    required List<int> bytes,
+    required String mime,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<StoredAvatar?>> photo({
+    required SeasonId season,
+    required UserId user,
   }) => _unwired();
 }
 

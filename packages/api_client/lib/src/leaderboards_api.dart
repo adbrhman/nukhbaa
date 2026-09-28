@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_client/src/api_transport.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -142,5 +144,21 @@ final class LeaderboardsApi {
       query: limit == null ? null : {'limit': '$limit'},
       parse: HallOfFameDto.fromJson,
     );
+  }
+
+  /// `GET /champions` -- every crowned champion of the monthly contests,
+  /// newest crowning first (migration 0077).
+  Future<Result<MonthChampionsDto>> champions() {
+    return _transport.getObject<MonthChampionsDto>(
+      '/champions',
+      parse: MonthChampionsDto.fromJson,
+    );
+  }
+
+  /// A champion's celebration picture, from the server-relative
+  /// [photoPath] the server built (`photo_url`), passed back verbatim.
+  /// `Ok(null)` when there is none.
+  Future<Result<Uint8List?>> championPhotoBytes(String photoPath) {
+    return _transport.getBytes(photoPath);
   }
 }
