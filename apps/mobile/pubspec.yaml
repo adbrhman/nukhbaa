@@ -87,6 +87,10 @@ dependencies:
   # apps/mobile" boundary (ADR-002 \xc2\xa72.8) \xe2\x80\x94 no `http` call is made here.
   url_launcher: ^6.3.2
 
+  # Approved 2026-09-28: the system share sheet for the hit card (image +
+  # text). ShareParams / SharePlus.instance exist from 11.0 on.
+  share_plus: '>=11.0.0 <14.0.0'
+
   # In-App OTA update (ADR-002 §2.8 EXCEPTION — documented):
   # `ota_update` downloads + installs the release APK via NATIVE Android
   # (internal storage + install intent / PackageInstaller). It performs NO

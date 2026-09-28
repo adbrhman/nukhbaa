@@ -1578,5 +1578,55 @@ class AppLocalizationsAr extends AppLocalizations {
   String get boardColMovement => 'الحركة';
 
   @override
+  String get historyShareHit => 'شارك إصابتك';
+
+  @override
+  String get shareHitShareButton => 'مشاركة';
+
+  @override
+  String get shareHitCloseButton => 'إغلاق';
+
+  @override
+  String get shareHitTitle => 'أصبت النتيجة! 🎯';
+
+  @override
+  String get shareHitDoubleTitle => 'ضاعفت وأصبت!';
+
+  @override
+  String get shareHitMyCall => 'توقعي';
+
+  @override
+  String get shareHitFinal => 'النتيجة';
+
+  @override
+  String shareHitPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '+$points نقطة',
+      many: '+$points نقطة',
+      few: '+$points نقاط',
+      two: '+2 نقطة',
+      one: '+1 نقطة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareHitRank(int rank) {
+    return 'مركزي في الشهر: $rank';
+  }
+
+  @override
+  String shareHitMessage(String home, String score, String away) {
+    return 'أصبت نتيجة $home $score $away في نُخبة 🎯';
+  }
+
+  @override
+  String shareHitJoin(String link) {
+    return 'العب معي: $link';
+  }
+
+  @override
   String get historyFinished => 'انتهت';
 }

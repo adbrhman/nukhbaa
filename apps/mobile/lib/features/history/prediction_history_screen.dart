@@ -15,6 +15,7 @@ import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
 import '../fixture_prediction/widgets/live_matches_chip.dart';
+import 'exact_hit_share.dart';
 import 'fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
 import 'prediction_lookup_providers.dart';
@@ -264,6 +265,21 @@ class _FixturePredictionCard extends ConsumerWidget {
                 points: points,
                 isDouble: prediction.isDouble,
               ),
+              // A call that earned points can be shared as a picture card.
+              if ((points ?? 0) > 0)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: ShareHitButton(
+                    key: Key('history.shareHit.${prediction.id}'),
+                    hit: ExactHit(
+                      prediction: prediction,
+                      fixture: fixture,
+                      resultHome: resultHome,
+                      resultAway: resultAway,
+                      points: points ?? 0,
+                    ),
+                  ),
+                ),
             ],
             const SizedBox(height: AppSpacing.sm),
             Text(

@@ -1568,5 +1568,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boardColMovement => 'Move';
 
   @override
+  String get historyShareHit => 'Share your hit';
+
+  @override
+  String get shareHitShareButton => 'Share';
+
+  @override
+  String get shareHitCloseButton => 'Close';
+
+  @override
+  String get shareHitTitle => 'Spot on! 🎯';
+
+  @override
+  String get shareHitDoubleTitle => 'Doubled and nailed it!';
+
+  @override
+  String get shareHitMyCall => 'My call';
+
+  @override
+  String get shareHitFinal => 'Final';
+
+  @override
+  String shareHitPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '+$points points',
+      one: '+1 point',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareHitRank(int rank) {
+    return 'My month rank: $rank';
+  }
+
+  @override
+  String shareHitMessage(String home, String score, String away) {
+    return 'I called $home $score $away on Nukhba 🎯';
+  }
+
+  @override
+  String shareHitJoin(String link) {
+    return 'Play with me: $link';
+  }
+
+  @override
   String get historyFinished => 'Full time';
 }

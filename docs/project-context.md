@@ -3514,6 +3514,19 @@ window, then both tables, scrolling sideways on a phone. The SQL was run
 against the 0069 views on sample data (Riyadh midnight, partial weeks,
 young cohorts) before shipping. No new dependency.
 
+### Share a hit (batch 66, 2026-09-28)
+
+A finished prediction that earned points (My Predictions) shows **شارك
+إصابتك**. It opens a preview of a picture card -- the Nukhba logo, the match
+and league, the call against the final score, the points (⚡🔥 on a double)
+and the viewer's place on the month's board -- then captures that exact card
+(`RepaintBoundary`, pixel ratio 3) and hands it with a text to the system
+share sheet. The text carries the viewer's invitation link
+(`inviteLinkFor`), so a share feeds the invitation system. Every number is
+the server's (scores read, `fixtureLeaderboardProvider`); a failed board or
+referral read only leaves the rank or the link out. New dependency, approved
+2026-09-28: `share_plus`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

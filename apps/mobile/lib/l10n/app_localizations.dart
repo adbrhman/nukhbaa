@@ -2790,6 +2790,72 @@ abstract class AppLocalizations {
   /// **'Move'**
   String get boardColMovement;
 
+  /// Button under a finished prediction that earned points; opens the share card.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your hit'**
+  String get historyShareHit;
+
+  /// No description provided for @shareHitShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareHitShareButton;
+
+  /// No description provided for @shareHitCloseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get shareHitCloseButton;
+
+  /// No description provided for @shareHitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot on! 🎯'**
+  String get shareHitTitle;
+
+  /// No description provided for @shareHitDoubleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doubled and nailed it!'**
+  String get shareHitDoubleTitle;
+
+  /// No description provided for @shareHitMyCall.
+  ///
+  /// In en, this message translates to:
+  /// **'My call'**
+  String get shareHitMyCall;
+
+  /// No description provided for @shareHitFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Final'**
+  String get shareHitFinal;
+
+  /// Points the server gave the prediction, on the share card.
+  ///
+  /// In en, this message translates to:
+  /// **'{points, plural, =1{+1 point} other{+{points} points}}'**
+  String shareHitPoints(int points);
+
+  /// The viewer's place on the month's board, on the share card.
+  ///
+  /// In en, this message translates to:
+  /// **'My month rank: {rank}'**
+  String shareHitRank(int rank);
+
+  /// Text shared with the card.
+  ///
+  /// In en, this message translates to:
+  /// **'I called {home} {score} {away} on Nukhba 🎯'**
+  String shareHitMessage(String home, String score, String away);
+
+  /// Second line of the shared text: the viewer's invitation link.
+  ///
+  /// In en, this message translates to:
+  /// **'Play with me: {link}'**
+  String shareHitJoin(String link);
+
   /// No description provided for @historyFinished.
   ///
   /// In en, this message translates to:

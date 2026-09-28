@@ -465,5 +465,16 @@
   "boardColMatches": "المباريات",
   "boardColPoints": "النقاط",
   "boardColMovement": "الحركة",
+  "historyShareHit": "شارك إصابتك",
+  "shareHitShareButton": "مشاركة",
+  "shareHitCloseButton": "إغلاق",
+  "shareHitTitle": "أصبت النتيجة! 🎯",
+  "shareHitDoubleTitle": "ضاعفت وأصبت!",
+  "shareHitMyCall": "توقعي",
+  "shareHitFinal": "النتيجة",
+  "shareHitPoints": "{points, plural, =1{+1 نقطة} =2{+2 نقطة} few{+{points} نقاط} many{+{points} نقطة} other{+{points} نقطة}}",
+  "shareHitRank": "مركزي في الشهر: {rank}",
+  "shareHitMessage": "أصبت نتيجة {home} {score} {away} في نُخبة 🎯",
+  "shareHitJoin": "العب معي: {link}",
   "historyFinished": "انتهت"
 }

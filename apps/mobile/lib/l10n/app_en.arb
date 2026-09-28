@@ -1188,5 +1188,57 @@
   "boardColMatches": "Matches",
   "boardColPoints": "Points",
   "boardColMovement": "Move",
+  "historyShareHit": "Share your hit",
+  "@historyShareHit": {
+    "description": "Button under a finished prediction that earned points; opens the share card."
+  },
+  "shareHitShareButton": "Share",
+  "shareHitCloseButton": "Close",
+  "shareHitTitle": "Spot on! 🎯",
+  "shareHitDoubleTitle": "Doubled and nailed it!",
+  "shareHitMyCall": "My call",
+  "shareHitFinal": "Final",
+  "shareHitPoints": "{points, plural, =1{+1 point} other{+{points} points}}",
+  "@shareHitPoints": {
+    "description": "Points the server gave the prediction, on the share card.",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "shareHitRank": "My month rank: {rank}",
+  "@shareHitRank": {
+    "description": "The viewer's place on the month's board, on the share card.",
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "shareHitMessage": "I called {home} {score} {away} on Nukhba 🎯",
+  "@shareHitMessage": {
+    "description": "Text shared with the card.",
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "score": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
+  },
+  "shareHitJoin": "Play with me: {link}",
+  "@shareHitJoin": {
+    "description": "Second line of the shared text: the viewer's invitation link.",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
   "historyFinished": "Full time"
 }
