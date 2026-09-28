@@ -3514,6 +3514,25 @@ window, then both tables, scrolling sideways on a phone. The SQL was run
 against the 0069 views on sample data (Riyadh midnight, partial weeks,
 young cohorts) before shipping. No new dependency.
 
+### The new logo (batch 69, 2026-09-29)
+
+The owner's flat mark (the letter nun and an N around a goal, the dot the
+ball) replaces the crown-and-ball logo of 2026-09-28: it stays legible at
+launcher and notification sizes, where the old one turned to a blur. Brand
+blue #1978D1, the mark in white.
+
+- Launcher (`assets/branding/nukhbaa_icon_v7/`, same paths, so the CI steps
+  are unchanged): the adaptive background is the brand blue, the foreground
+  the white mark inside the 66dp safe circle; the pre-Android-8 icons are a
+  rounded blue tile.
+- Web: `icon192/512` are full-bleed blue with the mark inside the maskable
+  80% circle (the same files serve as the maskable icons); the favicon is a
+  small rounded tile. The committed `web/icons` and `web/favicon.png` match.
+- `assets/branding/nukhbaa_logo.png` (sign-in header and the share card) is
+  the blue tile; both screens round its corners themselves.
+
+No code change, no new dependency.
+
 ### Share a hit (batch 66, 2026-09-28)
 
 A finished prediction that earned points (My Predictions) shows **شارك
