@@ -131,36 +131,48 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     _ => AccountScreen(user: widget.user),
   };
 
+  /// Android's back button on any tab but home returns to the home tab;
+  /// only from home does it leave the app. One back press on the matches or
+  /// leaderboard tab used to close the app outright.
+  void _onBack(bool didPop, Object? result) {
+    if (didPop || currentIndex == 0) return;
+    _select(0);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: context.tokens.background,
-        extendBody: true,
-        // On a tablet the tabs keep a phone-like reading width, centred,
-        // instead of stretching cards and tables edge to edge. A phone is
-        // narrower than the cap, so nothing changes there.
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppSizes.maxContentWidth,
-            ),
-            child: IndexedStack(
-              index: currentIndex,
-              children: <Widget>[
-                for (int i = 0; i < tabCount; i++)
-                  if (_built.contains(i))
-                    _pageAt(i)
-                  else
-                    const SizedBox.shrink(),
-              ],
+    return PopScope<Object?>(
+      canPop: currentIndex == 0,
+      onPopInvokedWithResult: _onBack,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: context.tokens.background,
+          extendBody: true,
+          // On a tablet the tabs keep a phone-like reading width, centred,
+          // instead of stretching cards and tables edge to edge. A phone is
+          // narrower than the cap, so nothing changes there.
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppSizes.maxContentWidth,
+              ),
+              child: IndexedStack(
+                index: currentIndex,
+                children: <Widget>[
+                  for (int i = 0; i < tabCount; i++)
+                    if (_built.contains(i))
+                      _pageAt(i)
+                    else
+                      const SizedBox.shrink(),
+                ],
+              ),
             ),
           ),
-        ),
-        bottomNavigationBar: NukhbaaBottomNav(
-          index: currentIndex,
-          onChanged: _select,
+          bottomNavigationBar: NukhbaaBottomNav(
+            index: currentIndex,
+            onChanged: _select,
+          ),
         ),
       ),
     );

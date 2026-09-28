@@ -17,6 +17,7 @@ import '../competition/team_catalog_index.dart';
 import '../competition/team_identity.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../gamification/daily_challenge_card.dart';
+import '../history/prediction_history_providers.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'pending_predictions_provider.dart';
@@ -56,6 +57,9 @@ class HomeScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(currentMonthFixturesProvider);
             ref.invalidate(activeSeasonsProvider);
+            // The open-predictions card and the day's challenge follow the
+            // caller's own predictions.
+            ref.invalidate(myFixturePredictionsProvider);
             try {
               await ref.read(currentMonthFixturesProvider.future);
             } on Object {

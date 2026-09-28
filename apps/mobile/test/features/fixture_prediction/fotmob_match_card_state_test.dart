@@ -345,4 +345,66 @@ void main() {
       );
     },
   );
+
+  testWidgets('locked state: the player\'s own call stays on the card', (
+    tester,
+  ) async {
+    final harness = _harnessFor(
+      kickoffAt: _pastIso(),
+      myPredictions: [
+        FixturePredictionDto(
+          id: 'fp-1',
+          participantId: 'part-1',
+          fixtureId: 'f-1',
+          submittedAt: '2026-09-01T10:00:00.000Z',
+          homeGoals: 2,
+          awayGoals: 1,
+          isDouble: true,
+        ).toJson(),
+      ],
+      scores: const [],
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_host(harness, const CurrentMonthFixturesScreen()));
+    await tester.pumpAndSettle();
+
+    final Finder myCall = find.byKey(
+      const Key('currentMonthFixtures.myCall.f-1'),
+    );
+    expect(myCall, findsOneWidget);
+    expect(
+      find.descendant(of: myCall, matching: find.text('Your call')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: myCall, matching: find.text('2 - 1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: myCall, matching: find.byIcon(Icons.bolt_rounded)),
+      findsOneWidget,
+    );
+    expect(find.text('Result pending'), findsOneWidget);
+  });
+
+  testWidgets('locked state without a prediction shows no call line', (
+    tester,
+  ) async {
+    final harness = _harnessFor(
+      kickoffAt: _pastIso(),
+      myPredictions: const [],
+      scores: const [],
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_host(harness, const CurrentMonthFixturesScreen()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('currentMonthFixtures.myCall.f-1')),
+      findsNothing,
+    );
+    expect(find.text('Result pending'), findsOneWidget);
+  });
 }

@@ -41,6 +41,7 @@ class AsyncListView<T> extends StatelessWidget {
     this.itemBuilder,
     this.listBuilder,
     this.padding = const EdgeInsets.symmetric(vertical: 8),
+    this.onRefresh,
     super.key,
   }) : assert(
          (itemBuilder == null) != (listBuilder == null),
@@ -69,25 +70,41 @@ class AsyncListView<T> extends StatelessWidget {
   /// The padding around the list.
   final EdgeInsetsGeometry padding;
 
+  /// Pull to refresh. When set, the rows (and the legitimate-empty state)
+  /// can be pulled down to reload, and a reload keeps the rows on screen
+  /// instead of flashing the loading skeleton. The screens that pass it sit
+  /// in the shell's kept-alive tabs, where a read otherwise stays as it was
+  /// when the tab was first opened.
+  final Future<void> Function()? onRefresh;
+
   @override
   Widget build(BuildContext context) {
+    final Future<void> Function()? refresh = onRefresh;
     return value.when(
-      skipLoadingOnRefresh: false,
+      skipLoadingOnRefresh: refresh != null && value.hasValue,
       loading: () => const _Loading(),
       error: (error, _) => _ErrorView(error: error, onRetry: onRetry),
       data: (items) {
         if (items.isEmpty) {
-          return _EmptyView(message: emptyMessage);
+          final Widget empty = _EmptyView(message: emptyMessage);
+          return refresh == null
+              ? empty
+              : _PullToRefresh(onRefresh: refresh, child: empty);
         }
         final listBuilder = this.listBuilder;
-        if (listBuilder != null) return listBuilder(context, items);
-        return ListView.separated(
-          key: const Key('browse.list'),
-          padding: padding,
-          itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) => itemBuilder!(context, items[index]),
-        );
+        final Widget list = listBuilder != null
+            ? listBuilder(context, items)
+            : ListView.separated(
+                key: const Key('browse.list'),
+                padding: padding,
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, index) =>
+                    itemBuilder!(context, items[index]),
+              );
+        return refresh == null
+            ? list
+            : RefreshIndicator(onRefresh: refresh, child: list);
       },
     );
   }
@@ -149,6 +166,36 @@ class _Loading extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Pull to refresh around a body that does not scroll by itself (the empty
+/// state): the body gets the viewport's full height inside an
+/// always-scrollable view, so the gesture works and the body stays centred.
+class _PullToRefresh extends StatelessWidget {
+  const _PullToRefresh({required this.onRefresh, required this.child});
+
+  final Future<void> Function() onRefresh;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : 0,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyView extends StatelessWidget {

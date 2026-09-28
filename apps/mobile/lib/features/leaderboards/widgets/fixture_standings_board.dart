@@ -81,6 +81,21 @@ class FixtureStandingsBoard extends ConsumerWidget {
       }
     }
 
+    Future<void> refresh() async {
+      try {
+        if (selectedDay == null) {
+          ref.invalidate(fixtureLeaderboardProvider(seasonId));
+          await ref.read(fixtureLeaderboardProvider(seasonId).future);
+        } else {
+          final DayLeaderboardKey key = (seasonId: seasonId, day: selectedDay);
+          ref.invalidate(dayFixtureLeaderboardProvider(key));
+          await ref.read(dayFixtureLeaderboardProvider(key).future);
+        }
+      } on Object {
+        // A failed reload shows its error through the board itself.
+      }
+    }
+
     // The viewer's row is found by participant id first; the display name is
     // only the fallback, since two players can share a name.
     final String? myParticipantId = _myParticipantIdIn(
@@ -92,6 +107,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
       value: standings.whenData((board) => board.entries),
       emptyMessage: emptyMessage ?? l10n.fixtureLeaderboardEmpty,
       onRetry: reload,
+      onRefresh: refresh,
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
         myParticipantId: myParticipantId,

@@ -25,6 +25,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/ui/app_card.dart';
 import '../../l10n/app_localizations.dart';
+import '../history/prediction_lookup_providers.dart';
 
 /// The home page's daily-challenge card.
 class DailyChallengeCard extends ConsumerStatefulWidget {
@@ -42,10 +43,29 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
   MyDailyChallengeDto? _challenge;
   MyStreakDto? _streak;
 
+  /// The caller's predictions as they stood at the last load.
+  Map<String, FixturePredictionDto>? _seenPredictions;
+
   @override
   void initState() {
     super.initState();
+    _seenPredictions = ref.read(myFixturePredictionsByFixtureProvider).value;
     unawaited(_load());
+  }
+
+  /// The home tab is kept alive, so this card is mounted once per session:
+  /// a prediction saved on the matches tab left it at "2 of 3" all day. It
+  /// reads again whenever the caller's own predictions change -- a save, or
+  /// the home page's pull to refresh.
+  void _onPredictionsChanged(
+    AsyncValue<Map<String, FixturePredictionDto>>? previous,
+    AsyncValue<Map<String, FixturePredictionDto>> next,
+  ) {
+    final Map<String, FixturePredictionDto>? now = next.value;
+    if (now == null || next.isLoading) return;
+    final Map<String, FixturePredictionDto>? seen = _seenPredictions;
+    _seenPredictions = now;
+    if (seen != null && !identical(seen, now)) unawaited(_load());
   }
 
   /// Fetched once per mount rather than through a provider: both numbers move
@@ -70,6 +90,10 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<Map<String, FixturePredictionDto>>>(
+      myFixturePredictionsByFixtureProvider,
+      _onPredictionsChanged,
+    );
     final MyDailyChallengeDto? challenge = _challenge;
     final MyStreakDto? streak = _streak;
     final int current = streak?.current ?? 0;

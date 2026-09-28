@@ -3527,6 +3527,36 @@ the server's (scores read, `fixtureLeaderboardProvider`); a failed board or
 referral read only leaves the rank or the link out. New dependency, approved
 2026-09-28: `share_plus`.
 
+### The player's experience pass (batch 68, 2026-09-29)
+
+No server change, no migration, no new dependency.
+
+- **Back button**: on any tab but home, Android back returns to the home
+  tab (`PopScope` in `NukhbaaShell`); from home it leaves the app as before.
+- **Last month's predictions**: `historyFixturesByIdProvider`
+  (`prediction_lookup_providers.dart`) adds, for a prediction whose fixture
+  is not in the current-month feed, the fixtures of the prediction's own
+  season (`GET /seasons/{id}/fixtures`, one cached read per season). On the
+  first of a month the previous month's predictions keep their teams, their
+  kickoff and their place under "مكتملة". A card whose names are still
+  unknown shows the bare call, never the fixture id.
+- **Pull to refresh** on My Predictions, the month / day / season boards
+  (`AsyncListView.onRefresh`; a reload keeps the rows on screen) and the
+  matches tab's two empty states.
+- **Matches tab**: the nearest day with matches is measured from the real
+  today on every build; an app left open past midnight opened on the day
+  before.
+- **Match card** (layout and scoring unchanged): after kickoff the middle
+  slot keeps the player's own call under the status ("توقعك 2 - 1", a bolt
+  for the double; key `currentMonthFixtures.myCall.<id>`); a save that
+  failed on the connection offers "إعادة المحاولة"; a second double on the
+  same day (`prediction.daily_double_exceeded`) turns the toggle off, says
+  why in a snackbar and saves the scoreline alone.
+- **Daily challenge card** reads again whenever the caller's predictions
+  change (a save, the home pull to refresh) instead of once per session.
+- **Sign-out** asks first (`signOutConfirmMessage`).
+- New l10n keys: `matchCardYourCall`, `signOutConfirmMessage`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

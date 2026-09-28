@@ -50,6 +50,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../l10n/app_localizations.dart';
+import '../history/fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
 import 'current_month_fixtures_providers.dart';
 import 'feed_refresh_signal.dart';
@@ -171,19 +172,23 @@ class _CurrentMonthFixturesScreenState
   /// (future preferred on a tie). Pure — never mutates state during build.
   DateTime _effectiveDay(List<CurrentMonthFixtureItemDto> items) {
     if (_userPickedDay) return _selectedDay;
+    // Measured from the real today on every build, not from the day the
+    // screen was first built: the tab stays alive, and an app left open
+    // past midnight kept opening on the day before.
+    final DateTime today = fixtureDayOnly(DateTime.now());
     DateTime? best;
     int bestDistance = 1 << 30;
     for (final CurrentMonthFixtureItemDto item in items) {
       final DateTime? day = _kickoffDay(item);
       if (day == null) continue;
-      final int delta = day.difference(_selectedDay).inDays;
+      final int delta = day.difference(today).inDays;
       final int distance = delta.abs() * 2 + (delta < 0 ? 1 : 0);
       if (distance < bestDistance) {
         bestDistance = distance;
         best = day;
       }
     }
-    return best ?? _selectedDay;
+    return best ?? today;
   }
 
   void _selectDay(DateTime day) {
@@ -216,6 +221,7 @@ class _CurrentMonthFixturesScreenState
     ref.read(feedRefreshSignalProvider.notifier).consume();
     ref.invalidate(currentMonthFixturesProvider);
     ref.invalidate(myFixturePredictionsProvider);
+    ref.invalidate(fixtureScoresProvider);
     try {
       await ref.read(currentMonthFixturesProvider.future);
     } on Object {
@@ -223,6 +229,23 @@ class _CurrentMonthFixturesScreenState
       // the pull gesture still has to finish.
     }
   }
+
+  /// The empty states pull to refresh too: a day the admin had not filled
+  /// yet kept saying "no matches" until the app was restarted.
+  Widget _refreshable(Widget child) => RefreshIndicator(
+    onRefresh: _refresh,
+    child: LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+          ),
+          child: child,
+        ),
+      ),
+    ),
+  );
 
   Future<void> _openCalendar(DateTime current) async {
     final DateTime? picked = await Navigator.of(context).push<DateTime>(
@@ -312,10 +335,12 @@ class _CurrentMonthFixturesScreenState
           ),
           data: (items) {
             if (items.isEmpty) {
-              return _EmptyMessage(
-                messageKey: const Key('currentMonthFixtures.empty.message'),
-                containerKey: const Key('currentMonthFixtures.empty'),
-                message: l10n.matchesEmpty,
+              return _refreshable(
+                _EmptyMessage(
+                  messageKey: const Key('currentMonthFixtures.empty.message'),
+                  containerKey: const Key('currentMonthFixtures.empty'),
+                  message: l10n.matchesEmpty,
+                ),
               );
             }
             final List<CurrentMonthFixtureItemDto> dayFiltered = items
@@ -329,10 +354,14 @@ class _CurrentMonthFixturesScreenState
               dayFiltered,
             );
             if (dayItems.isEmpty) {
-              return _EmptyMessage(
-                messageKey: const Key('currentMonthFixtures.dayEmpty.message'),
-                containerKey: const Key('currentMonthFixtures.dayEmpty'),
-                message: l10n.fixturesDayEmpty,
+              return _refreshable(
+                _EmptyMessage(
+                  messageKey: const Key(
+                    'currentMonthFixtures.dayEmpty.message',
+                  ),
+                  containerKey: const Key('currentMonthFixtures.dayEmpty'),
+                  message: l10n.fixturesDayEmpty,
+                ),
               );
             }
             return RefreshIndicator(

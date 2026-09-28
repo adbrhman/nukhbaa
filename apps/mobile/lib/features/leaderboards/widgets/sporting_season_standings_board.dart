@@ -48,6 +48,14 @@ class SportingSeasonStandingsBoard extends ConsumerWidget {
       value: standings.whenData((board) => board.entries),
       emptyMessage: l10n.leaderboardSeasonEmpty,
       onRetry: () => ref.invalidate(sportingSeasonLeaderboardProvider),
+      onRefresh: () async {
+        ref.invalidate(sportingSeasonLeaderboardProvider);
+        try {
+          await ref.read(sportingSeasonLeaderboardProvider.future);
+        } on Object {
+          // A failed reload shows its error through the board itself.
+        }
+      },
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
         myParticipantId: myUserId,

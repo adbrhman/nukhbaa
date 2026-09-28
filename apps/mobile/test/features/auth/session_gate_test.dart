@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/ui/app_button.dart';
 import 'package:mobile/features/auth/session_gate.dart';
 
 import '../../support/auth_harness.dart';
@@ -211,7 +212,77 @@ void main() {
     await tester.tap(find.byKey(const Key('account.signOut')));
     await tester.pumpAndSettle();
 
+    // It asks first; the confirm button is the dialog's second.
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(AppButton),
+          )
+          .last,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.byKey(const Key('signIn.title')), findsOneWidget);
     expect(await harness.store.read(), isNull);
+  });
+
+  _authTest('cancelling the sign-out question keeps the session', (
+    tester,
+  ) async {
+    final harness = buildAuthHarness(
+      (_) async => okMe(sampleUser),
+      seedToken: 'saved-jwt',
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_appUnder(harness));
+    await tester.pumpAndSettle();
+    await _openAccountTab(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('account.signOut')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('account.signOut')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(AppButton),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byKey(const Key('account.title')), findsOneWidget);
+    expect(await harness.store.read(), isNotNull);
+  });
+
+  _authTest('back on another tab returns to home instead of leaving', (
+    tester,
+  ) async {
+    final harness = buildAuthHarness(
+      (_) async => okMe(sampleUser),
+      seedToken: 'saved-jwt',
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_appUnder(harness));
+    await tester.pumpAndSettle();
+    await _openAccountTab(tester);
+    expect(find.byKey(const Key('account.title')), findsOneWidget);
+    expect(find.byKey(const Key('home.welcome')), findsNothing);
+
+    // The route the system back button goes through.
+    final bool handled = await tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .maybePop();
+    await tester.pumpAndSettle();
+
+    expect(handled, isTrue, reason: 'the shell keeps the app open');
+    expect(find.byKey(const Key('home.welcome')), findsOneWidget);
+    expect(find.byKey(const Key('account.title')), findsNothing);
   });
 }

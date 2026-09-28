@@ -476,5 +476,7 @@
   "shareHitRank": "مركزي في الشهر: {rank}",
   "shareHitMessage": "أصبت نتيجة {home} {score} {away} في نُخبة 🎯",
   "shareHitJoin": "العب معي: {link}",
-  "historyFinished": "انتهت"
+  "historyFinished": "انتهت",
+  "matchCardYourCall": "توقعك",
+  "signOutConfirmMessage": "هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟"
 }

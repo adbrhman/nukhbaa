@@ -14,6 +14,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/theme/theme_controller.dart';
+import '../../core/ui/app_dialog.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
@@ -198,9 +199,7 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   _SignOutCard(
                     label: l10n.signOut,
-                    onTap: () => unawaited(
-                      ref.read(sessionControllerProvider.notifier).signOut(),
-                    ),
+                    onTap: () => unawaited(_confirmSignOut(context, ref, l10n)),
                   ),
                   // Raw identity fields (id/role/status/email) are debug-only
                   // diagnostics, never production UI.
@@ -418,6 +417,26 @@ class _DarkModeRow extends ConsumerWidget {
       onChanged: (_) => ref.read(themeControllerProvider.notifier).toggle(),
     );
   }
+}
+
+/// Signing out ends the session on this device and, without fingerprint
+/// sign-in, means typing the password again -- a stray tap at the foot of
+/// the page was enough. It asks first now.
+Future<void> _confirmSignOut(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) async {
+  final bool? confirmed = await AppDialog.confirm(
+    context,
+    title: l10n.signOut,
+    message: l10n.signOutConfirmMessage,
+    confirmLabel: l10n.signOut,
+    cancelLabel: l10n.cancel,
+    destructive: true,
+  );
+  if (confirmed != true || !context.mounted) return;
+  await ref.read(sessionControllerProvider.notifier).signOut();
 }
 
 /// Sign-out, on its own card in the danger colour.

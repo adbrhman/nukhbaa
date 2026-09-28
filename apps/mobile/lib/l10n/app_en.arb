@@ -1240,5 +1240,7 @@
       }
     }
   },
-  "historyFinished": "Full time"
+  "historyFinished": "Full time",
+  "matchCardYourCall": "Your call",
+  "signOutConfirmMessage": "Sign out of your account on this device?"
 }

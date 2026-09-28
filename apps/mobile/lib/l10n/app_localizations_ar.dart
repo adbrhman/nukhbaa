@@ -1629,4 +1629,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get historyFinished => 'انتهت';
+
+  @override
+  String get matchCardYourCall => 'توقعك';
+
+  @override
+  String get signOutConfirmMessage =>
+      'هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟';
 }

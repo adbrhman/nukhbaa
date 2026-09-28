@@ -78,6 +78,7 @@ import '../../../core/design/app_stroke.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/error/error_presenter.dart';
 import '../../../core/ui/app_badge.dart';
+import '../../../core/ui/app_snackbar.dart';
 import '../../../core/ui/score_pill.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../../l10n/app_localizations.dart';
@@ -93,6 +94,9 @@ import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
 import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
+
+/// The server's refusal of a second double on the same day.
+const String _dailyDoubleExceededCode = 'prediction.daily_double_exceeded';
 
 /// One fixture's FotMob-style card. Entirely independent of every other
 /// card on screen (`fixturePredictionControllerProvider` is a family keyed
@@ -357,6 +361,17 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
           // once per saved prediction. Raise a flag instead; the screen's
           // minute tick and pull-to-refresh are what actually reload it.
           ref.read(feedRefreshSignalProvider.notifier).request();
+        }
+        if (next is FixtureSubmissionFailed &&
+            next.error.code == _dailyDoubleExceededCode &&
+            _isDouble &&
+            mounted) {
+          // The day's double is already on another match. The toggle stayed
+          // lit, claiming a double the server had refused: turn it off, say
+          // why, and save the scoreline on its own.
+          setState(() => _isDouble = false);
+          AppSnackbar.show(context, ErrorPresenter.message(next.error));
+          _scheduleAutoSave(isRetry: true);
         }
       },
     );
@@ -645,15 +660,30 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   Padding(
                     key: Key('currentMonthFixtures.failure.$fixtureId'),
                     padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Text(
-                      ErrorPresenter.message(submission.error),
-                      key: Key(
-                        'currentMonthFixtures.failure.message.$fixtureId',
-                      ),
-                      style: TextStyle(
-                        color: tokens.error,
-                        fontSize: AppFontSize.s12,
-                      ),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            ErrorPresenter.message(submission.error),
+                            key: Key(
+                              'currentMonthFixtures.failure.message.$fixtureId',
+                            ),
+                            style: TextStyle(
+                              color: tokens.error,
+                              fontSize: AppFontSize.s12,
+                            ),
+                          ),
+                        ),
+                        // A dropped connection left the pick unsaved until
+                        // the player happened to tap a stepper again.
+                        if (!locked &&
+                            ErrorPresenter.isRetryable(submission.error))
+                          TextButton(
+                            key: Key('currentMonthFixtures.retry.$fixtureId'),
+                            onPressed: _scheduleAutoSave,
+                            child: Text(AppLocalizations.of(context).retry),
+                          ),
+                      ],
                     ),
                   ),
               ],
@@ -971,6 +1001,7 @@ class _MiddleSlot extends StatelessWidget {
       return _LockedSlot(
         live: live,
         fixtureId: fixtureId,
+        myPrediction: myPrediction,
         home: liveHome,
         away: liveAway,
         minute: liveMinute,
@@ -1099,6 +1130,7 @@ class _LockedSlot extends StatelessWidget {
   const _LockedSlot({
     required this.live,
     required this.fixtureId,
+    this.myPrediction,
     this.home,
     this.away,
     this.minute,
@@ -1114,8 +1146,26 @@ class _LockedSlot extends StatelessWidget {
   final int? minute;
   final bool? finished;
 
+  /// The player's own call, shown under the status once kickoff has hidden
+  /// the steppers; null when they did not predict this match.
+  final FixturePredictionDto? myPrediction;
+
   @override
   Widget build(BuildContext context) {
+    final Widget status = _status(context);
+    final FixturePredictionDto? mine = myPrediction;
+    if (mine == null) return status;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        status,
+        const SizedBox(height: AppSpacing.xs),
+        _MyCallLine(prediction: mine, fixtureId: fixtureId),
+      ],
+    );
+  }
+
+  Widget _status(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
     final int? homeGoals = home;
@@ -1179,6 +1229,55 @@ class _LockedSlot extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(color: color, fontSize: AppFontSize.s11),
         ),
+      ],
+    );
+  }
+}
+
+/// "Your call 2 - 1" under a started match. Once kickoff hid the steppers
+/// the card no longer said what the player had called -- right when they
+/// were following the score. A bolt marks the day's double.
+class _MyCallLine extends StatelessWidget {
+  const _MyCallLine({required this.prediction, required this.fixtureId});
+
+  final FixturePredictionDto prediction;
+  final String fixtureId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final TextStyle style = TextStyle(
+      color: tokens.textSecondary,
+      fontSize: AppFontSize.s11,
+      fontWeight: FontWeight.w600,
+    );
+    return Row(
+      key: Key('currentMonthFixtures.myCall.$fixtureId'),
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(l10n.matchCardYourCall, style: style),
+        const SizedBox(width: 4),
+        Text(
+          orientedScoreLabel(
+            context,
+            prediction.homeGoals,
+            prediction.awayGoals,
+          ),
+          textDirection: TextDirection.ltr,
+          style: style.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (prediction.isDouble) ...<Widget>[
+          const SizedBox(width: 2),
+          Icon(
+            Icons.bolt_rounded,
+            size: AppSizes.iconInline,
+            color: tokens.gold,
+          ),
+        ],
       ],
     );
   }

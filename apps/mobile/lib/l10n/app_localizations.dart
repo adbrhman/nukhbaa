@@ -2861,6 +2861,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full time'**
   String get historyFinished;
+
+  /// No description provided for @matchCardYourCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your call'**
+  String get matchCardYourCall;
+
+  /// No description provided for @signOutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of your account on this device?'**
+  String get signOutConfirmMessage;
 }
 
 class _AppLocalizationsDelegate

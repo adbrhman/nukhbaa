@@ -14,6 +14,8 @@ import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/widgets/async_list_view.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../fixture_prediction/fixture_prediction_providers.dart';
 import '../fixture_prediction/widgets/live_matches_chip.dart';
 import 'exact_hit_share.dart';
 import 'fixture_scores_providers.dart';
@@ -56,9 +58,9 @@ class _PredictionHistoryScreenState
     final AsyncValue<List<FixturePredictionDto>> history = ref.watch(
       myFixturePredictionsProvider,
     );
-    final Map<String, SeasonFixtureCardDto>? fixturesById = ref
-        .watch(currentMonthFixturesByIdProvider)
-        .value;
+    final Map<String, SeasonFixtureCardDto> fixturesById = ref.watch(
+      historyFixturesByIdProvider,
+    );
     final bool hasAny = history.value?.isNotEmpty ?? false;
     return Scaffold(
       appBar: AppBar(
@@ -101,6 +103,7 @@ class _PredictionHistoryScreenState
                     ? l10n.historyFilterEmpty
                     : l10n.predictionHistoryEmpty,
                 onRetry: () => ref.invalidate(myFixturePredictionsProvider),
+                onRefresh: _refresh,
                 itemBuilder: (context, prediction) =>
                     // One spoken node per prediction.
                     MergeSemantics(
@@ -114,12 +117,27 @@ class _PredictionHistoryScreenState
     );
   }
 
+  /// Pull to refresh: the tab is kept alive by the shell, so a result
+  /// recorded while the app stayed open never reached this list before.
+  Future<void> _refresh() async {
+    ref.invalidate(currentMonthFixturesProvider);
+    ref.invalidate(seasonFixturesProvider);
+    ref.invalidate(fixtureScoresProvider);
+    ref.invalidate(myFixturePredictionsProvider);
+    try {
+      await ref.read(myFixturePredictionsProvider.future);
+    } on Object {
+      // A failed reload shows its error through the list itself; the pull
+      // gesture still has to finish.
+    }
+  }
+
   bool _passes(
     FixturePredictionDto prediction,
-    Map<String, SeasonFixtureCardDto>? fixturesById,
+    Map<String, SeasonFixtureCardDto> fixturesById,
   ) {
     if (_filter == _HistoryFilter.all) return true;
-    final String? kickoffAt = fixturesById?[prediction.fixtureId]?.kickoffAt;
+    final String? kickoffAt = fixturesById[prediction.fixtureId]?.kickoffAt;
     final DateTime? kickoff = kickoffAt == null
         ? null
         : DateTime.tryParse(kickoffAt)?.toUtc();
@@ -132,13 +150,10 @@ class _PredictionHistoryScreenState
 
 /// A single historical per-fixture forecast (Axiom 4 Amendment).
 ///
-/// Team names and the kickoff come from [currentMonthFixturesByIdProvider]
-/// -- an index over the same feed the fixtures screen renders -- because
-/// [FixturePredictionDto.seasonId] is the *participant's* season, not the
-/// fixture's, and a monthly competition gathers its fixtures from several
-/// leagues. A still-loading read, or a fixture outside the current month,
-/// falls back to the raw fixture id and no kickoff line rather than a
-/// broken card.
+/// Team names and the kickoff come from [historyFixturesByIdProvider]: the
+/// current-month feed, then the prediction's own season for a fixture of an
+/// earlier month. A still-loading read falls back to the bare call and no
+/// kickoff line rather than a broken card.
 ///
 /// Kickoff and submission are two separate, labelled lines: the card used
 /// to show only the submission instant at the top, where it read like the
@@ -155,15 +170,15 @@ class _FixturePredictionCard extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String? seasonId = prediction.seasonId;
-    // Team names come from the current-month feed, not from the
-    // prediction's own season: `seasonId` is derived server-side from the
-    // *participant's* season, which is not where the fixtures live once a
-    // monthly competition gathers fixtures from several leagues. Read
-    // BEFORE the scores below, which now depend on the kickoff.
-    final AsyncValue<Map<String, SeasonFixtureCardDto>> fixturesById = ref
-        .watch(currentMonthFixturesByIdProvider);
-    final SeasonFixtureCardDto? fixture =
-        fixturesById.value?[prediction.fixtureId];
+    // Team names and kickoff: the current-month feed first, then the
+    // prediction's own season for a fixture outside it (see
+    // historyFixturesByIdProvider). Read BEFORE the scores below, which
+    // depend on the kickoff.
+    final SeasonFixtureCardDto? fixture = ref.watch(
+      historyFixturesByIdProvider.select(
+        (Map<String, SeasonFixtureCardDto> byId) => byId[prediction.fixtureId],
+      ),
+    );
     final String? kickoffAt = fixture?.kickoffAt;
     // PERF: one scores request per visible row, over the caller's whole
     // history. A fixture whose kickoff is still ahead cannot carry a grade,
@@ -372,7 +387,8 @@ class _FixturePredictionCard extends ConsumerWidget {
 
 /// One fixture's scoreline: "[crest] Home  2 - 1  Away [crest]", with a
 /// small "double" badge under the pill when this was the day's double.
-/// Falls back to the raw fixture id (no crests) when [fixture] is `null` --
+/// Falls back to the call alone, centred (no names, no crests), when
+/// [fixture] is `null` --
 /// the resolved read hasn't returned this fixture yet, or it is no longer
 /// linked to the season. The verdict no longer sits here as a bare glyph
 /// (it rendered as an unexplained "x"); it is the card's labelled status.
@@ -390,36 +406,32 @@ class _ScoreLine extends StatelessWidget {
         (f?.homeTeam?.isNotEmpty ?? false) &&
         (f?.awayTeam?.isNotEmpty ?? false);
 
-    if (!hasNames) {
-      return Text(
-        l10n.predictionHistoryScoreLine(
-          score.fixtureId,
-          score.homeGoals,
-          score.awayGoals,
-        ),
-      );
-    }
+    final Widget call = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ScorePill(home: score.homeGoals, away: score.awayGoals),
+        if (score.isDouble)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: AppBadge(
+              label: l10n.predictionDoubleLabel,
+              tone: AppBadgeTone.gold,
+              icon: Icons.bolt_rounded,
+            ),
+          ),
+      ],
+    );
+
+    // Names not known: the call alone, never the raw fixture id, which
+    // read to the player as a code.
+    if (!hasNames) return Center(child: call);
 
     return Row(
       children: <Widget>[
         Expanded(child: _TeamMini(name: f!.homeTeam, alignEnd: false)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ScorePill(home: score.homeGoals, away: score.awayGoals),
-              if (score.isDouble)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: AppBadge(
-                    label: l10n.predictionDoubleLabel,
-                    tone: AppBadgeTone.gold,
-                    icon: Icons.bolt_rounded,
-                  ),
-                ),
-            ],
-          ),
+          child: call,
         ),
         Expanded(child: _TeamMini(name: f.awayTeam, alignEnd: true)),
       ],

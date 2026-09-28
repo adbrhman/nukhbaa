@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/gamification/daily_challenge_card.dart';
+import 'package:mobile/features/history/prediction_history_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/auth_harness.dart';
@@ -129,5 +130,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('home.dailyChallenge')), findsNothing);
+  });
+
+  testWidgets('a saved prediction brings the day\'s count up to date', (
+    tester,
+  ) async {
+    var predicted = 1;
+    final harness = buildAuthHarness((http.Request request) async {
+      switch (request.url.path) {
+        case '/me/daily-challenge':
+          return _okJson(<String, Object?>{
+            'schema_version': 1,
+            'day': '2026-09-20',
+            'total': 3,
+            'predicted': predicted,
+            'complete': false,
+          });
+        case '/me/streak':
+          return _okJson(<String, Object?>{
+            'schema_version': 1,
+            'current': 2,
+            'longest': 2,
+          });
+        case '/me/fixture-predictions':
+          return http.Response(
+            '[]',
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        default:
+          return http.Response('not found', 404);
+      }
+    }, seedToken: 'jwt');
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_cardUnder(harness));
+    await tester.pumpAndSettle();
+    expect(find.text('1 من 3'), findsOneWidget);
+
+    // What a save does: the caller's predictions are read again.
+    predicted = 2;
+    ProviderScope.containerOf(
+      tester.element(find.byType(DailyChallengeCard)),
+    ).invalidate(myFixturePredictionsProvider);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 من 3'), findsOneWidget);
+    expect(find.text('1 من 3'), findsNothing);
   });
 }

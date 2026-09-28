@@ -1616,4 +1616,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyFinished => 'Full time';
+
+  @override
+  String get matchCardYourCall => 'Your call';
+
+  @override
+  String get signOutConfirmMessage =>
+      'Sign out of your account on this device?';
 }
