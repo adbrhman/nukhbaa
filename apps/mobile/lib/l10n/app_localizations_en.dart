@@ -1623,4 +1623,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signOutConfirmMessage =>
       'Sign out of your account on this device?';
+
+  @override
+  String get championCrownLabel => 'Month champion';
+
+  @override
+  String championTitleOne(String month) {
+    return '$month champion';
+  }
+
+  @override
+  String championTitleTwo(String month) {
+    return '$month champions';
+  }
+
+  @override
+  String get championsRecordTitle => 'Champions record';
+
+  @override
+  String get championsRecordEmpty => 'No champion has been crowned yet.';
+
+  @override
+  String get championsLoadFailed => 'Couldn\'t load the champions.';
+
+  @override
+  String get championSpotlightCollapse => 'Hide the celebration';
+
+  @override
+  String get championSpotlightExpand => 'Show the celebration';
 }

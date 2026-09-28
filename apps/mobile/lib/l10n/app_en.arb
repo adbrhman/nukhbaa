@@ -1242,5 +1242,15 @@
   },
   "historyFinished": "Full time",
   "matchCardYourCall": "Your call",
-  "signOutConfirmMessage": "Sign out of your account on this device?"
+  "signOutConfirmMessage": "Sign out of your account on this device?",
+  "championCrownLabel": "Month champion",
+  "championTitleOne": "{month} champion",
+  "@championTitleOne": {"placeholders": {"month": {"type": "String"}}},
+  "championTitleTwo": "{month} champions",
+  "@championTitleTwo": {"placeholders": {"month": {"type": "String"}}},
+  "championsRecordTitle": "Champions record",
+  "championsRecordEmpty": "No champion has been crowned yet.",
+  "championsLoadFailed": "Couldn't load the champions.",
+  "championSpotlightCollapse": "Hide the celebration",
+  "championSpotlightExpand": "Show the celebration"
 }

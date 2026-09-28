@@ -478,5 +478,13 @@
   "shareHitJoin": "العب معي: {link}",
   "historyFinished": "انتهت",
   "matchCardYourCall": "توقعك",
-  "signOutConfirmMessage": "هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟"
+  "signOutConfirmMessage": "هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟",
+  "championCrownLabel": "بطل الشهر",
+  "championTitleOne": "بطل {month}",
+  "championTitleTwo": "بطلا {month}",
+  "championsRecordTitle": "سجل الأبطال",
+  "championsRecordEmpty": "لم يُتوَّج أي بطل بعد.",
+  "championsLoadFailed": "تعذّر تحميل الأبطال.",
+  "championSpotlightCollapse": "إخفاء الاحتفال",
+  "championSpotlightExpand": "إظهار الاحتفال"
 }

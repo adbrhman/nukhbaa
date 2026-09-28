@@ -13,7 +13,11 @@ import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import 'champions_providers.dart';
+import 'champions_record_screen.dart';
 import 'leaderboards_providers.dart';
+import 'widgets/champion_crown.dart';
+import 'widgets/champion_spotlight.dart';
 import 'widgets/fixture_standings_board.dart';
 import 'widgets/sporting_season_standings_board.dart';
 import 'widgets/weekly_league_board.dart';
@@ -257,7 +261,23 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       ),
     };
 
-    return SafeArea(
+    final MonthChampionsDto? champions = ref
+        .watch(monthChampionsProvider)
+        .value;
+    // The celebration runs for the 48 hours the server set; after that the
+    // champion stays in the record and beside their name on the boards.
+    final List<MonthChampionDto> celebrating = celebratingChampions(
+      champions,
+      DateTime.now().toUtc(),
+    );
+    final bool hasRecord = champions?.champions.isNotEmpty ?? false;
+    void openRecord() {
+      Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => const ChampionsRecordScreen()),
+      );
+    }
+
+    final Widget content = SafeArea(
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -265,14 +285,29 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
           const SizedBox(height: AppSpacing.lg),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              l10n.leaderboardsHeading,
-              key: const Key('leaderboards.title'),
-              textAlign: TextAlign.start,
-              style: context.text.headlineSmall?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.leaderboardsHeading,
+                    key: const Key('leaderboards.title'),
+                    textAlign: TextAlign.start,
+                    style: context.text.headlineSmall?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                // While the celebration runs, its own header links the
+                // record; afterwards this crown does.
+                if (hasRecord && celebrating.isEmpty)
+                  IconButton(
+                    key: const Key('leaderboards.champions.record'),
+                    tooltip: l10n.championsRecordTitle,
+                    onPressed: openRecord,
+                    icon: const ChampionCrown(size: 24),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 2),
@@ -285,6 +320,14 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
               style: context.text.bodySmall?.copyWith(color: tokens.textMuted),
             ),
           ),
+          if (celebrating.isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            ChampionSpotlight(
+              champions: celebrating,
+              keyPrefix: 'leaderboards.champion',
+              onOpenRecord: openRecord,
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           // What is ranked first, then which stretch of time.
           Padding(
@@ -313,6 +356,22 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
           Expanded(child: board),
         ],
       ),
+    );
+    if (celebrating.isEmpty) return content;
+    // Layer 1 of the celebration: the champion's faint picture behind the
+    // header (under the status bar too), fading out before the board.
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 340 + MediaQuery.paddingOf(context).top,
+          child: ChampionBackdrop(champions: celebrating),
+        ),
+        content,
+      ],
     );
   }
 }

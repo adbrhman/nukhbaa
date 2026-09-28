@@ -1636,4 +1636,32 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get signOutConfirmMessage =>
       'هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟';
+
+  @override
+  String get championCrownLabel => 'بطل الشهر';
+
+  @override
+  String championTitleOne(String month) {
+    return 'بطل $month';
+  }
+
+  @override
+  String championTitleTwo(String month) {
+    return 'بطلا $month';
+  }
+
+  @override
+  String get championsRecordTitle => 'سجل الأبطال';
+
+  @override
+  String get championsRecordEmpty => 'لم يُتوَّج أي بطل بعد.';
+
+  @override
+  String get championsLoadFailed => 'تعذّر تحميل الأبطال.';
+
+  @override
+  String get championSpotlightCollapse => 'إخفاء الاحتفال';
+
+  @override
+  String get championSpotlightExpand => 'إظهار الاحتفال';
 }

@@ -2873,6 +2873,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out of your account on this device?'**
   String get signOutConfirmMessage;
+
+  /// No description provided for @championCrownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month champion'**
+  String get championCrownLabel;
+
+  /// No description provided for @championTitleOne.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} champion'**
+  String championTitleOne(String month);
+
+  /// No description provided for @championTitleTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} champions'**
+  String championTitleTwo(String month);
+
+  /// No description provided for @championsRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Champions record'**
+  String get championsRecordTitle;
+
+  /// No description provided for @championsRecordEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No champion has been crowned yet.'**
+  String get championsRecordEmpty;
+
+  /// No description provided for @championsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn't load the champions.'**
+  String get championsLoadFailed;
+
+  /// No description provided for @championSpotlightCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the celebration'**
+  String get championSpotlightCollapse;
+
+  /// No description provided for @championSpotlightExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the celebration'**
+  String get championSpotlightExpand;
 }
 
 class _AppLocalizationsDelegate

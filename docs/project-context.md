@@ -3611,6 +3611,44 @@ breaking ties), read uncached. A fixture counts as unscored while
 `PostgresMonthChampionRepository`. **0077 must be on the live DB before
 this server is deployed.**
 
+### The champion of the month in the app (batch 71, 2026-09-29)
+
+The app side of batch 70. No server change, no migration, no new
+dependency.
+
+- **Leaderboard** (`leaderboards_screen.dart`): while `now <
+  celebrate_until` of the newest crowning (`celebratingChampions`), the tab
+  draws, back to front: the champion's picture faint behind the header
+  (`ChampionBackdrop`), then `ChampionSpotlight` -- a drawn crown
+  (`ChampionCrown`, no emoji font), a gold light and one light shower of
+  confetti (never loops, skipped when the system turns animations off), the
+  picture in a gold frame (`ChampionFramedPhoto`), the name, points and
+  accuracy -- then the usual pills and board. Two champions sit side by
+  side. The spotlight folds to one line (a screen under 600 dp starts
+  folded). The picture is the celebration picture, else the profile
+  picture, else the first letter; bytes through `avatarBytesProvider`.
+- **After 48 hours** the celebration disappears; a crown beside the title
+  opens the **champions' record** (`ChampionsRecordScreen`: every crowned
+  month, newest first). A crown also sits beside a champion's name on the
+  boards keyed by user -- the season and the weekly league
+  (`BoardEntry.champion`, `championUserIdsProvider`); a monthly board's
+  lines carry no user id, so it cannot tell.
+- `monthChampionsProvider` (`GET /champions`) is kept alive; the month
+  board's pull to refresh reloads it.
+- **Admin** (`ChampionAdminSection`, hub group "النقاط والترتيب"): pick the
+  month, see whether it is over and how many fixtures have no result, the
+  top of the final board as the server ranked it; tick the player ranked
+  first (or two, level), add the champion's picture (gallery, 640 px; the
+  type read from the bytes so a cut-out PNG keeps its transparency; 512 KB
+  checked before sending), preview exactly what the players will see, then
+  crown (confirmation; `force` when fixtures lack a result). The pictures go
+  up after the crowning; one that fails is added again from the crowned
+  month ("تغيير الصورة").
+- New l10n keys: `championCrownLabel`, `championTitleOne`,
+  `championTitleTwo`, `championsRecordTitle`, `championsRecordEmpty`,
+  `championsLoadFailed`, `championSpotlightCollapse`,
+  `championSpotlightExpand`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

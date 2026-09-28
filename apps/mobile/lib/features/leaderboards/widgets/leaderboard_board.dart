@@ -15,6 +15,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
 import '../../../l10n/app_localizations.dart';
+import 'champion_crown.dart';
 
 class BoardEntry {
   const BoardEntry({
@@ -30,6 +31,7 @@ class BoardEntry {
     this.avatarUrl,
     this.outcome,
     this.outcomeLabel,
+    this.champion = false,
   });
 
   final String participantId;
@@ -59,6 +61,11 @@ class BoardEntry {
 
   /// The words for [outcome], read out by the mark's tooltip.
   final String? outcomeLabel;
+
+  /// Whether this player was crowned champion of a month: a crown beside
+  /// the name. Only the boards keyed by user can tell (the season and the
+  /// weekly league); a monthly board's lines carry no user id.
+  final bool champion;
 }
 
 /// A weekly-league line's projected result, drawn from the server's
@@ -461,16 +468,35 @@ class _PodiumTile extends StatelessWidget {
               children: <Widget>[
                 _RankPill(rank: entry.rank, color: medal),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  entry.displayName,
-                  key: Key('$keyPrefix.participant.${entry.participantId}'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: context.text.labelMedium?.copyWith(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        entry.displayName,
+                        key: Key(
+                          '$keyPrefix.participant.${entry.participantId}',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: context.text.labelMedium?.copyWith(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (entry.champion) ...<Widget>[
+                      const SizedBox(width: 3),
+                      ChampionCrown(
+                        key: Key('$keyPrefix.crown.${entry.participantId}'),
+                        size: 14,
+                        semanticLabel: AppLocalizations.of(
+                          context,
+                        ).championCrownLabel,
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -659,6 +685,7 @@ class _BoardRow extends StatelessWidget {
         entry.displayName,
         l10n.boardPoints(entry.points),
         if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
+        if (entry.champion) l10n.championCrownLabel,
         if (isMe) l10n.boardYou,
       ].join(l10n.boardListSeparator),
       excludeSemantics: true,
@@ -702,18 +729,33 @@ class _BoardRow extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsetsDirectional.only(end: 2),
-                child: Text(
-                  entry.displayName,
-                  key: Key('$keyPrefix.participant.${entry.participantId}'),
-                  maxLines: 2,
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.start,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: t.textPrimary,
-                    fontWeight: isMe ? FontWeight.w800 : FontWeight.w600,
-                    height: 1.2,
-                  ),
+                child: Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        entry.displayName,
+                        key: Key(
+                          '$keyPrefix.participant.${entry.participantId}',
+                        ),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.start,
+                        style: context.text.bodyMedium?.copyWith(
+                          color: t.textPrimary,
+                          fontWeight: isMe ? FontWeight.w800 : FontWeight.w600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    if (entry.champion) ...<Widget>[
+                      const SizedBox(width: 4),
+                      ChampionCrown(
+                        key: Key('$keyPrefix.crown.${entry.participantId}'),
+                        size: 16,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

@@ -12,6 +12,7 @@ import 'screens/sections/admin_predictions_section.dart';
 import 'screens/sections/announcement_section.dart';
 import 'screens/sections/admin_counted_fixtures_section.dart';
 import 'screens/sections/audit_log_section.dart';
+import 'screens/sections/champion_admin_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/fixture_delete_section.dart';
@@ -36,6 +37,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.ledger => l10n.adminLedgerLookupTab,
     AdminSection.audit => l10n.adminAuditLogTab,
     AdminSection.referrals => 'نظام الدعوات',
+    AdminSection.champions => 'تتويج بطل الشهر',
   };
 }
 
@@ -53,7 +55,10 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
       AdminSection.countedFixtures,
     ],
   ),
-  (title: 'النقاط والترتيب', sections: [AdminSection.ledger]),
+  (
+    title: 'النقاط والترتيب',
+    sections: [AdminSection.champions, AdminSection.ledger],
+  ),
   (
     title: 'المستخدمون والتفاعل',
     sections: [
@@ -155,6 +160,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.predictions => const AdminPredictionsSection(),
       AdminSection.countedFixtures => const AdminCountedFixturesSection(),
       AdminSection.referrals => const ReferralAdminSection(),
+      AdminSection.champions => const ChampionAdminSection(),
     };
   }
 

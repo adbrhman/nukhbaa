@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
+import '../champions_providers.dart';
 import '../leaderboards_providers.dart';
 import 'leaderboard_board.dart';
 
@@ -44,6 +45,7 @@ class SportingSeasonStandingsBoard extends ConsumerWidget {
     final AsyncValue<SportingSeasonLeaderboardDto> standings = ref.watch(
       sportingSeasonLeaderboardProvider,
     );
+    final Set<String> champions = ref.watch(championUserIdsProvider);
     return AsyncListView<SportingSeasonEntryDto>(
       value: standings.whenData((board) => board.entries),
       emptyMessage: l10n.leaderboardSeasonEmpty,
@@ -76,6 +78,7 @@ class SportingSeasonStandingsBoard extends ConsumerWidget {
               accuracyPercent: e.decidedCount <= 0
                   ? null
                   : (e.exactCount * 100 / e.decidedCount).round(),
+              champion: champions.contains(e.userId),
             ),
         ],
       ),

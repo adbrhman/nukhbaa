@@ -17,6 +17,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
+import '../champions_providers.dart';
 import '../leaderboards_providers.dart';
 import 'leaderboard_board.dart';
 
@@ -59,7 +60,11 @@ BoardOutcome _outcomeOf(String raw) => switch (raw) {
 };
 
 /// One table line as the shared board draws it.
-BoardEntry _entryOf(AppLocalizations l10n, WeeklyLeagueEntryDto e) {
+BoardEntry _entryOf(
+  AppLocalizations l10n,
+  WeeklyLeagueEntryDto e, {
+  required bool champion,
+}) {
   final BoardOutcome outcome = _outcomeOf(e.projectedOutcome);
   return BoardEntry(
     participantId: e.userId,
@@ -77,6 +82,7 @@ BoardEntry _entryOf(AppLocalizations l10n, WeeklyLeagueEntryDto e) {
         ? null
         : (e.exactCount * 100 / e.decidedCount).round(),
     avatarUrl: e.avatarUrl,
+    champion: champion,
     outcome: outcome,
     outcomeLabel: switch (outcome) {
       BoardOutcome.promoted => l10n.weeklyLeagueOutcomePromoted,
@@ -110,6 +116,7 @@ class WeeklyLeagueBoard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final Set<String> champions = ref.watch(championUserIdsProvider);
     return AsyncObjectView<MyWeeklyLeagueDto>(
       value: ref.watch(myWeeklyLeagueProvider),
       onRetry: () => ref.invalidate(myWeeklyLeagueProvider),
@@ -164,7 +171,11 @@ class WeeklyLeagueBoard extends ConsumerWidget {
                       showHeader: showHeader,
                       entries: <BoardEntry>[
                         for (final WeeklyLeagueEntryDto e in league.entries)
-                          _entryOf(l10n, e),
+                          _entryOf(
+                            l10n,
+                            e,
+                            champion: champions.contains(e.userId),
+                          ),
                       ],
                     ),
             ),

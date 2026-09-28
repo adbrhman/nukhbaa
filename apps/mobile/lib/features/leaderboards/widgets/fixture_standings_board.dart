@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
 import '../../history/prediction_history_providers.dart';
+import '../champions_providers.dart';
 import '../leaderboards_providers.dart';
 import 'leaderboard_board.dart';
 
@@ -84,6 +85,8 @@ class FixtureStandingsBoard extends ConsumerWidget {
     Future<void> refresh() async {
       try {
         if (selectedDay == null) {
+          // A crowning made while the app was open shows with this pull.
+          ref.invalidate(monthChampionsProvider);
           ref.invalidate(fixtureLeaderboardProvider(seasonId));
           await ref.read(fixtureLeaderboardProvider(seasonId).future);
         } else {
