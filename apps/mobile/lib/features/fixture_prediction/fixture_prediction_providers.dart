@@ -96,4 +96,6 @@ final fixturePredictionsRevealProvider = FutureProvider.autoDispose
         Ok<List<FixturePredictionDto>>(:final value) => value,
         Err<List<FixturePredictionDto>>(:final error) => throw error,
       };
-    });
+      // A refused or failed column shows its error at once instead of
+      // spinning through automatic retries.
+    }, retry: (_, _) => null);

@@ -1013,13 +1013,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fixturePredictionsSearchHint => 'Search for a player';
 
   @override
-  String get fixturePredictionsEmpty => 'Nobody predicted this match.';
+  String get fixturePredictionsEmpty => 'No predictions for these matches yet.';
 
   @override
   String get fixturePredictionsNoMatch => 'No player by that name.';
-
-  @override
-  String get fixturePredictionsLoadFailed => 'Could not load the predictions.';
 
   @override
   String get fixturePredictionsUnnamed => 'Player';
@@ -1030,15 +1027,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String fixturePredictionsPoints(int points) {
-    String _temp0 = intl.Intl.pluralLogic(
-      points,
-      locale: localeName,
-      other: '+$points',
-      zero: '0',
-    );
-    return '$_temp0';
-  }
+  String get fixturePredictionsPlayerHeader => 'Player';
+
+  @override
+  String get fixturePredictionsNoStarted =>
+      'No match of this day has kicked off yet.';
 
   @override
   String get fixturesCalendarTooltip => 'Calendar';

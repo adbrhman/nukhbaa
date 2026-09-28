@@ -1845,7 +1845,7 @@ abstract class AppLocalizations {
   /// No description provided for @fixturePredictionsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Nobody predicted this match.'**
+  /// **'No predictions for these matches yet.'**
   String get fixturePredictionsEmpty;
 
   /// No description provided for @fixturePredictionsNoMatch.
@@ -1853,12 +1853,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No player by that name.'**
   String get fixturePredictionsNoMatch;
-
-  /// No description provided for @fixturePredictionsLoadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load the predictions.'**
-  String get fixturePredictionsLoadFailed;
 
   /// No description provided for @fixturePredictionsUnnamed.
   ///
@@ -1872,11 +1866,17 @@ abstract class AppLocalizations {
   /// **'{name} (you)'**
   String fixturePredictionsMine(String name);
 
-  /// Points a player earned on the match, as the server graded it.
+  /// No description provided for @fixturePredictionsPlayerHeader.
   ///
   /// In en, this message translates to:
-  /// **'{points, plural, =0{0} other{+{points}}}'**
-  String fixturePredictionsPoints(int points);
+  /// **'Player'**
+  String get fixturePredictionsPlayerHeader;
+
+  /// No description provided for @fixturePredictionsNoStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'No match of this day has kicked off yet.'**
+  String get fixturePredictionsNoStarted;
 
   /// No description provided for @fixturesCalendarTooltip.
   ///

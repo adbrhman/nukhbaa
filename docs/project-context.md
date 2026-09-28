@@ -3480,9 +3480,14 @@ registered kickoff: `409 prediction.fixture_not_started`; a non-member:
 `prediction.not_a_participant`.
 
 In the app, a started match card shows **توقعات الجميع** in the slot the
-double button held before kickoff (the card keeps its layout). It opens a sheet
-with every prediction, the viewer's own row first, a name search, the double
-mark, and the points once graded (from the existing scores read).
+double button held before kickoff (the card keeps its layout). It opens the
+day's table (batch 65, `FixturePredictionsBoardPage`): one row per player, one
+column per match of that device-local day that has kicked off (upcoming ones
+are never requested), names fixed on the reading side, columns scrolling
+sideways, the whole table scrolling down, the viewer's row first and a name
+search. Each cell is the predicted score with its verdict from the server's
+scores: points -> ✅ (⚡🔥 on a double), graded without points -> ❌, not graded
+yet -> nothing (⚡ on a double).
 
 ## 3. Version-Verification Log
 

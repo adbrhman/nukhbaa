@@ -91,7 +91,7 @@ import '../../leaderboards/season_leaderboard_screen.dart';
 import '../feed_refresh_signal.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
-import 'fixture_predictions_sheet.dart';
+import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
 
 /// One fixture's FotMob-style card. Entirely independent of every other
@@ -615,22 +615,21 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                             fixtureId: fixtureId,
                           ),
                         )
-                      // After kickoff the double button's slot opens
-                      // everyone's predictions (the server reveals them only
-                      // from kickoff, the instant predicting closes).
+                      // After kickoff the double button's slot opens the
+                      // day's predictions table (the server reveals each
+                      // match only from its kickoff, when predicting closes).
                       else if (locked)
                         SizedBox(
                           width: 130,
                           child: _RevealPredictionsButton(
                             fixtureId: fixtureId,
                             onTap: () => unawaited(
-                              showFixturePredictionsSheet(
-                                context: context,
-                                seasonId: _fixture.seasonId,
-                                fixtureId: fixtureId,
-                                homeTeam: home.displayName,
-                                awayTeam: away.displayName,
-                                myParticipantId: myPrediction?.participantId,
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => FixturePredictionsBoardPage(
+                                    kickoffAt: _fixture.kickoffAt,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
