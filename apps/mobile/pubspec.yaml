@@ -147,6 +147,7 @@ flutter:
   assets:
     - assets/team_logos/
     - assets/league_logos/
+    - assets/branding/nukhbaa_logo.png
   generate: true
   fonts:
     - family: IBMPlexSansArabic

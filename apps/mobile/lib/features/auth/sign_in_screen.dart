@@ -20,6 +20,9 @@ import 'session_controller.dart';
 import 'password_reset_screen.dart';
 import 'session_state.dart';
 
+/// The brand logo shown in the sign-in header (declared in pubspec.yaml).
+const String kBrandLogoAsset = 'assets/branding/nukhbaa_logo.png';
+
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
   @override
@@ -577,17 +580,18 @@ class _Header extends StatelessWidget {
     return Column(
       children: [
         Container(
+          key: const Key('signIn.brandLogo'),
           height: AppSizes.brandMark,
           width: AppSizes.brandMark,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            gradient: tokens.primaryGradient,
             borderRadius: AppRadius.brXl,
             boxShadow: tokens.shadowMd,
           ),
-          child: Icon(
-            Icons.sports_soccer_rounded,
-            color: tokens.onPrimary,
-            size: AppSizes.iconXl,
+          child: Image.asset(
+            kBrandLogoAsset,
+            fit: BoxFit.cover,
+            semanticLabel: l10n.appTitle,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
