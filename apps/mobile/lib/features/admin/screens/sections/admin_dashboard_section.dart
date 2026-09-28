@@ -18,8 +18,10 @@ import '../../widgets/admin_ui_kit.dart';
 /// مركز التحكم الرئيسي داخل التطبيق نفسه.
 ///
 /// كل رقم هنا ناتج عن API حقيقي موجود أصلًا. لا توجد بيانات تجريبية أو
-/// مستودعات بديلة؛ وعندما تكون قراءة المستخدمين محدودة بصفحة الخادم، نوضح
-/// ذلك في الواجهة بدل عرض "إجمالي" غير دقيق.
+/// مستودعات بديلة. عدد المستخدمين (الإجمالي والنشط والموقوف) يأتي من
+/// `GET /admin/user-stats` — تجميع حقيقي (`COUNT(*)`) على كل صفوف
+/// `identity.users`، وليس من صفحة تصفّح محدودة بحجم خادم (كما في
+/// `GET /admin/users`، المخصّصة فقط للبحث عن مستخدم لتعليقه).
 class AdminDashboardSection extends ConsumerWidget {
   const AdminDashboardSection({super.key, required this.onNavigate});
 
@@ -82,8 +84,8 @@ class _DashboardContent extends StatelessWidget {
     final t = context.tokens;
     final cards = <_MetricData>[
       _MetricData(
-        label: 'المستخدمون الظاهرون',
-        value: snapshot.users.users.length,
+        label: 'إجمالي المستخدمين',
+        value: snapshot.totalUsers,
         icon: Icons.people_alt_rounded,
         color: t.primary,
         section: AdminSection.users,

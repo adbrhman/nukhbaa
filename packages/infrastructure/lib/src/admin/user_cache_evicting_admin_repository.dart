@@ -33,4 +33,7 @@ final class UserCacheEvictingAdminRepository implements UserAdminRepository {
   @override
   Future<Result<List<User>>> listUsers({String? search, required int limit}) =>
       _inner.listUsers(search: search, limit: limit);
+
+  @override
+  Future<Result<UserCounts>> countUsers() => _inner.countUsers();
 }

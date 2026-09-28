@@ -59,4 +59,15 @@ void main() {
       expect(ctx.captured.single.method, 'GET');
     },
   );
+
+  test('userStats reads the platform-wide aggregate, not a page', () async {
+    const dto = UserStatsDto(total: 137, active: 90, suspended: 47);
+    final ctx = buildTransport((request) async => okJson(dto.toJson()));
+
+    final result = await AdminApi(ctx.transport).userStats();
+
+    expect(result, Result<UserStatsDto>.ok(dto));
+    expect(ctx.captured.single.url.path, '/admin/user-stats');
+    expect(ctx.captured.single.method, 'GET');
+  });
 }

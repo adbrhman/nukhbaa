@@ -1457,6 +1457,20 @@ final class InMemoryUserAdminRepository implements UserAdminRepository {
     final capped = matched.length > limit ? matched.sublist(0, limit) : matched;
     return Result.ok(List<User>.unmodifiable(capped));
   }
+
+  @override
+  Future<Result<UserCounts>> countUsers() async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final all = users.values.toList();
+    return Result.ok(
+      UserCounts(
+        total: all.length,
+        active: all.where((u) => u.status == UserStatus.active).length,
+        suspended: all.where((u) => u.status == UserStatus.suspended).length,
+      ),
+    );
+  }
 }
 
 /// A minimal in-memory [AuditLogRepository] for the Admin route tests: the

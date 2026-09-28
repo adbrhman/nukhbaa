@@ -12,7 +12,7 @@ Widget _host() => ProviderScope(
   overrides: [
     adminDashboardProvider.overrideWith(
       (ref) async => const AdminDashboardSnapshot(
-        users: UserListDto(users: []),
+        stats: UserStatsDto(total: 0, active: 0, suspended: 0),
         auditLog: AuditLogDto(entries: []),
         competitions: [],
         currentMonthFixtures: [],

@@ -127,6 +127,7 @@ final class CompositionRoot {
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
+    required this.adminGetUserStats,
     required this.listAuditLog,
     required this.viewParticipantLedger,
     required this.adminGetParticipantDisplayNames,
@@ -277,6 +278,7 @@ final class CompositionRoot {
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
     ListUsers? listUsers,
+    AdminGetUserStats? adminGetUserStats,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
@@ -445,6 +447,7 @@ final class CompositionRoot {
        suspendUser = suspendUser ?? _absentSuspendUser(),
        reinstateUser = reinstateUser ?? _absentReinstateUser(),
        listUsers = listUsers ?? _absentListUsers(),
+       adminGetUserStats = adminGetUserStats ?? _absentAdminGetUserStats(),
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
        viewParticipantLedger =
            viewParticipantLedger ?? _absentViewParticipantLedger(),
@@ -1222,6 +1225,9 @@ final class CompositionRoot {
   static ListUsers _absentListUsers() =>
       ListUsers(users: _unwiredUserAdminRepository);
 
+  static AdminGetUserStats _absentAdminGetUserStats() =>
+      AdminGetUserStats(users: _unwiredUserAdminRepository);
+
   static ListAuditLog _absentListAuditLog() =>
       ListAuditLog(auditLog: _unwiredAuditLogRepository);
 
@@ -1720,6 +1726,10 @@ final class CompositionRoot {
   /// Browses platform users by an optional email-contains search — the admin
   /// find-a-user flow feeding [suspendUser]/[reinstateUser] (admin-only).
   final ListUsers listUsers;
+
+  /// The platform-wide user counts (`GET /admin/user-stats`) — a real
+  /// aggregate over EVERY row, never [listUsers]'s bounded browse page.
+  final AdminGetUserStats adminGetUserStats;
 
   /// Reads the append-only admin audit trail, newest-first (admin-only — the
   /// trail is itself a privileged surface; decision OPEN-B).
@@ -2510,6 +2520,7 @@ final class CompositionRoot {
         auditRecorder: auditRecorder,
       ),
       listUsers: ListUsers(users: userAdminRepository),
+      adminGetUserStats: AdminGetUserStats(users: userAdminRepository),
       listAuditLog: ListAuditLog(auditLog: auditLogRepository),
       viewParticipantLedger: ViewParticipantLedger(
         participantReader: participantReader, // already built (Ledger slice)
@@ -3186,6 +3197,9 @@ final class _UnwiredUserAdminRepository implements UserAdminRepository {
   @override
   Future<Result<List<User>>> listUsers({String? search, required int limit}) =>
       _unwired();
+
+  @override
+  Future<Result<UserCounts>> countUsers() => _unwired();
 }
 
 /// Backs the "absent" audit trail behind every unwired admin use-case: any

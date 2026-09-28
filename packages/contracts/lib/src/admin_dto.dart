@@ -410,3 +410,64 @@ final class AuditLogDto {
     return true;
   }
 }
+
+/// The wire shape of `GET /admin/user-stats` — the platform-wide user
+/// counts: [total] registered users plus the [active]/[suspended] split, a
+/// single server-side aggregate over EVERY row of `identity.users`
+/// (Database ADR §3). Independent of `GET /admin/users`'s bounded browse
+/// page ([UserListDto]) — that one exists only to find a user to sanction
+/// and is capped server-side, so it is never a substitute for this total.
+final class UserStatsDto {
+  /// Creates a user-stats DTO.
+  const UserStatsDto({
+    required this.total,
+    required this.active,
+    required this.suspended,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
+  /// payloads that predate the field.
+  factory UserStatsDto.fromJson(Map<String, Object?> json) {
+    return UserStatsDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      total: json['total']! as int,
+      active: json['active']! as int,
+      suspended: json['suspended']! as int,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// Every registered user, regardless of status.
+  final int total;
+
+  /// Users whose lifecycle status is `active`.
+  final int active;
+
+  /// Users whose lifecycle status is `suspended`.
+  final int suspended;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'total': total,
+    'active': active,
+    'suspended': suspended,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is UserStatsDto &&
+      other.total == total &&
+      other.active == active &&
+      other.suspended == suspended &&
+      other.schemaVersion == schemaVersion;
+
+  @override
+  int get hashCode => Object.hash(total, active, suspended, schemaVersion);
+}

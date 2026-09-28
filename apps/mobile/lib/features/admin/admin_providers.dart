@@ -113,26 +113,29 @@ final adminCountedFixturesProvider = FutureProvider<List<AdminCountedFixture>>((
 /// The live data used by the Admin Control Center.
 ///
 /// This is deliberately composed from the existing typed APIs. The dashboard
-/// never owns a second repository, cache, or database and it does not invent
-/// totals when the current API only exposes a bounded admin page.
+/// never owns a second repository, cache, or database, and it never invents
+/// a total: [stats] is `GET /admin/user-stats`, a genuine `COUNT(*)`
+/// aggregate over EVERY row of `identity.users` — independent of any
+/// bounded browse page.
 final class AdminDashboardSnapshot {
   const AdminDashboardSnapshot({
-    required this.users,
+    required this.stats,
     required this.auditLog,
     required this.competitions,
     required this.currentMonthFixtures,
   });
 
-  final UserListDto users;
+  final UserStatsDto stats;
   final AuditLogDto auditLog;
   final List<CompetitionDto> competitions;
   final List<CurrentMonthFixtureItemDto> currentMonthFixtures;
 
-  int get activeUsers =>
-      users.users.where((user) => user.status == 'active').length;
+  /// Every registered user, regardless of status — the platform-wide total.
+  int get totalUsers => stats.total;
 
-  int get suspendedUsers =>
-      users.users.where((user) => user.status == 'suspended').length;
+  int get activeUsers => stats.active;
+
+  int get suspendedUsers => stats.suspended;
 
   int get todayFixtures {
     final now = DateTime.now();
@@ -157,22 +160,23 @@ final class AdminDashboardSnapshot {
 
 /// Reads the real sources needed by the overview in parallel.
 ///
-/// The users endpoint is intentionally requested with its server-side maximum
-/// page size. Until a count/pagination contract exists, the UI labels this
-/// value as a bounded admin view rather than pretending it is a global total.
+/// `userStats` (`GET /admin/user-stats`) is a single server-side aggregate
+/// over the WHOLE `identity.users` table, so the dashboard's user counts are
+/// never bounded by a page size — unlike `GET /admin/users`, which exists
+/// only to find one user to sanction and is capped server-side.
 @riverpod
 Future<AdminDashboardSnapshot> adminDashboard(Ref ref) async {
   final adminApi = ref.watch(adminApiProvider);
   final competitionApi = ref.watch(competitionApiProvider);
   final results = await (
-    adminApi.listUsers(limit: 50),
+    adminApi.userStats(),
     adminApi.listAuditLog(limit: 10),
     competitionApi.listCompetitions(),
     competitionApi.getCurrentMonthFixtures(),
   ).wait;
 
   return AdminDashboardSnapshot(
-    users: _unwrap(results.$1),
+    stats: _unwrap(results.$1),
     auditLog: _unwrap(results.$2),
     competitions: _unwrap(results.$3),
     currentMonthFixtures: _unwrap(results.$4),

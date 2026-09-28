@@ -5,6 +5,7 @@
 library;
 
 export 'src/admin/admin_get_user_fixture_predictions.dart';
+export 'src/admin/admin_get_user_stats.dart';
 export 'src/admin/admin_list_fixture_predictions.dart';
 export 'src/admin/admin_list_round_predictions.dart';
 export 'src/admin/audit_recorder.dart';

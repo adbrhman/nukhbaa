@@ -136,6 +136,58 @@ LIMIT @limit
     };
   }
 
+  // --------------------------------------------------------------------------
+  // countUsers — the platform-wide total, active/suspended split
+  // --------------------------------------------------------------------------
+
+  // One aggregate over the WHOLE table (no WHERE, no LIMIT) — deliberately
+  // the opposite shape of `_listSql`: that one is a bounded browse page for
+  // finding a user to sanction, this one is the true total the admin
+  // dashboard needs. `::bigint` is explicit so the driver's row shape is
+  // predictable regardless of table size.
+  static const String _countSql = '''
+SELECT
+  count(*)::bigint AS total,
+  count(*) FILTER (WHERE status = 'active')::bigint AS active,
+  count(*) FILTER (WHERE status = 'suspended')::bigint AS suspended
+FROM identity.users
+''';
+
+  @override
+  Future<Result<UserCounts>> countUsers() async {
+    final result = await _connection.query(_countSql);
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapCounts(value),
+    };
+  }
+
+  Result<UserCounts> _mapCounts(List<Map<String, dynamic>> rows) {
+    if (rows.isEmpty) {
+      // count(*) always returns exactly one row; an empty result is a
+      // corrupt read, mirroring `_mapCount` in the notification repository.
+      return Result.err(_corrupt('counts', 'count query returned no row'));
+    }
+    final row = rows.first;
+    return Result.ok(
+      UserCounts(
+        total: _asInt(row['total']),
+        active: _asInt(row['active']),
+        suspended: _asInt(row['suspended']),
+      ),
+    );
+  }
+
+  // `count(*)` comes back as `bigint`, which the driver may hand over as an
+  // `int` or as something that only knows how to print itself (mirrors
+  // `PostgresFixturePredictionTallyReader._count`).
+  static int _asInt(Object? raw) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw == null) return 0;
+    return int.tryParse(raw.toString()) ?? 0;
+  }
+
   Result<List<User>> _mapMany(List<Map<String, dynamic>> rows) {
     final users = <User>[];
     for (final row in rows) {

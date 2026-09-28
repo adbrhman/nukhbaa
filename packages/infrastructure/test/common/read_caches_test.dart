@@ -91,6 +91,10 @@ final class _AdminRepository implements UserAdminRepository {
     String? search,
     required int limit,
   }) async => const Result.ok(<User>[]);
+
+  @override
+  Future<Result<UserCounts>> countUsers() async =>
+      const Result.ok(UserCounts(total: 0, active: 0, suspended: 0));
 }
 
 final class _CountingScores implements FixtureScoreRepository {

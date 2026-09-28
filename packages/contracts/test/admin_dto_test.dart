@@ -178,4 +178,36 @@ void main() {
       expect(AuditLogDto.fromJson(json).schemaVersion, 1);
     });
   });
+
+  group('UserStatsDto', () {
+    const stats = UserStatsDto(total: 137, active: 90, suspended: 47);
+
+    test('round-trips through JSON with snake_case wire keys', () {
+      final json = stats.toJson();
+      expect(
+        json.keys,
+        containsAll(<String>['schema_version', 'total', 'active', 'suspended']),
+      );
+      expect(UserStatsDto.fromJson(json), stats);
+    });
+
+    test('total is independent of any bounded browse page', () {
+      // The whole point of this DTO: a count that can exceed a page size
+      // (ListUsers.maxLimit is 50) round-trips exactly, unlike a list length.
+      const large = UserStatsDto(total: 5000, active: 4800, suspended: 200);
+      expect(UserStatsDto.fromJson(large.toJson()).total, 5000);
+    });
+
+    test('defaults schema_version for a legacy payload', () {
+      final json = stats.toJson()..remove('schema_version');
+      expect(UserStatsDto.fromJson(json).schemaVersion, 1);
+    });
+
+    test('equality considers every field', () {
+      expect(
+        stats,
+        isNot(const UserStatsDto(total: 138, active: 90, suspended: 47)),
+      );
+    });
+  });
 }

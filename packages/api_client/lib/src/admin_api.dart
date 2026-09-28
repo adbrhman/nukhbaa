@@ -67,6 +67,16 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/user-stats` — the platform-wide user counts: total
+  /// registered users plus the active/suspended split, a single server-side
+  /// aggregate over EVERY row (never [listUsers]'s bounded browse page).
+  Future<Result<UserStatsDto>> userStats() {
+    return _transport.getObject<UserStatsDto>(
+      '/admin/user-stats',
+      parse: UserStatsDto.fromJson,
+    );
+  }
+
   /// `POST /admin/announcements` -- publish one instruction to every active
   /// user. The audience is resolved server-side; the client supplies only the
   /// [title] and [body]. Returns how many inboxes gained the announcement.

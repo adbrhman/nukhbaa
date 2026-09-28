@@ -20,6 +20,29 @@ import 'package:shared/shared.dart';
 /// General contract (Application ADR §2):
 /// * MUST NOT throw — every outcome is a typed [Result].
 /// * MUST map infrastructure failures to [ErrorKind.transient].
+/// Aggregate counts across EVERY row of `identity.users` (Database ADR §3),
+/// independent of [UserAdminRepository.listUsers]'s bounded browse page.
+/// [active] and [suspended] always sum to [total]: `UserStatus` is a closed
+/// two-value enum (migration `0001_identity.sql`'s `identity.user_status`),
+/// so there is no third status left unaccounted for.
+final class UserCounts {
+  /// Creates the counts.
+  const UserCounts({
+    required this.total,
+    required this.active,
+    required this.suspended,
+  });
+
+  /// Every stored user, regardless of status.
+  final int total;
+
+  /// Users whose `status` is `active`.
+  final int active;
+
+  /// Users whose `status` is `suspended`.
+  final int suspended;
+}
+
 abstract interface class UserAdminRepository {
   /// Returns the [User] identified by [id], or `Ok(null)` when no such user
   /// exists. The suspend/reinstate use-cases report a `null` as a typed
@@ -36,4 +59,10 @@ abstract interface class UserAdminRepository {
   /// email-contains [search], capped at [limit], ordered by display name then
   /// email. The admin surface's find-a-user read.
   Future<Result<List<User>>> listUsers({String? search, required int limit});
+
+  /// The platform-wide user counts: a single aggregate over EVERY row, never
+  /// a page. This is what backs "how many users does the platform have" —
+  /// [listUsers] exists only to find one user to sanction and is bounded by
+  /// design, so it must never be mistaken for this total.
+  Future<Result<UserCounts>> countUsers();
 }
