@@ -24,8 +24,17 @@ import '../../core/error/error_presenter.dart';
 import '../../core/providers.dart';
 import '../competition/widgets/async_list_view.dart';
 
+/// CI's NUKHBA_INVITE_BASE_URL: the Northflank web mirror, which opens in
+/// Yemen, where github.io is blocked. Empty when not set.
+const String _inviteBaseFromBuild = String.fromEnvironment(
+  'NUKHBA_INVITE_BASE_URL',
+);
+
 /// The web app's address; an invitation link opens it with `?ref=`.
-const String inviteWebBase = 'https://adbrhman.github.io/nukhbaa/';
+/// GitHub Pages unless the build names another host.
+const String inviteWebBase = _inviteBaseFromBuild == ''
+    ? 'https://adbrhman.github.io/nukhbaa/'
+    : _inviteBaseFromBuild;
 
 /// The invitation link that carries [code].
 String inviteLinkFor(String code) => '$inviteWebBase?ref=$code';

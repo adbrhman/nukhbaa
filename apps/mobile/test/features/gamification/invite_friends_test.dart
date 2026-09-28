@@ -162,6 +162,10 @@ void main() {
     expect(find.text(referralClaimMessage('unknown_code')), findsOneWidget);
   });
 
+  test('without a host from the build, the link opens GitHub Pages', () {
+    expect(inviteWebBase, 'https://adbrhman.github.io/nukhbaa/');
+  });
+
   test('the link carries the code; a late claim names the 24 hours', () {
     expect(inviteLinkFor('ABCDEFGH'), '$inviteWebBase?ref=ABCDEFGH');
     expect(referralClaimMessage('window_closed'), contains('24'));

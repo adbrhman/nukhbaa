@@ -11,7 +11,8 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  # write: the last step force-pushes the build to the web-dist branch.
+  contents: write
   pages: write
   id-token: write
 
@@ -91,6 +92,7 @@ jobs:
           --base-href "/${{ github.event.repository.name }}/"
           --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
           --dart-define=NUKHBA_SENTRY_DSN=${{ vars.NUKHBA_SENTRY_DSN }}
+          --dart-define=NUKHBA_INVITE_BASE_URL=${{ vars.NUKHBA_INVITE_BASE_URL }}
           --dart-define=NUKHBA_BUILD_SHA=$(git rev-parse HEAD | cut -c1-7)
 
       - name: SPA fallback
@@ -103,3 +105,29 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # github.io is blocked in Yemen; Northflank's code.run is not. A second
+      # free Northflank service builds the web-dist branch with
+      # deploy/web-mirror/Dockerfile (nginx, same build, same /nukhbaa/
+      # path). One orphan commit, force-pushed, so the 20+ MB build never
+      # piles up in the repository's history.
+      - name: Publish the build to the web-dist branch (Northflank mirror)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          DIST="$RUNNER_TEMP/web-dist"
+          rm -rf "$DIST"
+          mkdir -p "$DIST/site"
+          cp -R apps/mobile/build/web "$DIST/site/nukhbaa"
+          cp deploy/web-mirror/Dockerfile deploy/web-mirror/nginx.conf "$DIST/"
+          cd "$DIST"
+          git init -q
+          git checkout -q -b web-dist
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Dockerfile nginx.conf site
+          git commit -q -m "web build $SHORT_SHA"
+          git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" web-dist
+          echo "web-dist now holds the build of $SHORT_SHA"
