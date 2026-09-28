@@ -13,8 +13,11 @@ import 'package:shared/shared.dart';
 ///
 /// **Rule:** take the newest monthly season (by start) and its competition.
 /// While the month that follows it starts within [lead] of now, create that
-/// month under the same competition -- the same UTC window and `MM/YYYY`
-/// label `StartSeason` produces. At most [maxPerRun] months are created per
+/// month under the same competition -- the same Riyadh-midnight window and
+/// `MM/YYYY` label `StartSeason` produces. The month that follows is read
+/// from the newest label, never from its instants, and it never opens before
+/// that month ends (a month made before migration 0076 still ends at 00:00
+/// UTC). At most [maxPerRun] months are created per
 /// call, so a server that was down for a long time catches up gradually and a
 /// bug can never flood the table.
 ///
@@ -74,13 +77,18 @@ final class EnsureUpcomingMonthlySeasons {
         }
       }
 
+      final next = _monthAfter(latest.label);
+      if (next == null) {
+        return Result.ok(created);
+      }
       final previousEnd = latest.endAt.toUtc();
-      final nextStart = DateTime.utc(previousEnd.year, previousEnd.month);
+      final opensAt = CompetitionSeason.monthOpensAt(next.year, next.month);
+      final nextStart = opensAt.isBefore(previousEnd) ? previousEnd : opensAt;
       if (nextStart.isAfter(horizon)) {
         return Result.ok(created);
       }
 
-      final label = _labelFor(nextStart);
+      final label = _labelFor(next.year, next.month);
       final exists = monthly.any(
         (season) =>
             season.label == label &&
@@ -101,7 +109,7 @@ final class EnsureUpcomingMonthlySeasons {
         competitionId: latest.competitionId,
         label: label,
         startAt: nextStart,
-        endAt: DateTime.utc(nextStart.year, nextStart.month + 1),
+        endAt: CompetitionSeason.monthOpensAt(next.year, next.month + 1),
       );
       if (seasonResult is Err<CompetitionSeason>) {
         return Result.err(seasonResult.error);
@@ -117,7 +125,23 @@ final class EnsureUpcomingMonthlySeasons {
     return Result.ok(created);
   }
 
-  static String _labelFor(DateTime monthStart) =>
-      '${monthStart.month.toString().padLeft(2, '0')}/'
-      '${monthStart.year.toString().padLeft(4, '0')}';
+  static String _labelFor(int year, int month) =>
+      '${month.toString().padLeft(2, '0')}/'
+      '${year.toString().padLeft(4, '0')}';
+
+  /// The month after the `MM/YYYY` [label], or `null` when it is not one.
+  static ({int year, int month})? _monthAfter(String label) {
+    final parts = label.split('/');
+    if (parts.length != 2) {
+      return null;
+    }
+    final month = int.tryParse(parts.first);
+    final year = int.tryParse(parts.last);
+    if (month == null || year == null || month < 1 || month > 12) {
+      return null;
+    }
+    return month == 12
+        ? (year: year + 1, month: 1)
+        : (year: year, month: month + 1);
+  }
 }

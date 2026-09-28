@@ -47,8 +47,9 @@ void main() {
       expect(body['id'], kSeasonId);
       expect(body['competition_id'], kCompetitionId);
       expect(body['label'], '08/2026');
-      expect(body['start_at'], '2026-08-01T00:00:00.000Z');
-      expect(body['end_at'], '2026-09-01T00:00:00.000Z');
+      // 00:00 Riyadh on the 1st is 21:00 UTC the evening before.
+      expect(body['start_at'], '2026-07-31T21:00:00.000Z');
+      expect(body['end_at'], '2026-08-31T21:00:00.000Z');
       expect(repo.seasons[kSeasonId], isNotNull);
     });
 

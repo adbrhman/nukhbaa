@@ -8,10 +8,11 @@ import 'package:shared/shared.dart';
 /// (Application ADR, Section 2: command intent StartSeason).
 ///
 /// Phase 7.2: calendar-driven monthly season. The admin selects [year]/
-/// [month]; this use-case computes the UTC month window itself (startAt =
-/// 1st of the month 00:00:00.000Z, endAt = 1st of the next month,
-/// inclusive-start/exclusive-end) -- a caller never supplies startAt/endAt
-/// directly. [label] is derived as "MM/YYYY".
+/// [month]; this use-case computes the month window itself (startAt =
+/// 00:00 Riyadh on the 1st, endAt = 00:00 Riyadh on the 1st of the next
+/// month, inclusive-start/exclusive-end; [CompetitionSeason.monthOpensAt])
+/// -- a caller never supplies startAt/endAt directly. [label] is derived as
+/// "MM/YYYY".
 final class StartSeason {
   const StartSeason({
     required CompetitionRepository repository,
@@ -66,8 +67,8 @@ final class StartSeason {
       return Result.err(seasonIdResult.error);
     }
 
-    final startAt = DateTime.utc(year, month);
-    final endAt = DateTime.utc(year, month + 1);
+    final startAt = CompetitionSeason.monthOpensAt(year, month);
+    final endAt = CompetitionSeason.monthOpensAt(year, month + 1);
     final label =
         '${month.toString().padLeft(2, '0')}/${year.toString().padLeft(4, '0')}';
 

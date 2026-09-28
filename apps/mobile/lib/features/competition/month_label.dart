@@ -33,7 +33,9 @@ String monthLabelFromStored(String stored) {
 /// payload already carries `start_at`. Sending `cycle_label` too would
 /// mean a second source for one fact, and two sources drift.
 String cycleLabelFromStart(DateTime start) {
-  final DateTime utc = start.toUtc();
+  // A month opens at 00:00 Riyadh, 21:00 UTC the evening before (migration
+  // 0076): read it on the Riyadh clock so it is the month it names.
+  final DateTime utc = start.toUtc().add(const Duration(hours: 3));
   final int opensIn = utc.month >= 8 ? utc.year : utc.year - 1;
   final String closesIn = ((opensIn + 1) % 100).toString().padLeft(2, '0');
   return '$opensIn/$closesIn';

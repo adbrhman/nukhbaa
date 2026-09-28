@@ -85,6 +85,14 @@ final class CompetitionSeason {
 
   static const int _maxLabelLength = 60;
 
+  /// The instant the monthly contest for [month]/[year] opens: 00:00 in
+  /// Riyadh on the 1st, 21:00 UTC the evening before (UTC+3, no daylight
+  /// saving). The app's day is the Riyadh day everywhere else, so the month
+  /// turns over at that same midnight (migration 0076). [month] may run past
+  /// 12; it rolls into the next year as it does in [DateTime.utc].
+  static DateTime monthOpensAt(int year, int month) =>
+      DateTime.utc(year, month).subtract(const Duration(hours: 3));
+
   final SeasonId id;
   final CompetitionId competitionId;
   final String label;

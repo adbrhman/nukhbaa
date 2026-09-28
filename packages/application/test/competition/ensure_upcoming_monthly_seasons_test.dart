@@ -23,8 +23,8 @@ CompetitionSeason _month(
   competitionId: const CompetitionId(_monthly),
   label:
       '${month.toString().padLeft(2, '0')}/${year.toString().padLeft(4, '0')}',
-  startAt: DateTime.utc(year, month),
-  endAt: DateTime.utc(year, month + 1),
+  startAt: CompetitionSeason.monthOpensAt(year, month),
+  endAt: CompetitionSeason.monthOpensAt(year, month + 1),
 );
 
 // The fake repository, like the database, refuses a season whose
@@ -74,8 +74,8 @@ void main() {
     final newest = (await _monthlySeasons(repo)).first;
     expect(newest.label, '11/2026');
     expect(newest.competitionId, const CompetitionId(_monthly));
-    expect(newest.startAt, DateTime.utc(2026, 11));
-    expect(newest.endAt, DateTime.utc(2026, 12));
+    expect(newest.startAt, DateTime.utc(2026, 10, 31, 21));
+    expect(newest.endAt, DateTime.utc(2026, 11, 30, 21));
   });
 
   test('is idempotent: a second run creates nothing more', () async {
@@ -96,8 +96,8 @@ void main() {
     expect((result as Ok<int>).value, 1);
     final newest = (await _monthlySeasons(repo)).first;
     expect(newest.label, '01/2027');
-    expect(newest.startAt, DateTime.utc(2027));
-    expect(newest.endAt, DateTime.utc(2027, 2));
+    expect(newest.startAt, DateTime.utc(2026, 12, 31, 21));
+    expect(newest.endAt, DateTime.utc(2027, 1, 31, 21));
   });
 
   test('catches up after a long outage, at most three months a run', () async {
@@ -110,6 +110,34 @@ void main() {
       '11/2026',
     ]);
   });
+
+  test(
+    'a month made before 0076 (00:00 UTC) is followed without overlap',
+    () async {
+      final legacy = FakeCompetitionRepository()
+        ..seedCompetition(_competition());
+      legacy.seedSeason(
+        CompetitionSeason.fromStored(
+          id: const SeasonId('b0000000-0000-0000-0000-000000000010'),
+          competitionId: const CompetitionId(_monthly),
+          label: '10/2026',
+          startAt: DateTime.utc(2026, 10),
+          endAt: DateTime.utc(2026, 11),
+        ),
+      );
+
+      final result = await EnsureUpcomingMonthlySeasons(
+        repository: legacy,
+        idGenerator: FakeIdGenerator(_ids),
+      ).call(now: DateTime.utc(2026, 10, 26));
+
+      expect((result as Ok<int>).value, 1);
+      final newest = (await _monthlySeasons(legacy)).first;
+      expect(newest.label, '11/2026');
+      expect(newest.startAt, DateTime.utc(2026, 11));
+      expect(newest.endAt, DateTime.utc(2026, 11, 30, 21));
+    },
+  );
 
   test('with no monthly season there is nothing to follow', () async {
     final empty = FakeCompetitionRepository();

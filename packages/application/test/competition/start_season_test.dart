@@ -46,8 +46,9 @@ void main() {
     expect(season.id, const SeasonId(_newSeasonId));
     expect(season.competitionId, const CompetitionId(_competitionId));
     expect(season.label, '08/2026');
-    expect(season.startAt, DateTime.utc(2026, 8, 1));
-    expect(season.endAt, DateTime.utc(2026, 9, 1));
+    // 00:00 Riyadh on the 1st is 21:00 UTC the evening before.
+    expect(season.startAt, DateTime.utc(2026, 7, 31, 21));
+    expect(season.endAt, DateTime.utc(2026, 8, 31, 21));
     expect((await repo.findSeason(const SeasonId(_newSeasonId))).isOk, isTrue);
   });
 
@@ -60,8 +61,8 @@ void main() {
       month: 12,
     );
     final season = (result as Ok<CompetitionSeason>).value;
-    expect(season.startAt, DateTime.utc(2026, 12, 1));
-    expect(season.endAt, DateTime.utc(2027, 1, 1));
+    expect(season.startAt, DateTime.utc(2026, 11, 30, 21));
+    expect(season.endAt, DateTime.utc(2026, 12, 31, 21));
     expect(season.label, '12/2026');
   });
 

@@ -59,14 +59,29 @@ Future<Response> onRequest(
     return errorResponse(isDoubleResult.error);
   }
 
-  final result = await root.submitFixturePrediction(
-    principal: principal,
-    seasonId: id,
-    fixtureId: fixtureId,
-    homeGoals: (homeResult as Ok<int>).value,
-    awayGoals: (awayResult as Ok<int>).value,
-    isDouble: (isDoubleResult as Ok<bool>).value,
-  );
+  Future<Result<FixturePredictionView>> submit() =>
+      root.submitFixturePrediction(
+        principal: principal,
+        seasonId: id,
+        fixtureId: fixtureId,
+        homeGoals: (homeResult as Ok<int>).value,
+        awayGoals: (awayResult as Ok<int>).value,
+        isDouble: (isDoubleResult as Ok<bool>).value,
+      );
+
+  var result = await submit();
+  // Opening the app is the join (`GET /me`). An app left open across
+  // midnight Riyadh has not asked since the new month opened, so its first
+  // prediction in that month joins it here and is tried once more.
+  if (result case Err<FixturePredictionView>(
+    :final error,
+  ) when error.code == 'prediction.not_a_participant') {
+    await root.enrolInOpenSeasons(
+      principal: principal,
+      now: DateTime.now().toUtc(),
+    );
+    result = await submit();
+  }
 
   return switch (result) {
     Ok<FixturePredictionView>(:final value) => Response.json(

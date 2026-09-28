@@ -47,8 +47,22 @@ void main() {
               as Ok<SeasonFixture>)
           .value;
 
+  // The month that is open now and has fixtures, as the database reports it.
+  CompetitionSeason openMonth() => CompetitionSeason.fromStored(
+    id: (SeasonId.tryParse(kSeasonId) as Ok<SeasonId>).value,
+    competitionId:
+        (CompetitionId.tryParse(kCompetitionId) as Ok<CompetitionId>).value,
+    label: '10/2026',
+    startAt: DateTime.utc(2026, 9, 30, 21),
+    endAt: DateTime.utc(2026, 10, 31, 21),
+  );
+
   ({CompositionRoot root, _InMemoryFixturePredictionRepository preds})
-  predictionRootFor({bool joined = true, bool linked = true}) {
+  predictionRootFor({
+    bool joined = true,
+    bool linked = true,
+    bool monthOpen = false,
+  }) {
     final compRepo = InMemoryCompetitionRepository();
     if (joined) {
       compRepo.participants.add(participant());
@@ -70,6 +84,14 @@ void main() {
         ),
       );
     final root = CompositionRoot.forTesting(
+      enrolInOpenSeasons: EnrolInOpenSeasons(
+        competitionRepository: monthOpen
+            ? _OpenMonthRepository(compRepo, openMonth())
+            : compRepo,
+        idGenerator: ScriptedIdGenerator(const [
+          'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        ]),
+      ),
       submitFixturePrediction: SubmitFixturePrediction(
         fixturePredictionRepository: predRepo,
         competitionRepository: compRepo,
@@ -135,6 +157,40 @@ void main() {
 
       expect(response.statusCode, HttpStatus.ok);
       expect(setup.preds.count, 1);
+    });
+
+    test('a caller not yet in the open month joins it and the prediction is '
+        'accepted (an app left open across midnight)', () async {
+      final setup = predictionRootFor(joined: false, monthOpen: true);
+      final response = await prediction_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          body: const {'home_goals': 1, 'away_goals': 0},
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(setup.preds.count, 1);
+    });
+
+    test('a caller outside every open month is still refused', () async {
+      final setup = predictionRootFor(joined: false);
+      final response = await prediction_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          body: const {'home_goals': 1, 'away_goals': 0},
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      final body = await decodeBody(response);
+      expect(body['code'], 'prediction.not_a_participant');
+      expect(setup.preds.count, 0);
     });
 
     test('rejects a fixture not linked to the season', () async {
@@ -475,4 +531,32 @@ final class _InMemoryFixtureScoreRepository implements FixtureScoreRepository {
         if (wanted.contains(s.fixture.value)) s,
     ]);
   }
+}
+
+/// The harness repository plus one month that is open and has fixtures --
+/// all `EnrolInOpenSeasons` reads to decide where the caller joins.
+final class _OpenMonthRepository implements CompetitionRepository {
+  _OpenMonthRepository(this._inner, this._open);
+
+  final InMemoryCompetitionRepository _inner;
+  final CompetitionSeason _open;
+
+  @override
+  Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
+    DateTime at,
+  ) async => Result.ok(<CompetitionSeason>[_open]);
+
+  @override
+  Future<Result<Participant?>> findParticipant(
+    SeasonId seasonId,
+    UserId userId,
+  ) => _inner.findParticipant(seasonId, userId);
+
+  @override
+  Future<Result<void>> saveParticipant(Participant participant) =>
+      _inner.saveParticipant(participant);
+
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
 }
