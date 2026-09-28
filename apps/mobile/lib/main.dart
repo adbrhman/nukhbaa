@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -19,6 +21,19 @@ Future<void> main() async {
   // A build without NUKHBA_SENTRY_DSN (local runs, tests) starts as before.
   if (!crashReportingEnabled(sentryDsn)) {
     await _startApp();
+    return;
+  }
+  if (kIsWeb) {
+    // On the web, SentryFlutter.init waits for its script from
+    // browser.sentry-cdn.com before it calls appRunner, and some networks
+    // block that host: the page stayed blank. The app starts first here,
+    // and reporting follows whenever (and if) the script arrives.
+    await _startApp();
+    unawaited(
+      SentryFlutter.init(
+        (options) => configureCrashReporting(options, dsn: sentryDsn),
+      ),
+    );
     return;
   }
   await SentryFlutter.init(

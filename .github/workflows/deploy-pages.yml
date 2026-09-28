@@ -80,10 +80,14 @@ jobs:
             exit 1
           fi
 
+      # --no-web-resources-cdn: CanvasKit is served from this site, not
+      # www.gstatic.com. Some networks block Google's CDN, and without
+      # CanvasKit the page stays blank (it opened only over a VPN).
       - name: Build web
         working-directory: apps/mobile
         run: >-
           flutter build web --release
+          --no-web-resources-cdn
           --base-href "/${{ github.event.repository.name }}/"
           --dart-define=NUKHBA_API_BASE_URL=${{ vars.NUKHBA_API_BASE_URL }}
           --dart-define=NUKHBA_SENTRY_DSN=${{ vars.NUKHBA_SENTRY_DSN }}

@@ -157,3 +157,10 @@ flutter:
           weight: 600
         - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
           weight: 700
+    # The web engine fetches Roboto from fonts.gstatic.com before the
+    # first frame unless the app declares a "Roboto" family itself, and
+    # some networks block that host. The app never draws in Roboto (the
+    # theme sets IBMPlexSansArabic), so the name points at a bundled font.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
