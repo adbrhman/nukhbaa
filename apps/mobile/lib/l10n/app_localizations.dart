@@ -1824,6 +1824,60 @@ abstract class AppLocalizations {
   /// **'Tomorrow'**
   String get fixturesDateTomorrow;
 
+  /// Match card button, shown only after kickoff, that opens everyone's predictions for the match.
+  ///
+  /// In en, this message translates to:
+  /// **'All predictions'**
+  String get fixturePredictionsButton;
+
+  /// No description provided for @fixturePredictionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s predictions'**
+  String get fixturePredictionsTitle;
+
+  /// No description provided for @fixturePredictionsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a player'**
+  String get fixturePredictionsSearchHint;
+
+  /// No description provided for @fixturePredictionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody predicted this match.'**
+  String get fixturePredictionsEmpty;
+
+  /// No description provided for @fixturePredictionsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No player by that name.'**
+  String get fixturePredictionsNoMatch;
+
+  /// No description provided for @fixturePredictionsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the predictions.'**
+  String get fixturePredictionsLoadFailed;
+
+  /// No description provided for @fixturePredictionsUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Player'**
+  String get fixturePredictionsUnnamed;
+
+  /// The viewer's own row in the predictions list.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (you)'**
+  String fixturePredictionsMine(String name);
+
+  /// Points a player earned on the match, as the server graded it.
+  ///
+  /// In en, this message translates to:
+  /// **'{points, plural, =0{0} other{+{points}}}'**
+  String fixturePredictionsPoints(int points);
+
   /// No description provided for @fixturesCalendarTooltip.
   ///
   /// In en, this message translates to:

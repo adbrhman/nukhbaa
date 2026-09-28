@@ -40,6 +40,8 @@ abstract final class ErrorPresenter {
         return 'لم ترسل توقعًا لهذه المباراة بعد.';
       case 'prediction.round_not_locked':
         return 'تظهر توقعات اللاعبين الآخرين بعد انطلاق المباراة.';
+      case 'prediction.fixture_not_started':
+        return 'تظهر توقعات اللاعبين الآخرين بعد انطلاق المباراة.';
       case 'prediction.not_a_participant':
         return 'لم تنضم إلى هذه المسابقة بعد.';
       case 'competition.not_found':

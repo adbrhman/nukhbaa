@@ -83,6 +83,21 @@ final class PredictionApi {
     );
   }
 
+  /// `GET /seasons/{id}/fixtures/{fixtureId}/predictions` -- every member's
+  /// prediction for [fixtureId], each carrying its player's name, available
+  /// only once the fixture has kicked off. Before kickoff the server refuses
+  /// `409 prediction.fixture_not_started`; a started fixture nobody predicted
+  /// is a legitimate empty list.
+  Future<Result<List<FixturePredictionDto>>> listFixturePredictions({
+    required String seasonId,
+    required String fixtureId,
+  }) {
+    return _transport.getList<FixturePredictionDto>(
+      '/seasons/$seasonId/fixtures/$fixtureId/predictions',
+      parseElement: FixturePredictionDto.fromJson,
+    );
+  }
+
   /// `GET /rounds/{id}/predictions` — the caller's own prediction for
   /// [roundId], any round status (self-read is safe).
   ///

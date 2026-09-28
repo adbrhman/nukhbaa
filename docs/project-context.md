@@ -3469,6 +3469,21 @@ Admin hub section **نظام الدعوات** (`AdminSection.referrals`, group
 
 A suspended idle account is reinstated from the existing users section.
 
+### Everyone's predictions after kickoff (batch 64, 2026-09-28)
+
+`GET /seasons/{id}/fixtures/{fixtureId}/predictions` (`ListFixturePredictions`)
+returns every member's prediction for one fixture with the player's name --
+only from kickoff on. The gate is `FixtureLock` over the fixture's schedule and
+the server clock, the same instant that closes submission, so no prediction is
+ever visible while any prediction can still change. Before kickoff, or with no
+registered kickoff: `409 prediction.fixture_not_started`; a non-member:
+`prediction.not_a_participant`.
+
+In the app, a started match card shows **توقعات الجميع** in the slot the
+double button held before kickoff (the card keeps its layout). It opens a sheet
+with every prediction, the viewer's own row first, a name search, the double
+mark, and the points once graded (from the existing scores read).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

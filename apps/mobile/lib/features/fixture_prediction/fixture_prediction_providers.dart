@@ -77,3 +77,23 @@ final fixturePredictionDistributionProvider =
         Err<FixturePredictionDistributionDto>(:final error) => throw error,
       };
     });
+
+/// `GET /seasons/{id}/fixtures/{fixtureId}/predictions` -- everyone's
+/// predictions for a fixture that has kicked off, with each player's name.
+/// The server alone decides visibility (it refuses before kickoff); read
+/// only when the viewer opens the list, and dropped when it closes.
+final fixturePredictionsRevealProvider = FutureProvider.autoDispose
+    .family<List<FixturePredictionDto>, FixturePredictionDistributionKey>((
+      ref,
+      key,
+    ) async {
+      final api = ref.watch(predictionApiProvider);
+      final result = await api.listFixturePredictions(
+        seasonId: key.seasonId,
+        fixtureId: key.fixtureId,
+      );
+      return switch (result) {
+        Ok<List<FixturePredictionDto>>(:final value) => value,
+        Err<List<FixturePredictionDto>>(:final error) => throw error,
+      };
+    });

@@ -1016,6 +1016,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fixturesDateTomorrow => 'غداً';
 
   @override
+  String get fixturePredictionsButton => 'توقعات الجميع';
+
+  @override
+  String get fixturePredictionsTitle => 'توقعات اللاعبين';
+
+  @override
+  String get fixturePredictionsSearchHint => 'ابحث عن لاعب';
+
+  @override
+  String get fixturePredictionsEmpty => 'لم يتوقع أحد هذه المباراة.';
+
+  @override
+  String get fixturePredictionsNoMatch => 'لا يوجد لاعب بهذا الاسم.';
+
+  @override
+  String get fixturePredictionsLoadFailed => 'تعذّر تحميل التوقعات.';
+
+  @override
+  String get fixturePredictionsUnnamed => 'لاعب';
+
+  @override
+  String fixturePredictionsMine(String name) {
+    return '$name (أنت)';
+  }
+
+  @override
+  String fixturePredictionsPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '+$points',
+      zero: '0',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get fixturesCalendarTooltip => 'التقويم';
 
   @override

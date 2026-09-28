@@ -1004,6 +1004,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fixturesDateTomorrow => 'Tomorrow';
 
   @override
+  String get fixturePredictionsButton => 'All predictions';
+
+  @override
+  String get fixturePredictionsTitle => 'Everyone\'s predictions';
+
+  @override
+  String get fixturePredictionsSearchHint => 'Search for a player';
+
+  @override
+  String get fixturePredictionsEmpty => 'Nobody predicted this match.';
+
+  @override
+  String get fixturePredictionsNoMatch => 'No player by that name.';
+
+  @override
+  String get fixturePredictionsLoadFailed => 'Could not load the predictions.';
+
+  @override
+  String get fixturePredictionsUnnamed => 'Player';
+
+  @override
+  String fixturePredictionsMine(String name) {
+    return '$name (you)';
+  }
+
+  @override
+  String fixturePredictionsPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '+$points',
+      zero: '0',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get fixturesCalendarTooltip => 'Calendar';
 
   @override

@@ -75,6 +75,7 @@ final class CompositionRoot {
     required this.getFixtureScores,
     required this.getFixtureResult,
     required this.getFixturePredictionDistribution,
+    required this.listFixturePredictions,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
@@ -226,6 +227,7 @@ final class CompositionRoot {
     GetFixtureScores? getFixtureScores,
     GetFixtureResult? getFixtureResult,
     GetFixturePredictionDistribution? getFixturePredictionDistribution,
+    ListFixturePredictions? listFixturePredictions,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
@@ -377,6 +379,8 @@ final class CompositionRoot {
        getFixturePredictionDistribution =
            getFixturePredictionDistribution ??
            _absentGetFixturePredictionDistribution(),
+       listFixturePredictions =
+           listFixturePredictions ?? _absentListFixturePredictions(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -854,6 +858,17 @@ final class CompositionRoot {
     fixturePredictionRepository: _unwiredFixturePredictionRepository,
     fixtureScoreRepository: _unwiredFixtureScoreRepository,
   );
+
+  /// Backs the "absent" [ListFixturePredictions]: throws so a test that
+  /// reaches it fails loudly instead of touching a real database.
+  static ListFixturePredictions _absentListFixturePredictions() =>
+      ListFixturePredictions(
+        competitionRepository: _unwiredCompetitionRepository,
+        fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
+        participantReader: _unwiredParticipantReader,
+        clock: _unwiredClock,
+      );
 
   /// Unlike the other absent use-cases this one is quiet: the result is an
   /// optional enrichment of the scores read, so a test root that did not
@@ -1507,6 +1522,10 @@ final class CompositionRoot {
 
   /// Reads the aggregated home/away win shares displayed on fixture cards.
   final GetFixturePredictionDistribution getFixturePredictionDistribution;
+
+  /// Everyone's predictions for one fixture, revealed only after kickoff
+  /// (backs `GET /seasons/{id}/fixtures/{fixtureId}/predictions`).
+  final ListFixturePredictions listFixturePredictions;
 
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
   /// without the participant-of-season gate (added so an admin can
@@ -2410,6 +2429,13 @@ final class CompositionRoot {
       getFixtureResult: GetFixtureResult(results: fixtureResultRepository),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
         fixturePredictionRepository: fixturePredictionRepository,
+      ),
+      listFixturePredictions: ListFixturePredictions(
+        competitionRepository: competitionRepository,
+        fixturePredictionRepository: fixturePredictionRepository,
+        fixtureScheduleRepository: fixtureScheduleRepository,
+        participantReader: participantReader,
+        clock: clock,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,

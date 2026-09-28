@@ -91,6 +91,7 @@ import '../../leaderboards/season_leaderboard_screen.dart';
 import '../feed_refresh_signal.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
+import 'fixture_predictions_sheet.dart';
 import 'live_matches_chip.dart';
 
 /// One fixture's FotMob-style card. Entirely independent of every other
@@ -612,6 +613,26 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                             enabled: enabled,
                             onTap: _toggleDouble,
                             fixtureId: fixtureId,
+                          ),
+                        )
+                      // After kickoff the double button's slot opens
+                      // everyone's predictions (the server reveals them only
+                      // from kickoff, the instant predicting closes).
+                      else if (locked)
+                        SizedBox(
+                          width: 130,
+                          child: _RevealPredictionsButton(
+                            fixtureId: fixtureId,
+                            onTap: () => unawaited(
+                              showFixturePredictionsSheet(
+                                context: context,
+                                seasonId: _fixture.seasonId,
+                                fixtureId: fixtureId,
+                                homeTeam: home.displayName,
+                                awayTeam: away.displayName,
+                                myParticipantId: myPrediction?.participantId,
+                              ),
+                            ),
                           ),
                         )
                       else
@@ -1371,6 +1392,70 @@ class _WinPercentage extends StatelessWidget {
                     color: tokens.textPrimary,
                     fontSize: AppFontSize.s14,
                     fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The started card's "everyone's predictions" button, drawn in the slot
+/// and at the height of [_DoubleGlowButton] so the card keeps its layout.
+class _RevealPredictionsButton extends StatelessWidget {
+  const _RevealPredictionsButton({
+    required this.fixtureId,
+    required this.onTap,
+  });
+
+  final String fixtureId;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final String label = l10n.fixturePredictionsButton;
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        key: Key('currentMonthFixtures.reveal.$fixtureId'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          unawaited(HapticFeedback.selectionClick());
+          onTap();
+        },
+        child: Container(
+          height: _DoubleGlowButton._height,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.brButton,
+            border: Border.all(color: tokens.primary),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                Icons.groups_rounded,
+                size: AppSizes.iconSm,
+                color: tokens.primary,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.s12,
+                    color: tokens.primary,
                   ),
                 ),
               ),

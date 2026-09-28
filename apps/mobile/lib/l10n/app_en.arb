@@ -660,6 +660,34 @@
   "fixturesDateToday": "Today",
   "fixturesDateYesterday": "Yesterday",
   "fixturesDateTomorrow": "Tomorrow",
+  "fixturePredictionsButton": "All predictions",
+  "@fixturePredictionsButton": {
+    "description": "Match card button, shown only after kickoff, that opens everyone's predictions for the match."
+  },
+  "fixturePredictionsTitle": "Everyone's predictions",
+  "fixturePredictionsSearchHint": "Search for a player",
+  "fixturePredictionsEmpty": "Nobody predicted this match.",
+  "fixturePredictionsNoMatch": "No player by that name.",
+  "fixturePredictionsLoadFailed": "Could not load the predictions.",
+  "fixturePredictionsUnnamed": "Player",
+  "fixturePredictionsMine": "{name} (you)",
+  "@fixturePredictionsMine": {
+    "description": "The viewer's own row in the predictions list.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fixturePredictionsPoints": "{points, plural, =0{0} other{+{points}}}",
+  "@fixturePredictionsPoints": {
+    "description": "Points a player earned on the match, as the server graded it.",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
   "fixturesCalendarTooltip": "Calendar",
   "fixturesDayEmpty": "No matches on this day.",
   "fixturesLiveLabel": "Live",
