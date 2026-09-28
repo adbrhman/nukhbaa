@@ -46,6 +46,13 @@ final adminFrameStatsProvider = FutureProvider<AdminFrameStatsDto>((ref) async {
   return _unwrap(await ref.watch(adminApiProvider).frameStats());
 });
 
+/// `GET /admin/retention` -- do players come back (migration 0069), the
+/// last eight weeks. A plain provider: no code generation. A failed read
+/// shows at once instead of spinning through automatic retries.
+final adminRetentionProvider = FutureProvider<AdminRetentionDto>((ref) async {
+  return _unwrap(await ref.watch(adminApiProvider).retention());
+}, retry: (_, _) => null);
+
 /// Current-month fixtures whose server-side per-fixture score projection is
 /// non-empty. This is intentionally lazy: it runs only when the admin opens
 /// the "المباريات المحتسبة" section, keeping the main dashboard fast.

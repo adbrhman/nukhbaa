@@ -3489,6 +3489,31 @@ search. Each cell is the predicted score with its verdict from the server's
 scores: points -> ✅ (⚡🔥 on a double), graded without points -> ❌, not graded
 yet -> nothing (⚡ on a double).
 
+### Retention on the admin dashboard (batch 67, 2026-09-28)
+
+`GET /admin/retention?weeks=` (`AdminGetRetention`, admin; default 8 weeks,
+at most 26, the week in progress included) reads the views of migration
+0069 through `RetentionReader` / `PostgresRetentionReader`. Nothing new in
+the database; **0069 must be on the live DB**.
+
+- Per week (`kpi_weekly_engagement`, `kpi_league_retention`): players
+  active, the share active on 3+ days, the same inside the weekly league
+  against everyone else (P2-8), and the share of league seats held the
+  next week. That last one is null until the next week has ended: a seat
+  is taken the first time a player is seen in the week, so a half-counted
+  week would read as a drop.
+- Per week of first active day (`user_active_days`, first day over the
+  whole history): back on day 1, day 7, day 14 (0069's d14) and in week 4
+  (days 21 to 27, 0069's w4). A horizon counts only the players whose day
+  has ended; the card shows a dash while nobody can be judged.
+
+Every week of the window is present, zeros included. The dashboard card
+(`AdminRetentionCard`, «هل يعود اللاعبون؟») sits under the user counts:
+this week's players, last week's 3+ share and day 7 pooled over the
+window, then both tables, scrolling sideways on a phone. The SQL was run
+against the 0069 views on sample data (Riyadh midnight, partial weeks,
+young cohorts) before shipping. No new dependency.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

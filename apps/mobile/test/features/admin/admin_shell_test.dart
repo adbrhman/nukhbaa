@@ -18,6 +18,24 @@ Widget _host() => ProviderScope(
         currentMonthFixtures: [],
       ),
     ),
+    adminRetentionProvider.overrideWith(
+      (ref) async => const AdminRetentionDto(
+        today: '2026-09-28',
+        weeks: [
+          RetentionWeekDto(
+            weekStart: '2026-09-28',
+            complete: false,
+            activeUsers: 0,
+            active3Plus: 0,
+            leagueActive: 0,
+            leagueActive3Plus: 0,
+            leagueMembers: 0,
+            leagueReturned: null,
+          ),
+        ],
+        cohorts: [],
+      ),
+    ),
   ],
   child: const MaterialApp(
     supportedLocales: AppLocalizations.supportedLocales,

@@ -43,6 +43,24 @@ Widget _host() => ProviderScope(
       ),
     ),
     adminFrameStatsProvider.overrideWith((ref) async => _emptyFrameStats),
+    adminRetentionProvider.overrideWith(
+      (ref) async => const AdminRetentionDto(
+        today: '2026-09-28',
+        weeks: [
+          RetentionWeekDto(
+            weekStart: '2026-09-28',
+            complete: false,
+            activeUsers: 0,
+            active3Plus: 0,
+            leagueActive: 0,
+            leagueActive3Plus: 0,
+            leagueMembers: 0,
+            leagueReturned: null,
+          ),
+        ],
+        cohorts: [],
+      ),
+    ),
   ],
   child: MaterialApp(
     theme: AppTheme.dark,
@@ -74,5 +92,7 @@ void main() {
     expect(find.text('90'), findsOneWidget);
     expect(find.text('مستخدمون موقوفون'), findsOneWidget);
     expect(find.text('47'), findsOneWidget);
+    // The retention card sits under the counts, on the same screen.
+    expect(find.byKey(const Key('admin.retention')), findsOneWidget);
   });
 }

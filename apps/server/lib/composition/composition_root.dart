@@ -107,6 +107,7 @@ final class CompositionRoot {
     required this.recordPushOpen,
     required this.recordFrameReport,
     required this.adminGetFrameStats,
+    required this.adminGetRetention,
     required this.getMyReferral,
     required this.claimReferral,
     required this.qualifyReferrals,
@@ -259,6 +260,7 @@ final class CompositionRoot {
     RecordPushOpen? recordPushOpen,
     RecordFrameReport? recordFrameReport,
     AdminGetFrameStats? adminGetFrameStats,
+    AdminGetRetention? adminGetRetention,
     GetMyReferral? getMyReferral,
     ClaimReferral? claimReferral,
     QualifyReferrals? qualifyReferrals,
@@ -427,6 +429,7 @@ final class CompositionRoot {
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
        recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
        adminGetFrameStats = adminGetFrameStats ?? _absentAdminGetFrameStats(),
+       adminGetRetention = adminGetRetention ?? _absentAdminGetRetention(),
        getMyReferral = getMyReferral ?? _absentGetMyReferral(),
        claimReferral = claimReferral ?? _absentClaimReferral(),
        qualifyReferrals = qualifyReferrals ?? _absentQualifyReferrals(),
@@ -1105,6 +1108,13 @@ final class CompositionRoot {
     clock: _unwiredClock,
   );
 
+  /// Builds an "absent" [AdminGetRetention]: loud if a test reaches it
+  /// without wiring it.
+  static AdminGetRetention _absentAdminGetRetention() => AdminGetRetention(
+    reader: _UnwiredRetentionReader(),
+    clock: _unwiredClock,
+  );
+
   /// Builds an "absent" [GetMyReferral]: loud if a test reaches it without
   /// wiring it.
   static GetMyReferral _absentGetMyReferral() => GetMyReferral(
@@ -1666,6 +1676,10 @@ final class CompositionRoot {
   /// `GET /admin/frame-stats`, migration 0070).
   final AdminGetFrameStats adminGetFrameStats;
 
+  /// Do players come back: play per week and players by the week of their
+  /// first active day (backs `GET /admin/retention`, migration 0069).
+  final AdminGetRetention adminGetRetention;
+
   /// The caller's invitation code and counters (backs `GET /me/referral`,
   /// migration 0073).
   final GetMyReferral getMyReferral;
@@ -2206,6 +2220,10 @@ final class CompositionRoot {
       ),
       adminGetFrameStats: AdminGetFrameStats(
         reports: PostgresFrameReportRepository(connection),
+        clock: clock,
+      ),
+      adminGetRetention: AdminGetRetention(
+        reader: PostgresRetentionReader(connection),
         clock: clock,
       ),
       getMyReferral: GetMyReferral(
@@ -3599,6 +3617,21 @@ final class _UnwiredReferralRepository implements ReferralRepository {
     required String reason,
     required DateTime now,
   }) => _unwired();
+}
+
+/// Refuses every call: see [_absentAdminGetRetention].
+final class _UnwiredRetentionReader implements RetentionReader {
+  @override
+  Future<Result<List<WeeklyActivity>>> weeks({
+    required DateTime from,
+    required DateTime through,
+  }) => throw StateError('retention was not wired into this test root');
+
+  @override
+  Future<Result<List<RetentionCohort>>> cohorts({
+    required DateTime from,
+    required DateTime today,
+  }) => throw StateError('retention was not wired into this test root');
 }
 
 /// Refuses every call: see [_absentRecordFrameReport].

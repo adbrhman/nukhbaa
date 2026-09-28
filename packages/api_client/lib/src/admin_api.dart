@@ -52,6 +52,17 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/retention` -- do players come back (migration 0069): play
+  /// per week and players by the week of their first active day, over the
+  /// last [weeks] weeks (server default 8, at most 26).
+  Future<Result<AdminRetentionDto>> retention({int? weeks}) {
+    return _transport.getObject<AdminRetentionDto>(
+      '/admin/retention',
+      query: weeks == null ? null : {'weeks': '$weeks'},
+      parse: AdminRetentionDto.fromJson,
+    );
+  }
+
   /// `GET /admin/users` — browse users by an optional display-name or
   /// email-contains [search]; [limit] is an optional page cap, clamped
   /// server-side.
