@@ -3649,6 +3649,31 @@ dependency.
   `championsLoadFailed`, `championSpotlightCollapse`,
   `championSpotlightExpand`.
 
+### The web build reaches players (batch 72, 2026-09-29)
+
+The APK updated itself; the web mirror (`nukhbaa-web` on Northflank) was
+redeployed with every build but players kept the old one. Checked
+2026-09-29: the mirror served `web build 74b72cd`, and its
+`flutter_service_worker.js` is Flutter's self-unregistering cleanup worker
+(no fetch handler, no cache), so the stale copy came from two places:
+
+- `deploy/web-mirror/nginx.conf` sent `Cache-Control: public, max-age=600`
+  for everything, and the file names never change between builds
+  (`main.dart.js`, `flutter_bootstrap.js`). Now `no-cache`: the browser
+  revalidates every file (304 when unchanged). The workflow copies this
+  file into `web-dist`, so the next deploy carries it. GitHub Pages keeps
+  its own fixed headers.
+- `UpdateGate` returned at once on the web, so a page left open or added to
+  the home screen never learned of a new build. Now, on the web, it
+  compares its `NUKHBA_BUILD_SHA` with the newest release
+  (`GET /app/latest-build`, tag `build-<sha>`) and offers "تحديث الآن",
+  which reloads the page (`reloadPage`, `core/platform/browser_url*.dart`).
+  Asked on opening and again when the player returns after 30 minutes;
+  one release is offered again only after 30 minutes, because the release
+  is published a few minutes before the web build is live.
+
+No server change, no migration, no new dependency.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -40,6 +40,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/platform/browser_url.dart';
 import '../../core/providers.dart';
 import 'in_app_updater.dart';
 
@@ -52,34 +53,115 @@ final Provider<InAppUpdater> inAppUpdaterProvider = Provider<InAppUpdater>(
   (ref) => OtaInAppUpdater(),
 );
 
+/// Reloads the web page (a no-op off the web); overridden in tests.
+final Provider<void Function()> pageReloaderProvider =
+    Provider<void Function()>((ref) => reloadPage);
+
+/// Where the web build remembers the release it last offered, and when:
+/// `<published_at>@<offered_at>`.
+@visibleForTesting
+const String updateWebOfferedKey = 'nukhba.update_web_offered';
+
+/// The web build's memory of the release it last offered. Kept behind an
+/// interface so a test can hold it in memory: platform storage has no
+/// implementation under `flutter test` and never answers there.
+abstract interface class UpdateOfferMemory {
+  /// The stored `<published_at>@<offered_at>`, or null.
+  Future<String?> read();
+
+  /// Stores [value].
+  Future<void> write(String value);
+}
+
+final class _SecureUpdateOfferMemory implements UpdateOfferMemory {
+  const _SecureUpdateOfferMemory();
+
+  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  @override
+  Future<String?> read() => _storage.read(key: updateWebOfferedKey);
+
+  @override
+  Future<void> write(String value) =>
+      _storage.write(key: updateWebOfferedKey, value: value);
+}
+
+/// The web build's offer memory; overridden in tests.
+final Provider<UpdateOfferMemory> updateOfferMemoryProvider =
+    Provider<UpdateOfferMemory>((ref) => const _SecureUpdateOfferMemory());
+
 /// Wraps [child], performing one silent update check after the first frame.
 class UpdateGate extends ConsumerStatefulWidget {
   /// Creates the gate around [child].
-  const UpdateGate({required this.child, super.key});
+  const UpdateGate({
+    required this.child,
+    this.isWeb = kIsWeb,
+    this.buildSha = const String.fromEnvironment('NUKHBA_BUILD_SHA'),
+    super.key,
+  });
 
   /// The app's root screen, rendered unconditionally.
   final Widget child;
+
+  /// Whether this is the web build. A parameter only so a test can take the
+  /// web path; the app always leaves the default.
+  final bool isWeb;
+
+  /// The short commit of this build, injected by CI (`--dart-define`);
+  /// empty on a local run.
+  final String buildSha;
 
   @override
   ConsumerState<UpdateGate> createState() => _UpdateGateState();
 }
 
-class _UpdateGateState extends ConsumerState<UpdateGate> {
+class _UpdateGateState extends ConsumerState<UpdateGate>
+    with WidgetsBindingObserver {
   bool _checked = false;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  /// When the web build last asked. A page left open is asked again when
+  /// the player comes back to it, at most once every [_webRecheck].
+  DateTime? _lastWebCheck;
+  bool _webChecking = false;
+  static const Duration _webRecheck = Duration(minutes: 30);
 
   @override
   void initState() {
     super.initState();
+    if (widget.isWeb) WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Only a return after the first check: the binding also reports
+    // `resumed` as the app starts, which used to run a second check
+    // alongside the first.
+    if (state != AppLifecycleState.resumed || !widget.isWeb || !_checked) {
+      return;
+    }
+    final DateTime? last = _lastWebCheck;
+    if (last != null && DateTime.now().difference(last) < _webRecheck) return;
+    unawaited(_checkWeb());
   }
 
   Future<void> _checkForUpdate() async {
     if (_checked) return;
     _checked = true;
-    // PWA updates via the browser/service worker on redeploy — native
-    // OTA (ota_update plugin) has no web implementation and would hang.
-    if (kIsWeb) return;
+    // The web build has no installer: a newer build is one reload away. It
+    // used to return here, so a page left open, or one added to the home
+    // screen, kept the old build and nothing told the player.
+    if (widget.isWeb) {
+      await _checkWeb();
+      return;
+    }
 
     final AppApi api = ref.read(appApiProvider);
     final Result<LatestBuildDto> result = await api.latestBuild();
@@ -113,7 +195,7 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
     // "seen" and returned, permanently marking a stale install as up to
     // date. That branch now only guards builds with no injected identity (a
     // local `flutter run`), where no better signal exists.
-    const String buildSha = String.fromEnvironment('NUKHBA_BUILD_SHA');
+    final String buildSha = widget.buildSha;
 
     if (buildSha.isNotEmpty) {
       // this IS the latest
@@ -152,6 +234,84 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
     if (proceed == true && mounted) {
       await _runInAppUpdate(dto);
     }
+  }
+
+  /// The web build's check. The newest release and the web build come from
+  /// the same commit, so a release under another commit means this page
+  /// runs an older build. Each release is offered once, and offered again
+  /// only after [_webRecheck]: the release goes up a few minutes before the
+  /// web build does, and a reload in that window still gets the old one.
+  Future<void> _checkWeb() async {
+    final String sha = widget.buildSha;
+    // A local run carries no build id: nothing to compare against.
+    if (sha.isEmpty || _webChecking) return;
+    _webChecking = true;
+    _lastWebCheck = DateTime.now();
+    try {
+      await _checkWebAgainst(sha);
+    } finally {
+      _webChecking = false;
+    }
+  }
+
+  Future<void> _checkWebAgainst(String sha) async {
+    final Result<LatestBuildDto> result = await ref
+        .read(appApiProvider)
+        .latestBuild();
+    if (!mounted || result is! Ok<LatestBuildDto>) return;
+    final LatestBuildDto dto = result.value;
+    if (dto.apkUrl.contains('/build-$sha/')) return;
+
+    final UpdateOfferMemory memory = ref.read(updateOfferMemoryProvider);
+    String? offered;
+    try {
+      offered = await memory.read();
+    } on Object {
+      offered = null;
+    }
+    if (offered != null) {
+      final int at = offered.lastIndexOf('@');
+      final DateTime? when = at < 0
+          ? null
+          : DateTime.tryParse(offered.substring(at + 1));
+      if (at > 0 &&
+          offered.substring(0, at) == dto.publishedAt &&
+          when != null &&
+          DateTime.now().difference(when) < _webRecheck) {
+        return;
+      }
+    }
+    try {
+      await memory.write(
+        '${dto.publishedAt}@${DateTime.now().toUtc().toIso8601String()}',
+      );
+    } on Object {
+      // best-effort
+    }
+    if (!mounted) return;
+
+    final bool? reload = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('يتوفر تحديث جديد'),
+        content: const Text(
+          'نزلت نسخة أحدث من التطبيق. أعد التحميل للحصول عليها.',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('update.web.later'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('لاحقاً'),
+          ),
+          FilledButton(
+            key: const Key('update.web.reload'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('تحديث الآن'),
+          ),
+        ],
+      ),
+    );
+    if (reload == true && mounted) ref.read(pageReloaderProvider)();
   }
 
   Future<void> _runInAppUpdate(LatestBuildDto dto) async {
