@@ -421,7 +421,10 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               labelText: 'الجائزة (اختياري)',
-              hintText: '150 ريال سعودي',
+              // The example sits under the field, not inside it: a grey
+              // "150 ريال سعودي" inside the empty field read as already
+              // typed, so a crowning could go out without one.
+              helperText: 'اكتب الجائزة، مثال: 150 ريال سعودي',
               border: OutlineInputBorder(),
             ),
           ),

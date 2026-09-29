@@ -317,6 +317,8 @@ void main() {
 
     await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
     await tester.pumpAndSettle();
+    // An empty field shows no example text inside it (it looked typed).
+    expect(find.text('150 ريال سعودي'), findsNothing);
     await tester.enterText(
       find.byKey(const Key('admin.champions.prize')),
       '150 ريال سعودي',
