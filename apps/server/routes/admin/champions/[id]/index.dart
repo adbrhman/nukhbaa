@@ -64,6 +64,7 @@ Future<Response> _crown(RequestContext context, String id) async {
     seasonId: id,
     userIds: CrownChampionsDto.userIdsOf(body),
     force: CrownChampionsDto.forceOf(body),
+    prize: CrownChampionsDto.prizeOf(body),
   );
 
   return switch (result) {

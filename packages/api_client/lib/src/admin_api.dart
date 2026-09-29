@@ -283,15 +283,21 @@ final class AdminApi {
 
   /// `POST /admin/champions/{seasonId}` -- crowns one player, or two level
   /// on every tie-break; [force] confirms crowning while some fixture has no
-  /// result. Answers the month's champions.
+  /// result; [prize] is what the champion wins (migration 0078). Answers the
+  /// month's champions.
   Future<Result<MonthChampionsDto>> crownChampions({
     required String seasonId,
     required List<String> userIds,
     bool force = false,
+    String? prize,
   }) {
     return _transport.postObject<MonthChampionsDto>(
       '/admin/champions/$seasonId',
-      body: CrownChampionsDto(userIds: userIds, force: force).toJson(),
+      body: CrownChampionsDto(
+        userIds: userIds,
+        force: force,
+        prize: prize,
+      ).toJson(),
       parse: MonthChampionsDto.fromJson,
     );
   }

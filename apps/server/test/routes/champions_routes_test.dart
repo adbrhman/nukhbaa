@@ -80,6 +80,8 @@ final class _Champions implements MonthChampionRepository {
           referralPoints: champion.referralPoints,
           crownedAt: crownedAt,
           avatarUpdatedAt: DateTime.utc(2026, 9, 5),
+          monthEndAt: _monthEnd,
+          prize: champion.prize,
         ),
       );
     }
@@ -115,6 +117,8 @@ final class _Champions implements MonthChampionRepository {
       crownedAt: old.crownedAt,
       photoUpdatedAt: now,
       avatarUpdatedAt: old.avatarUpdatedAt,
+      monthEndAt: old.monthEndAt,
+      prize: old.prize,
     );
     photos[user.value] = (bytes, mime);
     return const Result.ok(true);
@@ -258,6 +262,7 @@ void main() {
           principal: adminPrincipal(),
           body: const {
             'user_ids': [_u1],
+            'prize': ' 150 ريال سعودي ',
           },
         ),
         _season,
@@ -270,7 +275,10 @@ void main() {
       expect(list.single['user_id'], _u1);
       expect(list.single['points'], 42);
       expect(list.single['crowned_at'], '2026-10-01T12:00:00.000Z');
-      expect(list.single['celebrate_until'], '2026-10-03T12:00:00.000Z');
+      // 48 hours from the month's end (00:00 Riyadh on the 1st), not from
+      // the crowning: 00:00 Riyadh on the 3rd.
+      expect(list.single['celebrate_until'], '2026-10-02T21:00:00.000Z');
+      expect(list.single['prize'], '150 ريال سعودي');
       expect(champions.rows, hasLength(1));
     });
 

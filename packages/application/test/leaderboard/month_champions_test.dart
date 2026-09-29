@@ -82,6 +82,8 @@ final class _Champions implements MonthChampionRepository {
           decidedCount: champion.decidedCount,
           referralPoints: champion.referralPoints,
           crownedAt: crownedAt,
+          monthEndAt: _monthEnd,
+          prize: champion.prize,
         ),
       );
     }
@@ -239,7 +241,89 @@ void main() {
       expect(crowned.single.referralPoints, 2);
       expect(crowned.single.crownedAt, world.clock.now);
       expect(world.champions.crownedBy, const UserId(_admin));
+      expect(crowned.single.prize, isNull);
     });
+
+    test('the prize is trimmed and frozen with the crowning', () async {
+      final world = _World();
+      world.totals.add(_p1, points: 42, exact: 6, decided: 30);
+
+      final result = await world.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: false,
+        prize: '  150 ريال سعودي  ',
+      );
+
+      expect(
+        (result as Ok<List<MonthChampion>>).value.single.prize,
+        '150 ريال سعودي',
+      );
+    });
+
+    test('a blank prize is none; a prize past 80 letters is refused', () async {
+      final blank = _World();
+      blank.totals.add(_p1, points: 42, exact: 6, decided: 30);
+      final none = await blank.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: false,
+        prize: '   ',
+      );
+      expect((none as Ok<List<MonthChampion>>).value.single.prize, isNull);
+
+      final long = _World();
+      long.totals.add(_p1, points: 42, exact: 6, decided: 30);
+      final refused = await long.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: false,
+        prize: 'x' * 81,
+      );
+      expect(_codeOf(refused), 'champion.prize_too_long');
+      expect(long.champions.rows, isEmpty);
+    });
+
+    test(
+      'the celebration runs for the first 48 hours of the next month',
+      () async {
+        final world = _World();
+        world.totals.add(_p1, points: 42, exact: 6, decided: 30);
+        // Crowned fifteen hours into October: the celebration still ends 48
+        // hours after September closed, not 48 hours after the crowning.
+        final result = await world.crown(
+          principal: _adminPrincipal,
+          seasonId: _season,
+          userIds: const [_u1],
+          force: false,
+        );
+
+        final champion = (result as Ok<List<MonthChampion>>).value.single;
+        expect(
+          ListMonthChampions.celebrateUntil(champion),
+          _monthEnd.add(const Duration(hours: 48)),
+        );
+        expect(
+          ListMonthChampions.celebrateUntil(
+            MonthChampion(
+              seasonId: champion.seasonId,
+              seasonLabel: champion.seasonLabel,
+              userId: champion.userId,
+              displayName: champion.displayName,
+              points: champion.points,
+              exactCount: champion.exactCount,
+              decidedCount: champion.decidedCount,
+              referralPoints: champion.referralPoints,
+              crownedAt: champion.crownedAt,
+            ),
+          ),
+          champion.crownedAt.add(const Duration(hours: 48)),
+        );
+      },
+    );
 
     test(
       'two players level on every tie-break: the admin may crown both',

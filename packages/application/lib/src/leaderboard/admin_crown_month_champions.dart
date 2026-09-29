@@ -38,13 +38,18 @@ final class AdminCrownMonthChampions {
   /// The most champions one month can have.
   static const int maxChampions = 2;
 
+  /// The longest prize text, the database's own bound (migration 0078).
+  static const int maxPrizeLength = 80;
+
   /// Runs the use-case for [principal]. [force] confirms crowning while some
-  /// fixtures still have no result (a postponed match, say).
+  /// fixtures still have no result (a postponed match, say). [prize] is what
+  /// the champion wins ("150 ريال سعودي"); blank means none.
   Future<Result<List<MonthChampion>>> call({
     required AuthenticatedUser principal,
     required String seasonId,
     required List<String>? userIds,
     required bool force,
+    String? prize,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
@@ -61,6 +66,11 @@ final class AdminCrownMonthChampions {
       return Result.err(chosenResult.error);
     }
     final chosen = (chosenResult as Ok<List<UserId>>).value;
+    final prizeResult = _parsePrize(prize);
+    if (prizeResult is Err<String?>) {
+      return Result.err(prizeResult.error);
+    }
+    final cleanPrize = (prizeResult as Ok<String?>).value;
 
     final monthResult = await _champions.month(season);
     if (monthResult is Err<ChampionMonth?>) {
@@ -124,6 +134,7 @@ final class AdminCrownMonthChampions {
           exactCount: line.entry.exactCount,
           decidedCount: line.entry.decidedCount,
           referralPoints: line.entry.referralPoints,
+          prize: cleanPrize,
         ),
       );
     }
@@ -146,6 +157,23 @@ final class AdminCrownMonthChampions {
           .where((champion) => champion.seasonId == season)
           .toList(growable: false),
     );
+  }
+
+  /// The prize trimmed, null when blank, refused past [maxPrizeLength].
+  static Result<String?> _parsePrize(String? raw) {
+    final String trimmed = raw?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return const Result.ok(null);
+    }
+    if (trimmed.length > maxPrizeLength) {
+      return const Result.err(
+        AppError.validation(
+          'champion.prize_too_long',
+          'نص الجائزة أطول من 80 حرفًا',
+        ),
+      );
+    }
+    return Result.ok(trimmed);
   }
 
   static Result<List<UserId>> _parseChosen(List<String>? raw) {

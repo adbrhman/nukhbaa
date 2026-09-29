@@ -90,6 +90,7 @@ final class ChampionToCrown {
     required this.exactCount,
     required this.decidedCount,
     required this.referralPoints,
+    this.prize,
   });
 
   /// The champion.
@@ -106,6 +107,10 @@ final class ChampionToCrown {
 
   /// The month's invitation points (a tie-break only).
   final int referralPoints;
+
+  /// What the champion wins, as the admin typed it (migration 0078), or
+  /// null without one.
+  final String? prize;
 }
 
 /// A crowned champion as it is read back.
@@ -123,6 +128,8 @@ final class MonthChampion {
     required this.crownedAt,
     this.photoUpdatedAt,
     this.avatarUpdatedAt,
+    this.monthEndAt,
+    this.prize,
   });
 
   /// The month.
@@ -158,4 +165,12 @@ final class MonthChampion {
   /// When the champion's own profile picture was set (UTC), or null without
   /// one -- the fallback when there is no celebration picture.
   final DateTime? avatarUpdatedAt;
+
+  /// When the crowned month closed (UTC, exclusive): the celebration runs
+  /// for the first 48 hours after it. Null only where a store does not
+  /// carry it; the crowning time is the fallback then.
+  final DateTime? monthEndAt;
+
+  /// What the champion wins (migration 0078), or null without one.
+  final String? prize;
 }

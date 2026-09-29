@@ -19,8 +19,8 @@ String championPhotoUrlOf({
     '/champions/${seasonId.value}/photos/${userId.value}'
     '?v=${updatedAt.toUtc().millisecondsSinceEpoch}';
 
-/// One crowned champion on the wire. The celebration runs for
-/// [ListMonthChampions.celebrationWindow] after the crowning.
+/// One crowned champion on the wire. The celebration runs for the first
+/// [ListMonthChampions.celebrationWindow] of the next month.
 MonthChampionDto monthChampionToDto(MonthChampion champion) {
   final DateTime? photoAt = champion.photoUpdatedAt;
   final DateTime? avatarAt = champion.avatarUpdatedAt;
@@ -35,9 +35,9 @@ MonthChampionDto monthChampionToDto(MonthChampion champion) {
     decidedCount: champion.decidedCount,
     referralPoints: champion.referralPoints,
     crownedAt: crownedAt.toIso8601String(),
-    celebrateUntil: crownedAt
-        .add(ListMonthChampions.celebrationWindow)
-        .toIso8601String(),
+    celebrateUntil: ListMonthChampions.celebrateUntil(
+      champion,
+    ).toIso8601String(),
     photoUrl: photoAt == null
         ? null
         : championPhotoUrlOf(
@@ -48,6 +48,7 @@ MonthChampionDto monthChampionToDto(MonthChampion champion) {
     avatarUrl: avatarAt == null
         ? null
         : avatarUrlOf(userId: champion.userId, updatedAt: avatarAt),
+    prize: champion.prize,
   );
 }
 

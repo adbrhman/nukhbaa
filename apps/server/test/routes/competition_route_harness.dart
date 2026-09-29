@@ -245,10 +245,14 @@ final class InMemoryCompetitionRepository implements CompetitionRepository {
     return Result.ok(matches.isEmpty ? null : matches.first);
   }
 
+  /// The seasons `EnrolInOpenSeasons` finds open with fixtures; empty unless
+  /// a test seeds it (the month-turnover test).
+  final List<CompetitionSeason> openWithFixtures = [];
+
   @override
   Future<Result<List<CompetitionSeason>>> listOpenSeasonsWithFixtures(
     DateTime at,
-  ) async => const Result.ok(<CompetitionSeason>[]);
+  ) async => Result.ok(List<CompetitionSeason>.of(openWithFixtures));
 
   @override
   Future<Result<List<CompetitionSeason>>> listMonthlySeasons() async {

@@ -15,9 +15,11 @@ void main() {
       crownedAt: '2026-10-01T12:00:00.000Z',
       celebrateUntil: '2026-10-03T12:00:00.000Z',
       photoUrl: '/champions/s-9/photos/u-1?v=1',
+      prize: '150 ريال سعودي',
     );
 
     final back = MonthChampionDto.fromJson(dto.toJson());
+    expect(back.prize, '150 ريال سعودي');
 
     expect(back.seasonLabel, '09/2026');
     expect(back.points, 42);
@@ -26,6 +28,20 @@ void main() {
     expect(back.avatarUrl, isNull);
     expect(back.accuracyPercent, 20);
     expect(dto.toJson().containsKey('avatar_url'), isFalse);
+  });
+
+  test('the crowning body carries the prize only when there is one', () {
+    expect(
+      const CrownChampionsDto(userIds: ['u-1']).toJson().containsKey('prize'),
+      isFalse,
+    );
+    final body = const CrownChampionsDto(
+      userIds: ['u-1'],
+      prize: '150 ريال سعودي',
+    ).toJson();
+    expect(CrownChampionsDto.prizeOf(body), '150 ريال سعودي');
+    expect(CrownChampionsDto.prizeOf(const {'prize': 150}), isNull);
+    expect(MonthChampionDto.fromJson(const {}).prize, isNull);
   });
 
   test('nothing decided means no accuracy', () {

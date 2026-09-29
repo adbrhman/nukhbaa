@@ -105,6 +105,26 @@ void main() {
     });
   });
 
+  test('the crowning sends the prize when there is one', () async {
+    final ctx = buildTransport(
+      (_) async => okJson(const {
+        'schema_version': 1,
+        'champions': [_champion],
+      }),
+    );
+
+    await AdminApi(ctx.transport).crownChampions(
+      seasonId: 's-9',
+      userIds: const ['u-1'],
+      prize: '150 ريال سعودي',
+    );
+
+    expect(
+      (jsonDecode(ctx.captured.single.body) as Map<String, Object?>)['prize'],
+      '150 ريال سعودي',
+    );
+  });
+
   test('the picture goes up as bytes with its type', () async {
     final ctx = buildTransport(
       (_) async => okJson(const {

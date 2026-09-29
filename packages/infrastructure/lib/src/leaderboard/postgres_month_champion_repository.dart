@@ -50,11 +50,11 @@ ORDER BY user_id
   static const String _crownSql = '''
 INSERT INTO competition.month_champions
   (season_id, user_id, points, exact_count, decided_count, referral_points,
-   crowned_at, crowned_by)
+   crowned_at, crowned_by, prize)
 VALUES
   (@season_id::uuid, @user_id::uuid, @points::int, @exact_count::int,
    @decided_count::int, @referral_points::int, @crowned_at::timestamptz,
-   @crowned_by::uuid)
+   @crowned_by::uuid, @prize::text)
 ''';
 
   static const String _listSql = '''
@@ -68,7 +68,9 @@ SELECT c.season_id::text AS season_id,
        c.referral_points,
        c.crowned_at,
        c.photo_updated_at,
-       u.avatar_updated_at
+       u.avatar_updated_at,
+       s.end_at AS month_end_at,
+       c.prize
 FROM competition.month_champions c
 JOIN competition.seasons s ON s.id = c.season_id
 JOIN identity.users u ON u.id = c.user_id
@@ -184,6 +186,7 @@ WHERE season_id = @season_id::uuid
             'referral_points': champion.referralPoints,
             'crowned_at': crownedAt.toUtc(),
             'crowned_by': crownedBy.value,
+            'prize': champion.prize,
           },
         );
         if (inserted is Err<List<Map<String, dynamic>>>) {
@@ -217,6 +220,8 @@ WHERE season_id = @season_id::uuid
       }
       final Object? photoAt = row['photo_updated_at'];
       final Object? avatarAt = row['avatar_updated_at'];
+      final Object? monthEndAt = row['month_end_at'];
+      final Object? prize = row['prize'];
       out.add(
         MonthChampion(
           seasonId: SeasonId(seasonId),
@@ -230,6 +235,8 @@ WHERE season_id = @season_id::uuid
           crownedAt: crownedAt.toUtc(),
           photoUpdatedAt: photoAt is DateTime ? photoAt.toUtc() : null,
           avatarUpdatedAt: avatarAt is DateTime ? avatarAt.toUtc() : null,
+          monthEndAt: monthEndAt is DateTime ? monthEndAt.toUtc() : null,
+          prize: prize is String && prize.trim().isNotEmpty ? prize : null,
         ),
       );
     }

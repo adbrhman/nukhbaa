@@ -116,6 +116,7 @@ void main() {
           exactCount: 6,
           decidedCount: 28,
           referralPoints: 2,
+          prize: '150 ريال سعودي',
         ),
       ],
       crownedBy: const UserId('00000000-0000-4000-8077-0000000000aa'),
@@ -123,6 +124,8 @@ void main() {
     );
 
     expect(result, isA<Ok<void>>());
+    expect(connection.params.first['prize'], isNull);
+    expect(connection.params.last['prize'], '150 ريال سعودي');
     expect(connection.transactions, 1);
     expect(connection.sqls, hasLength(2));
     expect(connection.params.first['points'], 42);
@@ -175,6 +178,8 @@ void main() {
             'crowned_at': DateTime.utc(2026, 10, 1, 12),
             'photo_updated_at': DateTime.utc(2026, 10, 1, 12, 5),
             'avatar_updated_at': null,
+            'month_end_at': DateTime.utc(2026, 9, 30, 21),
+            'prize': '150 ريال سعودي',
           },
         ]),
       }),
@@ -186,6 +191,8 @@ void main() {
     expect(champion.referralPoints, 2);
     expect(champion.photoUpdatedAt, DateTime.utc(2026, 10, 1, 12, 5));
     expect(champion.avatarUpdatedAt, isNull);
+    expect(champion.monthEndAt, DateTime.utc(2026, 9, 30, 21));
+    expect(champion.prize, '150 ريال سعودي');
   });
 
   test('the picture goes in as bytea bytes, and a stranger is false', () async {

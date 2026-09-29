@@ -3674,6 +3674,37 @@ redeployed with every build but players kept the old one. Checked
 
 No server change, no migration, no new dependency.
 
+### The month turns over (batch 73, server, 2026-09-29)
+
+Requested 2026-09-29: at 00:00 Riyadh on the 1st the app moves to the new
+month by itself, every player starts it at zero, the previous month stays
+in the records, and the champion's celebration runs for the first 48 hours
+of the new month, above the new month's board.
+
+What already held: months are created a week ahead by
+`EnsureUpcomingMonthlySeasons` (`monthly_season_scheduler.dart`), they run
+00:00 to 00:00 Riyadh (0076), and a month's board sums only its own
+fixtures, so the new month starts empty without anything being reset or
+deleted.
+
+- **Enrolment on turnover:** `GET /me/active-seasons` now runs the same
+  `EnrolInOpenSeasons` as `GET /me` before it reads. `/me` runs once when
+  the app opens, so an app left open across midnight asked for its seasons
+  after the old month closed and got none. (A month with no fixture yet
+  enrols nobody, as before.)
+- **Celebration window:** `celebrate_until` is now the month's end + 48 h
+  (`ListMonthChampions.celebrateUntil`, `MonthChampion.monthEndAt` read as
+  `seasons.end_at`), no longer the crowning + 48 h: a crowning made at 00:30
+  or at 09:00 on the 1st both end at 00:00 Riyadh on the 3rd.
+- **Prize:** migration 0078 adds `competition.month_champions.prize` (text,
+  1-80 characters after trimming, nullable) and adds it to the frozen
+  columns of `month_champions_guard_change`. `POST /admin/champions/{id}`
+  takes an optional `prize` (trimmed; blank is none; longer than 80 is 400
+  `champion.prize_too_long`); `GET /champions` returns it.
+  `supabase/tests/0078_champion_prize_test.sql`: 6 checks. **0078 must be
+  on the live DB before this server is deployed** (the list reads
+  `c.prize`).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

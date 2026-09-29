@@ -41,6 +41,17 @@ Future<Response> onRequest(RequestContext context) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
+  // The same enrolment `GET /me` runs, and for the same reason: opening the
+  // app is the join. `/me` runs once, when the app opens, so a player whose
+  // app stayed open across midnight on the 1st asked for their seasons and
+  // got none -- last month had closed and they were not yet in the new one.
+  // Enrolling here first makes the app's month turnover land in the new
+  // month. Unchecked: EnrolInOpenSeasons swallows its own failures.
+  await root.enrolInOpenSeasons(
+    principal: principal,
+    now: DateTime.now().toUtc(),
+  );
+
   final result = await root.listMyActiveSeasons(principal: principal);
 
   return switch (result) {

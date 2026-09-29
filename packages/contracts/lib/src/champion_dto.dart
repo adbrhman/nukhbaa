@@ -18,6 +18,7 @@ final class MonthChampionDto {
     required this.celebrateUntil,
     this.photoUrl,
     this.avatarUrl,
+    this.prize,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -35,6 +36,7 @@ final class MonthChampionDto {
         celebrateUntil: (json['celebrate_until'] as String?) ?? '',
         photoUrl: json['photo_url'] as String?,
         avatarUrl: json['avatar_url'] as String?,
+        prize: json['prize'] as String?,
       );
 
   /// The month.
@@ -73,6 +75,9 @@ final class MonthChampionDto {
   /// The champion's own profile picture (server-relative), or null.
   final String? avatarUrl;
 
+  /// What the champion wins ("150 ريال سعودي"), or null without one.
+  final String? prize;
+
   /// Exact scorelines over decided fixtures, rounded, or null when nothing
   /// was decided -- the same accuracy the boards show.
   int? get accuracyPercent =>
@@ -92,6 +97,7 @@ final class MonthChampionDto {
     'celebrate_until': celebrateUntil,
     if (photoUrl != null) 'photo_url': photoUrl,
     if (avatarUrl != null) 'avatar_url': avatarUrl,
+    if (prize != null) 'prize': prize,
   };
 }
 
@@ -261,10 +267,21 @@ final class ChampionCandidatesDto {
 }
 
 /// The body of `POST /admin/champions/{seasonId}`: the one or two players to
-/// crown, and whether to crown although some fixture has no result yet.
+/// crown, whether to crown although some fixture has no result yet, and the
+/// prize the champion wins.
 final class CrownChampionsDto {
   /// Creates the body.
-  const CrownChampionsDto({required this.userIds, this.force = false});
+  const CrownChampionsDto({
+    required this.userIds,
+    this.force = false,
+    this.prize,
+  });
+
+  /// The prize text, or null when the field is missing or not a string.
+  static String? prizeOf(Map<String, Object?> json) {
+    final Object? raw = json['prize'];
+    return raw is String ? raw : null;
+  }
 
   /// The chosen players, or null when the field is missing or is not a list
   /// of strings -- the use-case then refuses it rather than guessing.
@@ -293,6 +310,13 @@ final class CrownChampionsDto {
   /// Crown although some fixture has no result yet.
   final bool force;
 
+  /// What the champion wins, or null for none.
+  final String? prize;
+
   /// Serializes to a JSON-encodable map.
-  Map<String, Object?> toJson() => {'user_ids': userIds, 'force': force};
+  Map<String, Object?> toJson() => {
+    'user_ids': userIds,
+    'force': force,
+    if (prize != null) 'prize': prize,
+  };
 }
