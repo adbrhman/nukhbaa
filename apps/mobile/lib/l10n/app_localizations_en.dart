@@ -1651,4 +1651,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get championSpotlightExpand => 'Show the celebration';
+
+  @override
+  String get championCongrats => 'Congratulations on the crown';
+
+  @override
+  String championCongratsLine(String month) {
+    return '$month champion';
+  }
+
+  @override
+  String championPrize(String prize) {
+    return 'and the prize: $prize';
+  }
+
+  @override
+  String get championShareButton => 'Share your crown';
+
+  @override
+  String championShareMessage(String month) {
+    return 'I was crowned the $month champion on Nukhba 👑';
+  }
+
+  @override
+  String get leaderboardMonthStarting =>
+      'A new month has begun: everyone starts from zero, and the standings appear with the first scored match.';
 }

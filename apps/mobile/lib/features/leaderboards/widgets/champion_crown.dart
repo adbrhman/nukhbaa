@@ -9,8 +9,15 @@ import '../../../core/design/app_tokens.dart';
 
 /// A gold crown [size] wide, three points topped with jewels over a band.
 class ChampionCrown extends StatelessWidget {
-  /// Creates the crown.
-  const ChampionCrown({required this.size, this.semanticLabel, super.key});
+  /// Creates the crown; [light] and [dark] replace the theme's gold (the
+  /// dark crown on the hero's gold title pill).
+  const ChampionCrown({
+    required this.size,
+    this.semanticLabel,
+    this.light,
+    this.dark,
+    super.key,
+  });
 
   /// The crown's width; its height is three quarters of it.
   final double size;
@@ -18,14 +25,20 @@ class ChampionCrown extends StatelessWidget {
   /// Read out by a screen reader; null leaves the crown decorative.
   final String? semanticLabel;
 
+  /// The top of the crown's gradient; null for the theme's gold, lightened.
+  final Color? light;
+
+  /// The bottom of the crown's gradient; null for the theme's gold.
+  final Color? dark;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final Widget crown = CustomPaint(
       size: Size(size, size * 0.75),
       painter: _CrownPainter(
-        light: Color.lerp(t.gold, Colors.white, 0.35)!,
-        dark: t.gold,
+        light: light ?? Color.lerp(t.gold, Colors.white, 0.35)!,
+        dark: dark ?? t.gold,
       ),
     );
     final String? label = semanticLabel;

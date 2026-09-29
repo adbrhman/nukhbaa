@@ -3705,6 +3705,44 @@ deleted.
   on the live DB before this server is deployed** (the list reads
   `c.prize`).
 
+### The month turns over in the app (batch 74, 2026-09-29)
+
+The app side of batch 73. No server change, no migration, no new
+dependency.
+
+- **Turnover:** `RiyadhDayTurnover` (`core/time/`), started by the shell,
+  fires 5 s after 00:00 Riyadh (21:00 UTC, whatever the device zone), once
+  more 2 minutes later (a device clock running ahead), and on a return to
+  the app after a midnight passed. The shell then invalidates
+  `activeSeasonsProvider`, `currentMonthFixturesProvider`,
+  `monthChampionsProvider` and `myFixturePredictionsProvider`: the
+  leaderboard lands in the new month (its read enrols the player, batch 73)
+  and the celebration starts without a restart.
+- **Zero at the start:** a month's board sums only its own fixtures, so the
+  new month is empty until its first scored match; the month board then
+  says so (`leaderboardMonthStarting`), and so does the screen when the new
+  month has no fixture yet -- replacing the misleading "join a season"
+  prompt. The previous month stays in the records.
+- **The hero** (design of 2026-09-29, `champion_spotlight.dart`, rewritten
+  whole): brand navy and gold in both themes; ribbons, light and one
+  confetti shower; the picture in a gold frame inside a laurel wreath, the
+  crown above and the place "1" below; "بطل شهر سبتمبر 2026"
+  (`championMonthName`), the name, points and accuracy, "مبروك التتويج",
+  "بطل سبتمبر" and the prize. It leads the month's board and scrolls with it
+  (`header` on `LeaderboardBoard`, `FixtureStandingsBoard`,
+  `AsyncListView`), above the new month's standings; it shows for the
+  first 48 hours of the new month (the server's `celebrate_until`).
+- **Share:** the champion alone sees "شارك تتويجك"; it sends the hero as a
+  picture (`ChampionShareCard`, `share_plus`) with the invitation link.
+- **Admin:** a prize field (optional, 80 characters, frozen with the
+  crowning) and "تجربة الاحتفال", which opens the real
+  `LeaderboardsScreen` with `previewChampions` -- the rehearsal, before the
+  month is even over; nothing is sent.
+- New l10n keys: `championCongrats`, `championCongratsLine`,
+  `championPrize`, `championShareButton`, `championShareMessage`,
+  `leaderboardMonthStarting`; `championTitleOne/Two` (ar) now read
+  "بطل شهر {month}" with the month by name.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

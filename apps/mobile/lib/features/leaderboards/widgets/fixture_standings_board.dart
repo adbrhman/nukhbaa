@@ -42,6 +42,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
     this.showHeader = false,
     this.day,
     this.emptyMessage,
+    this.header,
     super.key,
   });
 
@@ -59,6 +60,9 @@ class FixtureStandingsBoard extends ConsumerWidget {
 
   /// Replaces the default "nothing scored yet" message.
   final String? emptyMessage;
+
+  /// Leads the board, above its standings or its empty message.
+  final Widget? header;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,11 +115,13 @@ class FixtureStandingsBoard extends ConsumerWidget {
       emptyMessage: emptyMessage ?? l10n.fixtureLeaderboardEmpty,
       onRetry: reload,
       onRefresh: refresh,
+      header: header,
       listBuilder: (context, entries) => LeaderboardBoard(
         keyPrefix: keyPrefix,
         myParticipantId: myParticipantId,
         myDisplayName: myDisplayName,
         showHeader: showHeader,
+        header: header,
         entries: <BoardEntry>[
           for (final FixtureLeaderboardEntryDto e in entries)
             BoardEntry(

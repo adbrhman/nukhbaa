@@ -1642,12 +1642,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String championTitleOne(String month) {
-    return 'بطل $month';
+    return 'بطل شهر $month';
   }
 
   @override
   String championTitleTwo(String month) {
-    return 'بطلا $month';
+    return 'بطلا شهر $month';
   }
 
   @override
@@ -1664,4 +1664,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get championSpotlightExpand => 'إظهار الاحتفال';
+
+  @override
+  String get championCongrats => 'مبروك التتويج';
+
+  @override
+  String championCongratsLine(String month) {
+    return 'بطل $month';
+  }
+
+  @override
+  String championPrize(String prize) {
+    return 'والفوز بالجائزة $prize';
+  }
+
+  @override
+  String get championShareButton => 'شارك تتويجك';
+
+  @override
+  String championShareMessage(String month) {
+    return 'تُوِّجتُ بطلًا لشهر $month في نُخبة 👑';
+  }
+
+  @override
+  String get leaderboardMonthStarting =>
+      'بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب.';
 }

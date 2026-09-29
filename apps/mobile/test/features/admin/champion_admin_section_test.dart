@@ -1,9 +1,10 @@
 /// The admin's crowning through the real section, its real providers and the
 /// real `AdminApi` / `LeaderboardsApi`, over the auth harness's fake server:
 /// the month's final board is drawn as the server ranked it, only a player
-/// ranked first can be chosen, the picture the admin picks shows in the
-/// preview before anything is sent, and the crowning then the picture reach
-/// the server with their values.
+/// ranked first can be chosen, the picture and the prize the admin gives show
+/// in the preview -- and in the real leaderboard screen, the rehearsal --
+/// before anything is sent, and the crowning then the picture reach the
+/// server with their values.
 library;
 
 import 'dart:convert';
@@ -14,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/admin/screens/sections/champion_admin_section.dart';
+import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/auth_harness.dart';
@@ -110,6 +112,9 @@ final class _Server {
         'schema_version': 1,
         'champions': <Object?>[_champion()],
       });
+    }
+    if (path == '/me/active-seasons') {
+      return _json(<Object?>[]);
     }
     if (path == '/champions') {
       return _json(<String, Object?>{
@@ -302,6 +307,71 @@ void main() {
 
     expect(find.text('الصورة أكبر من 512 ك.ب، اختر صورة أصغر'), findsOneWidget);
     expect(find.byKey(const Key('champion.backdrop.photo')), findsNothing);
+  });
+
+  testWidgets('the prize shows in the preview and goes with the crowning', (
+    tester,
+  ) async {
+    final server = _Server();
+    await _open(tester, server);
+
+    await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('admin.champions.prize')),
+      '150 ريال سعودي',
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const Key('admin.champions.spotlight.prize.u-1')),
+          )
+          .data,
+      contains('150 ريال سعودي'),
+    );
+
+    await _scrollTo(tester, find.byKey(const Key('admin.champions.crown')));
+    await tester.tap(find.byKey(const Key('admin.champions.crown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تتويج'));
+    await tester.pumpAndSettle();
+
+    final http.Request crown = server.requests.firstWhere(
+      (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9',
+    );
+    expect(
+      (jsonDecode(crown.body) as Map<String, Object?>)['prize'],
+      '150 ريال سعودي',
+    );
+  });
+
+  testWidgets('the rehearsal opens the real leaderboard with the champion', (
+    tester,
+  ) async {
+    final server = _Server(ended: false);
+    await _open(tester, server);
+
+    await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('admin.champions.photo.u-1')));
+    await tester.pumpAndSettle();
+    await _scrollTo(tester, find.byKey(const Key('admin.champions.rehearse')));
+    await tester.tap(find.byKey(const Key('admin.champions.rehearse')));
+    await tester.pumpAndSettle();
+
+    // The very screen the players open, before the month is even over:
+    // nothing was sent to the server.
+    expect(find.byType(LeaderboardsScreen), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('leaderboards.champion.name.u-1')))
+          .data,
+      'Ahmad',
+    );
+    expect(find.byKey(const Key('champion.backdrop.photo')), findsWidgets);
+    expect(server.requests.where((r) => r.method == 'POST'), isEmpty);
   });
 
   test('the picture type is read from its bytes', () {

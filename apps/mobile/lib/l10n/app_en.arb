@@ -1252,5 +1252,14 @@
   "championsRecordEmpty": "No champion has been crowned yet.",
   "championsLoadFailed": "Couldn't load the champions.",
   "championSpotlightCollapse": "Hide the celebration",
-  "championSpotlightExpand": "Show the celebration"
+  "championSpotlightExpand": "Show the celebration",
+  "championCongrats": "Congratulations on the crown",
+  "championCongratsLine": "{month} champion",
+  "@championCongratsLine": {"placeholders": {"month": {"type": "String"}}},
+  "championPrize": "and the prize: {prize}",
+  "@championPrize": {"placeholders": {"prize": {"type": "String"}}},
+  "championShareButton": "Share your crown",
+  "championShareMessage": "I was crowned the {month} champion on Nukhba 👑",
+  "@championShareMessage": {"placeholders": {"month": {"type": "String"}}},
+  "leaderboardMonthStarting": "A new month has begun: everyone starts from zero, and the standings appear with the first scored match."
 }

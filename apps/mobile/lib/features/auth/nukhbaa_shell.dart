@@ -10,6 +10,11 @@ import '../../core/design/app_tokens.dart';
 import '../../core/notifications/push_link.dart';
 import '../../core/perf/frame_reporter.dart';
 import '../../core/providers.dart';
+import '../../core/time/riyadh_day_turnover.dart';
+import '../competition/competition_providers.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../history/prediction_history_providers.dart';
+import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
@@ -67,9 +72,26 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     }
   }
 
+  /// At 00:00 Riyadh the month (on the 1st) and the day change under an app
+  /// that stayed open: the reads that name "now" are read again, so the
+  /// leaderboard lands in the new month (the server enrols the player on
+  /// that read) and the celebration starts, without a restart.
+  late final RiyadhDayTurnover _turnover = RiyadhDayTurnover(
+    onTurnover: _onNewDay,
+  );
+
+  void _onNewDay() {
+    if (!mounted) return;
+    ref.invalidate(activeSeasonsProvider);
+    ref.invalidate(currentMonthFixturesProvider);
+    ref.invalidate(monthChampionsProvider);
+    ref.invalidate(myFixturePredictionsProvider);
+  }
+
   @override
   void initState() {
     super.initState();
+    _turnover.start();
     // Fire-and-forget, and only once the user is signed in: the token is
     // bound to an account server-side, so registering before sign-in would
     // have nobody to bind it to. Never awaited -- registration must not
@@ -108,6 +130,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
 
   @override
   void dispose() {
+    _turnover.stop();
     _frames.stop();
     super.dispose();
   }

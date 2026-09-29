@@ -42,6 +42,7 @@ class AsyncListView<T> extends StatelessWidget {
     this.listBuilder,
     this.padding = const EdgeInsets.symmetric(vertical: 8),
     this.onRefresh,
+    this.header,
     super.key,
   }) : assert(
          (itemBuilder == null) != (listBuilder == null),
@@ -77,6 +78,11 @@ class AsyncListView<T> extends StatelessWidget {
   /// when the tab was first opened.
   final Future<void> Function()? onRefresh;
 
+  /// Shown above the empty message, so an empty list keeps what leads it
+  /// (the champion's hero above a month nobody has scored in yet). The list
+  /// itself places it through [listBuilder].
+  final Widget? header;
+
   @override
   Widget build(BuildContext context) {
     final Future<void> Function()? refresh = onRefresh;
@@ -86,7 +92,25 @@ class AsyncListView<T> extends StatelessWidget {
       error: (error, _) => _ErrorView(error: error, onRetry: onRetry),
       data: (items) {
         if (items.isEmpty) {
-          final Widget empty = _EmptyView(message: emptyMessage);
+          final Widget? lead = header;
+          final Widget empty = lead == null
+              ? _EmptyView(message: emptyMessage)
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    0,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      lead,
+                      _EmptyView(message: emptyMessage),
+                    ],
+                  ),
+                );
           return refresh == null
               ? empty
               : _PullToRefresh(onRefresh: refresh, child: empty);

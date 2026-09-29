@@ -480,11 +480,17 @@
   "matchCardYourCall": "توقعك",
   "signOutConfirmMessage": "هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟",
   "championCrownLabel": "بطل الشهر",
-  "championTitleOne": "بطل {month}",
-  "championTitleTwo": "بطلا {month}",
+  "championTitleOne": "بطل شهر {month}",
+  "championTitleTwo": "بطلا شهر {month}",
   "championsRecordTitle": "سجل الأبطال",
   "championsRecordEmpty": "لم يُتوَّج أي بطل بعد.",
   "championsLoadFailed": "تعذّر تحميل الأبطال.",
   "championSpotlightCollapse": "إخفاء الاحتفال",
-  "championSpotlightExpand": "إظهار الاحتفال"
+  "championSpotlightExpand": "إظهار الاحتفال",
+  "championCongrats": "مبروك التتويج",
+  "championCongratsLine": "بطل {month}",
+  "championPrize": "والفوز بالجائزة {prize}",
+  "championShareButton": "شارك تتويجك",
+  "championShareMessage": "تُوِّجتُ بطلًا لشهر {month} في نُخبة 👑",
+  "leaderboardMonthStarting": "بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب."
 }

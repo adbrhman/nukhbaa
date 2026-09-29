@@ -1,7 +1,8 @@
 /// لوحة المشرف لتتويج بطل الشهر (migration 0077): يختار المشرف الشهر،
 /// فيرى الترتيب النهائي كما حسبه الخادم، ويحدّد البطل أو البطلين من أصحاب
-/// المركز الأول، ويضيف صورة البطل، ويعاين الاحتفال كما سيظهر في شاشة
-/// المتصدرين، ثم يتوّج. الخادم وحده يقرر من يحق له التتويج.
+/// المركز الأول، ويضيف صورة البطل ونص الجائزة (0078)، ويعاين الاحتفال كما
+/// سيظهر في شاشة المتصدرين -- بل يفتح شاشة المتصدرين نفسها بالاحتفال قبل
+/// التتويج (تجربة) -- ثم يتوّج. الخادم وحده يقرر من يحق له التتويج.
 library;
 
 import 'dart:async';
@@ -22,6 +23,7 @@ import '../../../../core/ui/app_dialog.dart';
 import '../../../../core/ui/user_avatar.dart';
 import '../../../competition/month_label.dart';
 import '../../../leaderboards/champions_providers.dart';
+import '../../../leaderboards/leaderboards_screen.dart';
 import '../../../leaderboards/widgets/champion_spotlight.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
@@ -103,8 +105,44 @@ class ChampionAdminSection extends ConsumerStatefulWidget {
 class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
   SeasonDto? _month;
   final Set<String> _chosen = <String>{};
+  final TextEditingController _prize = TextEditingController();
   final Map<String, ChampionPhoto> _photos = <String, ChampionPhoto>{};
   bool _busy = false;
+
+  @override
+  void dispose() {
+    _prize.dispose();
+    super.dispose();
+  }
+
+  /// The prize as it will be sent: trimmed, null when blank.
+  String? get _prizeText {
+    final String text = _prize.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  /// The rehearsal: the real leaderboard screen, with [champions]
+  /// celebrated as they will be after the crowning, and the pictures still
+  /// on this device.
+  void _openRehearsal(
+    List<MonthChampionDto> champions,
+    Map<String, Uint8List> photos,
+  ) {
+    unawaited(
+      Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('تجربة الاحتفال')),
+            body: LeaderboardsScreen(
+              key: const Key('admin.champions.rehearsal'),
+              previewChampions: champions,
+              previewPhotos: photos,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _snack(String message) {
     ScaffoldMessenger.of(
@@ -168,13 +206,16 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     if (chosen.isEmpty) return;
     final String names = chosen.map((c) => c.displayName).join(' و');
     final bool force = month.unscoredFixtures > 0;
+    final String? prize = _prizeText;
     final bool? confirmed = await AppDialog.confirm(
       context,
       title: 'تتويج ${monthLabelFromStored(month.seasonLabel)}',
       message:
           'سيُتوَّج: $names.\n'
-          'يظهر الاحتفال في شاشة المتصدرين 48 ساعة، ويبقى البطل في سجل '
-          'الأبطال. التتويج لا يُلغى.'
+          '${prize == null ? 'بلا نص جائزة.' : 'الجائزة: $prize.'}\n'
+          'يظهر الاحتفال في شاشة المتصدرين حتى نهاية أول 48 ساعة من الشهر '
+          'الجديد، ويبقى البطل في سجل الأبطال. التتويج لا يُلغى، ولا تُعدَّل '
+          'الجائزة بعده.'
           '${force ? '\nتنبيه: ${month.unscoredFixtures} مباراة بلا نتيجة بعد.' : ''}',
       confirmLabel: 'تتويج',
       cancelLabel: 'إلغاء',
@@ -190,6 +231,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             for (final ChampionCandidateDto c in chosen) c.userId,
           ],
           force: force,
+          prize: prize,
         );
     if (!mounted) return;
     if (crowned is Err<MonthChampionsDto>) {
@@ -212,6 +254,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
       _busy = false;
       _chosen.clear();
       _photos.clear();
+      _prize.clear();
     });
     ref.invalidate(monthChampionsProvider);
     ref.invalidate(adminChampionCandidatesProvider(month.seasonId));
@@ -299,8 +342,13 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             crownedAt: '',
             celebrateUntil: '',
             avatarUrl: c.avatarUrl,
+            prize: _prizeText,
           ),
     ];
+    final Map<String, Uint8List> photos = <String, Uint8List>{
+      for (final MapEntry<String, ChampionPhoto> e in _photos.entries)
+        e.key: e.value.bytes,
+    };
     final bool canCrown = data.ended && _chosen.isNotEmpty && !_busy;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -365,20 +413,34 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
         ],
         if (preview.isNotEmpty) ...<Widget>[
           const SizedBox(height: AppSpacing.lg),
+          TextField(
+            key: const Key('admin.champions.prize'),
+            controller: _prize,
+            enabled: !_busy,
+            maxLength: 80,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'الجائزة (اختياري)',
+              hintText: '150 ريال سعودي',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            'المعاينة: هكذا يظهر أعلى شاشة المتصدرين 48 ساعة',
+            'المعاينة: هكذا يظهر أعلى شاشة المتصدرين أول 48 ساعة من الشهر الجديد',
             style: context.text.titleSmall?.copyWith(
               color: t.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          _Preview(
-            champions: preview,
-            photos: <String, Uint8List>{
-              for (final MapEntry<String, ChampionPhoto> e in _photos.entries)
-                e.key: e.value.bytes,
-            },
+          _Preview(champions: preview, photos: photos),
+          const SizedBox(height: AppSpacing.sm),
+          AdminSecondaryButton(
+            key: const Key('admin.champions.rehearse'),
+            label: 'تجربة الاحتفال',
+            icon: Icons.play_circle_outline_rounded,
+            onPressed: () => _openRehearsal(preview, photos),
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
@@ -429,6 +491,14 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
         if (champions.isNotEmpty) ...<Widget>[
           const SizedBox(height: AppSpacing.md),
           _Preview(champions: champions),
+          const SizedBox(height: AppSpacing.sm),
+          AdminSecondaryButton(
+            key: const Key('admin.champions.rehearse'),
+            label: 'عرض الاحتفال',
+            icon: Icons.play_circle_outline_rounded,
+            onPressed: () =>
+                _openRehearsal(champions, const <String, Uint8List>{}),
+          ),
         ],
       ],
     );
@@ -573,6 +643,7 @@ class _Preview extends StatelessWidget {
               champions: champions,
               keyPrefix: 'admin.champions.spotlight',
               previewPhotos: photos,
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             ),
           ),
         ],

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,13 +45,32 @@ enum LeaderboardScope {
 /// fixtures, then offers three views of the standings -- the month, one day,
 /// and the whole sporting season -- each ranked by the server, most points
 /// first.
+///
+/// While a crowning is being celebrated (the first 48 hours of the new
+/// month) the champion's hero leads the month's board, above the new month's
+/// standings -- and above the "the month starts with its first match"
+/// message when the new month has no fixture yet, so the celebration never
+/// depends on the new month being ready.
 class LeaderboardsScreen extends ConsumerWidget {
-  const LeaderboardsScreen({this.userDisplayName, this.userId, super.key});
+  const LeaderboardsScreen({
+    this.userDisplayName,
+    this.userId,
+    this.previewChampions,
+    this.previewPhotos = const <String, Uint8List>{},
+    super.key,
+  });
 
   final String? userDisplayName;
 
   /// The signed-in user's id; the season board is keyed by user.
   final String? userId;
+
+  /// The admin's rehearsal: these champions are celebrated whatever the
+  /// server's list says, so the screen can be seen before the crowning.
+  final List<MonthChampionDto>? previewChampions;
+
+  /// Pictures still on the admin's device, by user id (the rehearsal).
+  final Map<String, Uint8List> previewPhotos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,6 +81,14 @@ class LeaderboardsScreen extends ConsumerWidget {
     );
     final AsyncValue<List<CurrentMonthFixtureItemDto>> monthFixtures = ref
         .watch(currentMonthFixturesProvider);
+    // The celebration runs for the 48 hours the server set; after that the
+    // champion stays in the record and beside their name on the boards.
+    final List<MonthChampionDto> celebrating =
+        previewChampions ??
+        celebratingChampions(
+          ref.watch(monthChampionsProvider).value,
+          DateTime.now().toUtc(),
+        );
 
     return Scaffold(
       backgroundColor: tokens.background,
@@ -91,15 +120,14 @@ class LeaderboardsScreen extends ConsumerWidget {
                     .toList(growable: false);
 
           if (visible.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  l10n.leaderboardsJoinSeasonPrompt,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: tokens.textSecondary),
-                ),
-              ),
+            // The new month has no fixture yet (or none of its fixtures has
+            // reached this device). Nobody has to "join" anything --
+            // enrolment is automatic -- so the old join prompt misled; and
+            // the celebration still shows.
+            return _MonthNotStarted(
+              celebrating: celebrating,
+              previewPhotos: previewPhotos,
+              userId: userId,
             );
           }
 
@@ -109,6 +137,8 @@ class LeaderboardsScreen extends ConsumerWidget {
             season: season,
             userDisplayName: userDisplayName,
             userId: userId,
+            celebrating: celebrating,
+            previewPhotos: previewPhotos,
           );
         },
       ),
@@ -132,17 +162,116 @@ ActiveSeasonDto _currentOf(List<ActiveSeasonDto> seasons) {
   return seasons.first;
 }
 
+/// Opens the champions' record.
+void _openRecord(BuildContext context) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(builder: (_) => const ChampionsRecordScreen()),
+  );
+}
+
+/// The screen between the end of one month and the first fixture of the
+/// next: the title, the celebration when one runs, and a word on when the
+/// standings begin.
+class _MonthNotStarted extends ConsumerWidget {
+  const _MonthNotStarted({
+    required this.celebrating,
+    required this.previewPhotos,
+    required this.userId,
+  });
+
+  final List<MonthChampionDto> celebrating;
+  final Map<String, Uint8List> previewPhotos;
+  final String? userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final Widget list = SafeArea(
+      bottom: false,
+      child: ListView(
+        key: const Key('leaderboards.notStarted'),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.xl + MediaQuery.paddingOf(context).bottom,
+        ),
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: Text(
+              l10n.leaderboardsHeading,
+              key: const Key('leaderboards.title'),
+              style: context.text.headlineSmall?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (celebrating.isNotEmpty) ...<Widget>[
+            ChampionSpotlight(
+              champions: celebrating,
+              keyPrefix: 'leaderboards.champion',
+              previewPhotos: previewPhotos,
+              viewerUserId: userId,
+              margin: EdgeInsets.zero,
+              onOpenRecord: () => _openRecord(context),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Text(
+              l10n.leaderboardMonthStarting,
+              key: const Key('leaderboards.monthStarting'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: tokens.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (celebrating.isEmpty) return list;
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 340 + MediaQuery.paddingOf(context).top,
+          child: ChampionBackdrop(
+            champions: celebrating,
+            previewPhotos: previewPhotos,
+          ),
+        ),
+        list,
+      ],
+    );
+  }
+}
+
 class _ScopedLeaderboard extends ConsumerStatefulWidget {
   const _ScopedLeaderboard({
     required this.season,
     required this.userDisplayName,
     required this.userId,
+    required this.celebrating,
+    required this.previewPhotos,
     super.key,
   });
 
   final ActiveSeasonDto season;
   final String? userDisplayName;
   final String? userId;
+
+  /// The champions being celebrated, empty outside the 48 hours.
+  final List<MonthChampionDto> celebrating;
+
+  /// Pictures still on the admin's device, by user id (the rehearsal).
+  final Map<String, Uint8List> previewPhotos;
 
   @override
   ConsumerState<_ScopedLeaderboard> createState() => _ScopedLeaderboardState();
@@ -229,6 +358,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       LeaderboardScope.season =>
         ref.watch(sportingSeasonLeaderboardProvider).value?.label ?? '—',
     };
+    final List<MonthChampionDto> celebrating = widget.celebrating;
     final Widget board = switch (_scope) {
       LeaderboardScope.month => FixtureStandingsBoard(
         key: const ValueKey<String>('leaderboards.board.month'),
@@ -236,6 +366,19 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         keyPrefix: 'leaderboards',
         myDisplayName: widget.userDisplayName,
         showHeader: true,
+        emptyMessage: l10n.leaderboardMonthStarting,
+        // The hero leads the month's board and scrolls with it, above the
+        // new month's standings -- the design of 2026-09-29.
+        header: celebrating.isEmpty
+            ? null
+            : ChampionSpotlight(
+                champions: celebrating,
+                keyPrefix: 'leaderboards.champion',
+                previewPhotos: widget.previewPhotos,
+                viewerUserId: widget.userId,
+                margin: EdgeInsets.zero,
+                onOpenRecord: () => _openRecord(context),
+              ),
       ),
       LeaderboardScope.day => FixtureStandingsBoard(
         key: ValueKey<String>('leaderboards.board.day.$_day'),
@@ -264,18 +407,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
     final MonthChampionsDto? champions = ref
         .watch(monthChampionsProvider)
         .value;
-    // The celebration runs for the 48 hours the server set; after that the
-    // champion stays in the record and beside their name on the boards.
-    final List<MonthChampionDto> celebrating = celebratingChampions(
-      champions,
-      DateTime.now().toUtc(),
-    );
     final bool hasRecord = champions?.champions.isNotEmpty ?? false;
-    void openRecord() {
-      Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(builder: (_) => const ChampionsRecordScreen()),
-      );
-    }
 
     final Widget content = SafeArea(
       bottom: false,
@@ -304,7 +436,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
                   IconButton(
                     key: const Key('leaderboards.champions.record'),
                     tooltip: l10n.championsRecordTitle,
-                    onPressed: openRecord,
+                    onPressed: () => _openRecord(context),
                     icon: const ChampionCrown(size: 24),
                   ),
               ],
@@ -320,14 +452,6 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
               style: context.text.bodySmall?.copyWith(color: tokens.textMuted),
             ),
           ),
-          if (celebrating.isNotEmpty) ...<Widget>[
-            const SizedBox(height: AppSpacing.md),
-            ChampionSpotlight(
-              champions: celebrating,
-              keyPrefix: 'leaderboards.champion',
-              onOpenRecord: openRecord,
-            ),
-          ],
           const SizedBox(height: AppSpacing.lg),
           // What is ranked first, then which stretch of time.
           Padding(
@@ -368,7 +492,10 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
           left: 0,
           right: 0,
           height: 340 + MediaQuery.paddingOf(context).top,
-          child: ChampionBackdrop(champions: celebrating),
+          child: ChampionBackdrop(
+            champions: celebrating,
+            previewPhotos: widget.previewPhotos,
+          ),
         ),
         content,
       ],

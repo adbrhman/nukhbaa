@@ -88,6 +88,7 @@ class LeaderboardBoard extends StatelessWidget {
     this.myParticipantId,
     this.myDisplayName,
     this.showHeader = false,
+    this.header,
     super.key,
   });
 
@@ -101,6 +102,10 @@ class LeaderboardBoard extends StatelessWidget {
   /// switch live above the board in the leaderboards tab, so they stay put
   /// while a board loads.
   final bool showHeader;
+
+  /// Leads the list and scrolls with it -- the champion's hero on the
+  /// month's board while a crowning is celebrated.
+  final Widget? header;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +137,12 @@ class LeaderboardBoard extends StatelessWidget {
     //
     // Order is the reading order: where am I and how far is the top (the
     // summary), who leads (the podium), then everyone else (the table).
+    final Widget? lead = header;
     final List<Widget> leading = <Widget>[
+      if (lead != null) ...<Widget>[
+        lead,
+        const SizedBox(height: AppSpacing.lg),
+      ],
       if (showHeader)
         _SummaryCard(
           viewer: viewer,

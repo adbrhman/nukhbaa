@@ -2921,6 +2921,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show the celebration'**
   String get championSpotlightExpand;
+
+  /// No description provided for @championCongrats.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations on the crown'**
+  String get championCongrats;
+
+  /// No description provided for @championCongratsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} champion'**
+  String championCongratsLine(String month);
+
+  /// No description provided for @championPrize.
+  ///
+  /// In en, this message translates to:
+  /// **'and the prize: {prize}'**
+  String championPrize(String prize);
+
+  /// No description provided for @championShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your crown'**
+  String get championShareButton;
+
+  /// No description provided for @championShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'I was crowned the {month} champion on Nukhba 👑'**
+  String championShareMessage(String month);
+
+  /// No description provided for @leaderboardMonthStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'A new month has begun: everyone starts from zero, and the standings appear with the first scored match.'**
+  String get leaderboardMonthStarting;
 }
 
 class _AppLocalizationsDelegate
