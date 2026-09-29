@@ -1,9 +1,9 @@
 /// The web build's update check through the real [UpdateGate], the real
 /// `AppApi` and `GET /app/latest-build`, with only the socket faked
 /// ([buildAuthHarness]): a page running an older build than the newest
-/// release is offered a reload, the current build is left alone, a refusal
-/// is not asked again straight away, and a local run without a build id
-/// never asks at all.
+/// release reloads by itself with nothing to answer, the current build is
+/// left alone, a quick return does not reload again, and a local run without
+/// a build id never checks at all.
 library;
 
 import 'dart:convert';
@@ -86,17 +86,15 @@ Future<List<int>> _open(
 }
 
 void main() {
-  testWidgets('an older page is offered a reload, and reloads', (tester) async {
+  testWidgets('an older page reloads by itself, with no dialog', (
+    tester,
+  ) async {
     final server = _Server();
     final List<int> reloads = await _open(tester, server, buildSha: 'aaaaaaa');
 
     expect(server.checks, 1);
     expect(find.text('child-visible'), findsOneWidget);
-    expect(find.byKey(const Key('update.web.reload')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('update.web.reload')));
-    await tester.pumpAndSettle();
-
+    expect(find.byType(AlertDialog), findsNothing);
     expect(reloads, hasLength(1));
   });
 
@@ -105,33 +103,28 @@ void main() {
     final List<int> reloads = await _open(tester, server, buildSha: 'bbbbbbb');
 
     expect(server.checks, 1);
-    expect(find.byKey(const Key('update.web.reload')), findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
     expect(reloads, isEmpty);
   });
 
-  testWidgets('later: no reload, and no second ask on a quick return', (
-    tester,
-  ) async {
+  testWidgets('a quick return does not reload again', (tester) async {
     final server = _Server();
     final List<int> reloads = await _open(tester, server, buildSha: 'aaaaaaa');
-
-    await tester.tap(find.byKey(const Key('update.web.later')));
-    await tester.pumpAndSettle();
-    expect(reloads, isEmpty);
+    expect(reloads, hasLength(1));
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
 
     expect(server.checks, 1);
-    expect(find.byKey(const Key('update.web.reload')), findsNothing);
+    expect(reloads, hasLength(1));
   });
 
-  testWidgets('a release offered minutes ago is not offered again', (
+  testWidgets('a release reloaded for minutes ago is not reloaded again', (
     tester,
   ) async {
     // The release goes up before the web build: a reload in that window
-    // lands on the old build, which must not ask again at once.
+    // lands on the old build, which must not reload again at once.
     final server = _Server();
     final _Memory memory = _Memory(
       '2026-09-29T03:00:00Z@${DateTime.now().toUtc().toIso8601String()}',
@@ -144,11 +137,10 @@ void main() {
     );
 
     expect(server.checks, 1);
-    expect(find.byKey(const Key('update.web.reload')), findsNothing);
     expect(reloads, isEmpty);
   });
 
-  testWidgets('the offer is remembered with its release', (tester) async {
+  testWidgets('the reload is remembered with its release', (tester) async {
     final server = _Server();
     final _Memory memory = _Memory();
     await _open(tester, server, buildSha: 'aaaaaaa', memory: memory);
@@ -156,12 +148,11 @@ void main() {
     expect(memory.value, startsWith('2026-09-29T03:00:00Z@'));
   });
 
-  testWidgets('a local run without a build id never asks', (tester) async {
+  testWidgets('a local run without a build id never checks', (tester) async {
     final server = _Server();
     final List<int> reloads = await _open(tester, server, buildSha: '');
 
     expect(server.checks, 0);
-    expect(find.byKey(const Key('update.web.reload')), findsNothing);
     expect(reloads, isEmpty);
   });
 }

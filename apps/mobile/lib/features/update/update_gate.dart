@@ -1,11 +1,18 @@
-/// Best-effort in-app update nudge, wrapping the app's root screen.
+/// Quiet update check, wrapping the app's root screen.
 ///
 /// On first frame, calls `GET /app/latest-build` (via [AppApi], never HTTP
-/// directly — ADR-002 §2.8). The server publishes to a rolling `latest` tag
-/// with no usable semver, so this compares the release's `published_at`
-/// against the last one this device already saw (persisted in
-/// `flutter_secure_storage`). A strictly newer publish shows a dismissible
-/// dialog.
+/// directly — ADR-002 §2.8). Nothing pops up on its own: players found a
+/// dialog on every release intrusive.
+///
+/// * Android: a newer release is recorded in [pendingUpdateProvider] and the
+///   account tab shows an "update available" row. The player starts the
+///   install from there ([installUpdate]) whenever they like.
+/// * Web: a page running an older build than the newest release reloads by
+///   itself, at launch or when the player comes back to it.
+///
+/// Releases are published by hand (Build Verification run from the Actions
+/// tab), not on every push, so a player sees a new build at most as often as
+/// the owner publishes one.
 ///
 /// PRIMARY download path: [InAppUpdater] (native OTA) — download progress,
 /// SHA-256 INTEGRITY verification and the platform installer all happen
@@ -90,6 +97,22 @@ final class _SecureUpdateOfferMemory implements UpdateOfferMemory {
 final Provider<UpdateOfferMemory> updateOfferMemoryProvider =
     Provider<UpdateOfferMemory>((ref) => const _SecureUpdateOfferMemory());
 
+/// The newer Android build the launch check found, or null when this build
+/// is the newest (or the check could not tell). Hand-written like
+/// `feed_refresh_signal.dart`: no build_runner output is needed for it.
+class PendingUpdate extends Notifier<LatestBuildDto?> {
+  @override
+  LatestBuildDto? build() => null;
+
+  /// Records [build] as available to install.
+  void offer(LatestBuildDto build) => state = build;
+}
+
+/// The account tab watches this to show its "update available" row.
+final pendingUpdateProvider = NotifierProvider<PendingUpdate, LatestBuildDto?>(
+  PendingUpdate.new,
+);
+
 /// Wraps [child], performing one silent update check after the first frame.
 class UpdateGate extends ConsumerStatefulWidget {
   /// Creates the gate around [child].
@@ -172,75 +195,42 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     final DateTime? publishedAt = DateTime.tryParse(dto.publishedAt);
     if (publishedAt == null) return; // malformed server payload — silent
 
-    String? lastSeenRaw;
-    try {
-      lastSeenRaw = await _storage.read(key: updateLastSeenKey);
-    } on Object {
-      lastSeenRaw = null;
-    }
-    final DateTime? lastSeen = lastSeenRaw == null
-        ? null
-        : DateTime.tryParse(lastSeenRaw);
-
     // The short commit sha of THIS build, injected by CI at
     // `flutter build apk` time. The published release lives under the tag
     // `build-<sha>`, so its download URL contains the sha of the build it
-    // ships -- if that is not us, an update exists. This is what the check
-    // was missing: it compared the newest RELEASE against a timestamp the
-    // DEVICE had stored, and nothing in that comparison knew which build was
-    // actually installed.
-    //
-    // The old `lastSeen == null` branch is why an old install was never
-    // prompted at all: on the first launch it recorded the newest release as
-    // "seen" and returned, permanently marking a stale install as up to
-    // date. That branch now only guards builds with no injected identity (a
-    // local `flutter run`), where no better signal exists.
+    // ships -- if that is not us, an update exists. A local `flutter run`
+    // carries no sha and falls back to the timestamp this device stored.
     final String buildSha = widget.buildSha;
-
     if (buildSha.isNotEmpty) {
-      // this IS the latest
-      if (dto.apkUrl.contains('/build-$buildSha/')) {
+      if (dto.apkUrl.contains('/build-$buildSha/')) return; // newest already
+    } else {
+      String? lastSeenRaw;
+      try {
+        lastSeenRaw = await _storage.read(key: updateLastSeenKey);
+      } on Object {
+        lastSeenRaw = null;
+      }
+      final DateTime? lastSeen = lastSeenRaw == null
+          ? null
+          : DateTime.tryParse(lastSeenRaw);
+      if (lastSeen == null) {
+        await _remember(dto.publishedAt);
         return;
       }
-    } else if (lastSeen == null) {
-      await _remember(dto.publishedAt);
-      return;
+      if (!publishedAt.isAfter(lastSeen)) return;
     }
-    // Do not re-prompt for a release the user has already been offered.
-    if (lastSeen != null && !publishedAt.isAfter(lastSeen)) return;
     if (!mounted) return;
 
-    final bool? proceed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('يتوفر تحديث جديد'),
-        content: const Text('يتوفر إصدار أحدث من التطبيق. يُنصح بالتحديث.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('لاحقاً'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('تنزيل'),
-          ),
-        ],
-      ),
-    );
-
-    // Remember regardless, so the same release does not re-prompt every launch.
-    await _remember(dto.publishedAt);
-
-    if (proceed == true && mounted) {
-      await _runInAppUpdate(dto);
-    }
+    // No dialog: the account tab shows a quiet row until the player updates.
+    ref.read(pendingUpdateProvider.notifier).offer(dto);
   }
 
   /// The web build's check. The newest release and the web build come from
   /// the same commit, so a release under another commit means this page
-  /// runs an older build. Each release is offered once, and offered again
-  /// only after [_webRecheck]: the release goes up a few minutes before the
-  /// web build does, and a reload in that window still gets the old one.
+  /// runs an older build, and it reloads by itself -- at launch, or when the
+  /// player comes back after [_webRecheck]. Each release is reloaded for at
+  /// most once per [_webRecheck]: the release goes up a few minutes before
+  /// the web build does, and a reload in that window still gets the old one.
   Future<void> _checkWeb() async {
     final String sha = widget.buildSha;
     // A local run carries no build id: nothing to compare against.
@@ -289,86 +279,8 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
       // best-effort
     }
     if (!mounted) return;
-
-    final bool? reload = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('يتوفر تحديث جديد'),
-        content: const Text(
-          'نزلت نسخة أحدث من التطبيق. أعد التحميل للحصول عليها.',
-        ),
-        actions: [
-          TextButton(
-            key: const Key('update.web.later'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('لاحقاً'),
-          ),
-          FilledButton(
-            key: const Key('update.web.reload'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('تحديث الآن'),
-          ),
-        ],
-      ),
-    );
-    if (reload == true && mounted) ref.read(pageReloaderProvider)();
-  }
-
-  Future<void> _runInAppUpdate(LatestBuildDto dto) async {
-    final InAppUpdater updater = ref.read(inAppUpdaterProvider);
-    final Stream<UpdateProgress>? stream = updater.start(dto);
-    if (stream == null) {
-      if (mounted) await _offerBrowserFallback(dto);
-      return;
-    }
-    if (!mounted) return;
-
-    // The dialog returns the TERMINAL phase (no shared mutable state).
-    final UpdatePhase? terminal = await showDialog<UpdatePhase>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) =>
-          _UpdateProgressDialog(stream: stream, onCancel: updater.cancel),
-    );
-
-    if (!mounted) return;
-    final bool isFailure =
-        terminal == UpdatePhase.downloadFailed ||
-        terminal == UpdatePhase.checksumFailed ||
-        terminal == UpdatePhase.installFailed ||
-        terminal == UpdatePhase.failed;
-    if (isFailure) {
-      await _offerBrowserFallback(dto);
-    }
-  }
-
-  Future<void> _offerBrowserFallback(LatestBuildDto dto) async {
-    final bool? open = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('تعذّر التحديث داخل التطبيق'),
-        content: const Text(
-          'حدثت مشكلة أثناء التحديث التلقائي. يمكنك فتح صفحة التنزيل '
-          'لإكمال التحديث يدويًا.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('فتح صفحة التنزيل'),
-          ),
-        ],
-      ),
-    );
-    if (open == true) {
-      final Uri uri = Uri.parse(dto.apkUrl);
-      if (uri.scheme.toLowerCase() == 'https') {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    }
+    // No dialog: the new build simply loads.
+    ref.read(pageReloaderProvider)();
   }
 
   Future<void> _remember(String publishedAt) async {
@@ -381,6 +293,74 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// Downloads and installs [dto] in-app ([InAppUpdater]): download progress,
+/// SHA-256 integrity check and the platform installer, with a browser
+/// fallback when the native path fails. Started only by the player, from the
+/// account tab's "update available" row.
+Future<void> installUpdate(
+  BuildContext context,
+  WidgetRef ref,
+  LatestBuildDto dto,
+) async {
+  final InAppUpdater updater = ref.read(inAppUpdaterProvider);
+  final Stream<UpdateProgress>? stream = updater.start(dto);
+  if (stream == null) {
+    if (context.mounted) await _offerBrowserFallback(context, dto);
+    return;
+  }
+  if (!context.mounted) return;
+
+  // The dialog returns the TERMINAL phase (no shared mutable state).
+  final UpdatePhase? terminal = await showDialog<UpdatePhase>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) =>
+        _UpdateProgressDialog(stream: stream, onCancel: updater.cancel),
+  );
+
+  if (!context.mounted) return;
+  final bool isFailure =
+      terminal == UpdatePhase.downloadFailed ||
+      terminal == UpdatePhase.checksumFailed ||
+      terminal == UpdatePhase.installFailed ||
+      terminal == UpdatePhase.failed;
+  if (isFailure) {
+    await _offerBrowserFallback(context, dto);
+  }
+}
+
+Future<void> _offerBrowserFallback(
+  BuildContext context,
+  LatestBuildDto dto,
+) async {
+  final bool? open = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('تعذّر التحديث داخل التطبيق'),
+      content: const Text(
+        'حدثت مشكلة أثناء التحديث التلقائي. يمكنك فتح صفحة التنزيل '
+        'لإكمال التحديث يدويًا.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('فتح صفحة التنزيل'),
+        ),
+      ],
+    ),
+  );
+  if (open == true) {
+    final Uri uri = Uri.parse(dto.apkUrl);
+    if (uri.scheme.toLowerCase() == 'https') {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 }
 
 /// In-app progress dialog: RTL Arabic, non-dismissible. Pops with the terminal

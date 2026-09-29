@@ -29,6 +29,7 @@ import '../notifications/notifications_screen.dart';
 import '../record/elite_card_screen.dart';
 import '../record/my_points_screen.dart';
 import '../record/season_record_providers.dart';
+import '../update/update_gate.dart';
 import 'account_settings_screen.dart';
 import 'app_lock.dart';
 import 'session_controller.dart';
@@ -56,6 +57,7 @@ class AccountScreen extends ConsumerWidget {
       ref.watch(mySeasonRecordsProvider).value,
     );
     final int unreadCount = unread.value ?? 0;
+    final LatestBuildDto? update = ref.watch(pendingUpdateProvider);
 
     // Warm the matches feed: it is the destination most likely to be opened
     // from here, and the provider is a non-auto-disposed singleton.
@@ -170,6 +172,18 @@ class AccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   AccountMenuCard(
                     children: [
+                      // Android only: set by UpdateGate when a newer release
+                      // exists. A quiet row instead of a pop-up.
+                      if (update != null)
+                        AccountMenuRow(
+                          key: const Key('account.update'),
+                          icon: Icons.system_update_outlined,
+                          title: 'تحديث متاح',
+                          subtitle: 'نسخة أحدث من التطبيق جاهزة للتثبيت',
+                          trailing: const Badge(),
+                          onTap: () =>
+                              unawaited(installUpdate(context, ref, update)),
+                        ),
                       AccountMenuRow(
                         key: const Key('account.settings'),
                         icon: Icons.settings_outlined,

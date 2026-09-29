@@ -742,7 +742,11 @@ jobs:
     name: Publish latest APK to Release
     runs-on: ubuntu-latest
     needs: [build_android, database_migrations]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Published by hand only: Actions -> Build Verification -> Run workflow on
+    # main. A push builds and tests, but players are not offered every push
+    # (they found an update on every commit intrusive). Deploy Web follows the
+    # same rule, so the web build and the newest release stay the same commit.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
