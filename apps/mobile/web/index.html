@@ -19,8 +19,45 @@
 
   <title>نُخبة</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#071426">
+
+  <!-- Splash: painted from the first byte until Flutter draws its first
+       frame. Without it the page stays blank white while main.dart.js and
+       canvaskit.wasm (about 10 MB) download. #071426 is
+       AppColors.background, the default (dark) theme; #2E6AFF is
+       AppColors.primary. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #071426; }
+    #splash {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 24px;
+    }
+    #splash img { width: 96px; height: 96px; border-radius: 22px; }
+    #splash .ring {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #2E6AFF;
+      animation: splash-spin 0.9s linear infinite;
+    }
+    @keyframes splash-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <img src="icons/Icon-192.png" alt="">
+    <div class="ring"></div>
+  </div>
+  <script>
+    // The web engine dispatches flutter-first-frame once the framework has
+    // painted its first frame (RendererBinding sends 'first-frame' on
+    // flutter/service_worker). The splash has no z-index, so the Flutter
+    // view, appended after it, covers it even if this never runs.
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash');
+      if (splash) splash.remove();
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
