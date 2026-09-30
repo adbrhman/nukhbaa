@@ -572,6 +572,15 @@ ORDER BY fp.submitted_at DESC, fp.id ASC
           'prediction.not_a_participant',
           'Participant not found',
         );
+      case 'fixture_predictions_one_double_per_day':
+        // Migration 0079: the database refused a second double on the same
+        // UTC kickoff day -- the race two concurrent submissions win past
+        // the application's count. Same code as the application check, so
+        // the client turns the toggle off exactly as it already does.
+        return const AppError.invariant(
+          'prediction.daily_double_exceeded',
+          'Only one fixture may be marked as your double per day',
+        );
       case 'season_fixtures_pkey':
         return const AppError.invariant(
           'competition.season_fixture_already_linked',
