@@ -11,6 +11,7 @@ import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/referral_qualification_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
+import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
 import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
@@ -46,6 +47,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // monthly_season_scheduler.dart).
     startMonthlySeasonScheduler(root);
     startMatchDaySettlementScheduler(root);
+    // Finishes the scoring of results whose scoring failed after they
+    // were recorded (see rescore_scheduler.dart).
+    startRescoreScheduler(root);
     // Judges each weekly-league week once it has ended (see
     // weekly_league_closure_scheduler.dart).
     startWeeklyLeagueClosureScheduler(root);

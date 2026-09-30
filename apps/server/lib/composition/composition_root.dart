@@ -130,6 +130,7 @@ final class CompositionRoot {
     this.syncProviderResults,
     this.liveScoreBoard,
     this.refreshLiveScores,
+    this.rescoreUnscoredResults,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -288,6 +289,7 @@ final class CompositionRoot {
     this.syncProviderResults,
     this.liveScoreBoard,
     this.refreshLiveScores,
+    this.rescoreUnscoredResults,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1821,6 +1823,11 @@ final class CompositionRoot {
   /// Refreshes [liveScoreBoard]; null while the sync is off.
   final RefreshLiveScores? refreshLiveScores;
 
+  /// Finishes the scoring of recorded results whose scoring failed after
+  /// the result was written (migration 0080); null in tests that do not
+  /// provide one.
+  final RescoreUnscoredResults? rescoreUnscoredResults;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -2393,6 +2400,33 @@ final class CompositionRoot {
       syncProviderResults: syncProviderResults,
       liveScoreBoard: liveScoreBoard,
       refreshLiveScores: refreshLiveScores,
+      // The same two steps every result recorder runs after the write,
+      // as the service principal the provider sync already uses. Both are
+      // idempotent, so a fixture scored twice converges on the same rows.
+      rescoreUnscoredResults: RescoreUnscoredResults(
+        finder: PostgresUnscoredResultFinder(connection),
+        rescore: ({required String fixtureId}) async {
+          const principal = AuthenticatedUser(
+            userId: UserId(_providerSyncUserId),
+            role: PlatformRole.service,
+          );
+          final scored = await root.scoreFixture(
+            principal: principal,
+            fixtureId: fixtureId,
+          );
+          if (scored is Err<List<ParticipantFixtureScore>>) {
+            return Result.err(scored.error);
+          }
+          final posted = await root.postFixtureToLedger(
+            principal: principal,
+            fixtureId: fixtureId,
+          );
+          if (posted is Err<List<FixturePointEntry>>) {
+            return Result.err(posted.error);
+          }
+          return const Result.ok(null);
+        },
+      ),
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
       ),
