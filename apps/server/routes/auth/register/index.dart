@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:application/application.dart';
@@ -46,10 +47,29 @@ Future<Response> _handle(
     displayName: (displayNameResult as Ok<String>).value,
   );
 
+  if (result is Ok<IssuedSession>) {
+    unawaited(_alertAdmins(root));
+  }
+
   return switch (result) {
     Ok<IssuedSession>(:final value) => _sessionResponse(value),
     Err<IssuedSession>(:final error) => errorResponse(error),
   };
+}
+
+/// Best-effort admin alert: the signup already succeeded, so a failure here
+/// is logged and never reaches the caller or the zone.
+Future<void> _alertAdmins(CompositionRoot root) async {
+  try {
+    final result = await root.notifyNewUserRegistered();
+    if (result is Err<void>) {
+      // ignore: avoid_print
+      print('admin new-user push failed: ${result.error.code}');
+    }
+  } on Object catch (error) {
+    // ignore: avoid_print
+    print('admin new-user push threw: $error');
+  }
 }
 
 Response _sessionResponse(IssuedSession session) {

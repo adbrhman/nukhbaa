@@ -25,6 +25,7 @@ final class CompositionRoot {
     required this.enrolInOpenSeasons,
     required this.login,
     required this.register,
+    required this.notifyNewUserRegistered,
     required this.requestPasswordReset,
     required this.updatePassword,
     required this.signInWithGoogle,
@@ -181,6 +182,7 @@ final class CompositionRoot {
     GetLatestBuild? getLatestBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
+    NotifyNewUserRegistered? notifyNewUserRegistered,
     RequestPasswordReset? requestPasswordReset,
     UpdatePassword? updatePassword,
     SignInWithGoogle? signInWithGoogle,
@@ -310,6 +312,8 @@ final class CompositionRoot {
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
+       notifyNewUserRegistered =
+           notifyNewUserRegistered ?? _absentNotifyNewUserRegistered(),
        requestPasswordReset =
            requestPasswordReset ?? _absentRequestPasswordReset(),
        updatePassword = updatePassword ?? _absentUpdatePassword(),
@@ -505,6 +509,12 @@ final class CompositionRoot {
   /// Backs an "absent" [AuthGateway] for registration.
   static RegisterWithPassword _absentRegister() =>
       RegisterWithPassword(_UnwiredAuthGateway());
+
+  static NotifyNewUserRegistered _absentNotifyNewUserRegistered() =>
+      NotifyNewUserRegistered(
+        targets: _UnwiredAdminPushTargetReader(),
+        sender: const NoopPushSender(),
+      );
 
   static RequestPasswordReset _absentRequestPasswordReset() =>
       RequestPasswordReset(_UnwiredAuthGateway());
@@ -1379,6 +1389,10 @@ final class CompositionRoot {
 
   /// Registers a new email/password account.
   final RegisterWithPassword register;
+
+  /// Best-effort operational push after a new account is registered.
+  final NotifyNewUserRegistered notifyNewUserRegistered;
+
   final RequestPasswordReset requestPasswordReset;
   final UpdatePassword updatePassword;
 
@@ -2091,6 +2105,10 @@ final class CompositionRoot {
         const NoopPushSender();
     final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
     final announcementRepository = PostgresAnnouncementRepository(connection);
+    final notifyNewUserRegistered = NotifyNewUserRegistered(
+      targets: PostgresAdminPushTargetReader(connection),
+      sender: pushSender,
+    );
     // The one deferred-push queue: the exact-hit announcement and the admin
     // broadcast fill it in quiet hours, the flush sweep empties it.
     final notificationQueue = PostgresNotificationQueue(connection);
@@ -2232,6 +2250,7 @@ final class CompositionRoot {
       ),
       login: login,
       register: register,
+      notifyNewUserRegistered: notifyNewUserRegistered,
       requestPasswordReset: requestPasswordReset,
       updatePassword: updatePassword,
       signInWithGoogle: signInWithGoogle,
@@ -3630,6 +3649,14 @@ final class _UnwiredDeviceTokenRepository implements DeviceTokenRepository {
   }) => throw StateError(
     'DeviceTokenRepository was not wired into this test root',
   );
+}
+
+/// Backs the "absent" new-user admin push: throws if a test reaches an
+/// admin-target slice it never wired.
+final class _UnwiredAdminPushTargetReader implements AdminPushTargetReader {
+  @override
+  Future<Result<List<String>>> tokensForActiveAdmins() =>
+      throw StateError('Admin push targets were not wired into this test root');
 }
 
 /// Backs the "absent" notification-preference use-cases and the absent
