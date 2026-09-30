@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the invitation sweep runs (migration 0073). An invitee
@@ -23,7 +24,11 @@ Timer startReferralQualificationScheduler(CompositionRoot root) {
   });
 }
 
-Future<void> _sweep(CompositionRoot root) async {
+/// One run at a time: a tick that fires while the previous run is still
+/// going is skipped, not stacked (see single_flight.dart).
+final Future<void> Function(CompositionRoot) _sweep = singleFlight(_sweepOnce);
+
+Future<void> _sweepOnce(CompositionRoot root) async {
   try {
     final result = await root.qualifyReferrals(now: DateTime.now().toUtc());
     switch (result) {

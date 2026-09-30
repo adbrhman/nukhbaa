@@ -23,8 +23,10 @@ final class FcmPushSender implements PushSender {
   FcmPushSender({
     required Map<String, Object?> serviceAccount,
     http.Client? httpClient,
+    Duration requestTimeout = const Duration(seconds: 10),
   }) : _serviceAccount = serviceAccount,
-       _http = httpClient ?? http.Client();
+       _http = httpClient ?? http.Client(),
+       _requestTimeout = requestTimeout;
 
   /// Parses the service-account JSON (the Northflank environment variable).
   ///
@@ -53,6 +55,14 @@ final class FcmPushSender implements PushSender {
 
   final Map<String, Object?> _serviceAccount;
   final http.Client _http;
+
+  /// How long one call to Google may take before it is abandoned.
+  ///
+  /// `http` applies no timeout of its own, so a connection that never
+  /// answered held its caller forever -- and the callers are ScoreFixture
+  /// (winner pushes, awaited before it returns) and every push sweep. One
+  /// silent socket froze the automatic results sync until a restart.
+  final Duration _requestTimeout;
 
   static const String _tokenUri = 'https://oauth2.googleapis.com/token';
   static const String _scope =
@@ -87,21 +97,23 @@ final class FcmPushSender implements PushSender {
 
     for (final token in tokens) {
       try {
-        final response = await _http.post(
-          endpoint,
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'message': {
-              'token': token,
-              'notification': {'title': title, 'body': body},
-              if (link != null) 'data': {'link': link},
-              'android': {'priority': 'HIGH'},
-            },
-          }),
-        );
+        final response = await _http
+            .post(
+              endpoint,
+              headers: {
+                'Authorization': 'Bearer $accessToken',
+                'Content-Type': 'application/json',
+              },
+              body: jsonEncode({
+                'message': {
+                  'token': token,
+                  'notification': {'title': title, 'body': body},
+                  if (link != null) 'data': {'link': link},
+                  'android': {'priority': 'HIGH'},
+                },
+              }),
+            )
+            .timeout(_requestTimeout);
         if (response.statusCode == 200) {
           continue;
         }
@@ -165,14 +177,16 @@ final class FcmPushSender implements PushSender {
     }
 
     try {
-      final response = await _http.post(
-        Uri.parse(_tokenUri),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          'assertion': assertion,
-        },
-      );
+      final response = await _http
+          .post(
+            Uri.parse(_tokenUri),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: {
+              'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+              'assertion': assertion,
+            },
+          )
+          .timeout(_requestTimeout);
       if (response.statusCode != 200) {
         return Result.err(
           AppError.transient(

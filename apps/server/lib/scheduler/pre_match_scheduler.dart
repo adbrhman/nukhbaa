@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the pre-match sweep wakes up: well inside its 30-minute window,
@@ -19,7 +20,11 @@ Timer startPreMatchScheduler(CompositionRoot root) {
   });
 }
 
-Future<void> _sweep(CompositionRoot root) async {
+/// One run at a time: a tick that fires while the previous run is still
+/// going is skipped, not stacked (see single_flight.dart).
+final Future<void> Function(CompositionRoot) _sweep = singleFlight(_sweepOnce);
+
+Future<void> _sweepOnce(CompositionRoot root) async {
   try {
     final result = await root.sendPreMatchReminders(
       now: DateTime.now().toUtc(),

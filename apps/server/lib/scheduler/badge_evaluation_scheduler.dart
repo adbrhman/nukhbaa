@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the badge evaluation runs. A run is one grouped read of the
@@ -29,7 +30,11 @@ Timer startBadgeEvaluationScheduler(CompositionRoot root) {
   });
 }
 
-Future<void> _check(CompositionRoot root) async {
+/// One run at a time: a tick that fires while the previous run is still
+/// going is skipped, not stacked (see single_flight.dart).
+final Future<void> Function(CompositionRoot) _check = singleFlight(_checkOnce);
+
+Future<void> _checkOnce(CompositionRoot root) async {
   try {
     final result = await root.evaluateBadges(now: DateTime.now().toUtc());
     switch (result) {

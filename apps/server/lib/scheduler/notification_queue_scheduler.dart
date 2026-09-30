@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the deferred-push queue is swept.
@@ -21,7 +22,11 @@ Timer startNotificationQueueScheduler(CompositionRoot root) {
   });
 }
 
-Future<void> _sweep(CompositionRoot root) async {
+/// One run at a time: a tick that fires while the previous run is still
+/// going is skipped, not stacked (see single_flight.dart).
+final Future<void> Function(CompositionRoot) _sweep = singleFlight(_sweepOnce);
+
+Future<void> _sweepOnce(CompositionRoot root) async {
   try {
     final result = await root.flushNotificationQueue(
       now: DateTime.now().toUtc(),
