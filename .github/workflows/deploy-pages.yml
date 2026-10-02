@@ -22,15 +22,15 @@ concurrency:
 
 jobs:
   build_and_deploy:
-    # Only a green Build Verification that was run by hand (the publish run,
-    # which also publishes the APK release) reaches the site; a plain push
-    # does not. The web build reloads itself whenever its commit differs from
-    # the newest release, so running this workflow by hand on a commit that
-    # has no release would make open pages reload every half hour.
+    # A green Build Verification on main -- a push or a run by hand, the very
+    # runs that publish the APK release (decided 2026-10-03) -- reaches the
+    # site, so the web build and the newest release stay the same commit. A
+    # pull request never does.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'workflow_dispatch')
+       (github.event.workflow_run.event == 'push' ||
+        github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-latest
     environment:
       name: github-pages

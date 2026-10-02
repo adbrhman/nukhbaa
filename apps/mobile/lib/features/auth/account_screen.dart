@@ -178,8 +178,8 @@ class AccountScreen extends ConsumerWidget {
                         AccountMenuRow(
                           key: const Key('account.update'),
                           icon: Icons.system_update_outlined,
-                          title: 'تحديث متاح',
-                          subtitle: 'نسخة أحدث من التطبيق جاهزة للتثبيت',
+                          title: 'يتوفر تحديث جديد',
+                          subtitle: 'اضغط للتحديث متى شئت',
                           trailing: const Badge(),
                           onTap: () =>
                               unawaited(installUpdate(context, ref, update)),

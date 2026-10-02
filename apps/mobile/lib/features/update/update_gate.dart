@@ -10,9 +10,9 @@
 /// * Web: a page running an older build than the newest release reloads by
 ///   itself, at launch or when the player comes back to it.
 ///
-/// Releases are published by hand (Build Verification run from the Actions
-/// tab), not on every push, so a player sees a new build at most as often as
-/// the owner publishes one.
+/// Every green push to main publishes a release (decided 2026-10-03). The
+/// player is never interrupted: the row waits on the account tab, and the
+/// update installs only when they tap it.
 ///
 /// PRIMARY download path: [InAppUpdater] (native OTA) — download progress,
 /// SHA-256 INTEGRITY verification and the platform installer all happen

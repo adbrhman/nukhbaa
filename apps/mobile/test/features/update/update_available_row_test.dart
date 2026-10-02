@@ -101,6 +101,7 @@ void main() {
     );
 
     expect(find.byKey(const Key('account.update')), findsOneWidget);
+    expect(find.text('يتوفر تحديث جديد'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(updater.started, isEmpty);
   });
