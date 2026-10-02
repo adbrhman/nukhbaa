@@ -4,6 +4,13 @@
 \set ON_ERROR_STOP on
 begin;
 
+-- The fixtures below kick off on fixed dates, while the after-kickoff
+-- guard (migration 0019) compares with the real clock: left on, this test
+-- would start failing once those dates pass. It is switched off for this
+-- rolled-back transaction only (the guard itself is unchanged).
+alter table prediction.fixture_predictions
+  disable trigger fixture_predictions_reject_write_after_kickoff;
+
 create function pg_temp.mk_player(n int, points int, exact int) returns uuid
 language plpgsql as $$
 declare
