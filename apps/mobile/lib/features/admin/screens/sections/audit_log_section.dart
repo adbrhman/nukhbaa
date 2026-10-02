@@ -90,6 +90,7 @@ String _actionLabel(String action) => switch (action) {
   'fixture_linked_to_round' => 'ربط مباراة بجولة',
   'round_predictions_viewed' => 'عرض توقعات جولة',
   'fixture_predictions_viewed' => 'عرض توقعات مباراة',
+  'user_renamed' => 'تعديل اسم مستخدم',
   _ => action,
 };
 

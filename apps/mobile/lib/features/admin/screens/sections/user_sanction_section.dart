@@ -126,7 +126,9 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
         const SizedBox(height: AppSpacing.xl),
         AdminSectionHeader(
           title: l10n.adminUsersTab,
-          subtitle: 'إدارة تعليق المستخدمين وإعادة تفعيلهم.',
+          subtitle:
+              'التعليق يخفي الحساب ونقاطه من كل اللوحات، '
+              'وإعادة التفعيل تعيده بنقاطه كما كانت.',
         ),
         AdminCard(
           child: Column(

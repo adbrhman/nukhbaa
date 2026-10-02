@@ -88,6 +88,33 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/users/{userId}/display-name` -- renames a player, with
+  /// a mandatory [reason] for the audit trail. A name another player
+  /// holds comes back as `identity.display_name_taken`.
+  Future<Result<UserSummaryDto>> renameUser(
+    String userId, {
+    required String displayName,
+    required String reason,
+  }) {
+    return _transport.postObject<UserSummaryDto>(
+      '/admin/users/$userId/display-name',
+      body: AdminRenameUserRequestDto(
+        displayName: displayName,
+        reason: reason,
+      ).toJson(),
+      parse: UserSummaryDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/duplicate-names` -- every display name more than one
+  /// account carries, each with those accounts.
+  Future<Result<DuplicateNamesDto>> duplicateNames() {
+    return _transport.getObject<DuplicateNamesDto>(
+      '/admin/duplicate-names',
+      parse: DuplicateNamesDto.fromJson,
+    );
+  }
+
   /// `POST /admin/announcements` -- publish one instruction to every active
   /// user. The audience is resolved server-side; the client supplies only the
   /// [title] and [body]. Returns how many inboxes gained the announcement.

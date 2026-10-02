@@ -20,6 +20,7 @@ import 'screens/sections/fixture_edit_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/referral_admin_section.dart';
 import 'screens/sections/results_scoring_section.dart';
+import 'screens/sections/user_names_section.dart';
 import 'screens/sections/user_sanction_section.dart';
 
 String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
@@ -33,6 +34,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
     AdminSection.countedFixtures => l10n.adminCountedFixturesTab,
     AdminSection.users => l10n.adminUsersTab,
+    AdminSection.userNames => 'أسماء المستخدمين',
     AdminSection.announcements => 'إرسال إشعار',
     AdminSection.ledger => l10n.adminLedgerLookupTab,
     AdminSection.audit => l10n.adminAuditLogTab,
@@ -151,6 +153,7 @@ class AdminShell extends StatelessWidget {
         const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.users => const UserSanctionSection(),
+      AdminSection.userNames => const UserNamesSection(),
       AdminSection.announcements => const AnnouncementSection(),
       AdminSection.ledger => const LedgerLookupSection(),
       AdminSection.fixtures => const FixtureScheduleSection(),
