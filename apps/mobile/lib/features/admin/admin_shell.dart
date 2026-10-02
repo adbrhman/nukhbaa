@@ -65,6 +65,7 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
     title: 'المستخدمون والتفاعل',
     sections: [
       AdminSection.users,
+      AdminSection.userNames,
       AdminSection.announcements,
       AdminSection.referrals,
     ],
