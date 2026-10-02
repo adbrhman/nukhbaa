@@ -1,6 +1,8 @@
 -- End-to-end test for migration 0080: a recorded result with an unscored
 -- prediction is found; a fully scored one, one outside the window, and a
 -- fixture nobody predicted are not. Rolled back at the end.
+-- Since 0082 a fully settled fixture is also posted to the ledger, so the
+-- scored fixtures here carry their ledger entries too.
 \set ON_ERROR_STOP on
 begin;
 
@@ -62,6 +64,12 @@ insert into scoring.fixture_results (fixture_id, home_goals, away_goals, recorde
 insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points) values
   ('c8000000-0000-4000-8000-0000000000f1', 'c8000000-0000-4000-8000-0000000000a1', 1, 'exact_scoreline', 3),
   ('c8000000-0000-4000-8000-0000000000f2', 'c8000000-0000-4000-8000-0000000000a1', 1, 'exact_scoreline', 3);
+insert into ledger.fixture_point_entries
+  (id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at) values
+  (gen_random_uuid(), 'c8000000-0000-4000-8000-0000000000a1', 'c8000000-0000-4000-8000-0000000000f1',
+   'fixture_score', 3, 'fixture_score:f1:a1', '2099-06-01 20:11Z'),
+  (gen_random_uuid(), 'c8000000-0000-4000-8000-0000000000a1', 'c8000000-0000-4000-8000-0000000000f2',
+   'fixture_score', 3, 'fixture_score:f2:a1', '2099-06-01 20:06Z');
 
 do $$
 declare
@@ -93,6 +101,10 @@ begin
 
   insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points) values
     ('c8000000-0000-4000-8000-0000000000f1', 'c8000000-0000-4000-8000-0000000000a2', 1, 'incorrect', 0);
+  insert into ledger.fixture_point_entries
+    (id, participant_id, fixture_id, entry_kind, amount, source_ref, occurred_at) values
+    (gen_random_uuid(), 'c8000000-0000-4000-8000-0000000000a2', 'c8000000-0000-4000-8000-0000000000f1',
+     'fixture_score', 0, 'fixture_score:f1:a2', '2099-06-01 20:12Z');
   perform pg_temp.check(
     (select count(*) from scoring.fixtures_with_unscored_predictions(
        '2099-05-29 00:00Z', '2099-06-02 00:00Z', 10)) = 0,
