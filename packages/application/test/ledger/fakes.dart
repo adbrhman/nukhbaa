@@ -152,6 +152,15 @@ final class FakeFixtureLedgerRepository implements FixtureLedgerRepository {
   static String _dedupeKey(FixturePointEntry e) =>
       '${e.participantId.value}|${e.fixture.value}|${e.kind.wireValue}';
 
+  /// Mirrors the table's unique (participant_id, fixture_id, entry_kind,
+  /// source_ref), which the adapter's ON CONFLICT DO NOTHING turns into a
+  /// silent skip for every kind.
+  final Set<String> _sourceRefKeys = {};
+
+  static String _sourceRefKey(FixturePointEntry e) =>
+      '${e.participantId.value}|${e.fixture.value}|'
+      '${e.kind.wireValue}|${e.sourceRef}';
+
   /// How many entries are stored in total (proves idempotent re-post appends
   /// no second crediting row).
   int get count => _byId.length;
@@ -167,7 +176,13 @@ final class FakeFixtureLedgerRepository implements FixtureLedgerRepository {
     // then commit the whole batch in one shot.
     final toAppend = <FixturePointEntry>[];
     final stagedKeys = <String>{};
+    final stagedRefs = <String>{};
     for (final e in entries) {
+      final ref = _sourceRefKey(e);
+      if (_sourceRefKeys.contains(ref) || stagedRefs.contains(ref)) {
+        continue;
+      }
+      stagedRefs.add(ref);
       if (e.kind.isDedupedPerFixture) {
         final key = _dedupeKey(e);
         // Skip a key already present, or a duplicate within this same batch.
@@ -181,6 +196,7 @@ final class FakeFixtureLedgerRepository implements FixtureLedgerRepository {
 
     for (final e in toAppend) {
       _byId[e.id.value] = e;
+      _sourceRefKeys.add(_sourceRefKey(e));
       if (e.kind.isDedupedPerFixture) {
         _dedupeKeys.add(_dedupeKey(e));
       }

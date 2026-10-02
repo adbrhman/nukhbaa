@@ -61,6 +61,9 @@ final class PostFixtureToLedger {
     // corrections), mirroring the balance projection's own sum-of-entries
     // philosophy.
     final postedTotals = <String, int>{};
+    // How many score entries each participant already has on this
+    // fixture: the place of the next correction in that history.
+    final postedCounts = <String, int>{};
     for (final entry in existingEntries) {
       // A streak bonus rides on the fixture that completed a match day, but
       // it is not part of that fixture's score. Counting it here would make
@@ -71,6 +74,7 @@ final class PostFixtureToLedger {
       }
       final key = entry.participantId.value;
       postedTotals[key] = (postedTotals[key] ?? 0) + entry.amount;
+      postedCounts[key] = (postedCounts[key] ?? 0) + 1;
     }
 
     final now = _clock.nowUtc();
@@ -111,9 +115,13 @@ final class PostFixtureToLedger {
 
       // The fixture's result was corrected after the original post: append
       // a compensating correction for the difference (Axiom 5 -- never edit
-      // or delete the original entry). The source_ref embeds this entry's
-      // own fresh id so more than one correction can coexist over time
-      // (EntryKind.correction is intentionally not deduped on a fixed key).
+      // or delete the original entry). The source_ref carries the place of
+      // this correction in the participant's history on the fixture, so
+      // successive corrections coexist while two posts racing over the
+      // same one -- the admin's and the rescore sweep's, both reading the
+      // ledger before either wrote -- build the same source_ref, and the
+      // table's unique (participant, fixture, kind, source_ref) keeps
+      // one. It used to embed the entry's fresh id, which let both in.
       final idResult = PointEntryId.tryParse(_ids.newUuid());
       if (idResult is Err<PointEntryId>) {
         return Result.err(idResult.error);
@@ -127,7 +135,8 @@ final class PostFixtureToLedger {
         amount: delta,
         sourceRef:
             'fixture_score_correction:${fixture.value}:'
-            '${score.participantId.value}:${id.value}',
+            '${score.participantId.value}:'
+            '${postedCounts[score.participantId.value] ?? 0}',
         occurredAt: now,
       );
       if (entryResult is Err<FixturePointEntry>) {

@@ -219,4 +219,62 @@ void main() {
       expect(appended.single.amount, 2);
     },
   );
+
+  test('two posts racing over one correction append it once', () async {
+    await scores.saveFixtureScores([
+      fixtureScore(participantId: _p1, points: 4),
+    ]);
+    await useCase.call(principal: adminPrincipal(_admin), fixtureId: _fixture);
+    await scores.saveFixtureScores([
+      fixtureScore(participantId: _p1, points: 6),
+    ]);
+
+    // The admin's post and the rescore sweep, both reading the ledger before
+    // either has written.
+    await Future.wait([
+      useCase.call(principal: adminPrincipal(_admin), fixtureId: _fixture),
+      useCase.call(principal: adminPrincipal(_admin), fixtureId: _fixture),
+    ]);
+
+    final p1Entries =
+        (await ledger.listEntries(const ParticipantId(_p1))
+                as Ok<List<FixturePointEntry>>)
+            .value;
+    expect(
+      p1Entries.where((e) => e.kind == EntryKind.correction),
+      hasLength(1),
+    );
+    expect(p1Entries.fold<int>(0, (sum, e) => sum + e.amount), 6);
+  });
+
+  test('each later correction takes the next place in the history', () async {
+    await scores.saveFixtureScores([
+      fixtureScore(participantId: _p1, points: 4),
+    ]);
+    await useCase.call(principal: adminPrincipal(_admin), fixtureId: _fixture);
+    for (final points in <int>[6, 4]) {
+      await scores.saveFixtureScores([
+        fixtureScore(participantId: _p1, points: points),
+      ]);
+      await useCase.call(
+        principal: adminPrincipal(_admin),
+        fixtureId: _fixture,
+      );
+    }
+
+    final corrections =
+        (await ledger.listEntries(const ParticipantId(_p1))
+                as Ok<List<FixturePointEntry>>)
+            .value
+            .where((e) => e.kind == EntryKind.correction)
+            .toList();
+    expect([for (final e in corrections) e.amount], [2, -2]);
+    expect(
+      [for (final e in corrections) e.sourceRef],
+      [
+        'fixture_score_correction:$_fixture:$_p1:1',
+        'fixture_score_correction:$_fixture:$_p1:2',
+      ],
+    );
+  });
 }
