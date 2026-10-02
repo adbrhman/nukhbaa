@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+// Only the exception type, to read the SQLSTATE and constraint name.
+import 'package:postgres/postgres.dart' show ServerException;
 import 'package:shared/shared.dart';
 
 /// Postgres-backed [UserDirectory] over the canonical `identity.users` table.
@@ -204,8 +206,26 @@ final class PostgresUserDirectory implements UserDirectory {
                 ),
               )
             : _mapSingleRow(value),
-      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(
+        _reclassifyNameWrite(error),
+      ),
     };
+  }
+
+  /// Migration 0084 keeps display names unique: the database refuses a
+  /// name another player already holds (`users_display_name_taken`),
+  /// including when two players claim the same name at the same moment.
+  static AppError _reclassifyNameWrite(AppError error) {
+    final cause = error.cause;
+    if (cause is ServerException &&
+        cause.code == '23505' &&
+        cause.constraintName == 'users_display_name_taken') {
+      return const AppError.validation(
+        'identity.display_name_taken',
+        'هذا الاسم مستخدم، اختر اسمًا آخر',
+      );
+    }
+    return error;
   }
 
   @override
