@@ -61,6 +61,8 @@ const String apiErrorTimeout = 'api_client.timeout';
 ///   access refusal even though the app maps its own authz failures to 401)
 /// * `404` -> [ErrorKind.invariant] (the "resource not found" reads above)
 /// * `409` -> [ErrorKind.invariant]
+/// * `429` -> [ErrorKind.transient] (rate limited: worth trying again
+///   after a moment)
 /// * `503` -> [ErrorKind.transient]
 /// * anything else (incl. `405`, `5xx` other than 503) -> [ErrorKind.transient]
 ///   is deliberately NOT assumed; those map to a terminal
@@ -70,7 +72,7 @@ ErrorKind? kindForStatus(int statusCode) => switch (statusCode) {
   400 => ErrorKind.validation,
   401 || 403 => ErrorKind.authorization,
   404 || 409 => ErrorKind.invariant,
-  503 => ErrorKind.transient,
+  429 || 503 => ErrorKind.transient,
   _ => null,
 };
 

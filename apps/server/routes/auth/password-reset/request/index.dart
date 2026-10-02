@@ -5,6 +5,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// POST /auth/password-reset/request.
@@ -43,6 +44,11 @@ Future<Response> _handle(
         'Please enter a valid email address.',
       ),
     );
+  }
+
+  final limited = limitAuthAttempt(AuthAttempt.passwordReset, email);
+  if (limited != null) {
+    return limited;
   }
 
   final root = await context.read<Future<CompositionRoot>>();

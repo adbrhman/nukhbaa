@@ -4,6 +4,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// Middleware that enforces Supabase bearer authentication on the routes it
@@ -28,7 +29,12 @@ import 'package:shared/shared.dart';
 /// producing a second, inconsistent suspension error code
 /// (`auth.user_suspended` vs. `auth.account_suspended`). `ensureUser` /
 /// `GetCurrentUser` are owned exclusively by the `GET /me` boundary.
-Middleware bearerAuth() {
+///
+/// Once the principal is known, a player's writes are counted against
+/// [writeLimiter] ([playerWriteLimiter] unless a test passes its own); one
+/// over the limit is answered `429` before it reaches the route.
+Middleware bearerAuth({RateLimiter? writeLimiter}) {
+  final limiter = writeLimiter ?? playerWriteLimiter;
   return (handler) {
     return (context) async {
       final root = await context.read<Future<CompositionRoot>>();
@@ -40,6 +46,15 @@ Middleware bearerAuth() {
         return errorResponse(error);
       }
       final principal = (verifyResult as Ok<AuthenticatedUser>).value;
+
+      final limited = limitPlayerWrite(
+        limiter,
+        principal,
+        context.request.method,
+      );
+      if (limited != null) {
+        return limited;
+      }
 
       return handler(context.provide<AuthenticatedUser>(() => principal));
     };

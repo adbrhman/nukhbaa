@@ -6,6 +6,7 @@ import 'package:domain/domain.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/bearer_auth.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -80,6 +81,7 @@ void main() {
     required Result<AuthenticatedUser> verifierResult,
     Result<User>? directoryResult,
     String? authorizationHeader,
+    HttpMethod method = HttpMethod.get,
   }) {
     final root = Future<CompositionRoot>.value(
       CompositionRoot.forTesting(
@@ -96,6 +98,7 @@ void main() {
     when(
       () => request.headers,
     ).thenReturn({HttpHeaders.authorizationHeader: ?authorizationHeader});
+    when(() => request.method).thenReturn(method);
 
     final provided = <AuthenticatedUser>[];
     final finalContext = _MockRequestContext();
@@ -178,6 +181,91 @@ void main() {
 
       expect(response.statusCode, HttpStatus.serviceUnavailable);
       expect(downstream.ran, isEmpty);
+    });
+  });
+
+  group('the write limit', () {
+    const admin = AuthenticatedUser(
+      userId: UserId(_uuid),
+      role: PlatformRole.admin,
+    );
+
+    Future<List<Response>> send(
+      int times, {
+      required RateLimiter limiter,
+      required HttpMethod method,
+      AuthenticatedUser? principal,
+      List<bool>? ran,
+    }) async {
+      final wired = wire(
+        verifierResult: Result.ok(principal ?? _principal()),
+        authorizationHeader: 'Bearer good-token',
+        method: method,
+      );
+      final downstream = okHandler();
+      final guarded = bearerAuth(writeLimiter: limiter)(downstream.handler);
+      final responses = <Response>[
+        for (var i = 0; i < times; i++) await guarded(wired.context),
+      ];
+      ran?.addAll(downstream.ran);
+      return responses;
+    }
+
+    test('a player\'s writes over the limit are refused with 429', () async {
+      final ran = <bool>[];
+      final responses = await send(
+        3,
+        limiter: RateLimiter(limit: 2, window: const Duration(minutes: 1)),
+        method: HttpMethod.post,
+        ran: ran,
+      );
+
+      expect(
+        [for (final r in responses) r.statusCode],
+        [HttpStatus.ok, HttpStatus.ok, HttpStatus.tooManyRequests],
+      );
+      expect(responses.last.headers[HttpHeaders.retryAfterHeader], isNotNull);
+      final body = await responses.last.json() as Map<Object?, Object?>;
+      expect(body['code'], 'request.rate_limited');
+      expect(ran, hasLength(2));
+    });
+
+    test('reads are never counted', () async {
+      final responses = await send(
+        3,
+        limiter: RateLimiter(limit: 1, window: const Duration(minutes: 1)),
+        method: HttpMethod.get,
+      );
+
+      expect(responses.every((r) => r.statusCode == HttpStatus.ok), isTrue);
+    });
+
+    test('an admin\'s writes are not counted', () async {
+      final responses = await send(
+        3,
+        limiter: RateLimiter(limit: 1, window: const Duration(minutes: 1)),
+        method: HttpMethod.post,
+        principal: admin,
+      );
+
+      expect(responses.every((r) => r.statusCode == HttpStatus.ok), isTrue);
+    });
+  });
+
+  group('RateLimiter', () {
+    test('a window resets once it has passed', () {
+      var now = DateTime.utc(2026, 10, 2, 12);
+      final limiter = RateLimiter(
+        limit: 1,
+        window: const Duration(minutes: 1),
+        clock: () => now,
+      );
+
+      expect(limiter.hit('k'), isNull);
+      expect(limiter.hit('k'), const Duration(minutes: 1));
+      expect(limiter.hit('other'), isNull);
+      now = now.add(const Duration(seconds: 61));
+      expect(limiter.hit('k'), isNull);
     });
   });
 }

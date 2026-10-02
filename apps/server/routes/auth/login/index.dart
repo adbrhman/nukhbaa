@@ -6,6 +6,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// POST /auth/login — exchanges email/password for a session, proxying to
@@ -35,9 +36,16 @@ Future<Response> _handle(
     return errorResponse(passwordResult.error);
   }
 
+  // One cast, read once: a second would be flagged unnecessary.
+  final email = (emailResult as Ok<String>).value;
+  final limited = limitAuthAttempt(AuthAttempt.login, email);
+  if (limited != null) {
+    return limited;
+  }
+
   final root = await context.read<Future<CompositionRoot>>();
   final result = await root.login(
-    email: (emailResult as Ok<String>).value,
+    email: email,
     password: (passwordResult as Ok<String>).value,
   );
 

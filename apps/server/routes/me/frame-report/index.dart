@@ -7,6 +7,7 @@ import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// `POST /me/frame-report` -- one app session's frame counts (migration
@@ -62,6 +63,11 @@ Future<Response> onRequest(RequestContext context) async {
 
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
+
+  final limited = limitPlayerAppend(PlayerAppend.frameReport, principal);
+  if (limited != null) {
+    return limited;
+  }
 
   final result = await root.recordFrameReport(
     principal: principal,
