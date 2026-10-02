@@ -269,6 +269,30 @@ void main() {
       expect((result as Ok<int>).value, 0);
     });
 
+    test('countDoublesOnDay binds the Riyadh day window', () async {
+      final connection = _FakeConnection([
+        const Result.ok([
+          {'n': 0},
+        ]),
+      ]);
+      final repo = PostgresFixturePredictionRepository(connection);
+
+      await repo.countDoublesOnDay(
+        const ParticipantId(_participantId),
+        DateTime.utc(2026, 8, 2),
+      );
+
+      // 2 August in Riyadh: 21:00 UTC on 1 August to 21:00 UTC on 2 August.
+      expect(
+        connection.parameters.single['day_start'],
+        '2026-08-01T21:00:00.000Z',
+      );
+      expect(
+        connection.parameters.single['day_end'],
+        '2026-08-02T21:00:00.000Z',
+      );
+    });
+
     test(
       'listByFixture groups by first-seen order, no grouping needed (flat rows)',
       () async {

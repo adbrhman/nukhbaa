@@ -241,6 +241,61 @@ void main() {
       );
     });
 
+    test('a double after midnight Riyadh counts on the next day', () async {
+      // 23:00 Riyadh on 1 August (20:00Z), 00:30 Riyadh on 2 August
+      // (21:30Z on 1 August) and 22:00 Riyadh on 2 August (19:00Z): the
+      // first two share a UTC day, the last two the day the player sees.
+      const lateFixtureId = '44444444-4444-4444-4444-444444444444';
+      const nextFixtureId = '55555555-5555-5555-5555-555555555555';
+      for (final (id, order, kickoff) in <(String, int, DateTime)>[
+        (lateFixtureId, 1, DateTime.utc(2026, 8, 1, 21, 30)),
+        (nextFixtureId, 2, DateTime.utc(2026, 8, 2, 19)),
+      ]) {
+        fixturePredictions.seedSeasonFixture(
+          (SeasonFixture.create(
+                    seasonId: const SeasonId(seasonId),
+                    fixture: FixtureRef(id),
+                    displayOrder: order,
+                  )
+                  as Ok<SeasonFixture>)
+              .value,
+        );
+        schedules.seed(
+          FixtureSchedule.fromStored(
+            fixture: FixtureRef(id),
+            homeTeam: 'Home $order',
+            awayTeam: 'Away $order',
+            kickoffAt: kickoff,
+          ),
+        );
+        fixturePredictions.seedKickoff(FixtureRef(id), kickoff);
+      }
+      fixturePredictions.seedKickoff(
+        const FixtureRef(fixtureId),
+        DateTime.utc(2026, 8, 1, 20),
+      );
+
+      Future<Result<FixturePredictionView>> placeDouble(String id) => useCase(
+        principal: userPrincipal(userId),
+        seasonId: seasonId,
+        fixtureId: id,
+        homeGoals: 1,
+        awayGoals: 0,
+        isDouble: true,
+      );
+
+      expect(await placeDouble(fixtureId), isA<Ok<FixturePredictionView>>());
+      expect(
+        await placeDouble(lateFixtureId),
+        isA<Ok<FixturePredictionView>>(),
+      );
+      final third = await placeDouble(nextFixtureId);
+      expect(
+        (third as Err<FixturePredictionView>).error.code,
+        'prediction.daily_double_exceeded',
+      );
+    });
+
     test('records one prediction_placed event, and none on an amend', () async {
       final events = _RecordingGamificationEventSink();
       final withSink = SubmitFixturePrediction(

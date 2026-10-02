@@ -1,5 +1,6 @@
--- End-to-end test for migration 0079: one double per participant per UTC
--- kickoff day, enforced by the database itself. Rolled back at the end.
+-- End-to-end test for migration 0079: one double per participant per
+-- kickoff day (the Riyadh day since 0083), enforced by the database
+-- itself. Rolled back at the end.
 \set ON_ERROR_STOP on
 begin;
 
@@ -33,10 +34,10 @@ insert into competition.seasons (id, competition_id, label, start_at, end_at) va
   ('c7900000-0000-4000-8000-000000000010', 'c7900000-0000-4000-8000-000000000001',
    '06/2099', '2099-05-31 21:00Z', '2099-06-30 21:00Z');
 -- Far in the future, so the kickoff trigger never refuses these writes.
--- f1, f2: the same UTC day. f3: the next UTC day.
+-- f1, f2: the same day (in Riyadh and in UTC alike). f3: the next day.
 insert into competition.fixture_schedules (fixture_id, home_team, away_team, kickoff_at) values
   ('c7900000-0000-4000-8000-0000000000f1', 'A', 'B', '2099-06-01 18:00Z'),
-  ('c7900000-0000-4000-8000-0000000000f2', 'C', 'D', '2099-06-01 21:30Z'),
+  ('c7900000-0000-4000-8000-0000000000f2', 'C', 'D', '2099-06-01 19:30Z'),
   ('c7900000-0000-4000-8000-0000000000f3', 'E', 'F', '2099-06-02 01:00Z');
 insert into competition.season_fixtures (season_id, fixture_id, display_order) values
   ('c7900000-0000-4000-8000-000000000010', 'c7900000-0000-4000-8000-0000000000f1', 0),
@@ -70,7 +71,7 @@ begin
       values ('c7900000-0000-4000-8000-00000000b002', 'c7900000-0000-4000-8000-0000000000f2',
               'c7900000-0000-4000-8000-0000000000a1', 1, 1, true, now())
     $q$) = '23514/fixture_predictions_one_double_per_day',
-    'a second double on the same UTC day is refused by name');
+    'a second double on the same day is refused by name');
 
   insert into prediction.fixture_predictions
     (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at)
@@ -94,7 +95,7 @@ begin
     (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at)
   values ('c7900000-0000-4000-8000-00000000b003', 'c7900000-0000-4000-8000-0000000000f3',
           'c7900000-0000-4000-8000-0000000000a1', 0, 0, true, now());
-  perform pg_temp.check(true, 'the next UTC day has its own double');
+  perform pg_temp.check(true, 'the next day has its own double');
 
   insert into prediction.fixture_predictions
     (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at)

@@ -328,7 +328,7 @@ RETURNING fixture_id
   // countDoublesOnDay
   //
   // Joins fixture_predictions -> competition.fixture_schedules to group
-  // stored doubles by the UTC calendar day of their fixture's kickoff — a
+  // stored doubles by the Riyadh calendar day of their fixture's kickoff — a
   // fixture_prediction whose fixture has NO schedule row is excluded (it
   // cannot be attributed to any day), matching the "no schedule = not
   // locked" default the use-case applies on the write side.
@@ -351,8 +351,14 @@ WHERE fp.participant_id = @participant_id
     DateTime dayUtc, {
     FixtureRef? excludingFixture,
   }) async {
-    final dayStart = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
+    // [dayUtc] carries a Riyadh date (riyadhDayOf); that day starts at
+    // 21:00 UTC the evening before -- the window migration 0083 counts.
+    final dayStart = DateTime.utc(
+      dayUtc.year,
+      dayUtc.month,
+      dayUtc.day,
+    ).subtract(const Duration(hours: 3));
+    final dayEnd = dayStart.add(const Duration(hours: 24));
     final result = await _connection.query(
       _countDoublesSql,
       parameters: {

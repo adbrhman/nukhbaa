@@ -18,7 +18,7 @@ final class FakeFixturePredictionRepository
   final Map<String, SeasonFixture> _seasonFixtures = {};
 
   /// keyed by fixtureId -> kickoff instant, so [countDoublesOnDay] can group
-  /// stored doubles by the UTC calendar day of their fixture's kickoff.
+  /// stored doubles by the Riyadh calendar day of their fixture's kickoff.
   final Map<String, DateTime> _kickoffByFixture = {};
 
   /// keyed by participantId → owning userId, so [listByUser] can filter
@@ -171,10 +171,12 @@ final class FakeFixturePredictionRepository
       }
       final kickoff = _kickoffByFixture[prediction.fixture.value];
       if (kickoff == null) continue;
+      // The Riyadh day, as the Postgres adapter counts it.
+      final day = riyadhDayOf(kickoff);
       final sameDay =
-          kickoff.year == dayUtc.year &&
-          kickoff.month == dayUtc.month &&
-          kickoff.day == dayUtc.day;
+          day.year == dayUtc.year &&
+          day.month == dayUtc.month &&
+          day.day == dayUtc.day;
       if (sameDay) count++;
     }
     return Result.ok(count);

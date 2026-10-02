@@ -188,17 +188,13 @@ final class SubmitFixturePrediction {
       );
     }
 
-    // Rule 4: at most one double per UTC calendar day, only when marking one.
+    // Rule 4: at most one double per Riyadh calendar day -- the day the
+    // app shows and the daily challenge uses, the same day migration 0083
+    // enforces -- only when marking one.
     if (isDouble) {
-      final dayReference = kickoffAt;
-      final dayUtc = DateTime.utc(
-        dayReference.year,
-        dayReference.month,
-        dayReference.day,
-      );
       final countResult = await _fixturePredictions.countDoublesOnDay(
         participant.id,
-        dayUtc,
+        riyadhDayOf(kickoffAt),
         excludingFixture: fixture,
       );
       if (countResult is Err<int>) {

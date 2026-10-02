@@ -68,8 +68,10 @@ abstract interface class FixturePredictionRepository {
   });
 
   /// Counts how many fixtures [participantId] has already marked as their
-  /// double whose kickoff falls on the UTC calendar day [dayUtc] (midnight
-  /// UTC of that day), optionally excluding [excludingFixture] (an amendment
+  /// double whose kickoff falls on the Riyadh calendar day [dayUtc] (as
+  /// `riyadhDayOf` returns it: that date at UTC midnight; the Riyadh day
+  /// itself runs from 21:00 UTC the evening before, UTC+3 with no daylight
+  /// saving), optionally excluding [excludingFixture] (an amendment
   /// of an already-double fixture must not count itself) — the query
   /// [DailyDoublePolicy] is checked against.
   Future<Result<int>> countDoublesOnDay(
