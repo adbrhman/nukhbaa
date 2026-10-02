@@ -14,10 +14,18 @@ List<String> _allowedOrigins() {
         .where((o) => o.isNotEmpty)
         .toList();
   }
+  // Every host the web build is served from: the domain, its www form,
+  // the Northflank mirror (github.io is blocked in Yemen) and GitHub
+  // Pages. Only GitHub Pages was listed, so the build at nukhbaa.app
+  // depended on NUKHBA_CORS_ALLOWED_ORIGINS being set by hand.
+  const deployed = [
+    'https://nukhbaa.app',
+    'https://www.nukhbaa.app',
+    'https://p01--nukhbaa-web--42bcqlpqwp8m.code.run',
+    'https://adbrhman.github.io',
+  ];
   final isProd = Platform.environment['NUKHBA_ENV'] == 'production';
-  return isProd
-      ? const ['https://adbrhman.github.io']
-      : const ['https://adbrhman.github.io', 'http://localhost:*'];
+  return isProd ? deployed : const [...deployed, 'http://localhost:*'];
 }
 
 bool _matchesPortWildcard(String origin, String prefix) {
