@@ -4,6 +4,7 @@ import 'package:application/application.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/bounded_body.dart';
 import 'package:server/http/champion_dto_mapper.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
@@ -39,12 +40,9 @@ Future<Response> onRequest(
     );
   }
 
-  final List<int> bytes;
+  final List<int>? bytes;
   try {
-    bytes = await context.request.bytes().fold<List<int>>(
-      <int>[],
-      (acc, chunk) => acc..addAll(chunk),
-    );
+    bytes = await readBoundedBytes(context.request, User.maxAvatarBytes);
   } on Object {
     return errorResponse(
       const AppError.validation(
@@ -52,6 +50,12 @@ Future<Response> onRequest(
         'تعذّرت قراءة بيانات الصورة',
       ),
     );
+  }
+
+  // Never more than the size limit is read: a larger upload is refused
+  // before the rest of it is buffered.
+  if (bytes == null) {
+    return errorResponse(avatarTooLarge(mime));
   }
 
   final root = await context.read<Future<CompositionRoot>>();

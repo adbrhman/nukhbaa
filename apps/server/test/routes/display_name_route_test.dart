@@ -78,6 +78,9 @@ _MockRequestContext _wire(
   final request = _MockRequest();
   when(() => request.method).thenReturn(method);
   when(request.body).thenAnswer((_) async => body);
+  when(
+    request.bytes,
+  ).thenAnswer((_) => Stream<List<int>>.value(utf8.encode(body)));
   final context = _MockRequestContext();
   when(() => context.request).thenReturn(request);
   when(() => context.read<Future<CompositionRoot>>()).thenAnswer((_) => root);

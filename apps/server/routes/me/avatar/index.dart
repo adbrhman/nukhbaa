@@ -5,6 +5,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/avatar_url.dart';
+import 'package:server/http/bounded_body.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
@@ -55,14 +56,11 @@ Future<Response> _set(RequestContext context) async {
     );
   }
 
-  // `bytes()` streams chunks; the whole image is needed at once because the
-  // domain validates its total size before a single byte is stored.
-  final List<int> bytes;
+  // The whole image is needed at once because the domain validates its
+  // total size before a single byte is stored.
+  final List<int>? bytes;
   try {
-    bytes = await context.request.bytes().fold<List<int>>(
-      <int>[],
-      (acc, chunk) => acc..addAll(chunk),
-    );
+    bytes = await readBoundedBytes(context.request, User.maxAvatarBytes);
   } on Object {
     return errorResponse(
       const AppError.validation(
@@ -70,6 +68,12 @@ Future<Response> _set(RequestContext context) async {
         'تعذّرت قراءة بيانات الصورة',
       ),
     );
+  }
+
+  // Never more than the size limit is read: a larger upload is refused
+  // before the rest of it is buffered.
+  if (bytes == null) {
+    return errorResponse(avatarTooLarge(mime));
   }
 
   final result = await root.setAvatar(

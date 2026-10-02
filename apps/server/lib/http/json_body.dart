@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
+import 'package:server/http/bounded_body.dart';
 import 'package:shared/shared.dart';
 
 /// Reads and parses a request body as a JSON object, totally (never throws).
@@ -16,7 +17,18 @@ import 'package:shared/shared.dart';
 Future<Result<Map<String, Object?>>> readJsonObject(Request request) async {
   final String raw;
   try {
-    raw = await request.body();
+    // Bounded: at most [maxJsonBodyBytes] are ever buffered, so one
+    // oversized request cannot exhaust the server's memory.
+    final bytes = await readBoundedBytes(request, maxJsonBodyBytes);
+    if (bytes == null) {
+      return const Result.err(
+        AppError.validation(
+          'request.body_too_large',
+          'Request body is too large',
+        ),
+      );
+    }
+    raw = utf8.decode(bytes);
   } on Object {
     return const Result.err(
       AppError.validation(

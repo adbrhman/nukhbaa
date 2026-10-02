@@ -1211,9 +1211,11 @@ MockRequestContext wireContext({
 }) {
   final request = MockRequest();
   when(() => request.method).thenReturn(method);
+  final encoded = body == null ? '' : jsonEncode(body);
+  when(request.body).thenAnswer((_) async => encoded);
   when(
-    request.body,
-  ).thenAnswer((_) async => body == null ? '' : jsonEncode(body));
+    request.bytes,
+  ).thenAnswer((_) => Stream<List<int>>.value(utf8.encode(encoded)));
   when(() => request.uri).thenReturn(
     Uri(
       path: '/',
