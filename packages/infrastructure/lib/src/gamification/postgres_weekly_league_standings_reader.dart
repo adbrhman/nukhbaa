@@ -46,7 +46,10 @@ WITH members AS (
   SELECT m.user_id,
          m.joined_at
   FROM gamification.weekly_league_members m
+  JOIN identity.users u
+    ON u.id = m.user_id
   WHERE m.league_id = @league_id::uuid
+    AND u.status <> 'suspended'
 ),
 week_fixtures AS (
   SELECT mb.user_id,

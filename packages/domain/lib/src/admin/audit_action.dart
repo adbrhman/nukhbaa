@@ -80,7 +80,11 @@ enum AuditAction {
   /// (`CorrectFixtureSchedule`). The prediction lock is derived from
   /// `kickoff_at`, so a change here moves a deadline -- the reason carries the
   /// old and new kickoff whenever the time actually moved.
-  fixtureScheduleCorrected;
+  fixtureScheduleCorrected,
+
+  /// An admin changed a player's display name (`AdminRenameUser`); the
+  /// reason carries the old and the new name.
+  userRenamed;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -100,6 +104,7 @@ enum AuditAction {
     AuditAction.fixturePredictionsViewed => 'fixture_predictions_viewed',
     AuditAction.userPredictionsViewed => 'user_predictions_viewed',
     AuditAction.fixtureScheduleCorrected => 'fixture_schedule_corrected',
+    AuditAction.userRenamed => 'user_renamed',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

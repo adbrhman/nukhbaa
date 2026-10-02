@@ -289,8 +289,10 @@ SELECT
 FROM leaderboard.season_standings s
 JOIN competition.participants p ON p.id = s.participant_id
 JOIN "group".group_memberships m ON m.user_id = p.user_id
+JOIN identity.users u ON u.id = p.user_id
 WHERE s.season_id = @season_id
   AND m.group_id = @group_id
+  AND u.status <> 'suspended'
 ''';
 
   @override

@@ -53,6 +53,12 @@ SELECT participant_id, display_name, total_points, entry_count, joined_at,
        previous_rank, exact_count, settled_count
 FROM leaderboard.season_standings_with_movement
 WHERE season_id = @season_id
+  AND participant_id NOT IN (
+    SELECT p.id
+    FROM competition.participants p
+    JOIN identity.users u ON u.id = p.user_id
+    WHERE u.status = 'suspended'
+  )
 ''';
 
   // Read the all-time standings from the projection VIEW, capped by an
@@ -62,6 +68,9 @@ WHERE season_id = @season_id
   static const String _selectAllTimeStandingsSql = '''
 SELECT user_id, display_name, total_points, seasons_played
 FROM leaderboard.hall_of_fame_standings
+WHERE user_id NOT IN (
+  SELECT id FROM identity.users WHERE status = 'suspended'
+)
 LIMIT @limit
 ''';
 
@@ -101,6 +110,9 @@ board AS (
                     COALESCE(f.exact_count, 0) DESC
          ) AS current_rank
   FROM competition.participants p
+  JOIN identity.users u
+    ON u.id = p.user_id
+   AND (u.status <> 'suspended' OR p.user_id = @user_id)
   LEFT JOIN leaderboard.season_fixture_standings f
     ON f.participant_id = p.id
   LEFT JOIN gamification.referral_month_points rm

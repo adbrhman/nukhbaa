@@ -30,6 +30,7 @@ void main() {
         'fixture_predictions_viewed',
         'user_predictions_viewed',
         'fixture_schedule_corrected',
+        'user_renamed',
       });
     });
   });

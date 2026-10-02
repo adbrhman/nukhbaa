@@ -52,6 +52,7 @@ scores AS (
     ON fs.participant_id = p.id
   JOIN identity.users u
     ON u.id = p.user_id
+   AND u.status <> 'suspended'
   WHERE m.month_key BETWEEN @first_key AND @last_key
   GROUP BY p.user_id, p.season_id, u.display_name
 )

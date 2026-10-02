@@ -36,6 +36,11 @@ SELECT fs.participant_id::text AS participant_id,
 FROM scoring.fixture_scores fs
 JOIN competition.participants p
   ON p.id = fs.participant_id
+-- A suspended account is off every board (0085); reinstating it
+-- brings its points back unchanged.
+JOIN identity.users u
+  ON u.id = p.user_id
+ AND u.status <> 'suspended'
 LEFT JOIN gamification.referral_month_points rm
   ON rm.season_id = p.season_id
  AND rm.user_id = p.user_id

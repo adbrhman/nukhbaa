@@ -137,6 +137,8 @@ final class CompositionRoot {
     required this.reinstateUser,
     required this.listUsers,
     required this.adminGetUserStats,
+    required this.adminRenameUser,
+    required this.adminListDuplicateNames,
     required this.listAuditLog,
     required this.viewParticipantLedger,
     required this.adminGetParticipantDisplayNames,
@@ -297,6 +299,8 @@ final class CompositionRoot {
     ReinstateUser? reinstateUser,
     ListUsers? listUsers,
     AdminGetUserStats? adminGetUserStats,
+    AdminRenameUser? adminRenameUser,
+    AdminListDuplicateNames? adminListDuplicateNames,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
     AdminGetParticipantDisplayNames? adminGetParticipantDisplayNames,
@@ -479,6 +483,9 @@ final class CompositionRoot {
        reinstateUser = reinstateUser ?? _absentReinstateUser(),
        listUsers = listUsers ?? _absentListUsers(),
        adminGetUserStats = adminGetUserStats ?? _absentAdminGetUserStats(),
+       adminRenameUser = adminRenameUser ?? _absentAdminRenameUser(),
+       adminListDuplicateNames =
+           adminListDuplicateNames ?? _absentAdminListDuplicateNames(),
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
        viewParticipantLedger =
            viewParticipantLedger ?? _absentViewParticipantLedger(),
@@ -1326,6 +1333,14 @@ final class CompositionRoot {
   static AdminGetUserStats _absentAdminGetUserStats() =>
       AdminGetUserStats(users: _unwiredUserAdminRepository);
 
+  static AdminRenameUser _absentAdminRenameUser() => AdminRenameUser(
+    userDirectory: _UnwiredUserDirectory(),
+    auditRecorder: _absentAuditRecorder(),
+  );
+
+  static AdminListDuplicateNames _absentAdminListDuplicateNames() =>
+      AdminListDuplicateNames(names: _UnwiredDuplicateNameReader());
+
   static ListAuditLog _absentListAuditLog() =>
       ListAuditLog(auditLog: _unwiredAuditLogRepository);
 
@@ -1863,6 +1878,14 @@ final class CompositionRoot {
   /// The platform-wide user counts (`GET /admin/user-stats`) — a real
   /// aggregate over EVERY row, never [listUsers]'s bounded browse page.
   final AdminGetUserStats adminGetUserStats;
+
+  /// Renames a player (`POST /admin/users/{id}/display-name`): admin-only,
+  /// mandatory reason, audited; a name another player holds is refused.
+  final AdminRenameUser adminRenameUser;
+
+  /// The display names more than one account carries
+  /// (`GET /admin/duplicate-names`), admin-only.
+  final AdminListDuplicateNames adminListDuplicateNames;
 
   /// Reads the append-only admin audit trail, newest-first (admin-only — the
   /// trail is itself a privileged surface; decision OPEN-B).
@@ -2725,6 +2748,15 @@ final class CompositionRoot {
       ),
       listUsers: ListUsers(users: userAdminRepository),
       adminGetUserStats: AdminGetUserStats(users: userAdminRepository),
+      // Through the cached directory, so the renamed player's next
+      // request already sees the new name.
+      adminRenameUser: AdminRenameUser(
+        userDirectory: directory,
+        auditRecorder: auditRecorder,
+      ),
+      adminListDuplicateNames: AdminListDuplicateNames(
+        names: PostgresDuplicateNameReader(connection),
+      ),
       listAuditLog: ListAuditLog(auditLog: auditLogRepository),
       viewParticipantLedger: ViewParticipantLedger(
         participantReader: participantReader, // already built (Ledger slice)
@@ -3404,6 +3436,15 @@ final class _UnwiredUserAdminRepository implements UserAdminRepository {
 
   @override
   Future<Result<UserCounts>> countUsers() => _unwired();
+}
+
+/// Backs the "absent" [AdminListDuplicateNames]: throws if a test reaches
+/// it without wiring one.
+final class _UnwiredDuplicateNameReader implements DuplicateNameReader {
+  @override
+  Future<Result<List<DuplicateNameGroup>>> duplicateNames({
+    required int limit,
+  }) => throw StateError('An admin use-case was not wired into this root');
 }
 
 /// Backs the "absent" audit trail behind every unwired admin use-case: any
