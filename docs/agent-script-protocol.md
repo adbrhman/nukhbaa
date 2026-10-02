@@ -79,6 +79,11 @@ the faulty function, reveals nothing.
 - No new dependency and no architectural change without the owner's approval.
 - A migration is additive only: no deletion of any user, account, points,
   fixture or prediction.
+- A migration records itself as its last statement, inside its own
+  transaction: `insert into ops.applied_migrations (version) values
+  ('NNNN_name') on conflict (version) do nothing;` (the file name without
+  `.sql`; table from 0081). `.github/workflows/migration-drift.yml` fails
+  when the live database lacks a migration the repository has.
 
 ## 6. The reply
 

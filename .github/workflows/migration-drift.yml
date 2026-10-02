@@ -1,0 +1,67 @@
+name: migration-drift
+
+# Compares supabase/migrations with the migrations the live database has
+# recorded in ops.applied_migrations (migration 0081): every migration ends
+# by inserting its own file name there. Migrations reach production by hand
+# while Northflank redeploys the server on every push, so this fails -- and
+# GitHub emails the owner -- whenever the repository holds a migration the
+# live database has not been given yet.
+#
+# Read-only: one SELECT. Nothing is ever written to production from CI.
+# Needs the SUPABASE_DB_URL secret the weekly backup already uses.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/migration-drift.yml'
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-drift
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare the repository with the live database
+        run: |
+          set -euo pipefail
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::the SUPABASE_DB_URL secret is required"
+            exit 1
+          fi
+          for f in supabase/migrations/*.sql; do
+            basename "$f" .sql
+          done | sort > repo.txt
+          if ! docker run --rm -e SUPABASE_DB_URL postgres:17-alpine \
+               sh -c 'psql "$SUPABASE_DB_URL" -X -q -tA -v ON_ERROR_STOP=1 -c "select version from ops.applied_migrations"' \
+               > live.txt; then
+            echo "::error::could not read ops.applied_migrations -- apply supabase/migrations/0081_applied_migrations.sql in the Supabase SQL Editor"
+            exit 1
+          fi
+          sort -o live.txt live.txt
+          missing="$(comm -23 repo.txt live.txt)"
+          if [ -n "$missing" ]; then
+            echo "::error::the live database is missing $(echo "$missing" | wc -l) migration(s) -- apply them in order in the Supabase SQL Editor:"
+            echo "$missing"
+            {
+              echo "### Migrations not applied to the live database"
+              echo '```'
+              echo "$missing"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "the live database has all $(wc -l < repo.txt) migrations"
