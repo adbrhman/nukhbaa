@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/timestamps.dart';
+import '../../../../core/providers.dart';
 import '../../../../core/ui/ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
@@ -24,7 +27,10 @@ class UserSanctionSection extends ConsumerStatefulWidget {
 }
 
 class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
-  final TextEditingController _userIdController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _renaming = false;
+  bool _renameFailed = false;
+  String? _renameMessage;
   final TextEditingController _reasonController = TextEditingController();
   UserSummaryDto? _selectedUser;
   AdminUserPredictionFilter _filter = AdminUserPredictionFilter.today;
@@ -32,7 +38,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
 
   @override
   void dispose() {
-    _userIdController.dispose();
+    _nameController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -40,7 +46,8 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
   void _selectUser(UserSummaryDto user) {
     setState(() {
       _selectedUser = user;
-      _userIdController.text = user.id;
+      _nameController.text = user.displayName;
+      _renameMessage = null;
     });
   }
 
@@ -83,6 +90,25 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // A suspend or reinstate shows on the picked account at once.
+    ref.listen<AsyncValue<UserSanctionResultDto>?>(
+      userSanctionControllerProvider,
+      (previous, next) {
+        final UserSummaryDto? current = _selectedUser;
+        if (next is AsyncData<UserSanctionResultDto> &&
+            current != null &&
+            current.id == next.value.userId) {
+          setState(
+            () => _selectedUser = UserSummaryDto(
+              id: current.id,
+              email: current.email,
+              displayName: current.displayName,
+              status: next.value.status,
+            ),
+          );
+        }
+      },
+    );
     final AsyncValue<UserSanctionResultDto>? sanctionState = ref.watch(
       userSanctionControllerProvider,
     );
@@ -114,6 +140,8 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
           const SizedBox(height: AppSpacing.md),
           _SelectedUserSummary(user: user),
           const SizedBox(height: AppSpacing.md),
+          _manageCard(context, user, sanctionState, sanctionInFlight, tokens),
+          const SizedBox(height: AppSpacing.md),
           _PredictionFilters(
             filter: _filter,
             selectedDate: _selectedDate,
@@ -123,94 +151,197 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
           const SizedBox(height: AppSpacing.md),
           _PredictionHistoryTable(query: query),
         ],
-        const SizedBox(height: AppSpacing.xl),
-        AdminSectionHeader(
-          title: l10n.adminUsersTab,
-          subtitle:
-              'التعليق يخفي الحساب ونقاطه من كل اللوحات، '
-              'وإعادة التفعيل تعيده بنقاطه كما كانت.',
-        ),
-        AdminCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              AdminTextField(
-                key: const Key('admin.users.userIdField'),
-                controller: _userIdController,
-                hint: l10n.userId,
-                enabled: !sanctionInFlight,
-                prefixIcon: Icons.person_search_rounded,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AdminTextField(
-                key: const Key('admin.users.reasonField'),
-                controller: _reasonController,
-                hint: l10n.adminReasonMandatoryLabel,
-                enabled: !sanctionInFlight,
-                prefixIcon: Icons.notes_rounded,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              if (sanctionState is AsyncError<UserSanctionResultDto>)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Text(
-                    ErrorPresenter.message(sanctionState.error as AppError),
-                    key: const Key('admin.users.error'),
-                    style: TextStyle(color: tokens.error),
-                  ),
-                ),
-              if (sanctionState is AsyncData<UserSanctionResultDto>)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Text(
-                    l10n.adminSanctionResultMessage(
-                      sanctionState.value.userId,
-                      sanctionState.value.status,
-                    ),
-                    key: const Key('admin.users.result'),
-                  ),
-                ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: AppButton(
-                      key: const Key('admin.users.suspend'),
-                      label: l10n.adminSuspendButton,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: sanctionInFlight
-                          ? null
-                          : () => _act(suspend: true),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: AppButton(
-                      key: const Key('admin.users.reinstate'),
-                      label: l10n.adminReinstateButton,
-                      onPressed: sanctionInFlight
-                          ? null
-                          : () => _act(suspend: false),
-                      loading: sanctionInFlight,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        if (user == null) ...[
+          const SizedBox(height: AppSpacing.xl),
+          AdminSectionHeader(
+            title: l10n.adminUsersTab,
+            subtitle:
+                'ابحث عن المستخدم باسمه في الأعلى ثم اضغط عليه، لتعديل اسمه '
+                'أو تعليقه. التعليق يخفي الحساب ونقاطه من كل اللوحات، وإعادة '
+                'التفعيل تعيده بنقاطه كما كانت.',
           ),
-        ),
+        ],
       ],
     );
   }
 
+  /// The account picked in the search, managed by its name: rename it,
+  /// suspend it or reinstate it, with one mandatory reason.
+  Widget _manageCard(
+    BuildContext context,
+    UserSummaryDto user,
+    AsyncValue<UserSanctionResultDto>? sanctionState,
+    bool sanctionInFlight,
+    AppTokens tokens,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final bool busy = sanctionInFlight || _renaming;
+    final bool suspended = user.status == 'suspended';
+    final String? renameMessage = _renameMessage;
+    return AdminCard(
+      key: const Key('admin.users.manageCard'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            _nameOf(user),
+            key: const Key('admin.users.selectedName'),
+            style: context.text.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            suspended
+                ? 'معلَّق: مخفي هو ونقاطه من كل اللوحات'
+                : 'نشط: ظاهر في اللوحات',
+            key: const Key('admin.users.selectedStatus'),
+            style: TextStyle(
+              color: suspended ? tokens.error : tokens.success,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AdminTextField(
+            key: const Key('admin.users.nameField'),
+            controller: _nameController,
+            hint: 'الاسم الجديد',
+            enabled: !busy,
+            prefixIcon: Icons.badge_rounded,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AdminTextField(
+            key: const Key('admin.users.reasonField'),
+            controller: _reasonController,
+            hint: l10n.adminReasonMandatoryLabel,
+            enabled: !busy,
+            prefixIcon: Icons.notes_rounded,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            key: const Key('admin.users.rename'),
+            label: 'حفظ الاسم',
+            variant: AppButtonVariant.secondary,
+            onPressed: busy ? null : () => unawaited(_rename()),
+            loading: _renaming,
+          ),
+          if (renameMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(
+                renameMessage,
+                key: const Key('admin.users.renameMessage'),
+                style: TextStyle(
+                  color: _renameFailed ? tokens.error : tokens.success,
+                ),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          if (sanctionState is AsyncError<UserSanctionResultDto>)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Text(
+                ErrorPresenter.message(sanctionState.error as AppError),
+                key: const Key('admin.users.error'),
+                style: TextStyle(color: tokens.error),
+              ),
+            ),
+          if (sanctionState is AsyncData<UserSanctionResultDto> &&
+              sanctionState.value.userId == user.id)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Text(
+                sanctionState.value.status == 'suspended'
+                    ? 'تم تعليق «${_nameOf(user)}» وإخفاؤه من اللوحات'
+                    : 'أُعيد تفعيل «${_nameOf(user)}» وعاد إلى اللوحات',
+                key: const Key('admin.users.result'),
+              ),
+            ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppButton(
+                  key: const Key('admin.users.suspend'),
+                  label: l10n.adminSuspendButton,
+                  variant: AppButtonVariant.secondary,
+                  onPressed: busy ? null : () => _act(suspend: true),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppButton(
+                  key: const Key('admin.users.reinstate'),
+                  label: l10n.adminReinstateButton,
+                  onPressed: busy ? null : () => _act(suspend: false),
+                  loading: sanctionInFlight,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _nameOf(UserSummaryDto user) =>
+      user.displayName.isEmpty ? (user.email ?? user.id) : user.displayName;
+
+  /// `POST /admin/users/{id}/display-name`: the server refuses a name another
+  /// player holds and records the change in the audit log.
+  Future<void> _rename() async {
+    final UserSummaryDto? user = _selectedUser;
+    if (user == null) return;
+    final String name = _nameController.text.trim();
+    final String reason = _reasonController.text.trim();
+    if (name.isEmpty || reason.isEmpty) {
+      setState(() {
+        _renameFailed = true;
+        _renameMessage = name.isEmpty
+            ? 'اكتب الاسم الجديد'
+            : 'اكتب السبب أولاً';
+      });
+      return;
+    }
+    setState(() {
+      _renaming = true;
+      _renameMessage = null;
+    });
+    final Result<UserSummaryDto> result = await ref
+        .read(adminApiProvider)
+        .renameUser(user.id, displayName: name, reason: reason);
+    if (!mounted) return;
+    setState(() {
+      _renaming = false;
+      switch (result) {
+        case Ok<UserSummaryDto>(:final value):
+          _selectedUser = value;
+          _nameController.text = value.displayName;
+          _renameFailed = false;
+          _renameMessage = 'تم تعديل الاسم إلى «${value.displayName}»';
+        case Err<UserSummaryDto>(:final error):
+          _renameFailed = true;
+          _renameMessage = ErrorPresenter.message(error);
+      }
+    });
+    ref.invalidate(auditLogProvider);
+  }
+
   void _act({required bool suspend}) {
-    final userId = _userIdController.text.trim();
+    final UserSummaryDto? user = _selectedUser;
     final reason = _reasonController.text.trim();
-    if (userId.isEmpty || reason.isEmpty) return;
+    if (user == null) return;
+    if (reason.isEmpty) {
+      setState(() {
+        _renameFailed = true;
+        _renameMessage = 'اكتب السبب أولاً';
+      });
+      return;
+    }
     final notifier = ref.read(userSanctionControllerProvider.notifier);
     if (suspend) {
-      notifier.suspend(userId, reason);
+      notifier.suspend(user.id, reason);
     } else {
-      notifier.reinstate(userId, reason);
+      notifier.reinstate(user.id, reason);
     }
   }
 }
@@ -303,40 +434,45 @@ class _UserPredictionSearchCardState
                             padding: const EdgeInsets.only(
                               bottom: AppSpacing.sm,
                             ),
-                            child: ListTile(
-                              key: Key(
-                                'admin.users.predictionSearch.result.${user.id}',
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: tokens.border),
-                              ),
-                              tileColor: user.id == widget.selectedUserId
-                                  ? tokens.primary.withValues(alpha: 0.08)
-                                  : tokens.surfaceElevated,
-                              leading: CircleAvatar(
-                                backgroundColor: tokens.primary,
-                                child: Text(
-                                  user.displayName.isEmpty
-                                      ? '؟'
-                                      : user.displayName.substring(0, 1),
-                                  style: const TextStyle(color: Colors.white),
+                            // A ListTile paints its color and ink on the
+                            // nearest Material; the card would hide them.
+                            child: Material(
+                              type: MaterialType.transparency,
+                              child: ListTile(
+                                key: Key(
+                                  'admin.users.predictionSearch.result.${user.id}',
                                 ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: tokens.border),
+                                ),
+                                tileColor: user.id == widget.selectedUserId
+                                    ? tokens.primary.withValues(alpha: 0.08)
+                                    : tokens.surfaceElevated,
+                                leading: CircleAvatar(
+                                  backgroundColor: tokens.primary,
+                                  child: Text(
+                                    user.displayName.isEmpty
+                                        ? '؟'
+                                        : user.displayName.substring(0, 1),
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                title: Text(
+                                  user.displayName.isEmpty
+                                      ? user.email ?? user.id
+                                      : user.displayName,
+                                ),
+                                subtitle: Text(
+                                  user.email ?? user.id,
+                                  style: TextStyle(color: tokens.textSecondary),
+                                ),
+                                trailing: Text(
+                                  user.status == 'suspended' ? 'معلَّق' : 'نشط',
+                                  style: TextStyle(color: tokens.textSecondary),
+                                ),
+                                onTap: () => widget.onSelected(user),
                               ),
-                              title: Text(
-                                user.displayName.isEmpty
-                                    ? user.email ?? user.id
-                                    : user.displayName,
-                              ),
-                              subtitle: Text(
-                                user.email ?? user.id,
-                                style: TextStyle(color: tokens.textSecondary),
-                              ),
-                              trailing: Text(
-                                user.status,
-                                style: TextStyle(color: tokens.textSecondary),
-                              ),
-                              onTap: () => widget.onSelected(user),
                             ),
                           ),
                       ],
@@ -387,7 +523,7 @@ class _SelectedUserSummary extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'المعرف: ${user.id}',
+                  user.email ?? '',
                   style: context.text.bodySmall?.copyWith(
                     color: tokens.textSecondary,
                   ),
@@ -396,8 +532,12 @@ class _SelectedUserSummary extends StatelessWidget {
             ),
           ),
           Chip(
-            label: Text(user.status),
-            avatar: Icon(Icons.circle, size: 10, color: tokens.success),
+            label: Text(user.status == 'suspended' ? 'معلَّق' : 'نشط'),
+            avatar: Icon(
+              Icons.circle,
+              size: 10,
+              color: user.status == 'suspended' ? tokens.error : tokens.success,
+            ),
           ),
         ],
       ),
