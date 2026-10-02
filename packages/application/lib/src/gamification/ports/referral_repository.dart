@@ -23,7 +23,14 @@ enum ReferralClaimOutcome {
   selfReferral('self_referral'),
 
   /// The account is older than 24 hours, or the inviter is newer than it.
-  windowClosed('window_closed');
+  windowClosed('window_closed'),
+
+  /// The claim came from the browser, where a phone cannot be told apart
+  /// (migration 0086): only the app counts an invitation.
+  appRequired('app_required'),
+
+  /// The claim came from a phone the inviter uses (migration 0086).
+  sameDevice('same_device');
 
   const ReferralClaimOutcome(this.wireName);
 

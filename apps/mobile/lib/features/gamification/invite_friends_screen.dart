@@ -23,6 +23,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/providers.dart';
 import '../competition/widgets/async_list_view.dart';
+import 'referral_notice.dart';
 
 /// CI's NUKHBA_INVITE_BASE_URL: the Northflank web mirror, which opens in
 /// Yemen, where github.io is blocked. Empty when not set.
@@ -58,6 +59,8 @@ String referralClaimMessage(String status) => switch (status) {
   'invalid_code' || 'unknown_code' => 'الرمز غير صحيح. تأكد منه وحاول مجدداً.',
   'self_referral' => 'لا يمكنك استخدام رمزك أنت.',
   'window_closed' => 'رمز الدعوة يُقبل خلال 24 ساعة من إنشاء الحساب فقط.',
+  'app_required' => referralAppRequiredMessage,
+  'same_device' => referralSameDeviceMessage,
   _ => 'تعذّر تأكيد الرمز. حاول مجدداً.',
 };
 

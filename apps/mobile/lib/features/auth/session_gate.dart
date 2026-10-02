@@ -25,6 +25,7 @@ import 'package:shared/shared.dart';
 
 import '../../core/error/error_presenter.dart';
 import '../../core/session/session_scope.dart';
+import '../gamification/referral_notice.dart';
 
 import 'app_lock.dart';
 import 'name_setup_screen.dart';
@@ -72,6 +73,33 @@ class SessionGate extends ConsumerWidget {
         if (signedOut && context.mounted) {
           SessionScope.maybeOf(context)?.reset();
         }
+      });
+    });
+
+    // Migration 0086: an invitation refused at sign-up (from the browser,
+    // or on the inviter's own phone) is told once, over whatever screen
+    // is up by then.
+    ref.listen<String?>(referralNoticeProvider, (previous, next) {
+      if (next == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(referralNoticeProvider.notifier).clear();
+        unawaited(
+          showDialog<void>(
+            context: context,
+            builder: (BuildContext dialogContext) => AlertDialog(
+              title: const Text('الدعوة لم تُحتسب'),
+              content: Text(next),
+              actions: <Widget>[
+                TextButton(
+                  key: const Key('referral.notice.ok'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('حسناً'),
+                ),
+              ],
+            ),
+          ),
+        );
       });
     });
 

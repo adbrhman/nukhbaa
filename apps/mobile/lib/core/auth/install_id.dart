@@ -7,6 +7,7 @@ library;
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -78,7 +79,10 @@ String newInstallId(Random random) {
   return out.toString();
 }
 
-/// This install's id store.
+/// This install's id store. The web build has none (migration 0086): a
+/// browser cannot be told apart from the phone it runs on, so an
+/// invitation claimed there is refused as `app_required` and the player
+/// is told to use the app.
 final installIdStoreProvider = Provider<InstallIdStore>(
-  (ref) => SecureInstallIdStore(),
+  (ref) => kIsWeb ? const FixedInstallIdStore(null) : SecureInstallIdStore(),
 );

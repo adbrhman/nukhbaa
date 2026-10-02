@@ -38,6 +38,7 @@ import '../../core/auth/google_id_token_source.dart';
 import '../../core/auth/install_id.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
+import '../gamification/referral_notice.dart';
 import 'session_state.dart';
 
 part 'session_controller.g.dart';
@@ -144,13 +145,24 @@ class SessionController extends _$SessionController {
   /// a code was typed. The outcome is not shown here: a code refused now
   /// can still be entered on the invitation page within 24 hours of the
   /// account's creation, and an invitation is never worth failing a
-  /// sign-up over.
+  /// sign-up over. Only the two refusals of migration 0086 (from the
+  /// browser, or on the inviter's own phone) are told, once, through
+  /// [referralNoticeProvider].
   Future<void> _claimReferral(String? code) async {
     final String trimmed = (code ?? '').trim();
     if (trimmed.isEmpty) return;
     try {
       final String? installId = await ref.read(installIdStoreProvider).read();
-      await _authApi.claimReferral(code: trimmed, installId: installId);
+      final Result<ReferralStatusDto> claimed = await _authApi.claimReferral(
+        code: trimmed,
+        installId: installId,
+      );
+      if (claimed case Ok<ReferralStatusDto>(:final value)) {
+        final String? notice = referralDeviceNotice(value.status);
+        if (notice != null) {
+          ref.read(referralNoticeProvider.notifier).show(notice);
+        }
+      }
     } on Object {
       // See above: the sign-up stands whatever happens to the claim.
     }

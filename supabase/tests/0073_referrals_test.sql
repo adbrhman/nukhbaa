@@ -224,15 +224,18 @@ begin
   perform pg_temp.check(gamification.review_referral(b, 'approve', x, 'not held', t_oct) = 'not_held', 'only a held invitation can be approved');
   perform pg_temp.check(gamification.qualify_referrals(t_oct) = 0, 'decided invitations are not processed again');
 
-  -- The inviter's own install is held too.
+  -- The inviter's own install: since 0086 the claim itself is refused, so
+  -- nothing is held or paid for it.
   perform gamification.mark_referral_install(a, 'inst-of-a', '2026-10-01');
   d := pg_temp.mk_user(10, '2026-10-06 09:00+03');
-  perform gamification.claim_referral(d, code_a, '3.3.3.3', 'inst-of-a', '2026-10-06 09:05+03');
+  perform pg_temp.check(
+    gamification.claim_referral(d, code_a, '3.3.3.3', 'inst-of-a', '2026-10-06 09:05+03') = 'same_device',
+    'an invitee on the inviter''s own install is refused');
   perform pg_temp.play(d, 'c7300000-0000-4000-8000-0000000000f1', 'incorrect');
   perform gamification.qualify_referrals(t_oct);
   perform pg_temp.check(
-    (select payload->'reasons' ? 'inviter_install' from gamification.events where ref_id = d),
-    'an invitee on the inviter''s own install is held');
+    not exists (select 1 from gamification.events where ref_id = d),
+    'nothing is held or paid for a refused claim');
 
   -- A burst of claims for one inviter is held.
   y := pg_temp.mk_user(300, '2026-09-01');
