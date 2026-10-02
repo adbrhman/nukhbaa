@@ -33,6 +33,25 @@ enum SessionRenewal {
 /// this transport never stores or exchanges a token itself.
 typedef SessionRenewer = Future<SessionRenewal> Function();
 
+/// Whether a `401` answered with [body] means the session itself is over.
+///
+/// The server answers `401` for two different things. Either the credential
+/// is missing, expired or refused -- an `auth.*` code, or no envelope at all
+/// (a proxy) -- and the session is over; or a signed-in caller is refused
+/// one action (`group.not_a_member`, `leaderboard.not_a_participant`,
+/// `prediction.not_a_participant`, `auth.insufficient_role`, ...), and the
+/// session is fine. Treating the second like the first renewed the token for
+/// nothing and then signed the player out for opening a board or a group
+/// they are not in; such a refusal is now returned to the caller as an
+/// ordinary `Err`.
+bool _endsSession(String body) {
+  final String code = decodeError(401, body).code;
+  if (code == 'auth.insufficient_role') return false;
+  return code == apiErrorUnexpectedStatus ||
+      code.startsWith('auth.') ||
+      code.startsWith('identity.user_id_');
+}
+
 /// The single low-level HTTP transport every domain client is built on.
 ///
 /// Responsibilities (and ONLY these — no business logic, ADR-002 §2.8):
@@ -269,7 +288,7 @@ final class ApiTransport {
     final status = response.statusCode;
     if (status == 404) return const Result.ok(null);
     if (status >= 200 && status < 300) return Result.ok(response.bodyBytes);
-    if (status == 401) {
+    if (status == 401 && _endsSession(response.body)) {
       await _onUnauthorized?.call();
     }
     return Result.err(decodeError(status, response.body));
@@ -320,7 +339,7 @@ final class ApiTransport {
     if (status >= 200 && status < 300) {
       return decode(response.body);
     }
-    if (status == 401) {
+    if (status == 401 && _endsSession(response.body)) {
       await _onUnauthorized?.call();
     }
     return Result.err(decodeError(status, response.body));
@@ -343,7 +362,7 @@ final class ApiTransport {
     }
     if (first case Ok<http.Response>(
       :final value,
-    ) when value.statusCode == 401) {
+    ) when value.statusCode == 401 && _endsSession(value.body)) {
       switch (await renew()) {
         case SessionRenewal.renewed:
           return send();
