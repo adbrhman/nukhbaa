@@ -1261,5 +1261,9 @@
   "championShareButton": "Share your crown",
   "championShareMessage": "I was crowned the {month} champion on Nukhba 👑",
   "@championShareMessage": {"placeholders": {"month": {"type": "String"}}},
-  "leaderboardMonthStarting": "A new month has begun: everyone starts from zero, and the standings appear with the first scored match."
+  "leaderboardMonthStarting": "A new month has begun: everyone starts from zero, and the standings appear with the first scored match.",
+  "versusShort": "vs",
+  "@versusShort": {"description": "Between the two team names in a compact match row."},
+  "problemCodeCopy": "Copy problem code",
+  "problemCodeCopied": "Problem code copied"
 }

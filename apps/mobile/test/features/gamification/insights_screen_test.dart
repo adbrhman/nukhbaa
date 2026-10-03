@@ -110,7 +110,13 @@ void main() {
       'weeks': <Object?>[_week('2026-09-21', 0, null)],
     });
 
-    expect(_textOf(tester, 'insights.empty'), ar.insightsEmpty);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('insights.empty')),
+        matching: find.text(ar.insightsEmpty),
+      ),
+      findsOneWidget,
+    );
   });
 
   test('a missing percent shows a dash, not zero', () {

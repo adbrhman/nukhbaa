@@ -1,6 +1,6 @@
 {
   "admin.desktop/dark": {
-    "contrast": 4,
+    "contrast": 0,
     "tapTarget": 0,
     "label": 0,
     "layout10": 0,
@@ -8,7 +8,7 @@
     "layout20": 0
   },
   "admin.desktop/light": {
-    "contrast": 4,
+    "contrast": 0,
     "tapTarget": 0,
     "label": 0,
     "layout10": 0,
@@ -20,16 +20,16 @@
     "tapTarget": 0,
     "label": 0,
     "layout10": 0,
-    "layout13": 6,
-    "layout20": 6
+    "layout13": 0,
+    "layout20": 0
   },
   "admin.phone/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
     "layout10": 0,
-    "layout13": 6,
-    "layout20": 6
+    "layout13": 0,
+    "layout20": 0
   },
   "board.widget/dark": {
     "contrast": 0,

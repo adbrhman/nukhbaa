@@ -120,7 +120,7 @@ void main() {
       expect(challenge, lessThan(overview), reason: 'the overview is detail');
 
       expect(
-        tester.getSemantics(find.text('Vs')).id,
+        tester.getSemantics(find.text('ضد')).id,
         tester.getSemantics(find.byKey(const Key('home.highlight.f-1'))).id,
         reason: 'a match row is one node, read as one sentence',
       );

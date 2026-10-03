@@ -2957,6 +2957,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A new month has begun: everyone starts from zero, and the standings appear with the first scored match.'**
   String get leaderboardMonthStarting;
+
+  /// Between the two team names in a compact match row.
+  ///
+  /// In en, this message translates to:
+  /// **'vs'**
+  String get versusShort;
+
+  /// No description provided for @problemCodeCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy problem code'**
+  String get problemCodeCopy;
+
+  /// No description provided for @problemCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem code copied'**
+  String get problemCodeCopied;
 }
 
 class _AppLocalizationsDelegate

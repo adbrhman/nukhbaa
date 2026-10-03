@@ -1,8 +1,8 @@
 /// The known UI defects of docs/reviews/ui-audit-2026-10.md, one focused
 /// test each, through the real widgets. Every test states what the screen
-/// should do once the finding is fixed, so each group is skipped with its
-/// finding id and reason until the fix lands; the fix removes the skip in
-/// the same commit, and the test then holds the line.
+/// should do once the finding is fixed. Each group was skipped with its
+/// finding id and reason until its fix landed; since batch 4 every finding
+/// here is fixed, and each test holds the line, named with what it was.
 library;
 
 import 'dart:convert';
@@ -11,19 +11,25 @@ import 'dart:io';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/design/app_tokens.dart';
+import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/core/theme/theme_controller.dart';
 import 'package:mobile/core/ui/app_badge.dart';
 import 'package:mobile/core/ui/segmented_pills.dart';
 import 'package:mobile/core/ui/team_logo.dart';
 import 'package:mobile/core/ui/user_avatar.dart';
+import 'package:mobile/features/admin/admin_hub_screen.dart';
+import 'package:mobile/features/admin/admin_providers.dart';
 import 'package:mobile/features/admin/widgets/admin_ui_kit.dart';
 import 'package:mobile/features/auth/home_screen.dart';
 import 'package:mobile/features/auth/nukhbaa_shell.dart';
+import 'package:mobile/features/auth/session_gate.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
@@ -36,6 +42,7 @@ import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
 import 'package:mobile/features/notifications/notifications_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
+import 'package:shared/shared.dart';
 
 import '../support/auth_harness.dart' as auth;
 import '../support/current_month_fixtures_harness.dart' as feed;
@@ -53,19 +60,6 @@ double _contrast(Color a, Color b) {
   final double hi = la > lb ? la : lb;
   final double lo = la > lb ? lb : la;
   return (hi + 0.05) / (lo + 0.05);
-}
-
-/// A finding that is known and not fixed yet: skipped with its id and
-/// reason, so `flutter test` lists it on every run.
-void _known(
-  String id,
-  String reason,
-  String description,
-  WidgetTesterCallback body,
-) {
-  group(id, () {
-    testWidgets(description, body);
-  }, skip: '$id: $reason');
 }
 
 /// A finding that is fixed: the same test, no longer skipped.
@@ -270,6 +264,75 @@ BoardEntry _entry(int i, int rank, {int? movement}) => BoardEntry(
   accuracyPercent: 30,
   movement: movement,
 );
+
+/// The admin panel's real dashboard, fed the survey's snapshot.
+Future<void> _pumpAdmin(
+  WidgetTester tester,
+  ThemeData theme, {
+  double scale = 1.0,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: <Override>[
+        adminDashboardProvider.overrideWith(
+          (ref) async => const AdminDashboardSnapshot(
+            stats: UserStatsDto(total: 120, active: 117, suspended: 3),
+            auditLog: AuditLogDto(entries: <AuditEntryDto>[]),
+            competitions: <CompetitionDto>[],
+            currentMonthFixtures: <CurrentMonthFixtureItemDto>[],
+          ),
+        ),
+        adminRetentionProvider.overrideWith(
+          (ref) async => const AdminRetentionDto(
+            today: '2026-10-03',
+            weeks: <RetentionWeekDto>[
+              RetentionWeekDto(
+                weekStart: '2026-09-28',
+                complete: false,
+                activeUsers: 80,
+                active3Plus: 41,
+                leagueActive: 60,
+                leagueActive3Plus: 30,
+                leagueMembers: 90,
+                leagueReturned: null,
+              ),
+            ],
+            cohorts: <RetentionCohortDto>[],
+          ),
+        ),
+      ],
+      child: _app(theme, const AdminHubScreen(), scale: scale),
+    ),
+  );
+  await _settle(tester);
+}
+
+/// pumpAndSettle that tolerates endless motion (a skeleton's shimmer, a
+/// spinner): the frames pumped so far are what the test reads.
+Future<void> _settle(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 10),
+    );
+  } on FlutterError {
+    // Never settles; carry on with what is on screen.
+  }
+}
+
+/// Whether keyboard focus sits on the widget keyed [key] or inside it.
+bool _focusIsOn(Key key) {
+  final BuildContext? focused = FocusManager.instance.primaryFocus?.context;
+  if (focused is! Element) return false;
+  if (focused.widget.key == key) return true;
+  bool found = false;
+  focused.visitAncestorElements((Element element) {
+    found = element.widget.key == key;
+    return !found;
+  });
+  return found;
+}
 
 void main() {
   _fixed(
@@ -895,7 +958,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-22',
     'the admin field outline is the hairline token, 1.24:1 on its fill in '
         'the dark theme (admin_ui_kit.dart:98-106)',
@@ -954,24 +1017,196 @@ void main() {
     },
   );
 
-  group(
-    'UI-24',
-    () {
-      test('the web page lets the reader zoom and matches the app colours', () {
-        final String index = File('web/index.html').readAsStringSync();
-        expect(index, isNot(contains('user-scalable=no')));
-        expect(index, isNot(contains('maximum-scale=1.0')));
-        final Object? manifest = jsonDecode(
-          File('web/manifest.json').readAsStringSync(),
+  _fixed(
+    'UI-23',
+    'the admin success banner was the action blue, not the success green '
+        '(admin_ui_kit.dart:278)',
+    'the admin success banner is green in both themes',
+    (WidgetTester tester) async {
+      for (final ThemeData theme in <ThemeData>[
+        AppTheme.dark,
+        AppTheme.light,
+      ]) {
+        final AppTokens t = theme.extension<AppTokens>()!;
+        await tester.pumpWidget(
+          _app(
+            theme,
+            const Scaffold(body: AdminSuccessBanner(message: 'تم الحفظ')),
+          ),
         );
-        expect(manifest, isA<Map<String, Object?>>());
-        final Map<String, Object?> fields = manifest as Map<String, Object?>;
-        expect((fields['theme_color'] as String?)?.toLowerCase(), '#071426');
-      });
+        // MaterialApp animates a theme change: let it land on the new one.
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<Icon>(find.byIcon(Icons.check_circle_outline_rounded))
+              .color,
+          t.success,
+          reason: '${theme.brightness}',
+        );
+        expect(
+          _backdrop(find.text('تم الحفظ'), t.background),
+          t.successContainer,
+          reason: '${theme.brightness}',
+        );
+      }
     },
-    skip:
-        'UI-24: index.html blocks pinch zoom (web/index.html:9) and the '
-        'manifest colour is #0d1b2a, not the app background '
-        '(web/manifest.json:6-7)',
   );
+
+  _fixed(
+    'UI-25',
+    'the match card buttons were bare GestureDetectors: no keyboard focus '
+        'and no pointer hand on the web (fotmob_match_card.dart:1523, :1602)',
+    'Tab reaches the double button on an open match',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpOpenMatch(tester);
+      const Key button = Key('currentMonthFixtures.double.f-1');
+      for (int i = 0; i < 200 && !_focusIsOn(button); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(_focusIsOn(button), isTrue);
+    },
+  );
+
+  _fixed(
+    'UI-30',
+    'the error state was a centred column with no scroll and no '
+        'announcement (core/ui/app_error_state.dart:33-36)',
+    'a failed board scrolls at x2.0 in landscape and is announced',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(2340, 1080);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            activeSeasonsProvider.overrideWith(
+              (ref) async =>
+                  throw const AppError.transient('net.down', 'offline'),
+            ),
+            currentMonthFixturesProvider.overrideWith(
+              (ref) async => const <CurrentMonthFixtureItemDto>[],
+            ),
+          ],
+          retry: (retryCount, error) => null,
+          child: _app(AppTheme.dark, const LeaderboardsScreen(), scale: 2.0),
+        ),
+      );
+      for (int i = 0; i < 3; i++) {
+        await tester.pump();
+      }
+      final Finder error = find.byKey(const Key('leaderboards.error'));
+      expect(error, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(
+        find.descendant(
+          of: error,
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: error,
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is Semantics && (w.properties.liveRegion ?? false),
+          ),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  _fixed(
+    'UI-31',
+    'no switchTheme: the dark-mode toggle drew a blue thumb on a blue '
+        'track (account_screen.dart:414-423)',
+    'the dark-mode toggle takes the theme switch: white thumb on blue',
+    (WidgetTester tester) async {
+      _phone(tester);
+      final auth.AuthHarness harness = auth.buildAuthHarness(
+        (http.Request request) async => auth.okMe(auth.sampleUser),
+        seedToken: 'saved-jwt',
+      );
+      addTearDown(harness.dispose);
+      await tester.pumpWidget(
+        SessionScope(
+          overrides: <Override>[
+            ...harness.overrides,
+            themePreferenceStoreProvider.overrideWithValue(
+              InMemoryThemePreferenceStore(ThemeMode.dark),
+            ),
+          ],
+          child: _app(AppTheme.dark, const SessionGate()),
+        ),
+      );
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('nav.item.account')));
+      await _settle(tester);
+      final Finder toggle = find.byKey(const Key('account.darkModeToggle'));
+      final SwitchListTile tile = tester.widget<SwitchListTile>(toggle);
+      expect(tile.value, isTrue);
+      expect(tile.activeThumbColor, isNull);
+      final SwitchThemeData switches = Theme.of(
+        tester.element(toggle),
+      ).switchTheme;
+      const Set<WidgetState> on = <WidgetState>{WidgetState.selected};
+      final Color thumb = switches.thumbColor!.resolve(on)!;
+      final Color track = switches.trackColor!.resolve(on)!;
+      expect(_contrast(thumb, track), greaterThanOrEqualTo(3));
+      final Color offOutline = switches.trackOutlineColor!.resolve(
+        const <WidgetState>{},
+      )!;
+      expect(_contrast(offOutline, _dark.background), greaterThanOrEqualTo(3));
+    },
+  );
+
+  _fixed(
+    'UI-34',
+    'the dashboard metric cards sat in a fixed 1.25 aspect ratio and '
+        'overflowed at x1.3 and x2.0 (admin_dashboard_section.dart:206)',
+    'the admin dashboard lays out at x2.0 on a phone',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpAdmin(tester, AppTheme.dark, scale: 2.0);
+      expect(
+        find.byKey(const Key('admin.dashboard.metric.users')),
+        findsWidgets,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  _fixed(
+    'UI-37',
+    'the admin menu group titles were 11px with letter spacing that pulls '
+        'joined Arabic letters apart (admin_shell.dart:112-117)',
+    'the admin menu group titles are 12px with no tracking',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _pumpAdmin(tester, AppTheme.light);
+      final TextStyle style = tester
+          .widget<Text>(find.text('نظرة عامة'))
+          .style!;
+      expect(style.fontSize, greaterThanOrEqualTo(12));
+      expect(style.letterSpacing ?? 0, 0);
+    },
+  );
+
+  group('UI-24 (fixed; was: the web page blocked pinch zoom)', () {
+    test('the web page lets the reader zoom and matches the app colours', () {
+      final String index = File('web/index.html').readAsStringSync();
+      expect(index, isNot(contains('user-scalable=no')));
+      expect(index, isNot(contains('maximum-scale=1.0')));
+      final Object? manifest = jsonDecode(
+        File('web/manifest.json').readAsStringSync(),
+      );
+      expect(manifest, isA<Map<String, Object?>>());
+      final Map<String, Object?> fields = manifest as Map<String, Object?>;
+      expect((fields['theme_color'] as String?)?.toLowerCase(), '#071426');
+    });
+  });
 }

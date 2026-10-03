@@ -375,8 +375,10 @@ class _MonthlyTeamLogoTile extends StatelessWidget {
             width: 58,
             height: 58,
             padding: const EdgeInsets.all(AppSpacing.sm),
+            // The plate the app's crests sit on (team_logo.dart), not a
+            // hand-written white (UI-23).
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.tokens.surfaceHigh,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: context.tokens.border),
             ),

@@ -6,7 +6,9 @@
 ///
 /// Each pair names the widget that draws it. A pair that fails today is
 /// skipped with its finding id until the fix lands; the rest hold the line.
-/// Batch 1 of the audit (2026-10-03) fixed UI-02, 03, 05, 06, 07, 08 and 13.
+/// Batch 1 of the audit (2026-10-03) fixed UI-02, 03, 05, 06, 07, 08 and 13;
+/// batch 4 the field outline (UI-22), the admin banners (UI-23) and the
+/// switch (UI-31).
 library;
 
 import 'package:flutter/material.dart';
@@ -31,7 +33,9 @@ Color _wash(Color tint, double alpha, Color under) =>
 /// it fails -- the finding that tracks it.
 typedef _Pair = ({String name, Color fg, Color bg, double min, String? skip});
 
-List<_Pair> _pairs(AppTokens t) {
+List<_Pair> _pairs(AppTokens t, ThemeData theme) {
+  final Color fieldOutline =
+      theme.inputDecorationTheme.enabledBorder!.borderSide.color;
   final Color navBar = _wash(t.backgroundElevated, 0.96, t.background);
   final Color viewerRow = _wash(t.primary, 0.14, t.surface);
   return <_Pair>[
@@ -203,13 +207,39 @@ List<_Pair> _pairs(AppTokens t) {
     ),
     // Outlines of controls (WCAG 1.4.11): 3:1.
     (
-      name: 'admin text field outline on its fill (admin_ui_kit.dart:98-106)',
-      fg: Color.alphaBlend(t.border, t.surfaceElevated),
+      name: 'text field outline on its fill, admin fields included (UI-22)',
+      fg: Color.alphaBlend(fieldOutline, t.surfaceElevated),
       bg: t.surfaceElevated,
       min: 3,
-      // The light hairline is quiet now too (UI-19): the admin kit must take
-      // the theme's field outline in both themes.
-      skip: 'UI-22: the hairline token as an outline, 1.24:1 / 1.30:1',
+      skip: null,
+    ),
+    (
+      name: 'switch: the on thumb on the on track (UI-31)',
+      fg: t.onPrimary,
+      bg: t.primary,
+      min: 3,
+      skip: null,
+    ),
+    (
+      name: 'switch: the off track outline on the page (UI-31)',
+      fg: t.controlBorder,
+      bg: t.background,
+      min: 3,
+      skip: null,
+    ),
+    (
+      name: 'admin success banner text on its fill (UI-23)',
+      fg: t.textPrimary,
+      bg: t.successContainer,
+      min: 4.5,
+      skip: null,
+    ),
+    (
+      name: 'admin error banner text on its fill (UI-23)',
+      fg: t.errorText,
+      bg: t.errorContainer,
+      min: 4.5,
+      skip: null,
     ),
     (
       name: 'a crest plate rim on a card (team_logo.dart, UI-10)',
@@ -235,7 +265,7 @@ void main() {
   ]) {
     final AppTokens tokens = theme.extension<AppTokens>()!;
     group('$name theme pairs', () {
-      for (final _Pair pair in _pairs(tokens)) {
+      for (final _Pair pair in _pairs(tokens, theme)) {
         test(pair.name, () {
           expect(
             _contrast(pair.fg, pair.bg),

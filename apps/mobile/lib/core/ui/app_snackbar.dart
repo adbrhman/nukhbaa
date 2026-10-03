@@ -21,7 +21,8 @@ abstract final class AppSnackbar {
     final TextTheme text = context.text;
 
     final (Color accent, IconData icon) = switch (tone) {
-      AppSnackTone.success => (tokens.primaryLight, Icons.check_circle_outline),
+      // Green is success across the app, not the action blue (UI-23).
+      AppSnackTone.success => (tokens.success, Icons.check_circle_outline),
       AppSnackTone.error => (tokens.error, Icons.error_outline_rounded),
       AppSnackTone.neutral => (
         tokens.textSecondary,

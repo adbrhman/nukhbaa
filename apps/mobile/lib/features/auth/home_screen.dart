@@ -12,6 +12,7 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_catalog_index.dart';
 import '../competition/team_identity.dart';
@@ -193,7 +194,7 @@ class _Highlights {
 }
 
 /// One highlighted match: league and kickoff on top, then home crest and
-/// name, "Vs", away name and crest.
+/// name, "vs" in the reader's language, away name and crest.
 class _HighlightRow extends ConsumerWidget {
   const _HighlightRow({required this.item, required this.onTap});
 
@@ -286,9 +287,9 @@ class _HighlightRow extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
+                    // Arabic in an Arabic row, not a Latin "Vs" (UI-29).
                     child: Text(
-                      'Vs',
-                      textDirection: TextDirection.ltr,
+                      AppLocalizations.of(context).versusShort,
                       style: TextStyle(
                         color: tokens.textMuted,
                         fontWeight: FontWeight.w800,

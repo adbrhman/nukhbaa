@@ -22,6 +22,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../competition/team_registry.dart';
@@ -29,13 +30,14 @@ import '../gamification/invite_friends_screen.dart';
 import '../leaderboards/leaderboards_providers.dart';
 
 // The card is a picture that leaves the app, so it keeps the brand's own
-// colours whatever theme the viewer runs.
-const Color _navy = Color(0xFF071426);
-const Color _navyRaised = Color(0xFF0E2140);
-const Color _blue = Color(0xFF008BFF);
-const Color _gold = Color(0xFFF5C451);
-const Color _white = Color(0xFFFFFFFF);
-const Color _muted = Color(0xFF9FB0C8);
+// colours whatever theme the viewer runs: the dark palette, read from
+// AppColors rather than copied, so it cannot drift from the app (UI-33).
+const Color _navy = AppColors.background;
+const Color _navyRaised = AppColors.surface;
+const Color _blue = AppColors.primaryLight;
+const Color _gold = AppColors.gold;
+const Color _white = AppColors.textPrimary;
+const Color _muted = AppColors.textMuted;
 
 /// The facts one hit card shows.
 final class ExactHit {

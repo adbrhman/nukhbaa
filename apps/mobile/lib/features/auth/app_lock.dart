@@ -161,7 +161,6 @@ class BiometricUnlockRow extends ConsumerWidget {
         color: tokens.primary,
         size: AppSizes.iconLg,
       ),
-      activeThumbColor: tokens.primary,
       title: Text(
         'الدخول بالبصمة',
         style: context.text.bodyLarge?.copyWith(

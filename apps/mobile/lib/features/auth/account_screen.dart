@@ -419,7 +419,6 @@ class _DarkModeRow extends ConsumerWidget {
         color: tokens.primary,
         size: AppSizes.iconLg,
       ),
-      activeThumbColor: tokens.primary,
       title: Text(
         l10n.accountDarkModeLabel,
         style: context.text.bodyLarge?.copyWith(

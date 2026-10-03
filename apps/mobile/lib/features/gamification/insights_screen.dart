@@ -13,6 +13,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/ui/app_empty_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/widgets/account_menu.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -52,16 +53,12 @@ class InsightsScreen extends ConsumerWidget {
               insights.month.decided == 0 &&
               insights.lastWeek == null &&
               insights.weeks.every((w) => w.accuracy.decided == 0);
+          // The app's one empty state, not free text (UI-30).
           if (nothing) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  l10n.insightsEmpty,
-                  key: const Key('insights.empty'),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            return AppEmptyState(
+              key: const Key('insights.empty'),
+              icon: Icons.insights_outlined,
+              title: l10n.insightsEmpty,
             );
           }
           return ListView(

@@ -492,5 +492,8 @@
   "championPrize": "والفوز بالجائزة {prize}",
   "championShareButton": "شارك تتويجك",
   "championShareMessage": "تُوِّجتُ بطلًا لشهر {month} في نُخبة 👑",
-  "leaderboardMonthStarting": "بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب."
+  "leaderboardMonthStarting": "بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب.",
+  "versusShort": "ضد",
+  "problemCodeCopy": "نسخ رمز المشكلة",
+  "problemCodeCopied": "تم نسخ رمز المشكلة"
 }

@@ -1676,4 +1676,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get leaderboardMonthStarting =>
       'A new month has begun: everyone starts from zero, and the standings appear with the first scored match.';
+
+  @override
+  String get versusShort => 'vs';
+
+  @override
+  String get problemCodeCopy => 'Copy problem code';
+
+  @override
+  String get problemCodeCopied => 'Problem code copied';
 }

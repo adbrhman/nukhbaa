@@ -107,56 +107,62 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
       enabled: enabled,
       selected: widget.selected,
       label: l10n.fixturesLiveLabel,
-      child: GestureDetector(
-        key: const Key('currentMonthFixtures.live'),
-        behavior: HitTestBehavior.opaque,
-        onTap: enabled ? widget.onTap : null,
-        // A full 48 touch target around the 32px pill (UI-16).
-        child: SizedBox(
-          height: AppSizes.minTouchTarget,
-          child: Center(
-            widthFactor: 1,
-            child: AnimatedContainer(
-              duration: AppMotion.fast,
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              decoration: ShapeDecoration(
-                shape: const StadiumBorder(),
-                color: widget.selected
-                    ? tokens.primary
-                    : tokens.textPrimary.withValues(alpha: 0.08),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  FadeTransition(
-                    // Never fades to nothing: the dot stays legible at its
-                    // dimmest, so the pulse reads as a heartbeat rather than
-                    // as the chip flickering in and out.
-                    // A steady dot when the system asks for no animation.
-                    opacity:
-                        (MediaQuery.maybeDisableAnimationsOf(context) ?? false)
-                        ? kAlwaysCompleteAnimation
-                        : Tween<double>(begin: 0.35, end: 1).animate(_pulse),
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: dotColor,
+      // An InkWell, not a bare GestureDetector: on the web it takes keyboard
+      // focus (Tab, then Enter) and shows the pointer hand (UI-25).
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const Key('currentMonthFixtures.live'),
+          customBorder: const StadiumBorder(),
+          onTap: enabled ? widget.onTap : null,
+          // A full 48 touch target around the 32px pill (UI-16).
+          child: SizedBox(
+            height: AppSizes.minTouchTarget,
+            child: Center(
+              widthFactor: 1,
+              child: AnimatedContainer(
+                duration: AppMotion.fast,
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                decoration: ShapeDecoration(
+                  shape: const StadiumBorder(),
+                  color: widget.selected
+                      ? tokens.primary
+                      : tokens.textPrimary.withValues(alpha: 0.08),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    FadeTransition(
+                      // Never fades to nothing: the dot stays legible at its
+                      // dimmest, so the pulse reads as a heartbeat rather than
+                      // as the chip flickering in and out.
+                      // A steady dot when the system asks for no animation.
+                      opacity:
+                          (MediaQuery.maybeDisableAnimationsOf(context) ??
+                              false)
+                          ? kAlwaysCompleteAnimation
+                          : Tween<double>(begin: 0.35, end: 1).animate(_pulse),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: dotColor,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    l10n.fixturesLiveLabel,
-                    style: TextStyle(
-                      fontSize: AppFontSize.s13,
-                      fontWeight: FontWeight.w700,
-                      color: foreground,
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      l10n.fixturesLiveLabel,
+                      style: TextStyle(
+                        fontSize: AppFontSize.s13,
+                        fontWeight: FontWeight.w700,
+                        color: foreground,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

@@ -32,6 +32,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/avatar_bytes_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
@@ -39,13 +40,14 @@ import '../../gamification/invite_friends_screen.dart';
 import 'champion_crown.dart';
 
 // The hero is a picture that can leave the app (the champion shares it), so
-// it keeps the brand's own colours whatever theme the viewer runs.
-const Color _navy = Color(0xFF071426);
-const Color _navyRaised = Color(0xFF0E2140);
-const Color _gold = Color(0xFFF5C451);
-const Color _goldDeep = Color(0xFFC8962E);
-const Color _white = Color(0xFFFFFFFF);
-const Color _muted = Color(0xFF9FB0C8);
+// it keeps the brand's own colours whatever theme the viewer runs: the dark
+// palette, read from AppColors rather than copied (UI-33).
+const Color _navy = AppColors.background;
+const Color _navyRaised = AppColors.surface;
+const Color _gold = AppColors.gold;
+const Color _goldDeep = AppColors.goldDark;
+const Color _white = AppColors.textPrimary;
+const Color _muted = AppColors.textMuted;
 
 const List<String> _monthsAr = <String>[
   'يناير',
@@ -171,7 +173,7 @@ class ChampionBackdrop extends ConsumerWidget {
                 shaderCallback: (Rect rect) => const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: <Color>[Colors.white, Colors.transparent],
+                  colors: <Color>[_white, Colors.transparent],
                   stops: <double>[0.3, 1],
                 ).createShader(rect),
                 child: Image.memory(
@@ -1120,7 +1122,7 @@ class _ConfettiPainter extends CustomPainter {
     _gold,
     _white,
     _goldDeep,
-    Color(0xFF008BFF),
+    AppColors.primaryLight,
   ];
 
   final double progress;

@@ -1525,52 +1525,59 @@ class _RevealPredictionsButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: GestureDetector(
-        key: Key('currentMonthFixtures.reveal.$fixtureId'),
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          unawaited(HapticFeedback.selectionClick());
-          onTap();
-        },
-        // A 48 touch target around the 36px button (UI-16).
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(
-                minHeight: _DoubleGlowButton._height,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: AppRadius.brButton,
-                border: Border.all(color: tokens.primary),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Icon(
-                    Icons.groups_rounded,
-                    size: AppSizes.iconSm,
-                    color: tokens.primaryText,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: AppFontSize.s12,
-                        color: tokens.primaryText,
+      // An InkWell, not a bare GestureDetector: on the web it takes keyboard
+      // focus (Tab, then Enter) and shows the pointer hand (UI-25).
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: Key('currentMonthFixtures.reveal.$fixtureId'),
+          borderRadius: AppRadius.brButton,
+          onTap: () {
+            unawaited(HapticFeedback.selectionClick());
+            onTap();
+          },
+          // A 48 touch target around the 36px button (UI-16).
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: AppSizes.minTouchTarget,
+            ),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: _DoubleGlowButton._height,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.brButton,
+                  border: Border.all(color: tokens.primary),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(
+                      Icons.groups_rounded,
+                      size: AppSizes.iconSm,
+                      color: tokens.primaryText,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: AppFontSize.s12,
+                          color: tokens.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1614,79 +1621,84 @@ class _DoubleGlowButton extends StatelessWidget {
         button: true,
         selected: selected,
         label: label,
-        child: GestureDetector(
-          key: Key('currentMonthFixtures.double.$fixtureId'),
-          behavior: HitTestBehavior.opaque,
-          onTap: enabled
-              ? () {
-                  unawaited(HapticFeedback.selectionClick());
-                  onTap();
-                }
-              : null,
-          // A 48 touch target around the 36px button (UI-16); the label
-          // wraps at large text instead of being cut (UI-18).
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: AppSizes.minTouchTarget,
-            ),
-            child: Center(
-              child: AnimatedContainer(
-                duration: AppMotion.fast,
-                constraints: const BoxConstraints(minHeight: _height),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.brButton,
-                  color: selected ? null : tokens.primary,
-                  gradient: selected
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: <Color>[
-                            tokens.primary,
-                            Color.lerp(tokens.primary, Colors.black, 0.25)!,
-                          ],
-                        )
-                      : null,
-                  border: Border.all(
-                    color: selected ? tokens.gold : tokens.primary,
-                    width: selected ? 1.5 : AppStroke.hairline,
+        // An InkWell, not a bare GestureDetector: on the web it takes
+        // keyboard focus (Tab, then Enter) and shows the pointer hand (UI-25).
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            key: Key('currentMonthFixtures.double.$fixtureId'),
+            borderRadius: AppRadius.brButton,
+            onTap: enabled
+                ? () {
+                    unawaited(HapticFeedback.selectionClick());
+                    onTap();
+                  }
+                : null,
+            // A 48 touch target around the 36px button (UI-16); the label
+            // wraps at large text instead of being cut (UI-18).
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppSizes.minTouchTarget,
+              ),
+              child: Center(
+                child: AnimatedContainer(
+                  duration: AppMotion.fast,
+                  constraints: const BoxConstraints(minHeight: _height),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
-                  boxShadow: selected
-                      ? <BoxShadow>[
-                          BoxShadow(
-                            color: tokens.primary.withValues(alpha: 0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : const <BoxShadow>[],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Icon(
-                      selected ? Icons.bolt_rounded : Icons.bolt_outlined,
-                      size: AppSizes.iconSm,
-                      color: selected ? tokens.gold : tokens.onPrimary,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadius.brButton,
+                    color: selected ? null : tokens.primary,
+                    gradient: selected
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: <Color>[
+                              tokens.primary,
+                              Color.lerp(tokens.primary, Colors.black, 0.25)!,
+                            ],
+                          )
+                        : null,
+                    border: Border.all(
+                      color: selected ? tokens.gold : tokens.primary,
+                      width: selected ? 1.5 : AppStroke.hairline,
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Flexible(
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: AppFontSize.s12,
-                          color: tokens.onPrimary,
+                    boxShadow: selected
+                        ? <BoxShadow>[
+                            BoxShadow(
+                              color: tokens.primary.withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : const <BoxShadow>[],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        selected ? Icons.bolt_rounded : Icons.bolt_outlined,
+                        size: AppSizes.iconSm,
+                        color: selected ? tokens.gold : tokens.onPrimary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.s12,
+                            color: tokens.onPrimary,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

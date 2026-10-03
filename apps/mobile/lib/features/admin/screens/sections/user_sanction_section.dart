@@ -455,7 +455,7 @@ class _UserPredictionSearchCardState
                                     user.displayName.isEmpty
                                         ? '؟'
                                         : user.displayName.substring(0, 1),
-                                    style: const TextStyle(color: Colors.white),
+                                    style: TextStyle(color: tokens.onPrimary),
                                   ),
                                 ),
                                 title: Text(
@@ -502,8 +502,8 @@ class _SelectedUserSummary extends StatelessWidget {
             backgroundColor: tokens.primary,
             child: Text(
               user.displayName.isEmpty ? '؟' : user.displayName.substring(0, 1),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: tokens.onPrimary,
                 fontSize: AppFontSize.s24,
               ),
             ),

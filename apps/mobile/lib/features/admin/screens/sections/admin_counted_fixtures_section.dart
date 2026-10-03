@@ -59,7 +59,7 @@ class AdminCountedFixturesSection extends ConsumerWidget {
                   children: [
                     AdminErrorBanner(
                       message: ErrorPresenter.message(appError),
-                      debugDetail: 'تعذر تحميل المباريات المحتسبة',
+                      detail: 'تعذر تحميل المباريات المحتسبة',
                     ),
                   ],
                 );

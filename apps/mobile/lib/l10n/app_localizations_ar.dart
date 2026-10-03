@@ -1689,4 +1689,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get leaderboardMonthStarting =>
       'بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب.';
+
+  @override
+  String get versusShort => 'ضد';
+
+  @override
+  String get problemCodeCopy => 'نسخ رمز المشكلة';
+
+  @override
+  String get problemCodeCopied => 'تم نسخ رمز المشكلة';
 }

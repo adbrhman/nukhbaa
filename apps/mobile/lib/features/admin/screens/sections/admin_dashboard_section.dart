@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_breakpoints.dart';
+import '../../../../core/design/app_radius.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
@@ -55,7 +56,7 @@ class AdminDashboardSection extends ConsumerWidget {
           children: [
             AdminErrorBanner(
               message: ErrorPresenter.message(error as AppError),
-              debugDetail: 'تعذر تحميل أحد مصادر لوحة التحكم',
+              detail: 'تعذر تحميل أحد مصادر لوحة التحكم',
             ),
           ],
         ),
@@ -194,24 +195,43 @@ class _DashboardContent extends StatelessWidget {
                 : constraints.maxWidth >= 1100
                 ? 3
                 : 2;
-            return GridView.builder(
+            final double width =
+                (constraints.maxWidth - AppSpacing.md * (columns - 1)) /
+                columns;
+            // Rows of cards as tall as their tallest content: the cards keep
+            // the grid's shape at normal text size and grow with larger text
+            // instead of overflowing a fixed aspect ratio (UI-34).
+            final double minHeight = width / (isMobile ? 1.25 : 1.8);
+            return Column(
               key: const Key('admin.dashboard.metrics'),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: cards.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-                childAspectRatio: isMobile ? 1.25 : 1.8,
-              ),
-              itemBuilder: (context, index) {
-                final card = cards[index];
-                return _MetricCard(
-                  data: card,
-                  onTap: () => onNavigate(card.section),
-                );
-              },
+              children: [
+                for (int start = 0; start < cards.length; start += columns) ...[
+                  if (start > 0) const SizedBox(height: AppSpacing.md),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (int i = start; i < start + columns; i++) ...[
+                          if (i > start) const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: i < cards.length
+                                ? ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: minHeight,
+                                    ),
+                                    child: _MetricCard(
+                                      data: cards[i],
+                                      onTap: () => onNavigate(cards[i].section),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             );
           },
         ),
@@ -273,7 +293,7 @@ class _MetricCard extends StatelessWidget {
     final t = context.tokens;
     return InkWell(
       key: Key('admin.dashboard.metric.${data.section.name}'),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.brCard,
       onTap: onTap,
       child: AdminCard(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -294,7 +314,7 @@ class _MetricCard extends StatelessWidget {
               data.label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: context.text.labelSmall?.copyWith(color: t.textSecondary),
+              style: context.text.labelMedium?.copyWith(color: t.textSecondary),
             ),
           ],
         ),

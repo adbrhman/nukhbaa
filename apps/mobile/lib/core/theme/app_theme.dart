@@ -3,6 +3,7 @@ library;
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import '../design/app_colors_light.dart';
+import '../design/app_opacity.dart';
 import '../design/app_radius.dart';
 import '../design/app_tokens.dart';
 import '../design/app_typography.dart';
@@ -210,6 +211,39 @@ abstract final class AppTheme {
       badgeTheme: BadgeThemeData(
         backgroundColor: tokens.errorFill,
         textColor: scheme.onError,
+      ),
+      // One switch for the app (UI-31): on is a white thumb on the action
+      // blue (4.5:1 dark, 6.7:1 light), off is a muted thumb in an outlined
+      // track that holds 3:1 against the page. Before, the dark-mode toggle
+      // painted a blue thumb on a blue track and the light off state fell
+      // back to Material's grey.
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return tokens.textMuted.withValues(alpha: AppOpacity.disabled);
+          }
+          return states.contains(WidgetState.selected)
+              ? scheme.onPrimary
+              : tokens.controlBorder;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+          final bool on = states.contains(WidgetState.selected);
+          if (states.contains(WidgetState.disabled)) {
+            return (on ? scheme.primary : tokens.surfaceHigh).withValues(
+              alpha: AppOpacity.disabled,
+            );
+          }
+          return on ? scheme.primary : tokens.surfaceHigh;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) return scheme.primary;
+          if (states.contains(WidgetState.disabled)) {
+            return tokens.controlBorder.withValues(alpha: AppOpacity.disabled);
+          }
+          return tokens.controlBorder;
+        }),
       ),
       dividerTheme: DividerThemeData(color: divider, thickness: 1, space: 1),
     );

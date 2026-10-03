@@ -2,6 +2,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/design/app_radius.dart';
+import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 
@@ -52,7 +54,7 @@ class AdminCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: t.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.brCard,
         border: Border.all(color: t.border),
         boxShadow: t.shadowSm,
       ),
@@ -80,6 +82,9 @@ class AdminTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
+    // The fill and the outlines come from the theme's inputDecorationTheme:
+    // its outline reaches 3:1 on the fill, where the hairline `border` token
+    // this kit drew sat at 1.24:1 and the fields all but vanished (UI-22).
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -89,24 +94,10 @@ class AdminTextField extends StatelessWidget {
         hintText: hint,
         prefixIcon: prefixIcon == null
             ? null
-            : Icon(prefixIcon, color: t.textSecondary, size: 20),
-        filled: true,
-        fillColor: t.surfaceElevated,
+            : Icon(prefixIcon, color: t.textSecondary, size: AppSizes.iconMd),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.md,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: t.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: t.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: t.primary, width: 1.5),
         ),
       ),
     );
@@ -135,13 +126,13 @@ class AdminPrimaryButton extends StatelessWidget {
         backgroundColor: t.primary,
         foregroundColor: t.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
       ),
       onPressed: onPressed,
       child: loading
           ? SizedBox(
-              width: 18,
-              height: 18,
+              width: AppSizes.iconSm,
+              height: AppSizes.iconSm,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: t.onPrimary,
@@ -152,7 +143,7 @@ class AdminPrimaryButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18),
+                  Icon(icon, size: AppSizes.iconSm),
                   const SizedBox(width: AppSpacing.sm),
                 ],
                 Text(label),
@@ -184,13 +175,13 @@ class AdminSecondaryButton extends StatelessWidget {
         foregroundColor: t.primary,
         side: BorderSide(color: t.primary.withValues(alpha: 0.5)),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
       ),
       onPressed: onPressed,
       child: loading
           ? SizedBox(
-              width: 18,
-              height: 18,
+              width: AppSizes.iconSm,
+              height: AppSizes.iconSm,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: t.primary,
@@ -201,7 +192,7 @@ class AdminSecondaryButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18),
+                  Icon(icon, size: AppSizes.iconSm),
                   const SizedBox(width: AppSpacing.sm),
                 ],
                 Text(label),
@@ -212,18 +203,13 @@ class AdminSecondaryButton extends StatelessWidget {
 }
 
 class AdminErrorBanner extends StatelessWidget {
-  const AdminErrorBanner({super.key, required this.message, this.debugDetail});
+  const AdminErrorBanner({super.key, required this.message, this.detail});
 
   final String message;
 
-  /// TEMP DIAGNOSTIC — remove once the transient-error root cause behind
-  /// "We could not reach the server" is confirmed and fixed at its source.
-  /// Renders [AppError.kind]/[AppError.code] beneath [message] so a real
-  /// network failure (api_client.network_unreachable/timeout) can be told
-  /// apart from a decoded server-side transient (e.g. scoring.*), which
-  /// ErrorPresenter otherwise collapses into the same sentence. Never
-  /// includes the bearer token or any response body.
-  final String? debugDetail;
+  /// A second, quieter line under [message] that names what failed (which
+  /// source did not load, which action did not go through).
+  final String? detail;
 
   @override
   Widget build(BuildContext context) {
@@ -232,11 +218,15 @@ class AdminErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: t.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.brButton,
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline_rounded, color: t.error, size: 18),
+          Icon(
+            Icons.error_outline_rounded,
+            color: t.error,
+            size: AppSizes.iconSm,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
@@ -244,12 +234,12 @@ class AdminErrorBanner extends StatelessWidget {
               children: [
                 Text(
                   message,
-                  style: context.text.bodySmall?.copyWith(color: t.error),
+                  style: context.text.bodySmall?.copyWith(color: t.errorText),
                 ),
-                if (debugDetail != null) ...[
+                if (detail != null) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    debugDetail!,
+                    detail!,
                     style: context.text.labelSmall?.copyWith(
                       color: t.textMuted,
                     ),
@@ -274,13 +264,18 @@ class AdminSuccessBanner extends StatelessWidget {
     final t = context.tokens;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
+      // Green is success across the app; this banner was blue (UI-23).
       decoration: BoxDecoration(
-        color: t.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        color: t.successContainer,
+        borderRadius: AppRadius.brButton,
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline_rounded, color: t.primary, size: 18),
+          Icon(
+            Icons.check_circle_outline_rounded,
+            color: t.success,
+            size: AppSizes.iconSm,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -343,7 +338,7 @@ class AdminListRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(leadingIcon, color: leadingColor, size: 20),
+          Icon(leadingIcon, color: leadingColor, size: AppSizes.iconMd),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(

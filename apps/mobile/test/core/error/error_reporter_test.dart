@@ -13,6 +13,7 @@ import 'package:mobile/core/error/error_presenter.dart';
 import 'package:mobile/core/error/error_reporter.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/ui/app_error_state.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 import 'package:shared/shared.dart';
 
 final class _Server {
@@ -271,6 +272,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark,
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(body: AppErrorState(message: message)),
       ),
     );
@@ -281,12 +285,21 @@ void main() {
       (MethodCall c) => c.method == 'Clipboard.setData',
     );
     expect((copy.arguments as Map<Object?, Object?>)['text'], code);
+
+    // The copy is confirmed on screen (UI-30).
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final AppLocalizations ar = lookupAppLocalizations(const Locale('ar'));
+    expect(find.text(ar.problemCodeCopied), findsOneWidget);
   });
 
   testWidgets('an ordinary message has no copy button', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark,
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: const Scaffold(body: AppErrorState(message: 'حدث خطأ ما')),
       ),
     );

@@ -136,7 +136,7 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
                 const SizedBox(height: AppSpacing.sm),
                 AdminErrorBanner(
                   message: ErrorPresenter.message(_error!),
-                  debugDetail: 'تعذر إرسال الإشعار',
+                  detail: 'تعذر إرسال الإشعار',
                 ),
               ],
               if (_sentTo != null) ...[
