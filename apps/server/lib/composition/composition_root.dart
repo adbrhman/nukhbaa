@@ -134,6 +134,7 @@ final class CompositionRoot {
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
+    this.adminErrorReleases,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -298,6 +299,7 @@ final class CompositionRoot {
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
+    this.adminErrorReleases,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1870,6 +1872,10 @@ final class CompositionRoot {
   /// 0087 and 0088); null in tests that do not provide one.
   final AdminErrorLog? adminErrorLog;
 
+  /// The error log by release and by file (backs `/admin/error-releases`,
+  /// migration 0087); null in tests that do not provide one.
+  final AdminErrorReleases? adminErrorReleases;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -2359,9 +2365,21 @@ final class CompositionRoot {
         reports: PostgresFrameReportRepository(connection),
         clock: clock,
       ),
+      // Every kept error may alert the admins (migration 0089): a new
+      // critical error, a new error in a fresh release, more than 20 an
+      // hour, a fixed error that came back -- at most once an hour each.
       recordError: RecordError(
         errors: PostgresErrorLogRepository(connection),
         clock: clock,
+        alerts: AlertAdminsOfError(
+          alerts: PostgresErrorAlertRepository(connection),
+          targets: PostgresAdminPushTargetReader(connection),
+          sender: pushSender,
+          clock: clock,
+        ),
+      ),
+      adminErrorReleases: AdminErrorReleases(
+        reader: PostgresErrorReleaseReader(connection),
       ),
       adminErrorLog: AdminErrorLog(
         errors: PostgresErrorLogAdminRepository(connection),

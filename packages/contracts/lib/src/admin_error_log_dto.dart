@@ -470,3 +470,132 @@ final class AdminErrorUpdateDto {
     if (notes != null) 'notes': notes,
   };
 }
+
+/// One build in `GET /admin/error-releases`.
+final class AdminErrorReleaseDto {
+  /// Creates the row.
+  const AdminErrorReleaseDto({
+    required this.build,
+    required this.errors,
+    required this.critical,
+    required this.occurrences,
+    required this.firstSeenAt,
+    required this.lastSeenAt,
+  });
+
+  /// Deserializes from a JSON map.
+  factory AdminErrorReleaseDto.fromJson(Map<String, Object?> json) =>
+      AdminErrorReleaseDto(
+        build: _str(json['build']) ?? '',
+        errors: _int(json['errors']),
+        critical: _int(json['critical']),
+        occurrences: _int(json['occurrences']),
+        firstSeenAt: _time(json['first_seen_at']),
+        lastSeenAt: _time(json['last_seen_at']),
+      );
+
+  /// The build.
+  final String build;
+
+  /// Distinct errors it hit.
+  final int errors;
+
+  /// Of which critical.
+  final int critical;
+
+  /// Occurrences in it.
+  final int occurrences;
+
+  /// Its first error.
+  final DateTime firstSeenAt;
+
+  /// Its latest error.
+  final DateTime lastSeenAt;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'build': build,
+    'errors': errors,
+    'critical': critical,
+    'occurrences': occurrences,
+    'first_seen_at': firstSeenAt.toUtc().toIso8601String(),
+    'last_seen_at': lastSeenAt.toUtc().toIso8601String(),
+  };
+}
+
+/// One file in `GET /admin/error-releases`.
+final class AdminErrorFileDto {
+  /// Creates the row.
+  const AdminErrorFileDto({
+    required this.file,
+    required this.errors,
+    required this.occurrences,
+  });
+
+  /// Deserializes from a JSON map.
+  factory AdminErrorFileDto.fromJson(Map<String, Object?> json) =>
+      AdminErrorFileDto(
+        file: _str(json['file']) ?? '',
+        errors: _int(json['errors']),
+        occurrences: _int(json['occurrences']),
+      );
+
+  /// The file.
+  final String file;
+
+  /// Distinct errors located there.
+  final int errors;
+
+  /// Their occurrences.
+  final int occurrences;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'file': file,
+    'errors': errors,
+    'occurrences': occurrences,
+  };
+}
+
+/// `GET /admin/error-releases`: the errors of each recent build and the
+/// files most errors come from.
+final class AdminErrorReleasesDto {
+  /// Creates the summary.
+  const AdminErrorReleasesDto({
+    required this.releases,
+    required this.files,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory AdminErrorReleasesDto.fromJson(Map<String, Object?> json) =>
+      AdminErrorReleasesDto(
+        schemaVersion: (json['schema_version'] as int?) ?? 1,
+        releases: [
+          for (final m in _maps(json['releases']))
+            AdminErrorReleaseDto.fromJson(m),
+        ],
+        files: [
+          for (final m in _maps(json['files'])) AdminErrorFileDto.fromJson(m),
+        ],
+      );
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The recent builds, latest error first.
+  final List<AdminErrorReleaseDto> releases;
+
+  /// The files with the most occurrences.
+  final List<AdminErrorFileDto> files;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'releases': [for (final r in releases) r.toJson()],
+    'files': [for (final f in files) f.toJson()],
+  };
+}

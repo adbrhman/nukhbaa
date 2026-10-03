@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 
 import 'package:application/src/common/clock.dart';
+import 'package:application/src/platform/alert_admins_of_error.dart';
 import 'package:application/src/platform/error_redaction.dart';
 import 'package:application/src/platform/ports/error_log_repository.dart';
 import 'package:shared/shared.dart';
@@ -80,12 +81,20 @@ final class ErrorReport {
 /// Never throws; returns a typed [Result].
 final class RecordError {
   /// Creates the use-case over its collaborators.
-  const RecordError({required ErrorLogRepository errors, required Clock clock})
-    : _errors = errors,
-      _clock = clock;
+  const RecordError({
+    required ErrorLogRepository errors,
+    required Clock clock,
+    AlertAdminsOfError? alerts,
+  }) : _errors = errors,
+       _clock = clock,
+       _alerts = alerts;
 
   final ErrorLogRepository _errors;
   final Clock _clock;
+
+  /// Tells the admins about an occurrence worth it (migration 0089); null
+  /// in tests that do not provide one. Its failure never fails the record.
+  final AlertAdminsOfError? _alerts;
 
   /// Where an error can come from.
   static const Set<String> sources = <String>{
@@ -126,7 +135,7 @@ final class RecordError {
     final identity = identify(report);
     final top = ErrorFingerprint.topFrames(stack);
     final where = top.isEmpty ? null : top.first;
-    return _errors.record(
+    return _recordAndAlert(
       ErrorOccurrence(
         fingerprint: identity.fingerprint,
         problemCode: identity.problemCode,
@@ -155,6 +164,21 @@ final class RecordError {
         requestInputJson: _input(report.requestInput),
       ),
     );
+  }
+
+  Future<Result<RecordedError>> _recordAndAlert(
+    ErrorOccurrence occurrence,
+  ) async {
+    final recorded = await _errors.record(occurrence);
+    final alerts = _alerts;
+    if (alerts != null && recorded is Ok<RecordedError>) {
+      try {
+        await alerts(recorded: recorded.value, occurrence: occurrence);
+      } on Object {
+        // The alert is best effort; the occurrence is already kept.
+      }
+    }
+    return recorded;
   }
 
   /// The identity [report] is kept under, computed from its fields as they

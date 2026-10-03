@@ -137,6 +137,15 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/error-releases` -- how many errors each recent build hit,
+  /// and the files most occurrences come from.
+  Future<Result<AdminErrorReleasesDto>> errorReleases() {
+    return _transport.getObject<AdminErrorReleasesDto>(
+      '/admin/error-releases',
+      parse: AdminErrorReleasesDto.fromJson,
+    );
+  }
+
   /// `GET /admin/errors/{id}` -- one error with its last samples and builds.
   Future<Result<AdminErrorDetailDto>> errorDetail(int id) {
     return _transport.getObject<AdminErrorDetailDto>(
