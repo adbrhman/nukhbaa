@@ -193,6 +193,22 @@ void main() {
     expect(find.text('تم الحفظ'), findsOneWidget);
   });
 
+  testWidgets('an error page lists each build on its own line', (tester) async {
+    await _open(tester, _Server());
+
+    await _tapVisible(tester, const Key('admin.errors.row.7'));
+    final Finder counts = find.text(
+      '100 مرة · آخر ظهور ${errorLogTime(DateTime.utc(2026, 10, 3, 10))}',
+    );
+    await tester.scrollUntilVisible(
+      counts,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(counts, findsOneWidget);
+  });
+
   testWidgets('finds an error by the code a player sent', (tester) async {
     final server = _Server();
     await _open(tester, server);
@@ -223,11 +239,12 @@ void main() {
       find.byKey(const Key('admin.errors.release.abc1235')),
       findsOneWidget,
     );
-    expect(find.textContaining('(1 حرج)'), findsOneWidget);
-    expect(
-      find.textContaining('routes/seasons/index.dart · 1 خطأ'),
-      findsOneWidget,
-    );
+    // The build and the file stand on their own line, ahead of the
+    // Arabic counts, so bidi cannot move them inside the sentence.
+    expect(find.text('abc1235'), findsOneWidget);
+    expect(find.textContaining('3 خطأ (1 حرج) · 120 مرة'), findsOneWidget);
+    expect(find.text('routes/seasons/index.dart'), findsOneWidget);
+    expect(find.text('1 خطأ · 100 مرة'), findsOneWidget);
   });
 
   testWidgets('pulling down reloads the list and the release summary', (

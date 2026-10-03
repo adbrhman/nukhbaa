@@ -444,13 +444,17 @@ class _ReleasesCard extends ConsumerWidget {
             if (data.releases.isEmpty)
               Text('لا أخطاء في أي إصدار بعد', style: line)
             else
+              // The build and the file get a line of their own: a Latin
+              // run at the start of an Arabic line is reordered by bidi.
               for (final AdminErrorReleaseDto r in data.releases)
-                Text(
-                  '${r.build} · ${r.errors} خطأ'
-                  '${r.critical > 0 ? ' (${r.critical} حرج)' : ''} · '
-                  '${r.occurrences} مرة · آخر ظهور ${errorLogTime(r.lastSeenAt)}',
+                _SummaryEntry(
                   key: Key('admin.errors.release.${r.build}'),
-                  style: line,
+                  title: r.build,
+                  detail:
+                      '${r.errors} خطأ'
+                      '${r.critical > 0 ? ' (${r.critical} حرج)' : ''} · '
+                      '${r.occurrences} مرة · آخر ظهور '
+                      '${errorLogTime(r.lastSeenAt)}',
                 ),
             if (data.files.isNotEmpty) ...<Widget>[
               const SizedBox(height: AppSpacing.md),
@@ -463,13 +467,39 @@ class _ReleasesCard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               for (final AdminErrorFileDto f in data.files)
-                Text(
-                  '${f.file} · ${f.errors} خطأ · ${f.occurrences} مرة',
-                  style: line,
+                _SummaryEntry(
+                  title: f.file,
+                  detail: '${f.errors} خطأ · ${f.occurrences} مرة',
                 ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One entry of the release summary: a build or a file, then its counts.
+class _SummaryEntry extends StatelessWidget {
+  const _SummaryEntry({super.key, required this.title, required this.detail});
+
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final TextStyle? line = context.text.bodySmall?.copyWith(
+      color: tokens.textSecondary,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(title, style: line?.copyWith(color: tokens.textPrimary)),
+          Text(detail, style: line),
+        ],
       ),
     );
   }
@@ -793,12 +823,11 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
                   const SizedBox(height: AppSpacing.md),
                   Text('الإصدارات', style: context.text.labelLarge),
                   for (final AdminErrorBuildDto b in data.builds)
-                    Text(
-                      '${b.build} · ${b.occurrences} مرة · '
-                      'آخر ظهور ${errorLogTime(b.lastSeenAt)}',
-                      style: context.text.bodySmall?.copyWith(
-                        color: tokens.textSecondary,
-                      ),
+                    _SummaryEntry(
+                      title: b.build,
+                      detail:
+                          '${b.occurrences} مرة · '
+                          'آخر ظهور ${errorLogTime(b.lastSeenAt)}',
                     ),
                 ],
               ],
