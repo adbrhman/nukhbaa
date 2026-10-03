@@ -1,0 +1,258 @@
+{
+  "admin.desktop/dark": {
+    "contrast": 4,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "admin.desktop/light": {
+    "contrast": 4,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "admin.phone/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 6,
+    "layout20": 6
+  },
+  "admin.phone/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 6,
+    "layout20": 6
+  },
+  "board.widget/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "board.widget/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "bottom-nav/dark": {
+    "contrast": 1,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "bottom-nav/light": {
+    "contrast": 5,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "home.data/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 1,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "home.data/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 1,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "leaderboards.month/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "leaderboards.month/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "matches.live/dark": {
+    "contrast": 0,
+    "tapTarget": 1,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "matches.live/light": {
+    "contrast": 0,
+    "tapTarget": 1,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "matches.open/dark": {
+    "contrast": 0,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "matches.open/light": {
+    "contrast": 0,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "predictions.data/dark": {
+    "contrast": 0,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "predictions.data/light": {
+    "contrast": 0,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "shell.account/dark": {
+    "contrast": 1,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.account/light": {
+    "contrast": 5,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.home/dark": {
+    "contrast": 1,
+    "tapTarget": 0,
+    "label": 2,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.home/light": {
+    "contrast": 5,
+    "tapTarget": 0,
+    "label": 2,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.leaderboards/dark": {
+    "contrast": 1,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.leaderboards/light": {
+    "contrast": 5,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.matches/dark": {
+    "contrast": 1,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.matches/light": {
+    "contrast": 5,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.notifications/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.notifications/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.predictions/dark": {
+    "contrast": 1,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "shell.predictions/light": {
+    "contrast": 5,
+    "tapTarget": 3,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 5
+  },
+  "sign-in/dark": {
+    "contrast": 0,
+    "tapTarget": 2,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "sign-in/light": {
+    "contrast": 0,
+    "tapTarget": 2,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  }
+}
