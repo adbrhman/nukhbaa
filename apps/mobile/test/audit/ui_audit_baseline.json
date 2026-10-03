@@ -81,7 +81,7 @@
   },
   "leaderboards.month/dark": {
     "contrast": 0,
-    "tapTarget": 0,
+    "tapTarget": 4,
     "label": 0,
     "layout10": 0,
     "layout13": 0,
@@ -89,7 +89,7 @@
   },
   "leaderboards.month/light": {
     "contrast": 0,
-    "tapTarget": 0,
+    "tapTarget": 4,
     "label": 0,
     "layout10": 0,
     "layout13": 0,

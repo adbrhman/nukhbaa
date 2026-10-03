@@ -692,8 +692,22 @@ void main() {
                 ),
               ],
             ),
+            // A fixture of the month's own season, so the board is shown.
             currentMonthFixturesProvider.overrideWith(
-              (ref) async => const <CurrentMonthFixtureItemDto>[],
+              (ref) async => <CurrentMonthFixtureItemDto>[
+                CurrentMonthFixtureItemDto(
+                  competitionId: 'c-1',
+                  competitionName: 'Monthly',
+                  seasonLabel: '10/2026',
+                  fixture: SeasonFixtureCardDto(
+                    seasonId: 's-10',
+                    fixtureId: 'f-10',
+                    homeTeam: 'Al Hilal',
+                    awayTeam: 'Al Nassr',
+                    kickoffAt: feed.futureIso(),
+                  ),
+                ),
+              ],
             ),
           ],
           retry: (retryCount, error) => null,
