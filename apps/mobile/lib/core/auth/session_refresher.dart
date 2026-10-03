@@ -76,6 +76,7 @@ ApiTransport buildSessionTransport({
   required TokenStore store,
   required Future<void> Function() onSessionEnded,
   Duration? requestTimeout = const Duration(seconds: 35),
+  ApiFailureListener? onFailure,
 }) {
   late final ApiTransport transport;
   final SessionRefresher refresher = SessionRefresher(
@@ -90,6 +91,7 @@ ApiTransport buildSessionTransport({
     requestTimeout: requestTimeout,
     renewSession: refresher.call,
     onUnauthorized: onSessionEnded,
+    onFailure: onFailure,
   );
   return transport;
 }

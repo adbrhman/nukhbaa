@@ -11,6 +11,8 @@
 /// mapping in one auditable table rather than scattered across widgets.
 library;
 
+import 'package:api_client/api_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared/shared.dart';
 
 /// Maps typed errors to human text. Pure and stateless.
@@ -20,7 +22,59 @@ abstract final class ErrorPresenter {
   /// Known stable codes are given tailored copy; everything else falls back to
   /// a message keyed on the [ErrorKind] so the user always sees something
   /// sensible and never a raw exception.
+  ///
+  /// An unexpected failure also carries its problem code on a second line
+  /// ([problemCodeLabel], see [problemCode]), never a stack or a cause.
   static String message(AppError error) {
+    final String text = _message(error);
+    final String? code = problemCode(error);
+    return code == null ? text : '$text\n$problemCodeLabel $code';
+  }
+
+  /// The words before a problem code in [message].
+  static const String problemCodeLabel = 'رمز المشكلة:';
+
+  /// Finds the problem code [message] put in [text], for a copy button.
+  static String? problemCodeIn(String text) =>
+      _problemCodeInText.firstMatch(text)?.group(1);
+
+  static final RegExp _problemCodeInText = RegExp(
+    '$problemCodeLabel ([A-HJ-NP-Z2-9]{4})',
+  );
+
+  /// Where this build runs, as the error log names it.
+  static String get errorSource => kIsWeb
+      ? 'web'
+      : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android');
+
+  /// Whether a failed API call is the app's to report (migration 0087): the
+  /// server answered nothing usable -- a 5xx without its own problem code,
+  /// a timeout, a body that could not be read. An expected refusal (wrong
+  /// password, a name taken, a match that kicked off) is a correct answer,
+  /// and being offline is no fault of the service: neither is reported.
+  static bool isReportable(AppError error) {
+    if (error.problemCode != null) return false;
+    return error.code == apiErrorTimeout ||
+        error.code == apiErrorMalformedResponse ||
+        (error.code == apiErrorUnexpectedStatus &&
+            error.kind == ErrorKind.transient);
+  }
+
+  /// The code the player reads out for [error]: the server's when it
+  /// logged the failure, the app's own (the same the server will compute
+  /// from the app's report) when [isReportable], else null.
+  static String? problemCode(AppError error) {
+    final String? fromServer = error.problemCode;
+    if (fromServer != null && fromServer.isNotEmpty) return fromServer;
+    if (!isReportable(error)) return null;
+    return ErrorFingerprint.of(
+      source: errorSource,
+      errorType: 'AppError',
+      errorCode: error.code,
+    ).problemCode;
+  }
+
+  static String _message(AppError error) {
     switch (error.code) {
       case 'auth.invalid_credentials':
         return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';

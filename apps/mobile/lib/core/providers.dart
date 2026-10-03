@@ -24,6 +24,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'config/app_config.dart';
+import 'error/error_reporter.dart';
 import 'auth/session_refresher.dart';
 import 'auth/token_store.dart';
 import 'network/http_client.dart';
@@ -63,6 +64,10 @@ ApiTransport apiTransport(Ref ref) {
       await store.clear();
       ref.read(sessionExpiryProvider.notifier).signal();
     },
+    // A failure the server could not answer properly goes to the error log
+    // (migration 0087); the reporter is installed in main().
+    onFailure: (failure) =>
+        ClientErrorReporter.instance?.reportApiFailure(failure),
   );
 }
 

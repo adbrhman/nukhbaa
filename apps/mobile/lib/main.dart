@@ -2,13 +2,19 @@ library;
 
 import 'dart:async';
 
+import 'package:api_client/api_client.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'app.dart';
+import 'core/auth/install_id.dart';
+import 'core/auth/token_store.dart';
 import 'core/config/app_config.dart';
 import 'core/error/crash_reporting.dart';
+import 'core/error/error_reporter.dart';
+import 'core/network/http_client.dart';
 import 'core/design/app_spacing.dart';
 import 'core/providers.dart';
 import 'core/session/session_scope.dart';
@@ -57,6 +63,24 @@ Future<void> _startApp() async {
     runApp(_ConfigErrorApp(message: e.message));
     return;
   }
+  // Unexpected errors go to the admin dashboard's error log (migration
+  // 0087) over a transport of their own, so a report never waits on, or
+  // feeds back into, the app's own calls. A signed-in player's token names
+  // them; before sign-in the report goes anonymously.
+  installErrorReporting(
+    ClientErrorReporter(
+      send: AppApi(
+        ApiTransport(
+          baseUri: config.apiBaseUrl,
+          httpClient: createHttpClient(),
+          tokenProvider: SecureTokenStore(const FlutterSecureStorage()).read,
+        ),
+      ).reportError,
+      build: const String.fromEnvironment('NUKHBA_BUILD_SHA'),
+      store: const SecurePendingErrorStore(),
+      installId: kIsWeb ? null : SecureInstallIdStore().read,
+    ),
+  );
   // SessionScope hosts the root ProviderScope and replaces it on sign-out,
   // so one account's cached reads never reach the next account.
   runApp(
