@@ -65,6 +65,28 @@ final class _Server {
         ],
       });
     }
+    if (path == '/admin/error-releases') {
+      return _json(const {
+        'schema_version': 1,
+        'releases': [
+          {
+            'build': 'abc1235',
+            'errors': 3,
+            'critical': 1,
+            'occurrences': 120,
+            'first_seen_at': '2026-10-03T09:00:00.000Z',
+            'last_seen_at': '2026-10-03T10:00:00.000Z',
+          },
+        ],
+        'files': [
+          {
+            'file': 'routes/seasons/index.dart',
+            'errors': 1,
+            'occurrences': 100,
+          },
+        ],
+      });
+    }
     if (path == '/admin/errors/7') {
       if (request.method == 'POST') {
         final body = jsonDecode(request.body) as Map<String, Object?>;
@@ -176,6 +198,28 @@ void main() {
     expect(server.to('/admin/errors').last.url.queryParameters['code'], 'K7Q2');
     expect(find.text('نتائج الرمز K7Q2'), findsOneWidget);
     expect(find.byKey(const Key('admin.errors.row.7')), findsOneWidget);
+  });
+
+  testWidgets('summarises the errors of each release and file', (tester) async {
+    await _open(tester, _Server());
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('admin.errors.releases')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ملخّص الإصدارات'), findsOneWidget);
+    expect(
+      find.byKey(const Key('admin.errors.release.abc1235')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('(1 حرج)'), findsOneWidget);
+    expect(
+      find.textContaining('routes/seasons/index.dart · 1 خطأ'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('copies a ready report for the developer', (tester) async {

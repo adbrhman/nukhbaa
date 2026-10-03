@@ -49,6 +49,18 @@ final adminErrorDetailProvider = FutureProvider.autoDispose
       };
     });
 
+/// `GET /admin/error-releases`.
+final adminErrorReleasesProvider =
+    FutureProvider.autoDispose<AdminErrorReleasesDto>((ref) async {
+      final Result<AdminErrorReleasesDto> result = await ref
+          .watch(adminApiProvider)
+          .errorReleases();
+      return switch (result) {
+        Ok<AdminErrorReleasesDto>(:final value) => value,
+        Err<AdminErrorReleasesDto>(:final error) => throw error,
+      };
+    });
+
 /// Arabic names of the lists, statuses, severities and sources.
 abstract final class ErrorLogLabels {
   /// The lists, in the order shown.
@@ -364,6 +376,8 @@ class _ErrorLogSectionState extends ConsumerState<ErrorLogSection> {
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.lg),
+        const _ReleasesCard(),
       ],
     );
   }
@@ -374,6 +388,79 @@ class _ErrorLogSectionState extends ConsumerState<ErrorLogSection> {
     'critical' => data.critical,
     _ => data.all,
   };
+}
+
+/// The errors of each recent build, and the files most come from.
+class _ReleasesCard extends ConsumerWidget {
+  const _ReleasesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final AsyncValue<AdminErrorReleasesDto> summary = ref.watch(
+      adminErrorReleasesProvider,
+    );
+    final TextStyle? line = context.text.bodySmall?.copyWith(
+      color: tokens.textSecondary,
+    );
+    return AdminCard(
+      key: const Key('admin.errors.releases'),
+      child: summary.when(
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        error: (Object error, _) => Text(
+          error is AppError
+              ? ErrorPresenter.message(error)
+              : 'تعذّر تحميل ملخّص الإصدارات',
+          style: TextStyle(color: tokens.error),
+        ),
+        data: (AdminErrorReleasesDto data) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              'ملخّص الإصدارات',
+              style: context.text.titleSmall?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (data.releases.isEmpty)
+              Text('لا أخطاء في أي إصدار بعد', style: line)
+            else
+              for (final AdminErrorReleaseDto r in data.releases)
+                Text(
+                  '${r.build} · ${r.errors} خطأ'
+                  '${r.critical > 0 ? ' (${r.critical} حرج)' : ''} · '
+                  '${r.occurrences} مرة · آخر ظهور ${errorLogTime(r.lastSeenAt)}',
+                  key: Key('admin.errors.release.${r.build}'),
+                  style: line,
+                ),
+            if (data.files.isNotEmpty) ...<Widget>[
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'أكثر الملفات تسببًا بالأخطاء',
+                style: context.text.titleSmall?.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              for (final AdminErrorFileDto f in data.files)
+                Text(
+                  '${f.file} · ${f.errors} خطأ · ${f.occurrences} مرة',
+                  style: line,
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ErrorRow extends StatelessWidget {
