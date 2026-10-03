@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/job_failure.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -46,9 +47,16 @@ Future<void> _checkOnce(CompositionRoot root) async {
       case Err<int>(:final error):
         // ignore: avoid_print
         print('badge evaluation failed: ${error.code} ${error.message}');
+        await reportJobFailure(root, job: 'badge-evaluation', error: error);
     }
-  } on Object catch (error) {
+  } on Object catch (error, stackTrace) {
     // ignore: avoid_print
     print('badge evaluation threw: $error');
+    await reportJobFailure(
+      root,
+      job: 'badge-evaluation',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 }

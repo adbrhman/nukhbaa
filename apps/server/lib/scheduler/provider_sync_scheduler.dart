@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:application/application.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/scheduler/job_failure.dart';
 import 'package:shared/shared.dart';
 
 /// First fixtures sync after boot: also covers today.
@@ -49,8 +50,21 @@ void startProviderSyncScheduler(CompositionRoot root) {
       ];
       final report = await fixtures(now: now, riyadhDays: days, apply: apply);
       _report(tag, 'fixtures', report);
-    } on Object catch (error) {
+      if (report case Err<ProviderSyncReport>(:final error)) {
+        await reportJobFailure(
+          root,
+          job: 'provider-sync fixtures',
+          error: error,
+        );
+      }
+    } on Object catch (error, stackTrace) {
       _log(tag, 'fixtures sync threw: $error');
+      await reportJobFailure(
+        root,
+        job: 'provider-sync fixtures',
+        error: error,
+        stackTrace: stackTrace,
+      );
     } finally {
       fixturesRunning = false;
     }
@@ -62,8 +76,23 @@ void startProviderSyncScheduler(CompositionRoot root) {
     try {
       final report = await results(now: DateTime.now().toUtc(), apply: apply);
       _report(tag, 'results', report);
-    } on Object catch (error) {
+      if (report case Err<ProviderSyncReport>(:final error)) {
+        await reportJobFailure(
+          root,
+          job: 'provider-sync results',
+          error: error,
+          critical: true,
+        );
+      }
+    } on Object catch (error, stackTrace) {
       _log(tag, 'results sync threw: $error');
+      await reportJobFailure(
+        root,
+        job: 'provider-sync results',
+        error: error,
+        stackTrace: stackTrace,
+        critical: true,
+      );
     } finally {
       resultsRunning = false;
     }
@@ -79,6 +108,7 @@ void startProviderSyncScheduler(CompositionRoot root) {
       switch (result) {
         case Err<LiveScoreRefresh>(:final error):
           _log(tag, 'live scores failed: ${error.code} ${error.message}');
+          await reportJobFailure(root, job: 'provider-sync live', error: error);
         case Ok<LiveScoreRefresh>(:final value):
           // Full time seen by the 2-minute live poll: check results now
           // instead of waiting for the next results tick. The score is still
@@ -89,8 +119,14 @@ void startProviderSyncScheduler(CompositionRoot root) {
             unawaited(runResults());
           }
       }
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
       _log(tag, 'live scores threw: $error');
+      await reportJobFailure(
+        root,
+        job: 'provider-sync live',
+        error: error,
+        stackTrace: stackTrace,
+      );
     } finally {
       liveRunning = false;
     }
