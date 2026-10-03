@@ -1,0 +1,94 @@
+name: Release Server
+
+# The Northflank API service (nukhbaa) builds the server-release branch, not
+# main. Northflank redeployed the server on every push to main, so a push
+# whose tests failed still reached the players; the APK and the web build
+# already waited for a green Build Verification (deploy-pages.yml). This is
+# the same gate for the server (error log plan, phase 4, 2026-10-03):
+#
+#   push to main -> Build Verification green
+#                -> db-tests and migration-drift green on the same commit,
+#                   when they ran for it (they run only when supabase/
+#                   changed)
+#                -> server-release moves to that commit -> Northflank builds.
+#
+# A red check leaves server-release where it was: the live server stays on
+# the last commit that passed. server-release only ever moves forward, so a
+# slow run of an older commit can never roll the server back. Run it by
+# hand (workflow_dispatch) to release the head of main once its checks pass.
+on:
+  workflow_run:
+    workflows: ["Build Verification"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release-server
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'push' ||
+        github.event.workflow_run.event == 'workflow_dispatch'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Wait for db-tests and migration-drift on this commit
+        run: |
+          set -euo pipefail
+          for wf in db-tests.yml migration-drift.yml; do
+            for i in $(seq 1 60); do
+              state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "$wf" \
+                --commit "$SHA" --event push --limit 1 \
+                --json status,conclusion \
+                --jq 'if length == 0 then "none" else (.[0] | "\(.status) \(.conclusion)") end')
+              case "$state" in
+                none)
+                  echo "$wf: no run for $SHA (nothing it checks changed)"
+                  break ;;
+                "completed success")
+                  echo "$wf: passed"
+                  break ;;
+                completed*)
+                  echo "::error::$wf did not pass on $SHA ($state): server not released"
+                  exit 1 ;;
+                *)
+                  if [ "$i" -eq 60 ]; then
+                    echo "::error::$wf still running after 20 minutes: server not released"
+                    exit 1
+                  fi
+                  echo "$wf: $state, waiting"
+                  sleep 20 ;;
+              esac
+            done
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Move server-release to this commit
+        run: |
+          set -euo pipefail
+          if git fetch -q origin server-release 2>/dev/null; then
+            if ! git merge-base --is-ancestor FETCH_HEAD "$SHA"; then
+              echo "server-release is already past $SHA: nothing to do"
+              exit 0
+            fi
+          fi
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "$SHA:refs/heads/server-release"
+          echo "server-release -> ${SHA:0:7}; Northflank builds it"
