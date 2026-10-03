@@ -471,34 +471,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );
-    // The theme's card surface with a restrained team-colored wash on each
-    // team's own side. The dark theme used a hard-coded #2F2F2F from the
-    // retired grey palette (UI-08). The actual crest glow is handled by
-    // [_TeamColumn] and uses the same resolved team color.
+    // One surface for every card: the team-coloured wash on each side gave
+    // each card its own cast, against one semantic colour system
+    // (2026-09-24, UI-09). The team colour stays in the crest's halo
+    // ([_TeamColumn]).
     final Color cardBase = tokens.surface;
-    final double intensity = locked ? 0.62 : 1.0;
-    final double edgeTint = (tokens.isDark ? 0.18 : 0.07) * intensity;
-    final double innerTint = (tokens.isDark ? 0.06 : 0.025) * intensity;
-    final Color homeEdge = Color.lerp(
-      cardBase,
-      home.brandColor ?? cardBase,
-      edgeTint,
-    )!;
-    final Color homeInner = Color.lerp(
-      cardBase,
-      home.brandColor ?? cardBase,
-      innerTint,
-    )!;
-    final Color awayInner = Color.lerp(
-      cardBase,
-      away.brandColor ?? cardBase,
-      innerTint,
-    )!;
-    final Color awayEdge = Color.lerp(
-      cardBase,
-      away.brandColor ?? cardBase,
-      edgeTint,
-    )!;
 
     return Container(
       key: Key('currentMonthFixtures.fixture.$fixtureId'),
@@ -511,29 +488,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       ),
       child: Stack(
         children: <Widget>[
-          // Keep the tint attached to the team's visual side. Directional
-          // alignment is essential here: Arabic RTL puts the home team on the
-          // right, while LTR puts it on the left.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.centerStart,
-                    end: AlignmentDirectional.centerEnd,
-                    colors: <Color>[
-                      homeEdge,
-                      homeInner,
-                      cardBase,
-                      awayInner,
-                      awayEdge,
-                    ],
-                    stops: const <double>[0.0, 0.22, 0.5, 0.78, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -706,13 +660,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     );
   }
 }
-
-/// The corner-glow color for one side of the card: the team's own resolved
-/// brand color washed to [tint], or fully transparent (never a guessed
-/// fallback color) when no brand color was resolved.
-Color _cornerGlow(Color? brandColor, double tint) => brandColor == null
-    ? Colors.transparent
-    : brandColor.withValues(alpha: tint);
 
 /// The header row: league logo + name + (optional) kickoff time on the
 /// leading (RTL: right) side, an "open leaderboard" icon button on the

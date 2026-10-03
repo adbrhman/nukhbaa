@@ -32,7 +32,6 @@ Color _wash(Color tint, double alpha, Color under) =>
 typedef _Pair = ({String name, Color fg, Color bg, double min, String? skip});
 
 List<_Pair> _pairs(AppTokens t) {
-  final bool dark = t.isDark;
   final Color navBar = _wash(t.backgroundElevated, 0.96, t.background);
   final Color viewerRow = _wash(t.primary, 0.14, t.surface);
   return <_Pair>[
@@ -177,7 +176,7 @@ List<_Pair> _pairs(AppTokens t) {
       skip: null,
     ),
     for (final (String medal, Color color) in <(String, Color)>[
-      ('gold', t.gold),
+      ('gold', t.goldAccent),
       ('silver', t.silver),
       ('bronze', t.bronze),
     ])
@@ -208,7 +207,16 @@ List<_Pair> _pairs(AppTokens t) {
       fg: Color.alphaBlend(t.border, t.surfaceElevated),
       bg: t.surfaceElevated,
       min: 3,
-      skip: dark ? 'UI-22: the hairline token as an outline, 1.24:1' : null,
+      // The light hairline is quiet now too (UI-19): the admin kit must take
+      // the theme's field outline in both themes.
+      skip: 'UI-22: the hairline token as an outline, 1.24:1 / 1.30:1',
+    ),
+    (
+      name: 'a crest plate rim on a card (team_logo.dart, UI-10)',
+      fg: t.border,
+      bg: t.surface,
+      min: 1.2,
+      skip: null,
     ),
     (
       name: 'segmented pill and day chip outline on the page',

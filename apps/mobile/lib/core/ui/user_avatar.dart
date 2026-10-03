@@ -61,9 +61,19 @@ class UserAvatar extends ConsumerWidget {
   /// stays [size] whether or not there is a photo.
   final double borderWidth;
 
+  /// The letter that tells this name apart: past a leading "أبو" and the
+  /// article "ال", which nearly every Arabic name shares -- "المستشار"
+  /// showed a bare alef that read as a stroke (UI-11).
   String get _initial {
-    final trimmed = displayName.trim();
-    return trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
+    String name = displayName.trim();
+    if (name.isEmpty) return '?';
+    for (final String kunya in const <String>['أبو ', 'ابو ']) {
+      if (name.startsWith(kunya) && name.length > kunya.length) {
+        name = name.substring(kunya.length).trim();
+      }
+    }
+    if (name.startsWith('ال') && name.length > 2) name = name.substring(2);
+    return name.substring(0, 1).toUpperCase();
   }
 
   /// The letter circle, drawn at [diameter]. [withRing] is false for the

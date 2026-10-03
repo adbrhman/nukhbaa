@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../branding/team_branding.dart';
+import '../design/app_stroke.dart';
 import '../design/app_tokens.dart';
 
 /// شعار فريق موحّد يستبدل النمط المكرر ثلاث مرات (في
@@ -88,19 +89,32 @@ class TeamLogo extends StatelessWidget {
 
     final String asset = assetPath?.trim() ?? '';
     if (asset.isNotEmpty) {
-      return SizedBox(
+      final Widget image = Image.asset(
+        asset,
+        key: ValueKey<String>('teamLogo.asset.$asset'),
         width: size,
         height: size,
-        child: Image.asset(
-          asset,
-          key: ValueKey<String>('teamLogo.asset.$asset'),
-          width: size,
-          height: size,
-          cacheWidth: decodeSize,
-          cacheHeight: decodeSize,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => networkOrFallback,
+        cacheWidth: decodeSize,
+        cacheHeight: decodeSize,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => networkOrFallback,
+      );
+      if (tokens.isDark) {
+        return SizedBox(width: size, height: size, child: image);
+      }
+      // On a white card a flag's white field had no edge (Finland showed a
+      // floating cross, England a bare red one): in the light theme every
+      // crest sits on one soft plate with a hairline rim (UI-10).
+      return Container(
+        width: size,
+        height: size,
+        padding: EdgeInsets.all(size * 0.12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: tokens.surfaceHigh,
+          border: Border.all(color: tokens.border, width: AppStroke.hairline),
         ),
+        child: image,
       );
     }
     if (url.isEmpty) return fallback;
@@ -136,7 +150,12 @@ class _InitialsCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppTokens tokens = context.tokens;
+    // The initials take whichever text colour reads on the team's own
+    // colour: the theme's text colour was white even on a yellow (UI-11).
+    final Color ink =
+        ThemeData.estimateBrightnessForColor(tint) == Brightness.dark
+        ? AppTokens.dark.textPrimary
+        : AppTokens.light.textPrimary;
     return Container(
       width: diameter,
       height: diameter,
@@ -148,10 +167,7 @@ class _InitialsCircle extends StatelessWidget {
         child: Text(
           initials,
           maxLines: 1,
-          style: TextStyle(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(color: ink, fontWeight: FontWeight.w800),
         ),
       ),
     );

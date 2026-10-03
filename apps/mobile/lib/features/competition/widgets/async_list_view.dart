@@ -43,6 +43,7 @@ class AsyncListView<T> extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(vertical: 8),
     this.onRefresh,
     this.header,
+    this.spaced = false,
     super.key,
   }) : assert(
          (itemBuilder == null) != (listBuilder == null),
@@ -70,6 +71,10 @@ class AsyncListView<T> extends StatelessWidget {
 
   /// The padding around the list.
   final EdgeInsetsGeometry padding;
+
+  /// Rows that are cards with their own border are separated by space; a
+  /// line between them drew a second edge (UI-21). Plain rows keep the line.
+  final bool spaced;
 
   /// Pull to refresh. When set, the rows (and the legitimate-empty state)
   /// can be pulled down to reload, and a reload keeps the rows on screen
@@ -122,7 +127,9 @@ class AsyncListView<T> extends StatelessWidget {
                 key: const Key('browse.list'),
                 padding: padding,
                 itemCount: items.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
+                separatorBuilder: (_, _) => spaced
+                    ? const SizedBox(height: AppSpacing.sm)
+                    : const Divider(height: 1),
                 itemBuilder: (context, index) =>
                     itemBuilder!(context, items[index]),
               );

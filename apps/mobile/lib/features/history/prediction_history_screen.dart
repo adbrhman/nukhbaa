@@ -74,9 +74,10 @@ class _PredictionHistoryScreenState
         child: Column(
           children: <Widget>[
             Padding(
+              // Clear of the app bar: at 4 the pills sat on its edge (UI-21).
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.xs,
+                AppSpacing.md,
                 AppSpacing.lg,
                 AppSpacing.sm,
               ),
@@ -104,6 +105,7 @@ class _PredictionHistoryScreenState
                     : l10n.predictionHistoryEmpty,
                 onRetry: () => ref.invalidate(myFixturePredictionsProvider),
                 onRefresh: _refresh,
+                spaced: true,
                 itemBuilder: (context, prediction) =>
                     // One spoken node per prediction.
                     MergeSemantics(

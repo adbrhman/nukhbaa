@@ -35,7 +35,9 @@ abstract final class AppTheme {
       outlineVariant: AppColors.border,
     ),
     scaffold: AppColors.background,
-    appBarBg: AppColors.backgroundElevated,
+    // Headers share the page colour: a black (white) band on some tabs and
+    // none on others read as three header styles (UI-20).
+    appBarBg: AppColors.background,
     divider: AppColors.border,
   );
 
@@ -63,7 +65,7 @@ abstract final class AppTheme {
       outlineVariant: AppColorsLight.border,
     ),
     scaffold: AppColorsLight.background,
-    appBarBg: AppColorsLight.backgroundElevated,
+    appBarBg: AppColorsLight.background,
     divider: AppColorsLight.border,
   );
 

@@ -19,6 +19,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.primaryLight,
     required this.primaryText,
     required this.gold,
+    required this.goldAccent,
     required this.silver,
     required this.bronze,
     required this.error,
@@ -61,6 +62,10 @@ class AppTokens extends ThemeExtension<AppTokens> {
   /// wash of its theme, which [primary] -- a fill colour -- is not.
   final Color primaryText;
   final Color gold;
+
+  /// Gold for a ring or a medal, never under text: the light [gold] carries
+  /// white text and reads olive (UI-32).
+  final Color goldAccent;
   final Color silver;
   final Color bronze;
   final Color error;
@@ -120,6 +125,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     primaryLight: AppColors.primaryLight,
     primaryText: AppColors.primaryText,
     gold: AppColors.gold,
+    goldAccent: AppColors.gold,
     silver: AppColors.silver,
     bronze: AppColors.bronze,
     error: AppColors.error,
@@ -174,6 +180,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     primaryLight: AppColorsLight.primaryLight,
     primaryText: AppColorsLight.primary,
     gold: AppColorsLight.gold,
+    goldAccent: AppColorsLight.goldAccent,
     silver: AppColorsLight.silver,
     bronze: AppColorsLight.bronze,
     error: AppColorsLight.error,
@@ -229,6 +236,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? primaryLight,
     Color? primaryText,
     Color? gold,
+    Color? goldAccent,
     Color? silver,
     Color? bronze,
     Color? error,
@@ -268,6 +276,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       primaryLight: primaryLight ?? this.primaryLight,
       primaryText: primaryText ?? this.primaryText,
       gold: gold ?? this.gold,
+      goldAccent: goldAccent ?? this.goldAccent,
       silver: silver ?? this.silver,
       bronze: bronze ?? this.bronze,
       error: error ?? this.error,
@@ -316,6 +325,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       primaryLight: Color.lerp(primaryLight, other.primaryLight, t)!,
       primaryText: Color.lerp(primaryText, other.primaryText, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
+      goldAccent: Color.lerp(goldAccent, other.goldAccent, t)!,
       silver: Color.lerp(silver, other.silver, t)!,
       bronze: Color.lerp(bronze, other.bronze, t)!,
       error: Color.lerp(error, other.error, t)!,

@@ -133,7 +133,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "predictions.data/light": {
     "contrast": 0,
@@ -141,7 +141,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "shell.account/dark": {
     "contrast": 0,

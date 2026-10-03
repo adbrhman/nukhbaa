@@ -32,6 +32,11 @@ abstract final class AppColorsLight {
 
   /// Gold at a lightness that holds >=4.5:1 for white content placed on it.
   static const Color gold = Color(0xFF755D00);
+
+  /// Gold for decoration -- the podium's ring, the leader's medal: it reads
+  /// as gold, where [gold] (tuned to carry white text) reads olive. 3.8:1 on
+  /// white, enough for a non-text mark; never carries text (UI-32).
+  static const Color goldAccent = Color(0xFFA87B00);
   static const Color goldDark = Color(0xFF6B5300);
   static const Color silver = Color(0xFF64748B);
   static const Color bronze = Color(0xFF9B5E1E);
@@ -67,8 +72,10 @@ abstract final class AppColorsLight {
   static const Color onGold = Color(0xFFFFFFFF);
   static const Color onError = Color(0xFFFFFFFF);
 
-  /// A cool hairline, the light-mode counterpart of the dark blue stroke.
-  static const Color border = Color(0x800A1420);
+  /// A quiet cool hairline, as light as the dark theme's (about 1.4:1 on a
+  /// card). At 50% of the text colour it outlined every card and divider
+  /// in grey (UI-19). Controls keep their 3:1 outline in `controlBorder`.
+  static const Color border = Color(0xFFD3DCE7);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,

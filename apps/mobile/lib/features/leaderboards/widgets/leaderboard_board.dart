@@ -390,7 +390,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: second,
                       keyPrefix: keyPrefix,
-                      height: 144,
+                      height: _podiumHeight(second.rank),
                       isMe: second.participantId == myParticipantId,
                     ),
             ),
@@ -399,7 +399,7 @@ class _Podium extends StatelessWidget {
               child: _PodiumTile(
                 entry: first,
                 keyPrefix: keyPrefix,
-                height: 172,
+                height: _podiumHeight(first.rank),
                 isMe: first.participantId == myParticipantId,
               ),
             ),
@@ -410,7 +410,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: third,
                       keyPrefix: keyPrefix,
-                      height: 136,
+                      height: _podiumHeight(third.rank),
                       isMe: third.participantId == myParticipantId,
                     ),
             ),
@@ -555,7 +555,7 @@ class _PodiumTile extends StatelessWidget {
                     top: -14,
                     child: Icon(
                       Icons.workspace_premium_rounded,
-                      color: t.gold,
+                      color: t.goldAccent,
                       size: AppSizes.iconMd,
                     ),
                   ),
@@ -568,8 +568,17 @@ class _PodiumTile extends StatelessWidget {
   }
 }
 
+/// A podium step's height follows the rank, not the position: three
+/// players tied on 1 stood at 172 / 144 / 136, as if first, second and
+/// third (UI-12).
+double _podiumHeight(int rank) => switch (rank) {
+  1 => 172,
+  2 => 144,
+  _ => 136,
+};
+
 Color _medal(AppTokens t, int rank) => switch (rank) {
-  1 => t.gold,
+  1 => t.goldAccent,
   2 => t.silver,
   3 => t.bronze,
   _ => t.primary,

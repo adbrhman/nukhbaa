@@ -547,20 +547,25 @@ class _PeriodBar extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Container(
-                width: AppSizes.controlSm - 4,
-                height: AppSizes.controlSm - 4,
-                decoration: BoxDecoration(
-                  color: tokens.primary.withValues(alpha: 0.13),
-                  borderRadius: AppRadius.brMd,
+              // The calendar only where it opens one -- the day board; on
+              // the month and the season it looked like a button that did
+              // nothing (UI-14).
+              if (tap != null) ...<Widget>[
+                const SizedBox(width: AppSpacing.sm),
+                Container(
+                  width: AppSizes.controlSm - 4,
+                  height: AppSizes.controlSm - 4,
+                  decoration: BoxDecoration(
+                    color: tokens.primary.withValues(alpha: 0.13),
+                    borderRadius: AppRadius.brMd,
+                  ),
+                  child: Icon(
+                    Icons.calendar_month_rounded,
+                    color: tokens.primaryText,
+                    size: AppSizes.iconMd,
+                  ),
                 ),
-                child: Icon(
-                  Icons.calendar_month_rounded,
-                  color: tokens.primaryText,
-                  size: AppSizes.iconMd,
-                ),
-              ),
+              ],
             ],
           ),
         ),

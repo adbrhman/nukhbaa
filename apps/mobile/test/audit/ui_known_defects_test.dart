@@ -538,7 +538,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-10',
     'a crest asset has no edge, so white flag fields vanish on white cards '
         '(team_logo.dart:91-104)',
@@ -573,7 +573,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-11',
     'the initial is the first character, so "ال..." names show a bare alef '
         '(user_avatar.dart:64-67)',
@@ -600,7 +600,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-12',
     'podium heights follow position, not rank (leaderboard_board.dart:'
         '383-418)',
@@ -665,7 +665,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-14',
     'the calendar button shows on the month and season boards, where it '
         'does nothing (leaderboards_screen.dart:477, 551-563)',
@@ -851,7 +851,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-21',
     'the list draws a divider between cards that already carry a border '
         '(async_list_view.dart:125)',
