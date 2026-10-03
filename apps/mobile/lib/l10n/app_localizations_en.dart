@@ -1685,4 +1685,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get problemCodeCopied => 'Problem code copied';
+
+  @override
+  String get accountTitle => 'Account';
 }

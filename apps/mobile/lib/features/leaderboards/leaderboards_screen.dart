@@ -11,6 +11,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_error_state.dart';
 import '../../core/ui/app_skeleton.dart';
+import '../../core/ui/app_tab_header.dart';
 import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
@@ -200,13 +201,12 @@ class _MonthNotStarted extends ConsumerWidget {
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            // The one tab-title style (UI-20), drawn in the page so the
+            // champion's backdrop can run under it.
             child: Text(
               l10n.leaderboardsHeading,
               key: const Key('leaderboards.title'),
-              style: context.text.headlineSmall?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+              style: AppTabHeader.titleStyle(context),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -420,14 +420,13 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
             child: Row(
               children: <Widget>[
                 Expanded(
+                  // The one tab-title style (UI-20), in the page so the
+                  // champion's backdrop can run under it.
                   child: Text(
                     l10n.leaderboardsHeading,
                     key: const Key('leaderboards.title'),
                     textAlign: TextAlign.start,
-                    style: context.text.headlineSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTabHeader.titleStyle(context),
                   ),
                 ),
                 // While the celebration runs, its own header links the

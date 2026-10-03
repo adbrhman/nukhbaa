@@ -495,5 +495,6 @@
   "leaderboardMonthStarting": "بدأ شهر جديد: نقاط الجميع تبدأ من الصفر، ويظهر الترتيب مع أول مباراة تُحتسب.",
   "versusShort": "ضد",
   "problemCodeCopy": "نسخ رمز المشكلة",
-  "problemCodeCopied": "تم نسخ رمز المشكلة"
+  "problemCodeCopied": "تم نسخ رمز المشكلة",
+  "accountTitle": "الحساب"
 }

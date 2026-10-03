@@ -1698,4 +1698,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get problemCodeCopied => 'تم نسخ رمز المشكلة';
+
+  @override
+  String get accountTitle => 'الحساب';
 }

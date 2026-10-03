@@ -10,4 +10,6 @@ export 'app_error_state.dart';
 export 'app_scaffold.dart';
 export 'app_skeleton.dart';
 export 'app_snackbar.dart';
+export 'app_tab_header.dart';
 export 'app_text_field.dart';
+export 'unread_badge.dart';

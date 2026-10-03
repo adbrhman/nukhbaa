@@ -1438,67 +1438,44 @@ class _WinPercentage extends StatelessWidget {
   /// Spoken with the share: "86%" alone did not say whose win (UI-28).
   final String teamName;
 
-  static const double _percentageWidth = 48;
-  static const double _labelWidth = 40;
-  static const double _height = 36;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    // A figure, not a control: plain text with no frame, so it no longer
+    // reads as two buttons that do nothing (UI-28). It wraps at large text
+    // instead of shrinking inside a FittedBox (UI-17).
     return Semantics(
       label: '\u0641\u0648\u0632 $teamName $percentage%',
       child: Directionality(
         textDirection: TextDirection.ltr,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: _percentageWidth,
-                height: _height,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.textPrimary.withValues(alpha: 0.08),
-                  borderRadius: AppRadius.brButton,
-                  border: Border.all(
-                    color: tokens.textPrimary.withValues(alpha: 0.10),
-                    width: AppStroke.hairline,
-                  ),
-                ),
-                child: Text(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: _DoubleGlowButton._height,
+          ),
+          child: Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.xs,
+              children: <Widget>[
+                Text(
                   '$percentage%',
                   style: TextStyle(
                     color: tokens.textPrimary,
-                    fontSize: AppFontSize.s14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.s16,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Container(
-                width: _labelWidth,
-                height: _height,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: tokens.textPrimary.withValues(alpha: 0.08),
-                  borderRadius: AppRadius.brButton,
-                  border: Border.all(
-                    color: tokens.textPrimary.withValues(alpha: 0.10),
-                    width: AppStroke.hairline,
-                  ),
-                ),
-                child: Text(
+                Text(
                   '\u0641\u0648\u0632',
                   style: TextStyle(
-                    color: tokens.textPrimary,
-                    fontSize: AppFontSize.s14,
-                    fontWeight: FontWeight.w700,
+                    color: tokens.textSecondary,
+                    fontSize: AppFontSize.s13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

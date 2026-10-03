@@ -10,6 +10,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/app_tab_header.dart';
 import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
@@ -63,8 +64,8 @@ class _PredictionHistoryScreenState
     );
     final bool hasAny = history.value?.isNotEmpty ?? false;
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
+      // The tab's name at the start, like every tab (UI-20).
+      appBar: AppTabHeader(
         title: Text(l10n.myPredictions, key: const Key('history.title')),
       ),
       // The shell's bottom bar floats over the page (`extendBody`), so the

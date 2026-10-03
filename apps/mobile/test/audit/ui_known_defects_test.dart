@@ -21,7 +21,9 @@ import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/theme/theme_controller.dart';
 import 'package:mobile/core/ui/app_badge.dart';
+import 'package:mobile/core/ui/app_tab_header.dart';
 import 'package:mobile/core/ui/segmented_pills.dart';
+import 'package:mobile/core/ui/streak_chip.dart';
 import 'package:mobile/core/ui/team_logo.dart';
 import 'package:mobile/core/ui/user_avatar.dart';
 import 'package:mobile/features/admin/admin_hub_screen.dart';
@@ -319,6 +321,27 @@ Future<void> _settle(WidgetTester tester) async {
   } on FlutterError {
     // Never settles; carry on with what is on screen.
   }
+}
+
+/// The whole signed-in shell behind SessionGate, in the dark theme.
+Future<void> _pumpShell(WidgetTester tester) async {
+  final auth.AuthHarness harness = auth.buildAuthHarness(
+    (http.Request request) async => auth.okMe(auth.sampleUser),
+    seedToken: 'saved-jwt',
+  );
+  addTearDown(harness.dispose);
+  await tester.pumpWidget(
+    SessionScope(
+      overrides: <Override>[
+        ...harness.overrides,
+        themePreferenceStoreProvider.overrideWithValue(
+          InMemoryThemePreferenceStore(ThemeMode.dark),
+        ),
+      ],
+      child: _app(AppTheme.dark, const SessionGate()),
+    ),
+  );
+  await _settle(tester);
 }
 
 /// Whether keyboard focus sits on the widget keyed [key] or inside it.
@@ -680,6 +703,18 @@ void main() {
           .height;
       expect(tester.getSize(find.byKey(const Key('k.item.p-1'))).height, first);
       expect(tester.getSize(find.byKey(const Key('k.item.p-2'))).height, first);
+
+      // Together at the lowest step they share, not all lifted to the
+      // first step's height with their tiles mostly empty.
+      await _pumpBoard(tester, AppTheme.dark, <BoardEntry>[
+        _entry(0, 1),
+        _entry(1, 2),
+        _entry(2, 3),
+      ]);
+      final double soloFirst = tester
+          .getSize(find.byKey(const Key('k.item.p-0')))
+          .height;
+      expect(first, lessThan(soloFirst));
     },
   );
 
@@ -1125,23 +1160,7 @@ void main() {
     'the dark-mode toggle takes the theme switch: white thumb on blue',
     (WidgetTester tester) async {
       _phone(tester);
-      final auth.AuthHarness harness = auth.buildAuthHarness(
-        (http.Request request) async => auth.okMe(auth.sampleUser),
-        seedToken: 'saved-jwt',
-      );
-      addTearDown(harness.dispose);
-      await tester.pumpWidget(
-        SessionScope(
-          overrides: <Override>[
-            ...harness.overrides,
-            themePreferenceStoreProvider.overrideWithValue(
-              InMemoryThemePreferenceStore(ThemeMode.dark),
-            ),
-          ],
-          child: _app(AppTheme.dark, const SessionGate()),
-        ),
-      );
-      await _settle(tester);
+      await _pumpShell(tester);
       await tester.tap(find.byKey(const Key('nav.item.account')));
       await _settle(tester);
       final Finder toggle = find.byKey(const Key('account.darkModeToggle'));
@@ -1193,6 +1212,130 @@ void main() {
           .style!;
       expect(style.fontSize, greaterThanOrEqualTo(12));
       expect(style.letterSpacing ?? 0, 0);
+    },
+  );
+
+  _fixed(
+    'UI-05',
+    'a two-digit count sat inside the bell and hid it (home_screen.dart:482)',
+    "the unread count reads '9+' and sits out on the bell's corner",
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpHome(tester, AppTheme.dark);
+      final Finder bell = find.byKey(const Key('home.notifications'));
+      final Finder label = find.descendant(of: bell, matching: find.text('9+'));
+      expect(label, findsOneWidget);
+      final Rect icon = tester.getRect(
+        find.descendant(
+          of: bell,
+          matching: find.byIcon(Icons.notifications_none_rounded),
+        ),
+      );
+      final Rect count = tester.getRect(label);
+      // Right to left: the bell's outer corner is its top left.
+      expect(count.left, lessThan(icon.left));
+      expect(count.top, lessThan(icon.top));
+    },
+  );
+
+  _fixed(
+    'UI-17',
+    'the overview chip and the win share shrank inside a FittedBox instead '
+        'of growing with the system text (home_screen.dart:562, '
+        'fotmob_match_card.dart:1452)',
+    'the overview chip and the win share are never shrunk to fit',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpHome(tester, AppTheme.dark);
+      expect(
+        find.ancestor(
+          of: find.byType(StreakChip),
+          matching: find.byType(FittedBox),
+        ),
+        findsNothing,
+      );
+      // A fresh tree: the open match brings its own ProviderScope.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpOpenMatch(tester, scale: 2.0);
+      expect(tester.takeException(), isNull);
+      // The sample fixture carries no shares yet: both sides read 0%.
+      final Finder share = find.text('0%');
+      expect(share, findsNWidgets(2));
+      expect(
+        find.ancestor(of: share, matching: find.byType(FittedBox)),
+        findsNothing,
+      );
+    },
+  );
+
+  _fixed(
+    'UI-20',
+    'three header styles across the five tabs: the wordmark, a centred '
+        'title, a page title (current_month_fixtures_screen.dart:275, '
+        'prediction_history_screen.dart:66, account_screen.dart:72)',
+    'matches, my predictions and account share one header, name at start',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpShell(tester);
+      for (final String tab in <String>[
+        'nav.item.fixtures',
+        'nav.item.predictions',
+        'nav.item.account',
+      ]) {
+        await tester.tap(find.byKey(Key(tab)));
+        await _settle(tester);
+        // The tab on screen: IndexedStack keeps the others built.
+        final Finder header = find.byType(AppTabHeader).hitTestable();
+        expect(header, findsOneWidget, reason: tab);
+        expect(
+          tester
+              .widget<AppBar>(
+                find.descendant(of: header, matching: find.byType(AppBar)),
+              )
+              .centerTitle,
+          isFalse,
+          reason: tab,
+        );
+      }
+    },
+  );
+
+  _fixed(
+    'UI-28',
+    'the win share sat in two framed chips that looked like buttons and did '
+        'nothing (fotmob_match_card.dart:1443-1500)',
+    'the win share is plain text on the card',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpOpenMatch(tester);
+      // The sample fixture carries no shares yet: both sides read 0%.
+      final Finder share = find.text('0%');
+      expect(share, findsNWidgets(2));
+      expect(_backdrop(share.first, _dark.background), _dark.surface);
+    },
+  );
+
+  _fixed(
+    'UI-38',
+    'Theme.of filled the empty letter spacing of every text role from the '
+        'Material 3 geometry, 0.1 to 0.5 (app_typography.dart:11)',
+    'no Arabic line on home carries letter spacing',
+    (WidgetTester tester) async {
+      _phone(tester);
+      await _pumpHome(tester, AppTheme.dark);
+      final RegExp arabic = RegExp('[\u0600-\u06FF]');
+      final List<String> tracked = <String>[];
+      for (final RenderParagraph paragraph
+          in tester.renderObjectList<RenderParagraph>(find.byType(RichText))) {
+        final String text = paragraph.text.toPlainText();
+        if (!arabic.hasMatch(text)) continue;
+        paragraph.text.visitChildren((InlineSpan span) {
+          final double spacing = span.style?.letterSpacing ?? 0;
+          if (spacing != 0) tracked.add('$text: $spacing');
+          return true;
+        });
+      }
+      expect(tracked, isEmpty, reason: tracked.join('\n'));
     },
   );
 

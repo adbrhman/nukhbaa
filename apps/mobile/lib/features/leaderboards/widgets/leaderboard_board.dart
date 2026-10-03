@@ -374,6 +374,7 @@ class _Podium extends StatelessWidget {
     final BoardEntry first = entries[0];
     final BoardEntry? second = entries.length > 1 ? entries[1] : null;
     final BoardEntry? third = entries.length > 2 ? entries[2] : null;
+    final List<BoardEntry?> steps = <BoardEntry?>[first, second, third];
 
     // Second, first, third from left to right in either reading direction:
     // the podium is a picture, not a sentence.
@@ -390,7 +391,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: second,
                       keyPrefix: keyPrefix,
-                      height: _podiumHeight(second.rank),
+                      height: _podiumHeight(steps, 1),
                       isMe: second.participantId == myParticipantId,
                     ),
             ),
@@ -399,7 +400,7 @@ class _Podium extends StatelessWidget {
               child: _PodiumTile(
                 entry: first,
                 keyPrefix: keyPrefix,
-                height: _podiumHeight(first.rank),
+                height: _podiumHeight(steps, 0),
                 isMe: first.participantId == myParticipantId,
               ),
             ),
@@ -410,7 +411,7 @@ class _Podium extends StatelessWidget {
                   : _PodiumTile(
                       entry: third,
                       keyPrefix: keyPrefix,
-                      height: _podiumHeight(third.rank),
+                      height: _podiumHeight(steps, 2),
                       isMe: third.participantId == myParticipantId,
                     ),
             ),
@@ -568,14 +569,21 @@ class _PodiumTile extends StatelessWidget {
   }
 }
 
-/// A podium step's height follows the rank, not the position: three
-/// players tied on 1 stood at 172 / 144 / 136, as if first, second and
-/// third (UI-12).
-double _podiumHeight(int rank) => switch (rank) {
-  1 => 172,
-  2 => 144,
-  _ => 136,
-};
+/// The podium steps, first to third.
+const List<double> _stepHeights = <double>[172, 144, 136];
+
+/// The height of the step at [position] (0 first, 2 third). Players tied
+/// on a rank stand together at the lowest step they share: three tied on 1
+/// stood at 172 / 144 / 136 as if first, second and third (UI-12), and then
+/// all at 172, which left the tiles mostly empty above their names.
+double _podiumHeight(List<BoardEntry?> steps, int position) {
+  final int rank = steps[position]!.rank;
+  int lowest = position;
+  for (int i = position + 1; i < steps.length; i++) {
+    if (steps[i]?.rank == rank) lowest = i;
+  }
+  return _stepHeights[lowest];
+}
 
 Color _medal(AppTokens t, int rank) => switch (rank) {
   1 => t.goldAccent,

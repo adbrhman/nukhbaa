@@ -1265,5 +1265,7 @@
   "versusShort": "vs",
   "@versusShort": {"description": "Between the two team names in a compact match row."},
   "problemCodeCopy": "Copy problem code",
-  "problemCodeCopied": "Problem code copied"
+  "problemCodeCopied": "Problem code copied",
+  "accountTitle": "Account",
+  "@accountTitle": {"description": "The account tab's header."}
 }

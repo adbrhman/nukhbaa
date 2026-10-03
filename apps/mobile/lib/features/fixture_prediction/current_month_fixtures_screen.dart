@@ -43,12 +43,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_skeleton.dart';
+import '../../core/ui/app_tab_header.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
@@ -272,30 +272,12 @@ class _CurrentMonthFixturesScreenState
 
     return Scaffold(
       backgroundColor: tokens.background,
-      appBar: AppBar(
-        backgroundColor: tokens.background,
-        foregroundColor: tokens.textPrimary,
-        elevation: 0,
-        centerTitle: false,
-        // 48 so the live chip and the calendar button keep a full touch
-        // target (UI-16); it was 44 to pull the day strip up.
-        toolbarHeight: 48,
-        // The brand wordmark replaces the tab name: the bottom bar already
-        // says "المباريات", so the header carries the app's identity.
-        title: ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (Rect bounds) =>
-              tokens.primaryGradient.createShader(bounds),
-          child: const Text(
-            'NUKHBAA',
-            key: Key('currentMonthFixtures.title'),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: AppFontSize.s22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.6,
-            ),
-          ),
+      // The tab's name at the start, like every tab; the wordmark stays on
+      // home alone (UI-20).
+      appBar: AppTabHeader(
+        title: Text(
+          l10n.matchesTitle,
+          key: const Key('currentMonthFixtures.title'),
         ),
         actions: <Widget>[
           LiveMatchesChip(

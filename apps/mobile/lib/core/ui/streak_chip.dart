@@ -18,6 +18,9 @@ class StreakChip extends StatelessWidget {
         color: tokens.isDark ? tokens.surfaceElevated : tokens.primary,
         borderRadius: BorderRadius.circular(999),
       ),
+      // The label wraps inside the space it is given instead of being
+      // shrunk by a FittedBox around the chip, so it grows with the
+      // system text like the rest of the screen (UI-17).
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -25,12 +28,15 @@ class StreakChip extends StatelessWidget {
             Icon(icon, size: 13, color: tokens.onPrimary),
             const SizedBox(width: 4),
           ],
-          Text(
-            label,
-            style: TextStyle(
-              color: tokens.onPrimary,
-              fontSize: AppFontSize.s10,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: tokens.onPrimary,
+                fontSize: AppFontSize.s12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

@@ -109,15 +109,13 @@ class AdminNavList extends StatelessWidget {
               AppSpacing.xs,
             ),
             // 12px and no tracking: letter spacing pulls joined Arabic
-            // letters apart (app_typography.dart), and 11px was too small
-            // to read (UI-37). The zero is explicit: the theme's Material
-            // geometry gives labelMedium 0.5 of tracking otherwise.
+            // letters apart (app_typography.dart, UI-38), and 11px was too
+            // small to read (UI-37).
             child: Text(
               group.title,
               style: context.text.labelMedium?.copyWith(
                 color: t.textSecondary,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0,
               ),
             ),
           ),

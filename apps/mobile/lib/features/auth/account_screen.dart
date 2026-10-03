@@ -15,6 +15,8 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/ui/app_dialog.dart';
+import '../../core/ui/app_tab_header.dart';
+import '../../core/ui/unread_badge.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
@@ -69,18 +71,17 @@ class AccountScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: tokens.background,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(l10n.appTitle, key: const Key('account.title')),
-        actions: [
+      // The tab's name at the start, like every tab (UI-20).
+      appBar: AppTabHeader(
+        title: Text(l10n.accountTitle, key: const Key('account.title')),
+        actions: <Widget>[
           IconButton(
             key: const Key('account.notifications'),
             tooltip: l10n.notifications,
             onPressed: () => open(const NotificationsScreen()),
-            icon: Badge(
+            icon: UnreadBadge(
               key: const Key('account.notifications.badge'),
-              label: unreadCount > 0 ? Text('$unreadCount') : null,
-              isLabelVisible: unreadCount > 0,
+              count: unreadCount,
               child: const Icon(Icons.notifications_outlined),
             ),
           ),
@@ -197,7 +198,9 @@ class AccountScreen extends ConsumerWidget {
                         icon: Icons.notifications_none_rounded,
                         title: l10n.notifications,
                         trailing: unreadCount > 0
-                            ? Badge(label: Text('$unreadCount'))
+                            ? Badge(
+                                label: Text(UnreadBadge.labelFor(unreadCount)),
+                              )
                             : null,
                         onTap: () => open(const NotificationsScreen()),
                       ),

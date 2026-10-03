@@ -2975,6 +2975,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Problem code copied'**
   String get problemCodeCopied;
+
+  /// The account tab's header.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
 }
 
 class _AppLocalizationsDelegate

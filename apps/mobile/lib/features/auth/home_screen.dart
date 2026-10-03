@@ -12,6 +12,7 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
+import '../../core/ui/unread_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_catalog_index.dart';
@@ -479,9 +480,8 @@ class _HomeHeader extends ConsumerWidget {
               builder: (_) => const NotificationsScreen(),
             ),
           ),
-          icon: Badge(
-            isLabelVisible: unread > 0,
-            label: Text('$unread'),
+          icon: UnreadBadge(
+            count: unread,
             child: const Icon(Icons.notifications_none_rounded),
           ),
           color: tokens.textSecondary,
@@ -552,20 +552,16 @@ class _OverviewCard extends StatelessWidget {
                 ),
                 Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
                 const SizedBox(width: AppSpacing.sm),
-                // At large system text the chip used to push past the
-                // card's edge; it now shrinks inside at most 60% of the
-                // row, and at normal size it is never near that.
+                // At most 60% of the row; at large system text the chip's
+                // label wraps there instead of shrinking (UI-17).
                 ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: constraints.maxWidth * 0.6,
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: StreakChip(
-                      label: seasonCount == null
-                          ? '...'
-                          : _activeSeasonsLabel(seasonCount),
-                    ),
+                  child: StreakChip(
+                    label: seasonCount == null
+                        ? '...'
+                        : _activeSeasonsLabel(seasonCount),
                   ),
                 ),
               ],
