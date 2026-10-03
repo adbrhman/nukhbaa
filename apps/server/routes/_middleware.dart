@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/error_capture.dart';
+import 'package:server/http/request_scope.dart';
 import 'package:server/http/security_headers.dart';
 
 List<String> _allowedOrigins() {
@@ -54,6 +55,14 @@ Handler middleware(Handler handler) {
     provider<Future<CompositionRoot>>((_) => CompositionRoot.instance()),
   );
 
+  // Every request gets an id (X-Request-Id) and every 5xx -- an escaped
+  // exception included -- is kept in the error log (migration 0087). The
+  // composition root is looked up only when there is something to keep.
+  final captured = captureServerErrors(
+    withCompositionRoot,
+    recorder: () async => (await CompositionRoot.instance()).recordError,
+  );
+
   return (context) async {
     final origin = context.request.headers['origin'];
     final corsHeaders = <String, Object>{
@@ -62,6 +71,7 @@ Handler middleware(Handler handler) {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
       'Access-Control-Max-Age': '86400',
+      'Access-Control-Expose-Headers': requestIdHeader,
       'Vary': 'Origin',
     };
 
@@ -72,25 +82,9 @@ Handler middleware(Handler handler) {
       );
     }
 
-    Response response;
-    try {
-      response = await withCompositionRoot(context);
-    } on Object catch (error, stackTrace) {
-      // Anything that escapes a handler used to be answered by the framework
-      // with a bare 500 carrying none of the headers below -- so the web
-      // build saw an opaque CORS failure rather than the error, and the
-      // container log, which is the only observability this deployment has,
-      // said nothing at all. Same envelope as every other error response.
-      // ignore: avoid_print
-      print('[middleware] unhandled failure: $error\n$stackTrace');
-      response = Response.json(
-        statusCode: HttpStatus.internalServerError,
-        body: const ErrorResponseDto(
-          code: 'server.unexpected',
-          message: 'Unexpected server error',
-        ).toJson(),
-      );
-    }
+    // captureServerErrors answers an escaped exception with the uniform
+    // `server.unexpected` envelope, so the CORS headers below reach it too.
+    final response = await captured(context);
     return response.copyWith(
       headers: {...response.headers, ...corsHeaders, ...securityHeaders},
     );

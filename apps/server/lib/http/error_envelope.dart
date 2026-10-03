@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:server/http/request_scope.dart';
 import 'package:shared/shared.dart';
 
 /// Maps a domain [AppError] to an HTTP response using the uniform error
@@ -19,9 +20,22 @@ import 'package:shared/shared.dart';
 ///
 /// The [AppError.cause] is never serialized — it is server-only detail. Only
 /// the stable [AppError.code] and safe [AppError.message] cross the wire.
+///
+/// A 5xx answer is also noted on the request's [RequestScope], with the
+/// stack here, so the error log keeps its code, its cause and the route
+/// that answered it (migration 0087).
 Response errorResponse(AppError error) {
+  final status = _statusFor(error.kind);
+  if (status >= HttpStatus.internalServerError) {
+    final scope = RequestScope.current;
+    if (scope != null) {
+      scope
+        ..serverError = error
+        ..serverErrorStack = StackTrace.current;
+    }
+  }
   return Response.json(
-    statusCode: _statusFor(error.kind),
+    statusCode: status,
     body: ErrorResponseDto(code: error.code, message: error.message).toJson(),
   );
 }

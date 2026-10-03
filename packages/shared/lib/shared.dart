@@ -4,6 +4,7 @@
 /// leaf of the dependency graph (Coding Standards ADR, Section 1).
 library;
 
+export 'src/error_fingerprint.dart';
 export 'src/errors.dart';
 export 'src/ids.dart';
 export 'src/result.dart';

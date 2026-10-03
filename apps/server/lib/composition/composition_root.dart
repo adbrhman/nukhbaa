@@ -132,6 +132,7 @@ final class CompositionRoot {
     this.liveScoreBoard,
     this.refreshLiveScores,
     this.rescoreUnscoredResults,
+    this.recordError,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -294,6 +295,7 @@ final class CompositionRoot {
     this.liveScoreBoard,
     this.refreshLiveScores,
     this.rescoreUnscoredResults,
+    this.recordError,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1857,6 +1859,11 @@ final class CompositionRoot {
   /// provide one.
   final RescoreUnscoredResults? rescoreUnscoredResults;
 
+  /// Keeps one occurrence of an error in the error log (migration 0087):
+  /// every 5xx the server answers and every scheduled job that fails. Null
+  /// in tests that do not provide one, so nothing is recorded there.
+  final RecordError? recordError;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -2344,6 +2351,10 @@ final class CompositionRoot {
       ),
       recordFrameReport: RecordFrameReport(
         reports: PostgresFrameReportRepository(connection),
+        clock: clock,
+      ),
+      recordError: RecordError(
+        errors: PostgresErrorLogRepository(connection),
         clock: clock,
       ),
       adminGetFrameStats: AdminGetFrameStats(

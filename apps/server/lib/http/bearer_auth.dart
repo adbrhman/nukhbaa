@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/rate_limit.dart';
+import 'package:server/http/request_scope.dart';
 import 'package:shared/shared.dart';
 
 /// Middleware that enforces Supabase bearer authentication on the routes it
@@ -46,6 +47,8 @@ Middleware bearerAuth({RateLimiter? writeLimiter}) {
         return errorResponse(error);
       }
       final principal = (verifyResult as Ok<AuthenticatedUser>).value;
+      // The error log counts the players a failure hit (migration 0087).
+      RequestScope.current?.userId = principal.userId.value;
 
       final limited = limitPlayerWrite(
         limiter,
