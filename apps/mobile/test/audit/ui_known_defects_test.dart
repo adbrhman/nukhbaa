@@ -272,7 +272,7 @@ BoardEntry _entry(int i, int rank, {int? movement}) => BoardEntry(
 );
 
 void main() {
-  _known(
+  _fixed(
     'UI-01',
     'stepper zones are 61x26 (fotmob_match_card.dart:1311-1313)',
     'a score stepper zone is at least 48px tall',
@@ -374,7 +374,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-04',
     'fixed 70px bar, 10px labels, no selected state for screen readers '
         '(nukhbaa_shell.dart:219-300)',
@@ -735,7 +735,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-15',
     'the pills are 42px tall (segmented_pills.dart:41)',
     'a segmented pill is at least 48px tall',
@@ -762,7 +762,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-16',
     'the live chip is 32px and the double button 36px tall '
         '(live_matches_chip.dart:115, fotmob_match_card.dart:1588)',
@@ -800,7 +800,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-17',
     'the day chips scale their text down to a fixed height, so larger '
         'system text never reaches them (fixtures_date_bar.dart:52, 219)',
@@ -836,7 +836,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-18',
     'the double label sits in a fixed 130px slot and is cut at large text '
         '(fotmob_match_card.dart:624-653)',
@@ -936,7 +936,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-27',
     'the account and bell buttons on home carry no tooltip '
         '(home_screen.dart:472-492)',

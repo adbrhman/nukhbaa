@@ -46,9 +46,23 @@ class FixturesDateStrip extends StatefulWidget {
   /// Called with a midnight-local day when a tab is tapped.
   final ValueChanged<DateTime> onDaySelected;
 
-  /// The strip's fixed height, for the app bar's `PreferredSize`: a 58px
-  /// chip (badge, weekday, date) plus its vertical margin.
+  /// The strip's height at normal text size, for the app bar's
+  /// `PreferredSize`: a 58px chip (badge, weekday, date) plus its margin.
   static const double height = 70;
+
+  /// The strip's height at the reader's text size: the chips grow with it
+  /// instead of shrinking their text to a fixed height (UI-17), so the app
+  /// bar asks for this rather than [height].
+  static double heightFor(BuildContext context) {
+    final TextScaler scaler = MediaQuery.textScalerOf(context);
+    final double content =
+        _DayTab.badgeHeightFor(scaler) +
+        scaler.scale(AppFontSize.s13) * 1.2 +
+        scaler.scale(AppFontSize.s10) * 1.2;
+    // Margin 12, chip padding 8, border 2, and 4 to spare for rounding.
+    final double fitted = content + 26;
+    return fitted > height ? fitted : height;
+  }
 
   @override
   State<FixturesDateStrip> createState() => _FixturesDateStripState();
@@ -122,7 +136,7 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
     final DateTime selected = fixtureDayOnly(widget.selectedDay);
 
     return SizedBox(
-      height: FixturesDateStrip.height,
+      height: FixturesDateStrip.heightFor(context),
       child: SingleChildScrollView(
         key: const Key('currentMonthFixtures.dayStrip'),
         controller: _controller,
@@ -182,8 +196,15 @@ class _DayTab extends StatelessWidget {
   final AppTokens tokens;
   final VoidCallback onTap;
 
-  static const double _width = 80;
-  static const double _badgeHeight = 15;
+  /// The narrowest chip; a longer weekday at large text makes it wider.
+  static const double _minWidth = 80;
+
+  /// The relative badge's height: 15 at normal size, and room for its
+  /// 10px text, line height 1.1, once the reader's text is larger.
+  static double badgeHeightFor(TextScaler scaler) {
+    final double fitted = scaler.scale(AppFontSize.s10) * 1.1 + 4;
+    return fitted > 15 ? fitted : 15;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,8 +221,11 @@ class _DayTab extends StatelessWidget {
           borderRadius: AppRadius.brMd,
           child: AnimatedContainer(
             duration: AppMotion.fast,
-            width: _width,
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            constraints: const BoxConstraints(minWidth: _minWidth),
+            padding: const EdgeInsets.symmetric(
+              vertical: 4,
+              horizontal: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
               color: selected ? tokens.primary : tokens.surface,
               borderRadius: AppRadius.brMd,
@@ -209,65 +233,62 @@ class _DayTab extends StatelessWidget {
                 color: selected ? tokens.primary : tokens.controlBorder,
               ),
             ),
-            // The chip keeps its fixed height; its three lines scale down
-            // together when the system text is larger than they fit (they
-            // overflowed from a 1.3 text scale upward).
+            // The strip grows with the reader's text size (heightFor), so
+            // the three lines keep their size instead of scaling down to a
+            // fixed height (UI-17).
             alignment: Alignment.center,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  SizedBox(
-                    height: _badgeHeight,
-                    child: relative == null
-                        ? null
-                        : Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: tokens.gold,
-                              borderRadius: AppRadius.brSm,
-                            ),
-                            child: Text(
-                              relative,
-                              maxLines: 1,
-                              // The theme's own content colour on gold: a
-                              // fixed dark brown read 2.9:1 on the light
-                              // theme's gold (UI-02).
-                              style: TextStyle(
-                                fontSize: AppFontSize.s10,
-                                height: 1.1,
-                                fontWeight: FontWeight.w800,
-                                color: tokens.onGold,
-                              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SizedBox(
+                  height: badgeHeightFor(MediaQuery.textScalerOf(context)),
+                  child: relative == null
+                      ? null
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: tokens.gold,
+                            borderRadius: AppRadius.brSm,
+                          ),
+                          child: Text(
+                            relative,
+                            maxLines: 1,
+                            // The theme's own content colour on gold: a
+                            // fixed dark brown read 2.9:1 on the light
+                            // theme's gold (UI-02).
+                            style: TextStyle(
+                              fontSize: AppFontSize.s10,
+                              height: 1.1,
+                              fontWeight: FontWeight.w800,
+                              color: tokens.onGold,
                             ),
                           ),
+                        ),
+                ),
+                Text(
+                  weekday,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s13,
+                    height: 1.2,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    color: primaryText,
                   ),
-                  Text(
-                    weekday,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: AppFontSize.s13,
-                      height: 1.2,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-                      color: primaryText,
-                    ),
+                ),
+                Text(
+                  date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s10,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: secondaryText,
                   ),
-                  Text(
-                    date,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: AppFontSize.s10,
-                      height: 1.2,
-                      fontWeight: FontWeight.w600,
-                      color: secondaryText,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

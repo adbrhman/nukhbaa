@@ -379,8 +379,9 @@ class _AuthModeTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    // No fixed height: the tabs set it, 48 at least (UI-35). The 46px
+    // container left them 40 tall inside its padding and border.
     return Container(
-      height: AppSizes.controlMd,
       padding: const EdgeInsets.all(AppSpacing.xs / 2),
       decoration: BoxDecoration(
         color: tokens.surfaceElevated,
@@ -442,6 +443,7 @@ class _AuthModeTab extends StatelessWidget {
           duration: AppMotion.tabSwitch,
           curve: AppMotion.standardCurve,
           alignment: Alignment.center,
+          constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
           decoration: BoxDecoration(
             color: selected ? tokens.primary : Colors.transparent,
             borderRadius: AppRadius.brSm,

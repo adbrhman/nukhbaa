@@ -277,8 +277,9 @@ class _CurrentMonthFixturesScreenState
         foregroundColor: tokens.textPrimary,
         elevation: 0,
         centerTitle: false,
-        // A tighter toolbar pulls the day strip and the first card up.
-        toolbarHeight: 44,
+        // 48 so the live chip and the calendar button keep a full touch
+        // target (UI-16); it was 44 to pull the day strip up.
+        toolbarHeight: 48,
         // The brand wordmark replaces the tab name: the bottom bar already
         // says "المباريات", so the header carries the app's identity.
         title: ShaderMask(
@@ -312,7 +313,7 @@ class _CurrentMonthFixturesScreenState
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(FixturesDateStrip.height),
+          preferredSize: Size.fromHeight(FixturesDateStrip.heightFor(context)),
           child: FixturesDateStrip(selectedDay: day, onDaySelected: _selectDay),
         ),
       ),

@@ -617,7 +617,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Expanded(child: _WinPercentage(percentage: homeWinShare)),
+                      Expanded(
+                        child: _WinPercentage(
+                          percentage: homeWinShare,
+                          teamName: home.displayName,
+                        ),
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       if (showEditableControls)
                         SizedBox(
@@ -649,9 +654,17 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           ),
                         )
                       else
-                        const SizedBox(width: 130, height: 36),
+                        const SizedBox(
+                          width: 130,
+                          height: AppSizes.minTouchTarget,
+                        ),
                       const SizedBox(width: AppSpacing.sm),
-                      Expanded(child: _WinPercentage(percentage: awayWinShare)),
+                      Expanded(
+                        child: _WinPercentage(
+                          percentage: awayWinShare,
+                          teamName: away.displayName,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -911,9 +924,10 @@ class _TeamColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
+        // Two lines at large text: one line cut long names (UI-18).
         Text(
           displayName,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -1034,7 +1048,8 @@ class _MiddleSlot extends StatelessWidget {
           ],
         ),
         if (homeGoals != null && awayGoals != null)
-          _ConfirmBadge(confirmed: isConfirmed),
+          // Drawn over the steppers' inner edges: it never takes their tap.
+          IgnorePointer(child: _ConfirmBadge(confirmed: isConfirmed)),
       ],
     );
   }
@@ -1291,6 +1306,10 @@ class _MyCallLine extends StatelessWidget {
 /// press moves it to `0`, the first `-` press from `null` (or from `0`) is a
 /// no-op (never negative). Range `0..99`; a button at its boundary is
 /// disabled visually ([AppOpacity.disabled]), never hidden.
+///
+/// The touch is the whole box split in two: the upper half adds, the lower
+/// half takes away, 48px each -- the bands drawn with `+` and `-` were 26px
+/// to touch (UI-01). The drawing keeps the same `+` / value / `-` order.
 class _ScoreStepper extends StatelessWidget {
   const _ScoreStepper({
     required this.value,
@@ -1309,11 +1328,13 @@ class _ScoreStepper extends StatelessWidget {
   final String side;
 
   // Measured off the reference screenshot (1080px capture, 2.75x): the
-  // stepper box is 167px wide there, i.e. 61 logical, not 68. Height and
-  // tap-zone follow at the same ratio so the box keeps its proportions.
+  // stepper box is 167px wide there, i.e. 61 logical, not 68. The height is
+  // two 48px touch halves (UI-01) inside the hairline border, which takes
+  // its width from each edge; the `+` / `-` bands keep the drawn 26.
   static const double _width = 61;
-  static const double _height = 82;
-  static const double _zoneHeight = 26;
+  static const double _height =
+      AppSizes.minTouchTarget * 2 + AppStroke.hairline * 2;
+  static const double _iconBand = 26;
 
   @override
   Widget build(BuildContext context) {
@@ -1335,45 +1356,67 @@ class _ScoreStepper extends StatelessWidget {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
-          _StepperZone(
-            key: Key('currentMonthFixtures.$side.increment.$fixtureId'),
-            icon: Icons.add_rounded,
-            tooltip: l10n.scoreStepperIncreaseTooltip,
-            height: _zoneHeight,
-            onTap: canIncrement ? onIncrement : null,
-          ),
-          Divider(
-            height: AppStroke.hairline,
-            thickness: AppStroke.hairline,
-            color: divider,
-          ),
-          Expanded(
-            child: Container(
-              alignment: Alignment.center,
-              child: Text(
-                value?.toString() ?? '?',
-                key: Key('currentMonthFixtures.$side.value.$fixtureId'),
-                style: TextStyle(
-                  fontSize: AppFontSize.s20,
-                  fontWeight: FontWeight.w800,
-                  color: value == null ? tokens.textMuted : tokens.textPrimary,
+          Column(
+            children: <Widget>[
+              Expanded(
+                child: _StepperZone(
+                  key: Key('currentMonthFixtures.$side.increment.$fixtureId'),
+                  icon: Icons.add_rounded,
+                  tooltip: l10n.scoreStepperIncreaseTooltip,
+                  band: _iconBand,
+                  alignment: Alignment.topCenter,
+                  onTap: canIncrement ? onIncrement : null,
                 ),
               ),
+              Expanded(
+                child: _StepperZone(
+                  key: Key('currentMonthFixtures.$side.decrement.$fixtureId'),
+                  icon: Icons.remove_rounded,
+                  tooltip: l10n.scoreStepperDecreaseTooltip,
+                  band: _iconBand,
+                  alignment: Alignment.bottomCenter,
+                  onTap: canDecrement ? onDecrement : null,
+                ),
+              ),
+            ],
+          ),
+          // The dividers and the value sit over the two halves and never
+          // take a tap from them.
+          IgnorePointer(
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: _iconBand),
+                Divider(
+                  height: AppStroke.hairline,
+                  thickness: AppStroke.hairline,
+                  color: divider,
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      value?.toString() ?? '?',
+                      key: Key('currentMonthFixtures.$side.value.$fixtureId'),
+                      style: TextStyle(
+                        fontSize: AppFontSize.s20,
+                        fontWeight: FontWeight.w800,
+                        color: value == null
+                            ? tokens.textMuted
+                            : tokens.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                Divider(
+                  height: AppStroke.hairline,
+                  thickness: AppStroke.hairline,
+                  color: divider,
+                ),
+                const SizedBox(height: _iconBand),
+              ],
             ),
-          ),
-          Divider(
-            height: AppStroke.hairline,
-            thickness: AppStroke.hairline,
-            color: divider,
-          ),
-          _StepperZone(
-            key: Key('currentMonthFixtures.$side.decrement.$fixtureId'),
-            icon: Icons.remove_rounded,
-            tooltip: l10n.scoreStepperDecreaseTooltip,
-            height: _zoneHeight,
-            onTap: canDecrement ? onDecrement : null,
           ),
         ],
       ),
@@ -1381,18 +1424,22 @@ class _ScoreStepper extends StatelessWidget {
   }
 }
 
+/// One touch half of a [_ScoreStepper]: the whole half is the target, and
+/// its icon is drawn in the [band] at its outer edge ([alignment]).
 class _StepperZone extends StatelessWidget {
   const _StepperZone({
     required this.icon,
     required this.tooltip,
-    required this.height,
+    required this.band,
+    required this.alignment,
     required this.onTap,
     super.key,
   });
 
   final IconData icon;
   final String tooltip;
-  final double height;
+  final double band;
+  final Alignment alignment;
   final VoidCallback? onTap;
 
   @override
@@ -1415,13 +1462,18 @@ class _StepperZone extends StatelessWidget {
                     unawaited(HapticFeedback.selectionClick());
                     tap();
                   },
-            child: SizedBox(
-              height: height,
-              width: double.infinity,
-              child: Icon(
-                icon,
-                size: AppSizes.iconSm,
-                color: tokens.textSecondary,
+            child: SizedBox.expand(
+              child: Align(
+                alignment: alignment,
+                child: SizedBox(
+                  height: band,
+                  width: double.infinity,
+                  child: Icon(
+                    icon,
+                    size: AppSizes.iconSm,
+                    color: tokens.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1432,9 +1484,12 @@ class _StepperZone extends StatelessWidget {
 }
 
 class _WinPercentage extends StatelessWidget {
-  const _WinPercentage({required this.percentage});
+  const _WinPercentage({required this.percentage, required this.teamName});
 
   final int percentage;
+
+  /// Spoken with the share: "86%" alone did not say whose win (UI-28).
+  final String teamName;
 
   static const double _percentageWidth = 48;
   static const double _labelWidth = 40;
@@ -1444,7 +1499,7 @@ class _WinPercentage extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Semantics(
-      label: '$percentage%',
+      label: '\u0641\u0648\u0632 $teamName $percentage%',
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: FittedBox(
@@ -1530,37 +1585,47 @@ class _RevealPredictionsButton extends StatelessWidget {
           unawaited(HapticFeedback.selectionClick());
           onTap();
         },
-        child: Container(
-          height: _DoubleGlowButton._height,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.brButton,
-            border: Border.all(color: tokens.primary),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                Icons.groups_rounded,
-                size: AppSizes.iconSm,
-                color: tokens.primaryText,
+        // A 48 touch target around the 36px button (UI-16).
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: _DoubleGlowButton._height,
               ),
-              const SizedBox(width: AppSpacing.xs),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppFontSize.s12,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.brButton,
+                border: Border.all(color: tokens.primary),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(
+                    Icons.groups_rounded,
+                    size: AppSizes.iconSm,
                     color: tokens.primaryText,
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: AppFontSize.s12,
+                        color: tokens.primaryText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1611,61 +1676,72 @@ class _DoubleGlowButton extends StatelessWidget {
                   onTap();
                 }
               : null,
-          child: AnimatedContainer(
-            duration: AppMotion.fast,
-            height: _height,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.brButton,
-              color: selected ? null : tokens.primary,
-              gradient: selected
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[
-                        tokens.primary,
-                        Color.lerp(tokens.primary, Colors.black, 0.25)!,
-                      ],
-                    )
-                  : null,
-              border: Border.all(
-                color: selected ? tokens.gold : tokens.primary,
-                width: selected ? 1.5 : AppStroke.hairline,
-              ),
-              boxShadow: selected
-                  ? <BoxShadow>[
-                      BoxShadow(
-                        color: tokens.primary.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : const <BoxShadow>[],
+          // A 48 touch target around the 36px button (UI-16); the label
+          // wraps at large text instead of being cut (UI-18).
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: AppSizes.minTouchTarget,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(
-                  selected ? Icons.bolt_rounded : Icons.bolt_outlined,
-                  size: AppSizes.iconSm,
-                  color: selected ? tokens.gold : tokens.onPrimary,
+            child: Center(
+              child: AnimatedContainer(
+                duration: AppMotion.fast,
+                constraints: const BoxConstraints(minHeight: _height),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: AppFontSize.s12,
-                      color: tokens.onPrimary,
-                    ),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.brButton,
+                  color: selected ? null : tokens.primary,
+                  gradient: selected
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: <Color>[
+                            tokens.primary,
+                            Color.lerp(tokens.primary, Colors.black, 0.25)!,
+                          ],
+                        )
+                      : null,
+                  border: Border.all(
+                    color: selected ? tokens.gold : tokens.primary,
+                    width: selected ? 1.5 : AppStroke.hairline,
                   ),
+                  boxShadow: selected
+                      ? <BoxShadow>[
+                          BoxShadow(
+                            color: tokens.primary.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : const <BoxShadow>[],
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(
+                      selected ? Icons.bolt_rounded : Icons.bolt_outlined,
+                      size: AppSizes.iconSm,
+                      color: selected ? tokens.gold : tokens.onPrimary,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: AppFontSize.s12,
+                          color: tokens.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

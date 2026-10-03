@@ -38,7 +38,8 @@ class SegmentedPills extends StatelessWidget {
   /// When set, each pill is keyed `'$keyPrefix.$index'`.
   final String? keyPrefix;
 
-  static const double _height = 42;
+  /// A full touch target: the pills were 42 (UI-15).
+  static const double _height = 48;
 
   @override
   Widget build(BuildContext context) {

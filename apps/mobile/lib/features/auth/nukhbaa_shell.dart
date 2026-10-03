@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
+import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/notifications/push_link.dart';
 import '../../core/perf/frame_reporter.dart';
@@ -212,58 +213,69 @@ class NukhbaaBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
+  /// The bar's height at normal text size; it grows with larger text.
+  static const double minHeight = 70;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    // Opaque, closed by a hairline on top: at 96% the list scrolled under
+    // the bar read through it. No fixed height: the five items share the
+    // tallest one's height, so the bar grows with the system text size
+    // instead of overflowing at x2.0 (UI-04).
     return Material(
-      color: tokens.backgroundElevated.withValues(alpha: 0.96),
+      color: tokens.backgroundElevated,
+      shape: Border(top: BorderSide(color: tokens.border)),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            children: <Widget>[
-              _item(
-                context,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: 'الرئيسية',
-                navKey: const Key('nav.item.home'),
-                destination: 0,
-              ),
-              _item(
-                context,
-                icon: Icons.sports_soccer_outlined,
-                activeIcon: Icons.sports_soccer,
-                label: 'المباريات',
-                navKey: const Key('nav.item.fixtures'),
-                destination: 1,
-              ),
-              _item(
-                context,
-                icon: Icons.bolt_outlined,
-                activeIcon: Icons.bolt_rounded,
-                label: 'توقعاتي',
-                navKey: const Key('nav.item.predictions'),
-                destination: 2,
-              ),
-              _item(
-                context,
-                icon: Icons.leaderboard_outlined,
-                activeIcon: Icons.leaderboard_rounded,
-                label: 'المتصدرون',
-                navKey: const Key('nav.item.leaders'),
-                destination: 3,
-              ),
-              _item(
-                context,
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'الحساب',
-                navKey: const Key('nav.item.account'),
-                destination: 4,
-              ),
-            ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: minHeight),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _item(
+                  context,
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: 'الرئيسية',
+                  navKey: const Key('nav.item.home'),
+                  destination: 0,
+                ),
+                _item(
+                  context,
+                  icon: Icons.sports_soccer_outlined,
+                  activeIcon: Icons.sports_soccer,
+                  label: 'المباريات',
+                  navKey: const Key('nav.item.fixtures'),
+                  destination: 1,
+                ),
+                _item(
+                  context,
+                  icon: Icons.bolt_outlined,
+                  activeIcon: Icons.bolt_rounded,
+                  label: 'توقعاتي',
+                  navKey: const Key('nav.item.predictions'),
+                  destination: 2,
+                ),
+                _item(
+                  context,
+                  icon: Icons.leaderboard_outlined,
+                  activeIcon: Icons.leaderboard_rounded,
+                  label: 'المتصدرون',
+                  navKey: const Key('nav.item.leaders'),
+                  destination: 3,
+                ),
+                _item(
+                  context,
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                  label: 'الحساب',
+                  navKey: const Key('nav.item.account'),
+                  destination: 4,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -283,23 +295,39 @@ class NukhbaaBottomNav extends StatelessWidget {
     // Blue made for text: primaryLight was 4.49:1 on the light bar (UI-03).
     final color = active ? tokens.primaryText : tokens.textSecondary;
     return Expanded(
-      child: InkWell(
-        key: navKey,
-        onTap: () => onChanged(destination),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(active ? activeIcon : icon, size: 22, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: AppFontSize.s10,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              ),
+      // A screen reader hears which tab is the current one (UI-04).
+      child: Semantics(
+        container: true,
+        button: true,
+        selected: active,
+        child: InkWell(
+          key: navKey,
+          onTap: () => onChanged(destination),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.sm,
+              horizontal: AppSpacing.xs,
             ),
-          ],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(active ? activeIcon : icon, size: 22, color: color),
+                const SizedBox(height: AppSpacing.xs),
+                // 12px, from 10: the smallest label the bar may carry.
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: AppFontSize.s12,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

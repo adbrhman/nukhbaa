@@ -471,6 +471,8 @@ class _HomeHeader extends ConsumerWidget {
         ),
         IconButton(
           key: const Key('home.notifications'),
+          // Named for screen readers: the badge alone read "19" (UI-27).
+          tooltip: 'الإشعارات',
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => const NotificationsScreen(),
@@ -485,6 +487,7 @@ class _HomeHeader extends ConsumerWidget {
         ),
         IconButton(
           key: const Key('home.account'),
+          tooltip: 'الحساب',
           onPressed: onAccount,
           icon: const Icon(Icons.person_outline_rounded),
           color: tokens.textSecondary,

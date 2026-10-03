@@ -232,26 +232,26 @@ class _FixturePredictionCard extends ConsumerWidget {
             // with its points) on the first line, the call itself below,
             // and when it was made last, as the least needed detail.
             if (kickoffAt != null || status != null) ...<Widget>[
-              Row(
+              // A Wrap, not a Row: at large text the status badge moves under
+              // the kickoff instead of overflowing beside it (UI-36).
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
                 children: <Widget>[
-                  Expanded(
-                    child: kickoffAt == null
-                        ? const SizedBox.shrink()
-                        : Text(
-                            l10n.historyKickoffAt(
-                              formatDayAndTime(context, kickoffAt),
-                            ),
-                            key: Key('history.kickoffAt.${prediction.id}'),
-                            style: metaStyle?.copyWith(
-                              color: tokens.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  ),
-                  if (status != null) ...<Widget>[
-                    const SizedBox(width: AppSpacing.sm),
-                    status,
-                  ],
+                  if (kickoffAt != null)
+                    Text(
+                      l10n.historyKickoffAt(
+                        formatDayAndTime(context, kickoffAt),
+                      ),
+                      key: Key('history.kickoffAt.${prediction.id}'),
+                      style: metaStyle?.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ?status,
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
