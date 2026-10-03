@@ -244,141 +244,153 @@ class _ErrorLogSectionState extends ConsumerState<ErrorLogSection> {
       adminErrorLogProvider(_query),
     );
     final int? selectedId = _selectedId;
-    return ListView(
-      key: const Key('admin.errors.list'),
-      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-      children: <Widget>[
-        const AdminSectionHeader(
-          title: 'سجل الأخطاء',
-          subtitle:
-              'كل خطأ غير متوقع في الخادم أو التطبيق أو الويب، في سطر واحد '
-              'بعدّاد. ابحث برمز المشكلة الذي يرسله اللاعب.',
-        ),
-        AdminCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              AdminTextField(
-                key: const Key('admin.errors.codeField'),
-                controller: _code,
-                hint: 'رمز المشكلة الذي أرسله اللاعب',
-                prefixIcon: Icons.search_rounded,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: AdminSecondaryButton(
-                      key: const Key('admin.errors.search'),
-                      label: 'بحث بالرمز',
-                      icon: Icons.search_rounded,
-                      onPressed: _search,
-                    ),
-                  ),
-                  if (_searched.isNotEmpty) ...<Widget>[
-                    const SizedBox(width: AppSpacing.sm),
-                    IconButton(
-                      key: const Key('admin.errors.clearSearch'),
-                      tooltip: 'إلغاء البحث',
-                      onPressed: _clearSearch,
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(adminErrorReleasesProvider);
+        ref.invalidate(adminErrorLogProvider(_query));
+        try {
+          await ref.read(adminErrorLogProvider(_query).future);
+        } on Object {
+          // The list shows the failure with its retry button.
+        }
+      },
+      child: ListView(
+        key: const Key('admin.errors.list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        children: <Widget>[
+          const AdminSectionHeader(
+            title: 'سجل الأخطاء',
+            subtitle:
+                'كل خطأ غير متوقع في الخادم أو التطبيق أو الويب، في سطر واحد '
+                'بعدّاد. ابحث برمز المشكلة الذي يرسله اللاعب.',
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        page.when(
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          error: (Object error, _) => AdminCard(
+          AdminCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(
-                  error is AppError
-                      ? ErrorPresenter.message(error)
-                      : 'تعذّر تحميل سجل الأخطاء',
-                  style: TextStyle(color: tokens.error),
+                AdminTextField(
+                  key: const Key('admin.errors.codeField'),
+                  controller: _code,
+                  hint: 'رمز المشكلة الذي أرسله اللاعب',
+                  prefixIcon: Icons.search_rounded,
                 ),
-                TextButton(
-                  onPressed: () =>
-                      ref.invalidate(adminErrorLogProvider(_query)),
-                  child: const Text('إعادة المحاولة'),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: AdminSecondaryButton(
+                        key: const Key('admin.errors.search'),
+                        label: 'بحث بالرمز',
+                        icon: Icons.search_rounded,
+                        onPressed: _search,
+                      ),
+                    ),
+                    if (_searched.isNotEmpty) ...<Widget>[
+                      const SizedBox(width: AppSpacing.sm),
+                      IconButton(
+                        key: const Key('admin.errors.clearSearch'),
+                        tooltip: 'إلغاء البحث',
+                        onPressed: _clearSearch,
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
-          data: (AdminErrorListDto data) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_searched.isEmpty)
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: <Widget>[
-                    for (final String list in ErrorLogLabels.lists)
-                      ChoiceChip(
-                        key: Key('admin.errors.tab.$list'),
-                        label: Text(
-                          '${ErrorLogLabels.list(list)} '
-                          '(${_count(data, list)})',
+          const SizedBox(height: AppSpacing.md),
+          page.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (Object error, _) => AdminCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    error is AppError
+                        ? ErrorPresenter.message(error)
+                        : 'تعذّر تحميل سجل الأخطاء',
+                    style: TextStyle(color: tokens.error),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        ref.invalidate(adminErrorLogProvider(_query)),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+            data: (AdminErrorListDto data) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (_searched.isEmpty)
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: <Widget>[
+                      for (final String list in ErrorLogLabels.lists)
+                        ChoiceChip(
+                          key: Key('admin.errors.tab.$list'),
+                          label: Text(
+                            '${ErrorLogLabels.list(list)} '
+                            '(${_count(data, list)})',
+                          ),
+                          selected: _list == list,
+                          onSelected: (_) => setState(() {
+                            _list = list;
+                            _selectedId = null;
+                          }),
                         ),
-                        selected: _list == list,
-                        onSelected: (_) => setState(() {
-                          _list = list;
-                          _selectedId = null;
-                        }),
+                    ],
+                  )
+                else
+                  Text(
+                    'نتائج الرمز $_searched',
+                    key: const Key('admin.errors.searchTitle'),
+                    style: context.text.titleSmall?.copyWith(
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.md),
+                if (data.errors.isEmpty)
+                  const AdminEmptyState(
+                    icon: Icons.check_circle_outline_rounded,
+                    title: 'لا توجد أخطاء هنا',
+                  )
+                else
+                  for (final AdminErrorDto error in data.errors) ...<Widget>[
+                    _ErrorRow(
+                      key: Key('admin.errors.row.${error.id}'),
+                      error: error,
+                      selected: error.id == selectedId,
+                      onTap: () => setState(
+                        () => _selectedId = error.id == selectedId
+                            ? null
+                            : error.id,
+                      ),
+                    ),
+                    if (error.id == selectedId)
+                      _ErrorDetail(
+                        key: Key('admin.errors.detail.${error.id}'),
+                        id: error.id,
+                        admins: data.admins,
+                        onChanged: () =>
+                            ref.invalidate(adminErrorLogProvider(_query)),
                       ),
                   ],
-                )
-              else
-                Text(
-                  'نتائج الرمز $_searched',
-                  key: const Key('admin.errors.searchTitle'),
-                  style: context.text.titleSmall?.copyWith(
-                    color: tokens.textPrimary,
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.md),
-              if (data.errors.isEmpty)
-                const AdminEmptyState(
-                  icon: Icons.check_circle_outline_rounded,
-                  title: 'لا توجد أخطاء هنا',
-                )
-              else
-                for (final AdminErrorDto error in data.errors) ...<Widget>[
-                  _ErrorRow(
-                    key: Key('admin.errors.row.${error.id}'),
-                    error: error,
-                    selected: error.id == selectedId,
-                    onTap: () => setState(
-                      () => _selectedId = error.id == selectedId
-                          ? null
-                          : error.id,
-                    ),
-                  ),
-                  if (error.id == selectedId)
-                    _ErrorDetail(
-                      key: Key('admin.errors.detail.${error.id}'),
-                      id: error.id,
-                      admins: data.admins,
-                      onChanged: () =>
-                          ref.invalidate(adminErrorLogProvider(_query)),
-                    ),
-                ],
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const _ReleasesCard(),
-      ],
+          const SizedBox(height: AppSpacing.lg),
+          const _ReleasesCard(),
+        ],
+      ),
     );
   }
 

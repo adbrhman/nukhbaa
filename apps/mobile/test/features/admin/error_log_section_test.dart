@@ -51,6 +51,7 @@ Map<String, Object?> _error({String status = 'new'}) => {
 final class _Server {
   final List<http.Request> requests = <http.Request>[];
   String status = 'new';
+  bool released = true;
 
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
@@ -63,6 +64,13 @@ final class _Server {
         'admins': [
           {'id': _admin, 'display_name': 'مشرف'},
         ],
+      });
+    }
+    if (path == '/admin/error-releases' && !released) {
+      return _json(const {
+        'schema_version': 1,
+        'releases': <Object>[],
+        'files': <Object>[],
       });
     }
     if (path == '/admin/error-releases') {
@@ -218,6 +226,36 @@ void main() {
     expect(find.textContaining('(1 حرج)'), findsOneWidget);
     expect(
       find.textContaining('routes/seasons/index.dart · 1 خطأ'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('pulling down reloads the list and the release summary', (
+    tester,
+  ) async {
+    final server = _Server()..released = false;
+    await _open(tester, server);
+    // Tall enough that the summary stays on screen, as on a phone with
+    // few errors: it is never rebuilt by scrolling, only by the pull.
+    tester.view.physicalSize = const Size(1080, 6000);
+    await tester.pumpAndSettle();
+    expect(find.text('لا أخطاء في أي إصدار بعد'), findsOneWidget);
+
+    // A report arrives while the tab is open.
+    server.released = true;
+    final int listReads = server.to('/admin/errors').length;
+    await tester.fling(
+      find.byKey(const Key('admin.errors.list')),
+      const Offset(0, 600),
+      1000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(server.to('/admin/errors').length, listReads + 1);
+    expect(server.to('/admin/error-releases'), hasLength(2));
+    expect(find.text('لا أخطاء في أي إصدار بعد'), findsNothing);
+    expect(
+      find.byKey(const Key('admin.errors.release.abc1235')),
       findsOneWidget,
     );
   });
