@@ -1,14 +1,26 @@
 library;
 
 import 'package:contracts/contracts.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'notifications_providers.dart';
+
+/// Opens an address taken from an announcement.
+///
+/// A provider so a test can see which address was opened without a real
+/// browser; in the app it hands the address to the system (browser, WhatsApp).
+final Provider<Future<bool> Function(Uri uri)> notificationLinkOpenerProvider =
+    Provider<Future<bool> Function(Uri uri)>(
+      (ref) =>
+          (Uri uri) => launchUrl(uri, mode: LaunchMode.externalApplication),
+    );
 
 /// The caller's own notification inbox, newest first, with a "mark read"
 /// affordance per unread row.
@@ -36,6 +48,104 @@ class NotificationsScreen extends ConsumerWidget {
             _NotificationRow(notification: notification),
       ),
     );
+  }
+}
+
+/// Matches an https address in free text. Only characters legal in a URL are
+/// accepted, so the match stops at the first Arabic letter or Arabic mark.
+final RegExp _httpsLink = RegExp(
+  r"https://[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+",
+  caseSensitive: false,
+);
+
+/// Drops sentence punctuation that trails an address but is not part of it.
+String _withoutTrailingPunctuation(String address) {
+  const String trailing = '.,;:!?)';
+  int end = address.length;
+  while (end > 0 && trailing.contains(address[end - 1])) {
+    end--;
+  }
+  return address.substring(0, end);
+}
+
+/// The body of an announcement with every https address made tappable.
+///
+/// The address opens outside the app exactly as the admin typed it. Nothing
+/// else is tappable: plain text stays plain and a non-https address is never
+/// opened.
+class _LinkifiedBody extends ConsumerStatefulWidget {
+  const _LinkifiedBody({
+    required this.text,
+    required this.style,
+    required this.linkStyle,
+    super.key,
+  });
+
+  final String text;
+  final TextStyle style;
+  final TextStyle linkStyle;
+
+  @override
+  ConsumerState<_LinkifiedBody> createState() => _LinkifiedBodyState();
+}
+
+class _LinkifiedBodyState extends ConsumerState<_LinkifiedBody> {
+  final List<TapGestureRecognizer> _recognizers = <TapGestureRecognizer>[];
+
+  @override
+  void dispose() {
+    _releaseRecognizers();
+    super.dispose();
+  }
+
+  void _releaseRecognizers() {
+    for (final TapGestureRecognizer recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    _recognizers.clear();
+  }
+
+  Future<void> _open(Uri uri) async {
+    try {
+      await ref.read(notificationLinkOpenerProvider)(uri);
+    } on Object {
+      // No app could open the address; the row stays as it was.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _releaseRecognizers();
+    final String text = widget.text;
+    final List<InlineSpan> spans = <InlineSpan>[];
+    int cursor = 0;
+    for (final RegExpMatch match in _httpsLink.allMatches(text)) {
+      final String address = _withoutTrailingPunctuation(match.group(0)!);
+      final Uri? uri = Uri.tryParse(address);
+      if (uri == null || uri.host.isEmpty) {
+        continue;
+      }
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+      final TapGestureRecognizer recognizer = TapGestureRecognizer()
+        ..onTap = () => _open(uri);
+      _recognizers.add(recognizer);
+      // A left-to-right mark after the address keeps a closing slash on its
+      // right inside right-to-left text instead of jumping to the front.
+      spans.add(
+        TextSpan(
+          text: '$address\u200E',
+          style: widget.linkStyle,
+          recognizer: recognizer,
+        ),
+      );
+      cursor = match.start + address.length;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+    return Text.rich(TextSpan(children: spans), style: widget.style);
   }
 }
 
@@ -111,10 +221,15 @@ class _NotificationRow extends ConsumerWidget {
         children: [
           if (hasBody) ...[
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              body,
+            _LinkifiedBody(
               key: Key('notifications.body.${notification.id}'),
+              text: body,
               style: TextStyle(color: tokens.textPrimary),
+              linkStyle: TextStyle(
+                color: tokens.primaryText,
+                decoration: TextDecoration.underline,
+                decorationColor: tokens.primaryText,
+              ),
             ),
           ],
           const SizedBox(height: AppSpacing.xs),
