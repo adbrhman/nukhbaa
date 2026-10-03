@@ -13,6 +13,7 @@ import 'screens/sections/announcement_section.dart';
 import 'screens/sections/admin_counted_fixtures_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/champion_admin_section.dart';
+import 'screens/sections/error_log_section.dart';
 import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/fixture_delete_section.dart';
@@ -38,6 +39,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.announcements => 'إرسال إشعار',
     AdminSection.ledger => l10n.adminLedgerLookupTab,
     AdminSection.audit => l10n.adminAuditLogTab,
+    AdminSection.errorLog => 'سجل الأخطاء',
     AdminSection.referrals => 'نظام الدعوات',
     AdminSection.champions => 'تتويج بطل الشهر',
   };
@@ -70,7 +72,10 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
       AdminSection.referrals,
     ],
   ),
-  (title: 'التحليلات والأمان', sections: [AdminSection.audit]),
+  (
+    title: 'التحليلات والأمان',
+    sections: [AdminSection.audit, AdminSection.errorLog],
+  ),
 ];
 
 /// قائمة التنقّل المشتركة بين الشريط الجانبي الدائم (سطح المكتب/اللوحي)
@@ -153,6 +158,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.monthlyCompetitions =>
         const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
+      AdminSection.errorLog => const ErrorLogSection(),
       AdminSection.users => const UserSanctionSection(),
       AdminSection.userNames => const UserNamesSection(),
       AdminSection.announcements => const AnnouncementSection(),

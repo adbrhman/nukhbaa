@@ -91,6 +91,7 @@ String _actionLabel(String action) => switch (action) {
   'round_predictions_viewed' => 'عرض توقعات جولة',
   'fixture_predictions_viewed' => 'عرض توقعات مباراة',
   'user_renamed' => 'تعديل اسم مستخدم',
+  'error_updated' => 'تعديل خطأ في سجل الأخطاء',
   _ => action,
 };
 
