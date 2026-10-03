@@ -25,6 +25,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.errorContainer,
     required this.success,
     required this.successContainer,
+    required this.successText,
+    required this.errorText,
+    required this.errorFill,
+    required this.onSuccess,
+    required this.onGold,
     required this.tintStrength,
     required this.textPrimary,
     required this.textSecondary,
@@ -33,6 +38,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.backgroundGradient,
     required this.primaryGradient,
     required this.goldGradient,
+    required this.actionGradient,
     required this.shadowSm,
     required this.shadowMd,
     required this.shadowLg,
@@ -62,6 +68,22 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color success;
   final Color successContainer;
 
+  /// Green for text: AA (4.5:1) on every surface, its container and the blue
+  /// viewer row -- [success] is a fill and an icon colour.
+  final Color successText;
+
+  /// Red for text, likewise; [error] stays the fill and icon colour.
+  final Color errorText;
+
+  /// Red under white text (the unread badge): 5.4:1 in both themes.
+  final Color errorFill;
+
+  /// Content on a [success] fill (the saved check).
+  final Color onSuccess;
+
+  /// Content on a [gold] fill (the day strip's relative badge).
+  final Color onGold;
+
   /// Alpha for a brand-color wash (e.g. a match card's corner glow) —
   /// deliberately weaker in light mode, where the same alpha reads far more
   /// saturated against a light surface than it does in dark mode.
@@ -73,6 +95,10 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Gradient backgroundGradient;
   final Gradient primaryGradient;
   final Gradient goldGradient;
+
+  /// The gradient behind white text (4.5:1 or better across it);
+  /// [primaryGradient] is decorative.
+  final Gradient actionGradient;
   final List<BoxShadow> shadowSm;
   final List<BoxShadow> shadowMd;
   final List<BoxShadow> shadowLg;
@@ -100,6 +126,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColors.errorContainer,
     success: AppColors.success,
     successContainer: AppColors.successContainer,
+    successText: AppColors.success,
+    errorText: AppColors.errorText,
+    errorFill: AppColors.errorFill,
+    onSuccess: AppColors.onSuccess,
+    onGold: AppColors.onGold,
     tintStrength: 0.14,
     textPrimary: AppColors.textPrimary,
     textSecondary: AppColors.textSecondary,
@@ -108,6 +139,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     backgroundGradient: AppColors.backgroundGradient,
     primaryGradient: AppColors.primaryGradient,
     goldGradient: AppColors.goldGradient,
+    actionGradient: AppColors.actionGradient,
     shadowSm: [
       BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4)),
     ],
@@ -148,6 +180,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColorsLight.errorContainer,
     success: AppColorsLight.success,
     successContainer: AppColorsLight.successContainer,
+    successText: AppColorsLight.successText,
+    errorText: AppColorsLight.errorText,
+    errorFill: AppColorsLight.error,
+    onSuccess: AppColorsLight.onSuccess,
+    onGold: AppColorsLight.onGold,
     tintStrength: 0.07,
     textPrimary: AppColorsLight.textPrimary,
     textSecondary: AppColorsLight.textSecondary,
@@ -156,6 +193,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     backgroundGradient: AppColorsLight.backgroundGradient,
     primaryGradient: AppColorsLight.primaryGradient,
     goldGradient: AppColorsLight.goldGradient,
+    actionGradient: AppColorsLight.actionGradient,
     shadowSm: [
       BoxShadow(color: Color(0x14101A28), blurRadius: 12, offset: Offset(0, 4)),
     ],
@@ -197,6 +235,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? errorContainer,
     Color? success,
     Color? successContainer,
+    Color? successText,
+    Color? errorText,
+    Color? errorFill,
+    Color? onSuccess,
+    Color? onGold,
     double? tintStrength,
     Color? textPrimary,
     Color? textSecondary,
@@ -205,6 +248,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Gradient? backgroundGradient,
     Gradient? primaryGradient,
     Gradient? goldGradient,
+    Gradient? actionGradient,
     List<BoxShadow>? shadowSm,
     List<BoxShadow>? shadowMd,
     List<BoxShadow>? shadowLg,
@@ -230,6 +274,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
       errorContainer: errorContainer ?? this.errorContainer,
       success: success ?? this.success,
       successContainer: successContainer ?? this.successContainer,
+      successText: successText ?? this.successText,
+      errorText: errorText ?? this.errorText,
+      errorFill: errorFill ?? this.errorFill,
+      onSuccess: onSuccess ?? this.onSuccess,
+      onGold: onGold ?? this.onGold,
       tintStrength: tintStrength ?? this.tintStrength,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
@@ -238,6 +287,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       backgroundGradient: backgroundGradient ?? this.backgroundGradient,
       primaryGradient: primaryGradient ?? this.primaryGradient,
       goldGradient: goldGradient ?? this.goldGradient,
+      actionGradient: actionGradient ?? this.actionGradient,
       shadowSm: shadowSm ?? this.shadowSm,
       shadowMd: shadowMd ?? this.shadowMd,
       shadowLg: shadowLg ?? this.shadowLg,
@@ -276,6 +326,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
         other.successContainer,
         t,
       )!,
+      successText: Color.lerp(successText, other.successText, t)!,
+      errorText: Color.lerp(errorText, other.errorText, t)!,
+      errorFill: Color.lerp(errorFill, other.errorFill, t)!,
+      onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
+      onGold: Color.lerp(onGold, other.onGold, t)!,
       tintStrength: tintStrength + (other.tintStrength - tintStrength) * t,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
@@ -286,6 +341,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
           : other.backgroundGradient,
       primaryGradient: t < 0.5 ? primaryGradient : other.primaryGradient,
       goldGradient: t < 0.5 ? goldGradient : other.goldGradient,
+      actionGradient: t < 0.5 ? actionGradient : other.actionGradient,
       shadowSm: t < 0.5 ? shadowSm : other.shadowSm,
       shadowMd: t < 0.5 ? shadowMd : other.shadowMd,
       shadowLg: t < 0.5 ? shadowLg : other.shadowLg,

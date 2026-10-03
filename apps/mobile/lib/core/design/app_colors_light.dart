@@ -39,8 +39,16 @@ abstract final class AppColorsLight {
   static const Color error = Color(0xFFD11A2B);
   static const Color errorContainer = Color(0xFFFDECEE);
 
+  /// Danger as TEXT: [error] drops to 4.3:1 on the highest surface and the
+  /// blue viewer row; this holds 5.2:1 or better on every light surface.
+  static const Color errorText = Color(0xFFB42318);
+
   static const Color success = Color(0xFF00875A);
   static const Color successContainer = Color(0xFFE3F8F0);
+
+  /// Success as TEXT: [success] is 4.1:1 on its own container and 3.7:1 on
+  /// the viewer row; this holds 5.2:1 or better on every light surface.
+  static const Color successText = Color(0xFF006B47);
   static const Color onSuccess = Color(0xFFFFFFFF);
 
   static const Color warning = Color(0xFF9A6400);
@@ -76,5 +84,13 @@ abstract final class AppColorsLight {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [gold, goldDark],
+  );
+
+  /// The gradient behind white text: white reads 6.7:1 to 10.4:1 across it
+  /// (the light [primaryGradient] starts at 4.5:1 and stays decorative).
+  static const LinearGradient actionGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, primaryDark],
   );
 }

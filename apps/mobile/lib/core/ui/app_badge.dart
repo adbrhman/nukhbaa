@@ -30,14 +30,10 @@ class AppBadge extends StatelessWidget {
         tokens.primaryText,
       ),
       AppBadgeTone.gold => (tokens.gold.withValues(alpha: 0.16), tokens.gold),
-      AppBadgeTone.success => (
-        tokens.primary.withValues(alpha: 0.14),
-        tokens.primaryLight,
-      ),
-      AppBadgeTone.danger => (
-        tokens.error.withValues(alpha: 0.14),
-        tokens.error,
-      ),
+      // Green means success and red means danger (2026-09-24), each in
+      // the text shade made for its own container (UI-06).
+      AppBadgeTone.success => (tokens.successContainer, tokens.successText),
+      AppBadgeTone.danger => (tokens.errorContainer, tokens.errorText),
       AppBadgeTone.muted => (tokens.surfaceHigh, tokens.textMuted),
       AppBadgeTone.neutral => (tokens.surfaceElevated, tokens.textSecondary),
     };

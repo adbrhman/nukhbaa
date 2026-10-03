@@ -83,6 +83,16 @@ abstract final class AppColors {
   /// glowing.
   static const Color errorContainer = Color(0xFF2E0C13);
 
+  /// DERIVED -- danger as TEXT. [error] reads 4.4:1 on a raised surface and
+  /// 3.8:1 on the highest, under AA for the small labels it marks (the live
+  /// minute, a fall on the board); this lighter red holds 5.3:1 or better on
+  /// every dark surface, its container and the blue viewer row.
+  static const Color errorText = Color(0xFFFF7A85);
+
+  /// DERIVED -- danger as a FILL under white text (the unread badge): white
+  /// on [error] is 3.5:1, on this 5.4:1. The same red as the light theme's.
+  static const Color errorFill = Color(0xFFD11A2B);
+
   /// SHEET Success.
   static const Color success = Color(0xFF19E68C);
   static const Color successContainer = Color(0xFF06291C);
@@ -133,5 +143,15 @@ abstract final class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [gold, goldDark],
+  );
+
+  /// DERIVED -- the gradient behind white text, from the action blue DOWN to
+  /// its pressed depth: white reads 4.5:1 to 6.7:1 across it.
+  /// [primaryGradient] starts at [primaryLight], where white is 3.4:1, so it
+  /// stays for decoration (the wordmark) only.
+  static const LinearGradient actionGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, primaryDark],
   );
 }

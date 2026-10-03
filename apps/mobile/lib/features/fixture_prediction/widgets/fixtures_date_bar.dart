@@ -20,7 +20,6 @@ import '../../../core/design/app_motion.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Midnight-local for [value] — the canonical "day" key used by the strip,
@@ -190,9 +189,8 @@ class _DayTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? relative = badge;
     final Color primaryText = selected ? tokens.onPrimary : tokens.textPrimary;
-    final Color secondaryText = selected
-        ? tokens.onPrimary.withValues(alpha: 0.85)
-        : tokens.textMuted;
+    // Full white on the selected chip: at 85% it read 3.7:1 (UI-02).
+    final Color secondaryText = selected ? tokens.onPrimary : tokens.textMuted;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
       child: Material(
@@ -234,11 +232,14 @@ class _DayTab extends StatelessWidget {
                             child: Text(
                               relative,
                               maxLines: 1,
-                              style: const TextStyle(
-                                fontSize: AppFontSize.s9,
+                              // The theme's own content colour on gold: a
+                              // fixed dark brown read 2.9:1 on the light
+                              // theme's gold (UI-02).
+                              style: TextStyle(
+                                fontSize: AppFontSize.s10,
                                 height: 1.1,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.onBronze,
+                                color: tokens.onGold,
                               ),
                             ),
                           ),

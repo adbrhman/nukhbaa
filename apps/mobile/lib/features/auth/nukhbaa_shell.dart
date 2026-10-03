@@ -280,7 +280,8 @@ class NukhbaaBottomNav extends StatelessWidget {
   }) {
     final tokens = context.tokens;
     final active = index == destination;
-    final color = active ? tokens.primaryLight : tokens.textSecondary;
+    // Blue made for text: primaryLight was 4.49:1 on the light bar (UI-03).
+    final color = active ? tokens.primaryText : tokens.textSecondary;
     return Expanded(
       child: InkWell(
         key: navKey,

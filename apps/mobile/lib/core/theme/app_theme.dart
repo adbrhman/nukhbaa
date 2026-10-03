@@ -203,6 +203,12 @@ abstract final class AppTheme {
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
+      // White on the dark danger red is 3.5:1; every Badge (the unread
+      // count) takes the fill made for white text instead (UI-05).
+      badgeTheme: BadgeThemeData(
+        backgroundColor: tokens.errorFill,
+        textColor: scheme.onError,
+      ),
       dividerTheme: DividerThemeData(color: divider, thickness: 1, space: 1),
     );
   }

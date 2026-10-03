@@ -526,7 +526,8 @@ class _OverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: tokens.primaryGradient,
+        // White text sits on it: the gradient made for white (UI-07).
+        gradient: tokens.actionGradient,
         borderRadius: AppRadius.brLg,
         boxShadow: tokens.shadowMd,
       ),
@@ -571,8 +572,9 @@ class _OverviewCard extends StatelessWidget {
             fixtureCount == null
                 ? 'جارٍ تحديث مبارياتك...'
                 : _monthFixturesLabel(fixtureCount),
+            // Full white: at 90% it fell to 3.9:1 on the gradient (UI-07).
             style: TextStyle(
-              color: tokens.onPrimary.withValues(alpha: 0.9),
+              color: tokens.onPrimary,
               fontSize: AppFontSize.s13,
             ),
           ),

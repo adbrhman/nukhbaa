@@ -191,7 +191,7 @@ void main() {
     );
     expect(request.request.method, 'POST');
     final checkIcon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
-    expect(checkIcon.color, Colors.white);
+    expect(checkIcon.color, AppTokens.dark.onSuccess);
     final badge = tester.widget<Container>(
       find
           .ancestor(
@@ -204,7 +204,7 @@ void main() {
       badge.constraints,
       const BoxConstraints.tightFor(width: 56, height: 56),
     );
-    expect((badge.decoration! as BoxDecoration).color, AppTokens.dark.primary);
+    expect((badge.decoration! as BoxDecoration).color, AppTokens.dark.success);
   });
 
   testWidgets(

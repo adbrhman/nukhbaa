@@ -591,8 +591,10 @@ class _RankPill extends StatelessWidget {
       ),
       child: Text(
         '$rank',
+        // The medal is the wash and the avatar ring; the figure is text, and
+        // silver/bronze as text fell under 4.5:1 (UI-13).
         style: context.text.labelSmall?.copyWith(
-          color: color,
+          color: context.tokens.textPrimary,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -845,7 +847,9 @@ class _MovementChip extends StatelessWidget {
       );
     }
     final bool up = m > 0;
-    final Color color = up ? t.success : t.error;
+    // The text shades: success/error read 3.7:1 / 4.2:1 on the blue viewer
+    // row (UI-13).
+    final Color color = up ? t.successText : t.errorText;
     // A two-digit move (or larger system text) overflowed the 30px column;
     // the chip now scales down to fit it instead.
     return FittedBox(

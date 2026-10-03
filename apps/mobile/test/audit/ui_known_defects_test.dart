@@ -68,6 +68,18 @@ void _known(
   }, skip: '$id: $reason');
 }
 
+/// A finding that is fixed: the same test, no longer skipped.
+void _fixed(
+  String id,
+  String reason,
+  String description,
+  WidgetTesterCallback body,
+) {
+  group('$id (fixed; was: $reason)', () {
+    testWidgets(description, body);
+  });
+}
+
 Widget _app(ThemeData theme, Widget home, {double scale = 1.0}) => MaterialApp(
   theme: theme,
   debugShowCheckedModeBanner: false,
@@ -278,7 +290,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-02',
     'fixed dark text on the light gold is 2.86:1; the selected date line '
         'is 3.73:1 (fixtures_date_bar.dart:231-241, 193-194)',
@@ -328,7 +340,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-03',
     'the active tab is primaryLight, 4.49:1 on the light bar '
         '(nukhbaa_shell.dart:283)',
@@ -394,7 +406,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-05',
     'white on the dark error red is 3.51:1 (home_screen.dart:479, '
         'account_screen.dart:80)',
@@ -429,7 +441,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-06',
     'the success badge is blue (4.35:1 dark, 3.61:1 light) and the danger '
         'badge is 4.37:1 / 4.28:1 (app_badge.dart:33-40)',
@@ -474,14 +486,17 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-07',
     'white on the gradient start #008BFF is 3.42:1 (home_screen.dart:529, '
         'app_colors.dart:130)',
     'the overview card keeps 4.5:1 for its white text over the whole '
         'gradient',
     (WidgetTester tester) async {
-      _phone(tester);
+      // Tall enough that the lazy home list builds its last card.
+      tester.view.physicalSize = const Size(1080, 7200);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
       for (final (ThemeData theme, AppTokens t) in <(ThemeData, AppTokens)>[
         (AppTheme.dark, _dark),
         (AppTheme.light, _light),
@@ -508,7 +523,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-08',
     'the dark card is a hard-coded #2F2F2F from the retired grey palette '
         '(fotmob_match_card.dart:478)',
@@ -605,7 +620,7 @@ void main() {
     },
   );
 
-  _known(
+  _fixed(
     'UI-13',
     'light silver rank 3.90:1, bronze 4.22:1, moves on the viewer row '
         '3.66:1 / 4.24:1 (leaderboard_board.dart:578-600, 848)',

@@ -471,12 +471,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );
-    // Reference-parity card surface: dark grey center with a restrained
-    // team-colored wash on each team's own side. The actual crest glow is
-    // handled by [_TeamColumn] and uses the same resolved team color.
-    final Color cardBase = tokens.isDark
-        ? const Color(0xFF2F2F2F)
-        : tokens.surface;
+    // The theme's card surface with a restrained team-colored wash on each
+    // team's own side. The dark theme used a hard-coded #2F2F2F from the
+    // retired grey palette (UI-08). The actual crest glow is handled by
+    // [_TeamColumn] and uses the same resolved team color.
+    final Color cardBase = tokens.surface;
     final double intensity = locked ? 0.62 : 1.0;
     final double edgeTint = (tokens.isDark ? 0.18 : 0.07) * intensity;
     final double innerTint = (tokens.isDark ? 0.06 : 0.025) * intensity;
@@ -1067,8 +1066,9 @@ class _ConfirmBadge extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            // Green means a saved prediction (2026-09-24, UI-26).
             color: confirmed
-                ? tokens.primary
+                ? tokens.success
                 : tokens.textPrimary.withValues(alpha: 0.10),
             border: confirmed
                 ? null
@@ -1080,7 +1080,7 @@ class _ConfirmBadge extends StatelessWidget {
           child: Icon(
             Icons.check_rounded,
             size: AppSizes.iconMd,
-            color: confirmed ? Colors.white : tokens.textSecondary,
+            color: confirmed ? tokens.onSuccess : tokens.textSecondary,
           ),
         ),
       ),
@@ -1173,6 +1173,8 @@ class _LockedSlot extends StatelessWidget {
     if (homeGoals != null && awayGoals != null) {
       final bool over = finished ?? false;
       final Color accent = over ? tokens.textMuted : tokens.error;
+      // The dot keeps the danger red; the words take the red made for text.
+      final Color accentText = over ? tokens.textMuted : tokens.errorText;
       final int? clock = minute;
       return Column(
         key: Key('currentMonthFixtures.liveScore.$fixtureId'),
@@ -1205,7 +1207,7 @@ class _LockedSlot extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textDirection: over || clock == null ? null : TextDirection.ltr,
-                style: TextStyle(color: accent, fontSize: AppFontSize.s11),
+                style: TextStyle(color: accentText, fontSize: AppFontSize.s11),
               ),
             ],
           ),
@@ -1213,6 +1215,7 @@ class _LockedSlot extends StatelessWidget {
       );
     }
     final Color color = live ? tokens.error : tokens.textMuted;
+    final Color textColor = live ? tokens.errorText : tokens.textMuted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -1227,7 +1230,7 @@ class _LockedSlot extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: TextStyle(color: color, fontSize: AppFontSize.s11),
+          style: TextStyle(color: textColor, fontSize: AppFontSize.s11),
         ),
       ],
     );
@@ -1542,7 +1545,7 @@ class _RevealPredictionsButton extends StatelessWidget {
               Icon(
                 Icons.groups_rounded,
                 size: AppSizes.iconSm,
-                color: tokens.primary,
+                color: tokens.primaryText,
               ),
               const SizedBox(width: AppSpacing.xs),
               Flexible(
@@ -1553,7 +1556,7 @@ class _RevealPredictionsButton extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: AppFontSize.s12,
-                    color: tokens.primary,
+                    color: tokens.primaryText,
                   ),
                 ),
               ),
