@@ -31,6 +31,7 @@ void main() {
         'user_predictions_viewed',
         'fixture_schedule_corrected',
         'user_renamed',
+        'error_updated',
       });
     });
   });

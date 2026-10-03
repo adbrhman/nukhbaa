@@ -115,6 +115,50 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/errors` -- the error log (migration 0087): the counts of
+  /// every list, the errors of [list] (`all`, `new`, `recurring`,
+  /// `critical`), and the admins an error can be assigned to. A [code] a
+  /// player sent finds its error in every list.
+  Future<Result<AdminErrorListDto>> errorLog({
+    String list = 'all',
+    String? source,
+    String? build,
+    String? code,
+  }) {
+    return _transport.getObject<AdminErrorListDto>(
+      '/admin/errors',
+      query: {
+        'list': list,
+        if (source != null && source.isNotEmpty) 'source': source,
+        if (build != null && build.isNotEmpty) 'build': build,
+        if (code != null && code.isNotEmpty) 'code': code,
+      },
+      parse: AdminErrorListDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/errors/{id}` -- one error with its last samples and builds.
+  Future<Result<AdminErrorDetailDto>> errorDetail(int id) {
+    return _transport.getObject<AdminErrorDetailDto>(
+      '/admin/errors/$id',
+      parse: AdminErrorDetailDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/errors/{id}` -- changes the error's status, severity,
+  /// assignee or notes (only what [change] carries); recorded in the audit
+  /// trail. Answers the error as it now stands.
+  Future<Result<AdminErrorDetailDto>> updateError(
+    int id,
+    AdminErrorUpdateDto change,
+  ) {
+    return _transport.postObject<AdminErrorDetailDto>(
+      '/admin/errors/$id',
+      body: change.toJson(),
+      parse: AdminErrorDetailDto.fromJson,
+    );
+  }
+
   /// `POST /admin/announcements` -- publish one instruction to every active
   /// user. The audience is resolved server-side; the client supplies only the
   /// [title] and [body]. Returns how many inboxes gained the announcement.

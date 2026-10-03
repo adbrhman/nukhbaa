@@ -84,7 +84,12 @@ enum AuditAction {
 
   /// An admin changed a player's display name (`AdminRenameUser`); the
   /// reason carries the old and the new name.
-  userRenamed;
+  userRenamed,
+
+  /// An admin changed an error in the error log (`AdminErrorLog`,
+  /// migration 0088): its status, severity, assignee or notes; the reason
+  /// carries the old and new values.
+  errorUpdated;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -105,6 +110,7 @@ enum AuditAction {
     AuditAction.userPredictionsViewed => 'user_predictions_viewed',
     AuditAction.fixtureScheduleCorrected => 'fixture_schedule_corrected',
     AuditAction.userRenamed => 'user_renamed',
+    AuditAction.errorUpdated => 'error_updated',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

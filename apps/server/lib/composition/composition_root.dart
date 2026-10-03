@@ -133,6 +133,7 @@ final class CompositionRoot {
     this.refreshLiveScores,
     this.rescoreUnscoredResults,
     this.recordError,
+    this.adminErrorLog,
     required this.registerDeviceToken,
     required this.suspendUser,
     required this.reinstateUser,
@@ -296,6 +297,7 @@ final class CompositionRoot {
     this.refreshLiveScores,
     this.rescoreUnscoredResults,
     this.recordError,
+    this.adminErrorLog,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1864,6 +1866,10 @@ final class CompositionRoot {
   /// in tests that do not provide one, so nothing is recorded there.
   final RecordError? recordError;
 
+  /// The admin dashboard's error log (backs `/admin/errors`, migrations
+  /// 0087 and 0088); null in tests that do not provide one.
+  final AdminErrorLog? adminErrorLog;
+
   /// Registers the caller's OWN device token for push delivery. Self-only:
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
@@ -2355,6 +2361,11 @@ final class CompositionRoot {
       ),
       recordError: RecordError(
         errors: PostgresErrorLogRepository(connection),
+        clock: clock,
+      ),
+      adminErrorLog: AdminErrorLog(
+        errors: PostgresErrorLogAdminRepository(connection),
+        auditRecorder: auditRecorder,
         clock: clock,
       ),
       adminGetFrameStats: AdminGetFrameStats(

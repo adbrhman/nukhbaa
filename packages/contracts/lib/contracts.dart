@@ -7,6 +7,7 @@
 library;
 
 export 'src/admin_dto.dart';
+export 'src/admin_error_log_dto.dart';
 export 'src/admin_user_names_dto.dart';
 export 'src/announcement_dto.dart';
 export 'src/admin_user_prediction_dto.dart';
