@@ -115,21 +115,15 @@ final class RecordError {
         AppError.validation('errors.invalid_source', 'Invalid error source'),
       );
     }
-    final stack = _capOrNull(_redactOrNull(report.stack), 16000);
+    final stack = _stackOf(report);
     final route = _capOrNull(_redactOrNull(report.route), 300);
-    final errorType = _cap(_nonBlank(report.errorType, 'Error'), 120);
-    final errorCode = _capOrNull(_redactOrNull(report.errorCode), 120);
+    final errorType = _typeOf(report);
+    final errorCode = _codeOf(report);
     final message = _cap(
       _nonBlank(ErrorRedaction.text(report.message), errorType),
       1000,
     );
-    final identity = ErrorFingerprint.of(
-      source: report.source,
-      errorType: errorType,
-      errorCode: errorCode,
-      stack: stack,
-      route: route,
-    );
+    final identity = identify(report);
     final top = ErrorFingerprint.topFrames(stack);
     final where = top.isEmpty ? null : top.first;
     return _errors.record(
@@ -162,6 +156,33 @@ final class RecordError {
       ),
     );
   }
+
+  /// The identity [report] is kept under, computed from its fields as they
+  /// are stored. The server shows its [ErrorFingerprint.problemCode] in a
+  /// 5xx answer; the app computes the same from what it sends.
+  ///
+  /// The route identifies a server error that has no stack (`GET
+  /// /seasons/:id`, `job rescore`). An app error never uses its route: the
+  /// app shows the code before it knows where the report will be filed, so
+  /// it computes it from the type, the code and the stack alone.
+  static ErrorFingerprint identify(ErrorReport report) => ErrorFingerprint.of(
+    source: report.source,
+    errorType: _typeOf(report),
+    errorCode: _codeOf(report),
+    stack: _stackOf(report),
+    route: report.source == 'server'
+        ? _capOrNull(_redactOrNull(report.route), 300)
+        : null,
+  );
+
+  static String _typeOf(ErrorReport report) =>
+      _cap(_nonBlank(report.errorType, 'Error'), 120);
+
+  static String? _codeOf(ErrorReport report) =>
+      _capOrNull(_redactOrNull(report.errorCode), 120);
+
+  static String? _stackOf(ErrorReport report) =>
+      _capOrNull(_redactOrNull(report.stack), 16000);
 
   static String? _input(Map<String, Object?>? input) {
     if (input == null) {

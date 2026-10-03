@@ -33,6 +33,38 @@ enum SessionRenewal {
 /// this transport never stores or exchanges a token itself.
 typedef SessionRenewer = Future<SessionRenewal> Function();
 
+/// One API call that failed, as an [ApiFailureListener] hears of it: the
+/// app decides which failures are worth reporting to the error log
+/// (migration 0087); this transport only tells it.
+final class ApiFailure {
+  /// Creates the failure.
+  const ApiFailure({
+    required this.method,
+    required this.path,
+    required this.error,
+    this.statusCode,
+    this.requestId,
+  });
+
+  /// `GET`, `POST`, `PUT` or `DELETE`.
+  final String method;
+
+  /// The server-relative path called, ids included.
+  final String path;
+
+  /// The error the caller received.
+  final AppError error;
+
+  /// The response status; null when no response arrived.
+  final int? statusCode;
+
+  /// The response's `X-Request-Id`, when the server sent one.
+  final String? requestId;
+}
+
+/// Hears every failed call; it must not throw, and a throw is ignored.
+typedef ApiFailureListener = void Function(ApiFailure failure);
+
 /// Whether a `401` answered with [body] means the session itself is over.
 ///
 /// The server answers `401` for two different things. Either the credential
@@ -105,12 +137,14 @@ final class ApiTransport {
     Duration? requestTimeout = const Duration(seconds: 15),
     Future<void> Function()? onUnauthorized,
     SessionRenewer? renewSession,
+    ApiFailureListener? onFailure,
   }) : _baseUri = baseUri,
        _httpClient = httpClient,
        _tokenProvider = tokenProvider,
        _requestTimeout = requestTimeout,
        _onUnauthorized = onUnauthorized,
-       _renewSession = renewSession;
+       _renewSession = renewSession,
+       _onFailure = onFailure;
 
   final Uri _baseUri;
   final http.Client _httpClient;
@@ -120,6 +154,31 @@ final class ApiTransport {
   final Future<void> Function()? _onUnauthorized;
 
   final SessionRenewer? _renewSession;
+
+  final ApiFailureListener? _onFailure;
+
+  void _notifyFailure(
+    String method,
+    String path,
+    AppError error, [
+    http.Response? response,
+  ]) {
+    final listener = _onFailure;
+    if (listener == null) return;
+    try {
+      listener(
+        ApiFailure(
+          method: method,
+          path: path,
+          error: error,
+          statusCode: response?.statusCode,
+          requestId: response?.headers['x-request-id'],
+        ),
+      );
+    } on Object {
+      // A listener's failure never becomes the caller's.
+    }
+  }
 
   /// Performs `GET [path]` (with optional [query]) and decodes a JSON **object**
   /// body via [parse]. See [_send] for the total error contract.
@@ -332,17 +391,26 @@ final class ApiTransport {
         return first;
       },
     );
-    if (sent is Err<http.Response>) return Result.err(sent.error);
+    if (sent is Err<http.Response>) {
+      _notifyFailure(method, path, sent.error);
+      return Result.err(sent.error);
+    }
     final response = (sent as Ok<http.Response>).value;
 
     final status = response.statusCode;
     if (status >= 200 && status < 300) {
-      return decode(response.body);
+      final decoded = decode(response.body);
+      if (decoded is Err<T>) {
+        _notifyFailure(method, path, decoded.error, response);
+      }
+      return decoded;
     }
     if (status == 401 && _endsSession(response.body)) {
       await _onUnauthorized?.call();
     }
-    return Result.err(decodeError(status, response.body));
+    final error = decodeError(status, response.body);
+    _notifyFailure(method, path, error, response);
+    return Result.err(error);
   }
 
   /// Sends via [send]; when that draws a `401` on a call made with the stored

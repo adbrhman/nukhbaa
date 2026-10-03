@@ -170,6 +170,59 @@ Response? limitAuthAttempt(AuthAttempt attempt, String email) {
   return wait == null ? null : tooManyRequests(wait);
 }
 
+/// Error reports one device may send (`POST /errors/report`, migration
+/// 0087): an app stuck in a loop must not fill the log. Keyed on the
+/// install id, or the player when there is none (the web build).
+final RateLimiter errorReportDeviceLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(hours: 1),
+);
+
+/// Error reports one network address may send: the route takes reports
+/// before sign-in, so the address bounds a caller that invents a new
+/// install id for every request. Wide, because many players share one
+/// carrier address and an outage makes every app report at once.
+final RateLimiter errorReportAddressLimiter = RateLimiter(
+  limit: 600,
+  window: const Duration(hours: 1),
+);
+
+/// `429` when [device] or [address] has sent too many error reports; null
+/// otherwise. A report with neither counts against one shared anonymous
+/// key.
+Response? limitErrorReport({String? device, String? address}) {
+  final deviceKey = device?.trim() ?? '';
+  if (deviceKey.isNotEmpty) {
+    final wait = errorReportDeviceLimiter.hit(deviceKey);
+    if (wait != null) {
+      return tooManyRequests(wait);
+    }
+  }
+  final addressKey = address?.trim() ?? '';
+  final wait = errorReportAddressLimiter.hit(
+    addressKey.isEmpty ? 'anonymous' : addressKey,
+  );
+  return wait == null ? null : tooManyRequests(wait);
+}
+
+/// The caller's network address: the last hop of `X-Forwarded-For` (the
+/// one the platform's proxy added, which the client cannot forge), else
+/// `X-Real-IP`.
+String? clientAddress(Map<String, String> headers) {
+  final forwarded = headers['x-forwarded-for'];
+  if (forwarded != null) {
+    final hops = [
+      for (final hop in forwarded.split(','))
+        if (hop.trim().isNotEmpty) hop.trim(),
+    ];
+    if (hops.isNotEmpty) {
+      return hops.last;
+    }
+  }
+  final real = headers['x-real-ip']?.trim();
+  return real == null || real.isEmpty ? null : real;
+}
+
 /// `429 Too Many Requests` in the shared error envelope, with `Retry-After`.
 Response tooManyRequests(Duration wait) {
   final seconds = wait.inSeconds < 1 ? 1 : wait.inSeconds;

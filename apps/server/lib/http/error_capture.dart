@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:application/application.dart';
@@ -44,8 +45,10 @@ String serverBuild(Map<String, String> environment) {
 /// `server.unexpected` envelope) -- is kept in the error log (migration
 /// 0087) with the request id, the route, the player and the build.
 ///
-/// Recording never changes the response: a failure to record is printed
-/// and the response goes out as it was.
+/// A 5xx error envelope also carries the `problem_code` the error was kept
+/// under, for the app to show the player; recording itself never changes
+/// the response: a failure to record is printed and the response goes out
+/// as it was.
 Handler captureServerErrors(
   Handler handler, {
   required ErrorRecorderLookup recorder,
@@ -80,16 +83,18 @@ Handler captureServerErrors(
       );
     }
     if (response.statusCode >= HttpStatus.internalServerError) {
-      await keepErrorReport(
-        recorder,
-        _reportFor(
-          context.request,
-          response.statusCode,
-          scope,
-          thisBuild,
-          thrown,
-          thrownStack,
-        ),
+      final report = _reportFor(
+        context.request,
+        response.statusCode,
+        scope,
+        thisBuild,
+        thrown,
+        thrownStack,
+      );
+      await keepErrorReport(recorder, report);
+      response = await _withProblemCode(
+        response,
+        RecordError.identify(report).problemCode,
       );
     }
     return response.copyWith(
@@ -127,6 +132,37 @@ Future<void> keepErrorReport(
   } finally {
     _recordsInFlight--;
   }
+}
+
+// The same envelope with `problem_code` added. A body that is not an
+// error envelope (a bare 5xx) goes out unchanged.
+Future<Response> _withProblemCode(Response response, String code) async {
+  final String body;
+  try {
+    body = await response.body();
+  } on Object {
+    return response;
+  }
+  Object? decoded;
+  try {
+    decoded = jsonDecode(body);
+  } on FormatException {
+    decoded = null;
+  }
+  if (decoded is Map<String, Object?> && decoded['code'] is String) {
+    return Response.json(
+      statusCode: response.statusCode,
+      body: <String, Object?>{...decoded, 'problem_code': code},
+    );
+  }
+  return Response(
+    statusCode: response.statusCode,
+    body: body,
+    headers: {
+      for (final entry in response.headers.entries)
+        if (entry.key.toLowerCase() != 'content-length') entry.key: entry.value,
+    },
+  );
 }
 
 ErrorReport _reportFor(

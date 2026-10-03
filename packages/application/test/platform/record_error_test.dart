@@ -205,6 +205,54 @@ void main() {
       );
     });
 
+    test('an app error is identified as the app computes it, without its '
+        'route', () async {
+      const stack =
+          '#0      FixtureCard.build '
+          '(package:mobile/features/fixtures/card.dart:88:7)';
+      ErrorReport app(String? route) => ErrorReport(
+        source: 'android',
+        errorType: 'StateError',
+        message: 'Bad state',
+        severity: ErrorSeverity.high,
+        build: 'abc1234',
+        stack: stack,
+        route: route,
+      );
+
+      final expected = ErrorFingerprint.of(
+        source: 'android',
+        errorType: 'StateError',
+        stack: stack,
+      );
+      expect(
+        RecordError.identify(app('building FixtureCard')).fingerprint,
+        expected.fingerprint,
+      );
+      expect(RecordError.identify(app(null)).problemCode, expected.problemCode);
+
+      await record(app('building FixtureCard'));
+      expect(log.kept.single.problemCode, expected.problemCode);
+      expect(log.kept.single.route, 'building FixtureCard');
+    });
+
+    test('a server error without a stack is identified by its route', () {
+      ErrorReport server(String route) => ErrorReport(
+        source: 'server',
+        errorType: 'AppError',
+        errorCode: 'db.timeout',
+        message: 'timed out',
+        severity: ErrorSeverity.medium,
+        build: 'abc1234',
+        route: route,
+      );
+
+      expect(
+        RecordError.identify(server('GET /seasons')).fingerprint,
+        isNot(RecordError.identify(server('GET /months')).fingerprint),
+      );
+    });
+
     test('a blank message falls back to the error type', () async {
       await record(_report(message: '   '));
 

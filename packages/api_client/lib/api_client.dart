@@ -32,9 +32,16 @@ export 'src/api_error.dart'
     show
         apiErrorMalformedResponse,
         apiErrorNetworkUnreachable,
+        apiErrorTimeout,
         apiErrorUnexpectedStatus;
 export 'src/api_transport.dart'
-    show ApiTransport, SessionRenewal, SessionRenewer, TokenProvider;
+    show
+        ApiFailure,
+        ApiFailureListener,
+        ApiTransport,
+        SessionRenewal,
+        SessionRenewer,
+        TokenProvider;
 export 'src/app_api.dart' show AppApi;
 export 'src/auth_api.dart' show AuthApi;
 export 'src/competition_api.dart' show CompetitionApi;

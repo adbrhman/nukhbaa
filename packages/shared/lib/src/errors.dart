@@ -25,6 +25,7 @@ final class AppError {
     required this.code,
     required this.message,
     this.cause,
+    this.problemCode,
   });
 
   /// Convenience constructor for authorization failures.
@@ -59,6 +60,11 @@ final class AppError {
 
   /// Optional underlying cause, for server-side logging only.
   final Object? cause;
+
+  /// The 4-character code of this failure in the error log (migration
+  /// 0087), when the server logged it: shown to the player beside the
+  /// message so an admin can find it. Like [cause], not part of equality.
+  final String? problemCode;
 
   /// Whether a client may safely retry the operation that produced this error.
   bool get isRetryable => kind == ErrorKind.transient;

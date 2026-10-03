@@ -91,7 +91,12 @@ AppError decodeError(int statusCode, String body) {
   final envelope = _tryDecodeEnvelope(body);
 
   if (envelope != null && kind != null) {
-    return AppError(kind: kind, code: envelope.code, message: envelope.message);
+    return AppError(
+      kind: kind,
+      code: envelope.code,
+      message: envelope.message,
+      problemCode: envelope.problemCode,
+    );
   }
 
   if (envelope != null) {
@@ -102,6 +107,7 @@ AppError decodeError(int statusCode, String body) {
       kind: statusCode >= 500 ? ErrorKind.transient : ErrorKind.invariant,
       code: envelope.code,
       message: envelope.message,
+      problemCode: envelope.problemCode,
     );
   }
 

@@ -13,6 +13,7 @@ export 'src/admin_user_prediction_dto.dart';
 export 'src/auth_dto.dart';
 export 'src/badge_dto.dart';
 export 'src/champion_dto.dart';
+export 'src/client_error_report_dto.dart';
 export 'src/competition_dto.dart';
 export 'src/daily_challenge_dto.dart';
 export 'src/device_token_dto.dart';

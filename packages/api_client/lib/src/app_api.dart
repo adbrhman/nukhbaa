@@ -25,4 +25,17 @@ final class AppApi {
       parse: LatestBuildDto.fromJson,
     );
   }
+
+  /// `POST /errors/report` -- one unexpected error the app caught
+  /// (migration 0087). Open before sign-in; a bearer token, when the
+  /// transport has one, names the player.
+  Future<Result<ClientErrorReportAckDto>> reportError(
+    ClientErrorReportDto report,
+  ) {
+    return _transport.postObject<ClientErrorReportAckDto>(
+      '/errors/report',
+      body: report.toJson(),
+      parse: ClientErrorReportAckDto.fromJson,
+    );
+  }
 }

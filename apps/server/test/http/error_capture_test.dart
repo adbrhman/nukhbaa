@@ -106,6 +106,7 @@ void main() {
     final body = jsonDecode(await response.body()) as Map<String, Object?>;
     expect(body['code'], 'server.unexpected');
     final kept = log.kept.single;
+    expect(body['problem_code'], kept.problemCode);
     expect(kept.source, 'server');
     expect(kept.errorType, 'StateError');
     expect(kept.severity, ErrorSeverity.high);
@@ -137,6 +138,13 @@ void main() {
 
     expect(response.statusCode, HttpStatus.serviceUnavailable);
     final kept = log.kept.single;
+    final body = jsonDecode(await response.body()) as Map<String, Object?>;
+    expect(body['code'], 'db.timeout');
+    expect(
+      body['problem_code'],
+      kept.problemCode,
+      reason: 'the player reads the code the admin searches for',
+    );
     expect(kept.errorType, 'AppError');
     expect(kept.errorCode, 'db.timeout');
     expect(kept.message, startsWith('Statement timed out: '));
@@ -178,14 +186,21 @@ void main() {
 
     expect(response.statusCode, HttpStatus.conflict);
     expect(response.headers[requestIdHeader], isNotNull);
+    final body = jsonDecode(await response.body()) as Map<String, Object?>;
+    expect(body.containsKey('problem_code'), isFalse);
     expect(log.kept, isEmpty);
   });
 
   test('a bare 5xx without an AppError is kept by its status', () async {
     final log = _MemoryErrorLog();
 
-    await _call((_) => Response(statusCode: HttpStatus.badGateway), log);
+    final response = await _call(
+      (_) => Response(statusCode: HttpStatus.badGateway),
+      log,
+    );
 
+    expect(response.statusCode, HttpStatus.badGateway);
+    expect(await response.body(), isEmpty);
     expect(log.kept.single.errorType, 'HttpStatus');
     expect(log.kept.single.message, 'HTTP 502');
   });

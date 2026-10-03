@@ -11,6 +11,7 @@ final class ErrorResponseDto {
     required this.code,
     required this.message,
     this.schemaVersion = currentSchemaVersion,
+    this.problemCode,
   });
 
   /// Deserializes from a JSON map, defaulting [schemaVersion] for legacy
@@ -20,6 +21,7 @@ final class ErrorResponseDto {
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       code: json['code']! as String,
       message: json['message']! as String,
+      problemCode: json['problem_code'] as String?,
     );
   }
 
@@ -36,11 +38,16 @@ final class ErrorResponseDto {
   /// The schema version of this payload.
   final int schemaVersion;
 
+  /// The 4-character code the server logged a 5xx under (migration 0087),
+  /// for the player to read out; absent on every other response.
+  final String? problemCode;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'code': code,
     'message': message,
+    if (problemCode != null) 'problem_code': problemCode,
   };
 
   @override
