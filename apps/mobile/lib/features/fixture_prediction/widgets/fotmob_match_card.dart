@@ -60,6 +60,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 // intl is already a transitive dependency (pulled in by the SDK's
 // flutter_localizations, the same package the generated l10n files import
 // it from — see their own `// ignore_for_file: type=lint`); not declared
@@ -84,6 +85,7 @@ import '../../../core/ui/team_logo.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_logo_assets.dart';
 import '../../competition/team_catalog_index.dart';
+import '../../competition/team_registry.dart';
 import '../../competition/team_identity.dart';
 import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
@@ -324,6 +326,23 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
         // The controller went down with the tree; nothing to flush into.
       }
     });
+  }
+
+  Future<void> _sharePrediction({
+    required int homeGoals,
+    required int awayGoals,
+  }) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String message = l10n.shareHitMessage(
+      teamDisplayName(_fixture.homeTeam),
+      '$homeGoals-$awayGoals',
+      teamDisplayName(_fixture.awayTeam),
+    );
+    await SharePlus.instance.share(
+      ShareParams(
+        text: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
+      ),
+    );
   }
 
   @override
@@ -622,6 +641,41 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     ],
                   ),
                 ),
+                if (!locked && myPrediction != null)
+                  ListenableBuilder(
+                    listenable: Listenable.merge(<Listenable>[
+                      _homeGoals,
+                      _awayGoals,
+                    ]),
+                    builder: (context, _) {
+                      final int? shareHome = _homeGoals.value;
+                      final int? shareAway = _awayGoals.value;
+                      final bool canShare =
+                          shareHome != null &&
+                          shareAway != null &&
+                          isConfirmedFor(shareHome, shareAway);
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: TextButton.icon(
+                          key: Key(
+                            'currentMonthFixtures.sharePrediction.$fixtureId',
+                          ),
+                          onPressed: canShare
+                              ? () => unawaited(
+                                  _sharePrediction(
+                                    homeGoals: shareHome,
+                                    awayGoals: shareAway,
+                                  ),
+                                )
+                              : null,
+                          icon: const Icon(Icons.ios_share_rounded),
+                          label: Text(
+                            AppLocalizations.of(context).shareHitShareButton,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 if (submission is FixtureSubmissionFailed)
                   Padding(
                     key: Key('currentMonthFixtures.failure.$fixtureId'),

@@ -252,6 +252,11 @@ void main() {
             .data,
         '1',
       );
+      expect(
+        find.byKey(const Key('currentMonthFixtures.sharePrediction.f-1')),
+        findsOneWidget,
+        reason: 'a saved upcoming prediction must be shareable before kickoff',
+      );
       // No standalone "pending result" badge in this state (removed in the
       // reference-parity pass — it had no counterpart in the reference and
       // added a fourth row).
