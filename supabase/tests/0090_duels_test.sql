@@ -56,8 +56,9 @@ begin
     (u3, 'd3@t.io', 'Duel Three');
   insert into competition.competitions (id, name, format, visibility)
     values (competition, 'Duel Test', 'football_scoreline', 'public');
-  insert into competition.seasons (id, competition_id, label)
-    values (season, competition, 'Duel Test Season');
+  insert into competition.seasons (id, competition_id, label, start_at, end_at)
+    values (season, competition, 'Duel Test Season',
+            '2029-12-01 00:00+00', '2030-02-01 00:00+00');
   insert into competition.participants (id, season_id, user_id, joined_at)
     values
       (p1, season, u1, t0 - interval '1 day'),
@@ -114,9 +115,15 @@ begin
 
   perform pg_temp.check(
     pg_temp.refusal(format(
-      'select social.accept_duel_challenge(%L,%L,%L)', c1, u3, t0 + interval '6 minutes'))
+      'select social.accept_duel_challenge(%L,%L,%L)', c1, u2, t0 + interval '6 minutes'))
       = '23514/duel_capacity_full',
     'private duel cannot be accepted twice');
+
+  perform pg_temp.check(
+    pg_temp.refusal(format(
+      'select social.accept_duel_challenge(%L,%L,%L)', c1, u3, t0 + interval '6 minutes'))
+      = '23514/duel_wrong_target',
+    'a private duel cannot be taken by another user');
 
   perform pg_temp.check(
     pg_temp.refusal(format(
@@ -134,7 +141,7 @@ begin
   perform pg_temp.check(
     pg_temp.refusal(format(
       'select social.accept_duel_challenge(%L,%L,%L)', c2, u2, t0 + interval '7 minutes'))
-      = '23514/duel_pair_already_exists',
+      = '23505/duel_pair_already_exists',
     'same pair cannot get a second duel for the fixture');
 
   select social.accept_duel_challenge(c2, u3, t0 + interval '8 minutes') into d2;
@@ -147,7 +154,7 @@ begin
   perform pg_temp.check(
     pg_temp.refusal(format(
       'select social.accept_duel_challenge(%L,%L,%L)', c3, u1, t0 + interval '9 minutes'))
-      = '23514/duel_pair_already_exists',
+      = '23505/duel_pair_already_exists',
     'reverse-direction challenge cannot create a duplicate pair duel');
 
   perform pg_temp.check(
@@ -157,14 +164,18 @@ begin
       = '23514/duel_minimum_lead_time',
     'creation inside the thirty-minute window is rejected');
 
-  select social.create_duel_challenge(u3, season, fixture, 1, u2, t0)
+  select social.create_duel_challenge(u1, season, fixture, 1, u2, t0)
     into c3;
   perform pg_temp.check(
     pg_temp.refusal(format(
       'select social.accept_duel_challenge(%L,%L,%L)', c3, u2, t0 + interval '10 minutes'))
-      = '23514/duel_pair_already_exists',
+      = '23505/duel_pair_already_exists',
     'pair uniqueness is enforced across separate challenges');
 
+  -- Start the quota from zero: earlier open challenges would already count.
+  update social.duel_challenges
+     set status = 'cancelled'
+   where challenger_participant_id = p1 and status = 'open';
   -- Ten open challenges consume the fixed pending quota; the eleventh is refused.
   for i in 1..10 loop
     perform social.create_duel_challenge(u1, season, fixture, 5, null, t0);
@@ -197,7 +208,7 @@ begin
 
   select social.create_duel_challenge(u2, season, fixture, 1, u3, t0)
     into c3;
-  select social.decline_duel_challenge(c3, u3);
+  perform social.decline_duel_challenge(c3, u3);
   perform pg_temp.check(
     (select status = 'declined' from social.duel_challenges where id = c3),
     'private target can decline before acceptance');
@@ -228,6 +239,9 @@ begin
     'a suspended target cannot accept a cancelled challenge');
   update identity.users set status = 'active' where id = u3;
 
+  -- The earlier challenge was cancelled by the suspension; use a fresh open one.
+  select social.create_duel_challenge(u2, season, fixture, 1, u3, t0)
+    into c3;
   delete from prediction.fixture_predictions where participant_id = p2;
   perform pg_temp.check(
     pg_temp.refusal(format(

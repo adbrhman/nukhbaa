@@ -153,10 +153,16 @@ declare
   code text;
   i integer;
 begin
-  bytes := gen_random_bytes(12);
+  -- pgcrypto is not installed in CI and is not on an empty search_path, so
+  -- use the core CSPRNG like 0073. A v4 uuid has fixed version/variant bits
+  -- in bytes 6 and 8, so only bytes 0-5 and 10-15 are used below.
+  bytes := uuid_send(gen_random_uuid());
   code := '';
   for i in 0..11 loop
-    code := code || substr(alphabet, 1 + (get_byte(bytes, i) % 30), 1);
+    code := code || substr(
+      alphabet,
+      1 + (get_byte(bytes, case when i < 6 then i else i + 4 end) % 30),
+      1);
   end loop;
   return code;
 end;
@@ -172,7 +178,7 @@ create or replace function social.create_duel_challenge(
   p_challenger_user_id uuid,
   p_season_id uuid,
   p_fixture_id uuid,
-  p_capacity smallint default 5,
+  p_capacity integer default 5,
   p_target_user_id uuid default null,
   p_now timestamptz default now()
 )
@@ -285,7 +291,7 @@ begin
         p_fixture_id,
         v_challenger_participant,
         p_target_user_id,
-        p_capacity
+        p_capacity::smallint
       ) returning id into v_id;
       return v_id;
     exception when unique_violation then
@@ -300,9 +306,10 @@ end;
 $$;
 
 -- Accept is deliberately prediction-aware. The application calls
--- SubmitFixturePrediction first and then this function inside the SAME DB
--- transaction. The function re-checks both rows, so a duel can never be
--- accepted without both predictions. It never copies those predictions.
+-- SubmitFixturePrediction first and then this function. They are two
+-- statements, not one transaction: if this function refuses, the saved
+-- prediction simply stays. The function re-checks both rows, so a duel
+-- can never be accepted without both predictions. It never copies them.
 create or replace function social.accept_duel_challenge(
   p_challenge_id uuid,
   p_opponent_user_id uuid,
@@ -527,7 +534,7 @@ alter table social.duels enable row level security;
 revoke all on social.duel_challenges from public, anon, authenticated;
 revoke all on social.duels from public, anon, authenticated;
 revoke all on function social.new_duel_code() from public, anon, authenticated;
-revoke all on function social.create_duel_challenge(uuid, uuid, uuid, smallint, uuid, timestamptz)
+revoke all on function social.create_duel_challenge(uuid, uuid, uuid, integer, uuid, timestamptz)
   from public, anon, authenticated;
 revoke all on function social.accept_duel_challenge(uuid, uuid, timestamptz)
   from public, anon, authenticated;
