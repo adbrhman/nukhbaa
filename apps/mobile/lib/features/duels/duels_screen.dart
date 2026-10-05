@@ -27,7 +27,11 @@ import 'duels_providers.dart';
 /// The Duels page.
 class DuelsScreen extends ConsumerStatefulWidget {
   /// Creates the page.
-  const DuelsScreen({super.key});
+  const DuelsScreen({this.openCode, super.key});
+
+  /// A challenge to open at once, as if its code had been typed: the
+  /// code of a tapped `duel:CODE` push.
+  final String? openCode;
 
   @override
   ConsumerState<DuelsScreen> createState() => _DuelsScreenState();
@@ -36,6 +40,18 @@ class DuelsScreen extends ConsumerStatefulWidget {
 class _DuelsScreenState extends ConsumerState<DuelsScreen> {
   final TextEditingController _code = TextEditingController();
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final String? code = widget.openCode;
+    if (code != null && code.isNotEmpty) {
+      _code.text = code;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_openCode());
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -79,7 +95,7 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
     );
     if (!mounted || accepted != true) return;
     _code.clear();
-    _say('قُبل التحدي ⚔️ بالتوفيق!');
+    _say('قُبل التحدي. بالتوفيق!');
   }
 
   Future<void> _decline(DuelChallengeDto challenge) async {
@@ -335,7 +351,7 @@ class _InvitationTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Text(
-          '⚔️ ${challenge.challengerName} يتحداك',
+          '${challenge.challengerName} يتحداك',
           style: context.text.bodyMedium?.copyWith(
             color: context.tokens.textSecondary,
           ),
@@ -431,7 +447,7 @@ class _DuelTile extends StatelessWidget {
 
   String _pick(int? home, int? away, bool? isDouble) {
     if (home == null || away == null) return '—';
-    return isDouble == true ? '$home-$away ⚡' : '$home-$away';
+    return isDouble == true ? '$home-$away ×2' : '$home-$away';
   }
 
   @override

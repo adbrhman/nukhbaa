@@ -117,7 +117,7 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              '⚔️ ${challenge.challengerName} يتحداك',
+              '${challenge.challengerName} يتحداك',
               textAlign: TextAlign.center,
               style: text.titleLarge?.copyWith(
                 color: tokens.textPrimary,

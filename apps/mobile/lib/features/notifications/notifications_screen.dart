@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
+import '../duels/duels_screen.dart';
 import 'notifications_providers.dart';
 
 /// Opens an address taken from an announcement.
@@ -159,6 +162,7 @@ class _NotificationRow extends ConsumerWidget {
     'group_member_joined' => Icons.group_add_outlined,
     'reaction_received' => Icons.favorite_border,
     'admin_announcement' => Icons.campaign_outlined,
+    'duel_challenged' || 'duel_accepted' => Icons.compare_arrows_rounded,
     _ => Icons.notifications_outlined,
   };
 
@@ -179,6 +183,8 @@ class _NotificationRow extends ConsumerWidget {
       'group_member_joined' => l10n.notificationGroupMemberJoined,
       'reaction_received' => l10n.notificationReactionReceived,
       'admin_announcement' => l10n.notificationAdminAnnouncement,
+      'duel_challenged' => 'لاعب يتحداك على مباراة. اضغط لتتوقّع.',
+      'duel_accepted' => 'قُبل تحديك. تابع المواجهة.',
       _ => l10n.notificationsTitle,
     };
   }
@@ -195,13 +201,51 @@ class _NotificationRow extends ConsumerWidget {
         '${two(local.hour)}:${two(local.minute)}';
   }
 
+  /// Marks [id] read while this row's page may already be covered: the
+  /// controller is auto-disposed, so a listener holds it until the call
+  /// and its invalidations finish.
+  static Future<void> _markReadKeptAlive(
+    BuildContext context,
+    String id,
+  ) async {
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    final ProviderSubscription<void> hold = container.listen<void>(
+      notificationControllerProvider,
+      (_, _) {},
+    );
+    try {
+      await container
+          .read(notificationControllerProvider.notifier)
+          .markRead(id);
+    } finally {
+      hold.close();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
     final String? body = notification.body;
     final bool hasBody = body != null && body.isNotEmpty;
+    final bool isDuel = notification.kind.startsWith('duel_');
     return ListTile(
       key: Key('notifications.item.${notification.id}'),
+      // A duel row opens the Duels page, where the challenge waits.
+      onTap: isDuel
+          ? () {
+              if (!notification.read) {
+                unawaited(_markReadKeptAlive(context, notification.id));
+              }
+              unawaited(
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(builder: (_) => const DuelsScreen()),
+                ),
+              );
+            }
+          : null,
       isThreeLine: hasBody,
       leading: Icon(
         _iconFor(notification.kind),

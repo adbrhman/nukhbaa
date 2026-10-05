@@ -17,6 +17,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
+import '../duels/duels_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -55,19 +56,31 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   }
 
   /// Opens what a tapped push is about (see push_link.dart): its tab, and
-  /// for the inbox the inbox itself on top of the home tab.
+  /// for the inbox the inbox itself on top of the home tab. A duel push
+  /// opens the Duels page, and `duel:CODE` that challenge's accept sheet.
   void _openLink(String link) {
     final int? tab = shellTabForLink(link);
     if (tab == null || !mounted) {
       return;
     }
     // P3-8: the open rate per push. Never awaited: the tap must not wait.
-    unawaited(ref.read(authApiProvider).reportPushOpened(link: link));
+    unawaited(
+      ref
+          .read(authApiProvider)
+          .reportPushOpened(link: pushOpenNameForLink(link)),
+    );
     _select(tab);
     if (link == PushLinks.inbox) {
       unawaited(
         Navigator.of(context).push<void>(
           MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+        ),
+      );
+    } else if (pushOpenNameForLink(link) == PushLinks.duel) {
+      final String? code = duelCodeForLink(link);
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => DuelsScreen(openCode: code)),
         ),
       );
     }

@@ -47,7 +47,9 @@ void offerDuelAfterSave({
       // offer must never hold back the messages queued behind it.
       content: Row(
         children: <Widget>[
-          const Expanded(child: Text('توقعت المباراة ✅ تحدَّ صديقك عليها ⚔️')),
+          const Expanded(
+            child: Text('حُفظ توقعك. تحدَّ صديقك على هذه المباراة.'),
+          ),
           TextButton(
             key: Key('duelOffer.${fixture.fixtureId}.open'),
             onPressed: () {
