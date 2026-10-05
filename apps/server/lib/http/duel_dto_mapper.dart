@@ -70,3 +70,11 @@ MyDuelsDto myDuelsToDto(MyDuels duels) => MyDuelsDto(
   challenges: [for (final c in duels.challenges) duelChallengeViewToDto(c)],
   duels: [for (final d in duels.duels) duelViewToDto(d)],
 );
+
+/// The `GET /duels/players` answer (migration 0092).
+DuelPlayersDto duelPlayersToDto(List<DuelPlayer> players) => DuelPlayersDto(
+  players: [
+    for (final p in players)
+      DuelPlayerDto(userId: p.userId.value, displayName: p.displayName),
+  ],
+);

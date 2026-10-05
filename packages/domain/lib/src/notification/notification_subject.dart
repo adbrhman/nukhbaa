@@ -4,6 +4,7 @@ import 'package:domain/src/group/group_id.dart';
 import 'package:domain/src/identity/user_id.dart';
 import 'package:domain/src/notification/announcement_id.dart';
 import 'package:domain/src/notification/notification_kind.dart';
+import 'package:domain/src/social/duel_challenge_id.dart';
 
 /// The bounded, **kind-discriminated reference payload** of a [Notification]
 /// (Notifications decision #1/#3): the type-specific ids a client needs to
@@ -34,6 +35,7 @@ final class NotificationSubject {
     this.actorUserId,
     this.fixture,
     this.announcementId,
+    this.duelChallengeId,
   });
 
   /// Rehydrates a subject from already-trusted stored fields (used by the
@@ -47,6 +49,7 @@ final class NotificationSubject {
     this.actorUserId,
     this.fixture,
     this.announcementId,
+    this.duelChallengeId,
   });
 
   /// The subject of a `roundScored` notification — the scored [roundId].
@@ -98,6 +101,28 @@ final class NotificationSubject {
     announcementId: announcementId,
   );
 
+  /// The subject of a `duelChallenged` notification -- the private
+  /// challenge and its challenger (migration 0092). One per challenge.
+  static NotificationSubject duelChallenged({
+    required DuelChallengeId challengeId,
+    required UserId actorUserId,
+  }) => NotificationSubject._(
+    kind: NotificationKind.duelChallenged,
+    duelChallengeId: challengeId,
+    actorUserId: actorUserId,
+  );
+
+  /// The subject of a `duelAccepted` notification -- the challenge and the
+  /// player who accepted it (migration 0092). One per acceptance.
+  static NotificationSubject duelAccepted({
+    required DuelChallengeId challengeId,
+    required UserId actorUserId,
+  }) => NotificationSubject._(
+    kind: NotificationKind.duelAccepted,
+    duelChallengeId: challengeId,
+    actorUserId: actorUserId,
+  );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -117,6 +142,10 @@ final class NotificationSubject {
   /// The announcement involved (`adminAnnouncement`); else null.
   final AnnouncementId? announcementId;
 
+  /// The duel challenge involved (`duelChallenged`, `duelAccepted`); else
+  /// null (migration 0092).
+  final DuelChallengeId? duelChallengeId;
+
   /// A deterministic string that identifies the originating event, keying the
   /// `(recipientId, kind, subjectRef)` idempotency constraint so a replayed
   /// trigger dedupes and a distinct event does not. Built purely from the
@@ -131,6 +160,10 @@ final class NotificationSubject {
       'announcement:${announcementId!.value}',
     NotificationKind.reactionReceived =>
       'reaction:${groupId!.value}:${roundId!.value}:${actorUserId!.value}',
+    NotificationKind.duelChallenged =>
+      'duel_challenged:${duelChallengeId!.value}',
+    NotificationKind.duelAccepted =>
+      'duel_accepted:${duelChallengeId!.value}:${actorUserId!.value}',
   };
 
   @override
@@ -141,11 +174,19 @@ final class NotificationSubject {
       other.groupId == groupId &&
       other.actorUserId == actorUserId &&
       other.fixture == fixture &&
-      other.announcementId == announcementId;
+      other.announcementId == announcementId &&
+      other.duelChallengeId == duelChallengeId;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, roundId, groupId, actorUserId, fixture, announcementId);
+  int get hashCode => Object.hash(
+    kind,
+    roundId,
+    groupId,
+    actorUserId,
+    fixture,
+    announcementId,
+    duelChallengeId,
+  );
 
   @override
   String toString() => 'NotificationSubject(${kind.wireValue}, $dedupeRef)';

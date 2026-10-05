@@ -91,6 +91,8 @@ export 'src/scoring/postgres_score_repository.dart';
 export 'src/scoring/postgres_unscored_result_finder.dart';
 export 'src/social/postgres_activity_feed_reader.dart';
 export 'src/social/postgres_duel_challenge_repository.dart';
+export 'src/social/postgres_duel_notice_reader.dart';
+export 'src/social/postgres_duel_player_directory.dart';
 export 'src/social/postgres_duel_reader.dart';
 export 'src/social/postgres_fixture_reaction_repository.dart';
 export 'src/social/postgres_reaction_repository.dart';

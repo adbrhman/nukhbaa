@@ -37,7 +37,15 @@ enum NotificationKind {
   /// An admin published a broadcast instruction to every active user
   /// (migration 0043). Subject references the `Announcement` carrying the
   /// text -- the notification row itself stays free of prose (decision #1).
-  adminAnnouncement;
+  adminAnnouncement,
+
+  /// A player challenged the recipient privately to a duel (migration
+  /// 0092). Subject references the challenge and the challenger.
+  duelChallenged,
+
+  /// A player accepted a duel challenge the recipient created (migration
+  /// 0092). Subject references the challenge and the player who accepted.
+  duelAccepted;
 
   /// The stable wire/storage token for this notification kind.
   String get wireValue => switch (this) {
@@ -46,6 +54,8 @@ enum NotificationKind {
     NotificationKind.reactionReceived => 'reaction_received',
     NotificationKind.fixtureScored => 'fixture_scored',
     NotificationKind.adminAnnouncement => 'admin_announcement',
+    NotificationKind.duelChallenged => 'duel_challenged',
+    NotificationKind.duelAccepted => 'duel_accepted',
   };
 
   /// Parses a [NotificationKind] from an untrusted [raw] token, returning a

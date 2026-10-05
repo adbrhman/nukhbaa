@@ -5,6 +5,7 @@ import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/social/duel_policy.dart';
+import 'package:application/src/social/notify_duel_events.dart';
 import 'package:application/src/social/ports/duel_challenge_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -13,7 +14,8 @@ import 'package:shared/shared.dart';
 ///
 /// The caller must already have a prediction for the fixture. Application
 /// performs cheap read-only preflight checks; migration 0090 remains the final
-/// integrity backstop for races and cross-row invariants.
+/// integrity backstop for races and cross-row invariants. A private
+/// challenge then tells its target (best effort, never failing the write).
 final class CreateDuelChallenge {
   const CreateDuelChallenge({
     required DuelChallengeRepository duels,
@@ -21,17 +23,20 @@ final class CreateDuelChallenge {
     required FixturePredictionRepository predictions,
     required FixtureScheduleRepository schedules,
     required Clock clock,
+    NotifyDuelEvents? notify,
   }) : _duels = duels,
        _competition = competition,
        _predictions = predictions,
        _schedules = schedules,
-       _clock = clock;
+       _clock = clock,
+       _notify = notify;
 
   final DuelChallengeRepository _duels;
   final CompetitionRepository _competition;
   final FixturePredictionRepository _predictions;
   final FixtureScheduleRepository _schedules;
   final Clock _clock;
+  final NotifyDuelEvents? _notify;
 
   Future<Result<DuelChallenge>> call({
     required AuthenticatedUser principal,
@@ -143,7 +148,7 @@ final class CreateDuelChallenge {
       );
     }
 
-    return _duels.createChallenge(
+    final created = await _duels.createChallenge(
       seasonId: season,
       fixture: fixture,
       challengerParticipantId: participant.id,
@@ -151,5 +156,10 @@ final class CreateDuelChallenge {
       capacity: capacity,
       nowUtc: now,
     );
+    // Best effort: the challenge exists whether or not a phone rang.
+    if (created case Ok<DuelChallenge>(:final value)) {
+      await _notify?.challenged(value);
+    }
+    return created;
   }
 }

@@ -2,6 +2,7 @@ import 'package:application/src/common/clock.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/submit_fixture_prediction.dart';
+import 'package:application/src/social/notify_duel_events.dart';
 import 'package:application/src/social/ports/duel_challenge_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -11,19 +12,23 @@ import 'package:shared/shared.dart';
 /// The existing prediction writer is deliberately reused. The sequence is
 /// read challenge -> submit prediction -> atomically accept in Postgres. If
 /// the final acceptance loses a race, the prediction remains safely saved and
-/// no partial duel row is created.
+/// no partial duel row is created. The challenger is then told (best
+/// effort, never failing the acceptance).
 final class AcceptDuelChallenge {
   const AcceptDuelChallenge({
     required DuelChallengeRepository duels,
     required SubmitFixturePrediction submitPrediction,
     required Clock clock,
+    NotifyDuelEvents? notify,
   }) : _duels = duels,
        _submitPrediction = submitPrediction,
-       _clock = clock;
+       _clock = clock,
+       _notify = notify;
 
   final DuelChallengeRepository _duels;
   final SubmitFixturePrediction _submitPrediction;
   final Clock _clock;
+  final NotifyDuelEvents? _notify;
 
   Future<Result<Duel>> call({
     required AuthenticatedUser principal,
@@ -83,10 +88,15 @@ final class AcceptDuelChallenge {
       return Result.err(prediction.error);
     }
 
-    return _duels.acceptChallenge(
+    final accepted = await _duels.acceptChallenge(
       challengeId: id,
       opponentUserId: principal.userId,
       nowUtc: now,
     );
+    // Best effort: the duel exists whether or not a phone rang.
+    if (accepted case Ok<Duel>(:final value)) {
+      await _notify?.accepted(value);
+    }
+    return accepted;
   }
 }

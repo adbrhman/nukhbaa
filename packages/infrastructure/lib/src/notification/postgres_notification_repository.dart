@@ -50,10 +50,11 @@ final class PostgresNotificationRepository implements NotificationRepository {
   static const String _createSql = '''
 INSERT INTO notification.notifications
   (id, recipient_id, kind, round_id, group_id, actor_user_id, fixture_id,
-   announcement_id, subject_ref, read_at, created_at)
+   announcement_id, duel_challenge_id, subject_ref, read_at, created_at)
 VALUES
   (@id, @recipient_id, @kind, @round_id, @group_id, @actor_user_id,
-   @fixture_id, @announcement_id, @subject_ref, @read_at, @created_at)
+   @fixture_id, @announcement_id, @duel_challenge_id, @subject_ref, @read_at,
+   @created_at)
 ON CONFLICT ON CONSTRAINT notifications_dedupe_uniq DO NOTHING
 RETURNING id
 ''';
@@ -72,6 +73,7 @@ RETURNING id
         'actor_user_id': subject.actorUserId?.value,
         'fixture_id': subject.fixture?.value,
         'announcement_id': subject.announcementId?.value,
+        'duel_challenge_id': subject.duelChallengeId?.value,
         'subject_ref': subject.dedupeRef,
         'read_at': notification.readAt?.toUtc(),
         'created_at': notification.createdAt.toUtc(),
@@ -106,7 +108,7 @@ RETURNING id
 
   static const String _listSql = '''
 SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
-       fixture_id, announcement_id, read_at, created_at
+       fixture_id, announcement_id, duel_challenge_id, read_at, created_at
 FROM notification.notifications
 WHERE recipient_id = @recipient_id
 ORDER BY created_at DESC, id DESC
@@ -134,7 +136,7 @@ LIMIT @limit
 
   static const String _findSql = '''
 SELECT id, recipient_id, kind::text, round_id, group_id, actor_user_id,
-       fixture_id, announcement_id, read_at, created_at
+       fixture_id, announcement_id, duel_challenge_id, read_at, created_at
 FROM notification.notifications
 WHERE id = @id AND recipient_id = @recipient_id
 ''';
@@ -415,6 +417,35 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
           NotificationSubject.adminAnnouncement(
             announcementId: (announcementResult as Ok<AnnouncementId>).value,
           ),
+        );
+      case NotificationKind.duelChallenged || NotificationKind.duelAccepted:
+        // Migration 0092: the challenge plus the player who acted.
+        final challengeResult = DuelChallengeId.tryParse(
+          row['duel_challenge_id']?.toString(),
+        );
+        if (challengeResult is Err<DuelChallengeId>) {
+          return Result.err(
+            _corrupt('duel_challenge_id', challengeResult.error.message),
+          );
+        }
+        final actorResult = UserId.tryParse(row['actor_user_id']?.toString());
+        if (actorResult is Err<UserId>) {
+          return Result.err(
+            _corrupt('actor_user_id', actorResult.error.message),
+          );
+        }
+        final challengeId = (challengeResult as Ok<DuelChallengeId>).value;
+        final actorUserId = (actorResult as Ok<UserId>).value;
+        return Result.ok(
+          kind == NotificationKind.duelChallenged
+              ? NotificationSubject.duelChallenged(
+                  challengeId: challengeId,
+                  actorUserId: actorUserId,
+                )
+              : NotificationSubject.duelAccepted(
+                  challengeId: challengeId,
+                  actorUserId: actorUserId,
+                ),
         );
     }
   }

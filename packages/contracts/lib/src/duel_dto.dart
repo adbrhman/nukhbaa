@@ -450,3 +450,62 @@ final class MyDuelsDto {
     'duels': [for (final d in duels) d.toJson()],
   };
 }
+
+/// One player who can be challenged by name (`GET /duels/players`).
+final class DuelPlayerDto {
+  /// Creates the entry.
+  const DuelPlayerDto({required this.userId, required this.displayName});
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory DuelPlayerDto.fromJson(Map<String, Object?> json) => DuelPlayerDto(
+    userId: json['user_id'] is String ? json['user_id'] as String : '',
+    displayName: json['display_name'] is String
+        ? json['display_name'] as String
+        : '',
+  );
+
+  /// The account a private challenge targets.
+  final String userId;
+
+  /// The player's display name.
+  final String displayName;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'user_id': userId,
+    'display_name': displayName,
+  };
+}
+
+/// Body of `GET /duels/players?q=NAME` (migration 0092).
+final class DuelPlayersDto {
+  /// Creates the answer.
+  const DuelPlayersDto({
+    required this.players,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory DuelPlayersDto.fromJson(Map<String, Object?> json) => DuelPlayersDto(
+    schemaVersion: (json['schema_version'] as int?) ?? 1,
+    players: [
+      for (final item in (json['players'] as List<Object?>?) ?? const [])
+        if (item is Map<String, Object?>) DuelPlayerDto.fromJson(item),
+    ],
+  );
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// Matching players, exact name first; never the caller.
+  final List<DuelPlayerDto> players;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'players': [for (final p in players) p.toJson()],
+  };
+}

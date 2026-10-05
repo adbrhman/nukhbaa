@@ -15,4 +15,11 @@ abstract final class PushLink {
   /// The in-app inbox: exact-hit and announcement pushes, sent now or
   /// deferred out of the quiet hours.
   static const String inbox = 'inbox';
+
+  /// The duels page: an accepted challenge (migration 0092).
+  static const String duel = 'duel';
+
+  /// A private challenge to answer, `duel:CODE`: the app opens that
+  /// challenge directly. The push-open funnel records it as [duel].
+  static String duelChallenge(String code) => '$duel:$code';
 }

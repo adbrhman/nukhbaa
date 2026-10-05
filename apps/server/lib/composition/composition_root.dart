@@ -101,6 +101,7 @@ final class CompositionRoot {
     required this.declineDuelChallenge,
     required this.getDuelChallengeByCode,
     required this.listMyDuels,
+    required this.searchDuelPlayers,
     required this.getGroupActivityFeed,
     required this.listMyNotifications,
     required this.listMyNotificationFeed,
@@ -272,6 +273,7 @@ final class CompositionRoot {
     DeclineDuelChallenge? declineDuelChallenge,
     GetDuelChallengeByCode? getDuelChallengeByCode,
     ListMyDuels? listMyDuels,
+    SearchDuelPlayers? searchDuelPlayers,
     GetGroupActivityFeed? getGroupActivityFeed,
     ListMyNotifications? listMyNotifications,
     ListMyNotificationFeed? listMyNotificationFeed,
@@ -457,6 +459,7 @@ final class CompositionRoot {
        getDuelChallengeByCode =
            getDuelChallengeByCode ?? _absentGetDuelChallengeByCode(),
        listMyDuels = listMyDuels ?? _absentListMyDuels(),
+       searchDuelPlayers = searchDuelPlayers ?? _absentSearchDuelPlayers(),
        getGroupActivityFeed =
            getGroupActivityFeed ?? _absentGetGroupActivityFeed(),
        listMyNotifications =
@@ -1110,6 +1113,9 @@ final class CompositionRoot {
 
   static ListMyDuels _absentListMyDuels() =>
       ListMyDuels(duels: _unwiredDuelReader, clock: _unwiredClock);
+
+  static SearchDuelPlayers _absentSearchDuelPlayers() =>
+      SearchDuelPlayers(players: _UnwiredDuelPlayerDirectory());
 
   static GetGroupActivityFeed _absentGetGroupActivityFeed() =>
       GetGroupActivityFeed(
@@ -1801,6 +1807,9 @@ final class CompositionRoot {
   /// The caller's challenges and duels (backs `GET /me/duels`).
   final ListMyDuels listMyDuels;
 
+  /// Finds players to challenge by name (backs `GET /duels/players`).
+  final SearchDuelPlayers searchDuelPlayers;
+
   /// Reads a group's activity feed — a pure read projection over already-
   /// ratified data (member-gated; NO table, NEVER a source of truth — Social
   /// decision #2).
@@ -2367,6 +2376,22 @@ final class CompositionRoot {
       );
     }
 
+    // Duel pushes (migration 0092): a private challenge tells its target,
+    // an acceptance tells the challenger. Same inbox, sender and quiet-hour
+    // queue as the exact-hit announcement.
+    final duelNotifier = NotifyDuelEvents(
+      notices: PostgresDuelNoticeReader(connection),
+      create: CreateNotification(
+        notifications: notificationRepository,
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      sender: pushSender,
+      queue: notificationQueue,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
     // One instance backs both the prediction route and duel acceptance,
     // so accepting a duel saves the prediction the way the match card does.
     final submitFixturePrediction = SubmitFixturePrediction(
@@ -2845,11 +2870,13 @@ final class CompositionRoot {
         predictions: fixturePredictionRepository,
         schedules: fixtureScheduleRepository,
         clock: clock,
+        notify: duelNotifier,
       ),
       acceptDuelChallenge: AcceptDuelChallenge(
         duels: duelChallengeRepository,
         submitPrediction: submitFixturePrediction,
         clock: clock,
+        notify: duelNotifier,
       ),
       cancelDuelChallenge: CancelDuelChallenge(
         duels: duelChallengeRepository,
@@ -2863,6 +2890,9 @@ final class CompositionRoot {
         clock: clock,
       ),
       listMyDuels: ListMyDuels(duels: duelReader, clock: clock),
+      searchDuelPlayers: SearchDuelPlayers(
+        players: PostgresDuelPlayerDirectory(connection),
+      ),
       getGroupActivityFeed: GetGroupActivityFeed(
         feed: activityFeedReader,
         groups: groupRepository,
@@ -4327,4 +4357,14 @@ final class _UnwiredDuelReader implements DuelReader {
     required DateTime since,
     required int limit,
   }) => _unwired();
+}
+
+/// Refuses every call: backs the "absent" player search of a test root.
+final class _UnwiredDuelPlayerDirectory implements DuelPlayerDirectory {
+  @override
+  Future<Result<List<DuelPlayer>>> search({
+    required String query,
+    required UserId excluding,
+    required int limit,
+  }) => throw StateError('player search was not wired into this test root');
 }

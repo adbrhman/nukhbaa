@@ -5,13 +5,15 @@ import 'package:test/test.dart';
 void main() {
   group('NotificationKind', () {
     test('has exactly the ratified kinds (closed set)', () {
-      expect(NotificationKind.values, hasLength(5));
+      expect(NotificationKind.values, hasLength(7));
       expect(NotificationKind.values.toSet(), {
         NotificationKind.roundScored,
         NotificationKind.groupMemberJoined,
         NotificationKind.reactionReceived,
         NotificationKind.fixtureScored,
         NotificationKind.adminAnnouncement,
+        NotificationKind.duelChallenged,
+        NotificationKind.duelAccepted,
       });
     });
 

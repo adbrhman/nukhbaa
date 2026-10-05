@@ -12,6 +12,7 @@ import 'package:shared/shared.dart';
 ///   * `POST /duels/challenges/{id}/decline` -> `{"status": "declined"}`.
 ///   * `GET  /duels/codes/{code}` -> [DuelChallengeDto].
 ///   * `GET  /me/duels` -> [MyDuelsDto].
+///   * `GET  /duels/players?q=` -> [DuelPlayersDto].
 ///
 /// Every rule (the prediction required before a challenge, the 30-minute
 /// lead time, capacity, the private target, one duel per pair) is decided
@@ -97,6 +98,16 @@ final class DuelsApi {
     return _transport.getObject<MyDuelsDto>(
       '/me/duels',
       parse: MyDuelsDto.fromJson,
+    );
+  }
+
+  /// `GET /duels/players?q=NAME` -- players to challenge by name. The
+  /// server answers nothing for fewer than two characters.
+  Future<Result<DuelPlayersDto>> searchPlayers(String query) {
+    return _transport.getObject<DuelPlayersDto>(
+      '/duels/players',
+      query: {'q': query.trim()},
+      parse: DuelPlayersDto.fromJson,
     );
   }
 
