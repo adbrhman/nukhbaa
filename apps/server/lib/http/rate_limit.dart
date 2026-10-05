@@ -91,7 +91,7 @@ Response? limitPlayerWrite(
 /// The writes that add a row every time, counted per player per hour.
 ///
 /// Every other player write updates a row it already has (a prediction, a
-/// name, a token), so it cannot grow the database; these two append. Without
+/// name, a token), so it cannot grow the database; these append. Without
 /// a cap one account could fill the free Supabase plan (500 MB) with them.
 enum PlayerAppend {
   /// `POST /me/frame-report`: the app sends one each time it goes to the
@@ -100,6 +100,11 @@ enum PlayerAppend {
 
   /// `POST /me/push-opened`: one per notification opened; 60 an hour.
   pushOpened,
+
+  /// `POST /duels/challenges`: each adds a challenge row, and cancelling
+  /// one frees a pending seat, so the database cap alone would not bound
+  /// the rows; 30 an hour.
+  duelChallenge,
 }
 
 final RateLimiter _frameReportLimiter = RateLimiter(
@@ -112,6 +117,11 @@ final RateLimiter _pushOpenLimiter = RateLimiter(
   window: const Duration(hours: 1),
 );
 
+final RateLimiter _duelChallengeLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(hours: 1),
+);
+
 /// The `429` for a [kind] append by [principal] over its hourly cap, or
 /// `null` when it may be stored.
 Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
@@ -121,6 +131,7 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
   final limiter = switch (kind) {
     PlayerAppend.frameReport => _frameReportLimiter,
     PlayerAppend.pushOpened => _pushOpenLimiter,
+    PlayerAppend.duelChallenge => _duelChallengeLimiter,
   };
   final wait = limiter.hit(principal.userId.value);
   return wait == null ? null : tooManyRequests(wait);

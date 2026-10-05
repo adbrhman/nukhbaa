@@ -18,6 +18,7 @@ export 'src/client_error_report_dto.dart';
 export 'src/competition_dto.dart';
 export 'src/daily_challenge_dto.dart';
 export 'src/device_token_dto.dart';
+export 'src/duel_dto.dart';
 export 'src/streak_dto.dart';
 export 'src/time_zone_dto.dart';
 export 'src/error_dto.dart';

@@ -95,6 +95,12 @@ final class CompositionRoot {
     required this.reactToFixture,
     required this.removeFixtureReaction,
     required this.listFixtureReactions,
+    required this.createDuelChallenge,
+    required this.acceptDuelChallenge,
+    required this.cancelDuelChallenge,
+    required this.declineDuelChallenge,
+    required this.getDuelChallengeByCode,
+    required this.listMyDuels,
     required this.getGroupActivityFeed,
     required this.listMyNotifications,
     required this.listMyNotificationFeed,
@@ -260,6 +266,12 @@ final class CompositionRoot {
     ReactToFixture? reactToFixture,
     RemoveFixtureReaction? removeFixtureReaction,
     ListFixtureReactions? listFixtureReactions,
+    CreateDuelChallenge? createDuelChallenge,
+    AcceptDuelChallenge? acceptDuelChallenge,
+    CancelDuelChallenge? cancelDuelChallenge,
+    DeclineDuelChallenge? declineDuelChallenge,
+    GetDuelChallengeByCode? getDuelChallengeByCode,
+    ListMyDuels? listMyDuels,
     GetGroupActivityFeed? getGroupActivityFeed,
     ListMyNotifications? listMyNotifications,
     ListMyNotificationFeed? listMyNotificationFeed,
@@ -434,6 +446,17 @@ final class CompositionRoot {
            removeFixtureReaction ?? _absentRemoveFixtureReaction(),
        listFixtureReactions =
            listFixtureReactions ?? _absentListFixtureReactions(),
+       createDuelChallenge =
+           createDuelChallenge ?? _absentCreateDuelChallenge(),
+       acceptDuelChallenge =
+           acceptDuelChallenge ?? _absentAcceptDuelChallenge(),
+       cancelDuelChallenge =
+           cancelDuelChallenge ?? _absentCancelDuelChallenge(),
+       declineDuelChallenge =
+           declineDuelChallenge ?? _absentDeclineDuelChallenge(),
+       getDuelChallengeByCode =
+           getDuelChallengeByCode ?? _absentGetDuelChallengeByCode(),
+       listMyDuels = listMyDuels ?? _absentListMyDuels(),
        getGroupActivityFeed =
            getGroupActivityFeed ?? _absentGetGroupActivityFeed(),
        listMyNotifications =
@@ -1049,6 +1072,44 @@ final class CompositionRoot {
         reactions: _unwiredFixtureReactionRepository,
         groups: _unwiredGroupRepository,
       );
+
+  /// Duel stand-ins (migration 0090): loud if a test reaches one without
+  /// wiring it.
+  static final DuelChallengeRepository _unwiredDuelChallengeRepository =
+      _UnwiredDuelChallengeRepository();
+
+  static final DuelReader _unwiredDuelReader = _UnwiredDuelReader();
+
+  static CreateDuelChallenge _absentCreateDuelChallenge() =>
+      CreateDuelChallenge(
+        duels: _unwiredDuelChallengeRepository,
+        competition: _unwiredCompetitionRepository,
+        predictions: _unwiredFixturePredictionRepository,
+        schedules: _unwiredFixtureScheduleRepository,
+        clock: _unwiredClock,
+      );
+
+  static AcceptDuelChallenge _absentAcceptDuelChallenge() =>
+      AcceptDuelChallenge(
+        duels: _unwiredDuelChallengeRepository,
+        submitPrediction: _absentSubmitFixturePrediction(),
+        clock: _unwiredClock,
+      );
+
+  static CancelDuelChallenge _absentCancelDuelChallenge() =>
+      CancelDuelChallenge(
+        duels: _unwiredDuelChallengeRepository,
+        competition: _unwiredCompetitionRepository,
+      );
+
+  static DeclineDuelChallenge _absentDeclineDuelChallenge() =>
+      DeclineDuelChallenge(duels: _unwiredDuelChallengeRepository);
+
+  static GetDuelChallengeByCode _absentGetDuelChallengeByCode() =>
+      GetDuelChallengeByCode(duels: _unwiredDuelReader, clock: _unwiredClock);
+
+  static ListMyDuels _absentListMyDuels() =>
+      ListMyDuels(duels: _unwiredDuelReader, clock: _unwiredClock);
 
   static GetGroupActivityFeed _absentGetGroupActivityFeed() =>
       GetGroupActivityFeed(
@@ -1718,6 +1779,28 @@ final class CompositionRoot {
   /// Axiom 4 Amendment; the per-fixture sibling of [listRoundReactions]).
   final ListFixtureReactions listFixtureReactions;
 
+  /// Creates a duel challenge (backs `POST /duels/challenges`, migration
+  /// 0090).
+  final CreateDuelChallenge createDuelChallenge;
+
+  /// Accepts a duel challenge with the caller's prediction (backs
+  /// `POST /duels/challenges/{id}/accept`).
+  final AcceptDuelChallenge acceptDuelChallenge;
+
+  /// The challenger closes an open challenge (backs
+  /// `POST /duels/challenges/{id}/cancel`).
+  final CancelDuelChallenge cancelDuelChallenge;
+
+  /// The invited player refuses a private challenge (backs
+  /// `POST /duels/challenges/{id}/decline`).
+  final DeclineDuelChallenge declineDuelChallenge;
+
+  /// Opens a shared duel link (backs `GET /duels/codes/{code}`).
+  final GetDuelChallengeByCode getDuelChallengeByCode;
+
+  /// The caller's challenges and duels (backs `GET /me/duels`).
+  final ListMyDuels listMyDuels;
+
   /// Reads a group's activity feed — a pure read projection over already-
   /// ratified data (member-gated; NO table, NEVER a source of truth — Social
   /// decision #2).
@@ -2114,6 +2197,11 @@ final class CompositionRoot {
     );
     final activityFeedReader = PostgresActivityFeedReader(connection);
 
+    // Duels (migration 0090): every rule is a database function. The
+    // repository calls them; the reader projects what the screens read.
+    final duelChallengeRepository = PostgresDuelChallengeRepository(connection);
+    final duelReader = PostgresDuelReader(connection);
+
     // Notifications slice (Tier-3, peripheral, rebuildable — NEVER a source of
     // truth; Database ADR §3 / Deployment ADR §Tier-3). One Postgres-backed
     // adapter over the single new stored surface `notification.notifications`
@@ -2278,6 +2366,26 @@ final class CompositionRoot {
             },
       );
     }
+
+    // One instance backs both the prediction route and duel acceptance,
+    // so accepting a duel saves the prediction the way the match card does.
+    final submitFixturePrediction = SubmitFixturePrediction(
+      fixturePredictionRepository: fixturePredictionRepository,
+      competitionRepository: competitionRepository,
+      fixtureScheduleRepository: fixtureScheduleRepository,
+      idGenerator: idGenerator,
+      clock: clock,
+      gamificationEventSink: PostgresGamificationEventSink(connection),
+      dailyChallengeRepository: PostgresDailyChallengeRepository(connection),
+      awardStreakBonus: AwardStreakBonus(
+        getMyStreak: GetMyStreak(
+          streaks: PostgresStreakRepository(connection),
+          clock: clock,
+        ),
+        fixtureLedgerRepository: fixtureLedgerRepository,
+        idGenerator: idGenerator,
+      ),
+    );
 
     return root = CompositionRoot._(
       connection: connection,
@@ -2577,23 +2685,7 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         clock: clock,
       ),
-      submitFixturePrediction: SubmitFixturePrediction(
-        fixturePredictionRepository: fixturePredictionRepository,
-        competitionRepository: competitionRepository,
-        fixtureScheduleRepository: fixtureScheduleRepository,
-        idGenerator: idGenerator,
-        clock: clock,
-        gamificationEventSink: PostgresGamificationEventSink(connection),
-        dailyChallengeRepository: PostgresDailyChallengeRepository(connection),
-        awardStreakBonus: AwardStreakBonus(
-          getMyStreak: GetMyStreak(
-            streaks: PostgresStreakRepository(connection),
-            clock: clock,
-          ),
-          fixtureLedgerRepository: fixtureLedgerRepository,
-          idGenerator: idGenerator,
-        ),
-      ),
+      submitFixturePrediction: submitFixturePrediction,
       getMyPrediction: GetMyPrediction(
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
@@ -2747,6 +2839,30 @@ final class CompositionRoot {
         reactions: fixtureReactionRepository,
         groups: groupRepository,
       ),
+      createDuelChallenge: CreateDuelChallenge(
+        duels: duelChallengeRepository,
+        competition: competitionRepository,
+        predictions: fixturePredictionRepository,
+        schedules: fixtureScheduleRepository,
+        clock: clock,
+      ),
+      acceptDuelChallenge: AcceptDuelChallenge(
+        duels: duelChallengeRepository,
+        submitPrediction: submitFixturePrediction,
+        clock: clock,
+      ),
+      cancelDuelChallenge: CancelDuelChallenge(
+        duels: duelChallengeRepository,
+        competition: competitionRepository,
+      ),
+      declineDuelChallenge: DeclineDuelChallenge(
+        duels: duelChallengeRepository,
+      ),
+      getDuelChallengeByCode: GetDuelChallengeByCode(
+        duels: duelReader,
+        clock: clock,
+      ),
+      listMyDuels: ListMyDuels(duels: duelReader, clock: clock),
       getGroupActivityFeed: GetGroupActivityFeed(
         feed: activityFeedReader,
         groups: groupRepository,
@@ -4149,3 +4265,66 @@ final class _UnwiredAuthGateway implements AuthGateway {
 /// The service principal the provider sync records results under. Not a
 /// person; never issued to a session.
 const String _providerSyncUserId = '00000000-0000-4000-8000-00000000517c';
+
+/// Refuses every call: backs the "absent" duel commands of a test root.
+final class _UnwiredDuelChallengeRepository implements DuelChallengeRepository {
+  static Never _unwired() =>
+      throw StateError('duels were not wired into this test root');
+
+  @override
+  Future<Result<DuelChallenge>> createChallenge({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+    required ParticipantId challengerParticipantId,
+    required UserId? targetUserId,
+    required int capacity,
+    required DateTime nowUtc,
+  }) => _unwired();
+
+  @override
+  Future<Result<DuelChallenge?>> findChallenge(DuelChallengeId id) =>
+      _unwired();
+
+  @override
+  Future<Result<Duel>> acceptChallenge({
+    required DuelChallengeId challengeId,
+    required UserId opponentUserId,
+    required DateTime nowUtc,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> cancelChallenge({
+    required DuelChallengeId challengeId,
+    required UserId challengerUserId,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> declineChallenge({
+    required DuelChallengeId challengeId,
+    required UserId targetUserId,
+  }) => _unwired();
+}
+
+/// Refuses every call: backs the "absent" duel reads of a test root.
+final class _UnwiredDuelReader implements DuelReader {
+  static Never _unwired() =>
+      throw StateError('duel reads were not wired into this test root');
+
+  @override
+  Future<Result<DuelChallengePreview?>> findChallengeByCode(DuelCode code) =>
+      _unwired();
+
+  @override
+  Future<Result<List<DuelChallengePreview>>> listOpenChallengesFor({
+    required UserId userId,
+    required DateTime now,
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<DuelRecord>>> listDuelsFor({
+    required UserId userId,
+    required DateTime since,
+    required int limit,
+  }) => _unwired();
+}
