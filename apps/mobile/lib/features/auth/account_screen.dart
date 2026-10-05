@@ -20,6 +20,7 @@ import '../../core/ui/unread_badge.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
+import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../gamification/insights_screen.dart';
@@ -167,6 +168,13 @@ class AccountScreen extends ConsumerWidget {
                         title: 'ادعُ أصدقاءك',
                         subtitle: 'نقاط الدعوة تكسر التعادل في الترتيب',
                         onTap: () => open(const InviteFriendsScreen()),
+                      ),
+                      AccountMenuRow(
+                        key: const Key('account.duels'),
+                        icon: Icons.compare_arrows_rounded,
+                        title: 'المواجهات',
+                        subtitle: 'تحدَّ أصدقاءك على مباراة',
+                        onTap: () => open(const DuelsScreen()),
                       ),
                     ],
                   ),
