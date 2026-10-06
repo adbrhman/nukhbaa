@@ -28,14 +28,61 @@ final Provider<Future<bool> Function(Uri uri)> notificationLinkOpenerProvider =
 
 /// The caller's own notification inbox, newest first, with a "mark read"
 /// affordance per unread row.
-class NotificationsScreen extends ConsumerWidget implements NamedScreen {
+///
+/// Opening it is seeing it: once the list arrives, every unread notification
+/// is marked read, so the bell's count clears and comes back only with the
+/// next notification. The rows keep the look they arrived with until the
+/// page is opened again, so the player still sees which ones are new.
+class NotificationsScreen extends ConsumerStatefulWidget
+    implements NamedScreen {
   @override
   String get screenName => ScreenNames.notifications;
 
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+/// Marks the whole inbox read while its page may already be closed: the
+/// controller is auto-disposed, so a listener holds it until the call and
+/// its invalidation finish, as a single row's mark does.
+Future<void> _markAllSeenKeptAlive(ProviderContainer container) async {
+  final ProviderSubscription<void> hold = container.listen<void>(
+    notificationControllerProvider,
+    (_, _) {},
+  );
+  try {
+    await container.read(notificationControllerProvider.notifier).markAllSeen();
+  } finally {
+    hold.close();
+  }
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  bool _seen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<NotificationListDto>>(
+      myNotificationsProvider,
+      (_, AsyncValue<NotificationListDto> next) => _markSeen(next.value),
+      fireImmediately: true,
+    );
+  }
+
+  void _markSeen(NotificationListDto? inbox) {
+    if (_seen || inbox == null || inbox.unreadCount == 0) return;
+    _seen = true;
+    unawaited(
+      _markAllSeenKeptAlive(ProviderScope.containerOf(context, listen: false)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<NotificationListDto> inbox = ref.watch(
       myNotificationsProvider,
     );

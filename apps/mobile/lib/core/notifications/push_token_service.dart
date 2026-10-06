@@ -58,7 +58,14 @@ class PushTokenService {
   /// Calls [onLink] with the `link` of the push that opened the app: the
   /// one that launched it, then every later tap while it runs. A push with
   /// no link, and the web build, call nothing.
-  Future<void> listenForOpenedPushes(void Function(String link) onLink) async {
+  ///
+  /// [onForegroundPush] is called for every push that arrives while the app
+  /// is open: Android shows no banner for those, so the app refreshes what
+  /// they change instead (the bell's count).
+  Future<void> listenForOpenedPushes(
+    void Function(String link) onLink, {
+    void Function()? onForegroundPush,
+  }) async {
     if (kIsWeb || _listeningForLinks) {
       return;
     }
@@ -76,6 +83,10 @@ class PushTokenService {
           onLink(link);
         }
       });
+      final void Function()? onForeground = onForegroundPush;
+      if (onForeground != null) {
+        FirebaseMessaging.onMessage.listen((_) => onForeground());
+      }
     } on Object catch (error) {
       if (kDebugMode) {
         debugPrint('PushTokenService: push links unavailable: $error');

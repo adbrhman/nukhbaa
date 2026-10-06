@@ -135,6 +135,22 @@ final class InMemoryNotificationRepository implements NotificationRepository {
         .length;
     return Result.ok(count);
   }
+
+  @override
+  Future<Result<int>> markAllRead(UserId recipientId, DateTime readAt) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    var marked = 0;
+    for (var i = 0; i < _rows.length; i++) {
+      final n = _rows[i];
+      if (n.recipientId.value != recipientId.value || n.isRead) continue;
+      final read = n.markRead(readAt);
+      if (read is Err<Notification>) return Result.err(read.error);
+      _rows[i] = (read as Ok<Notification>).value;
+      marked++;
+    }
+    return Result.ok(marked);
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -18,9 +18,11 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
+import '../duels/duels_providers.dart';
 import '../duels/duels_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
+import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import 'account_screen.dart';
@@ -38,7 +40,8 @@ class NukhbaaShell extends ConsumerStatefulWidget {
   ConsumerState<NukhbaaShell> createState() => _NukhbaaShellState();
 }
 
-class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
+class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
+    with WidgetsBindingObserver {
   int currentIndex = 0;
 
   /// PERF: IndexedStack builds every child on the first frame, so all five
@@ -108,10 +111,27 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     ref.invalidate(myFixturePredictionsProvider);
   }
 
+  /// Reads the bell's count (and the duels a push may be about) again
+  /// whenever a notification may have arrived without the app seeing it: the
+  /// app came back to the foreground from the launcher rather than from the
+  /// push, or a push arrived while it was open, which Android shows no
+  /// banner for. The count then stays until the inbox is opened.
+  void _refreshBell() {
+    if (!mounted) return;
+    ref.invalidate(unreadCountProvider);
+    ref.invalidate(myDuelsProvider);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshBell();
+  }
+
   @override
   void initState() {
     super.initState();
     _turnover.start();
+    WidgetsBinding.instance.addObserver(this);
     // Every session opens on the home tab.
     ref.read(screenViewLogProvider).record(ScreenNames.home);
     // Fire-and-forget, and only once the user is signed in: the token is
@@ -122,7 +142,9 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
     // A push says where it should open: the tap that launched the app, then
     // every later one while it runs.
     unawaited(
-      ref.read(pushTokenServiceProvider).listenForOpenedPushes(_openLink),
+      ref
+          .read(pushTokenServiceProvider)
+          .listenForOpenedPushes(_openLink, onForegroundPush: _refreshBell),
     );
     // The device's own clock offset, for notification timing only -- no day
     // boundary is derived from it. Re-sent on every start because an offset
@@ -164,6 +186,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   @override
   void dispose() {
     _turnover.stop();
+    WidgetsBinding.instance.removeObserver(this);
     _frames.stop();
     _screens.stop();
     super.dispose();

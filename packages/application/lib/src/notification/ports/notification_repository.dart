@@ -79,4 +79,11 @@ abstract interface class NotificationRepository {
   /// Recipient-scoped (decision #4). Always `>= 0`; zero is a legitimate
   /// result (all read, or none exist).
   Future<Result<int>> unreadCount(UserId recipientId);
+
+  /// Marks every one of [recipientId]'s unread notifications read at
+  /// [readAt], returning how many went from unread to read.
+  ///
+  /// Recipient-scoped (decision #4) and idempotent: a row already read keeps
+  /// its original read timestamp, and a repeat returns zero.
+  Future<Result<int>> markAllRead(UserId recipientId, DateTime readAt);
 }

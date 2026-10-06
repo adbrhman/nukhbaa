@@ -115,6 +115,7 @@ export 'src/notification/get_my_notification_preferences.dart';
 export 'src/notification/get_unread_count.dart';
 export 'src/notification/list_my_notification_feed.dart';
 export 'src/notification/list_my_notifications.dart';
+export 'src/notification/mark_all_notifications_read.dart';
 export 'src/notification/mark_notification_read.dart';
 export 'src/notification/notify_fixture_scored.dart';
 export 'src/notification/notify_fixture_winners.dart';

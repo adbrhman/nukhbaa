@@ -108,6 +108,7 @@ final class CompositionRoot {
     required this.publishAnnouncement,
     required this.getUnreadCount,
     required this.markNotificationRead,
+    required this.markAllNotificationsRead,
     required this.sendPredictionReminders,
     required this.sendPreMatchReminders,
     required this.sendStreakSavers,
@@ -281,6 +282,7 @@ final class CompositionRoot {
     PublishAnnouncement? publishAnnouncement,
     GetUnreadCount? getUnreadCount,
     MarkNotificationRead? markNotificationRead,
+    MarkAllNotificationsRead? markAllNotificationsRead,
     SendPredictionReminders? sendPredictionReminders,
     SendPreMatchReminders? sendPreMatchReminders,
     SendStreakSavers? sendStreakSavers,
@@ -473,6 +475,8 @@ final class CompositionRoot {
        getUnreadCount = getUnreadCount ?? _absentGetUnreadCount(),
        markNotificationRead =
            markNotificationRead ?? _absentMarkNotificationRead(),
+       markAllNotificationsRead =
+           markAllNotificationsRead ?? _absentMarkAllNotificationsRead(),
        sendPredictionReminders =
            sendPredictionReminders ?? _absentSendPredictionReminders(),
        sendPreMatchReminders =
@@ -1380,6 +1384,12 @@ final class CompositionRoot {
         clock: _unwiredClock,
       );
 
+  static MarkAllNotificationsRead _absentMarkAllNotificationsRead() =>
+      MarkAllNotificationsRead(
+        notifications: _unwiredNotificationRepository,
+        clock: _unwiredClock,
+      );
+
   /// Throwing admin repositories backing every "absent" Admin Panel use-case,
   /// so a test that reaches an unwired admin slice fails loudly instead of
   /// touching a real database. The user-sanction path (`SuspendUser`/
@@ -1848,6 +1858,10 @@ final class CompositionRoot {
   /// no existence oracle — Notifications decision #4). The one client-safe
   /// Tier-3 mutation.
   final MarkNotificationRead markNotificationRead;
+
+  /// Marks every one of the caller's OWN unread notifications read: the
+  /// inbox was opened (backs `POST /notifications/read_all`).
+  final MarkAllNotificationsRead markAllNotificationsRead;
 
   /// Reminds everyone who has not predicted, three hours before the day's
   /// first kickoff. Driven by the scheduler, never by a request.
@@ -2939,6 +2953,10 @@ final class CompositionRoot {
       ),
       getUnreadCount: GetUnreadCount(notifications: notificationRepository),
       markNotificationRead: MarkNotificationRead(
+        notifications: notificationRepository,
+        clock: clock,
+      ),
+      markAllNotificationsRead: MarkAllNotificationsRead(
         notifications: notificationRepository,
         clock: clock,
       ),
@@ -4266,6 +4284,10 @@ final class _UnwiredNotificationRepository implements NotificationRepository {
 
   @override
   Future<Result<int>> unreadCount(UserId recipientId) => _unwired();
+
+  @override
+  Future<Result<int>> markAllRead(UserId recipientId, DateTime readAt) =>
+      _unwired();
 }
 
 final class _UnwiredAnnouncementRepository implements AnnouncementRepository {

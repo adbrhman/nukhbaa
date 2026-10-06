@@ -255,6 +255,45 @@ WHERE recipient_id = @recipient_id AND read_at IS NULL
   }
 
   // --------------------------------------------------------------------------
+  // markAllRead -- the inbox was opened: every unread row of the recipient
+  // --------------------------------------------------------------------------
+
+  // Recipient-scoped like every statement here; the `read_at IS NULL` guard
+  // keeps the original timestamp of a row already read and makes a repeat
+  // mark nothing. The CTE turns the updated rows into one count.
+  static const String _markAllSql = '''
+WITH marked AS (
+  UPDATE notification.notifications
+  SET read_at = @read_at
+  WHERE recipient_id = @recipient_id AND read_at IS NULL
+  RETURNING 1
+)
+SELECT count(*) AS marked FROM marked
+''';
+
+  @override
+  Future<Result<int>> markAllRead(UserId recipientId, DateTime readAt) async {
+    final result = await _connection.query(
+      _markAllSql,
+      parameters: {
+        'recipient_id': recipientId.value,
+        'read_at': readAt.toUtc(),
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => _mapMarked(value),
+    };
+  }
+
+  Result<int> _mapMarked(List<Map<String, dynamic>> rows) {
+    final int? marked = rows.isEmpty ? null : _readInt(rows.first['marked']);
+    return marked == null
+        ? Result.err(_corrupt('marked', 'not an integer'))
+        : Result.ok(marked);
+  }
+
+  // --------------------------------------------------------------------------
   // Row mapping
   // --------------------------------------------------------------------------
 

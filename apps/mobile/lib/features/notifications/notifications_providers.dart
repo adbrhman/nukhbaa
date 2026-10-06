@@ -62,4 +62,16 @@ class NotificationController extends _$NotificationController {
     }
     return result;
   }
+
+  /// The inbox was opened: marks every unread notification read, so the
+  /// bell's count clears and comes back only with the next notification.
+  /// Only the count is read again; the open list keeps showing which rows
+  /// were new on this visit.
+  Future<Result<int>> markAllSeen() async {
+    final result = await _api.markAllRead();
+    if (result is Ok<int>) {
+      ref.invalidate(unreadCountProvider);
+    }
+    return result;
+  }
 }

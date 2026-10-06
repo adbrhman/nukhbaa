@@ -59,4 +59,15 @@ final class NotificationsApi {
       parse: (json) => json['read']! as bool,
     );
   }
+
+  /// `POST /notifications/read_all` -- marks every one of the caller's
+  /// unread notifications read (the inbox was opened) and answers how many
+  /// went from unread to read. No body; the recipient is the token.
+  Future<Result<int>> markAllRead() {
+    return _transport.postObject<int>(
+      '/notifications/read_all',
+      body: const {},
+      parse: (json) => json['marked']! as int,
+    );
+  }
 }
