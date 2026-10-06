@@ -27,10 +27,10 @@ final class RegisterDeviceToken {
 
   final DeviceTokenRepository _deviceTokens;
 
-  /// Supported values for [platform] (Android only today; migration 0039's
-  /// check constraint is the backstop behind this, not the first line of
-  /// defense).
-  static const Set<String> supportedPlatforms = {'android', 'ios'};
+  /// Supported values for [platform]: the phones, and the web build where
+  /// the iPhone players are (migration 0096). The check constraint is the
+  /// backstop behind this, not the first line of defense.
+  static const Set<String> supportedPlatforms = {'android', 'ios', 'web'};
 
   /// Registers [token] for [principal] on [platform].
   Future<Result<void>> call({

@@ -25,6 +25,7 @@ import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
+import '../notifications/web_push_card.dart';
 import 'pending_predictions_provider.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
@@ -103,6 +104,9 @@ class HomeScreen extends ConsumerWidget {
                   onPredict: onOpenMatches,
                 ),
               ),
+              // The web build only: how pushes reach this browser (on an
+              // iPhone, by adding the app to the home screen first).
+              const WebPushCard(),
               // While a match the player predicted is in play: what it
               // would earn, their duels and their month place if it ended
               // now; hidden otherwise.

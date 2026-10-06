@@ -10,7 +10,7 @@ import 'package:shared/shared.dart';
 
 /// `POST /me/device-token` -- register the calling device for push delivery.
 ///
-/// Body: `{ "token": string, "platform": "android" | "ios" }`. The owner comes
+/// Body: `{ "token": string, "platform": "android" | "ios" | "web" }`. The owner comes
 /// from the verified token, never the body (Security ADR §2).
 ///
 /// Idempotent: the app calls this on every launch and on every FCM token
