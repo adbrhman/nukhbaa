@@ -123,6 +123,19 @@ final class NotificationSubject {
     actorUserId: actorUserId,
   );
 
+  /// The subject of a `predictionReaction` notification -- the fixture and
+  /// the player who reacted to the recipient's prediction for it (migration
+  /// 0094). One per reacting player per fixture: a changed reaction, or one
+  /// taken back and given again, is the same event.
+  static NotificationSubject predictionReaction({
+    required FixtureRef fixture,
+    required UserId actorUserId,
+  }) => NotificationSubject._(
+    kind: NotificationKind.predictionReaction,
+    fixture: fixture,
+    actorUserId: actorUserId,
+  );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -164,6 +177,8 @@ final class NotificationSubject {
       'duel_challenged:${duelChallengeId!.value}',
     NotificationKind.duelAccepted =>
       'duel_accepted:${duelChallengeId!.value}:${actorUserId!.value}',
+    NotificationKind.predictionReaction =>
+      'prediction_reaction:${fixture!.value}:${actorUserId!.value}',
   };
 
   @override

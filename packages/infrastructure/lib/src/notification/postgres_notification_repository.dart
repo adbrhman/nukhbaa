@@ -486,6 +486,28 @@ SELECT count(*) AS marked FROM marked
                   actorUserId: actorUserId,
                 ),
         );
+      case NotificationKind.predictionReaction:
+        // Migration 0094: the fixture plus the player who reacted.
+        final fixtureResult = FixtureRef.tryParse(
+          row['fixture_id']?.toString(),
+        );
+        if (fixtureResult is Err<FixtureRef>) {
+          return Result.err(
+            _corrupt('fixture_id', fixtureResult.error.message),
+          );
+        }
+        final actorResult = UserId.tryParse(row['actor_user_id']?.toString());
+        if (actorResult is Err<UserId>) {
+          return Result.err(
+            _corrupt('actor_user_id', actorResult.error.message),
+          );
+        }
+        return Result.ok(
+          NotificationSubject.predictionReaction(
+            fixture: (fixtureResult as Ok<FixtureRef>).value,
+            actorUserId: (actorResult as Ok<UserId>).value,
+          ),
+        );
     }
   }
 

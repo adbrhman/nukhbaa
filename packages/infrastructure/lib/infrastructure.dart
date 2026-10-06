@@ -96,4 +96,5 @@ export 'src/social/postgres_duel_notice_reader.dart';
 export 'src/social/postgres_duel_player_directory.dart';
 export 'src/social/postgres_duel_reader.dart';
 export 'src/social/postgres_fixture_reaction_repository.dart';
+export 'src/social/postgres_prediction_reaction_repository.dart';
 export 'src/social/postgres_reaction_repository.dart';

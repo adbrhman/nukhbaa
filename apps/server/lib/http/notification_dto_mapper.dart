@@ -38,6 +38,7 @@ NotificationDto notificationToDto(Notification notification) {
     roundId: subject.roundId?.value,
     groupId: subject.groupId?.value,
     actorUserId: subject.actorUserId?.value,
+    fixtureId: subject.fixture?.value,
   );
 }
 
@@ -66,6 +67,7 @@ NotificationDto notificationFeedItemToDto(NotificationFeedItem item) {
     roundId: base.roundId,
     groupId: base.groupId,
     actorUserId: base.actorUserId,
+    fixtureId: base.fixtureId,
     announcementId: announcement.id.value,
     title: announcement.title,
     body: announcement.body,

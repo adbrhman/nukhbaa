@@ -34,6 +34,7 @@ final class NotificationDto {
     this.roundId,
     this.groupId,
     this.actorUserId,
+    this.fixtureId,
     this.announcementId,
     this.title,
     this.body,
@@ -54,6 +55,7 @@ final class NotificationDto {
       roundId: json['round_id'] as String?,
       groupId: json['group_id'] as String?,
       actorUserId: json['actor_user_id'] as String?,
+      fixtureId: json['fixture_id'] as String?,
       announcementId: json['announcement_id'] as String?,
       title: json['title'] as String?,
       body: json['body'] as String?,
@@ -97,6 +99,10 @@ final class NotificationDto {
   /// `group_member_joined`/`reaction_received`; else null.
   final String? actorUserId;
 
+  /// The fixture involved (UUID string) -- `fixture_scored`,
+  /// `prediction_reaction` (migration 0094); else null.
+  final String? fixtureId;
+
   /// The announcement involved (UUID string), for `admin_announcement`; else
   /// null.
   final String? announcementId;
@@ -125,6 +131,7 @@ final class NotificationDto {
     if (roundId != null) 'round_id': roundId,
     if (groupId != null) 'group_id': groupId,
     if (actorUserId != null) 'actor_user_id': actorUserId,
+    if (fixtureId != null) 'fixture_id': fixtureId,
     if (announcementId != null) 'announcement_id': announcementId,
     if (title != null) 'title': title,
     if (body != null) 'body': body,
@@ -142,6 +149,7 @@ final class NotificationDto {
       other.roundId == roundId &&
       other.groupId == groupId &&
       other.actorUserId == actorUserId &&
+      other.fixtureId == fixtureId &&
       other.announcementId == announcementId &&
       other.title == title &&
       other.body == body &&
@@ -158,6 +166,7 @@ final class NotificationDto {
     roundId,
     groupId,
     actorUserId,
+    fixtureId,
     announcementId,
     title,
     body,

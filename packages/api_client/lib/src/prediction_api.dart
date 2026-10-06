@@ -98,6 +98,50 @@ final class PredictionApi {
     );
   }
 
+  /// `GET /seasons/{id}/fixtures/{fixtureId}/reactions` -- the reactions
+  /// every prediction for [fixtureId] received, with the caller's own
+  /// (migration 0094). The same kickoff gate as the predictions.
+  Future<Result<PredictionReactionsDto>> listPredictionReactions({
+    required String seasonId,
+    required String fixtureId,
+  }) {
+    return _transport.getObject<PredictionReactionsDto>(
+      '/seasons/$seasonId/fixtures/$fixtureId/reactions',
+      parse: PredictionReactionsDto.fromJson,
+    );
+  }
+
+  /// `PUT /seasons/{id}/fixtures/{fixtureId}/predictions/{participantId}/
+  /// reaction` -- reacts with [kind] (one of [predictionReactionKinds]) to
+  /// that player's prediction, or changes the caller's reaction to it.
+  Future<Result<bool>> reactToPrediction({
+    required String seasonId,
+    required String fixtureId,
+    required String participantId,
+    required String kind,
+  }) {
+    return _transport.putObject<bool>(
+      '/seasons/$seasonId/fixtures/$fixtureId/predictions/$participantId/'
+      'reaction',
+      body: <String, Object?>{'emoji': kind},
+      parse: (json) => json['reacted'] == true,
+    );
+  }
+
+  /// `DELETE` of the same path -- takes the caller's reaction back; false
+  /// when there was none.
+  Future<Result<bool>> removePredictionReaction({
+    required String seasonId,
+    required String fixtureId,
+    required String participantId,
+  }) {
+    return _transport.deleteObject<bool>(
+      '/seasons/$seasonId/fixtures/$fixtureId/predictions/$participantId/'
+      'reaction',
+      parse: (json) => json['removed'] == true,
+    );
+  }
+
   /// `GET /rounds/{id}/predictions` — the caller's own prediction for
   /// [roundId], any round status (self-read is safe).
   ///

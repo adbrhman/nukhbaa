@@ -45,7 +45,12 @@ enum NotificationKind {
 
   /// A player accepted a duel challenge the recipient created (migration
   /// 0092). Subject references the challenge and the player who accepted.
-  duelAccepted;
+  duelAccepted,
+
+  /// A player reacted to the recipient's prediction for a fixture
+  /// (migration 0094). Subject references the fixture and the player who
+  /// reacted; one per reacting player per fixture.
+  predictionReaction;
 
   /// The stable wire/storage token for this notification kind.
   String get wireValue => switch (this) {
@@ -56,6 +61,7 @@ enum NotificationKind {
     NotificationKind.adminAnnouncement => 'admin_announcement',
     NotificationKind.duelChallenged => 'duel_challenged',
     NotificationKind.duelAccepted => 'duel_accepted',
+    NotificationKind.predictionReaction => 'prediction_reaction',
   };
 
   /// Parses a [NotificationKind] from an untrusted [raw] token, returning a

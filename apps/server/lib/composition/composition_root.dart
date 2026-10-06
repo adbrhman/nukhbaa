@@ -77,6 +77,9 @@ final class CompositionRoot {
     required this.getFixtureResult,
     required this.getFixturePredictionDistribution,
     required this.listFixturePredictions,
+    required this.listPredictionReactions,
+    required this.reactToPrediction,
+    required this.removePredictionReaction,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
@@ -251,6 +254,9 @@ final class CompositionRoot {
     GetFixtureResult? getFixtureResult,
     GetFixturePredictionDistribution? getFixturePredictionDistribution,
     ListFixturePredictions? listFixturePredictions,
+    ListPredictionReactions? listPredictionReactions,
+    ReactToPrediction? reactToPrediction,
+    RemovePredictionReaction? removePredictionReaction,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
@@ -427,6 +433,11 @@ final class CompositionRoot {
            _absentGetFixturePredictionDistribution(),
        listFixturePredictions =
            listFixturePredictions ?? _absentListFixturePredictions(),
+       listPredictionReactions =
+           listPredictionReactions ?? _absentListPredictionReactions(),
+       reactToPrediction = reactToPrediction ?? _absentReactToPrediction(),
+       removePredictionReaction =
+           removePredictionReaction ?? _absentRemovePredictionReaction(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -947,6 +958,33 @@ final class CompositionRoot {
         fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
         participantReader: _unwiredParticipantReader,
         clock: _unwiredClock,
+      );
+
+  /// Back the "absent" prediction-reaction use-cases (migration 0094):
+  /// loud if a test reaches one it did not wire.
+  static ListPredictionReactions _absentListPredictionReactions() =>
+      ListPredictionReactions(
+        reveal: _absentListFixturePredictions(),
+        reactions: _UnwiredPredictionReactionRepository(),
+      );
+
+  static ReactToPrediction _absentReactToPrediction() => ReactToPrediction(
+    reveal: _absentListFixturePredictions(),
+    competition: _unwiredCompetitionRepository,
+    reactions: _UnwiredPredictionReactionRepository(),
+    notify: CreateNotification(
+      notifications: _unwiredNotificationRepository,
+      idGenerator: _unwiredIdGenerator,
+      clock: _unwiredClock,
+    ),
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
+  static RemovePredictionReaction _absentRemovePredictionReaction() =>
+      RemovePredictionReaction(
+        reveal: _absentListFixturePredictions(),
+        reactions: _UnwiredPredictionReactionRepository(),
       );
 
   /// Unlike the other absent use-cases this one is quiet: the result is an
@@ -1722,6 +1760,17 @@ final class CompositionRoot {
   /// (backs `GET /seasons/{id}/fixtures/{fixtureId}/predictions`).
   final ListFixturePredictions listFixturePredictions;
 
+  /// The reactions every prediction for a fixture received (backs
+  /// `GET /seasons/{id}/fixtures/{fixtureId}/reactions`, migration 0094).
+  final ListPredictionReactions listPredictionReactions;
+
+  /// Reacts to another player's prediction (backs `PUT /seasons/{id}/
+  /// fixtures/{fixtureId}/predictions/{participantId}/reaction`).
+  final ReactToPrediction reactToPrediction;
+
+  /// Takes a reaction back (backs `DELETE` of the same path).
+  final RemovePredictionReaction removePredictionReaction;
+
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
   /// without the participant-of-season gate (added so an admin can
   /// investigate a user's complaint on any fixture regardless of the
@@ -2404,6 +2453,19 @@ final class CompositionRoot {
       );
     }
 
+    // Reactions on a prediction (migration 0094) stand behind the
+    // predictions' own gate: whoever may see a prediction may react to it.
+    final predictionReveal = ListFixturePredictions(
+      competitionRepository: competitionRepository,
+      fixturePredictionRepository: fixturePredictionRepository,
+      fixtureScheduleRepository: fixtureScheduleRepository,
+      participantReader: participantReader,
+      clock: clock,
+    );
+    final predictionReactions = PostgresPredictionReactionRepository(
+      connection,
+    );
+
     // Duel pushes (migration 0092): a private challenge tells its target,
     // an acceptance tells the challenger. Same inbox, sender and quiet-hour
     // queue as the exact-hit announcement.
@@ -2826,6 +2888,26 @@ final class CompositionRoot {
         fixtureScheduleRepository: fixtureScheduleRepository,
         participantReader: participantReader,
         clock: clock,
+      ),
+      listPredictionReactions: ListPredictionReactions(
+        reveal: predictionReveal,
+        reactions: predictionReactions,
+      ),
+      reactToPrediction: ReactToPrediction(
+        reveal: predictionReveal,
+        competition: competitionRepository,
+        reactions: predictionReactions,
+        notify: CreateNotification(
+          notifications: notificationRepository,
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      removePredictionReaction: RemovePredictionReaction(
+        reveal: predictionReveal,
+        reactions: predictionReactions,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
@@ -3995,6 +4077,39 @@ final class _UnwiredScreenViewRepository implements ScreenViewRepository {
     required Map<String, int> opens,
     required DateTime reportedAt,
   }) => throw StateError('RecordScreenViews was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentReactToPrediction].
+final class _UnwiredPredictionReactionRepository
+    implements PredictionReactionRepository {
+  static Never _unwired() => throw StateError(
+    'A prediction-reaction use-case was not wired into this test root',
+  );
+
+  @override
+  Future<Result<PredictionReactionWrite>> upsert({
+    required String id,
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+    required ParticipantId target,
+    required UserId reactor,
+    required ReactionKind kind,
+    required DateTime reactedAt,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> remove({
+    required FixtureRef fixture,
+    required ParticipantId target,
+    required UserId reactor,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<PredictionReactionTally>>> tallies({
+    required SeasonId seasonId,
+    required FixtureRef fixture,
+    required UserId viewer,
+  }) => _unwired();
 }
 
 /// Refuses every call: see [_absentAdminGetReferralOverview].
