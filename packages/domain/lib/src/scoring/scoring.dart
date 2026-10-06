@@ -168,6 +168,16 @@ abstract final class Scoring {
     );
   }
 
+  /// Grades one scoreline [prediction] against [result] under [ruleset],
+  /// with nothing stored: what the prediction would earn if [result] stood.
+  /// The live view grades every prediction against the running score with
+  /// it, by the same rules as a recorded result.
+  static FixtureScoreResult gradeScoreline({
+    required FixtureScorePrediction prediction,
+    required FixtureResult result,
+    required ScoringRuleset ruleset,
+  }) => _gradeFixture(prediction, result, ruleset);
+
   static FixtureScoreResult _gradeFixturePrediction(
     FixturePrediction prediction,
     FixtureResult result,

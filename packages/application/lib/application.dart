@@ -92,6 +92,7 @@ export 'src/leaderboard/admin_crown_month_champions.dart';
 export 'src/leaderboard/admin_get_champion_candidates.dart';
 export 'src/leaderboard/admin_set_champion_photo.dart';
 export 'src/leaderboard/get_hall_of_fame.dart';
+export 'src/leaderboard/get_live_standing.dart';
 export 'src/leaderboard/get_season_fixture_leaderboard.dart';
 export 'src/leaderboard/get_season_leaderboard.dart';
 export 'src/leaderboard/get_sporting_season_leaderboard.dart';

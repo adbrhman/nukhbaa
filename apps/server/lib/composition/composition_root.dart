@@ -81,6 +81,7 @@ final class CompositionRoot {
     required this.reactToPrediction,
     required this.removePredictionReaction,
     required this.listSeasonDuelWins,
+    required this.getLiveStanding,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
@@ -259,6 +260,7 @@ final class CompositionRoot {
     ReactToPrediction? reactToPrediction,
     RemovePredictionReaction? removePredictionReaction,
     ListSeasonDuelWins? listSeasonDuelWins,
+    GetLiveStanding? getLiveStanding,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
@@ -441,6 +443,7 @@ final class CompositionRoot {
        removePredictionReaction =
            removePredictionReaction ?? _absentRemovePredictionReaction(),
        listSeasonDuelWins = listSeasonDuelWins ?? _absentListSeasonDuelWins(),
+       getLiveStanding = getLiveStanding ?? _absentGetLiveStanding(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -994,6 +997,18 @@ final class CompositionRoot {
   static ListSeasonDuelWins _absentListSeasonDuelWins() => ListSeasonDuelWins(
     competition: _unwiredCompetitionRepository,
     records: _UnwiredDuelRecordReader(),
+  );
+
+  /// Backs the "absent" [GetLiveStanding]: loud if a test reaches it.
+  static GetLiveStanding _absentGetLiveStanding() => GetLiveStanding(
+    competition: _unwiredCompetitionRepository,
+    fixturePredictions: _unwiredFixturePredictionRepository,
+    totals: _UnwiredFixtureTotalsReader(),
+    results: _unwiredFixtureResultRepository,
+    rulesets: _unwiredRulesetProvider,
+    duels: _unwiredDuelReader,
+    liveScores: null,
+    clock: _unwiredClock,
   );
 
   /// Unlike the other absent use-cases this one is quiet: the result is an
@@ -1783,6 +1798,10 @@ final class CompositionRoot {
   /// How many duels each player of a season won, beside their name on the
   /// month's leaderboard (backs `GET /seasons/{id}/duel-wins`).
   final ListSeasonDuelWins listSeasonDuelWins;
+
+  /// While a season's matches are in play: points, month place and duels
+  /// as if they ended now (backs `GET /seasons/{id}/live`).
+  final GetLiveStanding getLiveStanding;
 
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
   /// without the participant-of-season gate (added so an admin can
@@ -2925,6 +2944,18 @@ final class CompositionRoot {
       listSeasonDuelWins: ListSeasonDuelWins(
         competition: competitionRepository,
         records: PostgresDuelRecordReader(connection),
+      ),
+      getLiveStanding: GetLiveStanding(
+        competition: competitionRepository,
+        fixturePredictions: fixturePredictionRepository,
+        totals: CachedFixtureTotalsReader(
+          PostgresFixtureTotalsReader(connection),
+        ),
+        results: fixtureResultRepository,
+        rulesets: rulesetProvider,
+        duels: duelReader,
+        liveScores: liveScoreBoard,
+        clock: clock,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,

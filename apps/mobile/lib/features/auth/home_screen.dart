@@ -20,6 +20,7 @@ import '../competition/team_identity.dart';
 import '../duels/duels_home_card.dart';
 import '../duels/duels_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../fixture_prediction/widgets/live_home_card.dart';
 import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
 import '../notifications/notifications_providers.dart';
@@ -102,6 +103,10 @@ class HomeScreen extends ConsumerWidget {
                   onPredict: onOpenMatches,
                 ),
               ),
+              // While a match the player predicted is in play: what it
+              // would earn, their duels and their month place if it ended
+              // now; hidden otherwise.
+              LiveHomeCard(onOpenMatches: onOpenMatches),
               // A challenge waiting, duels running, the last result; hidden
               // when there is none. The only duel news a web player gets.
               const DuelsHomeCard(),

@@ -41,6 +41,7 @@ export 'src/health_dto.dart';
 export 'src/latest_build_dto.dart';
 export 'src/leaderboard_dto.dart';
 export 'src/ledger_dto.dart';
+export 'src/live_standing_dto.dart';
 export 'src/me_dto.dart';
 export 'src/notification_dto.dart';
 export 'src/notification_preferences_dto.dart';

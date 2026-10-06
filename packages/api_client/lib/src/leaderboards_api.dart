@@ -124,6 +124,19 @@ final class LeaderboardsApi {
     );
   }
 
+  /// `GET /seasons/{id}/live` -- while the season's matches are in play,
+  /// what the caller's predictions would earn if they ended now, their
+  /// place on the month board now and then, and their duels on those
+  /// matches. Same gate as [fixtureLeaderboard]:
+  /// `Err(authorization, code: leaderboard.not_a_participant)` for anyone
+  /// outside the season.
+  Future<Result<LiveStandingDto>> seasonLive(String seasonId) {
+    return _transport.getObject<LiveStandingDto>(
+      '/seasons/$seasonId/live',
+      parse: LiveStandingDto.fromJson,
+    );
+  }
+
   /// `GET /me/seasons` — the caller's own season-by-season record, newest
   /// season first: the place they took, the points they scored, and the raw
   /// counts behind their accuracy.
