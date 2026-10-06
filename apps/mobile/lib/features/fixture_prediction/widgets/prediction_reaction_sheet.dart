@@ -1,8 +1,9 @@
 /// The sheet behind a cell of the predictions board (migration 0094): one
 /// player's prediction, the reactions it received, and -- on someone
 /// else's -- the six reactions to give, change, or take back by tapping the
-/// chosen one again. The owner hears of the first reaction each player
-/// gives, in the inbox. Reactions carry no points.
+/// chosen one again. A choice closes the sheet and shows on the board at
+/// once, before the server answers. The owner hears of the first reaction
+/// each player gives, in the inbox. Reactions carry no points.
 ///
 /// Every kind is drawn as an icon with its name: emoji glyphs show as boxes
 /// in the app's typeface. Each kind keeps its own colour, from the theme's
@@ -15,14 +16,12 @@ import 'dart:async';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../core/analytics/screen_views.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
-import '../../../core/providers.dart';
 import '../fixture_prediction_providers.dart';
 import '../prediction_reactions_providers.dart';
 
@@ -133,38 +132,26 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
 
 class _PredictionReactionSheetState
     extends ConsumerState<PredictionReactionSheet> {
-  bool _busy = false;
-  String? _error;
-
   FixturePredictionDistributionKey get _key =>
       (seasonId: widget.seasonId, fixtureId: widget.fixtureId);
 
+  /// The board behind already carries the choice, so the sheet closes at
+  /// once; a refused save is put back there and said under it.
   Future<void> _choose(String kind, String? mine) async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final api = ref.read(predictionApiProvider);
-    final Result<bool> result = kind == mine
-        ? await api.removePredictionReaction(
-            seasonId: widget.seasonId,
-            fixtureId: widget.fixtureId,
-            participantId: widget.participantId,
-          )
-        : await api.reactToPrediction(
-            seasonId: widget.seasonId,
-            fixtureId: widget.fixtureId,
-            participantId: widget.participantId,
-            kind: kind,
-          );
-    if (!mounted) return;
-    if (result is Ok<bool>) {
-      ref.invalidate(predictionReactionsProvider(_key));
-    }
-    setState(() {
-      _busy = false;
-      _error = result is Ok<bool> ? null : 'تعذّر حفظ تفاعلك. حاول مرة أخرى.';
-    });
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
+    final Future<bool> saved = ref
+        .read(predictionReactionsProvider(_key).notifier)
+        .choose(widget.participantId, kind == mine ? null : kind);
+    Navigator.of(context).pop();
+    if (await saved) return;
+    messenger?.showSnackBar(
+      const SnackBar(
+        key: Key('reactionSheet.error'),
+        content: Text('تعذّر حفظ تفاعلك. حاول مرة أخرى.'),
+      ),
+    );
   }
 
   @override
@@ -251,21 +238,12 @@ class _PredictionReactionSheetState
                     kind: kind,
                     count: tally?.counts[kind] ?? 0,
                     selected: kind == mine,
-                    onTap: widget.isMine || _busy
+                    onTap: widget.isMine
                         ? null
                         : () => unawaited(_choose(kind, mine)),
                   ),
               ],
             ),
-            if (_error != null) ...<Widget>[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                _error!,
-                key: const Key('reactionSheet.error'),
-                textAlign: TextAlign.center,
-                style: text.bodySmall?.copyWith(color: tokens.errorText),
-              ),
-            ],
           ],
         ),
       ),

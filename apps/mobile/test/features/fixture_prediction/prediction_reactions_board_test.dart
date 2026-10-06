@@ -202,17 +202,37 @@ void main() {
     await _frames(tester);
     expect(server.count('PUT', _reactPath), 1);
     expect(server.mine, 'fire');
+    expect(find.byKey(const Key('reactionSheet')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('fixturePredictions.reactions.f-1.p-khaled')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const Key('fixturePredictions.cell.f-1.p-khaled')),
+    );
+    await _frames(tester);
     expect(
       tester
           .widget<Text>(find.byKey(const Key('reactionSheet.count.fire')))
           .data,
       '2',
     );
-
     await tester.tap(find.byKey(const Key('reactionSheet.kind.fire')));
     await _frames(tester);
     expect(server.count('DELETE', _reactPath), 1);
     expect(server.mine, isNull);
+    expect(find.byKey(const Key('reactionSheet')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('fixturePredictions.reactions.f-1.p-khaled')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('my own cell shows its reactions and gives none', (tester) async {
