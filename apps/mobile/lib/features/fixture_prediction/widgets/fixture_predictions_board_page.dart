@@ -13,6 +13,9 @@
 ///
 /// Tapping a prediction opens its reactions (migration 0094): anyone
 /// else's can be reacted to; the viewer's own shows what it received.
+/// Another player's prediction with none yet carries a faint reaction icon,
+/// and a line above the table says so until the viewer's first reaction of
+/// the day.
 library;
 
 import 'dart:async';
@@ -211,6 +214,15 @@ class _FixturePredictionsBoardPageState
             return a.name.compareTo(b.name);
           });
 
+    // Until the viewer gives a first reaction on this day's matches, a line
+    // says the predictions can be reacted to. Read from the server's own
+    // tallies, so nothing is kept on the device; unknown while any read is
+    // pending or failed, and then not shown.
+    final bool showReactHint =
+        byId.values.any((p) => !p.isMine) &&
+        columns.every((c) => c.reactions != null) &&
+        !columns.any((c) => c.reactions!.reactions.any((t) => t.mine != null));
+
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
@@ -246,6 +258,35 @@ class _FixturePredictionsBoardPageState
               ),
             ),
           ),
+          if (showReactHint)
+            Padding(
+              key: const Key('fixturePredictions.reactHint'),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.add_reaction_outlined,
+                    size: AppSizes.iconXs,
+                    color: tokens.primaryText,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'اضغط على توقع أي لاعب لتتفاعل معه.',
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: AppFontSize.s12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: columns.isEmpty
                 ? _Message(
@@ -539,6 +580,16 @@ class _PredictionCell extends StatelessWidget {
                         'fixturePredictions.reactions.${column.fixture.fixtureId}.${player.participantId}',
                       ),
                       tally: tally,
+                    )
+                  // Shows that the cell can be tapped to react.
+                  else if (!player.isMine)
+                    Icon(
+                      Icons.add_reaction_outlined,
+                      key: Key(
+                        'fixturePredictions.reactable.${column.fixture.fixtureId}.${player.participantId}',
+                      ),
+                      size: AppSizes.iconInline,
+                      color: tokens.textMuted,
                     ),
                 ],
               ),
