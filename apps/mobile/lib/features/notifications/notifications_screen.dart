@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -27,7 +28,10 @@ final Provider<Future<bool> Function(Uri uri)> notificationLinkOpenerProvider =
 
 /// The caller's own notification inbox, newest first, with a "mark read"
 /// affordance per unread row.
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.notifications;
+
   const NotificationsScreen({super.key});
 
   @override

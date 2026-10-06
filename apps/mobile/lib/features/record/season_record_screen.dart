@@ -6,6 +6,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -16,7 +17,10 @@ import 'season_record_providers.dart';
 
 /// Replaces the old "my active seasons" list, which named the seasons a user
 /// was in without saying how any of them went.
-class SeasonRecordScreen extends ConsumerWidget {
+class SeasonRecordScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.seasonRecord;
+
   /// Creates the record screen.
   const SeasonRecordScreen({super.key});
 

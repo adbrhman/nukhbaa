@@ -101,6 +101,10 @@ enum PlayerAppend {
   /// `POST /me/push-opened`: one per notification opened; 60 an hour.
   pushOpened,
 
+  /// `POST /me/screen-views`: the app sends one each time it goes to the
+  /// background, so 30 an hour is generous.
+  screenViews,
+
   /// `POST /duels/challenges`: each adds a challenge row, and cancelling
   /// one frees a pending seat, so the database cap alone would not bound
   /// the rows; 30 an hour.
@@ -114,6 +118,11 @@ final RateLimiter _frameReportLimiter = RateLimiter(
 
 final RateLimiter _pushOpenLimiter = RateLimiter(
   limit: 60,
+  window: const Duration(hours: 1),
+);
+
+final RateLimiter _screenViewsLimiter = RateLimiter(
+  limit: 30,
   window: const Duration(hours: 1),
 );
 
@@ -131,6 +140,7 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
   final limiter = switch (kind) {
     PlayerAppend.frameReport => _frameReportLimiter,
     PlayerAppend.pushOpened => _pushOpenLimiter,
+    PlayerAppend.screenViews => _screenViewsLimiter,
     PlayerAppend.duelChallenge => _duelChallengeLimiter,
   };
   final wait = limiter.hit(principal.userId.value);

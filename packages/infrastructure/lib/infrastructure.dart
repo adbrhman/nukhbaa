@@ -62,6 +62,7 @@ export 'src/gamification/postgres_prediction_outcome_reader.dart';
 export 'src/gamification/postgres_referral_admin_repository.dart';
 export 'src/gamification/postgres_referral_repository.dart';
 export 'src/gamification/postgres_retention_reader.dart';
+export 'src/gamification/postgres_screen_view_repository.dart';
 export 'src/gamification/postgres_streak_repository.dart';
 export 'src/gamification/postgres_weekly_league_closure_store.dart';
 export 'src/gamification/postgres_weekly_league_profile_reader.dart';

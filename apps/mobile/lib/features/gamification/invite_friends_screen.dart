@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/auth/install_id.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
@@ -77,7 +78,11 @@ final myReferralProvider = FutureProvider.autoDispose<ReferralSummaryDto>((
 });
 
 /// The invitation page.
-class InviteFriendsScreen extends ConsumerStatefulWidget {
+class InviteFriendsScreen extends ConsumerStatefulWidget
+    implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.invite;
+
   /// Creates the page.
   const InviteFriendsScreen({super.key});
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -15,7 +16,10 @@ import 'groups_providers.dart';
 
 /// A name-only form that creates a new private group owned by the caller,
 /// then surfaces the server-generated invite code so it can be shared.
-class CreateGroupScreen extends ConsumerStatefulWidget {
+class CreateGroupScreen extends ConsumerStatefulWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.groupCreate;
+
   const CreateGroupScreen({super.key});
 
   @override

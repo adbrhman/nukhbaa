@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -12,7 +13,10 @@ import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 
 /// The rules page.
-class RulesScreen extends StatelessWidget {
+class RulesScreen extends StatelessWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.rules;
+
   /// Creates the page.
   const RulesScreen({super.key});
 

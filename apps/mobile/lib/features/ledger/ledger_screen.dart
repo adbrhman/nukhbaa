@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,7 +12,10 @@ import 'ledger_providers.dart';
 
 /// Shows the caller's own current balance plus their append-only points
 /// history, for a given [participantId].
-class LedgerScreen extends ConsumerWidget {
+class LedgerScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.ledger;
+
   const LedgerScreen({required this.participantId, super.key});
   final String participantId;
 

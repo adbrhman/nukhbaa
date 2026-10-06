@@ -8,6 +8,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -78,7 +79,10 @@ class EliteStats {
 }
 
 /// Replaces the Hall of Fame tile on the account screen.
-class EliteCardScreen extends ConsumerWidget {
+class EliteCardScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.eliteCard;
+
   /// Creates the elite card screen for [user].
   const EliteCardScreen({required this.user, super.key});
 

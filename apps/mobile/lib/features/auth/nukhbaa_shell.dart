@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -49,6 +50,11 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   final Set<int> _built = <int>{0};
 
   void _select(int index) {
+    // The tabs are not routes, so the navigator's observer never sees
+    // them: a switch to another tab is counted here (migration 0093).
+    if (index != currentIndex) {
+      ref.read(screenViewLogProvider).record(ScreenNames.tabs[index]);
+    }
     setState(() {
       currentIndex = index;
       _built.add(index);
@@ -106,6 +112,8 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
   void initState() {
     super.initState();
     _turnover.start();
+    // Every session opens on the home tab.
+    ref.read(screenViewLogProvider).record(ScreenNames.home);
     // Fire-and-forget, and only once the user is signed in: the token is
     // bound to an account server-side, so registering before sign-in would
     // have nobody to bind it to. Never awaited -- registration must not
@@ -138,14 +146,26 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell> {
       build: const String.fromEnvironment('NUKHBA_BUILD_SHA'),
       platform: FrameReporter.currentPlatform,
     )..start();
+    // Which screens were opened (migration 0093): one report each time the
+    // app leaves the foreground; a failed one is kept for the next. A local
+    // or test build (no commit sha) never reports.
+    _screens = ScreenViewReporter(
+      log: ref.read(screenViewLogProvider),
+      send: (Map<String, int> opens) async =>
+          (await authApi.reportScreenViews(opens)).isOk,
+      enabled: const String.fromEnvironment('NUKHBA_BUILD_SHA').isNotEmpty,
+    )..start();
   }
 
   late final FrameReporter _frames;
+
+  late final ScreenViewReporter _screens;
 
   @override
   void dispose() {
     _turnover.stop();
     _frames.stop();
+    _screens.stop();
     super.dispose();
   }
 

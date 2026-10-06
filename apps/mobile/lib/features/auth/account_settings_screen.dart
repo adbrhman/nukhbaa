@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -19,7 +20,10 @@ import 'rules_screen.dart';
 import 'widgets/account_menu.dart';
 
 /// The settings page.
-class AccountSettingsScreen extends StatelessWidget {
+class AccountSettingsScreen extends StatelessWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.settings;
+
   /// Creates the page.
   const AccountSettingsScreen({super.key});
 

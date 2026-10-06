@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -33,7 +34,11 @@ final notificationPreferencesProvider =
     });
 
 /// The notification settings page.
-class NotificationSettingsScreen extends ConsumerStatefulWidget {
+class NotificationSettingsScreen extends ConsumerStatefulWidget
+    implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.notificationSettings;
+
   /// Creates the page.
   const NotificationSettingsScreen({super.key});
 

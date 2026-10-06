@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -10,7 +11,10 @@ import 'hall_of_fame_providers.dart';
 
 /// The platform-wide, all-time standings — every user's total points summed
 /// across every season they have played.
-class HallOfFameScreen extends ConsumerWidget {
+class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.hallOfFame;
+
   const HallOfFameScreen({super.key});
 
   @override

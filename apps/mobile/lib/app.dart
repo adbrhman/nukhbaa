@@ -3,6 +3,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/analytics/screen_views.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/password_reset_screen.dart';
@@ -44,6 +45,10 @@ class NukhbaApp extends ConsumerWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
+      // Counts which screens are opened (migration 0093).
+      navigatorObservers: <NavigatorObserver>[
+        ref.watch(screenViewObserverProvider),
+      ],
       home: const UpdateGate(child: _AuthEntry()),
     );
   }

@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -25,7 +26,10 @@ import 'duel_texts.dart';
 import 'duels_providers.dart';
 
 /// The Duels page.
-class DuelsScreen extends ConsumerStatefulWidget {
+class DuelsScreen extends ConsumerStatefulWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.duels;
+
   /// Creates the page.
   const DuelsScreen({this.openCode, super.key});
 

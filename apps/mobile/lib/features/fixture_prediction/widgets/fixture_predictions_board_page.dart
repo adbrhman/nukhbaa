@@ -16,6 +16,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/screen_views.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
@@ -37,7 +38,11 @@ const double _rowHeight = 46;
 
 /// The table for the device-local day of [kickoffAt] (the day of the card
 /// the viewer came from).
-class FixturePredictionsBoardPage extends ConsumerStatefulWidget {
+class FixturePredictionsBoardPage extends ConsumerStatefulWidget
+    implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.predictionsBoard;
+
   /// Creates the page for the day of [kickoffAt] (ISO-8601).
   const FixturePredictionsBoardPage({required this.kickoffAt, super.key});
 

@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -45,7 +46,10 @@ Future<void> showCreateDuelSheet({
 }
 
 /// The sheet body; public so a widget test can pump it directly.
-class CreateDuelSheet extends ConsumerStatefulWidget {
+class CreateDuelSheet extends ConsumerStatefulWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.duelCreate;
+
   /// Creates the sheet.
   const CreateDuelSheet({
     required this.seasonId,

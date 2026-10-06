@@ -28,6 +28,7 @@ export 'src/push_opened_dto.dart';
 export 'src/referral_admin_dto.dart';
 export 'src/referral_dto.dart';
 export 'src/retention_dto.dart';
+export 'src/screen_views_dto.dart';
 export 'src/fixture_ledger_dto.dart';
 export 'src/fixture_prediction_dto.dart';
 export 'src/fixture_schedule_dto.dart';

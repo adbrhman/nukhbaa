@@ -9,6 +9,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -20,7 +21,10 @@ import 'widgets/champion_crown.dart';
 import 'widgets/champion_spotlight.dart';
 
 /// Lists [monthChampionsProvider] one card per crowned month.
-class ChampionsRecordScreen extends ConsumerWidget {
+class ChampionsRecordScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.champions;
+
   /// Creates the record.
   const ChampionsRecordScreen({super.key});
 

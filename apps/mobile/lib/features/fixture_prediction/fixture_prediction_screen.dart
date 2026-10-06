@@ -29,6 +29,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
@@ -51,7 +52,10 @@ import 'fixture_prediction_submission.dart';
 import 'kickoff_countdown.dart';
 
 /// The fixture-list/predict screen for a single season.
-class FixturePredictionScreen extends ConsumerWidget {
+class FixturePredictionScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.fixturePrediction;
+
   /// Creates the fixture prediction screen for [seasonId].
   const FixturePredictionScreen({
     required this.seasonId,

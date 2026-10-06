@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
@@ -31,7 +32,10 @@ final insightsProvider = FutureProvider.autoDispose<InsightsDto>((ref) async {
 String percentText(int? percent) => percent == null ? '-' : '$percent%';
 
 /// The insights page.
-class InsightsScreen extends ConsumerWidget {
+class InsightsScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.insights;
+
   /// Creates the page.
   const InsightsScreen({super.key});
 

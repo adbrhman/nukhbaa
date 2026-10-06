@@ -195,6 +195,17 @@ final class AuthApi {
     );
   }
 
+  /// `POST /me/screen-views` -- how many times each screen was opened
+  /// since the last report (migration 0093). Sent when the app goes to the
+  /// background; nothing the user sees waits on it.
+  Future<Result<ScreenViewsAckDto>> reportScreenViews(Map<String, int> opens) {
+    return _transport.postObject<ScreenViewsAckDto>(
+      '/me/screen-views',
+      body: ScreenViewsReportDto(opens: opens).toJson(),
+      parse: ScreenViewsAckDto.fromJson,
+    );
+  }
+
   /// `GET /me/insights` -- accuracy, patterns and last week's recap (plan
   /// P4-4), computed server-side on every call.
   Future<Result<InsightsDto>> myInsights() {

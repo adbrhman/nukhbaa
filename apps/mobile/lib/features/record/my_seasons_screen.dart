@@ -5,6 +5,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -73,7 +74,10 @@ List<SportingSeasonTotal> rollUpSeasons(List<MySeasonRecordDto> records) {
 /// تقرأ سجلات الأشهر نفسها التي يعرضها سجل البطولات، وتجمعها حسب الموسم
 /// الرياضي المشتقّ من تاريخ بداية كل شهر — فلا تحتاج مسارًا جديدًا في
 /// الخادم ولا حقلًا إضافيًا في الحمولة.
-class MySeasonsScreen extends ConsumerWidget {
+class MySeasonsScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.mySeasons;
+
   /// Creates the screen.
   const MySeasonsScreen({super.key});
 

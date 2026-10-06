@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
@@ -17,7 +18,10 @@ import 'season_record_providers.dart';
 
 /// A compact personal-points dashboard backed entirely by server-produced
 /// season records and season leaderboards.
-class MyPointsScreen extends ConsumerWidget {
+class MyPointsScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.myPoints;
+
   const MyPointsScreen({this.userDisplayName, super.key});
 
   /// The signed-in user's display name -- only a fallback for finding the

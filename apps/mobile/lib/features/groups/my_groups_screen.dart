@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -18,7 +19,10 @@ import 'groups_providers.dart';
 /// carrying its invite code (a capability the caller already holds as a
 /// member) so it can be re-shared without going through group creation
 /// again. Tapping a row opens that group's activity feed.
-class MyGroupsScreen extends ConsumerWidget {
+class MyGroupsScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.groups;
+
   const MyGroupsScreen({super.key});
 
   @override

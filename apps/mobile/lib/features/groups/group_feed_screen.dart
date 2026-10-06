@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
@@ -13,7 +14,10 @@ import 'groups_providers.dart';
 /// A group's activity feed, newest first — a read-side projection over
 /// already-ratified data (Social decision #2: no new table, never a source of
 /// truth).
-class GroupFeedScreen extends ConsumerWidget {
+class GroupFeedScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.groupFeed;
+
   const GroupFeedScreen({
     required this.groupId,
     required this.groupName,

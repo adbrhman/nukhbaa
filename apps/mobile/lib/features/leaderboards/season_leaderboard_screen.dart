@@ -2,6 +2,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../l10n/app_localizations.dart';
 import 'widgets/fixture_standings_board.dart';
 import 'widgets/season_standings_board.dart';
@@ -14,7 +15,10 @@ import 'widgets/season_standings_board.dart';
 /// ranked (Axiom 5) — this screen only picks which board to show and
 /// decorates the top three with medal badges (🥇🥈🥉); it computes no rank or
 /// point value of its own (Axiom 2).
-class SeasonLeaderboardScreen extends StatelessWidget {
+class SeasonLeaderboardScreen extends StatelessWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.seasonLeaderboard;
+
   const SeasonLeaderboardScreen({
     required this.seasonId,
     required this.seasonLabel,

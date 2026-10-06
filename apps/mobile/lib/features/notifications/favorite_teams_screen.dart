@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/providers.dart';
@@ -34,7 +35,11 @@ final favoriteTeamsProvider = FutureProvider.autoDispose<FavoriteTeamsDto>((
 const int maxFavoriteTeams = 3;
 
 /// The favorite-teams page.
-class FavoriteTeamsScreen extends ConsumerStatefulWidget {
+class FavoriteTeamsScreen extends ConsumerStatefulWidget
+    implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.favoriteTeams;
+
   /// Creates the page.
   const FavoriteTeamsScreen({super.key});
 

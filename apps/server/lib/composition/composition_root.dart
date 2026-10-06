@@ -113,6 +113,7 @@ final class CompositionRoot {
     required this.sendStreakSavers,
     required this.sendOvertakenPushes,
     required this.recordPushOpen,
+    required this.recordScreenViews,
     required this.recordFrameReport,
     required this.adminGetFrameStats,
     required this.adminGetRetention,
@@ -285,6 +286,7 @@ final class CompositionRoot {
     SendStreakSavers? sendStreakSavers,
     SendOvertakenPushes? sendOvertakenPushes,
     RecordPushOpen? recordPushOpen,
+    RecordScreenViews? recordScreenViews,
     RecordFrameReport? recordFrameReport,
     AdminGetFrameStats? adminGetFrameStats,
     AdminGetRetention? adminGetRetention,
@@ -479,6 +481,7 @@ final class CompositionRoot {
        sendOvertakenPushes =
            sendOvertakenPushes ?? _absentSendOvertakenPushes(),
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
+       recordScreenViews = recordScreenViews ?? _absentRecordScreenViews(),
        recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
        adminGetFrameStats = adminGetFrameStats ?? _absentAdminGetFrameStats(),
        adminGetRetention = adminGetRetention ?? _absentAdminGetRetention(),
@@ -1204,6 +1207,13 @@ final class CompositionRoot {
   static RecordPushOpen _absentRecordPushOpen() =>
       RecordPushOpen(opens: _UnwiredPushOpenRepository(), clock: _unwiredClock);
 
+  /// Builds an "absent" [RecordScreenViews]: loud if a test reaches it
+  /// without wiring it.
+  static RecordScreenViews _absentRecordScreenViews() => RecordScreenViews(
+    views: _UnwiredScreenViewRepository(),
+    clock: _unwiredClock,
+  );
+
   /// Builds an "absent" [RecordFrameReport]: loud if a test reaches it
   /// without wiring it.
   static RecordFrameReport _absentRecordFrameReport() => RecordFrameReport(
@@ -1858,6 +1868,10 @@ final class CompositionRoot {
   /// Records a tap on a push (backs `POST /me/push-opened`, plan P3-8).
   final RecordPushOpen recordPushOpen;
 
+  /// Keeps which screens a player opened (backs `POST /me/screen-views`,
+  /// migration 0093).
+  final RecordScreenViews recordScreenViews;
+
   /// Keeps one app session's frame counts (backs `POST /me/frame-report`,
   /// migration 0070).
   final RecordFrameReport recordFrameReport;
@@ -2492,6 +2506,10 @@ final class CompositionRoot {
       ),
       recordPushOpen: RecordPushOpen(
         opens: PostgresPushOpenRepository(connection),
+        clock: clock,
+      ),
+      recordScreenViews: RecordScreenViews(
+        views: PostgresScreenViewRepository(connection),
         clock: clock,
       ),
       recordFrameReport: RecordFrameReport(
@@ -3948,6 +3966,17 @@ final class _UnwiredPushOpenRepository implements PushOpenRepository {
     required String link,
     required DateTime openedAt,
   }) => throw StateError('RecordPushOpen was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentRecordScreenViews].
+final class _UnwiredScreenViewRepository implements ScreenViewRepository {
+  @override
+  Future<Result<void>> add({
+    required UserId userId,
+    required DateTime day,
+    required Map<String, int> opens,
+    required DateTime reportedAt,
+  }) => throw StateError('RecordScreenViews was not wired into this test root');
 }
 
 /// Refuses every call: see [_absentAdminGetReferralOverview].

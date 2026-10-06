@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -88,7 +89,10 @@ BadgeLook? badgeLookOf(AppLocalizations l10n, String code) => switch (code) {
 };
 
 /// The badge wall page.
-class MyBadgesScreen extends ConsumerWidget {
+class MyBadgesScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.badges;
+
   /// Creates the page.
   const MyBadgesScreen({super.key});
 

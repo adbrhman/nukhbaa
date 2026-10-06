@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -10,7 +11,10 @@ import 'groups_providers.dart';
 
 /// A group's ranked standings for one season — the same visual shape as
 /// `SeasonLeaderboardScreen`, filtered to the group's members.
-class GroupLeaderboardScreen extends ConsumerWidget {
+class GroupLeaderboardScreen extends ConsumerWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.groupLeaderboard;
+
   const GroupLeaderboardScreen({
     required this.groupId,
     required this.seasonId,

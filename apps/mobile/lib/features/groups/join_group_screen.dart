@@ -4,6 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -12,7 +13,10 @@ import '../../l10n/app_localizations.dart';
 import 'groups_providers.dart';
 
 /// An invite-code-only form that joins the caller into a private group.
-class JoinGroupScreen extends ConsumerStatefulWidget {
+class JoinGroupScreen extends ConsumerStatefulWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.groupJoin;
+
   const JoinGroupScreen({super.key});
 
   @override

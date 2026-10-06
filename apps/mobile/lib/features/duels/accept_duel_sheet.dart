@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -38,7 +39,10 @@ Future<bool?> showAcceptDuelSheet({
 }
 
 /// The sheet body; public so a widget test can pump it directly.
-class AcceptDuelSheet extends ConsumerStatefulWidget {
+class AcceptDuelSheet extends ConsumerStatefulWidget implements NamedScreen {
+  @override
+  String get screenName => ScreenNames.duelAccept;
+
   /// Creates the sheet for [challenge].
   const AcceptDuelSheet({required this.challenge, super.key});
 
