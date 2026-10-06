@@ -22,11 +22,9 @@ import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
 import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import '../fixture_prediction/current_month_fixtures_screen.dart';
 import '../gamification/insights_screen.dart';
 import '../gamification/invite_friends_screen.dart';
 import '../gamification/my_badges_screen.dart';
-import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import '../record/elite_card_screen.dart';
@@ -40,6 +38,11 @@ import 'widgets/account_menu.dart';
 
 /// The signed-in user's account tab: a profile card with this month's
 /// figures, the personal destinations, the settings group and sign-out.
+///
+/// No row repeats a way the app already offers (phase 1 of the plan, a
+/// shorter menu): "my predictions" and "matches" are bottom-bar tabs and the
+/// inbox is the bell above. Which of the remaining rows earn their place is
+/// read from the screen opens (migration 0093) before any other goes.
 ///
 /// Every figure on the profile card is the server's: the current month's row
 /// of `GET /me/seasons`, whose accuracy is computed exactly like the
@@ -119,13 +122,6 @@ class AccountScreen extends ConsumerWidget {
                   AccountMenuCard(
                     children: [
                       AccountMenuRow(
-                        key: const Key('account.myPredictions'),
-                        icon: Icons.bolt_rounded,
-                        title: l10n.myPredictions,
-                        subtitle: l10n.accountMyPredictionsSubtitle,
-                        onTap: () => open(const PredictionHistoryScreen()),
-                      ),
-                      AccountMenuRow(
                         key: const Key('account.myPoints'),
                         icon: Icons.emoji_events_outlined,
                         title: l10n.myPoints,
@@ -133,13 +129,6 @@ class AccountScreen extends ConsumerWidget {
                         onTap: () => open(
                           MyPointsScreen(userDisplayName: user.displayName),
                         ),
-                      ),
-                      AccountMenuRow(
-                        key: const Key('account.matches'),
-                        icon: Icons.sports_soccer_outlined,
-                        title: l10n.matchesTitle,
-                        subtitle: l10n.homeMatchesSubtitle,
-                        onTap: () => open(const CurrentMonthFixturesScreen()),
                       ),
                       AccountMenuRow(
                         key: const Key('account.eliteCard'),
@@ -201,17 +190,6 @@ class AccountScreen extends ConsumerWidget {
                       ),
                       const _DarkModeRow(),
                       const BiometricUnlockRow(),
-                      AccountMenuRow(
-                        key: const Key('account.notificationsRow'),
-                        icon: Icons.notifications_none_rounded,
-                        title: l10n.notifications,
-                        trailing: unreadCount > 0
-                            ? Badge(
-                                label: Text(UnreadBadge.labelFor(unreadCount)),
-                              )
-                            : null,
-                        onTap: () => open(const NotificationsScreen()),
-                      ),
                       if (user.role == 'admin')
                         AccountMenuRow(
                           key: const Key('account.adminDashboard'),
