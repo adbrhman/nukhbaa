@@ -367,6 +367,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         myDisplayName: widget.userDisplayName,
         showHeader: true,
         emptyMessage: l10n.leaderboardMonthStarting,
+        showDuelWins: true,
         // The hero leads the month's board and scrolls with it, above the
         // new month's standings -- the design of 2026-09-29.
         header: celebrating.isEmpty

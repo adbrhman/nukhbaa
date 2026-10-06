@@ -22,6 +22,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
 import '../../history/prediction_history_providers.dart';
 import '../champions_providers.dart';
+import '../duel_wins_providers.dart';
 import '../leaderboards_providers.dart';
 import 'leaderboard_board.dart';
 
@@ -43,6 +44,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
     this.day,
     this.emptyMessage,
     this.header,
+    this.showDuelWins = false,
     super.key,
   });
 
@@ -63,6 +65,10 @@ class FixtureStandingsBoard extends ConsumerWidget {
 
   /// Leads the board, above its standings or its empty message.
   final Widget? header;
+
+  /// Reads the duels each player won in the season and marks them
+  /// beside the names (the month's board only).
+  final bool showDuelWins;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,6 +97,9 @@ class FixtureStandingsBoard extends ConsumerWidget {
         if (selectedDay == null) {
           // A crowning made while the app was open shows with this pull.
           ref.invalidate(monthChampionsProvider);
+          if (showDuelWins) {
+            ref.invalidate(seasonDuelWinsProvider(seasonId));
+          }
           ref.invalidate(fixtureLeaderboardProvider(seasonId));
           await ref.read(fixtureLeaderboardProvider(seasonId).future);
         } else {
@@ -110,6 +119,11 @@ class FixtureStandingsBoard extends ConsumerWidget {
           const <FixturePredictionDto>[],
       seasonId,
     );
+    // An extra beside the names, never the standings: a failed read shows
+    // the board without the marks.
+    final SeasonDuelWinsDto? duelWins = showDuelWins
+        ? ref.watch(seasonDuelWinsProvider(seasonId)).value
+        : null;
     return AsyncListView<FixtureLeaderboardEntryDto>(
       value: standings.whenData((board) => board.entries),
       emptyMessage: emptyMessage ?? l10n.fixtureLeaderboardEmpty,
@@ -152,6 +166,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
               // route. Null is the normal case (no picture uploaded), not a
               // failure.
               avatarUrl: e.avatarUrl,
+              duelWins: duelWins?.of(e.participantId) ?? 0,
             ),
         ],
       ),

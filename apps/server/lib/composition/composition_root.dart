@@ -80,6 +80,7 @@ final class CompositionRoot {
     required this.listPredictionReactions,
     required this.reactToPrediction,
     required this.removePredictionReaction,
+    required this.listSeasonDuelWins,
     required this.adminGetFixtureScores,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
@@ -257,6 +258,7 @@ final class CompositionRoot {
     ListPredictionReactions? listPredictionReactions,
     ReactToPrediction? reactToPrediction,
     RemovePredictionReaction? removePredictionReaction,
+    ListSeasonDuelWins? listSeasonDuelWins,
     AdminGetFixtureScores? adminGetFixtureScores,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
@@ -438,6 +440,7 @@ final class CompositionRoot {
        reactToPrediction = reactToPrediction ?? _absentReactToPrediction(),
        removePredictionReaction =
            removePredictionReaction ?? _absentRemovePredictionReaction(),
+       listSeasonDuelWins = listSeasonDuelWins ?? _absentListSeasonDuelWins(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
@@ -986,6 +989,12 @@ final class CompositionRoot {
         reveal: _absentListFixturePredictions(),
         reactions: _UnwiredPredictionReactionRepository(),
       );
+
+  /// Backs the "absent" [ListSeasonDuelWins]: loud if a test reaches it.
+  static ListSeasonDuelWins _absentListSeasonDuelWins() => ListSeasonDuelWins(
+    competition: _unwiredCompetitionRepository,
+    records: _UnwiredDuelRecordReader(),
+  );
 
   /// Unlike the other absent use-cases this one is quiet: the result is an
   /// optional enrichment of the scores read, so a test root that did not
@@ -1770,6 +1779,10 @@ final class CompositionRoot {
 
   /// Takes a reaction back (backs `DELETE` of the same path).
   final RemovePredictionReaction removePredictionReaction;
+
+  /// How many duels each player of a season won, beside their name on the
+  /// month's leaderboard (backs `GET /seasons/{id}/duel-wins`).
+  final ListSeasonDuelWins listSeasonDuelWins;
 
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
   /// without the participant-of-season gate (added so an admin can
@@ -2908,6 +2921,10 @@ final class CompositionRoot {
       removePredictionReaction: RemovePredictionReaction(
         reveal: predictionReveal,
         reactions: predictionReactions,
+      ),
+      listSeasonDuelWins: ListSeasonDuelWins(
+        competition: competitionRepository,
+        records: PostgresDuelRecordReader(connection),
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
@@ -4077,6 +4094,13 @@ final class _UnwiredScreenViewRepository implements ScreenViewRepository {
     required Map<String, int> opens,
     required DateTime reportedAt,
   }) => throw StateError('RecordScreenViews was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentListSeasonDuelWins].
+final class _UnwiredDuelRecordReader implements DuelRecordReader {
+  @override
+  Future<Result<Map<ParticipantId, int>>> winsInSeason(SeasonId seasonId) =>
+      throw StateError('ListSeasonDuelWins was not wired into this test root');
 }
 
 /// Refuses every call: see [_absentReactToPrediction].

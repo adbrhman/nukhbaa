@@ -112,6 +112,18 @@ final class LeaderboardsApi {
     );
   }
 
+  /// `GET /seasons/{id}/duel-wins` -- how many duels each player of the
+  /// season won, by participant id, for the marks beside the names on the
+  /// month's board. Same gate as [fixtureLeaderboard]:
+  /// `Err(authorization, code: leaderboard.not_a_participant)` for anyone
+  /// outside the season.
+  Future<Result<SeasonDuelWinsDto>> seasonDuelWins(String seasonId) {
+    return _transport.getObject<SeasonDuelWinsDto>(
+      '/seasons/$seasonId/duel-wins',
+      parse: SeasonDuelWinsDto.fromJson,
+    );
+  }
+
   /// `GET /me/seasons` — the caller's own season-by-season record, newest
   /// season first: the place they took, the points they scored, and the raw
   /// counts behind their accuracy.
