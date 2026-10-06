@@ -48,7 +48,6 @@ abstract final class ScreenNames {
   static const String badges = 'badges';
   static const String insights = 'insights';
   static const String invite = 'invite';
-  static const String hallOfFame = 'hall_of_fame';
   static const String champions = 'champions';
   static const String seasonLeaderboard = 'season_leaderboard';
   static const String predictionsBoard = 'predictions_board';
@@ -92,7 +91,6 @@ abstract final class ScreenNames {
     badges,
     insights,
     invite,
-    hallOfFame,
     champions,
     seasonLeaderboard,
     predictionsBoard,

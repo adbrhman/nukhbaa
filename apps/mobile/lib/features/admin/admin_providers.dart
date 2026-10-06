@@ -29,7 +29,6 @@ import 'fixture_report.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
-import '../hall_of_fame/hall_of_fame_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/leaderboards_providers.dart';
 
@@ -549,7 +548,6 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
     if (state is AsyncData<PostFixtureToLedgerResponseDto>) {
       ref.invalidate(seasonLeaderboardProvider(seasonId));
       ref.invalidate(fixtureLeaderboardProvider(seasonId));
-      ref.invalidate(hallOfFameProvider);
     }
   }
 }

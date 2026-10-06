@@ -17,7 +17,6 @@ import 'package:mobile/features/duels/duels_screen.dart';
 import 'package:mobile/features/gamification/insights_screen.dart';
 import 'package:mobile/features/gamification/my_badges_screen.dart';
 import 'package:mobile/features/groups/my_groups_screen.dart';
-import 'package:mobile/features/hall_of_fame/hall_of_fame_screen.dart';
 import 'package:mobile/features/notifications/notifications_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -155,7 +154,6 @@ void main() {
       const MyGroupsScreen(): 'groups',
       const MyBadgesScreen(): 'badges',
       const InsightsScreen(): 'insights',
-      const HallOfFameScreen(): 'hall_of_fame',
     };
     for (final MapEntry<Widget, String> e in screens.entries) {
       expect(e.key, isA<NamedScreen>(), reason: e.value);
