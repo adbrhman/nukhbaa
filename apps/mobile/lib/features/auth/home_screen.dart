@@ -17,6 +17,8 @@ import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/team_catalog_index.dart';
 import '../competition/team_identity.dart';
+import '../duels/duels_home_card.dart';
+import '../duels/duels_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
@@ -62,6 +64,7 @@ class HomeScreen extends ConsumerWidget {
             // The open-predictions card and the day's challenge follow the
             // caller's own predictions.
             ref.invalidate(myFixturePredictionsProvider);
+            ref.invalidate(myDuelsProvider);
             try {
               await ref.read(currentMonthFixturesProvider.future);
             } on Object {
@@ -99,6 +102,9 @@ class HomeScreen extends ConsumerWidget {
                   onPredict: onOpenMatches,
                 ),
               ),
+              // A challenge waiting, duels running, the last result; hidden
+              // when there is none. The only duel news a web player gets.
+              const DuelsHomeCard(),
               if (highlights.items.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 24),
                 _SectionHeader(
