@@ -5,7 +5,9 @@
 /// gives, in the inbox. Reactions carry no points.
 ///
 /// Every kind is drawn as an icon with its name: emoji glyphs show as boxes
-/// in the app's typeface.
+/// in the app's typeface. Each kind keeps its own colour, from the theme's
+/// tokens so both themes keep their contrast; the viewer's own choice is the
+/// blue frame and the blue name.
 library;
 
 import 'dart:async';
@@ -34,6 +36,17 @@ const Map<String, (IconData, String)> predictionReactionLooks =
       'sad': (Icons.sentiment_dissatisfied_rounded, 'حزين'),
       'shock': (Icons.priority_high_rounded, 'مفاجأة'),
     };
+
+/// The colour of each reaction kind, wherever it is drawn.
+Color predictionReactionColor(AppTokens tokens, String kind) => switch (kind) {
+  'like' => tokens.primaryText,
+  'fire' => tokens.bronze,
+  'clap' => tokens.successText,
+  'laugh' => tokens.goldAccent,
+  'sad' => tokens.silver,
+  'shock' => tokens.errorText,
+  _ => tokens.textSecondary,
+};
 
 /// The kind [tally] received most, the first in [predictionReactionKinds]
 /// order on a tie; null when it received none.
@@ -306,7 +319,11 @@ class _ReactionButton extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(icon, size: AppSizes.iconLg, color: color),
+                    Icon(
+                      icon,
+                      size: AppSizes.iconLg,
+                      color: predictionReactionColor(tokens, kind),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     FittedBox(
                       fit: BoxFit.scaleDown,

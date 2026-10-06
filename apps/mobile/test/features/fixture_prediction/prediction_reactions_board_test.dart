@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/design/app_tokens.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import 'package:mobile/features/notifications/notifications_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -232,6 +233,44 @@ void main() {
     expect(
       server.requests.where((r) => r.url.path.endsWith('/reaction')),
       isEmpty,
+    );
+  });
+
+  testWidgets('each kind keeps its own colour, on the board and the sheet', (
+    tester,
+  ) async {
+    const AppTokens tokens = AppTokens.dark;
+    Color? iconColor(Finder of) => tester
+        .widget<Icon>(find.descendant(of: of, matching: find.byType(Icon)))
+        .color;
+
+    await _pump(tester, _board(_minutesAgo(10)));
+    expect(
+      iconColor(
+        find.byKey(const Key('fixturePredictions.reactions.f-1.p-khaled')),
+      ),
+      tokens.bronze,
+    );
+    expect(
+      iconColor(find.byKey(const Key('fixturePredictions.reactions.f-1.p-me'))),
+      tokens.successText,
+    );
+
+    await tester.tap(
+      find.byKey(const Key('fixturePredictions.cell.f-1.p-khaled')),
+    );
+    await _frames(tester);
+    expect(
+      iconColor(find.byKey(const Key('reactionSheet.kind.like'))),
+      tokens.primaryText,
+    );
+    expect(
+      iconColor(find.byKey(const Key('reactionSheet.kind.sad'))),
+      tokens.silver,
+    );
+    expect(
+      iconColor(find.byKey(const Key('reactionSheet.kind.shock'))),
+      tokens.errorText,
     );
   });
 

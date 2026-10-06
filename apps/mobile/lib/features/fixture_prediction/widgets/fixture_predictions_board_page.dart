@@ -618,8 +618,9 @@ class _PredictionCell extends StatelessWidget {
   }
 }
 
-/// What a prediction received, under its score: the kind given most and
-/// how many reactions in all, in blue when the viewer gave one of them.
+/// What a prediction received, under its score: the kind given most, in
+/// its own colour, and how many reactions in all, in blue when the viewer
+/// gave one of them.
 class _ReactionSummary extends StatelessWidget {
   const _ReactionSummary({required this.tally, super.key});
 
@@ -639,7 +640,7 @@ class _ReactionSummary extends StatelessWidget {
           Icon(
             predictionReactionLooks[kind]!.$1,
             size: AppSizes.iconInline,
-            color: color,
+            color: predictionReactionColor(tokens, kind),
           ),
         const SizedBox(width: 2),
         Text(
