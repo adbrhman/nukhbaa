@@ -6,7 +6,8 @@
 ///
 /// * Android: a newer release is recorded in [pendingUpdateProvider] and the
 ///   account tab shows an "update available" row. The player starts the
-///   install from there ([installUpdate]) whenever they like.
+///   install from there ([installUpdate]) whenever they like. Asked again
+///   on every return to the app: it is mostly resumed, not launched.
 /// * Web: a page running an older build than the newest release reloads by
 ///   itself, at launch or when the player comes back to it.
 ///
@@ -147,12 +148,13 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
   /// the player comes back to it, at most once every [_webRecheck].
   DateTime? _lastWebCheck;
   bool _webChecking = false;
+  bool _androidChecking = false;
   static const Duration _webRecheck = Duration(minutes: 30);
 
   @override
   void initState() {
     super.initState();
-    if (widget.isWeb) WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
   }
 
@@ -167,7 +169,13 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     // Only a return after the first check: the binding also reports
     // `resumed` as the app starts, which used to run a second check
     // alongside the first.
-    if (state != AppLifecycleState.resumed || !widget.isWeb || !_checked) {
+    if (state != AppLifecycleState.resumed || !_checked) return;
+    // Android: a phone keeps the app in the background for days, so a
+    // check at launch alone missed every release published meanwhile and
+    // the account tab never showed its row. One request, cached on the
+    // server; nothing shows until the player opens the account tab.
+    if (!widget.isWeb) {
+      unawaited(_checkAndroid());
       return;
     }
     final DateTime? last = _lastWebCheck;
@@ -186,6 +194,22 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
       return;
     }
 
+    await _checkAndroid();
+  }
+
+  /// The Android build's check, at launch and on every return to the app;
+  /// one at a time.
+  Future<void> _checkAndroid() async {
+    if (_androidChecking) return;
+    _androidChecking = true;
+    try {
+      await _checkAndroidOnce();
+    } finally {
+      _androidChecking = false;
+    }
+  }
+
+  Future<void> _checkAndroidOnce() async {
     final AppApi api = ref.read(appApiProvider);
     final Result<LatestBuildDto> result = await api.latestBuild();
     if (!mounted) return;
