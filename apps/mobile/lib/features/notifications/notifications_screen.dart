@@ -14,6 +14,8 @@ import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import '../duels/duels_screen.dart';
+import '../fixture_prediction/current_month_fixtures_providers.dart';
+import '../fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import 'notifications_providers.dart';
 
 /// Opens an address taken from an announcement.
@@ -214,6 +216,7 @@ class _NotificationRow extends ConsumerWidget {
     'reaction_received' => Icons.favorite_border,
     'admin_announcement' => Icons.campaign_outlined,
     'duel_challenged' || 'duel_accepted' => Icons.compare_arrows_rounded,
+    'prediction_reaction' => Icons.add_reaction_outlined,
     _ => Icons.notifications_outlined,
   };
 
@@ -236,8 +239,20 @@ class _NotificationRow extends ConsumerWidget {
       'admin_announcement' => l10n.notificationAdminAnnouncement,
       'duel_challenged' => 'لاعب يتحداك على مباراة. اضغط لتتوقّع.',
       'duel_accepted' => 'قُبل تحديك. تابع المواجهة.',
+      'prediction_reaction' => 'لاعب تفاعل مع توقعك. اضغط لترى جدول التوقعات.',
       _ => l10n.notificationsTitle,
     };
+  }
+
+  /// The current month's fixture [fixtureId], or null.
+  static SeasonFixtureCardDto? _fixtureOf(WidgetRef ref, String? fixtureId) {
+    if (fixtureId == null) return null;
+    for (final CurrentMonthFixtureItemDto item
+        in ref.watch(currentMonthFixturesProvider).value ??
+            const <CurrentMonthFixtureItemDto>[]) {
+      if (item.fixture.fixtureId == fixtureId) return item.fixture;
+    }
+    return null;
   }
 
   /// تاريخ مقروء بالتوقيت المحلّي بدل طابع ISO الخام.
@@ -282,6 +297,12 @@ class _NotificationRow extends ConsumerWidget {
     final String? body = notification.body;
     final bool hasBody = body != null && body.isNotEmpty;
     final bool isDuel = notification.kind.startsWith('duel_');
+    // A reaction row opens the predictions board of its match's day, when
+    // the match is in the current month's feed.
+    final SeasonFixtureCardDto? reacted =
+        notification.kind == 'prediction_reaction'
+        ? _fixtureOf(ref, notification.fixtureId)
+        : null;
     return ListTile(
       key: Key('notifications.item.${notification.id}'),
       // A duel row opens the Duels page, where the challenge waits.
@@ -293,6 +314,21 @@ class _NotificationRow extends ConsumerWidget {
               unawaited(
                 Navigator.of(context).push<void>(
                   MaterialPageRoute<void>(builder: (_) => const DuelsScreen()),
+                ),
+              );
+            }
+          : reacted != null
+          ? () {
+              if (!notification.read) {
+                unawaited(_markReadKeptAlive(context, notification.id));
+              }
+              unawaited(
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => FixturePredictionsBoardPage(
+                      kickoffAt: reacted.kickoffAt,
+                    ),
+                  ),
                 ),
               );
             }

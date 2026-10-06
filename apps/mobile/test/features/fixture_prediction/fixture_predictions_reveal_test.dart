@@ -132,6 +132,9 @@ Future<List<String>> _pump(
       case '/teams':
         return okJsonList(const []);
     }
+    if (path.endsWith('/reactions')) {
+      return okJsonObject(const {'schema_version': 1, 'reactions': []});
+    }
     if (path.endsWith('/prediction-distribution')) {
       return okJsonObject(const {
         'schema_version': 1,

@@ -10,7 +10,12 @@
 ///
 /// Marks: points earned -> ✅ (⚡🔥 on a double); graded with no points ->
 /// ❌; not graded yet -> no mark (⚡ alone on a double).
+///
+/// Tapping a prediction opens its reactions (migration 0094): anyone
+/// else's can be reacted to; the viewer's own shows what it received.
 library;
+
+import 'dart:async';
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +34,9 @@ import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../current_month_fixtures_providers.dart';
 import '../fixture_prediction_providers.dart';
+import '../prediction_reactions_providers.dart';
 import 'fixtures_date_bar.dart';
+import 'prediction_reaction_sheet.dart';
 
 const double _nameWidth = 128;
 const double _cellWidth = 116;
@@ -64,6 +71,7 @@ final class _Column {
     required this.scores,
     required this.loading,
     required this.failed,
+    required this.reactions,
   });
 
   final SeasonFixtureCardDto fixture;
@@ -73,6 +81,10 @@ final class _Column {
   final Map<String, ParticipantFixtureScoreDto> scores;
   final bool loading;
   final bool failed;
+
+  /// The reactions each prediction received (migration 0094); null
+  /// until read, or when the read failed.
+  final PredictionReactionsDto? reactions;
 }
 
 /// One row: a player who predicted at least one of the day's started matches.
@@ -131,6 +143,12 @@ class _FixturePredictionsBoardPageState
       final AsyncValue<FixtureScoresDto> scores = ref.watch(
         fixtureScoresProvider(fixture.seasonId, fixture.fixtureId),
       );
+      final AsyncValue<PredictionReactionsDto> reactions = ref.watch(
+        predictionReactionsProvider((
+          seasonId: fixture.seasonId,
+          fixtureId: fixture.fixtureId,
+        )),
+      );
       columns.add(
         _Column(
           fixture: fixture,
@@ -158,6 +176,7 @@ class _FixturePredictionsBoardPageState
           },
           loading: reveal.isLoading && !reveal.hasValue,
           failed: reveal.hasError && !reveal.hasValue,
+          reactions: reactions.value,
         ),
       );
     }
@@ -467,7 +486,10 @@ class _PredictionCell extends StatelessWidget {
       fontWeight: FontWeight.w800,
       fontSize: AppFontSize.s14,
     );
-    return Container(
+    final PredictionReactionTallyDto? tally = column.reactions?.of(
+      player.participantId,
+    );
+    final Widget cell = Container(
       key: Key(
         'fixturePredictions.cell.${column.fixture.fixtureId}.${player.participantId}',
       ),
@@ -483,24 +505,101 @@ class _PredictionCell extends StatelessWidget {
       ),
       child: prediction == null
           ? Text('—', style: TextStyle(color: tokens.textMuted))
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                // A Row follows the reading direction: the home goals sit on
-                // the home team's side of the header above.
-                Text('${prediction.homeGoals}', style: digits),
-                Text(' - ', style: TextStyle(color: tokens.textMuted)),
-                Text('${prediction.awayGoals}', style: digits),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  verdictMark(isDouble: prediction.isDouble, score: score),
-                  key: Key(
-                    'fixturePredictions.mark.${column.fixture.fixtureId}.${player.participantId}',
+          // Scaled down rather than clipped when large text meets the
+          // fixed row height.
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      // A Row follows the reading direction: the home goals
+                      // sit on the home team's side of the header above.
+                      Text('${prediction.homeGoals}', style: digits),
+                      Text(' - ', style: TextStyle(color: tokens.textMuted)),
+                      Text('${prediction.awayGoals}', style: digits),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        verdictMark(
+                          isDouble: prediction.isDouble,
+                          score: score,
+                        ),
+                        key: Key(
+                          'fixturePredictions.mark.${column.fixture.fixtureId}.${player.participantId}',
+                        ),
+                        style: const TextStyle(fontSize: AppFontSize.s13),
+                      ),
+                    ],
                   ),
-                  style: const TextStyle(fontSize: AppFontSize.s13),
-                ),
-              ],
+                  if (tally != null && tally.total > 0)
+                    _ReactionSummary(
+                      key: Key(
+                        'fixturePredictions.reactions.${column.fixture.fixtureId}.${player.participantId}',
+                      ),
+                      tally: tally,
+                    ),
+                ],
+              ),
             ),
+    );
+    if (prediction == null) return cell;
+    // Every prediction on the board can be reacted to (migration 0094);
+    // the viewer's own shows what it received.
+    return InkWell(
+      onTap: () => unawaited(
+        showPredictionReactionSheet(
+          context: context,
+          seasonId: column.fixture.seasonId,
+          fixtureId: column.fixture.fixtureId,
+          participantId: player.participantId,
+          playerName: player.name,
+          homeName: column.homeName,
+          awayName: column.awayName,
+          homeGoals: prediction.homeGoals,
+          awayGoals: prediction.awayGoals,
+          isMine: player.isMine,
+        ),
+      ),
+      child: cell,
+    );
+  }
+}
+
+/// What a prediction received, under its score: the kind given most and
+/// how many reactions in all, in blue when the viewer gave one of them.
+class _ReactionSummary extends StatelessWidget {
+  const _ReactionSummary({required this.tally, super.key});
+
+  final PredictionReactionTallyDto tally;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Color color = tally.mine == null
+        ? tokens.textSecondary
+        : tokens.primaryText;
+    final String? kind = leadingReactionKind(tally);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (kind != null)
+          Icon(
+            predictionReactionLooks[kind]!.$1,
+            size: AppSizes.iconInline,
+            color: color,
+          ),
+        const SizedBox(width: 2),
+        Text(
+          '${tally.total}',
+          style: TextStyle(
+            color: color,
+            fontSize: AppFontSize.s11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

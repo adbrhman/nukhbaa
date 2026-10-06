@@ -33,6 +33,9 @@ abstract final class ScreenName {
   /// The sheet that creates a duel challenge.
   static const String duelCreate = 'duel_create';
 
+  /// The sheet of reactions on one prediction of the board (0094).
+  static const String predictionReactions = 'prediction_reactions';
+
   /// The player's groups.
   static const String groups = 'groups';
 
@@ -110,6 +113,7 @@ abstract final class ScreenName {
     duels,
     duelAccept,
     duelCreate,
+    predictionReactions,
     groups,
     groupFeed,
     groupLeaderboard,

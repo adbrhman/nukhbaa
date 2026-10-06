@@ -39,6 +39,7 @@ abstract final class ScreenNames {
   static const String duels = 'duels';
   static const String duelAccept = 'duel_accept';
   static const String duelCreate = 'duel_create';
+  static const String predictionReactions = 'prediction_reactions';
   static const String groups = 'groups';
   static const String groupFeed = 'group_feed';
   static const String groupLeaderboard = 'group_leaderboard';
@@ -82,6 +83,7 @@ abstract final class ScreenNames {
     duels,
     duelAccept,
     duelCreate,
+    predictionReactions,
     groups,
     groupFeed,
     groupLeaderboard,
