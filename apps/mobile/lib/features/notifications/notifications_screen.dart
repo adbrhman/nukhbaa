@@ -380,9 +380,8 @@ class _NotificationRow extends ConsumerWidget {
               key: Key('notifications.markRead.${notification.id}'),
               icon: const Icon(Icons.mark_email_read_outlined),
               tooltip: AppLocalizations.of(context).markNotificationRead,
-              onPressed: () => ref
-                  .read(notificationControllerProvider.notifier)
-                  .markRead(notification.id),
+              onPressed: () =>
+                  unawaited(_markReadKeptAlive(context, notification.id)),
             ),
     );
   }
