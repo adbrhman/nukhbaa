@@ -20,6 +20,8 @@ import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../duels/duels_providers.dart';
 import '../duels/duels_screen.dart';
+import '../groups/groups_providers.dart';
+import '../groups/join_group_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -27,6 +29,7 @@ import '../notifications/notifications_screen.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import 'account_screen.dart';
 import 'home_screen.dart';
+import 'launch_invite.dart';
 
 /// The authenticated app shell. The five destinations are kept alive in an
 /// IndexedStack so an in-progress prediction or scroll position survives tab
@@ -62,6 +65,37 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
       currentIndex = index;
       _built.add(index);
     });
+  }
+
+  /// Whether this run already opened the invitation its address carried:
+  /// the shell is built again at every sign-in.
+  static bool _launchInviteOpened = false;
+
+  /// Opens the league or duel invitation the app's address carries (the
+  /// links players share open the web build): the league's join page with
+  /// its code filled in, one tap to join, or the duel's accept sheet.
+  Future<void> _openLaunchInvite() async {
+    if (_launchInviteOpened) return;
+    final LaunchInvite invite = launchInviteFrom(Uri.base);
+    final String? league = invite.league;
+    final String? duel = invite.duel;
+    if (league == null && duel == null) return;
+    _launchInviteOpened = true;
+    // After the frame being built.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    if (league != null) {
+      await Navigator.of(context).push<Object?>(
+        MaterialPageRoute<Object?>(
+          builder: (_) => JoinGroupScreen(initialCode: league),
+        ),
+      );
+      if (mounted) ref.invalidate(myGroupsProvider);
+    } else {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => DuelsScreen(openCode: duel)),
+      );
+    }
   }
 
   /// Opens what a tapped push is about (see push_link.dart): its tab, and
@@ -146,6 +180,8 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
           .read(pushTokenServiceProvider)
           .listenForOpenedPushes(_openLink, onForegroundPush: _refreshBell),
     );
+    // A shared league or duel link opens on its invitation (the web build).
+    unawaited(_openLaunchInvite());
     // The device's own clock offset, for notification timing only -- no day
     // boundary is derived from it. Re-sent on every start because an offset
     // carries no daylight-saving rule, and sent on web too, unlike the push

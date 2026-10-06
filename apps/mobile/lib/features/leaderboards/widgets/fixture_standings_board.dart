@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../competition/widgets/async_list_view.dart';
+import '../../groups/league_invite.dart';
 import '../../history/prediction_history_providers.dart';
 import '../champions_providers.dart';
 import '../duel_wins_providers.dart';
@@ -45,6 +46,7 @@ class FixtureStandingsBoard extends ConsumerWidget {
     this.emptyMessage,
     this.header,
     this.showDuelWins = false,
+    this.groupId,
     super.key,
   });
 
@@ -70,11 +72,20 @@ class FixtureStandingsBoard extends ConsumerWidget {
   /// beside the names (the month's board only).
   final bool showDuelWins;
 
+  /// A friends' league: the board of the group's members only, ranked
+  /// among them by the server ([day] is not read then).
+  final String? groupId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final DateTime? selectedDay = day;
-    final AsyncValue<FixtureLeaderboardDto> standings = selectedDay == null
+    final String? league = groupId;
+    final AsyncValue<FixtureLeaderboardDto> standings = league != null
+        ? ref.watch(
+            groupMonthBoardProvider((groupId: league, seasonId: seasonId)),
+          )
+        : selectedDay == null
         ? ref.watch(fixtureLeaderboardProvider(seasonId))
         : ref.watch(
             dayFixtureLeaderboardProvider((
@@ -83,7 +94,11 @@ class FixtureStandingsBoard extends ConsumerWidget {
             )),
           );
     void reload() {
-      if (selectedDay == null) {
+      if (league != null) {
+        ref.invalidate(
+          groupMonthBoardProvider((groupId: league, seasonId: seasonId)),
+        );
+      } else if (selectedDay == null) {
         ref.invalidate(fixtureLeaderboardProvider(seasonId));
       } else {
         ref.invalidate(
@@ -94,7 +109,11 @@ class FixtureStandingsBoard extends ConsumerWidget {
 
     Future<void> refresh() async {
       try {
-        if (selectedDay == null) {
+        if (league != null) {
+          final GroupMonthBoardKey key = (groupId: league, seasonId: seasonId);
+          ref.invalidate(groupMonthBoardProvider(key));
+          await ref.read(groupMonthBoardProvider(key).future);
+        } else if (selectedDay == null) {
           // A crowning made while the app was open shows with this pull.
           ref.invalidate(monthChampionsProvider);
           if (showDuelWins) {

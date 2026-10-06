@@ -17,7 +17,10 @@ class JoinGroupScreen extends ConsumerStatefulWidget implements NamedScreen {
   @override
   String get screenName => ScreenNames.groupJoin;
 
-  const JoinGroupScreen({super.key});
+  const JoinGroupScreen({this.initialCode, super.key});
+
+  /// The code a shared league link carried: filled in, one tap to join.
+  final String? initialCode;
 
   @override
   ConsumerState<JoinGroupScreen> createState() => _JoinGroupScreenState();
@@ -25,6 +28,12 @@ class JoinGroupScreen extends ConsumerStatefulWidget implements NamedScreen {
 
 class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   final TextEditingController _codeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _codeController.text = widget.initialCode ?? '';
+  }
 
   @override
   void dispose() {

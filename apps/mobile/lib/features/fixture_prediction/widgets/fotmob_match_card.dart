@@ -92,6 +92,7 @@ import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
+import '../../notifications/favorite_team_offer.dart';
 import '../feed_refresh_signal.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
@@ -290,6 +291,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
         // Once per fixture, a bar offers to challenge a friend on it; the
         // card itself keeps its layout.
         offerDuelAfterSave(context: context, ref: ref, fixture: _fixture);
+        // Once per session, a player with no favourite team is offered the
+        // two teams of the match they just predicted.
+        unawaited(
+          offerFavoriteTeamAfterSave(
+            context: context,
+            ref: ref,
+            fixture: _fixture,
+          ),
+        );
       }
     }
   }

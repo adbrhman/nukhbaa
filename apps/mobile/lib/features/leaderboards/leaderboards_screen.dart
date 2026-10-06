@@ -22,6 +22,7 @@ import 'leaderboards_providers.dart';
 import 'widgets/champion_crown.dart';
 import 'widgets/champion_spotlight.dart';
 import 'widgets/fixture_standings_board.dart';
+import 'widgets/friends_league_board.dart';
 import 'widgets/sporting_season_standings_board.dart';
 import 'widgets/weekly_league_board.dart';
 
@@ -38,6 +39,10 @@ enum LeaderboardScope {
 
   /// The caller's weekly-league group for the Riyadh week open now.
   league,
+
+  /// The caller's own friends' league: the month's board of its members
+  /// (phase 2 of the plan).
+  friends,
 }
 
 /// The bottom-tab leaderboard surface.
@@ -338,6 +343,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       LeaderboardScope.day => l10n.leaderboardSubtitleDay,
       LeaderboardScope.season => l10n.leaderboardSubtitleSeason,
       LeaderboardScope.league => l10n.leaderboardSubtitleLeague,
+      LeaderboardScope.friends => 'ترتيبك بين أصدقائك بنقاط الشهر',
     };
     final String period = switch (_scope) {
       LeaderboardScope.month => widget.season.seasonLabel,
@@ -357,6 +363,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       },
       LeaderboardScope.season =>
         ref.watch(sportingSeasonLeaderboardProvider).value?.label ?? '—',
+      LeaderboardScope.friends => widget.season.seasonLabel,
     };
     final List<MonthChampionDto> celebrating = widget.celebrating;
     final Widget board = switch (_scope) {
@@ -395,6 +402,12 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         keyPrefix: 'leaderboards.league',
         myUserId: widget.userId,
         showHeader: true,
+      ),
+      LeaderboardScope.friends => FriendsLeagueBoard(
+        key: const ValueKey<String>('leaderboards.board.friends'),
+        seasonId: widget.season.seasonId,
+        keyPrefix: 'leaderboards.friends',
+        myDisplayName: widget.userDisplayName,
       ),
       LeaderboardScope.season => SportingSeasonStandingsBoard(
         key: const ValueKey<String>('leaderboards.board.season'),
@@ -463,6 +476,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
                 l10n.leaderboardScopeDay,
                 l10n.leaderboardScopeSeason,
                 l10n.leaderboardScopeLeague,
+                'أصدقائي',
               ],
               selectedIndex: _scope.index,
               onSelected: (index) =>

@@ -60,6 +60,7 @@ export 'src/football_data/sync_provider_results.dart';
 export 'src/group/create_group.dart';
 export 'src/group/get_group.dart';
 export 'src/group/get_group_leaderboard.dart';
+export 'src/group/get_group_month_board.dart';
 export 'src/group/group_leaderboard.dart';
 export 'src/group/join_group_by_invite.dart';
 export 'src/group/list_group_members.dart';

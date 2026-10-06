@@ -89,6 +89,20 @@ final class GroupsApi {
     );
   }
 
+  /// `GET /groups/{id}/seasons/{seasonId}/month-board` -- the friends'
+  /// league: the month's board of the group's members, ranked among them,
+  /// in the month board's own shape. `Err(authorization, code:
+  /// group.not_a_member)` for anyone outside the group.
+  Future<Result<FixtureLeaderboardDto>> monthBoard(
+    String groupId,
+    String seasonId,
+  ) {
+    return _transport.getObject<FixtureLeaderboardDto>(
+      '/groups/$groupId/seasons/$seasonId/month-board',
+      parse: FixtureLeaderboardDto.fromJson,
+    );
+  }
+
   /// `GET /groups/{groupId}/feed` — the group's activity feed, newest first.
   /// [limit] is an optional cap; the server clamps an untrusted value rather
   /// than rejecting it.

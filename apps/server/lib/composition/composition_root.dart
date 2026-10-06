@@ -93,6 +93,7 @@ final class CompositionRoot {
     required this.listGroupMembers,
     required this.listMyGroups,
     required this.getGroupLeaderboard,
+    required this.getGroupMonthBoard,
     required this.reactToRound,
     required this.removeReaction,
     required this.listRoundReactions,
@@ -272,6 +273,7 @@ final class CompositionRoot {
     ListGroupMembers? listGroupMembers,
     ListMyGroups? listMyGroups,
     GetGroupLeaderboard? getGroupLeaderboard,
+    GetGroupMonthBoard? getGroupMonthBoard,
     ReactToRound? reactToRound,
     RemoveReaction? removeReaction,
     ListRoundReactions? listRoundReactions,
@@ -459,6 +461,7 @@ final class CompositionRoot {
        listMyGroups = listMyGroups ?? _absentListMyGroups(),
        getGroupLeaderboard =
            getGroupLeaderboard ?? _absentGetGroupLeaderboard(),
+       getGroupMonthBoard = getGroupMonthBoard ?? _absentGetGroupMonthBoard(),
        reactToRound = reactToRound ?? _absentReactToRound(),
        removeReaction = removeReaction ?? _absentRemoveReaction(),
        listRoundReactions = listRoundReactions ?? _absentListRoundReactions(),
@@ -1085,6 +1088,15 @@ final class CompositionRoot {
         repository: _unwiredGroupRepository,
         standingsReader: _unwiredGroupRepository,
       );
+
+  /// Backs the "absent" [GetGroupMonthBoard]: loud if a test reaches it.
+  static GetGroupMonthBoard _absentGetGroupMonthBoard() => GetGroupMonthBoard(
+    groups: _unwiredGroupRepository,
+    competition: _unwiredCompetitionRepository,
+    fixturePredictions: _unwiredFixturePredictionRepository,
+    totals: _UnwiredFixtureTotalsReader(),
+    participants: _unwiredParticipantReader,
+  );
 
   /// A single throwing reaction repository backing every "absent" Social
   /// reaction use-case, and a throwing feed reader backing the "absent" feed
@@ -1852,6 +1864,11 @@ final class CompositionRoot {
   /// projection filtered to the group's membership (member-only; NO new points
   /// source, NO new ranking logic — Groups decision #4, Axiom 5).
   final GetGroupLeaderboard getGroupLeaderboard;
+
+  /// The friends' league: a group's month board from the per-fixture
+  /// scores, ranked among its members (backs
+  /// `GET /groups/{id}/seasons/{seasonId}/month-board`).
+  final GetGroupMonthBoard getGroupMonthBoard;
 
   /// Records (or idempotently changes) a member's emoji reaction to a
   /// round-result within a group (any authenticated user, member-gated;
@@ -2991,6 +3008,15 @@ final class CompositionRoot {
       getGroupLeaderboard: GetGroupLeaderboard(
         repository: groupRepository,
         standingsReader: groupRepository,
+      ),
+      getGroupMonthBoard: GetGroupMonthBoard(
+        groups: groupRepository,
+        competition: competitionRepository,
+        fixturePredictions: fixturePredictionRepository,
+        totals: CachedFixtureTotalsReader(
+          PostgresFixtureTotalsReader(connection),
+        ),
+        participants: participantReader,
       ),
       reactToRound: ReactToRound(
         reactions: reactionRepository,
