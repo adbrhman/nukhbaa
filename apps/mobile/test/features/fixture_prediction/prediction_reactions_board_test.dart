@@ -271,9 +271,13 @@ void main() {
       ),
       tokens.bronze,
     );
+    // The clap is the clapping hands emoji, not an icon (2026-10-07).
     expect(
-      iconColor(find.byKey(const Key('fixturePredictions.reactions.f-1.p-me'))),
-      tokens.successText,
+      find.descendant(
+        of: find.byKey(const Key('fixturePredictions.reactions.f-1.p-me')),
+        matching: find.text('\u{1F44F}'),
+      ),
+      findsOneWidget,
     );
 
     await tester.tap(
@@ -291,6 +295,13 @@ void main() {
     expect(
       iconColor(find.byKey(const Key('reactionSheet.kind.shock'))),
       tokens.errorText,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('reactionSheet.kind.clap')),
+        matching: find.text('\u{1F44F}'),
+      ),
+      findsOneWidget,
     );
   });
 

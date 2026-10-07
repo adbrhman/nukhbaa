@@ -24,6 +24,7 @@ import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
 import '../fixture_prediction_providers.dart';
 import '../prediction_reactions_providers.dart';
+import 'day_hero_card.dart';
 
 /// How each reaction kind looks: its icon and its name.
 const Map<String, (IconData, String)> predictionReactionLooks =
@@ -46,6 +47,51 @@ Color predictionReactionColor(AppTokens tokens, String kind) => switch (kind) {
   'shock' => tokens.errorText,
   _ => tokens.textSecondary,
 };
+
+/// Kinds drawn as an emoji instead of an icon: the clap is the clapping
+/// hands players know (decided 2026-10-07), not a party popper.
+const Map<String, String> _reactionEmoji = <String, String>{
+  'clap': '\u{1F44F}',
+};
+
+/// One reaction kind's mark at [size]: its emoji, or its icon in its colour.
+class PredictionReactionGlyph extends StatelessWidget {
+  /// Creates the mark of [kind].
+  const PredictionReactionGlyph({
+    required this.kind,
+    required this.size,
+    super.key,
+  });
+
+  /// The reaction kind.
+  final String kind;
+
+  /// The square it fills.
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? emoji = _reactionEmoji[kind];
+    if (emoji != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: FittedBox(
+          child: Text(
+            emoji,
+            key: Key('reactionGlyph.$kind'),
+            style: TextStyle(fontSize: size, height: 1),
+          ),
+        ),
+      );
+    }
+    return Icon(
+      predictionReactionLooks[kind]!.$1,
+      size: size,
+      color: predictionReactionColor(context.tokens, kind),
+    );
+  }
+}
 
 /// The kind [tally] received most, the first in [predictionReactionKinds]
 /// order on a tie; null when it received none.
@@ -74,6 +120,7 @@ Future<void> showPredictionReactionSheet({
   required int homeGoals,
   required int awayGoals,
   required bool isMine,
+  DayHero? hero,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -89,6 +136,7 @@ Future<void> showPredictionReactionSheet({
       homeGoals: homeGoals,
       awayGoals: awayGoals,
       isMine: isMine,
+      hero: hero,
     ),
   );
 }
@@ -110,6 +158,7 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
     required this.homeGoals,
     required this.awayGoals,
     required this.isMine,
+    this.hero,
     super.key,
   });
 
@@ -124,6 +173,10 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
 
   /// The viewer's own prediction: its reactions are shown, none is given.
   final bool isMine;
+
+  /// Set for an admin when this prediction alone called the match exactly:
+  /// the sheet then offers the hero of the day card.
+  final DayHero? hero;
 
   @override
   ConsumerState<PredictionReactionSheet> createState() =>
@@ -220,6 +273,15 @@ class _PredictionReactionSheetState
                 ),
               ],
             ),
+            if (widget.hero case final DayHero hero) ...<Widget>[
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.icon(
+                key: const Key('reactionSheet.shareHero'),
+                onPressed: () => unawaited(showDayHeroCard(context, hero)),
+                icon: const Icon(Icons.emoji_events_rounded),
+                label: const Text('مشاركة بطاقة بطل اليوم'),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Text(
               widget.isMine
@@ -267,7 +329,7 @@ class _ReactionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final (IconData icon, String label) = predictionReactionLooks[kind]!;
+    final String label = predictionReactionLooks[kind]!.$2;
     final Color color = selected ? tokens.primaryText : tokens.textSecondary;
     return Expanded(
       child: Padding(
@@ -297,11 +359,7 @@ class _ReactionButton extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(
-                      icon,
-                      size: AppSizes.iconLg,
-                      color: predictionReactionColor(tokens, kind),
-                    ),
+                    PredictionReactionGlyph(kind: kind, size: AppSizes.iconLg),
                     const SizedBox(height: AppSpacing.xs),
                     FittedBox(
                       fit: BoxFit.scaleDown,

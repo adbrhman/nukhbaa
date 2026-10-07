@@ -16,6 +16,10 @@
 /// Another player's prediction with none yet carries a faint reaction icon,
 /// and a line above the table says so until the viewer's first reaction of
 /// the day.
+///
+/// Admins also see each match's hero of the day (decided 2026-10-07): the
+/// one player who alone called its exact score, named above the table and
+/// marked in the cell, with a card to share from that prediction.
 library;
 
 import 'dart:async';
@@ -38,6 +42,9 @@ import '../../history/prediction_lookup_providers.dart';
 import '../current_month_fixtures_providers.dart';
 import '../fixture_prediction_providers.dart';
 import '../prediction_reactions_providers.dart';
+import '../../auth/session_controller.dart';
+import '../../auth/session_state.dart';
+import 'day_hero_card.dart';
 import 'fixtures_date_bar.dart';
 import 'prediction_reaction_sheet.dart';
 
@@ -214,6 +221,44 @@ class _FixturePredictionsBoardPageState
             return a.name.compareTo(b.name);
           });
 
+    // Admins only: the one player who alone called a match's exact score,
+    // by the server's grade, is that match's hero of the day.
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final bool isAdmin =
+        session is SessionAuthenticated && session.user.role == 'admin';
+    final Map<String, DayHero> heroes = <String, DayHero>{};
+    if (isAdmin) {
+      for (final _Column column in columns) {
+        final String? heroId = soloExactParticipant(column.scores.values);
+        final FixturePredictionDto? call = heroId == null
+            ? null
+            : column.predictions[heroId];
+        if (call == null) continue;
+        heroes[column.fixture.fixtureId] = DayHero(
+          fixtureId: column.fixture.fixtureId,
+          participantId: call.participantId,
+          playerName: call.displayName.isEmpty
+              ? l10n.fixturePredictionsUnnamed
+              : call.displayName,
+          home: resolveTeamIdentity(
+            catalog: null,
+            catalogById: catalogById,
+            teamId: column.fixture.homeTeamId,
+            teamName: column.fixture.homeTeam,
+          ),
+          away: resolveTeamIdentity(
+            catalog: null,
+            catalogById: catalogById,
+            teamId: column.fixture.awayTeamId,
+            teamName: column.fixture.awayTeam,
+          ),
+          homeGoals: call.homeGoals,
+          awayGoals: call.awayGoals,
+          leagueName: column.fixture.leagueName,
+        );
+      }
+    }
+
     // Until the viewer gives a first reaction on this day's matches, a line
     // says the predictions can be reacted to. Read from the server's own
     // tallies, so nothing is kept on the device; unknown while any read is
@@ -287,6 +332,7 @@ class _FixturePredictionsBoardPageState
                 ],
               ),
             ),
+          for (final DayHero hero in heroes.values) DayHeroBanner(hero: hero),
           Expanded(
             child: columns.isEmpty
                 ? _Message(
@@ -303,7 +349,7 @@ class _FixturePredictionsBoardPageState
                     key: const Key('fixturePredictions.noMatch'),
                     text: l10n.fixturePredictionsNoMatch,
                   )
-                : _Board(columns: columns, players: players),
+                : _Board(columns: columns, players: players, heroes: heroes),
           ),
         ],
       ),
@@ -325,10 +371,17 @@ class _FixturePredictionsBoardPageState
 /// The table: player names stay put on the reading side while the match
 /// columns scroll sideways; the whole table scrolls down.
 class _Board extends StatelessWidget {
-  const _Board({required this.columns, required this.players});
+  const _Board({
+    required this.columns,
+    required this.players,
+    required this.heroes,
+  });
 
   final List<_Column> columns;
   final List<_Player> players;
+
+  /// Each match's hero of the day, by fixture id; empty but for admins.
+  final Map<String, DayHero> heroes;
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +428,16 @@ class _Board extends StatelessWidget {
                     Row(
                       children: <Widget>[
                         for (final _Column column in columns)
-                          _PredictionCell(column: column, player: player),
+                          _PredictionCell(
+                            column: column,
+                            player: player,
+                            hero:
+                                heroes[column.fixture.fixtureId]
+                                        ?.participantId ==
+                                    player.participantId
+                                ? heroes[column.fixture.fixtureId]
+                                : null,
+                          ),
                       ],
                     ),
                 ],
@@ -510,10 +572,17 @@ class _NameCell extends StatelessWidget {
 }
 
 class _PredictionCell extends StatelessWidget {
-  const _PredictionCell({required this.column, required this.player});
+  const _PredictionCell({
+    required this.column,
+    required this.player,
+    this.hero,
+  });
 
   final _Column column;
   final _Player player;
+
+  /// Set for an admin on the hero of the day's cell.
+  final DayHero? hero;
 
   @override
   Widget build(BuildContext context) {
@@ -572,6 +641,15 @@ class _PredictionCell extends StatelessWidget {
                         ),
                         style: const TextStyle(fontSize: AppFontSize.s13),
                       ),
+                      if (hero != null)
+                        Icon(
+                          Icons.emoji_events_rounded,
+                          key: Key(
+                            'fixturePredictions.heroMark.${column.fixture.fixtureId}.${player.participantId}',
+                          ),
+                          size: AppSizes.iconInline,
+                          color: tokens.goldAccent,
+                        ),
                     ],
                   ),
                   if (tally != null && tally.total > 0)
@@ -611,6 +689,7 @@ class _PredictionCell extends StatelessWidget {
           homeGoals: prediction.homeGoals,
           awayGoals: prediction.awayGoals,
           isMine: player.isMine,
+          hero: hero,
         ),
       ),
       child: cell,
@@ -637,11 +716,7 @@ class _ReactionSummary extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         if (kind != null)
-          Icon(
-            predictionReactionLooks[kind]!.$1,
-            size: AppSizes.iconInline,
-            color: predictionReactionColor(tokens, kind),
-          ),
+          PredictionReactionGlyph(kind: kind, size: AppSizes.iconInline),
         const SizedBox(width: 2),
         Text(
           '${tally.total}',
