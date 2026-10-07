@@ -132,7 +132,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColors.errorContainer,
     success: AppColors.success,
     successContainer: AppColors.successContainer,
-    successText: AppColors.success,
+    successText: AppColors.successText,
     errorText: AppColors.errorText,
     errorFill: AppColors.errorFill,
     onSuccess: AppColors.onSuccess,

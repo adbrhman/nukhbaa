@@ -4,6 +4,7 @@ import 'package:application/src/competition/ports/fixture_schedule_repository.da
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_tally_reader.dart';
+import 'package:application/src/scoring/ports/fixture_result_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -25,6 +26,8 @@ final class CurrentMonthFixtureEntry {
     required this.fixture,
     this.homeWinPercentage,
     this.awayWinPercentage,
+    this.resultHomeGoals,
+    this.resultAwayGoals,
   });
 
   /// The owning competition's identity.
@@ -49,6 +52,13 @@ final class CurrentMonthFixtureEntry {
   /// The away share of decisive predictions, with the same null meaning.
   final int? awayWinPercentage;
 
+  /// The recorded final score, or `null` before a result is recorded (or
+  /// when the feed was built without a result repository).
+  final int? resultHomeGoals;
+
+  /// The recorded away goals, same meaning as [resultHomeGoals].
+  final int? resultAwayGoals;
+
   @override
   bool operator ==(Object other) =>
       other is CurrentMonthFixtureEntry &&
@@ -57,7 +67,9 @@ final class CurrentMonthFixtureEntry {
       other.seasonLabel == seasonLabel &&
       other.fixture == fixture &&
       other.homeWinPercentage == homeWinPercentage &&
-      other.awayWinPercentage == awayWinPercentage;
+      other.awayWinPercentage == awayWinPercentage &&
+      other.resultHomeGoals == resultHomeGoals &&
+      other.resultAwayGoals == resultAwayGoals;
 
   @override
   int get hashCode => Object.hash(
@@ -67,6 +79,8 @@ final class CurrentMonthFixtureEntry {
     fixture,
     homeWinPercentage,
     awayWinPercentage,
+    resultHomeGoals,
+    resultAwayGoals,
   );
 
   @override
@@ -108,11 +122,13 @@ final class ListCurrentMonthFixtures {
     required FixtureScheduleRepository fixtureScheduleRepository,
     required Clock clock,
     FixturePredictionTallyReader? predictionTallyReader,
+    FixtureResultRepository? resultRepository,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _schedules = fixtureScheduleRepository,
        _clock = clock,
-       _tallies = predictionTallyReader;
+       _tallies = predictionTallyReader,
+       _results = resultRepository;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
@@ -122,6 +138,10 @@ final class ListCurrentMonthFixtures {
   /// Optional on purpose: every existing construction of this use-case keeps
   /// compiling, and a feed built without it simply reports no split.
   final FixturePredictionTallyReader? _tallies;
+
+  /// Optional like [_tallies]: the recorded results, so a finished card
+  /// shows its final score without a request of its own.
+  final FixtureResultRepository? _results;
 
   /// Builds the current-month feed, visible to [principal].
   Future<Result<List<CurrentMonthFixtureEntry>>> call({
@@ -217,6 +237,20 @@ final class ListCurrentMonthFixtures {
       }
     }
 
+    // Step 6: the recorded results of the same fixtures, in ONE batched
+    // read. Display only: a failed read leaves them out rather than the
+    // whole feed.
+    final results = <String, FixtureResult>{};
+    final FixtureResultRepository? resultReader = _results;
+    if (resultReader != null) {
+      final read = await resultReader.findByFixtures(allFixtures);
+      if (read is Ok<List<FixtureResult>>) {
+        for (final FixtureResult result in read.value) {
+          results[result.fixture.value] = result;
+        }
+      }
+    }
+
     return Result.ok([
       for (final entry in currentSeasons)
         for (final fixture in fixturesBySeason[entry.season.id.value]!)
@@ -233,6 +267,8 @@ final class ListCurrentMonthFixtures {
             awayWinPercentage: tallyReader == null
                 ? null
                 : (tallies[fixture.value]?.awayWinPercentage ?? 0),
+            resultHomeGoals: results[fixture.value]?.homeGoals,
+            resultAwayGoals: results[fixture.value]?.awayGoals,
             fixture: SeasonFixtureCard(
               seasonId: entry.season.id,
               fixtureId: fixture,

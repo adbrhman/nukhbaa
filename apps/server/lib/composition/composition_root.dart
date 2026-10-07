@@ -2896,6 +2896,7 @@ final class CompositionRoot {
         fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
         predictionTallyReader: fixturePredictionTallyReader,
+        resultRepository: fixtureResultRepository,
       ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,

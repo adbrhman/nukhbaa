@@ -35,7 +35,9 @@ abstract final class AppColors {
   /// DERIVED -- every card: one navy step above [background], so a card
   /// reads as a raised plane. The sheet's Surface `#0A0A0A` sat below the
   /// page and read as a hole.
-  static const Color surface = Color(0xFF0D1B30);
+  // Lifted from 0xFF0D1B30 (2026-10-07): 1.07:1 against the page, the
+  // cards melted into it and only their hairline set them apart.
+  static const Color surface = Color(0xFF11223A);
 
   /// DERIVED -- one and two further steps up from [surface], in the same
   /// navy hue, for raised controls and table headers.
@@ -96,6 +98,11 @@ abstract final class AppColors {
   /// SHEET Success.
   static const Color success = Color(0xFF19E68C);
   static const Color successContainer = Color(0xFF06291C);
+
+  /// DERIVED -- success as text and badge content: the sheet's mint at
+  /// less saturation, so a points badge no longer glares on the navy
+  /// (2026-10-07). Fills that carry near-black content keep [success].
+  static const Color successText = Color(0xFF5CCF9B);
 
   /// DERIVED -- Success is a bright mint; white on it is unreadable, so
   /// filled success surfaces carry near-black content.

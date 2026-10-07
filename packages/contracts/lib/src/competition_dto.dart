@@ -802,6 +802,8 @@ final class CurrentMonthFixtureItemDto {
     this.liveAwayGoals,
     this.liveMinute,
     this.liveFinished,
+    this.resultHomeGoals,
+    this.resultAwayGoals,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -821,6 +823,8 @@ final class CurrentMonthFixtureItemDto {
       liveAwayGoals: json['live_away_goals'] as int?,
       liveMinute: json['live_minute'] as int?,
       liveFinished: json['live_finished'] as bool?,
+      resultHomeGoals: json['result_home_goals'] as int?,
+      resultAwayGoals: json['result_away_goals'] as int?,
     );
   }
 
@@ -865,6 +869,13 @@ final class CurrentMonthFixtureItemDto {
   /// may not be recorded yet).
   final bool? liveFinished;
 
+  /// The recorded final score, or `null` before it is recorded (an older
+  /// server never sends it, an older client ignores it).
+  final int? resultHomeGoals;
+
+  /// The recorded away goals, same meaning as [resultHomeGoals].
+  final int? resultAwayGoals;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -881,6 +892,8 @@ final class CurrentMonthFixtureItemDto {
     'live_away_goals': liveAwayGoals,
     'live_minute': liveMinute,
     'live_finished': liveFinished,
+    'result_home_goals': resultHomeGoals,
+    'result_away_goals': resultAwayGoals,
   };
 
   @override
@@ -896,6 +909,8 @@ final class CurrentMonthFixtureItemDto {
       other.liveAwayGoals == liveAwayGoals &&
       other.liveMinute == liveMinute &&
       other.liveFinished == liveFinished &&
+      other.resultHomeGoals == resultHomeGoals &&
+      other.resultAwayGoals == resultAwayGoals &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -910,6 +925,8 @@ final class CurrentMonthFixtureItemDto {
     liveAwayGoals,
     liveMinute,
     liveFinished,
+    resultHomeGoals,
+    resultAwayGoals,
     schemaVersion,
   );
 }

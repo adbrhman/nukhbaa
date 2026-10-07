@@ -171,5 +171,7 @@ CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
     liveAwayGoals: live?.awayGoals,
     liveMinute: live?.minute,
     liveFinished: live?.finished,
+    resultHomeGoals: entry.resultHomeGoals,
+    resultAwayGoals: entry.resultAwayGoals,
   );
 }

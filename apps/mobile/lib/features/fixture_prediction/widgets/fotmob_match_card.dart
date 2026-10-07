@@ -573,6 +573,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           liveAway: widget.item.liveAwayGoals,
                           liveMinute: widget.item.liveMinute,
                           liveFinished: widget.item.liveFinished,
+                          resultHome: widget.item.resultHomeGoals,
+                          resultAway: widget.item.resultAwayGoals,
                           myPrediction: myPrediction,
                           grade: myGrade,
                           points: myPoints,
@@ -983,6 +985,8 @@ class _MiddleSlot extends StatelessWidget {
     this.liveAway,
     this.liveMinute,
     this.liveFinished,
+    this.resultHome,
+    this.resultAway,
   });
 
   final bool isGraded;
@@ -1016,6 +1020,10 @@ class _MiddleSlot extends StatelessWidget {
   final int? liveMinute;
   final bool? liveFinished;
 
+  /// The recorded final score, once there is one (the feed's).
+  final int? resultHome;
+  final int? resultAway;
+
   @override
   Widget build(BuildContext context) {
     if (isGraded && myPrediction != null) {
@@ -1023,6 +1031,9 @@ class _MiddleSlot extends StatelessWidget {
         prediction: myPrediction!,
         grade: grade,
         points: points,
+        fixtureId: fixtureId,
+        resultHome: resultHome,
+        resultAway: resultAway,
       );
     }
     if (locked) {
@@ -1034,6 +1045,8 @@ class _MiddleSlot extends StatelessWidget {
         away: liveAway,
         minute: liveMinute,
         finished: liveFinished,
+        resultHome: resultHome,
+        resultAway: resultAway,
       );
     }
     return Stack(
@@ -1123,19 +1136,30 @@ class _GradedSlot extends StatelessWidget {
     required this.prediction,
     required this.grade,
     required this.points,
+    required this.fixtureId,
+    this.resultHome,
+    this.resultAway,
   });
 
   final FixturePredictionDto prediction;
   final String? grade;
   final int? points;
+  final String fixtureId;
+
+  /// The recorded final score, when the feed carries it.
+  final int? resultHome;
+  final int? resultAway;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
     // Tone follows the server's points, not the grade name: a correct
     // outcome can award 0 under the frozen ruleset, and a green "0 pts"
     // reads as a win nobody got.
     final bool success = (points ?? 0) > 0;
+    final int? home = resultHome;
+    final int? away = resultAway;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -1147,6 +1171,21 @@ class _GradedSlot extends StatelessWidget {
             tone: success ? AppBadgeTone.success : AppBadgeTone.muted,
             icon: grade == 'exact_scoreline' ? Icons.star : null,
           ),
+        // The final score beside the call: without it the points said
+        // nothing about why (decided 2026-10-07).
+        if (home != null && away != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'النتيجة ${orientedScoreLabel(context, home, away)}',
+            key: Key('currentMonthFixtures.finalScore.$fixtureId'),
+            maxLines: 1,
+            style: TextStyle(
+              color: tokens.textSecondary,
+              fontSize: AppFontSize.s12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1165,6 +1204,8 @@ class _LockedSlot extends StatelessWidget {
     this.away,
     this.minute,
     this.finished,
+    this.resultHome,
+    this.resultAway,
   });
 
   final bool live;
@@ -1175,6 +1216,11 @@ class _LockedSlot extends StatelessWidget {
   final int? away;
   final int? minute;
   final bool? finished;
+
+  /// The recorded final score: once there is one the match is over,
+  /// whatever the provider last said.
+  final int? resultHome;
+  final int? resultAway;
 
   /// The player's own call, shown under the status once kickoff has hidden
   /// the steppers; null when they did not predict this match.
@@ -1198,10 +1244,11 @@ class _LockedSlot extends StatelessWidget {
   Widget _status(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final int? homeGoals = home;
-    final int? awayGoals = away;
+    final bool recorded = resultHome != null && resultAway != null;
+    final int? homeGoals = recorded ? resultHome : home;
+    final int? awayGoals = recorded ? resultAway : away;
     if (homeGoals != null && awayGoals != null) {
-      final bool over = finished ?? false;
+      final bool over = recorded || (finished ?? false);
       final Color accent = over ? tokens.textMuted : tokens.error;
       // The dot keeps the danger red; the words take the red made for text.
       final Color accentText = over ? tokens.textMuted : tokens.errorText;
@@ -1229,7 +1276,9 @@ class _LockedSlot extends StatelessWidget {
                 const SizedBox(width: 4),
               ],
               Text(
-                over
+                recorded
+                    ? 'انتهت'
+                    : over
                     ? l10n.predictionPendingResultLabel
                     : clock != null
                     ? "$clock'"
@@ -1632,8 +1681,9 @@ class _RevealPredictionsButton extends StatelessWidget {
   }
 }
 
-/// The "make it double" toggle, in the action blue: a solid blue button by
-/// default, and once selected a deeper blue gradient with a gold rim, a
+/// The "make it double" toggle: a quiet outline by default (decided
+/// 2026-10-07: a solid blue drew the eye before the teams), and once
+/// selected a deeper blue gradient with a gold rim, a
 /// filled gold bolt and a soft glow. The gradient runs from the action blue
 /// DOWN, never up to the brighter blue: white on `primaryLight` is 3.6:1,
 /// under WCAG AA for a 12px label. The state is never colour-alone -- the
@@ -1696,7 +1746,7 @@ class _DoubleGlowButton extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     borderRadius: AppRadius.brButton,
-                    color: selected ? null : tokens.primary,
+                    color: selected ? null : Colors.transparent,
                     gradient: selected
                         ? LinearGradient(
                             begin: Alignment.topLeft,
@@ -1708,7 +1758,7 @@ class _DoubleGlowButton extends StatelessWidget {
                           )
                         : null,
                     border: Border.all(
-                      color: selected ? tokens.gold : tokens.primary,
+                      color: selected ? tokens.gold : tokens.controlBorder,
                       width: selected ? 1.5 : AppStroke.hairline,
                     ),
                     boxShadow: selected
@@ -1728,7 +1778,7 @@ class _DoubleGlowButton extends StatelessWidget {
                       Icon(
                         selected ? Icons.bolt_rounded : Icons.bolt_outlined,
                         size: AppSizes.iconSm,
-                        color: selected ? tokens.gold : tokens.onPrimary,
+                        color: selected ? tokens.gold : tokens.textSecondary,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Flexible(
@@ -1738,7 +1788,9 @@ class _DoubleGlowButton extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: AppFontSize.s12,
-                            color: tokens.onPrimary,
+                            color: selected
+                                ? tokens.onPrimary
+                                : tokens.textSecondary,
                           ),
                         ),
                       ),
