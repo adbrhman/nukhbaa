@@ -103,6 +103,47 @@ final class GroupsApi {
     );
   }
 
+  /// `POST /groups/{groupId}/invitations` -- invites [userId], a player
+  /// found by name, to the friends' league: `Ok(true)` when invited now,
+  /// `Ok(false)` when invited before. `Err(invariant, code:
+  /// group.already_member)` for a player already in it.
+  Future<Result<bool>> invite(String groupId, String userId) {
+    return _transport.postObject<bool>(
+      '/groups/$groupId/invitations',
+      body: {'user_id': userId},
+      parse: (json) => json['invited'] == true,
+    );
+  }
+
+  /// `GET /groups/invitations` -- the caller's own invitations to friends'
+  /// leagues, newest first.
+  Future<Result<GroupInvitationsDto>> myInvitations() {
+    return _transport.getObject<GroupInvitationsDto>(
+      '/groups/invitations',
+      parse: GroupInvitationsDto.fromJson,
+    );
+  }
+
+  /// `POST /groups/invitations/{id}/accept` -- joins the league; answers
+  /// the invitation's status.
+  Future<Result<String>> acceptInvitation(String invitationId) {
+    return _transport.postObject<String>(
+      '/groups/invitations/$invitationId/accept',
+      body: const <String, Object?>{},
+      parse: (json) => (json['status'] as String?) ?? '',
+    );
+  }
+
+  /// `POST /groups/invitations/{id}/decline` -- says no; answers the
+  /// invitation's status.
+  Future<Result<String>> declineInvitation(String invitationId) {
+    return _transport.postObject<String>(
+      '/groups/invitations/$invitationId/decline',
+      body: const <String, Object?>{},
+      parse: (json) => (json['status'] as String?) ?? '',
+    );
+  }
+
   /// `GET /groups/{groupId}/feed` — the group's activity feed, newest first.
   /// [limit] is an optional cap; the server clamps an untrusted value rather
   /// than rejecting it.

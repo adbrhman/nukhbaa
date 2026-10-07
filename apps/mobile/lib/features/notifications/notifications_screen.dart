@@ -16,6 +16,7 @@ import '../competition/widgets/async_list_view.dart';
 import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/fixture_predictions_board_page.dart';
+import '../groups/group_invitations.dart';
 import 'notifications_providers.dart';
 
 /// Opens an address taken from an announcement.
@@ -217,6 +218,7 @@ class _NotificationRow extends ConsumerWidget {
     'admin_announcement' => Icons.campaign_outlined,
     'duel_challenged' || 'duel_accepted' => Icons.compare_arrows_rounded,
     'prediction_reaction' => Icons.add_reaction_outlined,
+    'group_invited' => Icons.group_add_rounded,
     _ => Icons.notifications_outlined,
   };
 
@@ -240,6 +242,7 @@ class _NotificationRow extends ConsumerWidget {
       'duel_challenged' => 'لاعب يتحداك على مباراة. اضغط لتتوقّع.',
       'duel_accepted' => 'قُبل تحديك. تابع المواجهة.',
       'prediction_reaction' => 'لاعب تفاعل مع توقعك. اضغط لترى جدول التوقعات.',
+      'group_invited' => 'دعوة إلى دوري أصدقاء.',
       _ => l10n.notificationsTitle,
     };
   }
@@ -333,7 +336,7 @@ class _NotificationRow extends ConsumerWidget {
               );
             }
           : null,
-      isThreeLine: hasBody,
+      isThreeLine: hasBody || notification.kind == 'group_invited',
       leading: Icon(
         _iconFor(notification.kind),
         color: notification.read ? tokens.textSecondary : tokens.primary,
@@ -363,6 +366,10 @@ class _NotificationRow extends ConsumerWidget {
               ),
             ),
           ],
+          // An invitation to a friends' league: who, which league, and
+          // accept or decline (migration 0097).
+          if (notification.kind == 'group_invited')
+            GroupInvitationActions(groupId: notification.groupId),
           const SizedBox(height: AppSpacing.xs),
           Text(
             _formatDate(notification.createdAt),

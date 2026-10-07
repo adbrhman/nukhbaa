@@ -384,7 +384,9 @@ SELECT count(*) AS marked FROM marked
             roundId: (roundResult as Ok<RoundId>).value,
           ),
         );
-      case NotificationKind.groupMemberJoined:
+      case NotificationKind.groupMemberJoined || NotificationKind.groupInvited:
+        // Migration 0097: an invitation stores the league and who
+        // invited in the same columns as a join.
         final groupResult = GroupId.tryParse(row['group_id']?.toString());
         if (groupResult is Err<GroupId>) {
           return Result.err(_corrupt('group_id', groupResult.error.message));
@@ -395,11 +397,18 @@ SELECT count(*) AS marked FROM marked
             _corrupt('actor_user_id', actorResult.error.message),
           );
         }
+        final GroupId groupId = (groupResult as Ok<GroupId>).value;
+        final UserId actorUserId = (actorResult as Ok<UserId>).value;
         return Result.ok(
-          NotificationSubject.groupMemberJoined(
-            groupId: (groupResult as Ok<GroupId>).value,
-            actorUserId: (actorResult as Ok<UserId>).value,
-          ),
+          kind == NotificationKind.groupInvited
+              ? NotificationSubject.groupInvited(
+                  groupId: groupId,
+                  actorUserId: actorUserId,
+                )
+              : NotificationSubject.groupMemberJoined(
+                  groupId: groupId,
+                  actorUserId: actorUserId,
+                ),
         );
       case NotificationKind.reactionReceived:
         final groupResult = GroupId.tryParse(row['group_id']?.toString());

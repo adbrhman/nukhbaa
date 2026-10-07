@@ -10,7 +10,6 @@ import 'dart:async';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
@@ -20,6 +19,7 @@ import '../../groups/create_group_screen.dart';
 import '../../groups/groups_providers.dart';
 import '../../groups/join_group_screen.dart';
 import '../../groups/league_invite.dart';
+import '../../groups/league_invite_sheet.dart';
 import 'fixture_standings_board.dart';
 
 /// The tab's body for the month contest [seasonId].
@@ -55,9 +55,8 @@ class _FriendsLeagueBoardState extends ConsumerState<FriendsLeagueBoard> {
     if (mounted) ref.invalidate(myGroupsProvider);
   }
 
-  Future<void> _invite(GroupDto group) async {
-    await SharePlus.instance.share(ShareParams(text: leagueShareText(group)));
-  }
+  /// By the link, or by finding a player by name (decided 2026-10-07).
+  Future<void> _invite(GroupDto group) => showLeagueInviteSheet(context, group);
 
   @override
   Widget build(BuildContext context) {

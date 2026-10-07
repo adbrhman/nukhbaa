@@ -24,6 +24,7 @@ export 'src/football_data/postgres_league_repository.dart';
 export 'src/football_data/postgres_provider_sync_store.dart';
 export 'src/football_data/postgres_team_repository.dart';
 export 'src/football_data/cached_team_repository.dart';
+export 'src/group/postgres_group_invitation_repository.dart';
 export 'src/group/postgres_group_repository.dart';
 export 'src/identity/auth_config.dart';
 export 'src/identity/jwks_client.dart';

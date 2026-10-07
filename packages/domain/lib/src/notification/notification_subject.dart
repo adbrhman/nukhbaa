@@ -136,6 +136,18 @@ final class NotificationSubject {
     actorUserId: actorUserId,
   );
 
+  /// The subject of a `groupInvited` notification -- the league and the
+  /// member who invited the recipient to it (migration 0097). One per
+  /// league and inviter.
+  static NotificationSubject groupInvited({
+    required GroupId groupId,
+    required UserId actorUserId,
+  }) => NotificationSubject._(
+    kind: NotificationKind.groupInvited,
+    groupId: groupId,
+    actorUserId: actorUserId,
+  );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -179,6 +191,8 @@ final class NotificationSubject {
       'duel_accepted:${duelChallengeId!.value}:${actorUserId!.value}',
     NotificationKind.predictionReaction =>
       'prediction_reaction:${fixture!.value}:${actorUserId!.value}',
+    NotificationKind.groupInvited =>
+      'group_invited:${groupId!.value}:${actorUserId!.value}',
   };
 
   @override

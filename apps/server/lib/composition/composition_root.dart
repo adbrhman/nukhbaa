@@ -88,6 +88,9 @@ final class CompositionRoot {
     required this.createGroup,
     required this.getGroup,
     required this.joinGroupByInvite,
+    required this.inviteToGroup,
+    required this.respondToGroupInvitation,
+    required this.listMyGroupInvitations,
     required this.renameGroup,
     required this.regenerateInvite,
     required this.listGroupMembers,
@@ -268,6 +271,9 @@ final class CompositionRoot {
     CreateGroup? createGroup,
     GetGroup? getGroup,
     JoinGroupByInvite? joinGroupByInvite,
+    InviteToGroup? inviteToGroup,
+    RespondToGroupInvitation? respondToGroupInvitation,
+    ListMyGroupInvitations? listMyGroupInvitations,
     RenameGroup? renameGroup,
     RegenerateInvite? regenerateInvite,
     ListGroupMembers? listGroupMembers,
@@ -455,6 +461,11 @@ final class CompositionRoot {
        createGroup = createGroup ?? _absentCreateGroup(),
        getGroup = getGroup ?? _absentGetGroup(),
        joinGroupByInvite = joinGroupByInvite ?? _absentJoinGroupByInvite(),
+       inviteToGroup = inviteToGroup ?? _absentInviteToGroup(),
+       respondToGroupInvitation =
+           respondToGroupInvitation ?? _absentRespondToGroupInvitation(),
+       listMyGroupInvitations =
+           listMyGroupInvitations ?? _absentListMyGroupInvitations(),
        renameGroup = renameGroup ?? _absentRenameGroup(),
        regenerateInvite = regenerateInvite ?? _absentRegenerateInvite(),
        listGroupMembers = listGroupMembers ?? _absentListGroupMembers(),
@@ -1068,6 +1079,35 @@ final class CompositionRoot {
     idGenerator: _unwiredIdGenerator,
     clock: _unwiredClock,
   );
+
+  /// Backs the "absent" invitation use-cases (0097): loud if a test
+  /// reaches them.
+  static final GroupInvitationRepository _unwiredGroupInvitations =
+      _UnwiredGroupInvitationRepository();
+
+  static InviteToGroup _absentInviteToGroup() => InviteToGroup(
+    groups: _unwiredGroupRepository,
+    invitations: _unwiredGroupInvitations,
+    notify: CreateNotification(
+      notifications: _unwiredNotificationRepository,
+      idGenerator: _unwiredIdGenerator,
+      clock: _unwiredClock,
+    ),
+    sender: const NoopPushSender(),
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
+  static RespondToGroupInvitation _absentRespondToGroupInvitation() =>
+      RespondToGroupInvitation(
+        invitations: _unwiredGroupInvitations,
+        groups: _unwiredGroupRepository,
+        join: _absentJoinGroupByInvite(),
+        clock: _unwiredClock,
+      );
+
+  static ListMyGroupInvitations _absentListMyGroupInvitations() =>
+      ListMyGroupInvitations(invitations: _unwiredGroupInvitations);
 
   static RenameGroup _absentRenameGroup() =>
       RenameGroup(repository: _unwiredGroupRepository);
@@ -1842,6 +1882,17 @@ final class CompositionRoot {
   /// Joins a group via its shareable invite code (any authenticated user;
   /// zero-friction instant join, idempotent — Groups decision #2/#3).
   final JoinGroupByInvite joinGroupByInvite;
+
+  /// A member invites a player found by name to a friends' league (backs
+  /// `POST /groups/{id}/invitations`, migration 0097).
+  final InviteToGroup inviteToGroup;
+
+  /// The invited player accepts (joins) or declines (backs
+  /// `POST /groups/invitations/{id}/accept|decline`).
+  final RespondToGroupInvitation respondToGroupInvitation;
+
+  /// The caller's own invitations (backs `GET /groups/invitations`).
+  final ListMyGroupInvitations listMyGroupInvitations;
 
   /// Renames a group (owner-only, per-group `GroupRole` gate in the use-case —
   /// Groups decision #2).
@@ -2997,6 +3048,31 @@ final class CompositionRoot {
         repository: groupRepository,
         idGenerator: idGenerator,
         clock: clock,
+      ),
+      inviteToGroup: InviteToGroup(
+        groups: groupRepository,
+        invitations: PostgresGroupInvitationRepository(connection),
+        notify: CreateNotification(
+          notifications: notificationRepository,
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        sender: pushSender,
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      respondToGroupInvitation: RespondToGroupInvitation(
+        invitations: PostgresGroupInvitationRepository(connection),
+        groups: groupRepository,
+        join: JoinGroupByInvite(
+          repository: groupRepository,
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        clock: clock,
+      ),
+      listMyGroupInvitations: ListMyGroupInvitations(
+        invitations: PostgresGroupInvitationRepository(connection),
       ),
       renameGroup: RenameGroup(repository: groupRepository),
       regenerateInvite: RegenerateInvite(
@@ -4158,6 +4234,46 @@ final class _UnwiredDuelRecordReader implements DuelRecordReader {
   @override
   Future<Result<Map<ParticipantId, int>>> winsInSeason(SeasonId seasonId) =>
       throw StateError('ListSeasonDuelWins was not wired into this test root');
+}
+
+/// Refuses every call: see [_absentInviteToGroup].
+final class _UnwiredGroupInvitationRepository
+    implements GroupInvitationRepository {
+  static Never _unwired() => throw StateError(
+    'A group-invitation use-case was not wired into this test root',
+  );
+
+  @override
+  Future<Result<bool>> createIfAbsent({
+    required String id,
+    required GroupId groupId,
+    required UserId inviter,
+    required UserId invitee,
+    required DateTime createdAt,
+  }) => _unwired();
+
+  @override
+  Future<Result<GroupInvitation?>> findForInvitee({
+    required String id,
+    required UserId invitee,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> respond({
+    required String id,
+    required UserId invitee,
+    required GroupInvitationStatus status,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<GroupInvitation>>> listForInvitee(
+    UserId invitee, {
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<GroupInviteePush>> pushTargetOf(UserId user) => _unwired();
 }
 
 /// Refuses every call: see [_absentReactToPrediction].
