@@ -99,6 +99,10 @@ import '../fixture_prediction_submission.dart';
 import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
 
+/// Fewest decisive predictions a win share is shown for: over one call a
+/// share read "100%", a verdict it is not (decided 2026-10-07).
+const int minShareSample = 5;
+
 /// The server's refusal of a second double on the same day.
 const String _dailyDoubleExceededCode = 'prediction.daily_double_exceeded';
 
@@ -470,6 +474,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // (an older build); nobody having predicted is a real 0.
     final int homeWinShare = widget.item.homeWinPercentage ?? 0;
     final int awayWinShare = widget.item.awayWinPercentage ?? 0;
+    // An older server sends no count, and the shares show as before.
+    final int? decisive = widget.item.decisivePredictions;
+    final bool showShares = decisive == null || decisive >= minShareSample;
     // The check between the steppers means "this exact pick is saved".
     // Include the double flag so changing it also requires server
     // confirmation. Takes home/away explicitly so it can be re-evaluated
@@ -607,10 +614,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       Expanded(
-                        child: _WinPercentage(
-                          percentage: homeWinShare,
-                          teamName: home.displayName,
-                        ),
+                        child: showShares
+                            ? _WinPercentage(
+                                percentage: homeWinShare,
+                                teamName: home.displayName,
+                              )
+                            : const SizedBox.shrink(),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       if (showEditableControls)
@@ -649,10 +658,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                         ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: _WinPercentage(
-                          percentage: awayWinShare,
-                          teamName: away.displayName,
-                        ),
+                        child: showShares
+                            ? _WinPercentage(
+                                percentage: awayWinShare,
+                                teamName: away.displayName,
+                              )
+                            : const SizedBox.shrink(),
                       ),
                     ],
                   ),
@@ -849,27 +860,45 @@ class _CompetitionLogo extends StatelessWidget {
 
   static const double _size = 16;
 
+  /// A logo is drawn whole, a little smaller, on a light disc: logos are
+  /// made for light backgrounds (Ligue 1's black mark vanished on the navy
+  /// card) and the round clip cut the tall ones (2026-10-07).
+  static const double _logoSize = 14;
+  static const double _plateSize = 22;
+
+  Widget _plate(Widget logo) => Container(
+    key: const Key('competitionLogo.plate'),
+    width: _plateSize,
+    height: _plateSize,
+    alignment: Alignment.center,
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      shape: BoxShape.circle,
+    ),
+    child: logo,
+  );
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final String? url = logoUrl;
     if (url != null && url.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
+      return _plate(
+        Image.network(
           url,
-          width: _size,
-          height: _size,
+          width: _logoSize,
+          height: _logoSize,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => _fallback(tokens),
         ),
       );
     }
     if (assetPath != null) {
-      return ClipOval(
-        child: Image.asset(
+      return _plate(
+        Image.asset(
           assetPath!,
-          width: _size,
-          height: _size,
+          width: _logoSize,
+          height: _logoSize,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => _fallback(tokens),
         ),

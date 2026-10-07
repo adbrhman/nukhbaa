@@ -1,0 +1,42 @@
+import 'package:contracts/contracts.dart';
+import 'package:test/test.dart';
+
+const _card = SeasonFixtureCardDto(
+  seasonId: 's-1',
+  fixtureId: 'f-1',
+  homeTeam: 'Arsenal',
+  awayTeam: 'Chelsea',
+  kickoffAt: '2026-10-09T14:00:00.000Z',
+);
+
+void main() {
+  test('the decisive-call count survives a JSON round trip', () {
+    const dto = CurrentMonthFixtureItemDto(
+      competitionId: 'c-1',
+      competitionName: 'PL',
+      seasonLabel: '10/2026',
+      fixture: _card,
+      homeWinPercentage: 60,
+      awayWinPercentage: 40,
+      decisivePredictions: 5,
+    );
+
+    final back = CurrentMonthFixtureItemDto.fromJson(dto.toJson());
+    expect(back, dto);
+    expect(back.decisivePredictions, 5);
+  });
+
+  test('an older payload without the count decodes it as null', () {
+    final dto = CurrentMonthFixtureItemDto.fromJson({
+      'schema_version': 3,
+      'competition_id': 'c-1',
+      'competition_name': 'PL',
+      'season_label': '10/2026',
+      'fixture': _card.toJson(),
+      'home_win_percentage': 100,
+      'away_win_percentage': 0,
+    });
+
+    expect(dto.decisivePredictions, isNull);
+  });
+}

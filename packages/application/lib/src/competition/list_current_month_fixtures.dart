@@ -28,6 +28,7 @@ final class CurrentMonthFixtureEntry {
     this.awayWinPercentage,
     this.resultHomeGoals,
     this.resultAwayGoals,
+    this.decisivePredictions,
   });
 
   /// The owning competition's identity.
@@ -59,6 +60,10 @@ final class CurrentMonthFixtureEntry {
   /// The recorded away goals, same meaning as [resultHomeGoals].
   final int? resultAwayGoals;
 
+  /// How many predictions the shares stand on (draws excluded), or `null`
+  /// when the feed was built without a tally reader.
+  final int? decisivePredictions;
+
   @override
   bool operator ==(Object other) =>
       other is CurrentMonthFixtureEntry &&
@@ -69,7 +74,8 @@ final class CurrentMonthFixtureEntry {
       other.homeWinPercentage == homeWinPercentage &&
       other.awayWinPercentage == awayWinPercentage &&
       other.resultHomeGoals == resultHomeGoals &&
-      other.resultAwayGoals == resultAwayGoals;
+      other.resultAwayGoals == resultAwayGoals &&
+      other.decisivePredictions == decisivePredictions;
 
   @override
   int get hashCode => Object.hash(
@@ -81,6 +87,7 @@ final class CurrentMonthFixtureEntry {
     awayWinPercentage,
     resultHomeGoals,
     resultAwayGoals,
+    decisivePredictions,
   );
 
   @override
@@ -267,6 +274,10 @@ final class ListCurrentMonthFixtures {
             awayWinPercentage: tallyReader == null
                 ? null
                 : (tallies[fixture.value]?.awayWinPercentage ?? 0),
+            decisivePredictions: tallyReader == null
+                ? null
+                : (tallies[fixture.value]?.homeWins ?? 0) +
+                      (tallies[fixture.value]?.awayWins ?? 0),
             resultHomeGoals: results[fixture.value]?.homeGoals,
             resultAwayGoals: results[fixture.value]?.awayGoals,
             fixture: SeasonFixtureCard(

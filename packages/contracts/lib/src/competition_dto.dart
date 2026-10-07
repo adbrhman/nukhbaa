@@ -804,6 +804,7 @@ final class CurrentMonthFixtureItemDto {
     this.liveFinished,
     this.resultHomeGoals,
     this.resultAwayGoals,
+    this.decisivePredictions,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -825,6 +826,7 @@ final class CurrentMonthFixtureItemDto {
       liveFinished: json['live_finished'] as bool?,
       resultHomeGoals: json['result_home_goals'] as int?,
       resultAwayGoals: json['result_away_goals'] as int?,
+      decisivePredictions: json['decisive_predictions'] as int?,
     );
   }
 
@@ -876,6 +878,11 @@ final class CurrentMonthFixtureItemDto {
   /// The recorded away goals, same meaning as [resultHomeGoals].
   final int? resultAwayGoals;
 
+  /// How many predictions the win shares stand on (draws excluded), or
+  /// `null` from an older server; a client shows the shares only from a
+  /// handful up.
+  final int? decisivePredictions;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -894,6 +901,7 @@ final class CurrentMonthFixtureItemDto {
     'live_finished': liveFinished,
     'result_home_goals': resultHomeGoals,
     'result_away_goals': resultAwayGoals,
+    'decisive_predictions': decisivePredictions,
   };
 
   @override
@@ -911,6 +919,7 @@ final class CurrentMonthFixtureItemDto {
       other.liveFinished == liveFinished &&
       other.resultHomeGoals == resultHomeGoals &&
       other.resultAwayGoals == resultAwayGoals &&
+      other.decisivePredictions == decisivePredictions &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -927,6 +936,7 @@ final class CurrentMonthFixtureItemDto {
     liveFinished,
     resultHomeGoals,
     resultAwayGoals,
+    decisivePredictions,
     schemaVersion,
   );
 }
