@@ -46,6 +46,10 @@ Future<Response> _list(RequestContext context, String id) async {
   final result = await root.browseSeasonFixtures(
     principal: principal,
     seasonId: id,
+    // Honoured for an admin only (the admin panel's fixture list); a
+    // player never receives a hidden fixture (migration 0098).
+    includeHidden:
+        context.request.uri.queryParameters['include_hidden'] == 'true',
   );
 
   return switch (result) {

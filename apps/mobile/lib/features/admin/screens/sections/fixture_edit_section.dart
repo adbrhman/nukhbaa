@@ -22,8 +22,19 @@ import '../../widgets/team_picker_aliases.dart';
 /// كانت بطاقة أسفل شاشة الإضافة تشاركها منتقي المسابقة. صارت مستقلة
 /// ومفتاحها الشهر لا المسابقة، تمامًا كشاشة الإضافة.
 class FixtureEditSection extends ConsumerStatefulWidget {
-  /// ينشئ القسم.
-  const FixtureEditSection({super.key});
+  /// ينشئ القسم. [initialSeasonId] و[initialFixture] يفتحانه على مباراة
+  /// بعينها (زر «تعديل» في قائمة «المباريات»).
+  const FixtureEditSection({
+    super.key,
+    this.initialSeasonId,
+    this.initialFixture,
+  });
+
+  /// The month the form opens on.
+  final String? initialSeasonId;
+
+  /// The fixture the form opens on, already filled in.
+  final SeasonFixtureCardDto? initialFixture;
 
   @override
   ConsumerState<FixtureEditSection> createState() => _FixtureEditSectionState();
@@ -54,6 +65,27 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
 
   /// The league name shown on the selected fixture, for context only.
   String? _currentLeagueName;
+
+  @override
+  void initState() {
+    super.initState();
+    _seasonId = widget.initialSeasonId;
+    final SeasonFixtureCardDto? fixture = widget.initialFixture;
+    if (fixture != null) _fill(fixture);
+  }
+
+  /// Fills the form from [fixture], as picking it from the list does.
+  void _fill(SeasonFixtureCardDto fixture) {
+    _fixtureId = fixture.fixtureId;
+    _homeTeamController.text = fixture.homeTeam ?? '';
+    _awayTeamController.text = fixture.awayTeam ?? '';
+    _homeTeamId = fixture.homeTeamId;
+    _awayTeamId = fixture.awayTeamId;
+    _kickoffLocal = DateTime.tryParse(fixture.kickoffAt ?? '')?.toLocal();
+    _currentLeagueName = fixture.leagueName;
+    _leagueId = null;
+    _isContinentalLeague = false;
+  }
 
   @override
   void dispose() {
@@ -148,19 +180,8 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   seasonId: _seasonId!,
                   enabled: !inFlight,
                   selectedId: _fixtureId,
-                  onSelected: (SeasonFixtureCardDto fixture) => setState(() {
-                    _fixtureId = fixture.fixtureId;
-                    _homeTeamController.text = fixture.homeTeam ?? '';
-                    _awayTeamController.text = fixture.awayTeam ?? '';
-                    _homeTeamId = fixture.homeTeamId;
-                    _awayTeamId = fixture.awayTeamId;
-                    _kickoffLocal = DateTime.tryParse(
-                      fixture.kickoffAt ?? '',
-                    )?.toLocal();
-                    _currentLeagueName = fixture.leagueName;
-                    _leagueId = null;
-                    _isContinentalLeague = false;
-                  }),
+                  onSelected: (SeasonFixtureCardDto fixture) =>
+                      setState(() => _fill(fixture)),
                 ),
               ],
               if (_fixtureId != null) ...[

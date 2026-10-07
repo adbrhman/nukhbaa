@@ -1,5 +1,6 @@
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/competition/fixture_visibility.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
@@ -41,6 +42,10 @@ import 'package:shared/shared.dart';
 ///    already-double fixture on amend never double-counts
 ///    (`prediction.daily_double_exceeded`). Only checked when [isDouble] is
 ///    true.
+/// 5. **The fixture is available to the caller** (migration 0098): nobody
+///    predicts a hidden fixture, and only an admin predicts a test fixture
+///    (`prediction.fixture_unavailable`). A test prediction feeds no
+///    gamification: no placement, no daily challenge, no streak bonus.
 ///
 /// **Idempotent**: a first call for `(fixture, participant)` inserts; a
 /// repeat call amends the existing prediction in place — one row per
@@ -171,7 +176,11 @@ final class SubmitFixturePrediction {
         ),
       );
     }
-    final kickoffAt = schedules.first.kickoffAt;
+    final schedule = schedules.first;
+    if (!FixtureVisibility.playable(principal, schedule)) {
+      return const Result.err(FixtureVisibility.unavailable);
+    }
+    final kickoffAt = schedule.kickoffAt;
 
     final lockResult = FixtureLock.at(kickoffAt: kickoffAt, nowUtc: now);
     if (lockResult is Err<FixtureLock>) {
@@ -238,11 +247,12 @@ final class SubmitFixturePrediction {
       awayGoals,
       isDouble,
       now,
+      recordPlacement: !schedule.isTest,
     );
     // Only a first-time submission can change coverage: an amend rewrites a
     // score the participant already had, so the day is exactly as complete
-    // as it was a moment ago.
-    if (inserted is Ok<FixturePredictionView>) {
+    // as it was a moment ago. A test fixture is no part of any day.
+    if (inserted is Ok<FixturePredictionView> && !schedule.isTest) {
       final completedDay = await _recordDailyProgress(
         userId: principal.userId,
         participantId: participant.id,
@@ -384,8 +394,9 @@ final class SubmitFixturePrediction {
     int homeGoals,
     int awayGoals,
     bool isDouble,
-    DateTime now,
-  ) async {
+    DateTime now, {
+    bool recordPlacement = true,
+  }) async {
     final idResult = PredictionId.tryParse(_idGenerator.newUuid());
     if (idResult is Err<PredictionId>) {
       return Result.err(idResult.error);
@@ -406,7 +417,7 @@ final class SubmitFixturePrediction {
     final prediction = (predictionResult as Ok<FixturePrediction>).value;
 
     final saved = await _fixturePredictions.save(prediction, now);
-    if (saved is Ok<void>) {
+    if (saved is Ok<void> && recordPlacement) {
       // Tier-3: a first-time placement is recorded for the gamification
       // stream, and its failure never fails the prediction that caused it.
       await _recordPlacement(userId, prediction, now);

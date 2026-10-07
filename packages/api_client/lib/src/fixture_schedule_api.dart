@@ -41,6 +41,7 @@ final class FixtureScheduleApi {
     String? homeTeamId,
     String? awayTeamId,
     String? leagueId,
+    bool isTest = false,
   }) {
     return _transport.postObject<FixtureScheduleDto>(
       '/fixtures',
@@ -51,6 +52,7 @@ final class FixtureScheduleApi {
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
         leagueId: leagueId,
+        isTest: isTest,
       ).toJson(),
       parse: FixtureScheduleDto.fromJson,
     );

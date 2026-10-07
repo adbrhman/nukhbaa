@@ -65,6 +65,8 @@ candidates AS (
   FROM competition.fixture_schedules s
   WHERE s.kickoff_at >= @from::timestamptz
     AND s.kickoff_at < @to::timestamptz
+    -- A test fixture is never the real match a provider reports (0098).
+    AND NOT s.is_test
 )
 SELECT c.fixture_id::text AS fixture_id
 FROM candidates c, target t

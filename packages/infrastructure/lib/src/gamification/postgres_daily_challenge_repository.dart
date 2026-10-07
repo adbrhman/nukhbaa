@@ -36,6 +36,9 @@ LEFT JOIN prediction.fixture_predictions fp
  AND fp.participant_id = @participant_id
 WHERE sf.season_id = @season_id
   AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = @day::date
+  -- Hidden and test fixtures are no part of a player's day (0098).
+  AND fs.hidden_at IS NULL
+  AND NOT fs.is_test
 ''';
 
   @override

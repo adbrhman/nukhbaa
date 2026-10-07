@@ -84,6 +84,8 @@ abstract final class ErrorPresenter {
         return 'لست مشاركًا في هذا الموسم، لذلك لا يظهر لك ترتيبه.';
       case 'prediction.fixture_locked':
         return 'انطلقت المباراة، ولم يعد التوقع متاحًا.';
+      case 'prediction.fixture_unavailable':
+        return 'هذه المباراة غير متاحة الآن.';
       case 'prediction.daily_double_exceeded':
         return 'يمكنك مضاعفة النقاط في مباراة واحدة فقط كل يوم.';
       case 'prediction.fixture_not_scheduled':

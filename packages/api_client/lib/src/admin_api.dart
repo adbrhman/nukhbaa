@@ -106,6 +106,23 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/fixture-visibility` -- hides [fixtureIds] from the
+  /// players ([hidden] true) or shows them again (migration 0098); answers
+  /// the fixtures whose state changed.
+  Future<Result<FixtureVisibilityResultDto>> setFixturesHidden({
+    required List<String> fixtureIds,
+    required bool hidden,
+  }) {
+    return _transport.postObject<FixtureVisibilityResultDto>(
+      '/admin/fixture-visibility',
+      body: FixtureVisibilityRequestDto(
+        fixtureIds: fixtureIds,
+        hidden: hidden,
+      ).toJson(),
+      parse: FixtureVisibilityResultDto.fromJson,
+    );
+  }
+
   /// `GET /admin/duplicate-names` -- every display name more than one
   /// account carries, each with those accounts.
   Future<Result<DuplicateNamesDto>> duplicateNames() {

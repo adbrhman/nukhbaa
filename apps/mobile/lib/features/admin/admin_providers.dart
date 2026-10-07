@@ -52,6 +52,64 @@ final adminRetentionProvider = FutureProvider<AdminRetentionDto>((ref) async {
   return _unwrap(await ref.watch(adminApiProvider).retention());
 }, retry: (_, _) => null);
 
+/// Every fixture of month [seasonId] as the admin panel needs it: hidden
+/// ones too, each flagged (`GET /seasons/{id}/fixtures?include_hidden=true`,
+/// migration 0098). The players' read, [seasonFixturesProvider], never
+/// carries a hidden fixture. A plain provider: no code generation.
+final adminSeasonFixturesProvider =
+    FutureProvider.family<List<SeasonFixtureCardDto>, String>((
+      ref,
+      seasonId,
+    ) async {
+      return _unwrap(
+        await ref
+            .watch(competitionApiProvider)
+            .browseSeasonFixtures(seasonId, includeHidden: true),
+      );
+    });
+
+/// Hides fixtures from the players or shows them again
+/// (`POST /admin/fixture-visibility`, migration 0098): one fixture from its
+/// row, or a whole selection at once. Hand-written (no code generation).
+/// The state is the last answer: which fixtures changed and to what.
+class FixtureVisibilityController
+    extends Notifier<AsyncValue<FixtureVisibilityResultDto>?> {
+  @override
+  AsyncValue<FixtureVisibilityResultDto>? build() => null;
+
+  /// Hides ([hidden] true) or shows [fixtureIds], all filed under month
+  /// [seasonId], then refreshes every read that lists them.
+  Future<void> setHidden({
+    required String seasonId,
+    required List<String> fixtureIds,
+    required bool hidden,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await ref
+        .read(adminApiProvider)
+        .setFixturesHidden(fixtureIds: fixtureIds, hidden: hidden);
+    state = switch (result) {
+      Ok<FixtureVisibilityResultDto>(:final value) => AsyncValue.data(value),
+      Err<FixtureVisibilityResultDto>(:final error) => AsyncValue.error(
+        error,
+        StackTrace.current,
+      ),
+    };
+    if (result is Ok<FixtureVisibilityResultDto>) {
+      ref.invalidate(adminSeasonFixturesProvider(seasonId));
+      ref.invalidate(seasonFixturesProvider(seasonId));
+      ref.invalidate(currentMonthFixturesProvider);
+    }
+  }
+}
+
+/// The admin's hide/show command; see [FixtureVisibilityController].
+final fixtureVisibilityControllerProvider =
+    NotifierProvider.autoDispose<
+      FixtureVisibilityController,
+      AsyncValue<FixtureVisibilityResultDto>?
+    >(FixtureVisibilityController.new);
+
 /// Current-month fixtures whose server-side per-fixture score projection is
 /// non-empty. This is intentionally lazy: it runs only when the admin opens
 /// the "المباريات المحتسبة" section, keeping the main dashboard fast.
@@ -428,6 +486,7 @@ class FixtureScheduleController extends _$FixtureScheduleController {
     _apply(result);
     if (state is AsyncData<FixtureScheduleDto>) {
       ref.invalidate(seasonFixturesProvider(seasonId));
+      ref.invalidate(adminSeasonFixturesProvider(seasonId));
       ref.invalidate(currentMonthFixturesProvider);
     }
   }
@@ -633,6 +692,7 @@ class RemoveFixtureController extends _$RemoveFixtureController {
 
     // نفس الإبطالين اللذين يجريهما AddMatchController، بالاتجاه المعاكس.
     ref.invalidate(seasonFixturesProvider(seasonId));
+    ref.invalidate(adminSeasonFixturesProvider(seasonId));
     ref.invalidate(currentMonthFixturesProvider);
   }
 }
@@ -672,6 +732,7 @@ class AddMatchController extends _$AddMatchController {
     String? homeTeamId,
     String? awayTeamId,
     String? leagueId,
+    bool isTest = false,
   }) async {
     state = const AsyncValue.loading();
 
@@ -683,6 +744,7 @@ class AddMatchController extends _$AddMatchController {
       homeTeamId: homeTeamId,
       awayTeamId: awayTeamId,
       leagueId: leagueId,
+      isTest: isTest,
     );
     if (registerResult is Err<FixtureScheduleDto>) {
       state = AsyncValue.error(registerResult.error, StackTrace.current);
@@ -706,6 +768,7 @@ class AddMatchController extends _$AddMatchController {
 
     // حدّث قائمة مباريات الموسم حتى يُحسب displayOrder التالي تلقائياً.
     ref.invalidate(seasonFixturesProvider(seasonId));
+    ref.invalidate(adminSeasonFixturesProvider(seasonId));
     ref.invalidate(currentMonthFixturesProvider);
   }
 }

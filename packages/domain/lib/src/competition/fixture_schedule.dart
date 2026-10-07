@@ -25,8 +25,10 @@ final class FixtureSchedule {
     this.homeTeamId,
     this.awayTeamId,
     this.leagueId,
+    this.isTest = false,
   }) : leagueName = null,
-       leagueLogoUrl = null;
+       leagueLogoUrl = null,
+       hiddenAt = null;
 
   /// Rebuilds a stored schedule.
   ///
@@ -47,8 +49,13 @@ final class FixtureSchedule {
     this.leagueId,
     this.leagueName,
     this.leagueLogoUrl,
+    this.isTest = false,
+    this.hiddenAt,
   });
 
+  /// [isTest] marks a test fixture (migration 0098): admins only, never
+  /// scored. It is chosen here, at registration, and the database refuses
+  /// to change it afterwards.
   static Result<FixtureSchedule> create({
     required FixtureRef fixture,
     required String homeTeam,
@@ -57,6 +64,7 @@ final class FixtureSchedule {
     TeamRef? homeTeamId,
     TeamRef? awayTeamId,
     LeagueRef? leagueId,
+    bool isTest = false,
   }) {
     final trimmedHome = homeTeam.trim();
     final trimmedAway = awayTeam.trim();
@@ -87,6 +95,7 @@ final class FixtureSchedule {
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
         leagueId: leagueId,
+        isTest: isTest,
       ),
     );
   }
@@ -124,6 +133,18 @@ final class FixtureSchedule {
   /// The league's logo URL, same nullability and provenance as [leagueName].
   final String? leagueLogoUrl;
 
+  /// Whether this is a test fixture (migration 0098): only admins see and
+  /// predict it, and it is never scored, so it reaches no board.
+  final bool isTest;
+
+  /// When an admin hid this fixture from players, or `null` while it is
+  /// visible (migration 0098). Read-only here: hiding is its own command,
+  /// never part of a schedule correction.
+  final DateTime? hiddenAt;
+
+  /// Whether an admin has hidden this fixture.
+  bool get isHidden => hiddenAt != null;
+
   @override
   bool operator ==(Object other) =>
       other is FixtureSchedule &&
@@ -135,7 +156,9 @@ final class FixtureSchedule {
       other.awayTeamId == awayTeamId &&
       other.leagueId == leagueId &&
       other.leagueName == leagueName &&
-      other.leagueLogoUrl == leagueLogoUrl;
+      other.leagueLogoUrl == leagueLogoUrl &&
+      other.isTest == isTest &&
+      other.hiddenAt == hiddenAt;
 
   @override
   int get hashCode => Object.hash(
@@ -148,6 +171,8 @@ final class FixtureSchedule {
     leagueId,
     leagueName,
     leagueLogoUrl,
+    isTest,
+    hiddenAt,
   );
 
   @override

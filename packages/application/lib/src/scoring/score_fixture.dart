@@ -1,3 +1,5 @@
+import 'package:application/src/competition/fixture_visibility.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/competition/ports/ruleset_provider.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/notification/notify_fixture_winners.dart';
@@ -41,6 +43,11 @@ import 'package:shared/shared.dart';
 /// re-persists it without creating duplicates (one score per
 /// `(fixture, participant)`).
 ///
+/// **Hidden and test fixtures** (migration 0098) are not scored: the call
+/// succeeds with no scores, persists nothing and notifies nobody. A hidden
+/// fixture is scored once it is shown again (the rescore sweep finds it); a
+/// test fixture never is. Applied when the schedule repository is wired.
+///
 /// Never throws; returns a typed [Result] carrying the scored
 /// [ParticipantFixtureScore]s.
 final class ScoreFixture {
@@ -51,11 +58,13 @@ final class ScoreFixture {
     required FixtureScoreRepository scoreRepository,
     required RulesetProvider rulesetProvider,
     NotifyFixtureWinners? winnerNotifier,
+    FixtureScheduleRepository? fixtureScheduleRepository,
   }) : _fixturePredictions = fixturePredictionRepository,
        _results = resultRepository,
        _scores = scoreRepository,
        _rulesetProvider = rulesetProvider,
-       _winnerNotifier = winnerNotifier;
+       _winnerNotifier = winnerNotifier,
+       _schedules = fixtureScheduleRepository;
 
   final FixturePredictionRepository _fixturePredictions;
   final FixtureResultRepository _results;
@@ -65,6 +74,9 @@ final class ScoreFixture {
   /// Optional Tier-3 announcer. Null in the test roots and in any composition
   /// that has no push transport; scoring behaves identically either way.
   final NotifyFixtureWinners? _winnerNotifier;
+
+  /// Optional: without it every fixture is scored, as before 0098.
+  final FixtureScheduleRepository? _schedules;
 
   /// Scores fixture [fixtureId] on behalf of admin [principal].
   Future<Result<List<ParticipantFixtureScore>>> call({
@@ -81,6 +93,19 @@ final class ScoreFixture {
       return Result.err(fixtureRefResult.error);
     }
     final fixture = (fixtureRefResult as Ok<FixtureRef>).value;
+
+    final schedules = _schedules;
+    if (schedules != null) {
+      final scheduleResult = await schedules.findByFixture(fixture);
+      if (scheduleResult is Err<FixtureSchedule?>) {
+        return Result.err(scheduleResult.error);
+      }
+      if (!FixtureVisibility.scorable(
+        (scheduleResult as Ok<FixtureSchedule?>).value,
+      )) {
+        return const Result.ok(<ParticipantFixtureScore>[]);
+      }
+    }
 
     final snapshotResult = await _rulesetProvider.currentSnapshotFor(
       FormatType.footballScoreline,

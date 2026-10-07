@@ -35,6 +35,10 @@ final class CachedFixtureScheduleRepository
     return result;
   }
 
+  /// Drops every cached answer: a fixture was hidden or shown (migration
+  /// 0098), a change that does not go through [upsert].
+  void forget() => _batches.clear();
+
   @override
   Future<Result<FixtureSchedule?>> findByFixture(FixtureRef fixture) =>
       _inner.findByFixture(fixture);

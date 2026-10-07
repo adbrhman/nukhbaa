@@ -92,6 +92,8 @@ String _actionLabel(String action) => switch (action) {
   'fixture_predictions_viewed' => 'عرض توقعات مباراة',
   'user_renamed' => 'تعديل اسم مستخدم',
   'error_updated' => 'تعديل خطأ في سجل الأخطاء',
+  'fixture_hidden' => 'إخفاء مباراة',
+  'fixture_shown' => 'إظهار مباراة',
   _ => action,
 };
 

@@ -159,6 +159,7 @@ final class CompositionRoot {
     required this.listUsers,
     required this.adminGetUserStats,
     required this.adminRenameUser,
+    required this.adminSetFixturesHidden,
     required this.adminListDuplicateNames,
     required this.listAuditLog,
     required this.viewParticipantLedger,
@@ -342,6 +343,7 @@ final class CompositionRoot {
     ListUsers? listUsers,
     AdminGetUserStats? adminGetUserStats,
     AdminRenameUser? adminRenameUser,
+    AdminSetFixturesHidden? adminSetFixturesHidden,
     AdminListDuplicateNames? adminListDuplicateNames,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
@@ -554,6 +556,8 @@ final class CompositionRoot {
        listUsers = listUsers ?? _absentListUsers(),
        adminGetUserStats = adminGetUserStats ?? _absentAdminGetUserStats(),
        adminRenameUser = adminRenameUser ?? _absentAdminRenameUser(),
+       adminSetFixturesHidden =
+           adminSetFixturesHidden ?? _absentAdminSetFixturesHidden(),
        adminListDuplicateNames =
            adminListDuplicateNames ?? _absentAdminListDuplicateNames(),
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
@@ -1545,6 +1549,12 @@ final class CompositionRoot {
     auditRecorder: _absentAuditRecorder(),
   );
 
+  static AdminSetFixturesHidden _absentAdminSetFixturesHidden() =>
+      AdminSetFixturesHidden(
+        store: _UnwiredFixtureVisibilityStore(),
+        auditRecorder: _absentAuditRecorder(),
+      );
+
   static AdminListDuplicateNames _absentAdminListDuplicateNames() =>
       AdminListDuplicateNames(names: _UnwiredDuplicateNameReader());
 
@@ -2170,6 +2180,11 @@ final class CompositionRoot {
   /// Renames a player (`POST /admin/users/{id}/display-name`): admin-only,
   /// mandatory reason, audited; a name another player holds is refused.
   final AdminRenameUser adminRenameUser;
+
+  /// Hides fixtures from the players or shows them again
+  /// (`POST /admin/fixture-visibility`, migration 0098): admin-only,
+  /// audited per fixture; nothing is deleted.
+  final AdminSetFixturesHidden adminSetFixturesHidden;
 
   /// The display names more than one account carries
   /// (`GET /admin/duplicate-names`), admin-only.
@@ -2933,6 +2948,8 @@ final class CompositionRoot {
         resultRepository: fixtureResultRepository,
         scoreRepository: fixtureScoreRepository,
         rulesetProvider: rulesetProvider,
+        // Hidden and test fixtures are not scored (migration 0098).
+        fixtureScheduleRepository: fixtureScheduleRepository,
         // The exact-hit announcement rides the same proven transport as the
         // daily reminder: same FCM sender, same device_tokens table. With no
         // service account configured `pushSender` is the no-op, so scoring
@@ -3114,6 +3131,8 @@ final class CompositionRoot {
         fixtureLedgerRepository: fixtureLedgerRepository,
         idGenerator: idGenerator,
         clock: clock,
+        // A test fixture posts nothing (migration 0098).
+        fixtureScheduleRepository: fixtureScheduleRepository,
       ),
       reactToFixture: ReactToFixture(
         reactions: fixtureReactionRepository,
@@ -3209,6 +3228,15 @@ final class CompositionRoot {
         userDirectory: directory,
         auditRecorder: auditRecorder,
       ),
+      // Every change drops the schedule cache, so the feed stops (or
+      // starts) showing the fixture on its very next read.
+      adminSetFixturesHidden: AdminSetFixturesHidden(
+        store: PostgresFixtureVisibilityStore(
+          connection,
+          onChanged: fixtureScheduleRepository.forget,
+        ),
+        auditRecorder: auditRecorder,
+      ),
       adminListDuplicateNames: AdminListDuplicateNames(
         names: PostgresDuplicateNameReader(connection),
       ),
@@ -3239,6 +3267,8 @@ final class CompositionRoot {
       listMyFixturePredictions: ListMyFixturePredictions(
         fixturePredictionRepository:
             fixturePredictionRepository, // already built
+        // A hidden fixture's prediction waits out of sight (migration 0098).
+        fixtureScheduleRepository: fixtureScheduleRepository,
       ),
       listMyActiveSeasons: ListMyActiveSeasons(
         competitionRepository: competitionRepository,
@@ -3891,6 +3921,16 @@ final class _UnwiredUserAdminRepository implements UserAdminRepository {
 
   @override
   Future<Result<UserCounts>> countUsers() => _unwired();
+}
+
+/// Backs the "absent" [AdminSetFixturesHidden]: throws if a test reaches
+/// it without wiring one.
+final class _UnwiredFixtureVisibilityStore implements FixtureVisibilityStore {
+  @override
+  Future<Result<List<FixtureRef>>> setHidden(
+    List<FixtureRef> fixtures, {
+    required bool hidden,
+  }) => throw StateError('An admin use-case was not wired into this root');
 }
 
 /// Backs the "absent" [AdminListDuplicateNames]: throws if a test reaches

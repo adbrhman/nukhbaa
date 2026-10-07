@@ -26,6 +26,8 @@ WITH open_fixtures AS (
   JOIN competition.fixture_schedules fs ON fs.fixture_id = sf.fixture_id
   WHERE p.status = 'active'
     AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = @today::date
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
     AND NOT EXISTS (
       SELECT 1
       FROM prediction.fixture_predictions fp

@@ -14,6 +14,7 @@ export 'src/common/uuid_invite_code_generator.dart';
 export 'src/competition/configured_ruleset_provider.dart';
 export 'src/competition/postgres_competition_repository.dart';
 export 'src/competition/postgres_fixture_schedule_repository.dart';
+export 'src/competition/postgres_fixture_visibility_store.dart';
 export 'src/competition/cached_fixture_schedule_repository.dart';
 export 'src/db/postgres_config.dart';
 export 'src/db/postgres_connection.dart';

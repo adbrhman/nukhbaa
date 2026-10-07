@@ -27,9 +27,11 @@ final class PostgresFixtureScheduleRepository
   static const String _upsertSql = '''
 INSERT INTO competition.fixture_schedules
   (fixture_id, home_team, away_team, kickoff_at, home_team_id,
-   away_team_id, league_id)
+   away_team_id, league_id, is_test)
 VALUES (@fixture_id, @home_team, @away_team, @kickoff_at, @home_team_id,
-        @away_team_id, @league_id)
+        @away_team_id, @league_id, @is_test)
+-- is_test and hidden_at are never part of the update: the test flag is
+-- fixed at registration and visibility is its own command (0098).
 ON CONFLICT (fixture_id) DO UPDATE SET
   home_team    = EXCLUDED.home_team,
   away_team    = EXCLUDED.away_team,
@@ -55,6 +57,7 @@ ON CONFLICT (fixture_id) DO UPDATE SET
         'home_team_id': schedule.homeTeamId?.value,
         'away_team_id': schedule.awayTeamId?.value,
         'league_id': schedule.leagueId?.value,
+        'is_test': schedule.isTest,
       },
     );
     return switch (inserted) {
@@ -75,7 +78,8 @@ ON CONFLICT (fixture_id) DO UPDATE SET
   static const String _selectByFixtureSql = '''
 SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
        fs.home_team_id, fs.away_team_id, fs.league_id,
-       l.name AS league_name, l.logo_url AS league_logo_url
+       l.name AS league_name, l.logo_url AS league_logo_url,
+       fs.is_test, fs.hidden_at
 FROM competition.fixture_schedules fs
 LEFT JOIN football_data.leagues l ON l.id = fs.league_id
 WHERE fs.fixture_id = @fixture_id
@@ -101,7 +105,8 @@ WHERE fs.fixture_id = @fixture_id
   static const String _selectByFixturesSql = '''
 SELECT fs.fixture_id, fs.home_team, fs.away_team, fs.kickoff_at,
        fs.home_team_id, fs.away_team_id, fs.league_id,
-       l.name AS league_name, l.logo_url AS league_logo_url
+       l.name AS league_name, l.logo_url AS league_logo_url,
+       fs.is_test, fs.hidden_at
 FROM competition.fixture_schedules fs
 LEFT JOIN football_data.leagues l ON l.id = fs.league_id
 WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
@@ -222,6 +227,7 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
     // into a typed failure the way the identity columns above are.
     final leagueName = row['league_name'];
     final leagueLogoUrl = row['league_logo_url'];
+    final hiddenAt = row['hidden_at'];
 
     return Result.ok(
       FixtureSchedule.fromStored(
@@ -234,6 +240,9 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
         leagueId: leagueId,
         leagueName: leagueName is String ? leagueName : null,
         leagueLogoUrl: leagueLogoUrl is String ? leagueLogoUrl : null,
+        // Migration 0098 (it must be on the database before this server).
+        isTest: row['is_test'] == true,
+        hiddenAt: hiddenAt is DateTime ? hiddenAt.toUtc() : null,
       ),
     );
   }

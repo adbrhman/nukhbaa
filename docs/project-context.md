@@ -3743,6 +3743,55 @@ dependency.
   `leaderboardMonthStarting`; `championTitleOne/Two` (ar) now read
   "بطل شهر {month}" with the month by name.
 
+### Hidden and test fixtures; the admin menu by domain (migration 0098, 2026-10-07)
+
+Requested 2026-10-07: the admin menu lists administrative domains, never
+single actions, and a fixture can be a test fixture, hidden at once and
+shown again, alone or in bulk, with filters. Protection lives on the
+server.
+
+- **Data** (0098, additive): `competition.fixture_schedules.hidden_at`
+  (null while visible) and `is_test` (fixed at registration). Triggers, the
+  backstop: no prediction written on a hidden fixture; a test fixture
+  predicted by admins only; no `scoring.fixture_scores` row for a hidden or
+  test fixture; no `ledger.fixture_point_entries` row for a test fixture;
+  `is_test` cannot change. The rescore sweep
+  (`scoring.fixtures_with_unscored_predictions`) leaves both out. Audit
+  actions `fixture_hidden` / `fixture_shown`.
+  `supabase/tests/0098_fixture_visibility_test.sql`: 15 checks. **0098 must
+  be on the live DB before this server is deployed** (the schedule reads
+  select the new columns).
+- **One rule** (`FixtureVisibility`, application): a player never reads,
+  predicts or sees revealed predictions of a hidden or test fixture
+  (`prediction.fixture_unavailable`); an admin sees test fixtures, flagged,
+  and hidden ones only in the admin list. Applied in the month feed,
+  `GET /seasons/{id}/fixtures` (`?include_hidden=true` honoured for admins
+  only), `SubmitFixturePrediction` (a test prediction feeds no
+  gamification), `ListFixturePredictions`, `ListMyFixturePredictions` (a
+  hidden fixture's prediction waits out of sight), `ScoreFixture` (hidden
+  and test: no score, no push) and `PostFixtureToLedger` (test: nothing).
+  The day sets (daily challenge, settled days, streak, reminders, pre-match,
+  streak saver) leave both out; the champion's unscored count ignores test
+  fixtures; provider sync never matches a test fixture.
+- **Command:** `POST /admin/fixture-visibility` `{fixture_ids, hidden}`
+  (`AdminSetFixturesHidden`, up to 200 ids, one audit entry per changed
+  fixture; `PostgresFixtureVisibilityStore` drops the schedule cache).
+  `POST /fixtures` takes `is_test`.
+- **Admin menu:** نظرة عامة / المسابقات والمباريات (المسابقات الشهرية،
+  المباريات، التوقعات، النتائج والاحتساب، المباريات المحتسبة) / النقاط
+  والترتيب (الترتيب والأبطال، سجل النقاط) / المستخدمون والتفاعل
+  (المستخدمون، أسماء المستخدمين، نظام الدعوات) / الإشعارات والتواصل (إرسال
+  إشعار) / التدقيق والأمان (سجل التدقيق، سجل الأخطاء). Domains with
+  nothing built yet (groups, duels, reactions, notification log,
+  gamification, analytics pages, sync/ops) have no entry.
+- **المباريات** (`FixturesAdminSection`) replaces the separate add, edit
+  and delete sections: the month's list (hidden ones included,
+  `adminSeasonFixturesProvider`), filters الكل | ظاهرة | مخفية | تجريبية,
+  per row edit / hide-show (immediate) / delete (confirmed), select all in
+  the current view and hide or show the selection after a confirmation. The
+  add form gains "مباراة تجريبية"; the admin's match card shows
+  "مباراة تجريبية". No new dependency, no l10n key.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

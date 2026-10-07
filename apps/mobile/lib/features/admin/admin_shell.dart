@@ -14,10 +14,8 @@ import 'screens/sections/admin_counted_fixtures_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/champion_admin_section.dart';
 import 'screens/sections/error_log_section.dart';
-import 'screens/sections/fixture_schedule_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
-import 'screens/sections/fixture_delete_section.dart';
-import 'screens/sections/fixture_edit_section.dart';
+import 'screens/sections/fixtures_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/referral_admin_section.dart';
 import 'screens/sections/results_scoring_section.dart';
@@ -28,23 +26,24 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
   return switch (section) {
     AdminSection.dashboard => l10n.adminDashboardTab,
     AdminSection.monthlyCompetitions => l10n.adminMonthlyCompetitionsTab,
-    AdminSection.fixtures => l10n.adminFixturesTab,
-    AdminSection.fixtureEdit => l10n.adminFixtureEditTab,
-    AdminSection.fixtureDelete => l10n.adminFixtureDeleteTab,
+    AdminSection.fixtures => 'المباريات',
     AdminSection.predictions => l10n.adminPredictionsTab,
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
     AdminSection.countedFixtures => l10n.adminCountedFixturesTab,
     AdminSection.users => l10n.adminUsersTab,
     AdminSection.userNames => 'أسماء المستخدمين',
     AdminSection.announcements => 'إرسال إشعار',
-    AdminSection.ledger => l10n.adminLedgerLookupTab,
+    AdminSection.ledger => 'سجل النقاط',
     AdminSection.audit => l10n.adminAuditLogTab,
     AdminSection.errorLog => 'سجل الأخطاء',
     AdminSection.referrals => 'نظام الدعوات',
-    AdminSection.champions => 'تتويج بطل الشهر',
+    AdminSection.champions => 'الترتيب والأبطال',
   };
 }
 
+/// The menu: one entry per administrative domain, never per action (add,
+/// edit, delete and hide are buttons inside "المباريات"). Only sections
+/// that exist are listed; a domain with nothing built yet has no entry.
 const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
   (title: 'نظرة عامة', sections: [AdminSection.dashboard]),
   (
@@ -52,8 +51,6 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
     sections: [
       AdminSection.monthlyCompetitions,
       AdminSection.fixtures,
-      AdminSection.fixtureEdit,
-      AdminSection.fixtureDelete,
       AdminSection.predictions,
       AdminSection.resultsScoring,
       AdminSection.countedFixtures,
@@ -68,12 +65,12 @@ const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
     sections: [
       AdminSection.users,
       AdminSection.userNames,
-      AdminSection.announcements,
       AdminSection.referrals,
     ],
   ),
+  (title: 'الإشعارات والتواصل', sections: [AdminSection.announcements]),
   (
-    title: 'التحليلات والأمان',
+    title: 'التدقيق والأمان',
     sections: [AdminSection.audit, AdminSection.errorLog],
   ),
 ];
@@ -165,9 +162,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.userNames => const UserNamesSection(),
       AdminSection.announcements => const AnnouncementSection(),
       AdminSection.ledger => const LedgerLookupSection(),
-      AdminSection.fixtures => const FixtureScheduleSection(),
-      AdminSection.fixtureEdit => const FixtureEditSection(),
-      AdminSection.fixtureDelete => const FixtureDeleteSection(),
+      AdminSection.fixtures => const FixturesAdminSection(),
       AdminSection.resultsScoring => const ResultsScoringSection(),
       AdminSection.predictions => const AdminPredictionsSection(),
       AdminSection.countedFixtures => const AdminCountedFixturesSection(),

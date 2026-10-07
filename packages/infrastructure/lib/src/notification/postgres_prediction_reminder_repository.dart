@@ -22,6 +22,8 @@ FROM competition.fixture_schedules fs
 JOIN competition.season_fixtures sf ON sf.fixture_id = fs.fixture_id
 WHERE fs.kickoff_at >= @window_start
   AND fs.kickoff_at <  @window_end
+  AND fs.hidden_at IS NULL
+  AND NOT fs.is_test
 ''';
 
   // A user is due when they are an active participant of a season that has a
@@ -36,6 +38,8 @@ WITH day_fixtures AS (
   JOIN competition.fixture_schedules fs ON fs.fixture_id = sf.fixture_id
   WHERE fs.kickoff_at >= @window_start
     AND fs.kickoff_at <  @window_end
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
 ),
 due AS (
   SELECT DISTINCT p.user_id

@@ -8,12 +8,13 @@ import 'package:flutter/material.dart';
 ///
 /// ملاحظة: `ledger` (البحث في السجل المالي) محفوظة رغم غيابها عن الهيكل
 /// المطلوب — ميزة حقيقية قائمة، لا تُحذف دون موافقة صريحة.
+///
+/// القسم مجالٌ إداري لا إجراء: إضافة المباراة وتعديلها وحذفها وإخفاؤها
+/// أزرار داخل `fixtures` («المباريات»)، لا أقسام مستقلة.
 enum AdminSection {
   dashboard(icon: Icons.dashboard_rounded),
   monthlyCompetitions(icon: Icons.calendar_month_rounded),
   fixtures(icon: Icons.sports_soccer_rounded),
-  fixtureEdit(icon: Icons.edit_calendar_rounded),
-  fixtureDelete(icon: Icons.delete_outline_rounded),
   predictions(icon: Icons.rule_folder_rounded),
   resultsScoring(icon: Icons.scoreboard_rounded),
   countedFixtures(icon: Icons.fact_check_rounded),

@@ -12,7 +12,6 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/leagues_providers.dart';
 import '../../../competition/teams_providers.dart';
-import '../../../fixture_prediction/fixture_prediction_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
@@ -48,12 +47,17 @@ class _UnresolvedTeamHint extends StatelessWidget {
   }
 }
 
-/// إضافة مباراة — اختيار الشهر والدوري ثم الفريقين وموعد الانطلاق.
+/// إضافة مباراة — اختيار الشهر والدوري ثم الفريقين وموعد الانطلاق، مع
+/// خيار «مباراة تجريبية» (الترحيل 0098): يراها المشرفون وحدهم ولا تُحتسب
+/// لها نقاط، ولا يتغيّر هذا الخيار بعد الإضافة.
 ///
-/// التعديل والحذف لهما شاشتاهما المستقلتان
-/// (`fixture_edit_section.dart` و`fixture_delete_section.dart`).
+/// تُفتح من قسم «المباريات» (`fixtures_admin_section.dart`)، ومنه أيضًا
+/// التعديل والحذف والإخفاء.
 class FixtureScheduleSection extends ConsumerStatefulWidget {
-  const FixtureScheduleSection({super.key});
+  const FixtureScheduleSection({super.key, this.initialSeasonId});
+
+  /// The month the form opens on: the one the matches list was showing.
+  final String? initialSeasonId;
 
   @override
   ConsumerState<FixtureScheduleSection> createState() =>
@@ -78,6 +82,15 @@ class _FixtureScheduleSectionState
   String? _leagueId;
   String? _homeTeamId;
   String? _awayTeamId;
+
+  /// Whether to file it as a test fixture (migration 0098).
+  bool _isTest = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _seasonId = widget.initialSeasonId;
+  }
 
   /// The clubs of [leagueId], filtered by [query] — the add-fixture form's
   /// team options.
@@ -197,8 +210,9 @@ class _FixtureScheduleSectionState
 
     int nextDisplayOrder = 0;
     if (_seasonId != null) {
+      // Hidden fixtures included: they keep their place in the month.
       final AsyncValue<List<SeasonFixtureCardDto>> fixturesState = ref.watch(
-        seasonFixturesProvider(_seasonId!),
+        adminSeasonFixturesProvider(_seasonId!),
       );
       if (fixturesState is AsyncData<List<SeasonFixtureCardDto>>) {
         nextDisplayOrder = fixturesState.value.length;
@@ -322,6 +336,20 @@ class _FixtureScheduleSectionState
                 icon: Icons.event_outlined,
                 onPressed: inFlight ? null : _pickKickoff,
               ),
+              const SizedBox(height: AppSpacing.sm),
+              SwitchListTile(
+                key: const Key('admin.fixtures.testSwitch'),
+                contentPadding: EdgeInsets.zero,
+                value: _isTest,
+                onChanged: inFlight
+                    ? null
+                    : (bool value) => setState(() => _isTest = value),
+                title: const Text('مباراة تجريبية'),
+                subtitle: const Text(
+                  'للاختبار فقط: يراها المشرفون وحدهم، ولا تُحتسب لها نقاط '
+                  'ولا تدخل الترتيب. لا يمكن تغيير هذا بعد الإضافة.',
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               if (state is AsyncError<AddMatchResult>)
                 AdminErrorBanner(
@@ -402,6 +430,7 @@ class _FixtureScheduleSectionState
           homeTeamId: _homeTeamId,
           awayTeamId: _awayTeamId,
           leagueId: leagueId,
+          isTest: _isTest,
         );
   }
 

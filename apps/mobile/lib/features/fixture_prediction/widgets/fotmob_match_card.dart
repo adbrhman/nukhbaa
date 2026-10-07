@@ -552,6 +552,20 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     ),
                   ),
                 ),
+                // A test fixture reaches admins only (migration 0098);
+                // the label keeps it from passing for a real match.
+                if (_fixture.isTest) ...<Widget>[
+                  const SizedBox(height: AppSpacing.xs),
+                  const Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: AppBadge(
+                      key: Key('currentMonthFixtures.testBadge'),
+                      label: 'مباراة تجريبية',
+                      tone: AppBadgeTone.gold,
+                      icon: Icons.science_outlined,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,

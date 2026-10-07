@@ -108,6 +108,8 @@ SeasonFixtureCardDto seasonFixtureCardToDto(SeasonFixtureCard card) {
     awayTeamId: card.awayTeamId?.value,
     leagueName: card.leagueName,
     leagueLogoUrl: card.leagueLogoUrl,
+    hidden: card.hidden,
+    isTest: card.isTest,
   );
 }
 

@@ -44,6 +44,8 @@ SELECT to_char(
 FROM competition.season_fixtures sf
 JOIN competition.fixture_schedules fs
   ON fs.fixture_id = sf.fixture_id
+WHERE fs.hidden_at IS NULL
+  AND NOT fs.is_test
 ''';
 
   static const String _settleSql = '''
@@ -59,6 +61,8 @@ counts AS (
     ON fs.fixture_id = sf.fixture_id
   WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date
         BETWEEN @from::date AND @through::date
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
   GROUP BY 1
 ),
 season_counts AS (
@@ -70,6 +74,8 @@ season_counts AS (
     ON fs.fixture_id = sf.fixture_id
   WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date
         BETWEEN @from::date AND @through::date
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
   GROUP BY 1, 2
 ),
 settled_seasons AS (

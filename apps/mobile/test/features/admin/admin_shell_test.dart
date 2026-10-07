@@ -87,7 +87,7 @@ void main() {
         await tester.tap(teamsTile);
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.adminLedgerLookupTab), findsWidgets);
+        expect(find.text('سجل النقاط'), findsWidgets);
       },
     );
 

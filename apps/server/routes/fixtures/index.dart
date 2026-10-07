@@ -23,7 +23,9 @@ import 'package:shared/shared.dart';
 /// fixture may later be linked into many rounds via `LinkFixtureToRound`.
 ///
 /// Body: `{ "home_team": string, "away_team": string, "kickoff_at": ISO-8601
-/// string }` ([FixtureScheduleRequestDto]). Returns the stored
+/// string }` ([FixtureScheduleRequestDto]), plus an optional `"is_test":
+/// true` to register a test fixture (admins only, never scored; migration
+/// 0098). Returns the stored
 /// [FixtureScheduleDto] (`201`); an invalid team name (empty, over 120 chars,
 /// or identical to the other side) surfaces as `400` via the shared error
 /// envelope.
@@ -66,6 +68,8 @@ Future<Response> onRequest(RequestContext context) async {
     homeTeamId: body['home_team_id'] as String?,
     awayTeamId: body['away_team_id'] as String?,
     leagueId: body['league_id'] as String?,
+    // Optional; only a literal `true` files a test fixture (migration 0098).
+    isTest: body['is_test'] == true,
   );
 
   return switch (result) {

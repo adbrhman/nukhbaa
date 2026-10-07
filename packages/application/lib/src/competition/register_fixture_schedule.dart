@@ -4,6 +4,9 @@ import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
+/// Admin command: register a new fixture's identity. [call]'s `isTest`
+/// files it as a test fixture (migration 0098) -- admins only, never
+/// scored -- and that choice cannot be changed later.
 final class RegisterFixtureSchedule {
   const RegisterFixtureSchedule({
     required FixtureScheduleRepository repository,
@@ -22,6 +25,7 @@ final class RegisterFixtureSchedule {
     String? homeTeamId,
     String? awayTeamId,
     String? leagueId,
+    bool isTest = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
@@ -55,6 +59,7 @@ final class RegisterFixtureSchedule {
       homeTeamId: (homeTeamRefResult as Ok<TeamRef?>).value,
       awayTeamId: (awayTeamRefResult as Ok<TeamRef?>).value,
       leagueId: (leagueRefResult as Ok<LeagueRef?>).value,
+      isTest: isTest,
     );
     if (scheduleResult is Err<FixtureSchedule>) {
       return Result.err(scheduleResult.error);

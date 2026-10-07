@@ -1,4 +1,5 @@
 import 'package:application/src/common/clock.dart';
+import 'package:application/src/competition/fixture_visibility.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -130,6 +131,11 @@ final class ListFixturePredictions {
     final schedules = (schedulesResult as Ok<List<FixtureSchedule>>).value;
     if (schedules.isEmpty) {
       return const Result.err(_notStarted);
+    }
+    // A hidden fixture reveals nothing, and a test fixture reveals its
+    // predictions to admins only (migration 0098).
+    if (!FixtureVisibility.playable(principal, schedules.first)) {
+      return const Result.err(FixtureVisibility.unavailable);
     }
     final lockResult = FixtureLock.at(
       kickoffAt: schedules.first.kickoffAt.toUtc(),

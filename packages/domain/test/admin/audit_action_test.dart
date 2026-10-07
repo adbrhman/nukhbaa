@@ -32,6 +32,8 @@ void main() {
         'fixture_schedule_corrected',
         'user_renamed',
         'error_updated',
+        'fixture_hidden',
+        'fixture_shown',
       });
     });
   });

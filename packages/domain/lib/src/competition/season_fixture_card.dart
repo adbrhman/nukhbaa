@@ -24,6 +24,8 @@ final class SeasonFixtureCard {
     this.awayTeamId,
     this.leagueName,
     this.leagueLogoUrl,
+    this.hidden = false,
+    this.isTest = false,
   });
 
   /// The owning season.
@@ -59,6 +61,14 @@ final class SeasonFixtureCard {
   /// The league's logo URL, same nullability as [leagueName].
   final String? leagueLogoUrl;
 
+  /// Whether an admin has hidden the fixture (migration 0098). Only an
+  /// admin's read that asks for hidden fixtures ever carries `true`.
+  final bool hidden;
+
+  /// Whether it is a test fixture (migration 0098). Only an admin's read
+  /// ever carries `true`.
+  final bool isTest;
+
   @override
   bool operator ==(Object other) =>
       other is SeasonFixtureCard &&
@@ -70,7 +80,9 @@ final class SeasonFixtureCard {
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
       other.leagueName == leagueName &&
-      other.leagueLogoUrl == leagueLogoUrl;
+      other.leagueLogoUrl == leagueLogoUrl &&
+      other.hidden == hidden &&
+      other.isTest == isTest;
 
   @override
   int get hashCode => Object.hash(
@@ -83,6 +95,8 @@ final class SeasonFixtureCard {
     awayTeamId,
     leagueName,
     leagueLogoUrl,
+    hidden,
+    isTest,
   );
 
   @override

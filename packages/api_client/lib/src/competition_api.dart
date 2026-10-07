@@ -163,11 +163,16 @@ final class CompetitionApi {
   /// this browse read). `homeTeam`/`awayTeam`/`kickoffAt` are `null` when the
   /// linked fixture has no schedule yet (the link never verifies one exists —
   /// Axiom 3).
+  ///
+  /// [includeHidden] asks for the fixtures an admin hid as well (migration
+  /// 0098) -- the admin panel's list; the server ignores it for a player.
   Future<Result<List<SeasonFixtureCardDto>>> browseSeasonFixtures(
-    String seasonId,
-  ) {
+    String seasonId, {
+    bool includeHidden = false,
+  }) {
     return _transport.getList<SeasonFixtureCardDto>(
       '/seasons/$seasonId/fixtures',
+      query: includeHidden ? const {'include_hidden': 'true'} : null,
       parseElement: SeasonFixtureCardDto.fromJson,
     );
   }

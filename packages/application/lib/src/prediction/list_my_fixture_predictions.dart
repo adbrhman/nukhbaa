@@ -1,3 +1,5 @@
+import 'package:application/src/competition/fixture_visibility.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
@@ -17,14 +19,24 @@ import 'package:shared/shared.dart';
 /// season-membership gate to check here: the repository already scopes to
 /// `principal.userId`, so nothing here can reveal another user's prediction.
 ///
+/// **Hidden and test fixtures** (migration 0098): a prediction on a fixture
+/// an admin hid drops out of the list until the fixture is shown again
+/// (nothing is deleted), and a test prediction is listed for an admin only.
+/// Applied when the schedule repository is wired.
+///
 /// Never throws; returns a typed [Result].
 final class ListMyFixturePredictions {
   /// Creates the use-case over its collaborator.
   const ListMyFixturePredictions({
     required FixturePredictionRepository fixturePredictionRepository,
-  }) : _fixturePredictions = fixturePredictionRepository;
+    FixtureScheduleRepository? fixtureScheduleRepository,
+  }) : _fixturePredictions = fixturePredictionRepository,
+       _schedules = fixtureScheduleRepository;
 
   final FixturePredictionRepository _fixturePredictions;
+
+  /// Optional: without it every prediction is listed, as before 0098.
+  final FixtureScheduleRepository? _schedules;
 
   /// Lists every fixture prediction [principal] has ever submitted, newest
   /// first.
@@ -36,6 +48,33 @@ final class ListMyFixturePredictions {
       return Result.err(auth.error);
     }
 
-    return _fixturePredictions.listByUser(principal.userId);
+    final listed = await _fixturePredictions.listByUser(principal.userId);
+    final schedules = _schedules;
+    if (schedules == null || listed is Err<List<FixturePredictionView>>) {
+      return listed;
+    }
+    final views = (listed as Ok<List<FixturePredictionView>>).value;
+    if (views.isEmpty) {
+      return listed;
+    }
+
+    final read = await schedules.findByFixtures([
+      for (final view in views) view.prediction.fixture,
+    ]);
+    if (read is Err<List<FixtureSchedule>>) {
+      return Result.err(read.error);
+    }
+    final byFixture = {
+      for (final schedule in (read as Ok<List<FixtureSchedule>>).value)
+        schedule.fixture.value: schedule,
+    };
+    return Result.ok([
+      for (final view in views)
+        if (FixtureVisibility.playable(
+          principal,
+          byFixture[view.prediction.fixture.value],
+        ))
+          view,
+    ]);
   }
 }

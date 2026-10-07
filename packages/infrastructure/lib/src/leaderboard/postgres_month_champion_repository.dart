@@ -28,7 +28,12 @@ SELECT s.id::text AS season_id,
           FROM competition.season_fixtures sf
           LEFT JOIN scoring.fixture_results r ON r.fixture_id = sf.fixture_id
          WHERE sf.season_id = s.id
-           AND r.fixture_id IS NULL)::bigint AS unscored
+           AND r.fixture_id IS NULL
+           -- A test fixture never counts (0098): it is never scored.
+           AND NOT EXISTS (
+             SELECT 1 FROM competition.fixture_schedules t
+              WHERE t.fixture_id = sf.fixture_id AND t.is_test
+           ))::bigint AS unscored
 FROM competition.seasons s
 WHERE s.id = @season_id::uuid
 ''';

@@ -544,6 +544,8 @@ final class SeasonFixtureCardDto {
     this.awayTeamId,
     this.leagueName,
     this.leagueLogoUrl,
+    this.hidden = false,
+    this.isTest = false,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -560,6 +562,8 @@ final class SeasonFixtureCardDto {
       awayTeamId: json['away_team_id'] as String?,
       leagueName: json['league_name'] as String?,
       leagueLogoUrl: json['league_logo_url'] as String?,
+      hidden: json['hidden'] == true,
+      isTest: json['is_test'] == true,
     );
   }
 
@@ -595,6 +599,14 @@ final class SeasonFixtureCardDto {
   /// The league's logo URL, or `null` when unknown.
   final String? leagueLogoUrl;
 
+  /// Whether an admin hid the fixture (migration 0098). Only an admin's
+  /// read that asks for hidden fixtures ever carries it.
+  final bool hidden;
+
+  /// Whether it is a test fixture (migration 0098). Only an admin's read
+  /// ever carries it.
+  final bool isTest;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -610,6 +622,9 @@ final class SeasonFixtureCardDto {
     'away_team_id': awayTeamId,
     'league_name': leagueName,
     'league_logo_url': leagueLogoUrl,
+    // Written only when set, so a player's payload is exactly what it was.
+    if (hidden) 'hidden': true,
+    if (isTest) 'is_test': true,
   };
 
   @override
@@ -624,6 +639,8 @@ final class SeasonFixtureCardDto {
       other.awayTeamId == awayTeamId &&
       other.leagueName == leagueName &&
       other.leagueLogoUrl == leagueLogoUrl &&
+      other.hidden == hidden &&
+      other.isTest == isTest &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -637,6 +654,8 @@ final class SeasonFixtureCardDto {
     awayTeamId,
     leagueName,
     leagueLogoUrl,
+    hidden,
+    isTest,
     schemaVersion,
   );
 }

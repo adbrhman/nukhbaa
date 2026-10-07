@@ -89,7 +89,14 @@ enum AuditAction {
   /// An admin changed an error in the error log (`AdminErrorLog`,
   /// migration 0088): its status, severity, assignee or notes; the reason
   /// carries the old and new values.
-  errorUpdated;
+  errorUpdated,
+
+  /// An admin hid a fixture from the players (`AdminSetFixturesHidden`,
+  /// migration 0098); nothing attached to it is deleted.
+  fixtureHidden,
+
+  /// An admin showed a hidden fixture to the players again.
+  fixtureShown;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -111,6 +118,8 @@ enum AuditAction {
     AuditAction.fixtureScheduleCorrected => 'fixture_schedule_corrected',
     AuditAction.userRenamed => 'user_renamed',
     AuditAction.errorUpdated => 'error_updated',
+    AuditAction.fixtureHidden => 'fixture_hidden',
+    AuditAction.fixtureShown => 'fixture_shown',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

@@ -11,7 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_providers.dart';
 import '../../competition/leagues_providers.dart';
 import '../../competition/month_label.dart';
-import '../../fixture_prediction/fixture_prediction_providers.dart';
+import '../admin_providers.dart';
 
 /// The competition dropdown: reads the public catalogue
 /// (`GET /competitions`, via `competitionListProvider`) and lets the admin
@@ -306,6 +306,12 @@ class LeaguePickerField extends ConsumerWidget {
   }
 }
 
+/// The word a hidden fixture carries in the admin's lists (migration 0098).
+const String adminFixtureHiddenLabel = 'مخفية';
+
+/// The word a test fixture carries in the admin's lists (migration 0098).
+const String adminFixtureTestLabel = 'تجريبية';
+
 /// قائمة المباراة المنسدلة (الموسم ← المباراة مباشرة، بلا Round — Axiom 4
 /// Amendment). تعرض الفريقين — أو تنويهاً عند نقص بيانات الهوية — وتُخرج
 /// fixtureId فقط، بلا إدخال UUID يدوي. [keyPrefix] يُميّز مفاتيح الودجت بين
@@ -329,8 +335,10 @@ class SeasonFixturePickerField extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    // The admin's read: hidden fixtures too, so one can be corrected or
+    // settled while the players do not see it (migration 0098).
     final AsyncValue<List<SeasonFixtureCardDto>> fixtures = ref.watch(
-      seasonFixturesProvider(seasonId),
+      adminSeasonFixturesProvider(seasonId),
     );
     return fixtures.when(
       loading: () => const LinearProgressIndicator(),
@@ -441,6 +449,10 @@ class SeasonFixturePickerField extends ConsumerWidget {
     if (home == null || away == null) {
       return l10n.adminFixtureIncompleteDataLabel;
     }
-    return '$home × $away';
+    final String flags = [
+      if (fixture.hidden) adminFixtureHiddenLabel,
+      if (fixture.isTest) adminFixtureTestLabel,
+    ].map((String flag) => ' ($flag)').join();
+    return '$home × $away$flags';
   }
 }

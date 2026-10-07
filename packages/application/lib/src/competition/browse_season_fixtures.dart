@@ -1,3 +1,4 @@
+import 'package:application/src/competition/fixture_visibility.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
@@ -23,6 +24,11 @@ import 'package:shared/shared.dart';
 /// fixtures — or one that does not exist — yields a legitimate empty list (no
 /// existence oracle), never an error.
 ///
+/// Hidden and test fixtures (migration 0098) follow [FixtureVisibility]: a
+/// player never receives either; an admin receives test fixtures, flagged,
+/// and hidden ones too only when asking for them (`includeHidden`) -- the
+/// admin panel's fixture list.
+///
 /// Never throws; returns a typed [Result].
 final class BrowseSeasonFixtures {
   /// Creates the use-case over its repositories.
@@ -40,6 +46,7 @@ final class BrowseSeasonFixtures {
   Future<Result<List<SeasonFixtureCard>>> call({
     required AuthenticatedUser principal,
     required String seasonId,
+    bool includeHidden = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
@@ -74,17 +81,24 @@ final class BrowseSeasonFixtures {
 
     return Result.ok([
       for (final fixture in fixtures)
-        SeasonFixtureCard(
-          seasonId: (idResult).value,
-          fixtureId: fixture,
-          homeTeam: byFixture[fixture.value]?.homeTeam,
-          awayTeam: byFixture[fixture.value]?.awayTeam,
-          kickoffAt: byFixture[fixture.value]?.kickoffAt,
-          homeTeamId: byFixture[fixture.value]?.homeTeamId,
-          awayTeamId: byFixture[fixture.value]?.awayTeamId,
-          leagueName: byFixture[fixture.value]?.leagueName,
-          leagueLogoUrl: byFixture[fixture.value]?.leagueLogoUrl,
-        ),
+        if (FixtureVisibility.listable(
+          principal,
+          byFixture[fixture.value],
+          includeHidden: includeHidden,
+        ))
+          SeasonFixtureCard(
+            seasonId: (idResult).value,
+            fixtureId: fixture,
+            homeTeam: byFixture[fixture.value]?.homeTeam,
+            awayTeam: byFixture[fixture.value]?.awayTeam,
+            kickoffAt: byFixture[fixture.value]?.kickoffAt,
+            homeTeamId: byFixture[fixture.value]?.homeTeamId,
+            awayTeamId: byFixture[fixture.value]?.awayTeamId,
+            leagueName: byFixture[fixture.value]?.leagueName,
+            leagueLogoUrl: byFixture[fixture.value]?.leagueLogoUrl,
+            hidden: byFixture[fixture.value]?.isHidden ?? false,
+            isTest: byFixture[fixture.value]?.isTest ?? false,
+          ),
     ]);
   }
 }

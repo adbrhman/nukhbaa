@@ -332,9 +332,8 @@ class _QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     const actions = <(String, IconData, AdminSection)>[
-      ('إضافة مباراة', Icons.add_circle_outline_rounded, AdminSection.fixtures),
-      ('تعديل مباراة', Icons.edit_calendar_outlined, AdminSection.fixtureEdit),
-      ('حذف مباراة', Icons.delete_outline_rounded, AdminSection.fixtureDelete),
+      // Add, edit, delete and hide all live in the matches section.
+      ('المباريات', Icons.sports_soccer_outlined, AdminSection.fixtures),
       ('تسجيل نتيجة', Icons.scoreboard_outlined, AdminSection.resultsScoring),
       (
         'إنشاء مسابقة',

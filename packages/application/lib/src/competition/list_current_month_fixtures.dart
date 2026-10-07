@@ -1,4 +1,5 @@
 import 'package:application/src/common/clock.dart';
+import 'package:application/src/competition/fixture_visibility.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -119,6 +120,9 @@ final class CurrentMonthFixtureEntry {
 /// as [BrowseSeasonFixtures]). No public competitions, none with a season
 /// currently covering "now", or none of those seasons having a linked
 /// fixture are all legitimate `Ok(<empty list>)`, never an error.
+///
+/// Hidden fixtures (migration 0098) are left out for everyone; test
+/// fixtures reach admins only, flagged ([FixtureVisibility.playable]).
 ///
 /// Never throws; returns a typed [Result].
 final class ListCurrentMonthFixtures {
@@ -261,37 +265,39 @@ final class ListCurrentMonthFixtures {
     return Result.ok([
       for (final entry in currentSeasons)
         for (final fixture in fixturesBySeason[entry.season.id.value]!)
-          CurrentMonthFixtureEntry(
-            competitionId: entry.competition.id,
-            competitionName: entry.competition.name,
-            seasonLabel: entry.season.label,
-            // A fixture nobody has predicted has no tally row, which is a
-            // real 0/0 split, not a missing answer -- so it reads as 0 while
-            // the reader is wired, and as null only when it is not.
-            homeWinPercentage: tallyReader == null
-                ? null
-                : (tallies[fixture.value]?.homeWinPercentage ?? 0),
-            awayWinPercentage: tallyReader == null
-                ? null
-                : (tallies[fixture.value]?.awayWinPercentage ?? 0),
-            decisivePredictions: tallyReader == null
-                ? null
-                : (tallies[fixture.value]?.homeWins ?? 0) +
-                      (tallies[fixture.value]?.awayWins ?? 0),
-            resultHomeGoals: results[fixture.value]?.homeGoals,
-            resultAwayGoals: results[fixture.value]?.awayGoals,
-            fixture: SeasonFixtureCard(
-              seasonId: entry.season.id,
-              fixtureId: fixture,
-              homeTeam: byFixture[fixture.value]?.homeTeam,
-              awayTeam: byFixture[fixture.value]?.awayTeam,
-              kickoffAt: byFixture[fixture.value]?.kickoffAt,
-              homeTeamId: byFixture[fixture.value]?.homeTeamId,
-              awayTeamId: byFixture[fixture.value]?.awayTeamId,
-              leagueName: byFixture[fixture.value]?.leagueName,
-              leagueLogoUrl: byFixture[fixture.value]?.leagueLogoUrl,
+          if (FixtureVisibility.playable(principal, byFixture[fixture.value]))
+            CurrentMonthFixtureEntry(
+              competitionId: entry.competition.id,
+              competitionName: entry.competition.name,
+              seasonLabel: entry.season.label,
+              // A fixture nobody has predicted has no tally row, which is a
+              // real 0/0 split, not a missing answer -- so it reads as 0 while
+              // the reader is wired, and as null only when it is not.
+              homeWinPercentage: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.homeWinPercentage ?? 0),
+              awayWinPercentage: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.awayWinPercentage ?? 0),
+              decisivePredictions: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.homeWins ?? 0) +
+                        (tallies[fixture.value]?.awayWins ?? 0),
+              resultHomeGoals: results[fixture.value]?.homeGoals,
+              resultAwayGoals: results[fixture.value]?.awayGoals,
+              fixture: SeasonFixtureCard(
+                seasonId: entry.season.id,
+                fixtureId: fixture,
+                homeTeam: byFixture[fixture.value]?.homeTeam,
+                awayTeam: byFixture[fixture.value]?.awayTeam,
+                kickoffAt: byFixture[fixture.value]?.kickoffAt,
+                homeTeamId: byFixture[fixture.value]?.homeTeamId,
+                awayTeamId: byFixture[fixture.value]?.awayTeamId,
+                leagueName: byFixture[fixture.value]?.leagueName,
+                leagueLogoUrl: byFixture[fixture.value]?.leagueLogoUrl,
+                isTest: byFixture[fixture.value]?.isTest ?? false,
+              ),
             ),
-          ),
     ]);
   }
 }

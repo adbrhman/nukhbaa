@@ -134,6 +134,7 @@ final class FixtureScheduleRequestDto {
     this.homeTeamId,
     this.awayTeamId,
     this.leagueId,
+    this.isTest = false,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -150,6 +151,7 @@ final class FixtureScheduleRequestDto {
       homeTeamId: json['home_team_id'] as String?,
       awayTeamId: json['away_team_id'] as String?,
       leagueId: json['league_id'] as String?,
+      isTest: json['is_test'] == true,
     );
   }
 
@@ -181,6 +183,10 @@ final class FixtureScheduleRequestDto {
   /// left as it is rather than cleared.
   final String? leagueId;
 
+  /// Whether to register it as a test fixture (migration 0098): admins
+  /// only, never scored. Fixed once registered.
+  final bool isTest;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -193,6 +199,7 @@ final class FixtureScheduleRequestDto {
     'home_team_id': homeTeamId,
     'away_team_id': awayTeamId,
     'league_id': leagueId,
+    if (isTest) 'is_test': true,
   };
 
   @override
@@ -204,6 +211,7 @@ final class FixtureScheduleRequestDto {
       other.homeTeamId == homeTeamId &&
       other.awayTeamId == awayTeamId &&
       other.leagueId == leagueId &&
+      other.isTest == isTest &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -214,6 +222,101 @@ final class FixtureScheduleRequestDto {
     homeTeamId,
     awayTeamId,
     leagueId,
+    isTest,
     schemaVersion,
   );
+}
+
+/// The body of `POST /admin/fixture-visibility` (migration 0098): hide the
+/// named fixtures from the players, or show them again.
+final class FixtureVisibilityRequestDto {
+  /// Creates the body.
+  const FixtureVisibilityRequestDto({
+    required this.fixtureIds,
+    required this.hidden,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// The `hidden` field of an untrusted body, or `null` when it is missing
+  /// or not a boolean, so the use-case refuses it rather than guessing.
+  static bool? hiddenOf(Map<String, Object?> json) {
+    final Object? raw = json['hidden'];
+    return raw is bool ? raw : null;
+  }
+
+  /// The `fixture_ids` field of an untrusted body, or `null` when it is not
+  /// a list of strings.
+  static List<String>? fixtureIdsOf(Map<String, Object?> json) {
+    final Object? raw = json['fixture_ids'];
+    if (raw is! List<Object?>) return null;
+    final ids = <String>[];
+    for (final Object? id in raw) {
+      if (id is! String) return null;
+      ids.add(id);
+    }
+    return ids;
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The fixtures to change (UUID strings).
+  final List<String> fixtureIds;
+
+  /// `true` hides them, `false` shows them.
+  final bool hidden;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'fixture_ids': fixtureIds,
+    'hidden': hidden,
+  };
+}
+
+/// The answer of `POST /admin/fixture-visibility`: the fixtures whose state
+/// changed (one already hidden, or already shown, is not listed).
+final class FixtureVisibilityResultDto {
+  /// Creates the answer.
+  const FixtureVisibilityResultDto({
+    required this.changed,
+    required this.hidden,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory FixtureVisibilityResultDto.fromJson(Map<String, Object?> json) {
+    final Object? raw = json['changed'];
+    return FixtureVisibilityResultDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      changed: <String>[
+        if (raw is List<Object?>)
+          for (final Object? id in raw)
+            if (id is String) id,
+      ],
+      hidden: json['hidden'] == true,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The fixtures that changed (UUID strings).
+  final List<String> changed;
+
+  /// The state they are now in.
+  final bool hidden;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'changed': changed,
+    'hidden': hidden,
+  };
 }

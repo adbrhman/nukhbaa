@@ -59,6 +59,8 @@ days AS (
     JOIN competition.fixture_schedules fs
       ON fs.fixture_id = sf.fixture_id
     WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date <= @live_up_to::date
+      AND fs.hidden_at IS NULL
+      AND NOT fs.is_test
       AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date >
         COALESCE(
           (SELECT max(s2.day) FROM gamification.settled_days s2),

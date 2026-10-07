@@ -27,6 +27,8 @@ WITH window_fixtures AS (
   FROM competition.fixture_schedules fs
   WHERE fs.kickoff_at > @from
     AND fs.kickoff_at <= @to
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
 ),
 due AS (
   SELECT DISTINCT p.user_id, wf.fixture_id, wf.home_team, wf.away_team
