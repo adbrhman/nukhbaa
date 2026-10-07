@@ -78,7 +78,7 @@ void main() {
     // صراحة بدل الاعتماد على افتراض الحجم الافتراضي -- نفس الدرس
     // الموثّق في admin_shell_test.dart (ListView لا يبني ما هو بعيد
     // عن نافذة العرض).
-    tester.view.physicalSize = const Size(900, 1600);
+    tester.view.physicalSize = const Size(900, 6000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -92,7 +92,11 @@ void main() {
     expect(find.text('90'), findsOneWidget);
     expect(find.text('مستخدمون موقوفون'), findsOneWidget);
     expect(find.text('47'), findsOneWidget);
-    // The retention card sits under the counts, on the same screen.
-    expect(find.byKey(const Key('admin.retention')), findsOneWidget);
+    // The two analytics cards moved to their own section (2026-10-07).
+    // The list's last item is on screen first, so it was built to its
+    // end and "findsNothing" is not a lazy list hiding them.
+    expect(find.text('مباريات الشهر الحالي'), findsOneWidget);
+    expect(find.byKey(const Key('admin.retention')), findsNothing);
+    expect(find.byKey(const Key('admin.frameStats')), findsNothing);
   });
 }

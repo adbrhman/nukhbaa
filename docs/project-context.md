@@ -3829,6 +3829,30 @@ on a Redmi Note 9, slowest frame 335 167 ms).
   The effect is read on the admin card by build, once the release is out.
 - No migration, no new dependency, no l10n key.
 
+### The admin menu by the admin's day; analytics (2026-10-07)
+
+Requested 2026-10-07 (the owner, reviewing the panel on the phone): a
+cleaner panel, with no group that holds a single entry. This replaces the
+menu line of the entry above; the domain rule stands (one entry per domain,
+never per action; nothing listed that is not built).
+
+- **Menu** (`_adminNavGroups`, `admin_shell.dart`): الرئيسية alone at the
+  top with no group title (the title is now nullable) / المباريات والنتائج
+  (المباريات، النتائج والاحتساب، المباريات المحتسبة) / المسابقات والترتيب
+  (المسابقات الشهرية، الترتيب والأبطال، التوقعات) / اللاعبون والتواصل
+  (المستخدمون، أسماء المستخدمين، نظام الدعوات، سجل النقاط، إرسال إشعار) /
+  النظام (التحليلات، سجل التدقيق، سجل الأخطاء).
+- **التحليلات** (`AdminSection.analytics`, `AdminAnalyticsSection`): the
+  retention card («هل يعود اللاعبون؟», batch 67) and the smoothness card
+  («سلاسة التطبيق», 2026-09-24) moved off the dashboard unchanged, each with
+  its own provider and states. The dashboard keeps what needs a decision
+  today; its rework is the next batch.
+- Tests: `admin_analytics_section_test.dart` (through the real hub on a view
+  tall enough that the lazy lists build to their end); the dashboard test
+  now asserts the cards are gone, after proving the list was built to its
+  last item; UI-37 reads the first titled group.
+- No migration, no new dependency, no l10n key, no server change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

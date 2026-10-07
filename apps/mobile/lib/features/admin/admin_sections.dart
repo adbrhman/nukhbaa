@@ -22,6 +22,7 @@ enum AdminSection {
   userNames(icon: Icons.badge_rounded),
   announcements(icon: Icons.campaign_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
+  analytics(icon: Icons.insights_rounded),
   audit(icon: Icons.receipt_long_rounded),
   errorLog(icon: Icons.bug_report_rounded),
   referrals(icon: Icons.group_add_rounded),

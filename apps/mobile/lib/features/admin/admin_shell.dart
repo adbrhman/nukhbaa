@@ -7,6 +7,7 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'admin_sections.dart';
+import 'screens/sections/admin_analytics_section.dart';
 import 'screens/sections/admin_dashboard_section.dart';
 import 'screens/sections/admin_predictions_section.dart';
 import 'screens/sections/announcement_section.dart';
@@ -34,6 +35,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.userNames => 'أسماء المستخدمين',
     AdminSection.announcements => 'إرسال إشعار',
     AdminSection.ledger => 'سجل النقاط',
+    AdminSection.analytics => 'التحليلات',
     AdminSection.audit => l10n.adminAuditLogTab,
     AdminSection.errorLog => 'سجل الأخطاء',
     AdminSection.referrals => 'نظام الدعوات',
@@ -44,34 +46,45 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
 /// The menu: one entry per administrative domain, never per action (add,
 /// edit, delete and hide are buttons inside "المباريات"). Only sections
 /// that exist are listed; a domain with nothing built yet has no entry.
-const List<({String title, List<AdminSection> sections})> _adminNavGroups = [
-  (title: 'نظرة عامة', sections: [AdminSection.dashboard]),
+///
+/// Ordered by the admin's day (2026-10-07): the home entry alone at the top
+/// with no group title, then matches, competitions, players, the system.
+/// No group holds a single entry.
+const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
+  (title: null, sections: [AdminSection.dashboard]),
   (
-    title: 'المسابقات والمباريات',
+    title: 'المباريات والنتائج',
     sections: [
-      AdminSection.monthlyCompetitions,
       AdminSection.fixtures,
-      AdminSection.predictions,
       AdminSection.resultsScoring,
       AdminSection.countedFixtures,
     ],
   ),
   (
-    title: 'النقاط والترتيب',
-    sections: [AdminSection.champions, AdminSection.ledger],
+    title: 'المسابقات والترتيب',
+    sections: [
+      AdminSection.monthlyCompetitions,
+      AdminSection.champions,
+      AdminSection.predictions,
+    ],
   ),
   (
-    title: 'المستخدمون والتفاعل',
+    title: 'اللاعبون والتواصل',
     sections: [
       AdminSection.users,
       AdminSection.userNames,
       AdminSection.referrals,
+      AdminSection.ledger,
+      AdminSection.announcements,
     ],
   ),
-  (title: 'الإشعارات والتواصل', sections: [AdminSection.announcements]),
   (
-    title: 'التدقيق والأمان',
-    sections: [AdminSection.audit, AdminSection.errorLog],
+    title: 'النظام',
+    sections: [
+      AdminSection.analytics,
+      AdminSection.audit,
+      AdminSection.errorLog,
+    ],
   ),
 ];
 
@@ -98,24 +111,25 @@ class AdminNavList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       children: [
         for (final group in _adminNavGroups) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.xs,
-            ),
-            // 12px and no tracking: letter spacing pulls joined Arabic
-            // letters apart (app_typography.dart, UI-38), and 11px was too
-            // small to read (UI-37).
-            child: Text(
-              group.title,
-              style: context.text.labelMedium?.copyWith(
-                color: t.textSecondary,
-                fontWeight: FontWeight.w800,
+          if (group.title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.xs,
+              ),
+              // 12px and no tracking: letter spacing pulls joined Arabic
+              // letters apart (app_typography.dart, UI-38), and 11px was too
+              // small to read (UI-37).
+              child: Text(
+                group.title!,
+                style: context.text.labelMedium?.copyWith(
+                  color: t.textSecondary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-          ),
           for (final AdminSection section in group.sections)
             ListTile(
               key: Key('admin.shell.nav.${section.name}'),
@@ -158,6 +172,7 @@ class AdminShell extends StatelessWidget {
         const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.errorLog => const ErrorLogSection(),
+      AdminSection.analytics => const AdminAnalyticsSection(),
       AdminSection.users => const UserSanctionSection(),
       AdminSection.userNames => const UserNamesSection(),
       AdminSection.announcements => const AnnouncementSection(),

@@ -1208,7 +1208,7 @@ void main() {
       addTearDown(tester.view.reset);
       await _pumpAdmin(tester, AppTheme.light);
       final TextStyle style = tester
-          .widget<Text>(find.text('نظرة عامة'))
+          .widget<Text>(find.text('المباريات والنتائج'))
           .style!;
       expect(style.fontSize, greaterThanOrEqualTo(12));
       expect(style.letterSpacing ?? 0, 0);
