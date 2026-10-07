@@ -125,6 +125,25 @@ void main() {
       expect(tallies.single.fixture.value, _fixtureA);
     });
 
+    test('draws are read and feed the three-way split only', () async {
+      final connection = _FakeConnection([
+        Result.ok([
+          {'fixture_id': _fixtureA, 'home_wins': 6, 'away_wins': 2, 'draws': 2},
+        ]),
+      ]);
+      final reader = PostgresFixturePredictionTallyReader(connection);
+
+      final tally = _ok(
+        await reader.tallyByFixtures(const [FixtureRef(_fixtureA)]),
+      ).single;
+
+      expect(tally.draws, 2);
+      expect(tally.total, 10);
+      expect(tally.homeWinPercentage, 75);
+      final shares = tally.outcomeShares;
+      expect((shares.home, shares.draw, shares.away), (60, 20, 20));
+    });
+
     test('a driver failure propagates untouched', () async {
       final connection = _FakeConnection([
         const Result.err(

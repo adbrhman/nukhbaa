@@ -176,5 +176,9 @@ CurrentMonthFixtureItemDto currentMonthFixtureEntryToDto(
     resultHomeGoals: entry.resultHomeGoals,
     resultAwayGoals: entry.resultAwayGoals,
     decisivePredictions: entry.decisivePredictions,
+    homeOutcomeShare: entry.homeOutcomeShare,
+    drawOutcomeShare: entry.drawOutcomeShare,
+    awayOutcomeShare: entry.awayOutcomeShare,
+    totalPredictions: entry.totalPredictions,
   );
 }

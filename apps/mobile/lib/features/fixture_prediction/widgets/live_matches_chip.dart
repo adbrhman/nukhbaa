@@ -1,7 +1,13 @@
-/// The "live" chip in the matches app bar. It pulses — and is tappable —
-/// only while at least one fixture is actually in play; otherwise it sits
-/// quiet and disabled rather than disappearing, so its absence is never
-/// mistaken for a loading state.
+/// The "live" chip in the matches app bar. Its dot is red — and the chip
+/// tappable — only while at least one fixture is actually in play;
+/// otherwise it sits quiet and disabled rather than disappearing, so its
+/// absence is never mistaken for a loading state.
+///
+/// The dot is steady. It used to pulse forever (a repeating controller):
+/// the shell keeps the matches tab alive in an IndexedStack, so through
+/// every match the app drew sixty frames a second, on whatever tab was
+/// open, for a dot -- and each frame repainted the whole screen. On a
+/// low-end phone those frames were what the slow-frame figure counted.
 ///
 /// "In play" is a **time estimate, not a server fact**: the feed carries a
 /// kickoff instant and nothing else — no `live` / `finished` status — so
@@ -36,7 +42,7 @@ bool isFixtureLive(String? kickoffAt) {
 }
 
 /// The chip itself.
-class LiveMatchesChip extends StatefulWidget {
+class LiveMatchesChip extends StatelessWidget {
   /// Creates the chip.
   const LiveMatchesChip({
     required this.hasLive,
@@ -45,7 +51,8 @@ class LiveMatchesChip extends StatefulWidget {
     super.key,
   });
 
-  /// Whether any fixture is in play. Drives the pulse and the enabled state.
+  /// Whether any fixture is in play. Drives the red dot and the enabled
+  /// state.
   final bool hasLive;
 
   /// Whether the live-only filter is currently on.
@@ -55,48 +62,12 @@ class LiveMatchesChip extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<LiveMatchesChip> createState() => _LiveMatchesChipState();
-}
-
-class _LiveMatchesChipState extends State<LiveMatchesChip>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.hasLive) _pulse.repeat(reverse: true);
-  }
-
-  @override
-  void didUpdateWidget(covariant LiveMatchesChip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.hasLive == oldWidget.hasLive) return;
-    if (widget.hasLive) {
-      _pulse.repeat(reverse: true);
-    } else {
-      _pulse
-        ..stop()
-        ..value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final bool enabled = widget.hasLive;
+    final bool enabled = hasLive;
     final Color dotColor = enabled ? tokens.error : tokens.textMuted;
-    final Color foreground = widget.selected
+    final Color foreground = selected
         ? tokens.onPrimary
         : enabled
         ? tokens.textPrimary
@@ -105,7 +76,7 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
     return Semantics(
       button: true,
       enabled: enabled,
-      selected: widget.selected,
+      selected: selected,
       label: l10n.fixturesLiveLabel,
       // An InkWell, not a bare GestureDetector: on the web it takes keyboard
       // focus (Tab, then Enter) and shows the pointer hand (UI-25).
@@ -114,7 +85,7 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
         child: InkWell(
           key: const Key('currentMonthFixtures.live'),
           customBorder: const StadiumBorder(),
-          onTap: enabled ? widget.onTap : null,
+          onTap: enabled ? onTap : null,
           // A full 48 touch target around the 32px pill (UI-16).
           child: SizedBox(
             height: AppSizes.minTouchTarget,
@@ -126,30 +97,20 @@ class _LiveMatchesChipState extends State<LiveMatchesChip>
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 decoration: ShapeDecoration(
                   shape: const StadiumBorder(),
-                  color: widget.selected
+                  color: selected
                       ? tokens.primary
                       : tokens.textPrimary.withValues(alpha: 0.08),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    FadeTransition(
-                      // Never fades to nothing: the dot stays legible at its
-                      // dimmest, so the pulse reads as a heartbeat rather than
-                      // as the chip flickering in and out.
-                      // A steady dot when the system asks for no animation.
-                      opacity:
-                          (MediaQuery.maybeDisableAnimationsOf(context) ??
-                              false)
-                          ? kAlwaysCompleteAnimation
-                          : Tween<double>(begin: 0.35, end: 1).animate(_pulse),
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: dotColor,
-                        ),
+                    Container(
+                      key: const Key('currentMonthFixtures.live.dot'),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: dotColor,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),

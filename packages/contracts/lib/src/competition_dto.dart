@@ -824,6 +824,10 @@ final class CurrentMonthFixtureItemDto {
     this.resultHomeGoals,
     this.resultAwayGoals,
     this.decisivePredictions,
+    this.homeOutcomeShare,
+    this.drawOutcomeShare,
+    this.awayOutcomeShare,
+    this.totalPredictions,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -846,6 +850,10 @@ final class CurrentMonthFixtureItemDto {
       resultHomeGoals: json['result_home_goals'] as int?,
       resultAwayGoals: json['result_away_goals'] as int?,
       decisivePredictions: json['decisive_predictions'] as int?,
+      homeOutcomeShare: json['home_outcome_share'] as int?,
+      drawOutcomeShare: json['draw_outcome_share'] as int?,
+      awayOutcomeShare: json['away_outcome_share'] as int?,
+      totalPredictions: json['total_predictions'] as int?,
     );
   }
 
@@ -902,6 +910,22 @@ final class CurrentMonthFixtureItemDto {
   /// handful up.
   final int? decisivePredictions;
 
+  /// The home-win share of ALL predictions, draws included; with
+  /// [drawOutcomeShare] and [awayOutcomeShare] it adds up to 100. `null`
+  /// from an older server.
+  final int? homeOutcomeShare;
+
+  /// The draw share of all predictions, same meaning as [homeOutcomeShare].
+  final int? drawOutcomeShare;
+
+  /// The away-win share of all predictions, same meaning as
+  /// [homeOutcomeShare].
+  final int? awayOutcomeShare;
+
+  /// How many predictions the three-way split stands on, draws included;
+  /// `null` from an older server.
+  final int? totalPredictions;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -921,6 +945,11 @@ final class CurrentMonthFixtureItemDto {
     'result_home_goals': resultHomeGoals,
     'result_away_goals': resultAwayGoals,
     'decisive_predictions': decisivePredictions,
+    // Written only when known, so an older payload reads exactly as before.
+    if (homeOutcomeShare != null) 'home_outcome_share': homeOutcomeShare,
+    if (drawOutcomeShare != null) 'draw_outcome_share': drawOutcomeShare,
+    if (awayOutcomeShare != null) 'away_outcome_share': awayOutcomeShare,
+    if (totalPredictions != null) 'total_predictions': totalPredictions,
   };
 
   @override
@@ -939,6 +968,10 @@ final class CurrentMonthFixtureItemDto {
       other.resultHomeGoals == resultHomeGoals &&
       other.resultAwayGoals == resultAwayGoals &&
       other.decisivePredictions == decisivePredictions &&
+      other.homeOutcomeShare == homeOutcomeShare &&
+      other.drawOutcomeShare == drawOutcomeShare &&
+      other.awayOutcomeShare == awayOutcomeShare &&
+      other.totalPredictions == totalPredictions &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -956,6 +989,10 @@ final class CurrentMonthFixtureItemDto {
     resultHomeGoals,
     resultAwayGoals,
     decisivePredictions,
+    homeOutcomeShare,
+    drawOutcomeShare,
+    awayOutcomeShare,
+    totalPredictions,
     schemaVersion,
   );
 }

@@ -82,8 +82,7 @@ Future<void> _pump(
       ),
     ),
   );
-  // The live chip pulses forever, so the tree never settles:
-  // pump a bounded number of frames instead.
+  // Bounded frames rather than a settle: the minute tick is a timer.
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 250));
   }
@@ -137,6 +136,13 @@ void main() {
     // last number of the left-to-right label.
     expect(find.text('1 - 2'), findsOneWidget);
     expect(find.text("67'"), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('currentMonthFixtures.liveStatus.f-1')),
+        matching: find.text('مباشر'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('without a running score there is no score', (tester) async {
@@ -152,12 +158,17 @@ void main() {
 
     expect(find.byKey(_scoreKey), findsOneWidget);
     expect(find.text('0 - 3'), findsOneWidget);
+    // The status sits in the header now, beside the league.
     expect(
       find.descendant(
-        of: find.byKey(_scoreKey),
+        of: find.byKey(const Key('currentMonthFixtures.liveStatus.f-1')),
         matching: find.text('بانتظار النتيجة'),
       ),
       findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('currentMonthFixtures.liveMinute.f-1')),
+      findsNothing,
     );
   });
 }

@@ -30,6 +30,10 @@ final class CurrentMonthFixtureEntry {
     this.resultHomeGoals,
     this.resultAwayGoals,
     this.decisivePredictions,
+    this.homeOutcomeShare,
+    this.drawOutcomeShare,
+    this.awayOutcomeShare,
+    this.totalPredictions,
   });
 
   /// The owning competition's identity.
@@ -65,6 +69,23 @@ final class CurrentMonthFixtureEntry {
   /// when the feed was built without a tally reader.
   final int? decisivePredictions;
 
+  /// The three-way split of ALL predictions (home win, draw, away win),
+  /// adding up to 100, or `null` when the feed was built without a tally
+  /// reader -- the live card's "60% / 22% / 18%". Every prediction counts,
+  /// draws included, unlike [homeWinPercentage].
+  final int? homeOutcomeShare;
+
+  /// The draw share of all predictions, same meaning as [homeOutcomeShare].
+  final int? drawOutcomeShare;
+
+  /// The away-win share of all predictions, same meaning as
+  /// [homeOutcomeShare].
+  final int? awayOutcomeShare;
+
+  /// How many predictions the three-way split stands on, draws included,
+  /// or `null` without a tally reader.
+  final int? totalPredictions;
+
   @override
   bool operator ==(Object other) =>
       other is CurrentMonthFixtureEntry &&
@@ -76,7 +97,11 @@ final class CurrentMonthFixtureEntry {
       other.awayWinPercentage == awayWinPercentage &&
       other.resultHomeGoals == resultHomeGoals &&
       other.resultAwayGoals == resultAwayGoals &&
-      other.decisivePredictions == decisivePredictions;
+      other.decisivePredictions == decisivePredictions &&
+      other.homeOutcomeShare == homeOutcomeShare &&
+      other.drawOutcomeShare == drawOutcomeShare &&
+      other.awayOutcomeShare == awayOutcomeShare &&
+      other.totalPredictions == totalPredictions;
 
   @override
   int get hashCode => Object.hash(
@@ -89,6 +114,10 @@ final class CurrentMonthFixtureEntry {
     resultHomeGoals,
     resultAwayGoals,
     decisivePredictions,
+    homeOutcomeShare,
+    drawOutcomeShare,
+    awayOutcomeShare,
+    totalPredictions,
   );
 
   @override
@@ -283,6 +312,18 @@ final class ListCurrentMonthFixtures {
                   ? null
                   : (tallies[fixture.value]?.homeWins ?? 0) +
                         (tallies[fixture.value]?.awayWins ?? 0),
+              homeOutcomeShare: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.outcomeShares.home ?? 0),
+              drawOutcomeShare: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.outcomeShares.draw ?? 0),
+              awayOutcomeShare: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.outcomeShares.away ?? 0),
+              totalPredictions: tallyReader == null
+                  ? null
+                  : (tallies[fixture.value]?.total ?? 0),
               resultHomeGoals: results[fixture.value]?.homeGoals,
               resultAwayGoals: results[fixture.value]?.awayGoals,
               fixture: SeasonFixtureCard(

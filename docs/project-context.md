@@ -3792,6 +3792,43 @@ server.
   add form gains "مباراة تجريبية"; the admin's match card shows
   "مباراة تجريبية". No new dependency, no l10n key.
 
+### The live card and the slow frames (2026-10-07)
+
+Requested 2026-10-07: the matches card during a match after the supplied
+design, and the slow frames on the admin card fixed (5.3% overall, 21.1%
+on a Redmi Note 9, slowest frame 335 167 ms).
+
+- **After kickoff** the card is `_StartedBody` (`fotmob_match_card.dart`):
+  the league, then the minute and a status chip (مباشر red, بانتظار النتيجة,
+  انتهت); the two sides as name and crest around the score in a framed box
+  (running score, or the recorded result); a strip with the two names and
+  the player's call between them (توقعك 2 - 1, the bolt, points once
+  graded; لم تتوقّع without one); the split of everyone's calls; the
+  "توقعات الجميع" button. Before kickoff the card is unchanged.
+- **Large text.** When the framed score (measured at the reader's text
+  size) leaves either side less than a crest and the start of its name,
+  the score drops under the two sides (`_ScoreRow`); the status chip is
+  capped at half the header and ends in an ellipsis. The UI audit had
+  caught the score squeezing each side to 4px at x2.0.
+- **The split** is three-way over every call, draws included, adding up to
+  100 (largest remainder): the tally reader counts draws,
+  `FixtureOutcomeTally.outcomeShares`, and the feed item carries
+  `home_outcome_share`, `draw_outcome_share`, `away_outcome_share` and
+  `total_predictions` (written only when known; an older server sends
+  none and the card falls back to the two decisive shares). Shown from
+  `minShareSample` calls up. The decisive shares keep their meaning.
+- **Frames.** Three things drew frames nobody needed, each a full repaint:
+  the live chip's dot pulsed forever (now steady); the shell's
+  IndexedStack keeps hidden tabs' tickers running (`Visibility.maintain`),
+  so the pulse and the bell kept drawing over whatever tab was open --
+  hidden tabs now sit under `TickerMode(enabled: false)`, and the bell
+  blinks only while its tab is visible; every crest had a blurred halo,
+  redrawn on every scrolled frame (removed). The reporter no longer
+  counts a timing over 10 s (`FrameReporter.suspendedAfter`): that is the
+  app suspended mid-frame, not a frame -- the source of the 335 167 ms.
+  The effect is read on the admin card by build, once the release is out.
+- No migration, no new dependency, no l10n key.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

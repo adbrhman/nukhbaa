@@ -15,9 +15,9 @@ import 'package:shared/shared.dart';
 ///
 /// `migration 0019` indexes `fixture_id` (`fixture_predictions_fixture_idx`),
 /// so this is an index scan plus an aggregate, and it reads no scoreline into
-/// the server at all -- only two counts per fixture. Draws match neither
-/// filter, which is what makes the two percentages a split between the teams
-/// rather than between all three outcomes.
+/// the server at all -- only three counts per fixture. Draws match neither
+/// win filter, which is what makes the two win percentages a split between
+/// the teams; their own count feeds the live card's three-way split.
 ///
 /// A fixture nobody has predicted produces no row: absent, not zero. The
 /// caller decides what that means (see [FixturePredictionTallyReader]).
@@ -33,7 +33,8 @@ final class PostgresFixturePredictionTallyReader
   static const String _tallySql = '''
 SELECT fixture_id,
        COUNT(*) FILTER (WHERE home_goals > away_goals) AS home_wins,
-       COUNT(*) FILTER (WHERE home_goals < away_goals) AS away_wins
+       COUNT(*) FILTER (WHERE home_goals < away_goals) AS away_wins,
+       COUNT(*) FILTER (WHERE home_goals = away_goals) AS draws
 FROM prediction.fixture_predictions
 WHERE fixture_id = ANY(@fixture_ids::uuid[])
 GROUP BY fixture_id
@@ -74,6 +75,7 @@ GROUP BY fixture_id
           fixture: (parsed as Ok<FixtureRef>).value,
           homeWins: _count(row['home_wins']),
           awayWins: _count(row['away_wins']),
+          draws: _count(row['draws']),
         ),
       );
     }

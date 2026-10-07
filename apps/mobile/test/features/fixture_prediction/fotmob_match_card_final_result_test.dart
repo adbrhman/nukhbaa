@@ -1,7 +1,7 @@
 /// A finished match through the real matches screen, the real card and a
 /// fake server: once its result is recorded the card shows the final score
 /// as over, whether or not the player predicted it, and a graded card
-/// shows the final score under the player's own call and points.
+/// shows the final score above the player's own call and points.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -106,24 +106,41 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: find.byKey(score), matching: find.text('انتهت')),
+      find.descendant(
+        of: find.byKey(const Key('currentMonthFixtures.liveStatus.f-1')),
+        matching: find.text('انتهت'),
+      ),
       findsOneWidget,
     );
     expect(find.text('بانتظار النتيجة'), findsNothing);
   });
 
-  testWidgets('a graded card shows the final score under the call', (
+  testWidgets('a graded card shows the final score above the call', (
     tester,
   ) async {
     await _pump(tester, predicted: true);
 
     expect(
-      tester
-          .widget<Text>(
-            find.byKey(const Key('currentMonthFixtures.finalScore.f-1')),
-          )
-          .data,
-      'النتيجة 1 - 2',
+      find.descendant(
+        of: find.byKey(const Key('currentMonthFixtures.liveScore.f-1')),
+        matching: find.text('1 - 2'),
+      ),
+      findsOneWidget,
+    );
+    // The call (2-0 home) sits in the strip below, with its points.
+    final Finder call = find.byKey(
+      const Key('currentMonthFixtures.myCall.f-1'),
+    );
+    expect(
+      find.descendant(of: call, matching: find.text('0 - 2')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('currentMonthFixtures.liveStatus.f-1')),
+        matching: find.text('انتهت'),
+      ),
+      findsOneWidget,
     );
   });
 }

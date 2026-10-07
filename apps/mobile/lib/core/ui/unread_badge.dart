@@ -14,7 +14,9 @@ import 'package:flutter/material.dart';
 /// notification is noticed; opening the inbox marks everything read, the
 /// count drops to zero and the bell is still again until the next one. The
 /// count stays solid; only the glyph fades. A device that asks for less
-/// motion gets the count alone.
+/// motion gets the count alone, and a bell out of sight (its tab hidden,
+/// [TickerMode] off) does not blink: every blink is a repaint of the whole
+/// screen, which a phone should not pay for a bell nobody can see.
 class UnreadBadge extends StatefulWidget {
   const UnreadBadge({super.key, required this.count, required this.child});
 
@@ -62,6 +64,7 @@ class _UnreadBadgeState extends State<UnreadBadge> {
   void _sync() {
     final bool blink =
         widget.count > 0 &&
+        TickerMode.of(context) &&
         !(MediaQuery.maybeDisableAnimationsOf(context) ?? false);
     if (blink && _blink == null) {
       _blink = Timer.periodic(UnreadBadge.blinkPeriod, (_) {

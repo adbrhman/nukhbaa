@@ -48,6 +48,26 @@ void main() {
     expect(r.frames, 0, reason: 'a new session starts after a report');
   });
 
+  test('a timing spanning a suspension is not a frame', () async {
+    final sent = <FrameReportDto>[];
+    final r = reporter(sent, hz: 60);
+    for (int i = 0; i < 150; i++) {
+      r.addFrame(build: _ms(4), raster: _ms(5));
+    }
+    // The OS paused the app mid-frame for five and a half minutes.
+    r.addFrame(build: _ms(3), raster: _ms(335167));
+    // A real freeze is still a frozen frame.
+    r.addFrame(build: _ms(3), raster: _ms(900));
+
+    await r.flush();
+
+    final FrameReportDto report = sent.single;
+    expect(report.frames, 151);
+    expect(report.slowFrames, 1);
+    expect(report.frozenFrames, 1);
+    expect(report.worstFrameMs, 900);
+  });
+
   test('the same frame is not slow at 60 Hz', () async {
     final sent = <FrameReportDto>[];
     final r = reporter(sent, hz: 60);

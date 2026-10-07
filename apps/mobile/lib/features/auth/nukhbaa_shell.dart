@@ -278,7 +278,12 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
                 children: <Widget>[
                   for (int i = 0; i < tabCount; i++)
                     if (_built.contains(i))
-                      _pageAt(i)
+                      // A kept-alive tab out of sight stops its tickers.
+                      // IndexedStack keeps them running (Visibility.maintain),
+                      // so an animation on a hidden tab drew frames over the
+                      // visible one -- and each was a full repaint, counted
+                      // as slow on low-end phones (frame stats, 2026-10-07).
+                      TickerMode(enabled: i == currentIndex, child: _pageAt(i))
                     else
                       const SizedBox.shrink(),
                 ],

@@ -31,6 +31,7 @@ final class FixtureOutcomeTally {
     required this.fixture,
     required this.homeWins,
     required this.awayWins,
+    this.draws = 0,
   });
 
   /// The fixture this tally belongs to.
@@ -41,6 +42,40 @@ final class FixtureOutcomeTally {
 
   /// Predictions giving the away side more goals than the home side.
   final int awayWins;
+
+  /// Predictions calling a draw. Not part of [homeWinPercentage] or
+  /// [awayWinPercentage]; only of [outcomeShares].
+  final int draws;
+
+  /// Every prediction on the fixture: home wins, draws and away wins.
+  int get total => homeWins + draws + awayWins;
+
+  /// The three-way split of ALL predictions -- home win, draw, away win --
+  /// as whole percentages that add up to exactly 100 (largest remainder),
+  /// or all zero when nobody has predicted. The live card's "60% / 22% /
+  /// 18%" line; the two decisive shares above keep their own meaning.
+  ({int home, int draw, int away}) get outcomeShares {
+    final int all = total;
+    if (all == 0) return (home: 0, draw: 0, away: 0);
+    final List<int> counts = <int>[homeWins, draws, awayWins];
+    final List<int> shares = <int>[
+      for (final int c in counts) (c * 100) ~/ all,
+    ];
+    final List<int> order = <int>[0, 1, 2]
+      ..sort((a, b) {
+        final int byRemainder = ((counts[b] * 100) % all).compareTo(
+          (counts[a] * 100) % all,
+        );
+        return byRemainder != 0 ? byRemainder : a.compareTo(b);
+      });
+    int left = 100 - shares.fold<int>(0, (sum, s) => sum + s);
+    for (final int i in order) {
+      if (left == 0) break;
+      shares[i]++;
+      left--;
+    }
+    return (home: shares[0], draw: shares[1], away: shares[2]);
+  }
 
   /// The home share of decisive predictions, 0 when there are none.
   int get homeWinPercentage => _share(homeWins);

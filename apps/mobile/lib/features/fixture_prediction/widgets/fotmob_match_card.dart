@@ -533,29 +533,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                _CardHeader(
-                  // The league the match was played in when known, falling
-                  // back to the contest's own name ("شهر 9") only while a
-                  // fixture still carries no league. The reference design
-                  // shows the league here, never the contest.
-                  competitionId: widget.item.competitionId,
-                  competitionName:
-                      _fixture.leagueName ?? widget.item.competitionName,
-                  leagueLogoUrl: _fixture.leagueLogoUrl,
-                  kickoffAt: _fixture.kickoffAt,
-                  onOpenLeaderboard: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => SeasonLeaderboardScreen(
-                        seasonId: _fixture.seasonId,
-                        seasonLabel: widget.item.seasonLabel,
-                      ),
-                    ),
-                  ),
-                ),
                 // A test fixture reaches admins only (migration 0098);
                 // the label keeps it from passing for a real match.
                 if (_fixture.isTest) ...<Widget>[
-                  const SizedBox(height: AppSpacing.xs),
                   const Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: AppBadge(
@@ -565,123 +545,137 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       icon: Icons.science_outlined,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
                 ],
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Expanded(
-                      child: _TeamColumn(
-                        displayName: home.displayName,
-                        crestUrl: home.crestUrl,
-                        assetPath: home.assetPath,
-                        brandColor: home.brandColor,
+                // After kickoff the card turns into the match itself
+                // (design of 2026-10-07): status and minute in the header,
+                // the score in a box between the sides, the player's call
+                // under it, the split of everyone's calls, and the button
+                // to everyone's predictions.
+                if (locked)
+                  _StartedBody(
+                    item: widget.item,
+                    home: home,
+                    away: away,
+                    myPrediction: myPrediction,
+                    isGraded: isGraded,
+                    grade: myGrade,
+                    points: myPoints,
+                    onOpenPredictions: () => unawaited(
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => FixturePredictionsBoardPage(
+                            kickoffAt: _fixture.kickoffAt,
+                          ),
+                        ),
                       ),
                     ),
-                    ListenableBuilder(
-                      listenable: Listenable.merge(<Listenable>[
-                        _homeGoals,
-                        _awayGoals,
-                      ]),
-                      builder: (context, _) {
-                        final int? homeGoals = _homeGoals.value;
-                        final int? awayGoals = _awayGoals.value;
-                        return _MiddleSlot(
-                          isGraded: isGraded,
-                          locked: locked,
-                          live: locked && isFixtureLive(_fixture.kickoffAt),
-                          liveHome: widget.item.liveHomeGoals,
-                          liveAway: widget.item.liveAwayGoals,
-                          liveMinute: widget.item.liveMinute,
-                          liveFinished: widget.item.liveFinished,
-                          resultHome: widget.item.resultHomeGoals,
-                          resultAway: widget.item.resultAwayGoals,
-                          myPrediction: myPrediction,
-                          grade: myGrade,
-                          points: myPoints,
-                          homeGoals: homeGoals,
-                          awayGoals: awayGoals,
-                          enabled: enabled,
-                          showEditableControls: showEditableControls,
-                          isConfirmed: isConfirmedFor(homeGoals, awayGoals),
-                          fixtureId: fixtureId,
-                          onIncrementHome: _incrementHome,
-                          onDecrementHome: _decrementHome,
-                          onIncrementAway: _incrementAway,
-                          onDecrementAway: _decrementAway,
-                        );
-                      },
-                    ),
-                    Expanded(
-                      child: _TeamColumn(
-                        displayName: away.displayName,
-                        crestUrl: away.crestUrl,
-                        assetPath: away.assetPath,
-                        brandColor: away.brandColor,
+                  )
+                else ...<Widget>[
+                  _CardHeader(
+                    // The league the match was played in when known, falling
+                    // back to the contest's own name ("شهر 9") only while a
+                    // fixture still carries no league. The reference design
+                    // shows the league here, never the contest.
+                    competitionId: widget.item.competitionId,
+                    competitionName:
+                        _fixture.leagueName ?? widget.item.competitionName,
+                    leagueLogoUrl: _fixture.leagueLogoUrl,
+                    kickoffAt: _fixture.kickoffAt,
+                    onOpenLeaderboard: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SeasonLeaderboardScreen(
+                          seasonId: _fixture.seasonId,
+                          seasonLabel: widget.item.seasonLabel,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Row(
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       Expanded(
-                        child: showShares
-                            ? _WinPercentage(
-                                percentage: homeWinShare,
-                                teamName: home.displayName,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      if (showEditableControls)
-                        SizedBox(
-                          width: 130,
-                          child: _DoubleGlowButton(
-                            selected: _isDouble,
-                            enabled: enabled,
-                            onTap: _toggleDouble,
-                            fixtureId: fixtureId,
-                          ),
-                        )
-                      // After kickoff the double button's slot opens the
-                      // day's predictions table (the server reveals each
-                      // match only from its kickoff, when predicting closes).
-                      else if (locked)
-                        SizedBox(
-                          width: 130,
-                          child: _RevealPredictionsButton(
-                            fixtureId: fixtureId,
-                            onTap: () => unawaited(
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => FixturePredictionsBoardPage(
-                                    kickoffAt: _fixture.kickoffAt,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        const SizedBox(
-                          width: 130,
-                          height: AppSizes.minTouchTarget,
+                        child: _TeamColumn(
+                          displayName: home.displayName,
+                          crestUrl: home.crestUrl,
+                          assetPath: home.assetPath,
+                          brandColor: home.brandColor,
                         ),
-                      const SizedBox(width: AppSpacing.sm),
+                      ),
+                      ListenableBuilder(
+                        listenable: Listenable.merge(<Listenable>[
+                          _homeGoals,
+                          _awayGoals,
+                        ]),
+                        builder: (context, _) {
+                          final int? homeGoals = _homeGoals.value;
+                          final int? awayGoals = _awayGoals.value;
+                          return _MiddleSlot(
+                            homeGoals: homeGoals,
+                            awayGoals: awayGoals,
+                            enabled: enabled,
+                            isConfirmed: isConfirmedFor(homeGoals, awayGoals),
+                            fixtureId: fixtureId,
+                            onIncrementHome: _incrementHome,
+                            onDecrementHome: _decrementHome,
+                            onIncrementAway: _incrementAway,
+                            onDecrementAway: _decrementAway,
+                          );
+                        },
+                      ),
                       Expanded(
-                        child: showShares
-                            ? _WinPercentage(
-                                percentage: awayWinShare,
-                                teamName: away.displayName,
-                              )
-                            : const SizedBox.shrink(),
+                        child: _TeamColumn(
+                          displayName: away.displayName,
+                          crestUrl: away.crestUrl,
+                          assetPath: away.assetPath,
+                          brandColor: away.brandColor,
+                        ),
                       ),
                     ],
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Expanded(
+                          child: showShares
+                              ? _WinPercentage(
+                                  percentage: homeWinShare,
+                                  teamName: home.displayName,
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        if (showEditableControls)
+                          SizedBox(
+                            width: 130,
+                            child: _DoubleGlowButton(
+                              selected: _isDouble,
+                              enabled: enabled,
+                              onTap: _toggleDouble,
+                              fixtureId: fixtureId,
+                            ),
+                          )
+                        else
+                          const SizedBox(
+                            width: 130,
+                            height: AppSizes.minTouchTarget,
+                          ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: showShares
+                              ? _WinPercentage(
+                                  percentage: awayWinShare,
+                                  teamName: away.displayName,
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (!locked && myPrediction != null)
                   ListenableBuilder(
                     listenable: Listenable.merge(<Listenable>[
@@ -931,8 +925,6 @@ class _CompetitionLogo extends StatelessWidget {
 }
 
 /// One side's crest + name — identity is resolved once by the parent card.
-/// The small halo is intentionally local to the crest and uses the same
-/// dynamic brand color as the side tint; it is visible, but never dominant.
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
@@ -959,28 +951,20 @@ class _TeamColumn extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Container(
+        // No blurred halo: a blur shadow behind every crest was re-drawn on
+        // every scrolled frame, two per card, which a low-end GPU felt
+        // (frame stats, 2026-10-07). The size stays, so nothing moves.
+        SizedBox(
           width: _crestSize + 10,
           height: _crestSize + 10,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: brandColor == null
-                ? const <BoxShadow>[]
-                : <BoxShadow>[
-                    BoxShadow(
-                      color: brandColor!.withValues(alpha: 0.20),
-                      blurRadius: 14,
-                      spreadRadius: 0.5,
-                    ),
-                  ],
-          ),
-          child: TeamLogo(
-            displayName: displayName,
-            crestUrl: crestUrl,
-            assetPath: assetPath,
-            brandColor: brandColor,
-            size: _crestSize,
+          child: Center(
+            child: TeamLogo(
+              displayName: displayName,
+              crestUrl: crestUrl,
+              assetPath: assetPath,
+              brandColor: brandColor,
+              size: _crestSize,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -1001,55 +985,29 @@ class _TeamColumn extends StatelessWidget {
   }
 }
 
-/// The fixed-width middle slot between the two [_TeamColumn]s — one of
-/// three mutually exclusive contents (§6 of the spec, most specific first):
-/// graded (forecast + points), locked (lock icon + "Started"), or the two
-/// active [_ScoreStepper]s (open/predicted — steppers stay active and
-/// pre-filled once predicted, per the spec's own table).
+/// The middle slot between the two [_TeamColumn]s before kickoff: the two
+/// active [_ScoreStepper]s, pre-filled once predicted, with the saved check
+/// over their gap. After kickoff the whole card is [_StartedBody].
 class _MiddleSlot extends StatelessWidget {
   const _MiddleSlot({
-    required this.isGraded,
-    required this.locked,
-    required this.live,
-    required this.myPrediction,
-    required this.grade,
-    required this.points,
     required this.homeGoals,
     required this.awayGoals,
     required this.enabled,
-    required this.showEditableControls,
     required this.isConfirmed,
     required this.fixtureId,
     required this.onIncrementHome,
     required this.onDecrementHome,
     required this.onIncrementAway,
     required this.onDecrementAway,
-    this.liveHome,
-    this.liveAway,
-    this.liveMinute,
-    this.liveFinished,
-    this.resultHome,
-    this.resultAway,
   });
 
-  final bool isGraded;
-  final bool locked;
-
-  /// Locked AND inside [liveWindow] after kickoff (a time estimate, see
-  /// [isFixtureLive]); drives "live" vs "awaiting result" in [_LockedSlot].
-  final bool live;
-  final FixturePredictionDto? myPrediction;
-  final String? grade;
-  final int? points;
   final int? homeGoals;
   final int? awayGoals;
   final bool enabled;
-  final bool showEditableControls;
 
   /// Whether the current pick is a confirmed one — either just submitted
   /// successfully, or matches an already-stored prediction. Drives the
-  /// small checkmark badge between the two steppers (hidden entirely in
-  /// the locked/graded states, since this branch never runs for those).
+  /// small checkmark badge between the two steppers.
   final bool isConfirmed;
   final String fixtureId;
   final VoidCallback onIncrementHome;
@@ -1057,41 +1015,8 @@ class _MiddleSlot extends StatelessWidget {
   final VoidCallback onIncrementAway;
   final VoidCallback onDecrementAway;
 
-  /// The provider's running score for a locked card (display only).
-  final int? liveHome;
-  final int? liveAway;
-  final int? liveMinute;
-  final bool? liveFinished;
-
-  /// The recorded final score, once there is one (the feed's).
-  final int? resultHome;
-  final int? resultAway;
-
   @override
   Widget build(BuildContext context) {
-    if (isGraded && myPrediction != null) {
-      return _GradedSlot(
-        prediction: myPrediction!,
-        grade: grade,
-        points: points,
-        fixtureId: fixtureId,
-        resultHome: resultHome,
-        resultAway: resultAway,
-      );
-    }
-    if (locked) {
-      return _LockedSlot(
-        live: live,
-        fixtureId: fixtureId,
-        myPrediction: myPrediction,
-        home: liveHome,
-        away: liveAway,
-        minute: liveMinute,
-        finished: liveFinished,
-        resultHome: resultHome,
-        resultAway: resultAway,
-      );
-    }
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
@@ -1170,240 +1095,6 @@ class _ConfirmBadge extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _GradedSlot extends StatelessWidget {
-  const _GradedSlot({
-    required this.prediction,
-    required this.grade,
-    required this.points,
-    required this.fixtureId,
-    this.resultHome,
-    this.resultAway,
-  });
-
-  final FixturePredictionDto prediction;
-  final String? grade;
-  final int? points;
-  final String fixtureId;
-
-  /// The recorded final score, when the feed carries it.
-  final int? resultHome;
-  final int? resultAway;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
-    // Tone follows the server's points, not the grade name: a correct
-    // outcome can award 0 under the frozen ruleset, and a green "0 pts"
-    // reads as a win nobody got.
-    final bool success = (points ?? 0) > 0;
-    final int? home = resultHome;
-    final int? away = resultAway;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
-        const SizedBox(height: AppSpacing.xs),
-        if (points != null)
-          AppBadge(
-            label: l10n.pointsAbbreviated(points!),
-            tone: success ? AppBadgeTone.success : AppBadgeTone.muted,
-            icon: grade == 'exact_scoreline' ? Icons.star : null,
-          ),
-        // The final score beside the call: without it the points said
-        // nothing about why (decided 2026-10-07).
-        if (home != null && away != null) ...<Widget>[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'النتيجة ${orientedScoreLabel(context, home, away)}',
-            key: Key('currentMonthFixtures.finalScore.$fixtureId'),
-            maxLines: 1,
-            style: TextStyle(
-              color: tokens.textSecondary,
-              fontSize: AppFontSize.s12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// A started, not-yet-graded fixture: "live" (red dot) inside the
-/// [liveWindow] after kickoff, then "awaiting result" -- instead of one
-/// generic "started" label for both, which kept a finished match looking
-/// like it was still being played.
-class _LockedSlot extends StatelessWidget {
-  const _LockedSlot({
-    required this.live,
-    required this.fixtureId,
-    this.myPrediction,
-    this.home,
-    this.away,
-    this.minute,
-    this.finished,
-    this.resultHome,
-    this.resultAway,
-  });
-
-  final bool live;
-  final String fixtureId;
-
-  /// The provider's running (or, when [finished], final) score, if any.
-  final int? home;
-  final int? away;
-  final int? minute;
-  final bool? finished;
-
-  /// The recorded final score: once there is one the match is over,
-  /// whatever the provider last said.
-  final int? resultHome;
-  final int? resultAway;
-
-  /// The player's own call, shown under the status once kickoff has hidden
-  /// the steppers; null when they did not predict this match.
-  final FixturePredictionDto? myPrediction;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget status = _status(context);
-    final FixturePredictionDto? mine = myPrediction;
-    if (mine == null) return status;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        status,
-        const SizedBox(height: AppSpacing.xs),
-        _MyCallLine(prediction: mine, fixtureId: fixtureId),
-      ],
-    );
-  }
-
-  Widget _status(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
-    final bool recorded = resultHome != null && resultAway != null;
-    final int? homeGoals = recorded ? resultHome : home;
-    final int? awayGoals = recorded ? resultAway : away;
-    if (homeGoals != null && awayGoals != null) {
-      final bool over = recorded || (finished ?? false);
-      final Color accent = over ? tokens.textMuted : tokens.error;
-      // The dot keeps the danger red; the words take the red made for text.
-      final Color accentText = over ? tokens.textMuted : tokens.errorText;
-      final int? clock = minute;
-      return Column(
-        key: Key('currentMonthFixtures.liveScore.$fixtureId'),
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            orientedScoreLabel(context, homeGoals, awayGoals),
-            textDirection: TextDirection.ltr,
-            style: TextStyle(
-              color: tokens.textPrimary,
-              fontSize: AppFontSize.s26,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (!over) ...<Widget>[
-                Icon(Icons.circle, size: 8, color: accent),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                recorded
-                    ? 'انتهت'
-                    : over
-                    ? l10n.predictionPendingResultLabel
-                    : clock != null
-                    ? "$clock'"
-                    : l10n.fixturesLiveLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textDirection: over || clock == null ? null : TextDirection.ltr,
-                style: TextStyle(color: accentText, fontSize: AppFontSize.s11),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-    final Color color = live ? tokens.error : tokens.textMuted;
-    final Color textColor = live ? tokens.errorText : tokens.textMuted;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          live ? Icons.circle : Icons.lock_outline,
-          size: live ? 10 : AppSizes.iconSm,
-          color: color,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          live ? l10n.fixturesLiveLabel : l10n.predictionPendingResultLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: textColor, fontSize: AppFontSize.s11),
-        ),
-      ],
-    );
-  }
-}
-
-/// "Your call 2 - 1" under a started match. Once kickoff hid the steppers
-/// the card no longer said what the player had called -- right when they
-/// were following the score. A bolt marks the day's double.
-class _MyCallLine extends StatelessWidget {
-  const _MyCallLine({required this.prediction, required this.fixtureId});
-
-  final FixturePredictionDto prediction;
-  final String fixtureId;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
-    final TextStyle style = TextStyle(
-      color: tokens.textSecondary,
-      fontSize: AppFontSize.s11,
-      fontWeight: FontWeight.w600,
-    );
-    return Row(
-      key: Key('currentMonthFixtures.myCall.$fixtureId'),
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(l10n.matchCardYourCall, style: style),
-        const SizedBox(width: 4),
-        Text(
-          orientedScoreLabel(
-            context,
-            prediction.homeGoals,
-            prediction.awayGoals,
-          ),
-          textDirection: TextDirection.ltr,
-          style: style.copyWith(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        if (prediction.isDouble) ...<Widget>[
-          const SizedBox(width: 2),
-          Icon(
-            Icons.bolt_rounded,
-            size: AppSizes.iconInline,
-            color: tokens.gold,
-          ),
-        ],
-      ],
     );
   }
 }
@@ -1643,8 +1334,8 @@ class _WinPercentage extends StatelessWidget {
   }
 }
 
-/// The started card's "everyone's predictions" button, drawn in the slot
-/// and at the height of [_DoubleGlowButton] so the card keeps its layout.
+/// The started card's "everyone's predictions" button, centred under the
+/// split of everyone's calls.
 class _RevealPredictionsButton extends StatelessWidget {
   const _RevealPredictionsButton({
     required this.fixtureId,
@@ -1680,8 +1371,11 @@ class _RevealPredictionsButton extends StatelessWidget {
             ),
             child: Center(
               child: Container(
+                // Wide enough to read as the card's one action under the
+                // split (design of 2026-10-07).
                 constraints: const BoxConstraints(
                   minHeight: _DoubleGlowButton._height,
+                  minWidth: 200,
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
@@ -1841,6 +1535,755 @@ class _DoubleGlowButton extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Where a started match stands, for its header chip.
+enum _MatchPhase {
+  /// In play: a red "live" chip and the minute.
+  live,
+
+  /// Played (or past its live window) with no recorded result yet.
+  awaitingResult,
+
+  /// The result is recorded (or the call already graded).
+  over,
+}
+
+/// The card after kickoff (design of 2026-10-07): the league and the live
+/// chip with the minute, the two sides around the score in a box, the
+/// player's own call between the two names, the split of everyone's calls
+/// -- home win, draw, away win -- and the button to everyone's predictions.
+///
+/// Nothing here is computed: the score is the provider's running one or the
+/// recorded result, the split comes from the server with the feed item.
+class _StartedBody extends StatelessWidget {
+  const _StartedBody({
+    required this.item,
+    required this.home,
+    required this.away,
+    required this.myPrediction,
+    required this.isGraded,
+    required this.grade,
+    required this.points,
+    required this.onOpenPredictions,
+  });
+
+  final CurrentMonthFixtureItemDto item;
+  final ResolvedTeamIdentity home;
+  final ResolvedTeamIdentity away;
+  final FixturePredictionDto? myPrediction;
+  final bool isGraded;
+  final String? grade;
+  final int? points;
+  final VoidCallback onOpenPredictions;
+
+  SeasonFixtureCardDto get _fixture => item.fixture;
+
+  @override
+  Widget build(BuildContext context) {
+    final String fixtureId = _fixture.fixtureId;
+    final bool recorded =
+        item.resultHomeGoals != null && item.resultAwayGoals != null;
+    final int? homeGoals = recorded ? item.resultHomeGoals : item.liveHomeGoals;
+    final int? awayGoals = recorded ? item.resultAwayGoals : item.liveAwayGoals;
+    final bool hasScore = homeGoals != null && awayGoals != null;
+    final _MatchPhase phase = recorded || isGraded
+        ? _MatchPhase.over
+        : hasScore
+        ? ((item.liveFinished ?? false)
+              ? _MatchPhase.awaitingResult
+              : _MatchPhase.live)
+        : (isFixtureLive(_fixture.kickoffAt)
+              ? _MatchPhase.live
+              : _MatchPhase.awaitingResult);
+
+    // The split of everyone's calls: three-way from a server that sends
+    // it, the two decisive shares from an older one; never over a handful
+    // of calls (minShareSample).
+    final int? total = item.totalPredictions;
+    final int? decisive = item.decisivePredictions;
+    final bool threeWay = total != null;
+    final bool showShares = threeWay
+        ? total >= minShareSample
+        : item.homeWinPercentage != null &&
+              (decisive == null || decisive >= minShareSample);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _StartedHeader(
+          competitionId: item.competitionId,
+          competitionName: _fixture.leagueName ?? item.competitionName,
+          leagueLogoUrl: _fixture.leagueLogoUrl,
+          phase: phase,
+          minute: phase == _MatchPhase.live ? item.liveMinute : null,
+          fixtureId: fixtureId,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _ScoreRow(
+          fixtureId: fixtureId,
+          home: home,
+          away: away,
+          homeGoals: homeGoals,
+          awayGoals: awayGoals,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _CallStrip(
+          fixtureId: fixtureId,
+          homeName: home.displayName,
+          awayName: away.displayName,
+          prediction: myPrediction,
+          grade: isGraded ? grade : null,
+          points: isGraded ? points : null,
+        ),
+        if (showShares) ...<Widget>[
+          const SizedBox(height: AppSpacing.md),
+          _OutcomeShares(
+            key: Key('currentMonthFixtures.outcomeShares.$fixtureId'),
+            home: threeWay
+                ? (item.homeOutcomeShare ?? 0)
+                : (item.homeWinPercentage ?? 0),
+            draw: threeWay ? (item.drawOutcomeShare ?? 0) : null,
+            away: threeWay
+                ? (item.awayOutcomeShare ?? 0)
+                : (item.awayWinPercentage ?? 0),
+            homeName: home.displayName,
+            awayName: away.displayName,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        Center(
+          child: _RevealPredictionsButton(
+            fixtureId: fixtureId,
+            onTap: onOpenPredictions,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The started card's header: the league on the leading side, the match
+/// status (and, while live, the minute) on the trailing side.
+class _StartedHeader extends StatelessWidget {
+  const _StartedHeader({
+    required this.competitionId,
+    required this.competitionName,
+    required this.leagueLogoUrl,
+    required this.phase,
+    required this.minute,
+    required this.fixtureId,
+  });
+
+  final String competitionId;
+  final String competitionName;
+  final String? leagueLogoUrl;
+  final _MatchPhase phase;
+  final int? minute;
+  final String fixtureId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final bool live = phase == _MatchPhase.live;
+    final String label = switch (phase) {
+      _MatchPhase.live => l10n.fixturesLiveLabel,
+      _MatchPhase.awaitingResult => l10n.predictionPendingResultLabel,
+      _MatchPhase.over => 'انتهت',
+    };
+    final int? clock = minute;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) => _row(
+        context,
+        width: constraints.maxWidth,
+        label: label,
+        live: live,
+        clock: clock,
+      ),
+    );
+  }
+
+  Widget _row(
+    BuildContext context, {
+    required double width,
+    required String label,
+    required bool live,
+    required int? clock,
+  }) {
+    final tokens = context.tokens;
+    return Row(
+      children: <Widget>[
+        _CompetitionLogo(
+          assetPath: competitionLogoAsset(competitionId, competitionName),
+          logoUrl: leagueLogoUrl,
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(
+          child: Text(
+            competitionName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: AppFontSize.s13,
+              fontWeight: FontWeight.w700,
+              color: tokens.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        if (clock != null) ...<Widget>[
+          Text(
+            "$clock'",
+            key: Key('currentMonthFixtures.liveMinute.$fixtureId'),
+            textDirection: TextDirection.ltr,
+            style: TextStyle(
+              fontSize: AppFontSize.s16,
+              fontWeight: FontWeight.w800,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+        // At most half the header, so a long status ("result pending")
+        // at large text ends in an ellipsis instead of overflowing.
+        ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: width / 2),
+          child: Container(
+            key: Key('currentMonthFixtures.liveStatus.$fixtureId'),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: live ? tokens.errorContainer : tokens.surfaceHigh,
+              borderRadius: BorderRadius.circular(AppSizes.pillRadius),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppFontSize.s13,
+                      fontWeight: FontWeight.w700,
+                      color: live ? tokens.errorText : tokens.textSecondary,
+                    ),
+                  ),
+                ),
+                if (live) ...<Widget>[
+                  const SizedBox(width: AppSpacing.xs),
+                  // Steady, never pulsing: an animation here would repaint
+                  // the whole screen every frame of the match.
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tokens.error,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One side of a started match: its name and crest in a line, the crest
+/// toward the score. [crestFirst] puts the crest first in reading order
+/// (the second side, whose crest sits next to the score box).
+class _StartedSide extends StatelessWidget {
+  const _StartedSide({required this.team, required this.crestFirst});
+
+  final ResolvedTeamIdentity team;
+  final bool crestFirst;
+
+  static const double _crestSize = 34;
+
+  /// The narrowest a side may be: its crest, the gap and room for the
+  /// start of the name.
+  static const double minWidth = _crestSize + AppSpacing.sm + AppSpacing.xl;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final Widget crest = TeamLogo(
+      displayName: team.displayName,
+      crestUrl: team.crestUrl,
+      assetPath: team.assetPath,
+      brandColor: team.brandColor,
+      size: _crestSize,
+    );
+    final Widget name = Flexible(
+      child: Text(
+        team.displayName,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: crestFirst ? TextAlign.start : TextAlign.end,
+        style: TextStyle(
+          fontSize: AppFontSize.s15,
+          fontWeight: FontWeight.w700,
+          color: tokens.textPrimary,
+        ),
+      ),
+    );
+    return Row(
+      mainAxisAlignment: crestFirst
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.end,
+      children: crestFirst
+          ? <Widget>[crest, const SizedBox(width: AppSpacing.sm), name]
+          : <Widget>[name, const SizedBox(width: AppSpacing.sm), crest],
+    );
+  }
+}
+
+/// The two sides around the score. At large text the framed score would
+/// leave the sides no room for their crests (UI audit, text scale x2.0),
+/// so the score drops under the sides instead of overflowing them.
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({
+    required this.fixtureId,
+    required this.home,
+    required this.away,
+    required this.homeGoals,
+    required this.awayGoals,
+  });
+
+  final String fixtureId;
+  final ResolvedTeamIdentity home;
+  final ResolvedTeamIdentity away;
+  final int? homeGoals;
+  final int? awayGoals;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget score = _ScoreBox(
+      fixtureId: fixtureId,
+      home: homeGoals,
+      away: awayGoals,
+    );
+    final Widget homeSide = _StartedSide(team: home, crestFirst: false);
+    final Widget awaySide = _StartedSide(team: away, crestFirst: true);
+    final double inline =
+        _ScoreBox.widthOf(context, homeGoals, awayGoals) +
+        2 * AppSpacing.sm +
+        2 * _StartedSide.minWidth;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (inline <= constraints.maxWidth) {
+          return Row(
+            children: <Widget>[
+              Expanded(child: homeSide),
+              const SizedBox(width: AppSpacing.sm),
+              score,
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: awaySide),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(child: homeSide),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: awaySide),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Center(child: score),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The score between the two sides, in a framed box: the running score
+/// while live, the recorded one once over, a dash before the first update.
+class _ScoreBox extends StatelessWidget {
+  const _ScoreBox({required this.fixtureId, this.home, this.away});
+
+  final String fixtureId;
+  final int? home;
+  final int? away;
+
+  static const EdgeInsets _padding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.lg,
+    vertical: AppSpacing.xs,
+  );
+
+  static String _label(BuildContext context, int? home, int? away) =>
+      home != null && away != null
+      ? orientedScoreLabel(context, home, away)
+      : '-';
+
+  static TextStyle _style(BuildContext context) => TextStyle(
+    fontSize: AppFontSize.s26,
+    fontWeight: FontWeight.w800,
+    color: context.tokens.textPrimary,
+    height: 1.2,
+  );
+
+  /// The box's width at the reader's text size: the score as it will be
+  /// laid out, its padding and the frame on both sides.
+  static double widthOf(BuildContext context, int? home, int? away) {
+    final TextPainter painter = TextPainter(
+      text: TextSpan(
+        text: _label(context, home, away),
+        style: DefaultTextStyle.of(context).style.merge(_style(context)),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final double width = painter.width;
+    painter.dispose();
+    return width + _padding.horizontal + 2;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final bool known = home != null && away != null;
+    return Container(
+      key: known ? Key('currentMonthFixtures.liveScore.$fixtureId') : null,
+      padding: _padding,
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.brButton,
+        border: Border.all(color: tokens.border),
+      ),
+      child: Text(
+        _label(context, home, away),
+        textDirection: TextDirection.ltr,
+        style: _style(context),
+      ),
+    );
+  }
+}
+
+/// The player's own call between the two names, in a framed strip: "your
+/// call 2 - 1" (a bolt on the day's double), then the points once graded.
+/// Without a call the middle says so.
+class _CallStrip extends StatelessWidget {
+  const _CallStrip({
+    required this.fixtureId,
+    required this.homeName,
+    required this.awayName,
+    required this.prediction,
+    required this.grade,
+    required this.points,
+  });
+
+  final String fixtureId;
+  final String homeName;
+  final String awayName;
+  final FixturePredictionDto? prediction;
+  final String? grade;
+  final int? points;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final TextStyle nameStyle = TextStyle(
+      fontSize: AppFontSize.s13,
+      fontWeight: FontWeight.w600,
+      color: tokens.textSecondary,
+    );
+    final FixturePredictionDto? call = prediction;
+    final int? earned = points;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.brButton,
+        border: Border.all(color: tokens.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Text(
+                  homeName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: nameStyle,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            color: tokens.surfaceElevated,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            alignment: Alignment.center,
+            child: call == null
+                ? Text(
+                    'لم تتوقّع',
+                    style: TextStyle(
+                      fontSize: AppFontSize.s12,
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textSecondary,
+                    ),
+                  )
+                : Column(
+                    key: Key('currentMonthFixtures.myCall.$fixtureId'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        l10n.matchCardYourCall,
+                        style: TextStyle(
+                          fontSize: AppFontSize.s12,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            orientedScoreLabel(
+                              context,
+                              call.homeGoals,
+                              call.awayGoals,
+                            ),
+                            textDirection: TextDirection.ltr,
+                            style: TextStyle(
+                              fontSize: AppFontSize.s16,
+                              fontWeight: FontWeight.w800,
+                              color: tokens.textPrimary,
+                            ),
+                          ),
+                          if (call.isDouble) ...<Widget>[
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: AppSizes.iconInline,
+                              color: tokens.gold,
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (earned != null) ...<Widget>[
+                        const SizedBox(height: 2),
+                        AppBadge(
+                          label: l10n.pointsAbbreviated(earned),
+                          // Tone follows the points, not the grade name.
+                          tone: earned > 0
+                              ? AppBadgeTone.success
+                              : AppBadgeTone.muted,
+                          icon: grade == 'exact_scoreline' ? Icons.star : null,
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Text(
+                  awayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: nameStyle,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The split of everyone's calls: the home win share (green) with its bar,
+/// the draw share in the middle, the away win share (red) with its bar. A
+/// [draw] of null (an older server) leaves the middle empty and the two
+/// shares are the decisive ones.
+class _OutcomeShares extends StatelessWidget {
+  const _OutcomeShares({
+    super.key,
+    required this.home,
+    required this.draw,
+    required this.away,
+    required this.homeName,
+    required this.awayName,
+  });
+
+  final int home;
+  final int? draw;
+  final int away;
+  final String homeName;
+  final String awayName;
+
+  static const String _winLabel = 'فرص الفوز';
+  static const String _drawLabel = 'التعادل';
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final int? drawShare = draw;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        Expanded(
+          flex: 5,
+          child: _ShareFigure(
+            percentage: home,
+            label: _winLabel,
+            color: tokens.successText,
+            spoken: '$_winLabel $homeName $home%',
+          ),
+        ),
+        Expanded(
+          flex: 4,
+          child: _ShareBar(
+            fraction: home / 100,
+            color: tokens.success,
+            fromStart: true,
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: drawShare == null
+              ? const SizedBox.shrink()
+              : _ShareFigure(
+                  percentage: drawShare,
+                  label: _drawLabel,
+                  color: tokens.textPrimary,
+                  spoken: '$_drawLabel $drawShare%',
+                ),
+        ),
+        Expanded(
+          flex: 4,
+          child: _ShareBar(
+            fraction: away / 100,
+            color: tokens.error,
+            fromStart: false,
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: _ShareFigure(
+            percentage: away,
+            label: _winLabel,
+            color: tokens.errorText,
+            spoken: '$_winLabel $awayName $away%',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One share: the figure over its label.
+class _ShareFigure extends StatelessWidget {
+  const _ShareFigure({
+    required this.percentage,
+    required this.label,
+    required this.color,
+    required this.spoken,
+  });
+
+  final int percentage;
+  final String label;
+  final Color color;
+  final String spoken;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Semantics(
+      label: spoken,
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            '$percentage%',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textDirection: TextDirection.ltr,
+            style: TextStyle(
+              fontSize: AppFontSize.s20,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: AppFontSize.s12,
+              fontWeight: FontWeight.w600,
+              color: tokens.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A share as a bar: a quiet track filled to [fraction], from the side of
+/// its figure ([fromStart] for the home side).
+class _ShareBar extends StatelessWidget {
+  const _ShareBar({
+    required this.fraction,
+    required this.color,
+    required this.fromStart,
+  });
+
+  final double fraction;
+  final Color color;
+  final bool fromStart;
+
+  static const double _height = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      child: Container(
+        height: _height,
+        decoration: BoxDecoration(
+          color: tokens.textPrimary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(_height / 2),
+        ),
+        alignment: fromStart
+            ? AlignmentDirectional.centerStart
+            : AlignmentDirectional.centerEnd,
+        child: FractionallySizedBox(
+          widthFactor: fraction < 0 ? 0.0 : (fraction > 1 ? 1.0 : fraction),
+          heightFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(_height / 2),
             ),
           ),
         ),

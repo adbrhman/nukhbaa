@@ -52,6 +52,12 @@ class FrameReporter with WidgetsBindingObserver {
   /// Past this, a frame counts as frozen.
   static const Duration frozenAfter = Duration(milliseconds: 700);
 
+  /// Past this, a "frame" is the app having been suspended mid-frame (the
+  /// OS paused it, the browser tab slept), not a frame anyone waited for:
+  /// it is not counted at all. Without this one such timing set the
+  /// dashboard's slowest frame to 335 167 ms (5.6 minutes).
+  static const Duration suspendedAfter = Duration(seconds: 10);
+
   /// A session shorter than this (a couple of seconds) is not reported:
   /// too few frames to say anything.
   static const int minFrames = 120;
@@ -140,6 +146,7 @@ class FrameReporter with WidgetsBindingObserver {
   /// Counts one frame whose phases took [build] and [raster].
   void addFrame({required Duration build, required Duration raster}) {
     final int micros = math.max(build.inMicroseconds, raster.inMicroseconds);
+    if (micros > suspendedAfter.inMicroseconds) return;
     final int budget = (1000000 / _refreshRateHz()).round();
     _frames++;
     if (micros > budget) _slow++;
