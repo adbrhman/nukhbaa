@@ -95,6 +95,12 @@ the faulty function, reveals nothing.
 - **Tap the widget that handles the tap.** A key on a full-width wrapper
   (an `Align` around a button) makes `tap` hit the empty middle; put the key
   on the button.
+- **A scroll target is unique.** `scrollUntilVisible` needs exactly one
+  element, and in this `flutter_test` `.first` throws while nothing matches
+  yet: scroll to a finder that matches one widget (a unique text inside the
+  card), never `.first` of a finder that may match none. Two widgets that
+  share a key (two metric cards opening one section) are found with
+  `findsWidgets`, never scrolled to by that key.
 - **No real clock near a boundary.** A screen that picks "today" gets a
   fixed clock (an optional `now` parameter, as `RiyadhDayTurnover`). A test
   that places several kickoffs relative to `DateTime.now()` failed at 00:03

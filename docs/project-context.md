@@ -3918,6 +3918,26 @@ home page was a pile of equal cards with raw codes, ids and UTC instants.
   them below the fold, where a lazy list does not build them.
 - No migration, no new dependency, no l10n key, no server change.
 
+### The admin menu counts what waits (2026-10-08)
+
+- Beside four menu entries, a count when something waits there: النتائج
+  والاحتساب (matches over with no result), نظام الدعوات (invitations
+  held), سجل الأخطاء (new errors), الترتيب والأبطال (ended months with
+  players and no champion). `adminNavCounts` builds them from the very
+  sources and functions of the home page's «يحتاج تدخلك»
+  (`fixturesAwaitingResult`, `adminAttentionProvider`,
+  `adminMonthPulseProvider`), so the two never disagree; a source not
+  loaded or failed adds no count (the home page says the failure).
+- `AdminNavList` stays a plain widget with an optional `counts` (its test
+  builds it with no ProviderScope); the phone drawer and the desktop
+  sidebar read `adminNavCountsProvider` through a `Consumer`.
+- Removed from `AdminDashboardSnapshot`: `activeUsers`, `todayFixtures`
+  (it counted the device's local day, not Riyadh's) and `upcomingFixtures`,
+  unused since the old dashboard went.
+- Tests: `admin_nav_counts_test.dart`, through the real hub on the desktop
+  sidebar and the phone drawer, checking the counts against the home rows.
+- No migration, no new dependency, no l10n key, no server change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

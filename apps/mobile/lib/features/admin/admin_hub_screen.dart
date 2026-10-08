@@ -1,10 +1,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_breakpoints.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import 'admin_nav_counts.dart';
 import 'admin_sections.dart';
 import 'admin_shell.dart';
 
@@ -43,12 +45,15 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
                 // Builder يوفّر سياقاً أسفل الـDrawer/Scaffold كي يعمل
                 // Navigator.pop هنا على إغلاق الـDrawer نفسه فقط، لا الشاشة.
                 child: Builder(
-                  builder: (BuildContext drawerContext) => AdminNavList(
-                    selected: _selected,
-                    onSelect: (AdminSection section) {
-                      _select(section);
-                      Navigator.of(drawerContext).pop();
-                    },
+                  builder: (BuildContext drawerContext) => Consumer(
+                    builder: (context, ref, _) => AdminNavList(
+                      counts: ref.watch(adminNavCountsProvider),
+                      selected: _selected,
+                      onSelect: (AdminSection section) {
+                        _select(section);
+                        Navigator.of(drawerContext).pop();
+                      },
+                    ),
                   ),
                 ),
               ),

@@ -1,11 +1,13 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_breakpoints.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import 'admin_nav_counts.dart';
 import 'admin_sections.dart';
 import 'screens/sections/admin_analytics_section.dart';
 import 'screens/sections/admin_home_section.dart';
@@ -96,10 +98,15 @@ class AdminNavList extends StatelessWidget {
     super.key,
     required this.selected,
     required this.onSelect,
+    this.counts = const <AdminSection, int>{},
   });
 
   final AdminSection selected;
   final ValueChanged<AdminSection> onSelect;
+
+  /// How many things wait in each section ([adminNavCountsProvider]);
+  /// an entry with no count shows none.
+  final Map<AdminSection, int> counts;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +155,14 @@ class AdminNavList extends StatelessWidget {
               ),
               selected: section == selected,
               selectedTileColor: t.primary.withValues(alpha: 0.08),
+              trailing: (counts[section] ?? 0) > 0
+                  ? Badge(
+                      key: Key('admin.shell.nav.${section.name}.count'),
+                      label: Text(
+                        counts[section]! > 99 ? '99+' : '${counts[section]}',
+                      ),
+                    )
+                  : null,
               onTap: () => onSelect(section),
             ),
         ],
@@ -207,7 +222,13 @@ class AdminShell extends StatelessWidget {
           width: 240,
           child: Material(
             color: t.surface,
-            child: AdminNavList(selected: selected, onSelect: onSelect),
+            child: Consumer(
+              builder: (context, ref, _) => AdminNavList(
+                selected: selected,
+                onSelect: onSelect,
+                counts: ref.watch(adminNavCountsProvider),
+              ),
+            ),
           ),
         ),
         VerticalDivider(width: 1, color: t.border),

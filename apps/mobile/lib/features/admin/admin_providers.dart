@@ -336,29 +336,11 @@ final class AdminDashboardSnapshot {
   /// Every registered user, regardless of status — the platform-wide total.
   int get totalUsers => stats.total;
 
-  int get activeUsers => stats.active;
-
   int get suspendedUsers => stats.suspended;
 
-  int get todayFixtures {
-    final now = DateTime.now();
-    return currentMonthFixtures.where((item) {
-      final kickoff = DateTime.tryParse(item.fixture.kickoffAt ?? '');
-      if (kickoff == null) return false;
-      final local = kickoff.toLocal();
-      return local.year == now.year &&
-          local.month == now.month &&
-          local.day == now.day;
-    }).length;
-  }
-
-  int get upcomingFixtures {
-    final now = DateTime.now();
-    return currentMonthFixtures.where((item) {
-      final kickoff = DateTime.tryParse(item.fixture.kickoffAt ?? '');
-      return kickoff != null && kickoff.isAfter(now.toUtc());
-    }).length;
-  }
+  // The old dashboard's activeUsers, todayFixtures (the device's local day,
+  // not Riyadh's) and upcomingFixtures were removed with it (2026-10-08):
+  // the home page computes its days on the Riyadh day.
 }
 
 /// Reads the real sources needed by the overview in parallel.
