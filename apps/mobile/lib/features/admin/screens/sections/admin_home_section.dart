@@ -96,14 +96,15 @@ bool _isOver(CurrentMonthFixtureItemDto item, DateTime now) {
 }
 
 /// The month's fixtures that are over at [now] with no result recorded.
-/// Hidden and test fixtures never reach this feed (migration 0098).
+/// A test fixture is left out: it is never scored by design (migration
+/// 0098), so it would wait forever. Hidden ones never reach this feed.
 List<CurrentMonthFixtureItemDto> fixturesAwaitingResult(
   List<CurrentMonthFixtureItemDto> items,
   DateTime now,
 ) {
   return <CurrentMonthFixtureItemDto>[
     for (final CurrentMonthFixtureItemDto item in items)
-      if (_isOver(item, now) && !_hasResult(item)) item,
+      if (!item.fixture.isTest && _isOver(item, now) && !_hasResult(item)) item,
   ];
 }
 
@@ -117,7 +118,10 @@ List<CurrentMonthFixtureItemDto> riyadhTodayFixtures(
       <(DateTime, CurrentMonthFixtureItemDto)>[];
   for (final CurrentMonthFixtureItemDto item in items) {
     final DateTime? kickoff = _kickoff(item);
-    if (kickoff != null && RiyadhDayTurnover.riyadhDayOf(kickoff) == today) {
+    // Real matches only: a test fixture is the admins' own.
+    if (kickoff != null &&
+        !item.fixture.isTest &&
+        RiyadhDayTurnover.riyadhDayOf(kickoff) == today) {
       keyed.add((kickoff, item));
     }
   }
@@ -572,7 +576,10 @@ class _Pulse extends StatelessWidget {
     };
     final int upcoming = snapshot.currentMonthFixtures.where((item) {
       final DateTime? kickoff = _kickoff(item);
-      return kickoff != null && kickoff.isAfter(now.toUtc());
+      // Test fixtures are not matches left to play.
+      return kickoff != null &&
+          !item.fixture.isTest &&
+          kickoff.isAfter(now.toUtc());
     }).length;
     final cards = <_MetricData>[
       _MetricData(

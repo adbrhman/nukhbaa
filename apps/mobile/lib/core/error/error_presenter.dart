@@ -106,6 +106,10 @@ abstract final class ErrorPresenter {
         return 'تعذّر العثور على هذه الجولة.';
       case 'prediction.round_out_of_sequence':
         return 'لا يمكن توقع هذه الجولة قبل إكمال الجولات السابقة.';
+      case 'competition.fixture_has_predictions':
+        return 'توقّعها لاعبون، فلا يمكن حذفها. أخفِها بدلاً من ذلك.';
+      case 'competition.fixture_result_already_recorded':
+        return 'سُجّلت نتيجتها، فلا يمكن حذفها. أخفِها بدلاً من ذلك.';
       case 'scoring.fixture_not_started':
         return 'لا يمكن تسجيل نتيجة مباراة قبل موعد انطلاقها.';
       case 'api_client.timeout':

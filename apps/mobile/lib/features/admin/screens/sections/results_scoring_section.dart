@@ -11,6 +11,7 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
 import '../../fixture_report.dart';
+import '../../widgets/admin_awaiting_results.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
@@ -136,6 +137,15 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         AdminSectionHeader(
           title: l10n.adminRecordResultSectionTitle,
           subtitle: 'اختر المسابقة والموسم ثم المباراة وسجّل نتيجتها',
+        ),
+        AdminAwaitingResults(
+          onPick: (CurrentMonthFixtureItemDto item) => setState(() {
+            _resultCompetitionId = item.competitionId;
+            _resultSeasonId = item.fixture.seasonId;
+            _fixtureId = item.fixture.fixtureId;
+            _homeGoals.clear();
+            _awayGoals.clear();
+          }),
         ),
         AdminCard(
           child: Column(

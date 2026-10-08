@@ -3938,6 +3938,30 @@ home page was a pile of equal cards with raw codes, ids and UTC instants.
   sidebar and the phone drawer, checking the counts against the home rows.
 - No migration, no new dependency, no l10n key, no server change.
 
+### Matches waiting for a result; test fixtures (2026-10-08)
+
+- Correction to the home-page entry of 2026-10-07: the admin's month feed
+  DOES carry test fixtures (`SeasonFixtureCardDto.isTest`, migration 0098),
+  and a test fixture is never scored by design, so it was counted as
+  "over with no result" forever (the owner's «أبها × الأهلي»).
+  `fixturesAwaitingResult` now leaves test fixtures out, and so do «مباريات
+  اليوم» and «مباريات متبقية هذا الشهر». The menu count follows, being
+  built on the same function.
+- **بانتظار النتيجة** (`AdminAwaitingResults`) atop النتائج والاحتساب: the
+  same list the home page counts, each match filling the form (league,
+  month, match) on a tap.
+- The season picker names a month as the app does everywhere
+  (`monthLabelFromStored`: «شهر 10», not «10/2026»).
+- Deleting a predicted or scored match: the server still refuses
+  (`competition.fixture_has_predictions`,
+  `competition.fixture_result_already_recorded`; no deletion of predictions
+  or points, 2026-09-09), but the admin now reads why and what to do
+  instead: «… فلا يمكن حذفها. أخفِها بدلاً من ذلك.» A test fixture that
+  admins predicted is hidden, not deleted.
+- Tests: `admin_results_awaiting_test.dart`, through the real results
+  screen with only the HTTP answers faked (`buildAdminHarness`).
+- No migration, no new dependency, no l10n key, no server change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -146,7 +146,7 @@ class SeasonPickerField extends ConsumerWidget {
               DropdownMenuItem<String>(
                 key: Key('admin.fixtures.seasonField.${season.id}'),
                 value: season.id,
-                child: Text(season.label),
+                child: Text(monthLabelFromStored(season.label)),
               ),
           ],
           onChanged: !enabled
