@@ -168,10 +168,23 @@ Future<void> _frames(WidgetTester tester) async {
   }
 }
 
-String _minutesAgo(int minutes) => DateTime.now()
-    .toUtc()
-    .subtract(Duration(minutes: minutes))
-    .toIso8601String();
+/// [minutes] before a reference that keeps every call in one local day:
+/// now, or ten minutes before midnight during the first ten minutes of a
+/// day. The started matches of "the day" must share a day, or the screen
+/// opens on a day that holds only some of them: a full run at 00:03 put
+/// the two matches on either side of midnight and failed (2026-10-08).
+String _minutesAgo(int minutes) {
+  final DateTime now = DateTime.now();
+  final DateTime midnight = DateTime(now.year, now.month, now.day);
+  final DateTime reference =
+      now.difference(midnight) < const Duration(minutes: 10)
+      ? midnight.subtract(const Duration(minutes: 10))
+      : now;
+  return reference
+      .toUtc()
+      .subtract(Duration(minutes: minutes))
+      .toIso8601String();
+}
 
 void main() {
   test('the verdict mark follows the server grade only', () {

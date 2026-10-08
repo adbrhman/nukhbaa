@@ -8,7 +8,7 @@ import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'admin_sections.dart';
 import 'screens/sections/admin_analytics_section.dart';
-import 'screens/sections/admin_dashboard_section.dart';
+import 'screens/sections/admin_home_section.dart';
 import 'screens/sections/admin_predictions_section.dart';
 import 'screens/sections/announcement_section.dart';
 import 'screens/sections/admin_counted_fixtures_section.dart';
@@ -167,7 +167,7 @@ class AdminShell extends StatelessWidget {
 
   Widget _bodyFor(AdminSection section) {
     return switch (section) {
-      AdminSection.dashboard => AdminDashboardSection(onNavigate: onSelect),
+      AdminSection.dashboard => AdminHomeSection(onNavigate: onSelect),
       AdminSection.monthlyCompetitions =>
         const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),

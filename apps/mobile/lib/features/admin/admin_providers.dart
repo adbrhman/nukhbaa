@@ -52,6 +52,45 @@ final adminRetentionProvider = FutureProvider<AdminRetentionDto>((ref) async {
   return _unwrap(await ref.watch(adminApiProvider).retention());
 }, retry: (_, _) => null);
 
+/// What the home page's "needs you" card counts besides the month's
+/// fixtures: invitations held for an admin's decision (migration 0075) and
+/// errors in the "new" list (`GET /admin/errors`). Each count is null when
+/// its read failed, so the page says it could not check instead of showing
+/// a zero that is not true.
+final class AdminAttention {
+  /// Creates the counts.
+  const AdminAttention({
+    required this.heldReferrals,
+    required this.freshErrors,
+  });
+
+  /// Invitations held for review; null when the read failed.
+  final int? heldReferrals;
+
+  /// Errors in the "new" list; null when the read failed.
+  final int? freshErrors;
+}
+
+/// Reads both sources in parallel. A failed source is null, never a throw,
+/// so one bad read leaves the rest of the home page working. A plain
+/// provider: no code generation.
+final adminAttentionProvider = FutureProvider<AdminAttention>((ref) async {
+  final api = ref.watch(adminApiProvider);
+  final Future<Result<AdminReferralOverviewDto>> referrals = api
+      .referralOverview();
+  final Future<Result<AdminErrorListDto>> errors = api.errorLog();
+  final int? held = switch (await referrals) {
+    Ok<AdminReferralOverviewDto>(:final value) =>
+      value.stateCounts['held'] ?? 0,
+    Err<AdminReferralOverviewDto>() => null,
+  };
+  final int? fresh = switch (await errors) {
+    Ok<AdminErrorListDto>(:final value) => value.fresh,
+    Err<AdminErrorListDto>() => null,
+  };
+  return AdminAttention(heldReferrals: held, freshErrors: fresh);
+}, retry: (_, _) => null);
+
 /// Every fixture of month [seasonId] as the admin panel needs it: hidden
 /// ones too, each flagged (`GET /seasons/{id}/fixtures?include_hidden=true`,
 /// migration 0098). The players' read, [seasonFixturesProvider], never

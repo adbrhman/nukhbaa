@@ -284,6 +284,9 @@ Future<void> _pumpAdmin(
             currentMonthFixtures: <CurrentMonthFixtureItemDto>[],
           ),
         ),
+        adminAttentionProvider.overrideWith(
+          (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+        ),
         adminRetentionProvider.overrideWith(
           (ref) async => const AdminRetentionDto(
             today: '2026-10-03',

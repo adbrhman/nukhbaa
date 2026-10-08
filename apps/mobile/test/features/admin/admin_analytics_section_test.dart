@@ -38,6 +38,9 @@ Widget _host() => ProviderScope(
       ),
     ),
     adminFrameStatsProvider.overrideWith((ref) async => _emptyFrameStats),
+    adminAttentionProvider.overrideWith(
+      (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+    ),
     adminRetentionProvider.overrideWith(
       (ref) async => const AdminRetentionDto(
         today: '2026-09-28',
@@ -82,7 +85,10 @@ void main() {
 
       // The last item of the dashboard is on screen, so the list was built to
       // its end, and neither card is in it.
-      expect(find.text('مباريات الشهر الحالي'), findsOneWidget);
+      expect(
+        find.byKey(const Key('admin.dashboard.activity.all')),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('admin.retention')), findsNothing);
       expect(find.byKey(const Key('admin.frameStats')), findsNothing);
 

@@ -3853,6 +3853,49 @@ never per action; nothing listed that is not built).
   last item; UI-37 reads the first titled group.
 - No migration, no new dependency, no l10n key, no server change.
 
+### The admin home: what needs a decision first (2026-10-07)
+
+Requested 2026-10-07 (the owner, reviewing the panel on the phone): the
+home page was a pile of equal cards with raw codes, ids and UTC instants.
+`AdminHomeSection` (`admin_home_section.dart`) replaces
+`AdminDashboardSection` (file and test removed), top to bottom:
+
+- **يحتاج تدخلك**: one row per thing waiting, each with its count and
+  opening its section -- matches over with no result (past `liveWindow` or
+  reported finished, no recorded result; the month feed, so hidden and test
+  fixtures never count), invitations `held` (`GET /admin/referral-overview`)
+  and errors in the "new" list (`GET /admin/errors`). The last two come
+  from `adminAttentionProvider` (plain provider, both reads in parallel); a
+  failed read is null and shows «تعذّر التحقق من ...», never a false zero.
+  Nothing waiting reads «لا شيء ينتظرك الآن».
+- **مباريات اليوم**: the Riyadh day's fixtures (`RiyadhDayTurnover.riyadhDayOf`,
+  migration 0076), kickoff through `formatTimeOfDay`, state in words
+  (قادمة / مباشرة / بانتظار النتيجة / انتهت 2-1).
+- **نبض اللعبة**: players (user-stats aggregate), played this week
+  (`GET /admin/retention`, the week in progress), suspended, matches left
+  this month; each opens its section. "Active" meaning "not suspended" is
+  gone: it contradicted the weekly figure.
+- **آخر الإجراءات**: each audit entry as a sentence (`auditActionLabel`,
+  the domain's wire tokens; an unknown token reads «إجراء إداري»), with the
+  match's name when it points at one of the month, and its time. No id or
+  token is shown.
+- Removed: the duplicated title, «مركز العمليات» and its refresh button
+  that did nothing, «إجراءات سريعة» (the menu says the same), the month's
+  list with raw `...000Z` instants. Forward buttons use `ForwardChevron`;
+  the reversed `arrow_back` was the only arrow in the admin panel.
+- The section takes an optional clock (`now`), the pattern of
+  `RiyadhDayTurnover`; `admin_home_section_test.dart` runs at a fixed
+  15:00 Riyadh. `fixture_predictions_reveal_test.dart` failed in a run at
+  00:03: its two started matches fell on either side of midnight. Its
+  helper now keeps both in one local day. The other tests that place
+  kickoffs relative to now use a single kickoff, so the day cannot split.
+- Every ListTile on a card sits in a transparent Material (the panel's
+  rule; a card's colour hides its ink). The open buttons carry their key
+  on the button, not on the full-width Align, and let the label wrap: the
+  survey's phone at text x2 overflowed by 80px. The survey draws the home
+  with empty data, so a test draws every row at 360px and text x2.
+- No migration, no new dependency, no l10n key, no server change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

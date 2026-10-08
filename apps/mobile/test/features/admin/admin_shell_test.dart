@@ -18,6 +18,9 @@ Widget _host() => ProviderScope(
         currentMonthFixtures: [],
       ),
     ),
+    adminAttentionProvider.overrideWith(
+      (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+    ),
     adminRetentionProvider.overrideWith(
       (ref) async => const AdminRetentionDto(
         today: '2026-09-28',
