@@ -3962,6 +3962,29 @@ home page was a pile of equal cards with raw codes, ids and UTC instants.
   screen with only the HTTP answers faked (`buildAdminHarness`).
 - No migration, no new dependency, no l10n key, no server change.
 
+### The monthly competition's name (migration 0099, 2026-10-08)
+
+- The one competition that holds every monthly season was named «شهر 9»
+  when it was created in September, so every admin screen read it as
+  September while it holds 09/2026, 10/2026, 11/2026... Requested
+  2026-10-08: renamed «المسابقة الشهرية». The name is display only (no code
+  matches on it); id, seasons, fixtures, predictions, points and champions
+  are untouched.
+- 0099 (modify-only, safe to re-run): `competition.rename_competition(from,
+  to)` renames exactly one competition so named; none is a no-op (a fresh
+  database, or already renamed), more than one raises rather than guess.
+  Revoked from public, anon and authenticated. The migration calls it once
+  and records itself.
+- `supabase/tests/0099_rename_monthly_competition_test.sql`: 8 checks (one
+  renamed, another kept, months untouched, a second run changes nothing, two
+  same-named competitions stop the rename, no client may call it). Run with
+  the stubs and all 99 migrations on PostgreSQL 16 before sending: 28 of 28
+  SQL tests pass.
+- **Apply 0099 in the Supabase SQL editor after the push**; until then the
+  migration-drift check reports it missing.
+- Do not create a second competition for months: each month is a season of
+  this one, and a new competition would split fixtures and points.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
