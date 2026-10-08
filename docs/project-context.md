@@ -3896,6 +3896,28 @@ home page was a pile of equal cards with raw codes, ids and UTC instants.
   with empty data, so a test draws every row at 360px and text x2.
 - No migration, no new dependency, no l10n key, no server change.
 
+### The admin home: the month and its crowning (2026-10-08)
+
+- **مسابقة الشهر** (`AdminMonthCard`, `widgets/admin_month_card.dart`), between
+  today's matches and the pulse: the month running now (its own `startAt`
+  and `endAt` from `GET /months`), the time it has left, and the top of its
+  live board from `GET /admin/champions/{id}` -- the players' monthly
+  ranking, top five, every tie for first kept (`MonthFinalBoard`). Opens
+  «الترتيب والأبطال».
+- **يحتاج تدخلك** gains «أشهر انتهت بلا تتويج»: ended months, among the last
+  three, with players on their board and no champion. A month with nobody
+  on its board has no one to crown and is not counted.
+- `adminMonthPulseProvider` (plain provider, `admin_providers.dart`) reads
+  the months, then the boards in parallel; its choices are the pure
+  `adminMonthsAt` and `uncrownedMonths`, tested on their own. A failed read
+  shows «تعذّر تحميل ترتيب الشهر» on the card and adds «التتويج» to
+  «تعذّر التحقق من ...».
+- Tests: `admin_home_month_test.dart`, through the real home section with a
+  fixed clock, including a 360px phone at text x2. UI-34 (known defects)
+  now scrolls to the metric cards on its real phone: the new card pushed
+  them below the fold, where a lazy list does not build them.
+- No migration, no new dependency, no l10n key, no server change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

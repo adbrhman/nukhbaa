@@ -91,6 +91,106 @@ final adminAttentionProvider = FutureProvider<AdminAttention>((ref) async {
   return AdminAttention(heldReferrals: held, freshErrors: fresh);
 }, retry: (_, _) => null);
 
+/// The admin home's month card and its crowning reminder (2026-10-08).
+///
+/// [current] is the month running now (null between months), [board] its
+/// live board as `GET /admin/champions/{id}` builds it -- the same ranking
+/// as the players' monthly board, top five, every tie for first kept --
+/// and [uncrowned] the ended months, among the last
+/// [adminUncrownedLookback], that have players and no champion.
+final class AdminMonthPulse {
+  /// Creates the pulse.
+  const AdminMonthPulse({
+    required this.current,
+    required this.board,
+    required this.uncrowned,
+  });
+
+  /// The month running now; null between months.
+  final SeasonDto? current;
+
+  /// [current]'s live board; null when there is no current month.
+  final ChampionCandidatesDto? board;
+
+  /// Ended months with players and no champion, newest first.
+  final List<SeasonDto> uncrowned;
+}
+
+/// How many ended months the crowning reminder looks back over.
+const int adminUncrownedLookback = 3;
+
+/// The month running at [now] and the [adminUncrownedLookback] most recent
+/// ended months, newest first. A month runs from its `startAt` (included)
+/// to its `endAt` (excluded), the months' own bounds from `GET /months`.
+({SeasonDto? current, List<SeasonDto> recentEnded}) adminMonthsAt(
+  List<SeasonDto> months,
+  DateTime now,
+) {
+  final DateTime at = now.toUtc();
+  SeasonDto? current;
+  final List<SeasonDto> ended = <SeasonDto>[];
+  for (final SeasonDto month in months) {
+    if (!at.isBefore(month.endAt.toUtc())) {
+      ended.add(month);
+    } else if (!at.isBefore(month.startAt.toUtc())) {
+      current ??= month;
+    }
+  }
+  ended.sort((SeasonDto a, SeasonDto b) => b.endAt.compareTo(a.endAt));
+  return (
+    current: current,
+    recentEnded: ended.take(adminUncrownedLookback).toList(),
+  );
+}
+
+/// The months of [recentEnded] whose board has players and no champion. A
+/// month with nobody on its board has no one to crown and is left out.
+List<SeasonDto> uncrownedMonths(
+  List<SeasonDto> recentEnded,
+  Map<String, ChampionCandidatesDto> boards,
+) {
+  bool waiting(ChampionCandidatesDto? board) =>
+      board != null && board.crowned.isEmpty && board.candidates.isNotEmpty;
+  return <SeasonDto>[
+    for (final SeasonDto month in recentEnded)
+      if (waiting(boards[month.id])) month,
+  ];
+}
+
+/// Reads the months, then every board needed, in parallel. Any failed read
+/// fails the whole pulse: the card says it could not load and the reminder
+/// says it could not check, rather than showing half a picture. A plain
+/// provider: no code generation.
+final adminMonthPulseProvider = FutureProvider<AdminMonthPulse>((ref) async {
+  final api = ref.watch(adminApiProvider);
+  final competitions = ref.watch(competitionApiProvider);
+  final List<SeasonDto> months = _unwrap(
+    await competitions.listMonthlySeasons(),
+  );
+  final picked = adminMonthsAt(months, DateTime.now());
+  final SeasonDto? current = picked.current;
+  final List<SeasonDto> wanted = <SeasonDto>[
+    if (current != null) current,
+    ...picked.recentEnded,
+  ];
+  Future<ChampionCandidatesDto> boardOf(String seasonId) async =>
+      _unwrap(await api.championCandidates(seasonId));
+  final List<ChampionCandidatesDto> read = await Future.wait(
+    <Future<ChampionCandidatesDto>>[
+      for (final SeasonDto month in wanted) boardOf(month.id),
+    ],
+  );
+  final Map<String, ChampionCandidatesDto> boards =
+      <String, ChampionCandidatesDto>{
+        for (int i = 0; i < wanted.length; i++) wanted[i].id: read[i],
+      };
+  return AdminMonthPulse(
+    current: current,
+    board: current == null ? null : boards[current.id],
+    uncrowned: uncrownedMonths(picked.recentEnded, boards),
+  );
+}, retry: (_, _) => null);
+
 /// Every fixture of month [seasonId] as the admin panel needs it: hidden
 /// ones too, each flagged (`GET /seasons/{id}/fixtures?include_hidden=true`,
 /// migration 0098). The players' read, [seasonFixturesProvider], never

@@ -41,6 +41,10 @@ Widget _host() => ProviderScope(
     adminAttentionProvider.overrideWith(
       (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
     ),
+    adminMonthPulseProvider.overrideWith(
+      (ref) async =>
+          const AdminMonthPulse(current: null, board: null, uncrowned: []),
+    ),
     adminRetentionProvider.overrideWith(
       (ref) async => const AdminRetentionDto(
         today: '2026-09-28',

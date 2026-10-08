@@ -16,6 +16,7 @@ import '../../../../core/ui/forward_chevron.dart';
 import '../../../fixture_prediction/widgets/live_matches_chip.dart';
 import '../../admin_providers.dart';
 import '../../admin_sections.dart';
+import '../../widgets/admin_month_card.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 /// الرئيسية (2026-10-07): ما يحتاج قراراً الآن، ثم مباريات اليوم، ثم نبض
@@ -43,6 +44,7 @@ class AdminHomeSection extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () {
         ref.invalidate(adminAttentionProvider);
+        ref.invalidate(adminMonthPulseProvider);
         ref.invalidate(adminRetentionProvider);
         return ref.refresh(adminDashboardProvider.future);
       },
@@ -199,6 +201,7 @@ class _HomeContent extends ConsumerWidget {
         _NeedsAttention(
           awaitingResult: fixturesAwaitingResult(fixtures, now).length,
           attention: ref.watch(adminAttentionProvider),
+          month: ref.watch(adminMonthPulseProvider),
           onNavigate: onNavigate,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -206,6 +209,12 @@ class _HomeContent extends ConsumerWidget {
           fixtures: riyadhTodayFixtures(fixtures, now),
           now: now,
           onOpenAll: () => onNavigate(AdminSection.fixtures),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AdminMonthCard(
+          pulse: ref.watch(adminMonthPulseProvider),
+          now: now,
+          onOpen: () => onNavigate(AdminSection.champions),
         ),
         const SizedBox(height: AppSpacing.lg),
         _Pulse(
@@ -235,11 +244,13 @@ class _NeedsAttention extends StatelessWidget {
   const _NeedsAttention({
     required this.awaitingResult,
     required this.attention,
+    required this.month,
     required this.onNavigate,
   });
 
   final int awaitingResult;
   final AsyncValue<AdminAttention> attention;
+  final AsyncValue<AdminMonthPulse> month;
   final ValueChanged<AdminSection> onNavigate;
 
   @override
@@ -259,6 +270,24 @@ class _NeedsAttention extends StatelessWidget {
           onTap: () => onNavigate(AdminSection.resultsScoring),
         ),
       );
+    }
+    switch (month) {
+      case AsyncData<AdminMonthPulse>(:final value):
+        if (value.uncrowned.isNotEmpty) {
+          rows.add(
+            _AttentionRow(
+              key: const Key('admin.dashboard.attention.crowning'),
+              icon: Icons.emoji_events_rounded,
+              label: 'أشهر انتهت بلا تتويج',
+              count: value.uncrowned.length,
+              onTap: () => onNavigate(AdminSection.champions),
+            ),
+          );
+        }
+      case AsyncError<AdminMonthPulse>():
+        unchecked.add('التتويج');
+      default:
+        loading = true;
     }
     switch (attention) {
       case AsyncData<AdminAttention>(:final value):

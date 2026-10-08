@@ -287,6 +287,10 @@ Future<void> _pumpAdmin(
         adminAttentionProvider.overrideWith(
           (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
         ),
+        adminMonthPulseProvider.overrideWith(
+          (ref) async =>
+              const AdminMonthPulse(current: null, board: null, uncrowned: []),
+        ),
         adminRetentionProvider.overrideWith(
           (ref) async => const AdminRetentionDto(
             today: '2026-10-03',
@@ -1192,10 +1196,26 @@ void main() {
     (WidgetTester tester) async {
       _phone(tester);
       await _pumpAdmin(tester, AppTheme.dark, scale: 2.0);
-      expect(
-        find.byKey(const Key('admin.dashboard.metric.users')),
-        findsWidgets,
+      // The home page leads with other cards (2026-10-08): scroll to the
+      // metric cards on the real phone rather than enlarging the view, so
+      // they are laid out where a phone lays them out.
+      final Finder metric = find.byKey(
+        const Key('admin.dashboard.metric.users'),
       );
+      // Scroll to a unique target inside the first card: two cards share the
+      // metric key, and `.first` throws while nothing is built yet.
+      await tester.scrollUntilVisible(
+        find.text('إجمالي اللاعبين'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('admin.dashboard.scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(metric, findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

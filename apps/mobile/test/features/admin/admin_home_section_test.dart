@@ -136,6 +136,10 @@ Future<List<AdminSection>> _pump(
           ),
         ),
         adminAttentionProvider.overrideWith((ref) async => attention),
+        adminMonthPulseProvider.overrideWith(
+          (ref) async =>
+              const AdminMonthPulse(current: null, board: null, uncrowned: []),
+        ),
         adminRetentionProvider.overrideWith(
           (ref) async => const AdminRetentionDto(
             today: '2026-10-07',
