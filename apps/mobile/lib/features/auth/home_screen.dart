@@ -8,6 +8,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/streak_chip.dart';
@@ -160,7 +161,7 @@ class _Highlights {
 
   factory _Highlights.from(List<CurrentMonthFixtureItemDto> all) {
     final DateTime now = DateTime.now();
-    final DateTime today = DateTime(now.year, now.month, now.day);
+    final DateTime today = RiyadhDayTurnover.dayKeyOf(now);
     final List<(DateTime, CurrentMonthFixtureItemDto)> dated =
         <(DateTime, CurrentMonthFixtureItemDto)>[
           for (final CurrentMonthFixtureItemDto item in all)
@@ -169,8 +170,12 @@ class _Highlights {
               (kickoff.toLocal(), item),
         ]..sort((a, b) => a.$1.compareTo(b.$1));
 
-    bool sameDay(DateTime a, DateTime b) =>
-        a.year == b.year && a.month == b.month && a.day == b.day;
+    // A kickoff belongs to its Riyadh day, the day the matches tab and the
+    // server file it under.
+    bool sameDay(DateTime kickoff, DateTime day) {
+      final DateTime a = RiyadhDayTurnover.dayKeyOf(kickoff);
+      return a.year == day.year && a.month == day.month && a.day == day.day;
+    }
 
     final List<CurrentMonthFixtureItemDto> todays =
         <CurrentMonthFixtureItemDto>[
@@ -188,7 +193,7 @@ class _Highlights {
     DateTime? nextDay;
     for (final (DateTime kickoff, CurrentMonthFixtureItemDto _) in dated) {
       if (kickoff.isAfter(now)) {
-        nextDay = DateTime(kickoff.year, kickoff.month, kickoff.day);
+        nextDay = RiyadhDayTurnover.dayKeyOf(kickoff);
         break;
       }
     }

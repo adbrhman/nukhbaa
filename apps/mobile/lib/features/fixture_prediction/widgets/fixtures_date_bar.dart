@@ -20,10 +20,13 @@ import '../../../core/design/app_motion.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Midnight-local for [value] — the canonical "day" key used by the strip,
-/// the calendar page and the screen's own filter alike.
+/// the calendar page and the screen's own filter alike. It only normalises
+/// a key: an instant becomes a key through [RiyadhDayTurnover.dayKeyOf],
+/// so every device files a match under the server's day.
 DateTime fixtureDayOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
 
@@ -132,7 +135,7 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
     final String locale = Localizations.localeOf(context).toString();
     final intl.DateFormat weekdayFormat = intl.DateFormat.EEEE(locale);
     final intl.DateFormat dateFormat = intl.DateFormat('d MMMM', locale);
-    final DateTime today = fixtureDayOnly(DateTime.now());
+    final DateTime today = RiyadhDayTurnover.dayKeyOf(DateTime.now());
     final DateTime selected = fixtureDayOnly(widget.selectedDay);
 
     return SizedBox(

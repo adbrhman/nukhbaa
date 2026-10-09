@@ -7,6 +7,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/time/riyadh_day_turnover.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -168,14 +169,17 @@ Future<void> _frames(WidgetTester tester) async {
   }
 }
 
-/// [minutes] before a reference that keeps every call in one local day:
-/// now, or ten minutes before midnight during the first ten minutes of a
-/// day. The started matches of "the day" must share a day, or the screen
-/// opens on a day that holds only some of them: a full run at 00:03 put
-/// the two matches on either side of midnight and failed (2026-10-08).
+/// [minutes] before a reference that keeps every call in one Riyadh day
+/// (the day the tab files a match under): now, or ten minutes before
+/// midnight Riyadh during the first ten minutes of a day. The started
+/// matches of "the day" must share a day, or the screen opens on a day that
+/// holds only some of them: a full run at 00:03 put the two matches on
+/// either side of midnight and failed (2026-10-08).
 String _minutesAgo(int minutes) {
-  final DateTime now = DateTime.now();
-  final DateTime midnight = DateTime(now.year, now.month, now.day);
+  final DateTime now = DateTime.now().toUtc();
+  final DateTime midnight = RiyadhDayTurnover.opensAt(
+    RiyadhDayTurnover.dayKeyOf(now),
+  );
   final DateTime reference =
       now.difference(midnight) < const Duration(minutes: 10)
       ? midnight.subtract(const Duration(minutes: 10))

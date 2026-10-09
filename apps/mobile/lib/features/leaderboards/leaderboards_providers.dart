@@ -39,6 +39,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
+import '../../core/time/riyadh_day_turnover.dart';
 
 part 'leaderboards_providers.g.dart';
 
@@ -80,25 +81,22 @@ Future<FixtureLeaderboardDto> fixtureLeaderboard(
   return _unwrap(await api.fixtureLeaderboard(seasonId));
 }
 
-/// One device-local calendar day of one season: the key of the "today"
-/// board. [day] is midnight-local, so two reads of the same day share one
-/// cache entry however the time of day moved between them.
+/// One Riyadh calendar day of one season: the key of the "today" board.
+/// [day] is a day key ([RiyadhDayTurnover.dayKeyOf]), so two reads of the
+/// same day share one cache entry however the time of day moved between
+/// them.
 typedef DayLeaderboardKey = ({String seasonId, DateTime day});
 
 /// `GET /seasons/{id}/fixture-leaderboard?from=&to=` -- the season's
-/// standings over the fixtures kicking off on one local day, most points
-/// first. The window is the device's local midnight-to-midnight, sent as UTC
-/// instants; the server selects the fixtures and sums the points it already
-/// stored, so nothing is ranked or totalled here.
+/// standings over the fixtures kicking off on one Riyadh day, most points
+/// first. The window is 00:00 to 00:00 Riyadh, sent as UTC instants, the
+/// same day the matches tab shows; the server selects the fixtures and sums
+/// the points it already stored, so nothing is ranked or totalled here.
 final dayFixtureLeaderboardProvider = FutureProvider.autoDispose
     .family<FixtureLeaderboardDto, DayLeaderboardKey>((ref, key) async {
       final api = ref.watch(leaderboardsApiProvider);
-      final DateTime start = DateTime(key.day.year, key.day.month, key.day.day);
-      final DateTime end = DateTime(
-        key.day.year,
-        key.day.month,
-        key.day.day + 1,
-      );
+      final DateTime start = RiyadhDayTurnover.opensAt(key.day);
+      final DateTime end = start.add(const Duration(days: 1));
       return _unwrap(
         await api.fixtureLeaderboard(
           key.seasonId,

@@ -47,6 +47,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/app_tab_header.dart';
 import '../../l10n/app_localizations.dart';
@@ -71,7 +72,7 @@ class CurrentMonthFixturesScreen extends ConsumerStatefulWidget {
 
 class _CurrentMonthFixturesScreenState
     extends ConsumerState<CurrentMonthFixturesScreen> {
-  DateTime _selectedDay = fixtureDayOnly(DateTime.now());
+  DateTime _selectedDay = RiyadhDayTurnover.dayKeyOf(DateTime.now());
   bool _userPickedDay = false;
 
   /// Whether the live-only filter is on. Never trusted on its own — the
@@ -122,13 +123,18 @@ class _CurrentMonthFixturesScreenState
     super.dispose();
   }
 
-  /// The local kickoff day of [item], or `null` when it has no kickoff.
+  /// The Riyadh kickoff day of [item], or `null` when it has no kickoff.
+  ///
+  /// The device's own calendar put a 23:30 Riyadh match on the next day
+  /// for a player in the Emirates, and a 00:30 one on the day before for a
+  /// player in Egypt or Morocco, while the server counts both on the Riyadh
+  /// day: a double the strip showed on two days was refused as two on one.
   DateTime? _kickoffDay(CurrentMonthFixtureItemDto item) {
     final String? raw = item.fixture.kickoffAt;
     if (raw == null) return null;
     final DateTime? parsed = DateTime.tryParse(raw);
     if (parsed == null) return null;
-    return fixtureDayOnly(parsed.toLocal());
+    return RiyadhDayTurnover.dayKeyOf(parsed);
   }
 
   /// [items] in kickoff order, earliest first -- the order a day is drawn in.
@@ -175,7 +181,7 @@ class _CurrentMonthFixturesScreenState
     // Measured from the real today on every build, not from the day the
     // screen was first built: the tab stays alive, and an app left open
     // past midnight kept opening on the day before.
-    final DateTime today = fixtureDayOnly(DateTime.now());
+    final DateTime today = RiyadhDayTurnover.dayKeyOf(DateTime.now());
     DateTime? best;
     int bestDistance = 1 << 30;
     for (final CurrentMonthFixtureItemDto item in items) {
@@ -208,7 +214,7 @@ class _CurrentMonthFixturesScreenState
     setState(() {
       _liveOnly = !_liveOnly;
       if (_liveOnly) {
-        _selectedDay = fixtureDayOnly(DateTime.now());
+        _selectedDay = RiyadhDayTurnover.dayKeyOf(DateTime.now());
         _userPickedDay = true;
       }
     });
@@ -267,7 +273,7 @@ class _CurrentMonthFixturesScreenState
     );
     final bool liveOnly = _liveOnly && hasLive;
     final DateTime day = liveOnly
-        ? fixtureDayOnly(DateTime.now())
+        ? RiyadhDayTurnover.dayKeyOf(DateTime.now())
         : _effectiveDay(all);
 
     return Scaffold(

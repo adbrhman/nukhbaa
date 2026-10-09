@@ -44,6 +44,21 @@ final class RiyadhDayTurnover with WidgetsBindingObserver {
     return DateTime.utc(r.year, r.month, r.day);
   }
 
+  /// The Riyadh calendar day of [instant] as a local-midnight date: the day
+  /// key the match strip, the calendar, the home page and the day board
+  /// compare and print. A device in another zone then files a match under
+  /// the day the server counts it on (one double a day, the daily challenge,
+  /// the streak), not under its own calendar day.
+  static DateTime dayKeyOf(DateTime instant) {
+    final DateTime day = riyadhDayOf(instant);
+    return DateTime(day.year, day.month, day.day);
+  }
+
+  /// The instant 00:00 Riyadh opens the day [day] names, in UTC. Only its
+  /// year, month and day are read, so a day key works as well as a date.
+  static DateTime opensAt(DateTime day) =>
+      DateTime.utc(day.year, day.month, day.day).subtract(_riyadh);
+
   /// The next 00:00 Riyadh after [instant], in UTC.
   static DateTime nextRiyadhMidnight(DateTime instant) =>
       riyadhDayOf(instant).add(const Duration(days: 1)).subtract(_riyadh);

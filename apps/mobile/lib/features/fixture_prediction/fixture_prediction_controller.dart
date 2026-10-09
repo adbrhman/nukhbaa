@@ -16,8 +16,9 @@
 /// ## Responsibility
 /// This is the ONLY place `apps/mobile` triggers a fixture-prediction
 /// *write*. It drives the sealed [FixtureSubmissionState]
-/// (`Idle → InFlight → Succeeded | Failed`) through exactly one call to
-/// `PredictionApi.submitFixturePrediction` (from the ratified `api_client`,
+/// (`Idle → InFlight → Succeeded | Failed`) through
+/// `PredictionApi.submitFixturePrediction`, one call per command, a newer
+/// one waiting behind the one in flight (from the ratified `api_client`,
 /// obtained via `core/providers.dart`'s `predictionApiProvider`); the app
 /// performs no HTTP itself (ADR-002 §2.8). Widgets never touch `api_client`
 /// or branch on raw codes — they watch this controller and call [submit] /

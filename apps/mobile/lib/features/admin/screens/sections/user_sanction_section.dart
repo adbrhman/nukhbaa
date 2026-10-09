@@ -13,6 +13,7 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
+import '../../../../core/time/riyadh_day_turnover.dart';
 import '../../../../core/ui/ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
@@ -59,7 +60,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
       firstDate: DateTime(2026),
       lastDate: now,
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     setState(() {
       _filter = AdminUserPredictionFilter.date;
       _selectedDate = picked;
@@ -71,15 +72,16 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
     late final DateTime start;
     late final DateTime end;
     switch (_filter) {
+      // Riyadh days, the days the players' matches are filed under.
       case AdminUserPredictionFilter.today:
-        start = DateTime(now.year, now.month, now.day);
+        start = RiyadhDayTurnover.opensAt(RiyadhDayTurnover.dayKeyOf(now));
         end = start.add(const Duration(days: 1));
       case AdminUserPredictionFilter.yesterday:
-        end = DateTime(now.year, now.month, now.day);
+        end = RiyadhDayTurnover.opensAt(RiyadhDayTurnover.dayKeyOf(now));
         start = end.subtract(const Duration(days: 1));
       case AdminUserPredictionFilter.date:
         final selected = _selectedDate ?? now;
-        start = DateTime(selected.year, selected.month, selected.day);
+        start = RiyadhDayTurnover.opensAt(selected);
         end = start.add(const Duration(days: 1));
       case AdminUserPredictionFilter.all:
         return (fromUtc: null, toUtc: null);

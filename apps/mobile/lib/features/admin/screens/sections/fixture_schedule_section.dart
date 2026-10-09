@@ -394,7 +394,7 @@ class _FixtureScheduleSectionState
           ? TimeOfDay.fromDateTime(now)
           : TimeOfDay.fromDateTime(_kickoffLocal!),
     );
-    if (time == null) return;
+    if (time == null || !mounted) return;
     setState(() {
       _kickoffLocal = DateTime(
         date.year,

@@ -9,6 +9,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_error_state.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/app_tab_header.dart';
@@ -293,10 +294,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
     _day = _clamp(_today(), first, last);
   }
 
-  static DateTime _today() {
-    final DateTime now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }
+  static DateTime _today() => RiyadhDayTurnover.dayKeyOf(DateTime.now());
 
   static DateTime _clamp(DateTime day, DateTime first, DateTime last) {
     if (day.isBefore(first)) return first;
@@ -304,12 +302,20 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
     return day;
   }
 
-  /// The first and last local day of the month contest. `endAt` is
-  /// exclusive, so the last day is the one before its local date.
+  /// The first and last Riyadh day of the month contest. `endAt` is
+  /// exclusive, so the last day is the one before it. Read on the device's
+  /// clock, a month opening at 21:00 UTC began on the last day of the month
+  /// before for a player west of Riyadh.
   (DateTime, DateTime) _dayBounds() {
     final DateTime today = _today();
-    final DateTime? start = DateTime.tryParse(widget.season.startAt)?.toLocal();
-    final DateTime? end = DateTime.tryParse(widget.season.endAt)?.toLocal();
+    final DateTime? opens = DateTime.tryParse(widget.season.startAt);
+    final DateTime? closes = DateTime.tryParse(widget.season.endAt);
+    final DateTime? start = opens == null
+        ? null
+        : RiyadhDayTurnover.dayKeyOf(opens);
+    final DateTime? end = closes == null
+        ? null
+        : RiyadhDayTurnover.dayKeyOf(closes);
     final DateTime first = start == null
         ? DateTime(today.year, today.month, 1)
         : DateTime(start.year, start.month, start.day);

@@ -34,6 +34,7 @@ import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
+import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
@@ -113,7 +114,7 @@ class _FixturePredictionsBoardPageState
 
   DateTime? get _day {
     final DateTime? kickoff = DateTime.tryParse(widget.kickoffAt ?? '');
-    return kickoff == null ? null : fixtureDayOnly(kickoff.toLocal());
+    return kickoff == null ? null : RiyadhDayTurnover.dayKeyOf(kickoff);
   }
 
   @override
@@ -364,7 +365,7 @@ class _FixturePredictionsBoardPageState
     final DateTime? kickoff = DateTime.tryParse(fixture.kickoffAt ?? '');
     if (kickoff == null || day == null) return false;
     return !kickoff.toUtc().isAfter(nowUtc) &&
-        isSameFixtureDay(kickoff.toLocal(), day);
+        isSameFixtureDay(RiyadhDayTurnover.dayKeyOf(kickoff), day);
   }
 }
 

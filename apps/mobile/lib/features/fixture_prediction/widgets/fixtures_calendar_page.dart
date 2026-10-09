@@ -14,6 +14,7 @@ import 'package:intl/intl.dart' as intl;
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
+import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../l10n/app_localizations.dart';
 import 'fixtures_date_bar.dart';
 
@@ -34,7 +35,7 @@ class FixturesCalendarPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final DateTime today = fixtureDayOnly(DateTime.now());
+    final DateTime today = RiyadhDayTurnover.dayKeyOf(DateTime.now());
     final DateTime firstMonth = DateTime(today.year, today.month);
 
     return Scaffold(

@@ -1,67 +1,72 @@
-/// The matches tab draws a day's fixtures in kickoff order, earliest first,
-/// whatever order the feed arrives in.
+/// Two matches of one Riyadh day are listed on one day of the matches tab,
+/// whatever zone the device is in.
 ///
-/// Goes through the real screen: the genuine `api_client` and providers over
-/// a faked socket (`current_month_fixtures_harness.dart`), so a fixture's
-/// place in the list is decided by the same code path a device runs. The feed
-/// is deliberately NOT chronological -- it mirrors the server's competition
-/// order -- and includes a tie and a fixture with no kickoff.
+/// The tab used to file a match under the device's own calendar day. For a
+/// player in the Emirates a 23:30 Riyadh kickoff fell on the next day; for
+/// one in Egypt or Morocco a 00:30 kickoff fell on the day before. The
+/// server counts both on the Riyadh day (one double a day, the daily
+/// challenge), so a double the strip showed on two days was refused as two
+/// on one.
+///
+/// The edge match is placed where the device's own calendar would move it:
+/// 23:30 Riyadh on a device east of Riyadh, 00:30 Riyadh on one west of it.
+/// On a device at exactly UTC+3 the two calendars agree and this test cannot
+/// tell them apart, which is why `48_one_match_day.sh` also runs it with
+/// TZ=UTC.
 library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/time/riyadh_day_turnover.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fotmob_match_card.dart';
-import 'package:mobile/core/time/riyadh_day_turnover.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/current_month_fixtures_harness.dart';
 
-/// Riyadh [hour]:00 on a day 30 days ahead, as the UTC ISO string the feed
-/// carries. Every call lands on the same Riyadh day -- the day the tab files
-/// a match under -- whatever the machine's time zone, and far enough ahead
-/// that no card is locked or live.
-String _kickoff(int hour) {
-  final DateTime ahead = RiyadhDayTurnover.riyadhDayOf(
-    DateTime.now(),
-  ).add(const Duration(days: 30));
-  return RiyadhDayTurnover.opensAt(
-    ahead,
-  ).add(Duration(hours: hour)).toIso8601String();
-}
-
-Map<String, Object?> _item(String id, String? kickoffAt) =>
+Map<String, Object?> _item(String id, DateTime kickoffUtc) =>
     CurrentMonthFixtureItemDto(
       competitionId: 'c-1',
       competitionName: 'Test League',
-      seasonLabel: '09/2026',
+      seasonLabel: '10/2026',
       fixture: SeasonFixtureCardDto(
         seasonId: 's-1',
         fixtureId: id,
         homeTeam: 'Arsenal',
         awayTeam: 'Chelsea',
-        kickoffAt: kickoffAt,
+        kickoffAt: kickoffUtc.toIso8601String(),
       ),
     ).toJson();
 
 void main() {
-  testWidgets('a day lists its fixtures by kickoff time, earliest first', (
+  testWidgets('a late and an early match of one Riyadh day share its tab', (
     tester,
   ) async {
+    // Tall enough that every card of the day is built.
     tester.view.physicalSize = const Size(800, 4000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    // Feed order: late, no kickoff, tie (a), early, tie (b).
+    // Ten Riyadh days ahead: nothing is locked or live.
+    final DateTime day = RiyadhDayTurnover.riyadhDayOf(
+      DateTime.now(),
+    ).add(const Duration(days: 10));
+    final DateTime opens = RiyadhDayTurnover.opensAt(day);
+    final bool eastOfRiyadh =
+        DateTime.now().timeZoneOffset > const Duration(hours: 3);
+    final DateTime edge = opens.add(
+      eastOfRiyadh
+          ? const Duration(hours: 23, minutes: 30)
+          : const Duration(minutes: 30),
+    );
+    final DateTime evening = opens.add(const Duration(hours: 18));
+
     final List<Map<String, Object?>> feed = <Map<String, Object?>>[
-      _item('f-late', _kickoff(18)),
-      _item('f-none', null),
-      _item('f-tie-a', _kickoff(14)),
-      _item('f-early', _kickoff(12)),
-      _item('f-tie-b', _kickoff(14)),
+      _item('f-edge', edge),
+      _item('f-evening', evening),
     ];
     final harness = buildCurrentMonthFixturesHarness((request) async {
       final path = request.url.path;
@@ -93,27 +98,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final List<String> shown = tester
+    final Set<String> shown = tester
         .widgetList<FotmobMatchCard>(find.byType(FotmobMatchCard))
         .map((FotmobMatchCard card) => card.item.fixture.fixtureId)
-        .toList();
+        .toSet();
     expect(
       shown,
-      <String>['f-early', 'f-tie-a', 'f-tie-b', 'f-late', 'f-none'],
+      <String>{'f-edge', 'f-evening'},
       reason:
-          'earliest kickoff first; equal kickoffs keep feed order; '
-          'no kickoff last',
+          'both kick off on the same Riyadh day (zone offset '
+          '${DateTime.now().timeZoneOffset})',
     );
-
-    // Drawn order, not just tree order: each card sits below the previous.
-    for (var i = 1; i < shown.length; i++) {
-      final double above = tester
-          .getTopLeft(find.byKey(ValueKey<String>(shown[i - 1])))
-          .dy;
-      final double below = tester
-          .getTopLeft(find.byKey(ValueKey<String>(shown[i])))
-          .dy;
-      expect(below, greaterThan(above), reason: '${shown[i]} above its turn');
-    }
   });
 }
