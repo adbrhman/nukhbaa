@@ -4035,6 +4035,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `CloseH2hMonth` (events after grace and settlement; a pilot month closes
   without events), `GetMyH2hLeague` (table over settled rounds, live match,
   upcoming opponents, zones). Names reuse `WeeklyLeagueProfileReader`.
+- **Batch 3 (Postgres, 2026-10-10)**: `PostgresH2hLeagueStore` (draw in one
+  transaction that starts with the month row, so a month is seated once),
+  `PostgresH2hRoundStore` (a day = visible, non-test, season fixtures by
+  Riyadh date; lock freezes fixtures then the lock row; the 0100 refusals map
+  to `h2h.round_*` invariant codes), `PostgresH2hDrawSource` (active days,
+  carried finishes, pilot order), `PostgresH2hSheetReader` (round points over
+  the frozen fixtures still on the round day; settled = every fixture has a
+  result and no pending score; void = none left).
+  `supabase/tests/0100_h2h_queries_test.sql` PREPAREs the adapters' SQL text
+  for text and checks it on a seeded month (25 checks); all 30 SQL tests
+  pass on PostgreSQL 16 with all 100 migrations.
 
 ## 3. Version-Verification Log
 
