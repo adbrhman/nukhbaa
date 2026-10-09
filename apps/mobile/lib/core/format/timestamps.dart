@@ -15,6 +15,8 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' as intl;
 
+import '../time/riyadh_day_turnover.dart';
+
 /// Date + time of day, e.g. `6 Sep 2026, 5:29 AM` in the viewer's zone.
 String formatTimestamp(BuildContext context, String isoTimestamp) {
   final DateTime? parsed = DateTime.tryParse(isoTimestamp);
@@ -29,6 +31,30 @@ String formatTimeOfDay(BuildContext context, String isoTimestamp) {
   if (parsed == null) return isoTimestamp;
   final String locale = Localizations.localeOf(context).toString();
   return intl.DateFormat.jm(locale).format(parsed.toLocal());
+}
+
+/// Time of day of a kickoff, for a list already filed under the kickoff's
+/// Riyadh day (the matches tab, the home highlights, the admin's day).
+///
+/// The time is the viewer's own clock -- the one the prediction lock is
+/// read against, so a player never misses a kickoff by an hour. When the
+/// viewer's date is not that Riyadh day (23:30 Riyadh is 00:30 the next day
+/// in the Emirates; 00:30 Riyadh is 22:30 the day before in Egypt), the
+/// viewer's weekday follows: `00:30 (الخميس)`. At UTC+3 the two dates
+/// always agree, so nothing is added.
+String formatKickoffTime(BuildContext context, String isoTimestamp) {
+  final DateTime? parsed = DateTime.tryParse(isoTimestamp);
+  if (parsed == null) return isoTimestamp;
+  final String locale = Localizations.localeOf(context).toString();
+  final DateTime local = parsed.toLocal();
+  final String time = intl.DateFormat.jm(locale).format(local);
+  final DateTime day = RiyadhDayTurnover.dayKeyOf(parsed);
+  if (local.year == day.year &&
+      local.month == day.month &&
+      local.day == day.day) {
+    return time;
+  }
+  return '$time (${intl.DateFormat.EEEE(locale).format(local)})';
 }
 
 /// Day + time of day without the year, e.g. `10 Sep · 10:00 PM` in the

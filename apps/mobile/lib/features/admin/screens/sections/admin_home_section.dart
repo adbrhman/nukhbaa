@@ -531,7 +531,7 @@ class _TodayFixtures extends StatelessWidget {
     CurrentMonthFixtureItemDto item,
   ) {
     final String? raw = item.fixture.kickoffAt;
-    return raw == null ? 'موعد غير محدد' : formatTimeOfDay(context, raw);
+    return raw == null ? 'موعد غير محدد' : formatKickoffTime(context, raw);
   }
 }
 

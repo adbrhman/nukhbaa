@@ -1,13 +1,13 @@
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart' as intl;
 
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/format/timestamps.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
@@ -247,7 +247,7 @@ class _HighlightRow extends ConsumerWidget {
     final String league = fixture.leagueName ?? item.competitionName;
     final String meta = kickoff == null
         ? league
-        : '$league · ${intl.DateFormat.jm(Localizations.localeOf(context).toString()).format(kickoff)}';
+        : '$league · ${formatKickoffTime(context, fixture.kickoffAt!)}';
 
     Widget crest(ResolvedTeamIdentity team) => TeamLogo(
       displayName: team.displayName,

@@ -61,13 +61,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-// intl is already a transitive dependency (pulled in by the SDK's
-// flutter_localizations, the same package the generated l10n files import
-// it from — see their own `// ignore_for_file: type=lint`); not declared
-// directly in pubspec.yaml, and the task's "no new dependencies" rule
-// means it should not be added there just to silence this lint.
-// ignore: depend_on_referenced_packages
-import 'package:intl/intl.dart' as intl;
 
 import '../../../core/design/app_typography.dart';
 import '../../../core/design/app_motion.dart';
@@ -78,6 +71,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_stroke.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/error/error_presenter.dart';
+import '../../../core/format/timestamps.dart';
 import '../../../core/ui/app_badge.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/ui/score_pill.dart';
@@ -819,9 +813,7 @@ class _CardHeader extends StatelessWidget {
                     Text('•', style: TextStyle(color: tokens.textMuted)),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      intl.DateFormat.jm(
-                        Localizations.localeOf(context).toString(),
-                      ).format(kickoffLocal),
+                      formatKickoffTime(context, kickoffAt!),
                       style: TextStyle(
                         fontSize: AppFontSize.s13,
                         fontWeight: FontWeight.w600,
