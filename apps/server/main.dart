@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/badge_evaluation_scheduler.dart';
+import 'package:server/scheduler/h2h_league_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
@@ -53,6 +54,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Judges each weekly-league week once it has ended (see
     // weekly_league_closure_scheduler.dart).
     startWeeklyLeagueClosureScheduler(root);
+    // Approves and locks the head-to-head rounds, judges each month and
+    // draws the next (see h2h_league_scheduler.dart).
+    startH2hLeagueScheduler(root);
     // Awards the badges players have earned (see
     // badge_evaluation_scheduler.dart).
     startBadgeEvaluationScheduler(root);

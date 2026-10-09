@@ -4046,6 +4046,19 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `supabase/tests/0100_h2h_queries_test.sql` PREPAREs the adapters' SQL text
   for text and checks it on a seeded month (25 checks); all 30 SQL tests
   pass on PostgreSQL 16 with all 100 migrations.
+- **Batch 4 (server, 2026-10-10)**: contracts `h2h_league_dto.dart`
+  (`MyH2hLeagueDto` with standings, rounds and zones; `H2hRoundsOverviewDto`;
+  `H2hApproveRoundRequestDto`; `H2hPilotStartedDto`), mapper
+  `apps/server/lib/http/h2h_league_dto_mapper.dart` (form = the last five
+  settled results; a live round carries its score so far; a void or
+  upcoming round carries none). Routes: `GET /me/h2h-league`;
+  `GET /admin/h2h/rounds?day=` (the month's rounds and the days that may be
+  approved next), `POST /admin/h2h/rounds {"day"}` (201 with the round),
+  `DELETE /admin/h2h/rounds/{id}` (204), `POST /admin/h2h/pilot`
+  (`{"seated"}`). Scheduler `h2h_league_scheduler.dart` every 5 minutes:
+  `RunH2hRounds`, then `CloseH2hMonth`, then `DrawH2hMonth`; a failed job
+  is reported and does not stop the next. All eight use-cases are wired in
+  `CompositionRoot` (one `_UnwiredH2h` stand-in for the test roots).
 
 ## 3. Version-Verification Log
 

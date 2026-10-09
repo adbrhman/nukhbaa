@@ -143,6 +143,14 @@ final class CompositionRoot {
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
     required this.closeWeeklyLeague,
+    required this.getMyH2hLeague,
+    required this.listH2hRounds,
+    required this.approveH2hRound,
+    required this.withdrawH2hRound,
+    required this.startH2hPilot,
+    required this.runH2hRounds,
+    required this.closeH2hMonth,
+    required this.drawH2hMonth,
     required this.evaluateBadges,
     required this.providerSyncMode,
     this.syncProviderFixtures,
@@ -327,6 +335,14 @@ final class CompositionRoot {
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
     CloseWeeklyLeague? closeWeeklyLeague,
+    GetMyH2hLeague? getMyH2hLeague,
+    ListH2hRounds? listH2hRounds,
+    ApproveH2hRound? approveH2hRound,
+    WithdrawH2hRound? withdrawH2hRound,
+    StartH2hPilot? startH2hPilot,
+    RunH2hRounds? runH2hRounds,
+    CloseH2hMonth? closeH2hMonth,
+    DrawH2hMonth? drawH2hMonth,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
@@ -548,6 +564,14 @@ final class CompositionRoot {
            _absentEnsureUpcomingMonthlySeasons(),
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
        closeWeeklyLeague = closeWeeklyLeague ?? _absentCloseWeeklyLeague(),
+       getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
+       listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
+       approveH2hRound = approveH2hRound ?? _absentApproveH2hRound(),
+       withdrawH2hRound = withdrawH2hRound ?? _absentWithdrawH2hRound(),
+       startH2hPilot = startH2hPilot ?? _absentStartH2hPilot(),
+       runH2hRounds = runH2hRounds ?? _absentRunH2hRounds(),
+       closeH2hMonth = closeH2hMonth ?? _absentCloseH2hMonth(),
+       drawH2hMonth = drawH2hMonth ?? _absentDrawH2hMonth(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
@@ -1276,6 +1300,61 @@ final class CompositionRoot {
     closures: _UnwiredWeeklyLeagueClosureStore(),
     standings: _UnwiredWeeklyLeagueStandingsReader(),
     events: _UnwiredGamificationEventSink(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  /// Backs every "absent" head-to-head use-case: one stand-in for all four
+  /// ports, which throws, so a test that reaches a slice it never wired
+  /// fails loudly.
+  static final _UnwiredH2h _unwiredH2h = _UnwiredH2h();
+
+  static GetMyH2hLeague _absentGetMyH2hLeague() => GetMyH2hLeague(
+    leagues: _unwiredH2h,
+    rounds: _unwiredH2h,
+    sheets: _unwiredH2h,
+    profiles: _UnwiredWeeklyLeagueProfileReader(),
+    clock: _unwiredClock,
+  );
+
+  static ListH2hRounds _absentListH2hRounds() => ListH2hRounds(
+    rounds: _unwiredH2h,
+    leagues: _unwiredH2h,
+    clock: _unwiredClock,
+  );
+
+  static ApproveH2hRound _absentApproveH2hRound() => ApproveH2hRound(
+    rounds: _unwiredH2h,
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
+  static WithdrawH2hRound _absentWithdrawH2hRound() =>
+      WithdrawH2hRound(rounds: _unwiredH2h);
+
+  static StartH2hPilot _absentStartH2hPilot() => StartH2hPilot(
+    leagues: _unwiredH2h,
+    source: _unwiredH2h,
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
+  static RunH2hRounds _absentRunH2hRounds() => RunH2hRounds(
+    rounds: _unwiredH2h,
+    leagues: _unwiredH2h,
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  static CloseH2hMonth _absentCloseH2hMonth() => CloseH2hMonth(
+    leagues: _unwiredH2h,
+    rounds: _unwiredH2h,
+    sheets: _unwiredH2h,
+    events: _UnwiredGamificationEventSink(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  static DrawH2hMonth _absentDrawH2hMonth() => DrawH2hMonth(
+    leagues: _unwiredH2h,
+    source: _unwiredH2h,
     idGenerator: _unwiredIdGenerator,
   );
 
@@ -2116,6 +2195,38 @@ final class CompositionRoot {
   /// the event stream. Driven by the scheduler, never by a request.
   final CloseWeeklyLeague closeWeeklyLeague;
 
+  /// Reads the caller's head-to-head month: table, rounds, zones (backs
+  /// `GET /me/h2h-league`, migration 0100).
+  final GetMyH2hLeague getMyH2hLeague;
+
+  /// Lists a month's head-to-head rounds and the days that may be
+  /// approved next (backs `GET /admin/h2h/rounds`). Admin only.
+  final ListH2hRounds listH2hRounds;
+
+  /// Approves a day as the next head-to-head round (backs
+  /// `POST /admin/h2h/rounds`). Admin only.
+  final ApproveH2hRound approveH2hRound;
+
+  /// Withdraws the last head-to-head round before it starts (backs
+  /// `DELETE /admin/h2h/rounds/{id}`). Admin only.
+  final WithdrawH2hRound withdrawH2hRound;
+
+  /// Draws the hidden pilot month (backs `POST /admin/h2h/pilot`).
+  /// Admin only.
+  final StartH2hPilot startH2hPilot;
+
+  /// Approves due regular days and locks started head-to-head rounds.
+  /// Driven by the scheduler, never by a request.
+  final RunH2hRounds runH2hRounds;
+
+  /// Judges each finished head-to-head month into the event stream.
+  /// Driven by the scheduler, never by a request.
+  final CloseH2hMonth closeH2hMonth;
+
+  /// Draws each head-to-head month once it opens. Driven by the
+  /// scheduler, never by a request.
+  final DrawH2hMonth drawH2hMonth;
+
   /// Awards each catalog badge a player has earned and not yet been given.
   /// Driven by the scheduler, never by a request.
   final EvaluateBadges evaluateBadges;
@@ -2812,6 +2923,49 @@ final class CompositionRoot {
         closures: PostgresWeeklyLeagueClosureStore(connection),
         standings: PostgresWeeklyLeagueStandingsReader(connection),
         events: PostgresGamificationEventSink(connection),
+        idGenerator: idGenerator,
+      ),
+      getMyH2hLeague: GetMyH2hLeague(
+        leagues: PostgresH2hLeagueStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        sheets: PostgresH2hSheetReader(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
+        clock: clock,
+      ),
+      listH2hRounds: ListH2hRounds(
+        rounds: PostgresH2hRoundStore(connection),
+        leagues: PostgresH2hLeagueStore(connection),
+        clock: clock,
+      ),
+      approveH2hRound: ApproveH2hRound(
+        rounds: PostgresH2hRoundStore(connection),
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      withdrawH2hRound: WithdrawH2hRound(
+        rounds: PostgresH2hRoundStore(connection),
+      ),
+      startH2hPilot: StartH2hPilot(
+        leagues: PostgresH2hLeagueStore(connection),
+        source: PostgresH2hDrawSource(connection),
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      runH2hRounds: RunH2hRounds(
+        rounds: PostgresH2hRoundStore(connection),
+        leagues: PostgresH2hLeagueStore(connection),
+        idGenerator: idGenerator,
+      ),
+      closeH2hMonth: CloseH2hMonth(
+        leagues: PostgresH2hLeagueStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        sheets: PostgresH2hSheetReader(connection),
+        events: PostgresGamificationEventSink(connection),
+        idGenerator: idGenerator,
+      ),
+      drawH2hMonth: DrawH2hMonth(
+        leagues: PostgresH2hLeagueStore(connection),
+        source: PostgresH2hDrawSource(connection),
         idGenerator: idGenerator,
       ),
       evaluateBadges: EvaluateBadges(
@@ -3517,6 +3671,100 @@ final class _UnwiredGamificationEventSink implements GamificationEventSink {
   @override
   Future<Result<void>> record(GamificationEvent event) =>
       throw StateError('CloseWeeklyLeague was not wired into this test root');
+}
+
+/// Backs every "absent" head-to-head use-case (migration 0100): each port
+/// method throws if a test reaches a slice it never wired.
+final class _UnwiredH2h
+    implements H2hLeagueStore, H2hRoundStore, H2hSheetReader, H2hDrawSource {
+  static Never _unwired() => throw StateError(
+    'A head-to-head use-case was not wired into this test root',
+  );
+
+  @override
+  Future<Result<H2hMonthInfo?>> monthOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<bool>> isClosed(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<int>> draw({
+    required DateTime monthStart,
+    required bool isPilot,
+    required List<H2hDrawnGroup> groups,
+    required int capacity,
+  }) => _unwired();
+
+  @override
+  Future<Result<H2hSeat?>> seatFor({
+    required UserId userId,
+    required DateTime monthStart,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<H2hGroupRef>>> groupsOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<DateTime?>> nextUnclosedMonth() => _unwired();
+
+  @override
+  Future<Result<void>> markClosed({
+    required DateTime monthStart,
+    required int memberCount,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<H2hRound>>> roundsOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<H2hDayFixtures>> dayFixtures(DateTime day) => _unwired();
+
+  @override
+  Future<Result<List<H2hDayFixtures>>> daysBetween({
+    required DateTime from,
+    required DateTime through,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> approve({
+    required H2hRoundId id,
+    required DateTime monthStart,
+    required int number,
+    required DateTime day,
+    required int fixtureCount,
+    required UserId? approvedBy,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> withdraw(H2hRoundId roundId) => _unwired();
+
+  @override
+  Future<Result<int>> lock({
+    required H2hRoundId roundId,
+    required DateTime day,
+  }) => _unwired();
+
+  @override
+  Future<Result<H2hGroupSheet>> sheetOf({
+    required H2hLeagueId leagueId,
+    required List<H2hRound> rounds,
+  }) => _unwired();
+
+  @override
+  Future<Result<Map<UserId, int>>> activeDaysOf(DateTime monthStart) =>
+      _unwired();
+
+  @override
+  Future<Result<List<UserId>>> activeOrder({
+    required DateTime monthStart,
+    required int minActiveDays,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<H2hCarry>>> carriedFrom(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<List<UserId>>> pilotOrder(DateTime monthStart) => _unwired();
 }
 
 /// Backs an "absent" [EvaluateBadges]: throws if a test reaches the badge
