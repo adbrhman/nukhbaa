@@ -3,6 +3,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/format/timestamps.dart';
@@ -39,8 +40,14 @@ import 'prediction_lookup_providers.dart';
 /// still ahead of kickoff or in play), or completed (kicked off and no
 /// longer live). A prediction whose kickoff is unknown only appears under
 /// "all", since neither of the other two can be claimed for it.
-class PredictionHistoryScreen extends ConsumerStatefulWidget {
+class PredictionHistoryScreen extends ConsumerStatefulWidget
+    implements NamedScreen {
   const PredictionHistoryScreen({super.key});
+
+  /// Opened from the home page since the bottom bar gave its place to the
+  /// head-to-head league, so the navigator counts it (migration 0093).
+  @override
+  String get screenName => ScreenNames.predictions;
 
   @override
   ConsumerState<PredictionHistoryScreen> createState() =>

@@ -240,6 +240,17 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/h2h-league` -- the caller's month in the head-to-head league
+  /// (migration 0100): the state of the month, the group's table, every
+  /// round with the caller's match, and the zones. Computed by the server
+  /// on every call; this client decides nothing.
+  Future<Result<MyH2hLeagueDto>> myH2hLeague() {
+    return _transport.getObject<MyH2hLeagueDto>(
+      '/me/h2h-league',
+      parse: MyH2hLeagueDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///

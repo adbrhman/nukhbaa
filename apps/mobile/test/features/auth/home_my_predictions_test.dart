@@ -6,12 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile/core/design/app_tokens.dart';
+import 'package:mobile/core/analytics/screen_views.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/home_screen.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
+import 'package:mobile/features/history/prediction_history_screen.dart';
 import 'package:mobile/features/history/prediction_lookup_providers.dart';
 import 'package:mobile/features/notifications/notifications_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -19,41 +20,37 @@ import 'package:mobile/l10n/app_localizations.dart';
 import '../../support/auth_harness.dart';
 import '../../support/current_month_fixtures_harness.dart';
 
+http.Response _json(Object body) => http.Response(
+  jsonEncode(body),
+  200,
+  headers: const {'content-type': 'application/json'},
+);
+
+/// "توقعاتي" left the bottom bar for the head-to-head league: the home page
+/// opens it, through the real [HomeScreen], as a pushed page with its own
+/// back button, counted under its own screen name.
 void main() {
-  testWidgets('home uses RTL forward arrows and readable streak chip', (
-    tester,
-  ) async {
-    // Tall enough that the lazy ListView builds every card, the pending
-    // predictions button at the bottom included.
-    tester.view.physicalSize = const Size(800, 2000);
+  testWidgets('home opens my predictions and comes back', (tester) async {
+    // Tall enough that the lazy ListView builds every card.
+    tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-
     final auth = buildAuthHarness((request) async {
       if (request.url.path == '/me/daily-challenge') {
-        return http.Response(
-          jsonEncode(
-            const MyDailyChallengeDto(
-              day: '2026-09-23',
-              total: 0,
-              predicted: 0,
-              complete: false,
-            ).toJson(),
-          ),
-          200,
-          headers: const {'content-type': 'application/json'},
+        return _json(
+          const MyDailyChallengeDto(
+            day: '2026-09-23',
+            total: 3,
+            predicted: 1,
+            complete: false,
+          ).toJson(),
         );
       }
       if (request.url.path == '/me/streak') {
-        return http.Response(
-          jsonEncode(const MyStreakDto(current: 0, longest: 0).toJson()),
-          200,
-          headers: const {'content-type': 'application/json'},
-        );
+        return _json(const MyStreakDto(current: 0, longest: 0).toJson());
       }
-      throw StateError(
-        'Unexpected request: ${request.method} ${request.url.path}',
-      );
+      // Every list the history page reads is empty.
+      return _json(const <Object?>[]);
     });
     addTearDown(auth.dispose);
 
@@ -64,16 +61,7 @@ void main() {
       ),
       teamCatalogByIdProvider.overrideWithValue(null),
       activeSeasonsProvider.overrideWithValue(
-        AsyncData<List<ActiveSeasonDto>>([
-          const ActiveSeasonDto(
-            competitionId: 'c-1',
-            competitionName: 'الدوري السعودي',
-            seasonId: 's-1',
-            seasonLabel: '2026/27',
-            startAt: '2026-09-01T00:00:00.000Z',
-            endAt: '2026-10-01T00:00:00.000Z',
-          ),
-        ]),
+        const AsyncData<List<ActiveSeasonDto>>(<ActiveSeasonDto>[]),
       ),
       myFixturePredictionsByFixtureProvider.overrideWithValue(
         const AsyncData<Map<String, FixturePredictionDto>>({}),
@@ -105,34 +93,30 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Two forward chevrons, the overview's and "my predictions"; both point
-    // left in Arabic, none right.
-    expect(find.byIcon(Icons.chevron_left_rounded), findsNWidgets(2));
+    final Finder card = find.byKey(const Key('home.myPredictions'));
+    expect(card, findsOneWidget);
+    // In the place the day's challenge held: after the matches, before it.
     expect(
-      find.descendant(
-        of: find.byKey(const Key('home.myPredictions')),
-        matching: find.byIcon(Icons.chevron_left_rounded),
+      tester.getTopLeft(card).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const Key('home.dailyChallenge'))).dy,
       ),
-      findsOneWidget,
-    );
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-    expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('home.pendingPredictions.cta')),
-        matching: find.byIcon(Icons.arrow_forward_rounded),
-      ),
-      findsOneWidget,
     );
 
-    final streakText = find.text('موسم نشط واحد');
-    expect(streakText, findsOneWidget);
-    final chip = tester.widget<Container>(
-      find.ancestor(of: streakText, matching: find.byType(Container)).first,
-    );
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+
+    final Finder page = find.byType(PredictionHistoryScreen);
+    expect(page, findsOneWidget);
+    expect(find.byKey(const Key('history.title')), findsOneWidget);
     expect(
-      (chip.decoration! as BoxDecoration).color,
-      AppTheme.dark.extension<AppTokens>()!.surfaceElevated,
+      (tester.widget(page) as NamedScreen).screenName,
+      ScreenNames.predictions,
     );
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(page, findsNothing);
+    expect(card, findsOneWidget);
   });
 }

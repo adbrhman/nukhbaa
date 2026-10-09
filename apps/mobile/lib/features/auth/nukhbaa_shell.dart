@@ -22,7 +22,7 @@ import '../duels/duels_providers.dart';
 import '../duels/duels_screen.dart';
 import '../groups/groups_providers.dart';
 import '../groups/join_group_screen.dart';
-import '../history/prediction_history_screen.dart';
+import '../h2h/h2h_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
@@ -239,7 +239,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
       onOpenAccount: () => _select(4),
     ),
     1 => const CurrentMonthFixturesScreen(),
-    2 => const PredictionHistoryScreen(),
+    2 => const H2hScreen(),
     3 => LeaderboardsScreen(
       userDisplayName: widget.user.displayName,
       userId: widget.user.userId,
@@ -331,6 +331,10 @@ class NukhbaaBottomNav extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
+                // The bar's order (2026-10-10, agreed with the players):
+                // home, leaders, the league, matches, account. Each item
+                // keeps its page index, so pushes and the screen-view names
+                // still find the page they name.
                 _item(
                   context,
                   icon: Icons.home_outlined,
@@ -341,27 +345,27 @@ class NukhbaaBottomNav extends StatelessWidget {
                 ),
                 _item(
                   context,
-                  icon: Icons.sports_soccer_outlined,
-                  activeIcon: Icons.sports_soccer,
-                  label: 'المباريات',
-                  navKey: const Key('nav.item.fixtures'),
-                  destination: 1,
-                ),
-                _item(
-                  context,
-                  icon: Icons.bolt_outlined,
-                  activeIcon: Icons.bolt_rounded,
-                  label: 'توقعاتي',
-                  navKey: const Key('nav.item.predictions'),
-                  destination: 2,
-                ),
-                _item(
-                  context,
                   icon: Icons.leaderboard_outlined,
                   activeIcon: Icons.leaderboard_rounded,
                   label: 'المتصدرون',
                   navKey: const Key('nav.item.leaders'),
                   destination: 3,
+                ),
+                _item(
+                  context,
+                  icon: Icons.shield_outlined,
+                  activeIcon: Icons.shield_rounded,
+                  label: 'المواجهات',
+                  navKey: const Key('nav.item.h2h'),
+                  destination: 2,
+                ),
+                _item(
+                  context,
+                  icon: Icons.sports_soccer_outlined,
+                  activeIcon: Icons.sports_soccer,
+                  label: 'المباريات',
+                  navKey: const Key('nav.item.fixtures'),
+                  destination: 1,
                 ),
                 _item(
                   context,

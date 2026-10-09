@@ -35,6 +35,7 @@ abstract final class ScreenNames {
   static const String predictions = 'predictions';
   static const String leaderboard = 'leaderboard';
   static const String account = 'account';
+  static const String h2h = 'h2h';
   static const String notifications = 'notifications';
   static const String duels = 'duels';
   static const String duelAccept = 'duel_accept';
@@ -66,7 +67,7 @@ abstract final class ScreenNames {
   static const List<String> tabs = <String>[
     home,
     matches,
-    predictions,
+    h2h,
     leaderboard,
     account,
   ];
@@ -78,6 +79,7 @@ abstract final class ScreenNames {
     predictions,
     leaderboard,
     account,
+    h2h,
     notifications,
     duels,
     duelAccept,

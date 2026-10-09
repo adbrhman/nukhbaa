@@ -4059,6 +4059,16 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `RunH2hRounds`, then `CloseH2hMonth`, then `DrawH2hMonth`; a failed job
   is reported and does not stop the next. All eight use-cases are wired in
   `CompositionRoot` (one `_UnwiredH2h` stand-in for the test roots).
+- **Batch 5 (mobile tab, 2026-10-10)**: the bottom bar reads home,
+  leaders, المواجهات, matches, account (each item keeps its page index, so
+  push links and screen names are unchanged; page 2 is now `H2hScreen`).
+  `apps/mobile/lib/features/h2h/`: `myH2hLeagueProvider`
+  (`AuthApi.myH2hLeague`), `h2h_texts.dart` (Arabic words, like the duels),
+  `H2hScreen` (not started / draw pending / not in draw with the rules; the
+  open month: division banner, the featured match -- live, else next, else
+  last -- the group table with zone bars and form, and every round).
+  "توقعاتي" opens from a home card above the daily challenge as a pushed
+  page (`ScreenNames.predictions`); screen name `h2h` added on both sides.
 
 ## 3. Version-Verification Log
 

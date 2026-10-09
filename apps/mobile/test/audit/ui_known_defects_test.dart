@@ -1302,7 +1302,7 @@ void main() {
       await _pumpShell(tester);
       for (final String tab in <String>[
         'nav.item.fixtures',
-        'nav.item.predictions',
+        'nav.item.h2h',
         'nav.item.account',
       ]) {
         await tester.tap(find.byKey(Key(tab)));

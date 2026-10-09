@@ -24,6 +24,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/live_home_card.dart';
 import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
+import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import '../notifications/web_push_card.dart';
@@ -134,6 +135,10 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ],
               const SizedBox(height: 24),
+              // "My predictions" left the bottom bar for the head-to-head
+              // league (2026-10-10); it opens from here.
+              const MergeSemantics(child: _MyPredictionsCard()),
+              const SizedBox(height: 18),
               MergeSemantics(
                 child: DailyChallengeCard(onOpenMatches: onOpenMatches),
               ),
@@ -145,6 +150,68 @@ class HomeScreen extends ConsumerWidget {
                   onOpenMatches: onOpenMatches,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the caller's predictions ("توقعاتي") as a page of its own, with
+/// its back button: the tab it used to be went to the head-to-head league.
+class _MyPredictionsCard extends StatelessWidget {
+  const _MyPredictionsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Material(
+      color: tokens.surface,
+      borderRadius: AppRadius.brLg,
+      child: InkWell(
+        key: const Key('home.myPredictions'),
+        borderRadius: AppRadius.brLg,
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => const PredictionHistoryScreen(),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.brLg,
+            border: Border.all(color: tokens.border),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.bolt_rounded, color: tokens.primaryText),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'توقعاتي',
+                      style: TextStyle(
+                        color: tokens.textPrimary,
+                        fontSize: AppFontSize.s15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'كل توقعاتك ونتائجها في مكان واحد',
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: AppFontSize.s12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              ForwardChevron(color: tokens.textMuted),
             ],
           ),
         ),

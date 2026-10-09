@@ -104,7 +104,7 @@ final List<_Screen> _screens = <_Screen>[
   // something it cannot read -- its error state.
   _Screen('shell.home', _shell(null)),
   _Screen('shell.matches', _shell('nav.item.fixtures')),
-  _Screen('shell.predictions', _shell('nav.item.predictions')),
+  _Screen('shell.h2h', _shell('nav.item.h2h')),
   _Screen('shell.leaderboards', _shell('nav.item.leaders')),
   _Screen('shell.account', _shell('nav.item.account')),
   _Screen('shell.notifications', _shell('home.notifications')),

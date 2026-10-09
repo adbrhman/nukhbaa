@@ -21,6 +21,9 @@ abstract final class ScreenName {
   /// The account tab.
   static const String account = 'account';
 
+  /// The head-to-head league tab (migration 0100).
+  static const String h2h = 'h2h';
+
   /// The notifications inbox.
   static const String notifications = 'notifications';
 
@@ -109,6 +112,7 @@ abstract final class ScreenName {
     predictions,
     leaderboard,
     account,
+    h2h,
     notifications,
     duels,
     duelAccept,

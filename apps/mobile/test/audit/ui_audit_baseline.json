@@ -223,7 +223,7 @@
     "layout13": 0,
     "layout20": 0
   },
-  "shell.predictions/dark": {
+  "shell.h2h/dark": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
@@ -231,7 +231,7 @@
     "layout13": 0,
     "layout20": 0
   },
-  "shell.predictions/light": {
+  "shell.h2h/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
