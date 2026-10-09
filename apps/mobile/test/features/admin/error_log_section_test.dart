@@ -175,6 +175,23 @@ void main() {
     expect(server.to('/admin/errors').first.url.queryParameters['list'], 'new');
   });
 
+  testWidgets(
+    'a row counts in Arabic and keeps an English message left to right',
+    (tester) async {
+      await _open(tester, _Server());
+
+      // 100 occurrences, 4 players: "4 لاعب" was the broken form.
+      expect(find.textContaining('100 مرة · 4 لاعبين · '), findsOneWidget);
+      final Text message = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('admin.errors.row.7')),
+          matching: find.text('Statement timed out'),
+        ),
+      );
+      expect(message.textDirection, TextDirection.ltr);
+    },
+  );
+
   testWidgets('marks an error fixed, sending only what changed', (
     tester,
   ) async {
@@ -242,9 +259,9 @@ void main() {
     // The build and the file stand on their own line, ahead of the
     // Arabic counts, so bidi cannot move them inside the sentence.
     expect(find.text('abc1235'), findsOneWidget);
-    expect(find.textContaining('3 خطأ (1 حرج) · 120 مرة'), findsOneWidget);
+    expect(find.textContaining('3 أخطاء (1 حرج) · 120 مرة'), findsOneWidget);
     expect(find.text('routes/seasons/index.dart'), findsOneWidget);
-    expect(find.text('1 خطأ · 100 مرة'), findsOneWidget);
+    expect(find.text('خطأ واحد · 100 مرة'), findsOneWidget);
   });
 
   testWidgets('pulling down reloads the list and the release summary', (

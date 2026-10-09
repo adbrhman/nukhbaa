@@ -72,6 +72,9 @@ const String fixturePredictionNotAParticipantCode =
 /// the fixture itself.
 typedef FixturePredictionKey = ({String seasonId, String fixtureId});
 
+/// One submit: what [FixturePredictionController.submit] sends.
+typedef _FixtureCommand = ({int homeGoals, int awayGoals, bool isDouble});
+
 /// Owns and mutates the [FixtureSubmissionState] for one
 /// `(seasonId, fixtureId)` pair.
 ///
@@ -94,36 +97,79 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
   @override
   FixtureSubmissionState build() => const FixtureSubmissionIdle();
 
+  /// The command on the wire, and the newest one asked for while it was
+  /// there (see [submit]).
+  _FixtureCommand? _sending;
+  _FixtureCommand? _waiting;
+
   /// Submits (or idempotently amends) the caller's prediction for this
   /// controller's fixture with the given [homeGoals]/[awayGoals]/[isDouble].
   ///
   /// Transitions `→ InFlight` for the duration of the call (including a
   /// possible auto-join + retry, see class doc), then `→ Succeeded(prediction)`
-  /// on a `200` or `→ Failed(error)` on any typed failure. A second call
-  /// while a submit is already [FixtureSubmissionInFlight] is ignored (the
-  /// screen also disables the affordance, but this is the authoritative
-  /// guard against a double submit).
+  /// on a `200` or `→ Failed(error)` on any typed failure.
+  ///
+  /// Latest wins. A call made while a submit is in flight is not sent
+  /// at once, and it is not dropped either: it waits, a newer call replaces
+  /// it, and it goes out as soon as the one in flight lands. Dropping it
+  /// lost the player's newest score whenever the server took longer than
+  /// the card's retry budget (about a second): the card showed 2-1 while
+  /// the server kept 2-0. Asking again for the command already in flight
+  /// sends nothing more, so a double tap is still one request. The state
+  /// stays InFlight until the last waiting command has its answer, and that
+  /// answer becomes the state.
   Future<void> submit({
     required int homeGoals,
     required int awayGoals,
     bool isDouble = false,
   }) async {
-    // Do not fire a second overlapping request; the in-flight one wins.
+    final _FixtureCommand command = (
+      homeGoals: homeGoals,
+      awayGoals: awayGoals,
+      isDouble: isDouble,
+    );
     if (state is FixtureSubmissionInFlight) {
+      _waiting = command == _sending ? null : command;
       return;
     }
 
     state = const FixtureSubmissionInFlight();
 
+    _FixtureCommand next = command;
+    _FixtureCommand? waiting;
+    Result<FixturePredictionDto> result;
+    do {
+      _sending = next;
+      result = await _send(next);
+      waiting = _waiting;
+      _waiting = null;
+      if (waiting != null) next = waiting;
+    } while (waiting != null && ref.mounted);
+    _sending = null;
+
+    // The container can go while a request is out (sign-out replaces it):
+    // nobody is left to tell.
+    if (!ref.mounted) return;
+    state = switch (result) {
+      Ok<FixturePredictionDto>(:final value) => FixtureSubmissionSucceeded(
+        value,
+      ),
+      Err<FixturePredictionDto>(:final error) => FixtureSubmissionFailed(error),
+    };
+  }
+
+  /// Sends one [command], joining the season first when the server says the
+  /// caller has not joined it yet.
+  Future<Result<FixturePredictionDto>> _send(_FixtureCommand command) async {
     final seasonId = arg.seasonId;
     final fixtureId = arg.fixtureId;
 
     Result<FixturePredictionDto> result = await _api.submitFixturePrediction(
       seasonId: seasonId,
       fixtureId: fixtureId,
-      homeGoals: homeGoals,
-      awayGoals: awayGoals,
-      isDouble: isDouble,
+      homeGoals: command.homeGoals,
+      awayGoals: command.awayGoals,
+      isDouble: command.isDouble,
     );
 
     // Auto-join on first prediction (Axiom 1, social-first): the caller has
@@ -132,26 +178,21 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
     if (result case Err<FixturePredictionDto>(
       :final error,
     ) when error.code == fixturePredictionNotAParticipantCode) {
+      if (!ref.mounted) return result;
       final joinResult = await _competitionApi.joinCompetition(seasonId);
       if (joinResult is Err<ParticipantDto>) {
-        state = FixtureSubmissionFailed(joinResult.error);
-        return;
+        return Result.err(joinResult.error);
       }
+      if (!ref.mounted) return result;
       result = await _api.submitFixturePrediction(
         seasonId: seasonId,
         fixtureId: fixtureId,
-        homeGoals: homeGoals,
-        awayGoals: awayGoals,
-        isDouble: isDouble,
+        homeGoals: command.homeGoals,
+        awayGoals: command.awayGoals,
+        isDouble: command.isDouble,
       );
     }
-
-    state = switch (result) {
-      Ok<FixturePredictionDto>(:final value) => FixtureSubmissionSucceeded(
-        value,
-      ),
-      Err<FixturePredictionDto>(:final error) => FixtureSubmissionFailed(error),
-    };
+    return result;
   }
 
   /// Returns the controller to [FixtureSubmissionIdle] (e.g. after the user

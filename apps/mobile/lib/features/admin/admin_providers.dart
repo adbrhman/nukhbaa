@@ -227,6 +227,7 @@ class FixtureVisibilityController
     final result = await ref
         .read(adminApiProvider)
         .setFixturesHidden(fixtureIds: fixtureIds, hidden: hidden);
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<FixtureVisibilityResultDto>(:final value) => AsyncValue.data(value),
       Err<FixtureVisibilityResultDto>(:final error) => AsyncValue.error(
@@ -388,6 +389,7 @@ class UserSanctionController extends _$UserSanctionController {
   Future<void> suspend(String userId, String reason) async {
     state = const AsyncValue.loading();
     final result = await _api.suspendUser(userId, reason);
+    if (!ref.mounted) return;
     _applyAndRefresh(result);
   }
 
@@ -395,6 +397,7 @@ class UserSanctionController extends _$UserSanctionController {
   Future<void> reinstate(String userId, String reason) async {
     state = const AsyncValue.loading();
     final result = await _api.reinstateUser(userId, reason);
+    if (!ref.mounted) return;
     _applyAndRefresh(result);
   }
 
@@ -427,6 +430,7 @@ class UsersLookupController extends _$UsersLookupController {
   Future<void> search(String search) async {
     state = const AsyncValue.loading();
     final result = await _api.listUsers(search: search);
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<UserListDto>(:final value) => AsyncValue.data(value),
       Err<UserListDto>(:final error) => AsyncValue.error(
@@ -497,6 +501,7 @@ class AdminLedgerLookupController extends _$AdminLedgerLookupController {
       participantId,
       reason: reason,
     );
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<ParticipantEntriesDto>(:final value) => AsyncValue.data(value),
       Err<ParticipantEntriesDto>(:final error) => AsyncValue.error(
@@ -532,6 +537,7 @@ class AdminFixturePredictionsController
       fixtureId,
       reason: reason,
     );
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<List<FixturePredictionDto>>(:final value) => AsyncValue.data(value),
       Err<List<FixturePredictionDto>>(:final error) => AsyncValue.error(
@@ -576,6 +582,7 @@ class FixtureScheduleController extends _$FixtureScheduleController {
       awayTeamId: awayTeamId,
       leagueId: leagueId,
     );
+    if (!ref.mounted) return;
     _apply(result);
   }
 
@@ -604,6 +611,7 @@ class FixtureScheduleController extends _$FixtureScheduleController {
       awayTeamId: awayTeamId,
       leagueId: leagueId,
     );
+    if (!ref.mounted) return;
     _apply(result);
     if (state is AsyncData<FixtureScheduleDto>) {
       ref.invalidate(seasonFixturesProvider(seasonId));
@@ -649,6 +657,7 @@ class RecordFixtureResultController extends _$RecordFixtureResultController {
       homeGoals: homeGoals,
       awayGoals: awayGoals,
     );
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<FixtureResultDto>(:final value) => AsyncValue.data(value),
       Err<FixtureResultDto>(:final error) => AsyncValue.error(
@@ -679,6 +688,7 @@ class ScoreFixtureController extends _$ScoreFixtureController {
   Future<void> score(String fixtureId, String seasonId) async {
     state = const AsyncValue.loading();
     final result = await _api.scoreFixture(fixtureId);
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<FixtureScoresDto>(:final value) => AsyncValue.data(value),
       Err<FixtureScoresDto>(:final error) => AsyncValue.error(
@@ -709,6 +719,7 @@ class PostFixtureToLedgerController extends _$PostFixtureToLedgerController {
   Future<void> post(String fixtureId, String seasonId) async {
     state = const AsyncValue.loading();
     final result = await _api.postFixtureToLedger(fixtureId);
+    if (!ref.mounted) return;
     if (result is Err<PostFixtureToLedgerResponseDto>) {
       final AppError e = result.error;
       debugPrint(
@@ -760,6 +771,7 @@ class FixtureReportController extends _$FixtureReportController {
       _adminApi.adminGetFixtureScores(fixtureId),
       _adminApi.adminListFixturePredictions(fixtureId, reason: reason),
     ).wait;
+    if (!ref.mounted) return;
     final scoresResult = results.$1;
     final predictionsResult = results.$2;
 
@@ -805,6 +817,7 @@ class RemoveFixtureController extends _$RemoveFixtureController {
       seasonId: seasonId,
       fixtureId: fixtureId,
     );
+    if (!ref.mounted) return;
     if (result is Err<bool>) {
       state = AsyncValue.error(result.error, StackTrace.current);
       return;
@@ -867,6 +880,7 @@ class AddMatchController extends _$AddMatchController {
       leagueId: leagueId,
       isTest: isTest,
     );
+    if (!ref.mounted) return;
     if (registerResult is Err<FixtureScheduleDto>) {
       state = AsyncValue.error(registerResult.error, StackTrace.current);
       return;
@@ -879,6 +893,7 @@ class AddMatchController extends _$AddMatchController {
       fixtureId: fixture.fixtureId,
       displayOrder: displayOrder,
     );
+    if (!ref.mounted) return;
     if (linkResult is Err<SeasonFixtureDto>) {
       state = AsyncValue.error(linkResult.error, StackTrace.current);
       return;
@@ -920,6 +935,7 @@ class CreateCompetitionController extends _$CreateCompetitionController {
       format: format,
       visibility: visibility,
     );
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<CompetitionDto>(:final value) => AsyncValue.data(value),
       Err<CompetitionDto>(:final error) => AsyncValue.error(
@@ -960,6 +976,7 @@ class StartSeasonController extends _$StartSeasonController {
       year: year,
       month: month,
     );
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<SeasonDto>(:final value) => AsyncValue.data(value),
       Err<SeasonDto>(:final error) => AsyncValue.error(

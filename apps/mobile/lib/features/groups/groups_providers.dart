@@ -78,6 +78,7 @@ class CreateGroupController extends _$CreateGroupController {
   Future<void> create(String name) async {
     state = const AsyncValue.loading();
     final result = await _api.createGroup(name);
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<GroupDto>(:final value) => AsyncValue.data(value),
       Err<GroupDto>(:final error) => AsyncValue.error(
@@ -101,6 +102,7 @@ class JoinGroupController extends _$JoinGroupController {
   Future<void> join(String inviteCode) async {
     state = const AsyncValue.loading();
     final result = await _api.joinByInvite(inviteCode);
+    if (!ref.mounted) return;
     state = switch (result) {
       Ok<GroupMembershipDto>(:final value) => AsyncValue.data(value),
       Err<GroupMembershipDto>(:final error) => AsyncValue.error(

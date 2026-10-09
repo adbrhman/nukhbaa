@@ -18,6 +18,7 @@ import '../../../../core/design/app_radius.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
+import '../../../../core/format/arabic_count.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/ui/app_dialog.dart';
 import '../../../../core/ui/user_avatar.dart';
@@ -216,7 +217,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
           'يظهر الاحتفال في شاشة المتصدرين حتى نهاية أول 48 ساعة من الشهر '
           'الجديد، ويبقى البطل في سجل الأبطال. التتويج لا يُلغى، ولا تُعدَّل '
           'الجائزة بعده.'
-          '${force ? '\nتنبيه: ${month.unscoredFixtures} مباراة بلا نتيجة بعد.' : ''}',
+          '${force ? '\nتنبيه: ${arabicCount(month.unscoredFixtures, ArabicNoun.matches)} بلا نتيجة بعد.' : ''}',
       confirmLabel: 'تتويج',
       cancelLabel: 'إلغاء',
     );
@@ -363,7 +364,8 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
           AdminErrorBanner(
             key: const Key('admin.champions.unscored'),
             message:
-                '${data.unscoredFixtures} مباراة بلا نتيجة بعد. '
+                '${arabicCount(data.unscoredFixtures, ArabicNoun.matches)} '
+                'بلا نتيجة بعد. '
                 'التتويج الآن يعتمد الترتيب الحالي.',
           ),
         ],
@@ -579,7 +581,8 @@ class _CandidateRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${c.points} نقطة · دقة $accuracy · دعوات ${c.referralPoints}',
+                      '${arabicCount(c.points, ArabicNoun.points)} · '
+                      'دقة $accuracy · دعوات ${c.referralPoints}',
                       style: context.text.labelSmall?.copyWith(
                         color: t.textSecondary,
                       ),

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/format/arabic_count.dart';
 import '../admin_providers.dart';
 import 'admin_ui_kit.dart';
 
@@ -113,7 +114,8 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '${all.reports} جلسة من ${all.users} مستخدم • آخر '
+          '${arabicCount(all.reports, ArabicNoun.sessions)} من '
+          '${arabicCount(all.users, ArabicNoun.usersAfterPreposition)} • آخر '
           '${stats.windowDays} أيام',
           style: muted,
         ),
@@ -150,7 +152,7 @@ class _Body extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Text('${d.users} مستخدم', style: muted),
+                  Text(arabicCount(d.users, ArabicNoun.users), style: muted),
                 ],
               ),
             ),

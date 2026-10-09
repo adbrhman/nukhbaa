@@ -226,9 +226,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
   /// How many times a save may reschedule itself before the card gives up.
   ///
-  /// The reschedule covers two legitimate races -- a submit already in flight,
-  /// and a server that ended up holding values older than the ones on screen
-  /// -- and both settle within a round or two. Unbounded, a disagreement that
+  /// The reschedule covers a server that ended up holding values older
+  /// than the ones on screen, and a double the server refused; both settle
+  /// within a round or two. (A submit already in flight is not waited for
+  /// here: the controller keeps the newest one.) Unbounded, a disagreement that
   /// never resolved (the server storing something other than what was sent)
   /// became one submit every 250 ms for as long as the card stayed visible.
   static const int _maxAutoSaveRetries = 4;
@@ -264,12 +265,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final int? away = _awayGoals.value;
     if (!mounted || home == null || away == null || _isLocked) return;
 
-    if (ref.read(fixturePredictionControllerProvider(_key))
-        is FixtureSubmissionInFlight) {
-      _scheduleAutoSave(isRetry: true);
-      return;
-    }
-
+    // A save still in flight is not waited for here: the controller keeps
+    // this one and sends it when that save lands. Waiting here spent the
+    // retry budget in about a second, and a slower server then kept the
+    // older score while this card showed the newer one.
     final notifier = ref.read(
       fixturePredictionControllerProvider(_key).notifier,
     );
@@ -463,9 +462,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // stepper to the other is longer than that -- so the save fired and
     // disabled all four +/- zones plus the double toggle for the whole
     // request, making the second side look dead to fast taps. The controller
-    // already ignores an overlapping submit and _saveLatestPrediction
-    // reschedules itself until the server holds the current value, so the
-    // last tap still wins.
+    // keeps an overlapping submit and sends it once the one in flight
+    // lands, and _saveLatestPrediction reschedules itself until the server
+    // holds the current value, so the last tap still wins.
     final bool enabled = !locked;
     // The win shares arrive with the feed item itself. They used to be a
     // separate GET per card, so a twenty-match day opened twenty extra

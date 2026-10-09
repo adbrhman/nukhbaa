@@ -56,6 +56,10 @@ class NotificationController extends _$NotificationController {
   /// notification is a success no-op.
   Future<Result<bool>> markRead(String notificationId) async {
     final result = await _api.markRead(notificationId);
+    // FF7T in the error log: the controller is auto-disposed and its
+    // container can go while the request is out (sign-out replaces it).
+    // The answer is still the answer; there is just nothing left to refresh.
+    if (!ref.mounted) return result;
     if (result is Ok<bool>) {
       ref.invalidate(myNotificationsProvider);
       ref.invalidate(unreadCountProvider);
@@ -69,6 +73,7 @@ class NotificationController extends _$NotificationController {
   /// were new on this visit.
   Future<Result<int>> markAllSeen() async {
     final result = await _api.markAllRead();
+    if (!ref.mounted) return result;
     if (result is Ok<int>) {
       ref.invalidate(unreadCountProvider);
     }

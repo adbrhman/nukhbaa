@@ -14,16 +14,26 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
+import '../../../../core/format/arabic_count.dart';
 import '../../../../core/providers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
 /// What one list read asks for: the list, or a problem code in every list.
 typedef ErrorLogQuery = ({String list, String code});
+
+/// The direction [text] reads in, by its own letters rather than the page's.
+/// An English message laid out right to left carries its full stop and its
+/// ellipsis to the wrong end (".Please try again", "...after it has").
+TextDirection _directionOf(String text) =>
+    intl.Bidi.detectRtlDirectionality(text)
+    ? TextDirection.rtl
+    : TextDirection.ltr;
 
 /// `GET /admin/errors`.
 final adminErrorLogProvider = FutureProvider.autoDispose
@@ -159,7 +169,8 @@ String developerReport(AdminErrorDetailDto detail) {
       'الحالة: ${ErrorLogLabels.status(e.status)}',
     )
     ..writeln(
-      'العدد: ${e.occurrences} مرة، ${e.usersAffected} لاعب · '
+      'العدد: ${arabicCount(e.occurrences, ArabicNoun.times)}، '
+      '${arabicCount(e.usersAffected, ArabicNoun.players)} · '
       'أول ظهور ${errorLogTime(e.firstSeenAt)} (${e.firstBuild}) · '
       'آخر ظهور ${errorLogTime(e.lastSeenAt)} (${e.lastBuild})',
     );
@@ -451,9 +462,10 @@ class _ReleasesCard extends ConsumerWidget {
                   key: Key('admin.errors.release.${r.build}'),
                   title: r.build,
                   detail:
-                      '${r.errors} خطأ'
+                      '${arabicCount(r.errors, ArabicNoun.errors)}'
                       '${r.critical > 0 ? ' (${r.critical} حرج)' : ''} · '
-                      '${r.occurrences} مرة · آخر ظهور '
+                      '${arabicCount(r.occurrences, ArabicNoun.times)} · '
+                      'آخر ظهور '
                       '${errorLogTime(r.lastSeenAt)}',
                 ),
             if (data.files.isNotEmpty) ...<Widget>[
@@ -469,7 +481,9 @@ class _ReleasesCard extends ConsumerWidget {
               for (final AdminErrorFileDto f in data.files)
                 _SummaryEntry(
                   title: f.file,
-                  detail: '${f.errors} خطأ · ${f.occurrences} مرة',
+                  detail:
+                      '${arabicCount(f.errors, ArabicNoun.errors)} · '
+                      '${arabicCount(f.occurrences, ArabicNoun.times)}',
                 ),
             ],
           ],
@@ -543,6 +557,7 @@ class _ErrorRow extends StatelessWidget {
           ),
           title: Text(
             error.message,
+            textDirection: _directionOf(error.message),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -550,7 +565,8 @@ class _ErrorRow extends StatelessWidget {
             '${error.problemCode} · ${ErrorLogLabels.source(error.source)} · '
             '${ErrorLogLabels.severity(error.severity)} · '
             '${ErrorLogLabels.status(error.status)}\n'
-            '${error.occurrences} مرة · ${error.usersAffected} لاعب · '
+            '${arabicCount(error.occurrences, ArabicNoun.times)} · '
+            '${arabicCount(error.usersAffected, ArabicNoun.players)} · '
             'آخر ظهور ${errorLogTime(error.lastSeenAt)} · ${error.lastBuild}'
             '$where',
           ),
@@ -676,6 +692,7 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
                   '${e.errorType}'
                   '${e.errorCode == null ? '' : ' · ${e.errorCode}'}\n'
                   '${e.message}',
+                  textDirection: _directionOf(e.message),
                   style: context.text.bodyMedium?.copyWith(
                     color: tokens.textPrimary,
                   ),
@@ -684,7 +701,7 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
                 Text(
                   'أول ظهور ${errorLogTime(e.firstSeenAt)} (${e.firstBuild}) · '
                   'آخر ظهور ${errorLogTime(e.lastSeenAt)} (${e.lastBuild})'
-                  '${e.reopenedCount > 0 ? ' · عاد ${e.reopenedCount} مرة بعد الإصلاح' : ''}',
+                  '${e.reopenedCount > 0 ? ' · عاد ${arabicCount(e.reopenedCount, ArabicNoun.timesAfterVerb)} بعد الإصلاح' : ''}',
                   style: context.text.bodySmall?.copyWith(
                     color: tokens.textSecondary,
                   ),
@@ -826,7 +843,7 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
                     _SummaryEntry(
                       title: b.build,
                       detail:
-                          '${b.occurrences} مرة · '
+                          '${arabicCount(b.occurrences, ArabicNoun.times)} · '
                           'آخر ظهور ${errorLogTime(b.lastSeenAt)}',
                     ),
                 ],

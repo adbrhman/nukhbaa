@@ -188,21 +188,67 @@ void main() {
     });
   });
 
-  group('FixturePredictionController.submit — double-submit guard', () {
+  group('FixturePredictionController.submit — overlapping submits', () {
+    PredictionHarness slowServer() {
+      final harness = buildPredictionHarness((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return okJsonObject(_stored.toJson());
+      });
+      addTearDown(harness.dispose);
+      return harness;
+    }
+
+    FixturePredictionCommandDto sent(PredictionHarness h, int index) =>
+        FixturePredictionCommandDto.fromJson(
+          (jsonDecode(h.captured[index].request.body) as Map)
+              .cast<String, Object?>(),
+        );
+
+    test('a submit made while one is in flight is sent after it, and only '
+        'the newest one', () async {
+      final harness = slowServer();
+
+      final first = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+      final second = _controller(harness).submit(homeGoals: 5, awayGoals: 5);
+      final third = _controller(
+        harness,
+      ).submit(homeGoals: 2, awayGoals: 1, isDouble: true);
+      await Future.wait(<Future<void>>[first, second, third]);
+
+      expect(harness.captured, hasLength(2));
+      expect(sent(harness, 0).homeGoals, 1);
+      expect(sent(harness, 0).awayGoals, 0);
+      expect(sent(harness, 1).homeGoals, 2);
+      expect(sent(harness, 1).awayGoals, 1);
+      expect(sent(harness, 1).isDouble, isTrue);
+      expect(_stateOf(harness), isA<FixtureSubmissionSucceeded>());
+    });
+
     test(
-      'a second submit while one is in flight is ignored (one request)',
+      'the same command again while it is in flight is one request',
       () async {
-        final harness = buildPredictionHarness((_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 20));
-          return okJsonObject(_stored.toJson());
-        });
-        addTearDown(harness.dispose);
+        final harness = slowServer();
 
         final first = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
-        final second = _controller(harness).submit(homeGoals: 9, awayGoals: 9);
-        await Future.wait([first, second]);
+        final second = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+        await Future.wait(<Future<void>>[first, second]);
 
         expect(harness.captured, hasLength(1));
+      },
+    );
+
+    test(
+      'going back to the command in flight leaves nothing waiting',
+      () async {
+        final harness = slowServer();
+
+        final first = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+        final second = _controller(harness).submit(homeGoals: 5, awayGoals: 5);
+        final third = _controller(harness).submit(homeGoals: 1, awayGoals: 0);
+        await Future.wait(<Future<void>>[first, second, third]);
+
+        expect(harness.captured, hasLength(1));
+        expect(sent(harness, 0).homeGoals, 1);
       },
     );
   });

@@ -94,7 +94,7 @@ void main() {
     );
     expect(device, findsOneWidget);
     expect(
-      find.descendant(of: device, matching: find.text('4 مستخدم')),
+      find.descendant(of: device, matching: find.text('4 مستخدمين')),
       findsOneWidget,
     );
     expect(
