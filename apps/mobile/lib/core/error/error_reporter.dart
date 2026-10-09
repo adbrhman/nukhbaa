@@ -212,12 +212,32 @@ final class ClientErrorReporter {
     return code;
   }
 
+  /// Reports the app sends on its way to the background, which nobody
+  /// waits for and nobody sees fail.
+  ///
+  /// A browser throttles, then freezes, a hidden tab, so a timeout on one
+  /// of these says nothing about the server. It said a lot to the log,
+  /// though: every timeout shares one problem code (96WW), the five latest
+  /// samples of which were all `POST /me/frame-report` from the web, and
+  /// these used up that code's [maxPerError] for the run, so a timeout on a
+  /// screen the player was looking at went unreported.
+  static const Set<String> backgroundReportPaths = <String>{
+    '/me/frame-report',
+    '/me/screen-views',
+  };
+
   /// Hears every failed API call and reports those the server could not
-  /// answer properly ([ErrorPresenter.isReportable]).
+  /// answer properly ([ErrorPresenter.isReportable]). A timeout of a
+  /// background report ([backgroundReportPaths]) is not one of them; any
+  /// other failure of those calls still is.
   void reportApiFailure(ApiFailure failure) {
     final AppError error = failure.error;
     final String? code = ErrorPresenter.problemCode(error);
     if (code == null || !ErrorPresenter.isReportable(error)) return;
+    if (error.code == apiErrorTimeout &&
+        backgroundReportPaths.contains(failure.path)) {
+      return;
+    }
     final int? status = failure.statusCode;
     _track(
       _report(

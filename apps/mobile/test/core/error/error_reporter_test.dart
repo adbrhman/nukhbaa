@@ -171,6 +171,51 @@ void main() {
       expect(server.received, isEmpty);
     });
 
+    test('a timeout of a background report is not reported, and leaves '
+        'the quota to a timeout the player saw', () async {
+      final _Server server = _Server();
+      final ClientErrorReporter reporter = _reporter(
+        server,
+        MemoryPendingErrorStore(),
+      );
+      const AppError timeout = AppError(
+        kind: ErrorKind.transient,
+        code: apiErrorTimeout,
+        message: 'The server took too long to respond. Please try again.',
+      );
+
+      // The tab is hidden: the frame and screen reports time out, three of
+      // them, as many as one problem code may report in a run.
+      for (final String path in <String>[
+        '/me/frame-report',
+        '/me/screen-views',
+        '/me/frame-report',
+      ]) {
+        reporter.reportApiFailure(
+          ApiFailure(method: 'POST', path: path, error: timeout),
+        );
+      }
+      // Then a screen read times out.
+      reporter.reportApiFailure(_failure(timeout));
+      // A background report that the server answered badly is still news.
+      reporter.reportApiFailure(
+        ApiFailure(
+          method: 'POST',
+          path: '/me/frame-report',
+          error: _serverDown,
+          statusCode: 502,
+        ),
+      );
+      await reporter.drain();
+
+      expect(server.received.map((ClientErrorReportDto r) => r.route), <String>[
+        'GET /seasons/:id/fixtures',
+        'POST /me/frame-report',
+      ]);
+      expect(server.received.first.errorCode, apiErrorTimeout);
+      expect(server.received.last.errorCode, apiErrorUnexpectedStatus);
+    });
+
     test('an exception is reported with its stack and the same code the '
         'app shows', () async {
       final _Server server = _Server();
