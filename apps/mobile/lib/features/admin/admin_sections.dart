@@ -26,7 +26,8 @@ enum AdminSection {
   audit(icon: Icons.receipt_long_rounded),
   errorLog(icon: Icons.bug_report_rounded),
   referrals(icon: Icons.group_add_rounded),
-  champions(icon: Icons.emoji_events_rounded);
+  champions(icon: Icons.emoji_events_rounded),
+  h2hLeague(icon: Icons.shield_rounded);
 
   const AdminSection({required this.icon});
 

@@ -43,6 +43,7 @@ H2hRoundsOverviewDto h2hRoundsOverviewToDto(H2hRoundsOverview overview) {
   final month = overview.month;
   return H2hRoundsOverviewDto(
     monthStart: isoDayOf(overview.monthStart),
+    startsOn: isoDayOf(H2hLeaguePolicy.firstMonth),
     drawn: month != null,
     isPilot: month?.isPilot ?? false,
     rounds: [for (final round in overview.rounds) h2hRoundToDto(round)],

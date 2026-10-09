@@ -4069,6 +4069,16 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   last -- the group table with zone bars and form, and every round).
   "توقعاتي" opens from a home card above the daily challenge as a pushed
   page (`ScreenNames.predictions`); screen name `h2h` added on both sides.
+- **Batch 6 (admin, 2026-10-10)**: admin hub section "دوري المواجهات"
+  (`AdminSection.h2hLeague`, `h2h_admin_section.dart`): this month or the
+  next (the next is derived from the server's month, never the device
+  clock), the draw, the approved rounds with a withdraw button on the last
+  one not started, the candidate days with an approve button (a five-match
+  day is marked as a fill round), and before the launch the pilot button
+  behind a confirmation. `AdminApi.h2hRounds/approveH2hRound/
+  withdrawH2hRound/startH2hPilot`. Server: `DELETE /admin/h2h/rounds/{id}`
+  answers `{"withdrawn": true}` (the client decodes every answer as JSON),
+  and `H2hRoundsOverviewDto` carries `starts_on`.
 
 ## 3. Version-Verification Log
 

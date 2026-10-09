@@ -19,6 +19,7 @@ import 'screens/sections/champion_admin_section.dart';
 import 'screens/sections/error_log_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/fixtures_admin_section.dart';
+import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/referral_admin_section.dart';
 import 'screens/sections/results_scoring_section.dart';
@@ -42,6 +43,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.errorLog => 'سجل الأخطاء',
     AdminSection.referrals => 'نظام الدعوات',
     AdminSection.champions => 'الترتيب والأبطال',
+    AdminSection.h2hLeague => 'دوري المواجهات',
   };
 }
 
@@ -67,6 +69,7 @@ const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
     sections: [
       AdminSection.monthlyCompetitions,
       AdminSection.champions,
+      AdminSection.h2hLeague,
       AdminSection.predictions,
     ],
   ),
@@ -198,6 +201,7 @@ class AdminShell extends StatelessWidget {
       AdminSection.countedFixtures => const AdminCountedFixturesSection(),
       AdminSection.referrals => const ReferralAdminSection(),
       AdminSection.champions => const ChampionAdminSection(),
+      AdminSection.h2hLeague => const H2hAdminSection(),
     };
   }
 

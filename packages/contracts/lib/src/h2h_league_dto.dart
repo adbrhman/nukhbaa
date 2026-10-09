@@ -377,6 +377,7 @@ final class H2hRoundsOverviewDto {
     required this.isPilot,
     required this.rounds,
     required this.candidates,
+    this.startsOn = '',
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -384,6 +385,7 @@ final class H2hRoundsOverviewDto {
     Map<String, Object?> json,
   ) => H2hRoundsOverviewDto(
     monthStart: (json['month_start'] as String?) ?? '',
+    startsOn: (json['starts_on'] as String?) ?? '',
     drawn: (json['drawn'] as bool?) ?? false,
     isPilot: (json['is_pilot'] as bool?) ?? false,
     rounds: [for (final m in _maps(json['rounds'])) H2hRoundDto.fromJson(m)],
@@ -394,6 +396,10 @@ final class H2hRoundsOverviewDto {
 
   /// The month, `YYYY-MM-DD` of its first day.
   final String monthStart;
+
+  /// The day the league opens to everyone, `YYYY-MM-DD`: before it, a
+  /// month may hold only the pilot.
+  final String startsOn;
 
   /// Whether the month was drawn.
   final bool drawn;
@@ -410,6 +416,7 @@ final class H2hRoundsOverviewDto {
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'month_start': monthStart,
+    'starts_on': startsOn,
     'drawn': drawn,
     'is_pilot': isPilot,
     'rounds': [for (final r in rounds) r.toJson()],

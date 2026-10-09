@@ -524,6 +524,7 @@ void main() {
       expect(response.statusCode, HttpStatus.ok);
       final body = await decodeBody(response);
       expect(body['month_start'], '2026-11-01');
+      expect(body['starts_on'], '2026-11-01');
       expect(body['drawn'], true);
       expect(body['is_pilot'], false);
       final rounds = _list(body['rounds']);
@@ -681,7 +682,7 @@ void main() {
   });
 
   group('DELETE /admin/h2h/rounds/{id}', () {
-    test('an admin withdraws a round: 204', () async {
+    test('an admin withdraws a round: 200 with a JSON answer', () async {
       final rounds = _Rounds();
       final response = await withdraw_route.onRequest(
         wireContext(
@@ -692,7 +693,8 @@ void main() {
         _roundId(4),
       );
 
-      expect(response.statusCode, HttpStatus.noContent);
+      expect(response.statusCode, HttpStatus.ok);
+      expect((await decodeBody(response))['withdrawn'], true);
       expect(rounds.withdrawn, [_roundId(4)]);
     });
 

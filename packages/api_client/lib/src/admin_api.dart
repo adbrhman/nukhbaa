@@ -415,4 +415,47 @@ final class AdminApi {
       parse: MonthChampionsDto.fromJson,
     );
   }
+
+  /// `GET /admin/h2h/rounds` -- a month of the head-to-head league
+  /// (migration 0100): its draw, its approved rounds and the days that may
+  /// be approved next. [day] (`YYYY-MM-DD`) picks the month containing it;
+  /// the server's current month without it.
+  Future<Result<H2hRoundsOverviewDto>> h2hRounds({String? day}) {
+    return _transport.getObject<H2hRoundsOverviewDto>(
+      '/admin/h2h/rounds',
+      query: day == null ? null : <String, String>{'day': day},
+      parse: H2hRoundsOverviewDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/h2h/rounds` -- approves [day] (`YYYY-MM-DD`) as the next
+  /// round of its month. Every rule (the order, the matches of the day,
+  /// the nineteen rounds, a day already started) is the server's; a refusal
+  /// arrives as an `Err` with its `h2h.*` code.
+  Future<Result<H2hRoundDto>> approveH2hRound(String day) {
+    return _transport.postObject<H2hRoundDto>(
+      '/admin/h2h/rounds',
+      body: H2hApproveRoundRequestDto(day: day).toJson(),
+      parse: H2hRoundDto.fromJson,
+    );
+  }
+
+  /// `DELETE /admin/h2h/rounds/{roundId}` -- withdraws the last round of a
+  /// month before it starts.
+  Future<Result<bool>> withdrawH2hRound(String roundId) {
+    return _transport.deleteObject<bool>(
+      '/admin/h2h/rounds/${Uri.encodeComponent(roundId)}',
+      parse: (json) => json['withdrawn'] == true,
+    );
+  }
+
+  /// `POST /admin/h2h/pilot` -- draws the hidden pilot month from the users
+  /// assigned to the `h2h_pilot` flag. Answers the seats handed out.
+  Future<Result<int>> startH2hPilot() {
+    return _transport.postObject<int>(
+      '/admin/h2h/pilot',
+      body: const <String, Object?>{},
+      parse: (json) => H2hPilotStartedDto.fromJson(json).seated,
+    );
+  }
 }

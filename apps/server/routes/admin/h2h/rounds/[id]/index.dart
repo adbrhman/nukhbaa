@@ -10,7 +10,9 @@ import 'package:shared/shared.dart';
 ///
 /// Only the last round of a month, and only before its first match kicks
 /// off: anything else is `409` (`h2h.round_not_last`, `h2h.round_locked`);
-/// an unknown round is `400` (`h2h.round_unknown`). Answers `204`.
+/// an unknown round is `400` (`h2h.round_unknown`). Answers
+/// `{"withdrawn": true}`: the shared client decodes every answer as a JSON
+/// object, and an empty `204` body would read to it as a broken response.
 ///
 /// Admin only: the gate lives in the use-case; a non-admin is `401`.
 Future<Response> onRequest(RequestContext context, String id) async {
@@ -32,7 +34,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   );
 
   return switch (result) {
-    Ok<void>() => Response(statusCode: HttpStatus.noContent),
+    Ok<void>() => Response.json(body: const {'withdrawn': true}),
     Err<void>(:final error) => errorResponse(error),
   };
 }
