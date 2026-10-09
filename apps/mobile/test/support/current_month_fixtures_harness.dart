@@ -24,8 +24,16 @@ import 'package:mobile/core/providers.dart';
 
 /// A point far enough in the future that a fixture stays "not yet started"
 /// (unlocked) for the lifetime of any single test run.
-String futureIso() =>
-    DateTime.now().toUtc().add(const Duration(days: 365)).toIso8601String();
+///
+/// At 12:00 UTC (15:00 Riyadh) of that day, never at the clock's own time:
+/// a run between 21:00 and 24:00 UTC put the kickoff on the next Riyadh
+/// day, the card added the viewer's weekday, and eight layout tests failed
+/// only at that hour (CI, 2026-10-10). The longer label has its own test,
+/// fotmob_match_card_weekday_test.dart.
+String futureIso() {
+  final DateTime day = DateTime.now().toUtc().add(const Duration(days: 365));
+  return DateTime.utc(day.year, day.month, day.day, 12).toIso8601String();
+}
 
 /// One captured outbound request (for asserting method + path + body).
 final class CapturedRequest {

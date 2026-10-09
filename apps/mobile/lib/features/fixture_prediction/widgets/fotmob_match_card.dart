@@ -787,42 +787,55 @@ class _CardHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
         Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _CompetitionLogo(assetPath: assetPath, logoUrl: leagueLogoUrl),
-              const SizedBox(width: AppSpacing.xs),
-              Flexible(
-                fit: FlexFit.loose,
-                child: Text(
-                  competitionName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: AppFontSize.s12,
-                    fontWeight: FontWeight.w600,
-                    color: tokens.textSecondary,
+          // The kickoff keeps its own width up to half the group, the name
+          // takes the rest. A viewer whose date is not Riyadh's reads the
+          // weekday after the time (`formatKickoffTime`): that longer label
+          // overflowed the row at 320px and at large text (CI at 23:26 UTC,
+          // 2026-10-10). Past half the group it now wraps to a second line.
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _CompetitionLogo(assetPath: assetPath, logoUrl: leagueLogoUrl),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Text(
+                    competitionName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppFontSize.s12,
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textSecondary,
+                    ),
                   ),
                 ),
-              ),
-              if (kickoffLocal != null)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const SizedBox(width: AppSpacing.xs),
-                    Text('•', style: TextStyle(color: tokens.textMuted)),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
+                if (kickoffLocal != null) ...<Widget>[
+                  const SizedBox(width: AppSpacing.xs),
+                  Text('•', style: TextStyle(color: tokens.textMuted)),
+                  const SizedBox(width: AppSpacing.xs),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth.isFinite
+                          ? constraints.maxWidth / 2
+                          : double.infinity,
+                    ),
+                    child: Text(
                       formatKickoffTime(context, kickoffAt!),
+                      key: const Key('matchCard.kickoff'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFontSize.s13,
                         fontWeight: FontWeight.w600,
                         color: tokens.textSecondary,
                       ),
                     ),
-                  ],
-                ),
-            ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
         IconButton(
