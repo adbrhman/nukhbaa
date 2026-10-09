@@ -60,9 +60,26 @@ const Duration _statementTimeout = Duration(seconds: 10);
 /// [Result]s from [query] (Coding Standards §6: adapters tested against fakes).
 /// The `postgres` [Pool] is still private, so no fake can reach the real driver.
 class PostgresConnection implements DbExecutor {
-  PostgresConnection._(this._pool);
+  PostgresConnection._(this._pool, {Duration timeout = _statementTimeout})
+    : _timeout = timeout;
+
+  /// A connection over [pool] that gives up on a query after [timeout], for
+  /// tests that drive a timeout without a database.
+  static PostgresConnection withPoolForTest(
+    Pool<void> pool, {
+    Duration timeout = _statementTimeout,
+  }) => PostgresConnection._(pool, timeout: timeout);
 
   final Pool<void> _pool;
+  final Duration _timeout;
+
+  /// The pool's size, which a timeout is reported against.
+  static const int _maxConnections = 8;
+
+  // Connections this process holds, and calls still waiting for one. Only
+  // read to say where a timed-out query spent its time.
+  int _inUse = 0;
+  int _queued = 0;
 
   /// Opens a connection pool from [config]. Returns a typed error on failure
   /// rather than throwing, so startup can fail cleanly.
@@ -80,7 +97,7 @@ class PostgresConnection implements DbExecutor {
         ],
         settings: PoolSettings(
           sslMode: config.requireSsl ? SslMode.require : SslMode.disable,
-          maxConnectionCount: 8,
+          maxConnectionCount: _maxConnections,
         ),
       );
       // Eagerly verify connectivity so startup fails fast on misconfig.
@@ -160,21 +177,46 @@ class PostgresConnection implements DbExecutor {
     String sql, {
     Map<String, Object?> parameters = const {},
   }) async {
+    final Stopwatch clock = Stopwatch()..start();
+    Duration? connectedAfter;
+    _queued++;
+    final work = _pool.withConnection((connection) async {
+      _queued--;
+      connectedAfter = clock.elapsed;
+      _inUse++;
+      try {
+        return await connection.execute(Sql.named(sql), parameters: parameters);
+      } finally {
+        _inUse--;
+      }
+    });
+    // A call that fails before it gets a connection leaves the queue too.
+    unawaited(
+      work.then<void>(
+        (_) {},
+        onError: (Object _) {
+          if (connectedAfter == null) _queued--;
+        },
+      ),
+    );
     try {
-      final result = await _pool
-          .execute(Sql.named(sql), parameters: parameters)
-          .timeout(_statementTimeout);
+      final result = await work.timeout(_timeout);
       final rows = result
           .map((row) => row.toColumnMap())
           .toList(growable: false);
       return Result.ok(rows);
     } on TimeoutException catch (e) {
+      final String where = _whereTheTimeWent(connectedAfter, clock.elapsed);
       stderr.writeln(
         '[PostgresConnection.query] timed out after '
-        '${_statementTimeout.inSeconds}s',
+        '${_timeout.inSeconds}s: $where',
       );
       return Result.err(
-        AppError.transient('db.query_timeout', 'Database query timed out', e),
+        AppError.transient(
+          'db.query_timeout',
+          'Database query timed out ($where)',
+          e,
+        ),
       );
     } on Object catch (e) {
       stderr.writeln('[PostgresConnection.query] $e');
@@ -182,6 +224,24 @@ class PostgresConnection implements DbExecutor {
         AppError.transient('db.query_failed', 'Database query failed', e),
       );
     }
+  }
+
+  /// Where a timed-out query spent its time: waiting for one of the pool's
+  /// connections, or running on one, and how busy the pool was then.
+  ///
+  /// The night of 2026-10-06 logged an hour of timeouts on five routes
+  /// while `pg_stat_statements` held no query slower than about two
+  /// seconds since July: the time went somewhere other than running SQL.
+  /// The next incident says where.
+  String _whereTheTimeWent(Duration? connectedAfter, Duration total) {
+    String seconds(Duration d) =>
+        '${(d.inMilliseconds / 1000).toStringAsFixed(1)}s';
+    final String spent = connectedAfter == null
+        ? 'still waiting for a connection after ${seconds(total)}'
+        : 'waited ${seconds(connectedAfter)} for a connection, '
+              'ran ${seconds(total - connectedAfter)}';
+    return '$spent; connections in use $_inUse/$_maxConnections, '
+        'waiting $_queued';
   }
 
   /// Runs [action] inside a single database transaction, committing when it
@@ -206,14 +266,24 @@ class PostgresConnection implements DbExecutor {
   Future<Result<T>> runInTransaction<T>(
     Future<Result<T>> Function(DbExecutor tx) action,
   ) async {
+    // Counted like a query: a transaction holds its connection throughout.
+    var started = false;
+    _queued++;
     try {
       final value = await _pool.runTx((session) async {
-        final result = await action(_TxExecutor(session));
-        return switch (result) {
-          Ok<T>(:final value) => value,
-          // Force a rollback by throwing; carry the Err out to rethrow-unwrap.
-          Err<T>(:final error) => throw _RollbackSignal(error),
-        };
+        started = true;
+        _queued--;
+        _inUse++;
+        try {
+          final result = await action(_TxExecutor(session));
+          return switch (result) {
+            Ok<T>(:final value) => value,
+            // Force a rollback by throwing; carry the Err out to rethrow-unwrap.
+            Err<T>(:final error) => throw _RollbackSignal(error),
+          };
+        } finally {
+          _inUse--;
+        }
       });
       return Result.ok(value);
     } on _RollbackSignal catch (signal) {
@@ -224,6 +294,8 @@ class PostgresConnection implements DbExecutor {
       return Result.err(
         AppError.transient('db.tx_failed', 'Database transaction failed', e),
       );
+    } finally {
+      if (!started) _queued--;
     }
   }
 
