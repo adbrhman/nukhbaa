@@ -216,6 +216,51 @@ void main() {
       expect(server.received.last.errorCode, apiErrorUnexpectedStatus);
     });
 
+    test('a timeout while the app is away, or just back, is not reported; '
+        'one in the foreground is', () async {
+      final _Server server = _Server();
+      DateTime now = DateTime.utc(2026, 10, 9, 17, 37);
+      final ClientErrorReporter reporter = ClientErrorReporter(
+        send: server.send,
+        build: 'abc1234',
+        store: MemoryPendingErrorStore(),
+        installId: () async => 'install-1',
+        deviceSummary: () async =>
+            const DeviceSummary(device: 'samsung SM-N950U', os: 'Android 9'),
+        source: 'android',
+        now: () => now,
+      );
+      const AppError timeout = AppError(
+        kind: ErrorKind.transient,
+        code: apiErrorTimeout,
+        message: 'The server took too long to respond. Please try again.',
+      );
+
+      // The phone goes to the background with the feed read still out.
+      reporter.noteLifecycle(AppLifecycleState.inactive);
+      reporter.noteLifecycle(AppLifecycleState.hidden);
+      reporter.noteLifecycle(AppLifecycleState.paused);
+      reporter.reportApiFailure(_failure(timeout));
+      // A server failure is news even then.
+      reporter.reportApiFailure(_failure(_serverDown, status: 502));
+
+      // Back five minutes later: the read's timer fires on the way in.
+      now = now.add(const Duration(minutes: 5));
+      reporter.noteLifecycle(AppLifecycleState.resumed);
+      now = now.add(const Duration(seconds: 3));
+      reporter.reportApiFailure(_failure(timeout));
+
+      // Half a minute in the foreground: a timeout now is the server's.
+      now = now.add(const Duration(seconds: 30));
+      reporter.reportApiFailure(_failure(timeout));
+      await reporter.drain();
+
+      expect(
+        server.received.map((ClientErrorReportDto r) => r.errorCode),
+        <String>[apiErrorUnexpectedStatus, apiErrorTimeout],
+      );
+    });
+
     test('an exception is reported with its stack and the same code the '
         'app shows', () async {
       final _Server server = _Server();

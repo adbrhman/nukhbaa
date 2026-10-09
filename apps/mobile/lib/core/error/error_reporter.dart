@@ -112,11 +112,13 @@ final class ClientErrorReporter {
     Future<String?> Function()? installId,
     Future<DeviceSummary> Function()? deviceSummary,
     String? source,
+    DateTime Function()? now,
   }) : _send = send,
        _store = store,
        _installId = installId ?? _noInstallId,
        _deviceSummary = deviceSummary ?? _readDeviceSummary,
-       source = source ?? ErrorPresenter.errorSource;
+       source = source ?? ErrorPresenter.errorSource,
+       _now = now ?? DateTime.now;
 
   /// The reporter the app installed ([installErrorReporting]); null until
   /// then, and in tests.
@@ -133,6 +135,44 @@ final class ClientErrorReporter {
 
   /// The longest stack sent, in characters.
   static const int maxStack = 16000;
+
+  /// How long after the app comes back a timeout is still not news: the
+  /// transport's request timeout (15 s) with room to spare.
+  static const Duration awayWindow = Duration(seconds: 20);
+
+  final DateTime Function() _now;
+  AppLifecycleListener? _lifecycle;
+  bool _away = false;
+  DateTime? _backAt;
+
+  /// Hears the app leave and come back to the foreground (wired by
+  /// [installErrorReporting]).
+  ///
+  /// A phone suspends a backgrounded app and a browser freezes a hidden
+  /// tab, so a request out at that moment runs out its timeout without the
+  /// server being slow. NFRL's latest samples were a feed read, a frame
+  /// report and a screen report from one phone in the same minute. A
+  /// timeout while the app is away, or within [awayWindow] of its return,
+  /// is not reported; one the player sat through in the foreground is.
+  void noteLifecycle(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _away = true;
+      case AppLifecycleState.resumed:
+        if (_away) _backAt = _now();
+        _away = false;
+      case AppLifecycleState.inactive:
+        break;
+    }
+  }
+
+  bool get _recentlyAway {
+    if (_away) return true;
+    final DateTime? back = _backAt;
+    return back != null && _now().difference(back) < awayWindow;
+  }
 
   /// The build's short commit sha (`NUKHBA_BUILD_SHA`).
   final String build;
@@ -238,6 +278,7 @@ final class ClientErrorReporter {
         backgroundReportPaths.contains(failure.path)) {
       return;
     }
+    if (error.code == apiErrorTimeout && _recentlyAway) return;
     final int? status = failure.statusCode;
     _track(
       _report(
@@ -380,6 +421,11 @@ final class ClientErrorReporter {
 /// grey area. Sends whatever an earlier run left waiting.
 void installErrorReporting(ClientErrorReporter reporter) {
   ClientErrorReporter.instance = reporter;
+  if (reporter._lifecycle == null) {
+    reporter._lifecycle = AppLifecycleListener(
+      onStateChange: reporter.noteLifecycle,
+    );
+  }
 
   final FlutterExceptionHandler? previousFlutter = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
