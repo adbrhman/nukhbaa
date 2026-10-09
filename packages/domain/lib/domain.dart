@@ -52,6 +52,7 @@ export 'src/gamification/gamification_event_id.dart';
 export 'src/gamification/gamification_event_type.dart';
 export 'src/gamification/h2h_league_id.dart';
 export 'src/gamification/h2h_league_policy.dart';
+export 'src/gamification/h2h_round_id.dart';
 export 'src/gamification/overtake_detector.dart';
 export 'src/gamification/prediction_insights.dart';
 export 'src/gamification/screen_name.dart';

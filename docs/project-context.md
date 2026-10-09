@@ -4026,6 +4026,15 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   and all 100 migrations on PostgreSQL 16 before sending: every SQL test
   passes.
 - **Apply 0100 in the Supabase SQL editor after the push.**
+- **Batch 2 (application, 2026-10-10)**: ports `H2hLeagueStore`,
+  `H2hRoundStore`, `H2hDrawSource`, `H2hSheetReader`; use-cases
+  `DrawH2hMonth` (seed or carry, once per month, waits for last month's
+  close), `StartH2hPilot` (admin, before November), `ApproveH2hRound` /
+  `WithdrawH2hRound` / `ListH2hRounds` (admin), `RunH2hRounds` (scheduler:
+  auto-approve regular days 24 h ahead, lock at first kickoff),
+  `CloseH2hMonth` (events after grace and settlement; a pilot month closes
+  without events), `GetMyH2hLeague` (table over settled rounds, live match,
+  upcoming opponents, zones). Names reuse `WeeklyLeagueProfileReader`.
 
 ## 3. Version-Verification Log
 
