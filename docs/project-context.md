@@ -3985,6 +3985,48 @@ home page was a pile of equal cards with raw codes, ids and UTC instants.
 - Do not create a second competition for months: each month is a season of
   this one, and a new competition would split fixtures and points.
 
+### The monthly head-to-head league (migration 0100, 2026-10-10)
+
+Proposed by the players' group (captain Sulaiman), decided 2026-10-09/10 and
+checked against September's real data (simulation: 105 players, 19 rounds;
+division 1 decided by predictions in 92% of matches, division 4 in 2%, hence
+the activity rule below). It replaces the weekly league on screen from
+November 2026; the weekly tables stay. The rules document lives outside the
+repository (Claude doc "دوري المواجهات الشهري — القواعد النهائية").
+
+- **Divisions** (`H2hDivision`): 20 / 20 / 20 / the rest (the fourth in
+  even groups of up to 20). Drawn on the month's first night from the
+  `next_division` of last month's `h2h_league_finished` events, plus new
+  players at the end. Only a player who predicted on 5 days of the month
+  before is drawn (`H2hLeaguePolicy.minActiveDays`). The first public month
+  is November 2026, seeded from October's points.
+- **Rounds**: a day an admin approves, numbered in date order, at most 19 a
+  month. A day of 6+ fixtures is regular (the system approves it 24 h
+  before its first kickoff when no admin did); a day of exactly 5 is a fill
+  round, admin only. A round's fixtures are every fixture of the day, frozen
+  at its first kickoff (`h2h_round_fixtures`); a fixture moved off the day,
+  hidden or never scored is void for both sides. Only the last round may be
+  withdrawn, and only before it locks.
+- **A round**: fixed circle-method pairing by slot. More points wins, equal
+  draws; the one who predicted beats the one who did not; both absent both
+  lose; an empty seat plays the group average.
+- **Table**: 3/1/0, prediction points, head-to-head among the tied, exact
+  scorelines, seat, user id.
+- **Month end**: up to 3 cross each boundary (never more than half a
+  division), the fourth's group winners first; inactive members are not
+  drawn and the divisions above the fourth are refilled to 20 from below.
+  No ledger points.
+- **Pilot**: flag `h2h_pilot` (0054); users with variant `pilot` play a
+  hidden trial month (`h2h_months.is_pilot`) whose results decide nothing.
+- 0100 (additive): `h2h_months`, `h2h_leagues`, `h2h_league_members`,
+  `h2h_rounds`, `h2h_round_locks`, `h2h_round_fixtures`,
+  `h2h_month_closures`; append-only, server-only; triggers keep slots in
+  their group, rounds in order and withdrawals to the last unlocked round.
+- `supabase/tests/0100_h2h_leagues_test.sql`: 24 checks. Run with the stubs
+  and all 100 migrations on PostgreSQL 16 before sending: every SQL test
+  passes.
+- **Apply 0100 in the Supabase SQL editor after the push.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

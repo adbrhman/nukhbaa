@@ -2,6 +2,8 @@ import 'package:domain/src/competition/fixture_ref.dart';
 import 'package:domain/src/gamification/badge_code.dart';
 import 'package:domain/src/gamification/gamification_event_id.dart';
 import 'package:domain/src/gamification/gamification_event_type.dart';
+import 'package:domain/src/gamification/h2h_league_id.dart';
+import 'package:domain/src/gamification/h2h_league_policy.dart';
 import 'package:domain/src/gamification/weekly_league_id.dart';
 import 'package:domain/src/gamification/weekly_league_policy.dart';
 import 'package:domain/src/identity/user_id.dart';
@@ -176,6 +178,79 @@ final class GamificationEvent {
           'tier': tier.level,
           'rank': rank,
           'points': points,
+          'outcome': outcome.wireName,
+        },
+        ruleVersion: currentRuleVersion,
+      ),
+    );
+  }
+
+  /// One member's month of the head-to-head league was judged (0100).
+  ///
+  /// [monthStart] is any day of the judged month (a UTC midnight carrying a
+  /// Riyadh date); the event keys on the month's first day. The dedupe key is
+  /// the user and the month, so closing a month is replayable: a second run
+  /// writes nothing, and the stream rejects UPDATE and DELETE, so a result
+  /// corrected after the month was judged cannot rewrite the standing.
+  ///
+  /// [occurredAt] is the END of that month, not the moment the job ran.
+  ///
+  /// The payload is the standing and nothing else. The next month's draw
+  /// reads `next_division`, null for a member who is not drawn; the rest is
+  /// an audit copy. An award is a ledger entry, never this event. The event
+  /// points at the group through [leagueId].
+  static Result<GamificationEvent> h2hLeagueFinished({
+    required String id,
+    required UserId userId,
+    required H2hLeagueId leagueId,
+    required DateTime monthStart,
+    required H2hDivision division,
+    required int rank,
+    required int leaguePoints,
+    required int points,
+    required H2hDivision? nextDivision,
+    required H2hLeagueOutcome outcome,
+    required DateTime occurredAt,
+  }) {
+    final idResult = GamificationEventId.tryParse(id);
+    if (idResult is Err<GamificationEventId>) {
+      return Result.err(idResult.error);
+    }
+    if (rank < 1) {
+      return const Result.err(
+        AppError.invariant(
+          'gamification.h2h_league_rank_invalid',
+          'A head-to-head league rank starts at 1',
+        ),
+      );
+    }
+    if ((nextDivision == null) != (outcome == H2hLeagueOutcome.out)) {
+      return const Result.err(
+        AppError.invariant(
+          'gamification.h2h_league_outcome_mismatch',
+          'Only a member who is not drawn next month has no next division',
+        ),
+      );
+    }
+    final isoMonth = _isoDay(H2hLeaguePolicy.monthStartOf(monthStart));
+    return Result.ok(
+      GamificationEvent._(
+        id: (idResult as Ok<GamificationEventId>).value,
+        userId: userId,
+        type: GamificationEventType.h2hLeagueFinished,
+        dedupeKey:
+            '${GamificationEventType.h2hLeagueFinished.wireName}:'
+            '${userId.value}:$isoMonth',
+        occurredAt: occurredAt.toUtc(),
+        refType: 'h2h_league',
+        refId: leagueId.value,
+        payload: <String, Object?>{
+          'month': isoMonth,
+          'division': division.level,
+          'rank': rank,
+          'league_points': leaguePoints,
+          'points': points,
+          'next_division': nextDivision?.level,
           'outcome': outcome.wireName,
         },
         ruleVersion: currentRuleVersion,

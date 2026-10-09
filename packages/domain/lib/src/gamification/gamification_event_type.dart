@@ -31,6 +31,16 @@ enum GamificationEventType {
   /// value is already consulted the moment this ships.
   weeklyLeagueFinished('weekly_league_finished'),
 
+  /// A judged month of the head-to-head league ended for one member,
+  /// carrying `{month, division, rank, league_points, points, next_division,
+  /// outcome}` in its payload (migration 0100). It is the frozen standing of
+  /// that month and the only record of the division a player is drawn into
+  /// next (`next_division` is null for a player not drawn), which is why no
+  /// results table exists.
+  ///
+  /// Emitted by the month-closing job; read by the next month's draw.
+  h2hLeagueFinished('h2h_league_finished'),
+
   /// A player earned a badge of the catalog (P2-6). The payload carries the
   /// badge as `{code}`, and the dedupe key is the user and the code, so a
   /// badge is held once and cannot be granted twice or taken back. It carries
