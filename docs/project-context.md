@@ -4164,6 +4164,21 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `PredictionsBoardDto` / `PredictionsBoardColumnDto` reuse the three
   per-fixture shapes. The per-fixture routes stay for the other
   screens. No migration.
+- **Batch 95 (predictions board in one request, mobile, 2026-10-11)**:
+  `PredictionApi.predictionsBoard` and `predictionsBoardProvider`
+  (`predictions_board_providers.dart`): the board page reads the day
+  with one request per season (`predictionsBoardKeys`, 40 fixtures at
+  most each) instead of predictions + scores + reactions per started
+  match; a failure of the whole read with a transient code is asked
+  again after 2, 4 and 6 s, a refusal is shown at once. A column that
+  could not be read keeps its red mark, now with the reason in Arabic
+  (`predictionsBoardErrorText`) and a tap that reads the board again
+  (`fixturePredictions.retry.<fixtureId>`). Once one of a match's
+  predictions is tapped, that match's reactions follow the sheet's own
+  `predictionReactionsProvider`, so a reaction still shows at once.
+  The widget-test harness answers the board from the per-match
+  handlers (`composePredictionsBoard`) without adding them to
+  `captured`.
 
 ## 3. Version-Verification Log
 

@@ -2,11 +2,14 @@
 /// one row per player, one column per match of that day that has already
 /// kicked off, each cell the player's predicted score with its verdict.
 ///
-/// Visibility is the server's: each column is read from
-/// `GET /seasons/{id}/fixtures/{fixtureId}/predictions`, which refuses a
-/// fixture before its kickoff, and only started matches are asked for at
-/// all. The verdict comes from the same server scores the card reads
-/// (`fixtureScoresProvider`); nothing is graded here.
+/// Visibility is the server's: the whole day is one read,
+/// `GET /seasons/{id}/predictions-board?fixtures=` (2026-10-11, instead
+/// of three requests per match), which passes every match through the
+/// same kickoff gate as `GET .../fixtures/{fixtureId}/predictions`; only
+/// started matches are asked for at all. The verdict comes from the
+/// server's scores in that read; nothing is graded here. A column that
+/// could not be read shows a red mark that says why and, tapped, asks
+/// again.
 ///
 /// Marks: points earned -> ✅ (⚡🔥 on a double); graded with no points ->
 /// ❌; not graded yet -> no mark (⚡ alone on a double).
@@ -38,11 +41,10 @@ import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
-import '../../history/fixture_scores_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../current_month_fixtures_providers.dart';
-import '../fixture_prediction_providers.dart';
 import '../prediction_reactions_providers.dart';
+import '../predictions_board_providers.dart';
 import '../../auth/session_controller.dart';
 import '../../auth/session_state.dart';
 import 'day_hero_card.dart';
@@ -82,7 +84,10 @@ final class _Column {
     required this.scores,
     required this.loading,
     required this.failed,
+    required this.errorText,
     required this.reactions,
+    required this.onRetry,
+    required this.onTouch,
   });
 
   final SeasonFixtureCardDto fixture;
@@ -93,9 +98,19 @@ final class _Column {
   final bool loading;
   final bool failed;
 
+  /// Why the column could not be read, in Arabic; null unless [failed].
+  final String? errorText;
+
   /// The reactions each prediction received (migration 0094); null
   /// until read, or when the read failed.
   final PredictionReactionsDto? reactions;
+
+  /// Reads the day's board again (the red mark's tap).
+  final VoidCallback onRetry;
+
+  /// A prediction of this match was tapped: its reactions follow the
+  /// sheet's live read from now on.
+  final VoidCallback onTouch;
 }
 
 /// One row: a player who predicted at least one of the day's started matches.
@@ -111,6 +126,9 @@ final class _Player {
 class _FixturePredictionsBoardPageState
     extends ConsumerState<FixturePredictionsBoardPage> {
   String _query = '';
+
+  /// Matches with a tapped prediction (see [_Column.onTouch]).
+  final Set<String> _touched = <String>{};
 
   DateTime? get _day {
     final DateTime? kickoff = DateTime.tryParse(widget.kickoffAt ?? '');
@@ -143,23 +161,43 @@ class _FixturePredictionsBoardPageState
         p.participantId,
     };
 
+    // The whole day in one read per season (2026-10-11): the board used to
+    // ask three routes per started match, 63 for a day of 21.
+    final Map<String, PredictionsBoardKey> boardKeys = predictionsBoardKeys(
+      started,
+    );
     final List<_Column> columns = <_Column>[];
     for (final SeasonFixtureCardDto fixture in started) {
-      final AsyncValue<List<FixturePredictionDto>> reveal = ref.watch(
-        fixturePredictionsRevealProvider((
-          seasonId: fixture.seasonId,
-          fixtureId: fixture.fixtureId,
-        )),
+      final PredictionsBoardKey? key =
+          boardKeys['${fixture.seasonId}/${fixture.fixtureId}'];
+      if (key == null) continue;
+      final AsyncValue<PredictionsBoardDto> board = ref.watch(
+        predictionsBoardProvider(key),
       );
-      final AsyncValue<FixtureScoresDto> scores = ref.watch(
-        fixtureScoresProvider(fixture.seasonId, fixture.fixtureId),
+      final PredictionsBoardColumnDto? served = board.value?.of(
+        fixture.fixtureId,
       );
-      final AsyncValue<PredictionReactionsDto> reactions = ref.watch(
-        predictionReactionsProvider((
-          seasonId: fixture.seasonId,
-          fixtureId: fixture.fixtureId,
-        )),
-      );
+      final bool refused = served?.errorCode != null;
+      final bool loading = board.isLoading && (!board.hasValue || refused);
+      final bool failed =
+          !loading &&
+          ((board.hasError && !board.hasValue) ||
+              refused ||
+              (board.hasValue && served == null));
+      // Once a prediction of this match is tapped, its reactions are the
+      // sheet's own live read, so a new reaction shows at once.
+      final PredictionReactionsDto? reactions =
+          _touched.contains(fixture.fixtureId)
+          ? ref
+                    .watch(
+                      predictionReactionsProvider((
+                        seasonId: fixture.seasonId,
+                        fixtureId: fixture.fixtureId,
+                      )),
+                    )
+                    .value ??
+                served?.reactions
+          : served?.reactions;
       columns.add(
         _Column(
           fixture: fixture,
@@ -177,17 +215,30 @@ class _FixturePredictionsBoardPageState
           ).displayName,
           predictions: <String, FixturePredictionDto>{
             for (final FixturePredictionDto p
-                in reveal.value ?? const <FixturePredictionDto>[])
+                in served?.predictions ?? const <FixturePredictionDto>[])
               p.participantId: p,
           },
           scores: <String, ParticipantFixtureScoreDto>{
             for (final ParticipantFixtureScoreDto s
-                in scores.value?.scores ?? const <ParticipantFixtureScoreDto>[])
+                in served?.scores?.scores ??
+                    const <ParticipantFixtureScoreDto>[])
               s.participantId: s,
           },
-          loading: reveal.isLoading && !reveal.hasValue,
-          failed: reveal.hasError && !reveal.hasValue,
-          reactions: reactions.value,
+          loading: loading,
+          failed: failed,
+          errorText: failed
+              ? predictionsBoardErrorText(
+                  board.hasValue ? null : board.error,
+                  served?.errorCode,
+                )
+              : null,
+          reactions: reactions,
+          onRetry: () => ref.invalidate(predictionsBoardProvider(key)),
+          onTouch: () {
+            if (!_touched.contains(fixture.fixtureId)) {
+              setState(() => _touched.add(fixture.fixtureId));
+            }
+          },
         ),
       );
     }
@@ -528,10 +579,19 @@ class _MatchHeader extends StatelessWidget {
           else if (column.failed)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: AppSizes.iconXs,
-                color: tokens.error,
+              child: Tooltip(
+                message: column.errorText ?? '',
+                child: InkWell(
+                  key: Key(
+                    'fixturePredictions.retry.${column.fixture.fixtureId}',
+                  ),
+                  onTap: column.onRetry,
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: AppSizes.iconXs,
+                    color: tokens.error,
+                  ),
+                ),
               ),
             ),
         ],
@@ -678,21 +738,24 @@ class _PredictionCell extends StatelessWidget {
     // Every prediction on the board can be reacted to (migration 0094);
     // the viewer's own shows what it received.
     return InkWell(
-      onTap: () => unawaited(
-        showPredictionReactionSheet(
-          context: context,
-          seasonId: column.fixture.seasonId,
-          fixtureId: column.fixture.fixtureId,
-          participantId: player.participantId,
-          playerName: player.name,
-          homeName: column.homeName,
-          awayName: column.awayName,
-          homeGoals: prediction.homeGoals,
-          awayGoals: prediction.awayGoals,
-          isMine: player.isMine,
-          hero: hero,
-        ),
-      ),
+      onTap: () {
+        column.onTouch();
+        unawaited(
+          showPredictionReactionSheet(
+            context: context,
+            seasonId: column.fixture.seasonId,
+            fixtureId: column.fixture.fixtureId,
+            participantId: player.participantId,
+            playerName: player.name,
+            homeName: column.homeName,
+            awayName: column.awayName,
+            homeGoals: prediction.homeGoals,
+            awayGoals: prediction.awayGoals,
+            isMine: player.isMine,
+            hero: hero,
+          ),
+        );
+      },
       child: cell,
     );
   }

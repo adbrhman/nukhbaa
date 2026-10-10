@@ -98,6 +98,23 @@ final class PredictionApi {
     );
   }
 
+  /// `GET /seasons/{id}/predictions-board?fixtures=a,b` -- the players'
+  /// predictions board of a day in one read (2026-10-11): for each of
+  /// [fixtureIds] (1..40, started ones) everyone's predictions, the
+  /// scores and the reactions, behind the same kickoff gate as
+  /// [listFixturePredictions]. A refused fixture is a column with its
+  /// `error_code`; only a failure of the whole read is an `Err`.
+  Future<Result<PredictionsBoardDto>> predictionsBoard({
+    required String seasonId,
+    required List<String> fixtureIds,
+  }) {
+    return _transport.getObject<PredictionsBoardDto>(
+      '/seasons/$seasonId/predictions-board',
+      query: <String, String>{'fixtures': fixtureIds.join(',')},
+      parse: PredictionsBoardDto.fromJson,
+    );
+  }
+
   /// `GET /seasons/{id}/fixtures/{fixtureId}/reactions` -- the reactions
   /// every prediction for [fixtureId] received, with the caller's own
   /// (migration 0094). The same kickoff gate as the predictions.

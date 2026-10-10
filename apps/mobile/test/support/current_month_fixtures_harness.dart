@@ -77,7 +77,11 @@ CurrentMonthFixturesHarness buildCurrentMonthFixturesHarness(
   final captured = <CapturedRequest>[];
   final client = MockClient((request) async {
     captured.add(CapturedRequest(request));
-    return handler(request);
+    final http.Response? board = await composePredictionsBoard(
+      request,
+      handler,
+    );
+    return board ?? await handler(request);
   });
 
   final overrides = <Override>[
@@ -126,6 +130,97 @@ http.Response okJsonObject(Map<String, Object?> object) => http.Response(
   200,
   headers: const {'content-type': 'application/json'},
 );
+
+/// The predictions board (`GET /seasons/{id}/predictions-board`, batch 95)
+/// put together from the per-match routes a test's [handler] already
+/// answers, the way the server puts it together from the same reads: each
+/// match's predictions (any other answer than 200 is that column's
+/// `error_code`, `retryable` from a 5xx), its scores and its reactions
+/// (left out unless 200). Those per-match requests reach [handler] only,
+/// never `captured`: what the app sent stays the one board request. Null
+/// for any other request.
+Future<http.Response?> composePredictionsBoard(
+  http.Request request,
+  Future<http.Response> Function(http.Request request) handler,
+) async {
+  final RegExpMatch? match = RegExp(
+    r'^/seasons/([^/]+)/predictions-board$',
+  ).firstMatch(request.url.path);
+  if (request.method != 'GET' || match == null) return null;
+  final String seasonId = match.group(1) ?? '';
+  final List<String> fixtureIds = <String>[
+    for (final String id
+        in (request.url.queryParameters['fixtures'] ?? '').split(','))
+      if (id.isNotEmpty) id,
+  ];
+
+  Future<http.Response?> read(String path) async {
+    try {
+      return await handler(
+        http.Request(
+          'GET',
+          Uri(
+            scheme: request.url.scheme,
+            host: request.url.host,
+            port: request.url.port,
+            path: path,
+          ),
+        ),
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  Object? body(http.Response? response) {
+    if (response == null || response.statusCode != 200) return null;
+    try {
+      return jsonDecode(response.body) as Object?;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  final List<Map<String, Object?>> columns = <Map<String, Object?>>[];
+  for (final String fixtureId in fixtureIds) {
+    final String base = '/seasons/$seasonId/fixtures/$fixtureId';
+    final http.Response? predictions = await read('$base/predictions');
+    final Object? shown = body(predictions);
+    if (shown == null) {
+      Object? refusal;
+      try {
+        refusal = predictions == null
+            ? null
+            : jsonDecode(predictions.body) as Object?;
+      } on FormatException {
+        refusal = null;
+      }
+      final Object? code = refusal is Map<String, Object?>
+          ? refusal['code']
+          : null;
+      columns.add(<String, Object?>{
+        'fixture_id': fixtureId,
+        'error_code': code is String ? code : 'test.unavailable',
+        'retryable': predictions == null || predictions.statusCode >= 500,
+        'predictions': const <Object?>[],
+      });
+      continue;
+    }
+    columns.add(<String, Object?>{
+      'fixture_id': fixtureId,
+      'error_code': null,
+      'retryable': false,
+      'predictions': shown,
+      'scores': body(await read('$base/scores')),
+      'reactions': body(await read('$base/reactions')),
+    });
+  }
+  return okJsonObject(<String, Object?>{
+    'schema_version': 1,
+    'season_id': seasonId,
+    'columns': columns,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // DTO fixtures.
