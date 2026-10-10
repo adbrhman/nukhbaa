@@ -43,6 +43,7 @@ import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
+import 'package:mobile/features/h2h/h2h_screen.dart';
 import 'package:mobile/features/history/prediction_history_screen.dart';
 import 'package:mobile/features/history/prediction_lookup_providers.dart';
 import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
@@ -115,6 +116,10 @@ final List<_Screen> _screens = <_Screen>[
   const _Screen('predictions.data', _predictionsWithData),
   const _Screen('leaderboards.month', _leaderboardsMonth),
   const _Screen('board.widget', _boardWidget),
+  // The head-to-head tab with a seated month, each of its sections.
+  _Screen('h2h.next', _h2hMonth(0)),
+  _Screen('h2h.table', _h2hMonth(1)),
+  _Screen('h2h.rounds', _h2hMonth(2)),
   const _Screen('bottom-nav', _bottomNav),
   const _Screen('admin.phone', _admin),
   const _Screen('admin.desktop', _admin, size: _desktop),
@@ -807,3 +812,107 @@ void main() {
     }
   }
 }
+
+/// A seated head-to-head month: a live round, a settled one, a void one,
+/// the next one open with its first kickoff, and a group of six.
+H2hStandingDto _h2hLine(int rank, String name, {bool me = false}) =>
+    H2hStandingDto(
+      rank: rank,
+      userId: 'u-$rank',
+      displayName: name,
+      played: 2,
+      won: rank <= 2 ? 1 : 0,
+      drawn: 1,
+      lost: rank <= 2 ? 0 : 1,
+      leaguePoints: rank <= 2 ? 4 : 1,
+      pointsFor: 120 - rank * 9,
+      exactCount: 1,
+      form: const <String>['win', 'draw'],
+      isMe: me,
+    );
+
+final MyH2hLeagueDto _h2hLeague = MyH2hLeagueDto(
+  state: 'open',
+  monthStart: '2026-10-01',
+  startsOn: '2026-11-01',
+  isPilot: true,
+  division: 1,
+  groupIndex: 0,
+  myRank: 2,
+  promotionZone: 0,
+  relegationZone: 3,
+  daysLeft: 21,
+  standings: <H2hStandingDto>[
+    _h2hLine(1, 'عبدالرحمن المغربي'),
+    _h2hLine(2, 'سليمان الرفاعي', me: true),
+    _h2hLine(3, 'ناصر هيثم'),
+    _h2hLine(4, 'شادي الصرمي'),
+    _h2hLine(5, 'عبدالكريم أبو يحيى'),
+    _h2hLine(6, ''),
+  ],
+  rounds: const <H2hRoundViewDto>[
+    H2hRoundViewDto(
+      round: 1,
+      day: '2026-10-10',
+      status: 'settled',
+      fixtureCount: 22,
+      opponentUserId: 'u-5',
+      opponentName: 'عبدالكريم أبو يحيى',
+      myPoints: 31,
+      opponentPoints: 24,
+      result: 'win',
+    ),
+    H2hRoundViewDto(
+      round: 2,
+      day: '2026-10-11',
+      status: 'voided',
+      fixtureCount: 0,
+    ),
+    H2hRoundViewDto(
+      round: 3,
+      day: '2026-10-13',
+      status: 'live',
+      fixtureCount: 9,
+      opponentUserId: 'u-1',
+      opponentName: 'عبدالرحمن المغربي',
+      myPoints: 12,
+      opponentPoints: 15,
+      result: 'loss',
+    ),
+    H2hRoundViewDto(
+      round: 4,
+      day: '2026-10-17',
+      status: 'open',
+      fixtureCount: 7,
+      firstKickoff: '2026-10-17T15:00:00.000Z',
+    ),
+  ],
+);
+
+_Pump _h2hMonth(int section) =>
+    (WidgetTester tester, ThemeData theme, double scale) async {
+      final auth.AuthHarness harness = auth.buildAuthHarness((
+        http.Request request,
+      ) async {
+        if (request.url.path == '/me/h2h-league') {
+          return _json(_h2hLeague.toJson());
+        }
+        return http.Response('not found', 404);
+      }, seedToken: 'saved-jwt');
+      addTearDown(harness.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: harness.overrides,
+          retry: (retryCount, error) => null,
+          child: _app(
+            theme,
+            scale,
+            H2hScreen(
+              initialSection: section,
+              onOpenMatches: () {},
+              now: () => DateTime.utc(2026, 10, 13, 11, 39, 30),
+            ),
+          ),
+        ),
+      );
+    };

@@ -38,13 +38,23 @@ String h2hFormLetter(String result) => switch (result) {
   _ => '-',
 };
 
-/// A round's state: `upcoming`, `live`, `settled` or `voided`.
+/// A round's phase as the server sent it: `open` (the next round, taking
+/// predictions now), `upcoming` (a later one), `live`, `settled` or
+/// `voided`. Version 1 servers sent `upcoming` for every round not started.
 String h2hRoundStatusLabel(String status) => switch (status) {
+  'open' => 'مفتوحة',
   'live' => 'جارية',
-  'settled' => 'انتهت',
-  'voided' => 'أُلغيت',
-  _ => 'لم تبدأ',
+  'settled' => 'مكتملة',
+  'voided' => 'ملغاة',
+  _ => 'قادمة',
 };
+
+/// The three sections of a seated month, in order.
+const List<String> h2hSectionLabels = <String>[
+  'المواجهة',
+  'الترتيب',
+  'الجولات',
+];
 
 /// The Arabic month names, January first.
 const List<String> _months = <String>[
@@ -92,21 +102,53 @@ String h2hPointsLabel(num points) {
   return points.toStringAsFixed(1);
 }
 
+/// The caller's place in the group: `3 من 20`.
+String h2hRankLabel(int rank, int of) => '$rank من $of';
+
+/// Where the month stands: the round that matters now out of the most a
+/// month may hold.
+String h2hRoundProgressLabel(int round) => 'الجولة $round من 19 كحد أقصى';
+
+/// The whole days left in the month after today, as the server counted
+/// them (Riyadh days).
+String h2hDaysLeftLabel(int days) {
+  if (days <= 0) return 'آخر يوم في الشهر';
+  if (days == 1) return 'باقي يوم واحد';
+  if (days == 2) return 'باقي يومان';
+  if (days <= 10) return 'باقي $days أيام';
+  return 'باقي $days يومًا';
+}
+
+/// The time left until a kickoff, in hours and minutes: `3 س 20 د`. Under
+/// a minute it says so; once the kickoff has passed, the round has started.
+String h2hCountdownLabel(Duration left) {
+  if (left <= Duration.zero) return 'بدأت';
+  if (left < const Duration(minutes: 1)) return 'أقل من دقيقة';
+  final int hours = left.inHours;
+  final int minutes = left.inMinutes % 60;
+  if (hours == 0) return '$minutes د';
+  return '$hours س $minutes د';
+}
+
 /// The opponent's name when the caller plays the group average.
 const String h2hAverageOpponent = 'متوسط المجموعة';
 
 /// The name shown for a member with no display name.
 const String h2hUnnamed = 'لاعب';
 
-/// The rules, in the order the intro card lists them.
+/// Under the list of rounds: when a round becomes known.
+const String h2hRoundsNote = 'تُعلن الجولة قبل يوم مبارياتها.';
+
+/// The rules, in the order the rules card and sheet list them.
 const List<String> h2hRules = <String>[
   'في أول كل شهر يُقسَّم اللاعبون إلى درجات من 20 لاعبًا: الأولى ثم '
       'الثانية ثم الثالثة، والباقون في الرابعة.',
-  'الجولة يوم مباريات يعتمده المشرف، وتواجه فيها لاعبًا واحدًا من '
+  'الجولة يوم مباريات يُعلن قبل يومه، وتواجه فيها لاعبًا واحدًا من '
       'مجموعتك. في الشهر 19 جولة على الأكثر.',
   'من يجمع نقاط توقّع أكثر في الجولة يفوز بـ3 نقاط، والتعادل نقطة.',
   'من لم يتوقّع في الجولة يخسرها.',
-  'في نهاية الشهر يصعد الثلاثة الأوائل ويهبط الثلاثة الأخيرون.',
+  'في نهاية الشهر يصعد أوائل كل درجة ويهبط أواخرها، حتى 3 لاعبين بحسب '
+      'عدد المجموعة. لا صعود من الأولى ولا هبوط من الرابعة.',
   'لتدخل القرعة: توقّع في 5 أيام مختلفة على الأقل خلال الشهر السابق.',
 ];
 

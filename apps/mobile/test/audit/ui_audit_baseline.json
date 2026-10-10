@@ -239,6 +239,54 @@
     "layout13": 0,
     "layout20": 0
   },
+  "h2h.next/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.next/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.table/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.table/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.rounds/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.rounds/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "sign-in/dark": {
     "contrast": 0,
     "tapTarget": 0,
