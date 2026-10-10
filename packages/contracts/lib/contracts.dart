@@ -39,6 +39,7 @@ export 'src/frame_report_dto.dart';
 export 'src/group_dto.dart';
 export 'src/group_invitation_dto.dart';
 export 'src/h2h_league_dto.dart';
+export 'src/h2h_round_detail_dto.dart';
 export 'src/health_dto.dart';
 export 'src/latest_build_dto.dart';
 export 'src/leaderboard_dto.dart';

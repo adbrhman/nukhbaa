@@ -121,6 +121,7 @@ final class H2hRoundViewDto {
     this.myPoints,
     this.opponentPoints,
     this.result,
+    this.firstKickoff,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -136,6 +137,7 @@ final class H2hRoundViewDto {
         myPoints: json['my_points'] as int?,
         opponentPoints: (json['opponent_points'] as num?)?.toDouble(),
         result: json['result'] as String?,
+        firstKickoff: json['first_kickoff'] as String?,
       );
 
   /// 1-based round of the month.
@@ -144,7 +146,8 @@ final class H2hRoundViewDto {
   /// The round's Riyadh day, `YYYY-MM-DD`.
   final String day;
 
-  /// `upcoming`, `live`, `settled` or `voided`.
+  /// `open` (the next round, not started), `upcoming` (a later one),
+  /// `live`, `settled` or `voided`.
   final String status;
 
   /// The round's fixtures: frozen once it started.
@@ -168,6 +171,9 @@ final class H2hRoundViewDto {
   /// `win`, `draw` or `loss` so far; null while upcoming or voided.
   final String? result;
 
+  /// The round's first kickoff, ISO-8601 UTC, when known.
+  final String? firstKickoff;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'round': round,
@@ -180,6 +186,7 @@ final class H2hRoundViewDto {
     'my_points': myPoints,
     'opponent_points': opponentPoints,
     'result': result,
+    'first_kickoff': firstKickoff,
   };
 }
 
@@ -198,6 +205,7 @@ final class MyH2hLeagueDto {
     required this.rounds,
     this.division,
     this.groupIndex,
+    this.daysLeft = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -210,6 +218,7 @@ final class MyH2hLeagueDto {
     isPilot: (json['is_pilot'] as bool?) ?? false,
     division: json['division'] as int?,
     groupIndex: json['group_index'] as int?,
+    daysLeft: (json['days_left'] as int?) ?? 0,
     myRank: (json['my_rank'] as int?) ?? 0,
     promotionZone: (json['promotion_zone'] as int?) ?? 0,
     relegationZone: (json['relegation_zone'] as int?) ?? 0,
@@ -242,6 +251,9 @@ final class MyH2hLeagueDto {
   /// 0-based group of the division, when open.
   final int? groupIndex;
 
+  /// Days left in the month after today, Riyadh; 0 on its last day.
+  final int daysLeft;
+
   /// The caller's rank on the table, 0 when not open.
   final int myRank;
 
@@ -269,6 +281,7 @@ final class MyH2hLeagueDto {
     'is_pilot': isPilot,
     'division': division,
     'group_index': groupIndex,
+    'days_left': daysLeft,
     'my_rank': myRank,
     'promotion_zone': promotionZone,
     'relegation_zone': relegationZone,
