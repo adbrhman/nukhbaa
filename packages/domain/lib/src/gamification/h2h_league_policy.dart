@@ -748,6 +748,59 @@ final class H2hLeaguePolicy {
     return List<H2hDrawGroup>.unmodifiable(groups);
   }
 
+  /// The groups an admin adds to a month already drawn (decided
+  /// 2026-10-11): [order] dealt [groupCapacity] at a time, in its order,
+  /// into the next groups of the ladder -- each division above the open one
+  /// that holds no group yet, top down, then new groups of the open division
+  /// after its last. [existing] names every group the month holds already.
+  ///
+  /// At most [groups] groups. A group needs two players, so a single player
+  /// left at the end waits. Slots follow the order within each group, and
+  /// the schedule is the slot's, so a group added late meets the same
+  /// opponents in every round of the month as one drawn on its first night.
+  static List<H2hDrawGroup> extend({
+    required List<({H2hDivision division, int groupIndex})> existing,
+    required List<UserId> order,
+    required int groups,
+  }) {
+    final nextIndex = <H2hDivision, int>{};
+    for (final group in existing) {
+      final after = group.groupIndex + 1;
+      if (after > (nextIndex[group.division] ?? 0)) {
+        nextIndex[group.division] = after;
+      }
+    }
+    final open = H2hDivision.values.last;
+    final added = <H2hDrawGroup>[];
+    var start = 0;
+    while (added.length < groups && order.length - start >= 2) {
+      var division = open;
+      for (final candidate in H2hDivision.values) {
+        if (candidate != open && !nextIndex.containsKey(candidate)) {
+          division = candidate;
+          break;
+        }
+      }
+      final end = start + groupCapacity < order.length
+          ? start + groupCapacity
+          : order.length;
+      final index = nextIndex[division] ?? 0;
+      added.add(
+        H2hDrawGroup(
+          division: division,
+          groupIndex: index,
+          seats: List<H2hDrawSeat>.unmodifiable([
+            for (var k = start; k < end; k++)
+              H2hDrawSeat(userId: order[k], slot: k - start),
+          ]),
+        ),
+      );
+      nextIndex[division] = index + 1;
+      start = end;
+    }
+    return List<H2hDrawGroup>.unmodifiable(added);
+  }
+
   static H2hFinish _finish(_Ranked ranked, H2hDivision? next) {
     final H2hLeagueOutcome outcome;
     if (next == null) {

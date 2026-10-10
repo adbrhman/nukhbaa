@@ -41,6 +41,7 @@ export 'src/group_invitation_dto.dart';
 export 'src/h2h_admin_controls_dto.dart';
 export 'src/h2h_admin_dto.dart';
 export 'src/h2h_group_round_dto.dart';
+export 'src/h2h_groups_added_dto.dart';
 export 'src/h2h_league_dto.dart';
 export 'src/h2h_round_detail_dto.dart';
 export 'src/health_dto.dart';

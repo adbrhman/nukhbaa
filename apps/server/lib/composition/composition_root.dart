@@ -156,6 +156,7 @@ final class CompositionRoot {
     required this.closeH2hMonth,
     required this.drawH2hMonth,
     required this.h2hAdminDesk,
+    required this.addH2hGroups,
     required this.evaluateBadges,
     required this.providerSyncMode,
     this.syncProviderFixtures,
@@ -353,6 +354,7 @@ final class CompositionRoot {
     CloseH2hMonth? closeH2hMonth,
     DrawH2hMonth? drawH2hMonth,
     H2hAdminDesk? h2hAdminDesk,
+    AddH2hGroups? addH2hGroups,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
@@ -588,6 +590,7 @@ final class CompositionRoot {
        closeH2hMonth = closeH2hMonth ?? _absentCloseH2hMonth(),
        drawH2hMonth = drawH2hMonth ?? _absentDrawH2hMonth(),
        h2hAdminDesk = h2hAdminDesk ?? _absentH2hAdminDesk(),
+       addH2hGroups = addH2hGroups ?? _absentAddH2hGroups(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
@@ -1429,6 +1432,16 @@ final class CompositionRoot {
       idGenerator: _unwiredIdGenerator,
       clock: _unwiredClock,
     ),
+  );
+
+  /// Backs the "absent" [AddH2hGroups]: every port throws, so a test
+  /// that reaches it without wiring it fails loudly.
+  static AddH2hGroups _absentAddH2hGroups() => AddH2hGroups(
+    leagues: _unwiredH2h,
+    extension: _UnwiredH2hGroupExtension(),
+    controls: _UnwiredH2hControls(),
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
   );
 
   /// Backs the "absent" [EvaluateBadges]: its reader throws, so a test that
@@ -2328,6 +2341,11 @@ final class CompositionRoot {
   /// only.
   final H2hAdminDesk h2hAdminDesk;
 
+  /// Adds groups to the head-to-head month open now: the players
+  /// waiting for a seat, most days of predictions first, twenty to a
+  /// group (backs `POST /admin/h2h/extra-groups`). Admin only.
+  final AddH2hGroups addH2hGroups;
+
   /// Awards each catalog badge a player has earned and not yet been given.
   /// Driven by the scheduler, never by a request.
   final EvaluateBadges evaluateBadges;
@@ -3165,6 +3183,13 @@ final class CompositionRoot {
           idGenerator: idGenerator,
           clock: clock,
         ),
+      ),
+      addH2hGroups: AddH2hGroups(
+        leagues: PostgresH2hLeagueStore(connection),
+        extension: PostgresH2hGroupExtension(connection),
+        controls: PostgresH2hControlStore(connection),
+        idGenerator: idGenerator,
+        clock: clock,
       ),
       evaluateBadges: EvaluateBadges(
         progress: PostgresBadgeProgressReader(connection),
@@ -5235,6 +5260,26 @@ final class _UnwiredH2hFixtures implements H2hRoundFixtureReader {
     required UserId? opponent,
     required DateTime nowUtc,
   }) => throw StateError('GetMyH2hRound was not wired into this test root');
+}
+
+/// Backs the "absent" [AddH2hGroups]'s port (2026-10-11): throws, so a
+/// test that reaches it without wiring it fails loudly.
+final class _UnwiredH2hGroupExtension implements H2hGroupExtension {
+  Never _unwired() =>
+      throw StateError('Adding h2h groups was not wired into this test root');
+
+  @override
+  Future<Result<List<UserId>>> waitingByParticipation({
+    required DateTime monthStart,
+    required int minActiveDays,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> addGroups({
+    required DateTime monthStart,
+    required List<H2hDrawnGroup> groups,
+    required int capacity,
+  }) => _unwired();
 }
 
 /// Backs the "absent" [H2hAdminDesk]'s controls and report (0101):

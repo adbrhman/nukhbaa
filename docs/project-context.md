@@ -4180,6 +4180,32 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   handlers (`composePredictionsBoard`) without adding them to
   `captured`.
 
+### Adding groups to a drawn month (2026-10-11)
+
+- **Batch 96 (extra groups, server, 2026-10-11)**: the October pilot
+  was drawn with one group of twenty (first division); 72 players
+  without a seat had predicted on five days or more of October by
+  the 11th. Decided with the owner: the players who play the most get
+  a seat first, and the new groups take the next places of the
+  ladder. `POST /admin/h2h/extra-groups {"groups": 1..10}`
+  (`AddH2hGroups`): the players with no seat in the month open now who
+  predicted on the settings' `min_active_days` of it, most days
+  first, then points, exact scorelines, user id
+  (`PostgresH2hGroupExtension.waitingSql`), dealt twenty to a group by
+  `H2hLeaguePolicy.extend`: each division above the open one with no
+  group yet, top down, then new groups of the open division; a single
+  player left at the end waits. Groups and seats are ordinary 0100
+  rows written in one transaction (0100's constraints refuse a place
+  or a player taken twice: `h2h.group_taken`, `h2h.player_seated`);
+  `h2h_months.seated_count` keeps the seats of the draw itself. A
+  month not drawn or judged, fewer than two waiting, or a count
+  outside 1..10 is refused. Rounds belong to the month and the
+  schedule to the slot, so a group added late plays every round of
+  the month, the ones already played included, from its members' own
+  predictions. Migration 0102 widens 0101's admin-log check with
+  `groups_added` (logging is best-effort: before 0102 the groups are
+  still added, the log line is lost).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

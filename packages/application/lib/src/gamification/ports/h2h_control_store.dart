@@ -127,7 +127,10 @@ enum H2hAdminActionKind {
   jobsRun('jobs_run'),
 
   /// Started the pilot.
-  pilotStarted('pilot_started');
+  pilotStarted('pilot_started'),
+
+  /// Added groups to a month already drawn (migration 0102).
+  groupsAdded('groups_added');
 
   const H2hAdminActionKind(this.wireName);
 
