@@ -4092,6 +4092,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `0101_h2h_control_queries_test.sql` (16 checks, the adapters' SQL text).
   **Apply 0101 in the Supabase SQL editor before pushing the server batch
   that reads it (92).** Nothing reads these tables yet.
+- **Batch 91 (admin desk, application, 2026-10-11)**: `AdminH2hControls`
+  (`admin_h2h_controls.dart`): `view` (the settings, the month's days
+  from today on -- not started, or excluded -- with the round each one
+  already is, and the last 30 lines of the admin log with the admins'
+  names), `saveSettings` (lead 1..24 h, active days 1..28, else
+  `h2h.settings_out_of_range`), `setDayExcluded` (a past day is
+  `h2h.day_past`; only a change is logged), `addSeat` (month drawn and
+  open, the group its own, the slot inside it, the player not seated:
+  `h2h.month_not_drawn`, `h2h.month_closed`, `h2h.group_unknown`,
+  `h2h.seat_outside_group`, `h2h.player_seated`), `report` (the 0101
+  month report) and `runJobs` (rounds, close, draw now, as the
+  scheduler does; logged as `jobs_run`). `H2hAdminDesk` holds these and
+  the three admin readings of batch 89 for the composition root.
+  `DrawH2hMonth` and `CloseH2hMonth` take optional controls and read
+  `min_active_days` from `h2h_settings` (the policy's five without
+  them).
 
 ## 3. Version-Verification Log
 

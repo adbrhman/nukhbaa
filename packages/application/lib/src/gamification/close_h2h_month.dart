@@ -1,5 +1,6 @@
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
+import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
@@ -23,6 +24,11 @@ import 'package:shared/shared.dart';
 ///
 /// **A pilot month** is closed without events: its results decide nothing.
 ///
+/// **The admin's settings (0101)**, when [controls] is given: the days of
+/// predictions that keep a player in the league are the settings'
+/// `min_active_days` (five by default); unreadable settings leave the
+/// month open for the next run.
+///
 /// **Idempotent.** Each event is keyed on the user and the month; the month
 /// is marked closed only after every event was recorded, so a failure half
 /// way leaves it open and the next run repeats it harmlessly.
@@ -36,6 +42,7 @@ final class CloseH2hMonth {
     required H2hSheetReader sheets,
     required GamificationEventSink events,
     required IdGenerator idGenerator,
+    H2hControlStore? controls,
     this.grace = const Duration(hours: 3),
     this.settleWait = const Duration(days: 3),
     this.maxMonthsPerRun = 3,
@@ -43,13 +50,15 @@ final class CloseH2hMonth {
        _rounds = rounds,
        _sheets = sheets,
        _events = events,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _controls = controls;
 
   final H2hLeagueStore _leagues;
   final H2hRoundStore _rounds;
   final H2hSheetReader _sheets;
   final GamificationEventSink _events;
   final IdGenerator _ids;
+  final H2hControlStore? _controls;
 
   /// How long a month must have been over before it is judged.
   final Duration grace;
@@ -172,13 +181,23 @@ final class CloseH2hMonth {
       return const Result.ok(true);
     }
 
+    var minActiveDays = H2hLeaguePolicy.minActiveDays;
+    final controls = _controls;
+    if (controls != null) {
+      final settings = await controls.settings();
+      if (settings is Err<H2hSettings>) {
+        return Result.err(settings.error);
+      }
+      minActiveDays = (settings as Ok<H2hSettings>).value.minActiveDays;
+    }
+
     final activeResult = await _sheets.activeDaysOf(month);
     if (activeResult is Err<Map<UserId, int>>) {
       return Result.err(activeResult.error);
     }
     final eligible = <UserId>{
       for (final entry in (activeResult as Ok<Map<UserId, int>>).value.entries)
-        if (H2hLeaguePolicy.isEligible(entry.value)) entry.key,
+        if (entry.value >= minActiveDays) entry.key,
     };
 
     final finishes = H2hLeaguePolicy.monthEnd(

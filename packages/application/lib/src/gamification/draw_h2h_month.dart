@@ -1,6 +1,7 @@
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_draw_source.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:domain/domain.dart';
@@ -25,6 +26,11 @@ import 'package:shared/shared.dart';
 /// **Before the league opens** nothing is drawn here: the pilot month is
 /// started by an admin (`StartH2hPilot`).
 ///
+/// **The admin's settings (0101)**, when [controls] is given: the days
+/// of predictions that put a player into the draw are the settings'
+/// `min_active_days` (five by default); unreadable settings draw nothing
+/// and the next run tries again.
+///
 /// Never throws; returns a typed [Result] with the number of seats drawn.
 final class DrawH2hMonth {
   /// Creates the use-case over its collaborators.
@@ -32,13 +38,16 @@ final class DrawH2hMonth {
     required H2hLeagueStore leagues,
     required H2hDrawSource source,
     required IdGenerator idGenerator,
+    H2hControlStore? controls,
   }) : _leagues = leagues,
        _source = source,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _controls = controls;
 
   final H2hLeagueStore _leagues;
   final H2hDrawSource _source;
   final IdGenerator _ids;
+  final H2hControlStore? _controls;
 
   /// Draws the month containing [now] if it is due and not drawn yet.
   Future<Result<int>> call({required DateTime now}) async {
@@ -62,9 +71,19 @@ final class DrawH2hMonth {
     }
     final previousInfo = (previousResult as Ok<H2hMonthInfo?>).value;
 
+    var minActiveDays = H2hLeaguePolicy.minActiveDays;
+    final controls = _controls;
+    if (controls != null) {
+      final settings = await controls.settings();
+      if (settings is Err<H2hSettings>) {
+        return Result.err(settings.error);
+      }
+      minActiveDays = (settings as Ok<H2hSettings>).value.minActiveDays;
+    }
+
     final activeResult = await _source.activeOrder(
       monthStart: previous,
-      minActiveDays: H2hLeaguePolicy.minActiveDays,
+      minActiveDays: minActiveDays,
     );
     if (activeResult is Err<List<UserId>>) {
       return Result.err(activeResult.error);

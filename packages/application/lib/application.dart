@@ -172,6 +172,7 @@ export 'src/platform/record_error.dart';
 export 'src/platform/record_frame_report.dart';
 export 'src/gamification/admin_get_referral_overview.dart';
 export 'src/gamification/admin_get_retention.dart';
+export 'src/gamification/admin_h2h_controls.dart';
 export 'src/gamification/admin_h2h_groups.dart';
 export 'src/gamification/admin_list_held_referrals.dart';
 export 'src/gamification/admin_review_referral.dart';
