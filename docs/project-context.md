@@ -4143,6 +4143,28 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   their providers; the new refusal codes read in Arabic in
   `h2hAdminErrorMessage`.
 
+### The predictions board in one request (2026-10-11)
+
+- **Batch 94 (predictions board in one request, server, 2026-10-11)**:
+  measured first: on 2026-10-10 at 22:10 UTC the board of a day with
+  21 started matches sent 3 requests per match (predictions, scores,
+  reactions); the server's CPU peaked, probe latency reached 5.5 s,
+  and the error log holds `db.query_timeout` on the three routes
+  (`connections in use 8/8, waiting 54..148`) while Supabase showed
+  CPU ~3 %, IOPS 6 and 18 of 60 connections -- the server, not the
+  database, was saturated. `GET /seasons/{id}/predictions-board?
+  fixtures=a,b,...` (`GetPredictionsBoard`, 1..40 ids, a repeated id
+  once) answers the whole board: every fixture through the same
+  `ListFixturePredictions` gate, 3 at a time; scores
+  (`listBySeasonFixtures`) and results (`findByFixtures`) in one
+  query each; reactions 3 at a time (unreadable ones leave the
+  column without them). A refused fixture is a column with its
+  `error_code` and `retryable` (true only for a transient failure);
+  a failed batched read is the usual 503. Contracts
+  `PredictionsBoardDto` / `PredictionsBoardColumnDto` reuse the three
+  per-fixture shapes. The per-fixture routes stay for the other
+  screens. No migration.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

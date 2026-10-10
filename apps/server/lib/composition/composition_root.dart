@@ -78,6 +78,7 @@ final class CompositionRoot {
     required this.getFixturePredictionDistribution,
     required this.listFixturePredictions,
     required this.listPredictionReactions,
+    required this.getPredictionsBoard,
     required this.reactToPrediction,
     required this.removePredictionReaction,
     required this.listSeasonDuelWins,
@@ -274,6 +275,7 @@ final class CompositionRoot {
     GetFixturePredictionDistribution? getFixturePredictionDistribution,
     ListFixturePredictions? listFixturePredictions,
     ListPredictionReactions? listPredictionReactions,
+    GetPredictionsBoard? getPredictionsBoard,
     ReactToPrediction? reactToPrediction,
     RemovePredictionReaction? removePredictionReaction,
     ListSeasonDuelWins? listSeasonDuelWins,
@@ -473,6 +475,8 @@ final class CompositionRoot {
            listFixturePredictions ?? _absentListFixturePredictions(),
        listPredictionReactions =
            listPredictionReactions ?? _absentListPredictionReactions(),
+       getPredictionsBoard =
+           getPredictionsBoard ?? _absentGetPredictionsBoard(),
        reactToPrediction = reactToPrediction ?? _absentReactToPrediction(),
        removePredictionReaction =
            removePredictionReaction ?? _absentRemovePredictionReaction(),
@@ -1025,6 +1029,16 @@ final class CompositionRoot {
   static ListPredictionReactions _absentListPredictionReactions() =>
       ListPredictionReactions(
         reveal: _absentListFixturePredictions(),
+        reactions: _UnwiredPredictionReactionRepository(),
+      );
+
+  /// Backs the "absent" [GetPredictionsBoard]: its gate and stores
+  /// throw, so a test that reaches it without wiring it fails loudly.
+  static GetPredictionsBoard _absentGetPredictionsBoard() =>
+      GetPredictionsBoard(
+        reveal: _absentListFixturePredictions(),
+        scores: _unwiredFixtureScoreRepository,
+        results: _NoFixtureResults(),
         reactions: _UnwiredPredictionReactionRepository(),
       );
 
@@ -1987,6 +2001,12 @@ final class CompositionRoot {
   /// The reactions every prediction for a fixture received (backs
   /// `GET /seasons/{id}/fixtures/{fixtureId}/reactions`, migration 0094).
   final ListPredictionReactions listPredictionReactions;
+
+  /// The players' predictions board of a day in one read: each
+  /// fixture's predictions, scores, result and reactions behind the
+  /// predictions' own kickoff gate (backs
+  /// `GET /seasons/{id}/predictions-board`).
+  final GetPredictionsBoard getPredictionsBoard;
 
   /// Reacts to another player's prediction (backs `PUT /seasons/{id}/
   /// fixtures/{fixtureId}/predictions/{participantId}/reaction`).
@@ -3341,6 +3361,12 @@ final class CompositionRoot {
       ),
       listPredictionReactions: ListPredictionReactions(
         reveal: predictionReveal,
+        reactions: predictionReactions,
+      ),
+      getPredictionsBoard: GetPredictionsBoard(
+        reveal: predictionReveal,
+        scores: fixtureScoreRepository,
+        results: fixtureResultRepository,
         reactions: predictionReactions,
       ),
       reactToPrediction: ReactToPrediction(

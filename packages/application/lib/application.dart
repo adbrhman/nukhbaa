@@ -232,6 +232,7 @@ export 'src/gamification/withdraw_h2h_round.dart';
 export 'src/prediction/fixture_prediction_view.dart';
 export 'src/prediction/get_fixture_prediction_distribution.dart';
 export 'src/prediction/get_my_prediction.dart';
+export 'src/prediction/get_predictions_board.dart';
 export 'src/prediction/list_fixture_predictions.dart';
 export 'src/prediction/list_my_fixture_predictions.dart';
 export 'src/prediction/list_round_predictions.dart';
