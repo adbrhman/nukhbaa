@@ -332,7 +332,7 @@ class NukhbaaBottomNav extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 // The bar's order (2026-10-10, agreed with the players):
-                // home, leaders, the league, matches, account. Each item
+                // home, the league, matches, leaders, account. Each item
                 // keeps its page index, so pushes and the screen-view names
                 // still find the page they name.
                 _item(
@@ -342,14 +342,6 @@ class NukhbaaBottomNav extends StatelessWidget {
                   label: 'الرئيسية',
                   navKey: const Key('nav.item.home'),
                   destination: 0,
-                ),
-                _item(
-                  context,
-                  icon: Icons.leaderboard_outlined,
-                  activeIcon: Icons.leaderboard_rounded,
-                  label: 'المتصدرون',
-                  navKey: const Key('nav.item.leaders'),
-                  destination: 3,
                 ),
                 _item(
                   context,
@@ -366,6 +358,14 @@ class NukhbaaBottomNav extends StatelessWidget {
                   label: 'المباريات',
                   navKey: const Key('nav.item.fixtures'),
                   destination: 1,
+                ),
+                _item(
+                  context,
+                  icon: Icons.leaderboard_outlined,
+                  activeIcon: Icons.leaderboard_rounded,
+                  label: 'المتصدرون',
+                  navKey: const Key('nav.item.leaders'),
+                  destination: 3,
                 ),
                 _item(
                   context,

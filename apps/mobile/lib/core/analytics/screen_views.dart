@@ -63,7 +63,8 @@ abstract final class ScreenNames {
   static const String fixturePrediction = 'fixture_prediction';
   static const String ledger = 'ledger';
 
-  /// The bottom-bar tabs, in the bar's order.
+  /// The bottom-bar tabs by page index (the shell's IndexedStack); the
+  /// bar itself shows them in its own order.
   static const List<String> tabs = <String>[
     home,
     matches,
