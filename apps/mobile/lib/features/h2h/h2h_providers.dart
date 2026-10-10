@@ -20,3 +20,15 @@ final myH2hLeagueProvider = FutureProvider.autoDispose<MyH2hLeagueDto>((
     Err<MyH2hLeagueDto>(:final error) => throw error,
   };
 });
+
+/// `GET /me/h2h-league/rounds/{n}` -- one round of the caller's month in
+/// detail. The opponent's picks arrive only for fixtures that kicked off;
+/// the server withholds the rest, and nothing here guesses them.
+final myH2hRoundProvider = FutureProvider.autoDispose
+    .family<MyH2hRoundDto, int>((ref, round) async {
+      final AuthApi api = ref.watch(authApiProvider);
+      return switch (await api.myH2hRound(round)) {
+        Ok<MyH2hRoundDto>(:final value) => value,
+        Err<MyH2hRoundDto>(:final error) => throw error,
+      };
+    });

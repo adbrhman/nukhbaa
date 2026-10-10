@@ -174,3 +174,28 @@ const List<String> h2hRules = <String>[
             'وصعود وهبوط في نهاية كل شهر.',
       ),
     };
+
+/// A kickoff (ISO-8601 UTC) as `HH:MM` on the Riyadh clock, the clock the
+/// league's days are counted in; an unreadable one is a dash.
+String h2hKickoffTime(String? iso) {
+  final DateTime? utc = iso == null ? null : DateTime.tryParse(iso)?.toUtc();
+  if (utc == null) return '—';
+  final DateTime riyadh = utc.add(const Duration(hours: 3));
+  return '${riyadh.hour.toString().padLeft(2, '0')}:'
+      '${riyadh.minute.toString().padLeft(2, '0')}';
+}
+
+/// A fixture's state as the server sent it: `not_started`, `live`,
+/// `finished` or `void`.
+String h2hFixtureStateLabel(String state) => switch (state) {
+  'live' => 'جارية',
+  'finished' => 'انتهت',
+  'void' => 'لا تُحتسب',
+  _ => 'لم تبدأ',
+};
+
+/// In place of the opponent's pick of a fixture that has not kicked off.
+const String h2hHiddenPick = 'مخفي حتى الانطلاق';
+
+/// A predicted scoreline, home first.
+String h2hScoreline(int home, int away) => '$home - $away';

@@ -12,6 +12,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
+import '../h2h_round_screen.dart';
 import '../h2h_texts.dart';
 import 'h2h_parts.dart';
 
@@ -133,6 +134,15 @@ class H2hNextMatch extends StatelessWidget {
             key: const Key('h2h.featured.fixtures'),
             textAlign: TextAlign.center,
             style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            key: const Key('h2h.openRound'),
+            label: 'تفاصيل المواجهة',
+            icon: Icons.list_alt_rounded,
+            variant: AppButtonVariant.text,
+            size: AppButtonSize.large,
+            onPressed: () => openH2hRound(context, round.round),
           ),
           if (onOpenMatches != null && (ahead || live)) ...<Widget>[
             const SizedBox(height: AppSpacing.md),

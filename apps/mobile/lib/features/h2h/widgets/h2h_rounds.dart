@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../h2h_round_screen.dart';
 import '../h2h_texts.dart';
 import 'h2h_next_match.dart';
 import 'h2h_parts.dart';
@@ -32,7 +33,12 @@ class H2hRoundsList extends StatelessWidget {
           const H2hNoRounds()
         else
           for (final H2hRoundViewDto r in league.rounds.reversed) ...<Widget>[
-            MergeSemantics(child: H2hRoundTile(round: r)),
+            MergeSemantics(
+              child: H2hOpenRound(
+                round: r.round,
+                child: H2hRoundTile(round: r),
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
           ],
         if (league.rounds.isNotEmpty) ...<Widget>[
