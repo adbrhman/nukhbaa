@@ -8,6 +8,11 @@ begin;
 -- guard (migration 0019) compares with the real clock: left on, this test
 -- would start failing once those dates pass. It is switched off for this
 -- rolled-back transaction only (the guard itself is unchanged).
+--
+-- For the same reason every score carries a fixed scored_at: the sweep only
+-- pays for a prediction graded by its p_now, and the column's default (the
+-- real clock) passed the test's p_now on 2026-10-10, which made this test
+-- fail from that day on.
 alter table prediction.fixture_predictions
   disable trigger fixture_predictions_reject_write_after_kickoff;
 
@@ -25,10 +30,11 @@ begin
   values (p, 'c7400000-0000-4000-8000-000000000010', u, '2026-10-01');
   -- points as exact calls (3 each) plus correct outcomes (0 each here)
   for i in 1..3 loop
-    insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points)
+    insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points, scored_at)
     values (('c7400000-0000-4000-8000-0000000000f' || i)::uuid, p, 1,
             case when i <= exact then 'exact_scoreline' else 'correct_outcome' end,
-            case when i = 1 then points else 0 end);
+            case when i = 1 then points else 0 end,
+            '2026-10-05 20:00+03');
   end loop;
   return u;
 end $$;
@@ -73,8 +79,8 @@ begin
   values ('c7400000-0000-4000-8000-000000000099', 'c7400000-0000-4000-8000-000000000010', invitee, '2026-10-02');
   insert into prediction.fixture_predictions (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at)
   values (gen_random_uuid(), 'c7400000-0000-4000-8000-0000000000f1', 'c7400000-0000-4000-8000-000000000099', 1, 0, false, '2026-10-05 12:00+03');
-  insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points)
-  values ('c7400000-0000-4000-8000-0000000000f1', 'c7400000-0000-4000-8000-000000000099', 1, 'incorrect', 0);
+  insert into scoring.fixture_scores (fixture_id, participant_id, ruleset_version, grade, points, scored_at)
+  values ('c7400000-0000-4000-8000-0000000000f1', 'c7400000-0000-4000-8000-000000000099', 1, 'incorrect', 0, '2026-10-05 20:00+03');
   perform gamification.qualify_referrals('2026-10-10 12:00+03');
 
   perform leaderboard.capture_season_rank_snapshots('2026-10-10');
