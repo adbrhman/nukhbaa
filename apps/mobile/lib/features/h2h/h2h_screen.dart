@@ -90,6 +90,10 @@ class H2hScreen extends ConsumerWidget {
       _FeaturedMatch(league: league, me: me),
       const SizedBox(height: AppSpacing.xl),
       const _SectionTitle(text: 'جدول المجموعة', key: Key('h2h.table.title')),
+      if (!_anyPlayed(league)) ...<Widget>[
+        const SizedBox(height: AppSpacing.xs),
+        const _NotPlayedNote(),
+      ],
       const SizedBox(height: AppSpacing.sm),
       for (final H2hStandingDto s in league.standings) ...<Widget>[
         MergeSemantics(
@@ -267,7 +271,7 @@ class _DivisionBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              if (league.myRank > 0) ...<Widget>[
+              if (league.myRank > 0 && _anyPlayed(league)) ...<Widget>[
                 const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(
@@ -621,8 +625,8 @@ class _StandingRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'لعب ${s.played} · ${s.won}ف ${s.drawn}ت ${s.lost}خ'
-                  ' · ${s.pointsFor} ن',
+                  'لعب ${s.played} · فوز ${s.won} · تعادل ${s.drawn} · خسارة ${s.lost}'
+                  ' · نقاط التوقع ${s.pointsFor}',
                   key: Key('h2h.standing.${s.userId}.record'),
                   style: context.text.labelSmall?.copyWith(color: t.textMuted),
                 ),
@@ -763,4 +767,24 @@ class _RoundTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Whether any round of the month was settled: until then every line of
+/// the table is level, and its order (seat time, then id) means nothing to
+/// a player, so no rank is shown.
+bool _anyPlayed(MyH2hLeagueDto league) =>
+    league.standings.any((H2hStandingDto s) => s.played > 0);
+
+/// Under the table before the first settled round.
+class _NotPlayedNote extends StatelessWidget {
+  const _NotPlayedNote();
+
+  @override
+  Widget build(BuildContext context) => Text(
+    'لم تُلعب أي جولة بعد: الكل متساوون، ويتحدد الترتيب بعد الجولة الأولى.',
+    key: const Key('h2h.table.notPlayed'),
+    style: context.text.bodySmall?.copyWith(
+      color: context.tokens.textSecondary,
+    ),
+  );
 }
