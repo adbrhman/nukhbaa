@@ -144,6 +144,8 @@ final class CompositionRoot {
     required this.settleMatchDays,
     required this.closeWeeklyLeague,
     required this.getMyH2hLeague,
+    required this.getMyH2hMonth,
+    required this.getMyH2hRound,
     required this.listH2hRounds,
     required this.approveH2hRound,
     required this.withdrawH2hRound,
@@ -336,6 +338,8 @@ final class CompositionRoot {
     SettleMatchDays? settleMatchDays,
     CloseWeeklyLeague? closeWeeklyLeague,
     GetMyH2hLeague? getMyH2hLeague,
+    GetMyH2hMonth? getMyH2hMonth,
+    GetMyH2hRound? getMyH2hRound,
     ListH2hRounds? listH2hRounds,
     ApproveH2hRound? approveH2hRound,
     WithdrawH2hRound? withdrawH2hRound,
@@ -565,6 +569,8 @@ final class CompositionRoot {
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
        closeWeeklyLeague = closeWeeklyLeague ?? _absentCloseWeeklyLeague(),
        getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
+       getMyH2hMonth = getMyH2hMonth ?? _absentGetMyH2hMonth(),
+       getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
        listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
        approveH2hRound = approveH2hRound ?? _absentApproveH2hRound(),
        withdrawH2hRound = withdrawH2hRound ?? _absentWithdrawH2hRound(),
@@ -1313,6 +1319,18 @@ final class CompositionRoot {
     rounds: _unwiredH2h,
     sheets: _unwiredH2h,
     profiles: _UnwiredWeeklyLeagueProfileReader(),
+    clock: _unwiredClock,
+  );
+
+  static GetMyH2hMonth _absentGetMyH2hMonth() => GetMyH2hMonth(
+    league: _absentGetMyH2hLeague(),
+    rounds: _unwiredH2h,
+    clock: _unwiredClock,
+  );
+
+  static GetMyH2hRound _absentGetMyH2hRound() => GetMyH2hRound(
+    league: _absentGetMyH2hLeague(),
+    fixtures: _UnwiredH2hFixtures(),
     clock: _unwiredClock,
   );
 
@@ -2199,6 +2217,16 @@ final class CompositionRoot {
   /// `GET /me/h2h-league`, migration 0100).
   final GetMyH2hLeague getMyH2hLeague;
 
+  /// The caller's head-to-head month for the screen: the group reading
+  /// with each round's phase, first kickoff and shown result, and the days
+  /// left (backs `GET /me/h2h-league`).
+  final GetMyH2hMonth getMyH2hMonth;
+
+  /// One head-to-head round of the caller in detail; the opponent's picks
+  /// only on fixtures that kicked off by the server clock (backs
+  /// `GET /me/h2h-league/rounds/{n}`).
+  final GetMyH2hRound getMyH2hRound;
+
   /// Lists a month's head-to-head rounds and the days that may be
   /// approved next (backs `GET /admin/h2h/rounds`). Admin only.
   final ListH2hRounds listH2hRounds;
@@ -2924,6 +2952,28 @@ final class CompositionRoot {
         standings: PostgresWeeklyLeagueStandingsReader(connection),
         events: PostgresGamificationEventSink(connection),
         idGenerator: idGenerator,
+      ),
+      getMyH2hMonth: GetMyH2hMonth(
+        league: GetMyH2hLeague(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
+        rounds: PostgresH2hRoundStore(connection),
+        clock: clock,
+      ),
+      getMyH2hRound: GetMyH2hRound(
+        league: GetMyH2hLeague(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
+        fixtures: PostgresH2hRoundFixtureReader(connection),
+        clock: clock,
       ),
       getMyH2hLeague: GetMyH2hLeague(
         leagues: PostgresH2hLeagueStore(connection),
@@ -5019,4 +5069,16 @@ final class _UnwiredDuelPlayerDirectory implements DuelPlayerDirectory {
     required UserId excluding,
     required int limit,
   }) => throw StateError('player search was not wired into this test root');
+}
+
+/// Backs the "absent" [GetMyH2hRound] (migration 0100): throws if a test
+/// reaches the round-detail slice it never wired.
+final class _UnwiredH2hFixtures implements H2hRoundFixtureReader {
+  @override
+  Future<Result<List<H2hRoundFixture>>> fixturesOf({
+    required H2hRound round,
+    required UserId reader,
+    required UserId? opponent,
+    required DateTime nowUtc,
+  }) => throw StateError('GetMyH2hRound was not wired into this test root');
 }

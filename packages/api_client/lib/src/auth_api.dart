@@ -251,6 +251,18 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/h2h-league/rounds/{n}` -- one round of the caller's month in
+  /// detail (migration 0100): every fixture with the caller's pick, the
+  /// opponent's pick only on fixtures that kicked off (the server withholds
+  /// the rest), both sides' counts and the points. This client decides
+  /// nothing.
+  Future<Result<MyH2hRoundDto>> myH2hRound(int round) {
+    return _transport.getObject<MyH2hRoundDto>(
+      '/me/h2h-league/rounds/$round',
+      parse: MyH2hRoundDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///

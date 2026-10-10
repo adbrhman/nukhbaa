@@ -295,6 +295,17 @@ CompositionRoot _root({
   final clock = FixedClock(now);
   final ids = ScriptedIdGenerator(const [_newRoundId]);
   return CompositionRoot.forTesting(
+    getMyH2hMonth: GetMyH2hMonth(
+      league: GetMyH2hLeague(
+        leagues: store,
+        rounds: roundStore,
+        sheets: _Sheets(_sheet),
+        profiles: _Profiles(),
+        clock: clock,
+      ),
+      rounds: roundStore,
+      clock: clock,
+    ),
     getMyH2hLeague: GetMyH2hLeague(
       leagues: store,
       rounds: roundStore,
@@ -422,7 +433,7 @@ void main() {
       final rounds = _list(body['rounds']);
       expect(
         [for (final r in rounds) r['status']],
-        ['settled', 'live', 'voided', 'upcoming'],
+        ['settled', 'live', 'voided', 'open'],
       );
       expect(
         [for (final r in rounds) r['day']],

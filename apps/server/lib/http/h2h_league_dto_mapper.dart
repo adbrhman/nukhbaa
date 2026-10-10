@@ -147,7 +147,9 @@ H2hRoundViewDto _roundViewToDto(MyH2hRound view, MyH2hLeague league) {
         : _avatarUrlOf(opponent, league.profiles),
     myPoints: match?.points,
     opponentPoints: match?.opponentPoints,
-    result: match?.result.wireName,
+    // A live round shows points only: the policy's live result would
+    // tell whether the opponent predicted fixtures not kicked off yet.
+    result: h2hShownResultOf(view)?.wireName,
   );
 }
 
@@ -163,3 +165,105 @@ String? _avatarUrlOf(
   }
   return avatarUrlOf(userId: userId, updatedAt: updatedAt);
 }
+
+/// The caller's month as `GET /me/h2h-league` sends it: the group reading
+/// of [myH2hLeagueToDto], each round with its phase (`open` for the next
+/// one, from the server's round state), its first kickoff and the result it
+/// shows, and the days left in the month.
+MyH2hLeagueDto myH2hMonthToDto(MyH2hMonth month) {
+  final base = myH2hLeagueToDto(month.league);
+  return MyH2hLeagueDto(
+    state: base.state,
+    monthStart: base.monthStart,
+    startsOn: base.startsOn,
+    isPilot: base.isPilot,
+    division: base.division,
+    groupIndex: base.groupIndex,
+    myRank: base.myRank,
+    promotionZone: base.promotionZone,
+    relegationZone: base.relegationZone,
+    standings: base.standings,
+    daysLeft: month.daysLeft,
+    rounds: [
+      for (final round in base.rounds)
+        H2hRoundViewDto(
+          round: round.round,
+          day: round.day,
+          status: month.phases[round.round]?.name ?? round.status,
+          fixtureCount: round.fixtureCount,
+          opponentUserId: round.opponentUserId,
+          opponentName: round.opponentName,
+          opponentAvatarUrl: round.opponentAvatarUrl,
+          myPoints: round.myPoints,
+          opponentPoints: round.opponentPoints,
+          result: month.results[round.round]?.wireName,
+          firstKickoff: month.firstKickoffs[round.round]
+              ?.toUtc()
+              .toIso8601String(),
+        ),
+    ],
+  );
+}
+
+/// One round of the caller in detail as `GET /me/h2h-league/rounds/{n}`
+/// sends it. The opponent's picks are only those `GetMyH2hRound` let
+/// through (kicked-off fixtures); nothing here adds or computes one.
+MyH2hRoundDto myH2hRoundToDto(MyH2hRoundDetail detail) {
+  final opponent = detail.opponentId;
+  final profile = detail.opponentProfile;
+  final pictureAt = profile?.avatarUpdatedAt;
+  final theirs = detail.theirs;
+  return MyH2hRoundDto(
+    round: detail.round.number,
+    day: isoDayOf(detail.round.day),
+    status: detail.phase.name,
+    fixtureCount: detail.round.fixtureCount,
+    firstKickoff: detail.firstKickoff?.toUtc().toIso8601String(),
+    opponentUserId: opponent?.value,
+    opponentName: opponent == null ? null : profile?.displayName ?? '',
+    opponentAvatarUrl: opponent == null || pictureAt == null
+        ? null
+        : avatarUrlOf(userId: opponent, updatedAt: pictureAt),
+    myPoints: detail.myPoints,
+    opponentPoints: detail.opponentPoints,
+    result: detail.result?.wireName,
+    mine: _sideTotalsToDto(detail.mine),
+    theirs: theirs == null ? null : _sideTotalsToDto(theirs),
+    fixtures: [
+      for (final fixture in detail.fixtures) _roundFixtureToDto(fixture),
+    ],
+  );
+}
+
+H2hSideTotalsDto _sideTotalsToDto(H2hSideTotals totals) => H2hSideTotalsDto(
+  predicted: totals.predicted,
+  exact: totals.exact,
+  doubles: totals.doubles,
+);
+
+H2hRoundFixtureDto _roundFixtureToDto(H2hRoundFixtureView fixture) {
+  final mine = fixture.mine;
+  final theirs = fixture.theirs;
+  return H2hRoundFixtureDto(
+    fixtureId: fixture.fixtureId,
+    homeTeam: fixture.homeTeam,
+    awayTeam: fixture.awayTeam,
+    homeTeamId: fixture.homeTeamId,
+    awayTeamId: fixture.awayTeamId,
+    kickoffAt: fixture.kickoffAt?.toUtc().toIso8601String(),
+    state: fixture.state.wireName,
+    homeGoals: fixture.homeGoals,
+    awayGoals: fixture.awayGoals,
+    mine: mine == null ? null : _pickToDto(mine),
+    theirs: theirs == null ? null : _pickToDto(theirs),
+    theirsHidden: fixture.theirsHidden,
+  );
+}
+
+H2hPickDto _pickToDto(H2hFixturePick pick) => H2hPickDto(
+  homeGoals: pick.homeGoals,
+  awayGoals: pick.awayGoals,
+  isDouble: pick.isDouble,
+  points: pick.points,
+  exact: pick.exact,
+);
