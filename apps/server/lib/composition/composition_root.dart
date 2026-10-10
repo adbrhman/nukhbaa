@@ -3011,9 +3011,13 @@ final class CompositionRoot {
         rounds: PostgresH2hRoundStore(connection),
         idGenerator: idGenerator,
         clock: clock,
+        controls: PostgresH2hControlStore(connection),
       ),
       withdrawH2hRound: WithdrawH2hRound(
         rounds: PostgresH2hRoundStore(connection),
+        controls: PostgresH2hControlStore(connection),
+        clock: clock,
+        idGenerator: idGenerator,
       ),
       startH2hPilot: StartH2hPilot(
         leagues: PostgresH2hLeagueStore(connection),
@@ -3025,6 +3029,7 @@ final class CompositionRoot {
         rounds: PostgresH2hRoundStore(connection),
         leagues: PostgresH2hLeagueStore(connection),
         idGenerator: idGenerator,
+        controls: PostgresH2hControlStore(connection),
       ),
       closeH2hMonth: CloseH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),

@@ -2,6 +2,7 @@ import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
 import 'package:application/src/gamification/approve_h2h_round.dart';
+import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:domain/domain.dart';
@@ -32,6 +33,12 @@ final class H2hRoundsRun {
 /// frozen. A round whose day passed with no fixture left is frozen empty,
 /// which voids it.
 ///
+/// **The admin's controls (0101)**, when [controls] is given: with automatic
+/// approval off nothing is approved here; an excluded day is skipped; and
+/// the lead is the admin's (at most the policy's 24 hours). Locking is never
+/// affected: should the controls be unreadable, nothing is approved, the
+/// rounds due are still locked, and the error is returned after.
+///
 /// Never throws; a failure is returned and the next run repeats the work
 /// harmlessly (approval refuses a day already taken; locking is idempotent).
 final class RunH2hRounds {
@@ -40,13 +47,16 @@ final class RunH2hRounds {
     required H2hRoundStore rounds,
     required H2hLeagueStore leagues,
     required IdGenerator idGenerator,
+    H2hControlStore? controls,
   }) : _rounds = rounds,
        _leagues = leagues,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _controls = controls;
 
   final H2hRoundStore _rounds;
   final H2hLeagueStore _leagues;
   final IdGenerator _ids;
+  final H2hControlStore? _controls;
 
   /// Approves and locks what is due as of [now].
   Future<Result<H2hRoundsRun>> call({required DateTime now}) async {
@@ -54,8 +64,39 @@ final class RunH2hRounds {
     final today = riyadhDayOf(instant);
     var approved = 0;
     var locked = 0;
+    final tomorrow = today.add(const Duration(days: 1));
 
-    for (final day in [today, today.add(const Duration(days: 1))]) {
+    var approving = true;
+    var lead = H2hLeaguePolicy.autoApproveLead;
+    var excluded = const <DateTime>{};
+    // Unreadable controls stop the approving, never the locking: the error
+    // is returned after the rounds due were locked.
+    AppError? controlsError;
+    final controls = _controls;
+    if (controls != null) {
+      final settings = await controls.settings();
+      final days = await controls.excludedDays(from: today, through: tomorrow);
+      if (settings is Err<H2hSettings>) {
+        controlsError = settings.error;
+        approving = false;
+      } else if (days is Err<Set<DateTime>>) {
+        controlsError = days.error;
+        approving = false;
+      } else {
+        final knobs = (settings as Ok<H2hSettings>).value;
+        approving = knobs.autoApprove;
+        final hours = Duration(hours: knobs.leadHours);
+        if (hours < lead) {
+          lead = hours;
+        }
+        excluded = (days as Ok<Set<DateTime>>).value;
+      }
+    }
+
+    for (final day in [today, tomorrow]) {
+      if (!approving || excluded.contains(day)) {
+        continue;
+      }
       final open = await _monthIsOpen(H2hLeaguePolicy.monthStartOf(day));
       if (open is Err<bool>) {
         return Result.err(open.error);
@@ -63,7 +104,7 @@ final class RunH2hRounds {
       if (!(open as Ok<bool>).value) {
         continue;
       }
-      final due = await _dueForApproval(day, instant);
+      final due = await _dueForApproval(day, instant, lead);
       if (due is Err<bool>) {
         return Result.err(due.error);
       }
@@ -120,6 +161,9 @@ final class RunH2hRounds {
       }
     }
 
+    if (controlsError != null) {
+      return Result.err(controlsError);
+    }
     return Result.ok(H2hRoundsRun(approved: approved, locked: locked));
   }
 
@@ -137,8 +181,12 @@ final class RunH2hRounds {
   }
 
   /// Whether [day] is a regular day, not approved yet, whose first kickoff
-  /// is ahead of [now] but within the lead.
-  Future<Result<bool>> _dueForApproval(DateTime day, DateTime now) async {
+  /// is ahead of [now] but within [lead].
+  Future<Result<bool>> _dueForApproval(
+    DateTime day,
+    DateTime now,
+    Duration lead,
+  ) async {
     final fixturesResult = await _rounds.dayFixtures(day);
     if (fixturesResult is Err<H2hDayFixtures>) {
       return Result.err(fixturesResult.error);
@@ -148,7 +196,7 @@ final class RunH2hRounds {
     if (firstKickoff == null || !now.isBefore(firstKickoff)) {
       return const Result.ok(false);
     }
-    if (firstKickoff.difference(now) > H2hLeaguePolicy.autoApproveLead) {
+    if (firstKickoff.difference(now) > lead) {
       return const Result.ok(false);
     }
     if (H2hLeaguePolicy.roundKindOf(fixtures.fixtureCount) !=

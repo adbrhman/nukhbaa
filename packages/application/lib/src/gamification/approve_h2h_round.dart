@@ -1,5 +1,6 @@
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
@@ -24,13 +25,16 @@ final class ApproveH2hRound {
     required H2hRoundStore rounds,
     required IdGenerator idGenerator,
     required Clock clock,
+    H2hControlStore? controls,
   }) : _rounds = rounds,
        _ids = idGenerator,
-       _clock = clock;
+       _clock = clock,
+       _controls = controls;
 
   final H2hRoundStore _rounds;
   final IdGenerator _ids;
   final Clock _clock;
+  final H2hControlStore? _controls;
 
   /// Approves the Riyadh [day] (any instant on that date) for [principal].
   Future<Result<H2hRound>> call({
@@ -41,13 +45,27 @@ final class ApproveH2hRound {
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
-    return approveDay(
+    final theDay = DateTime.utc(day.year, day.month, day.day);
+    final approved = await approveDay(
       rounds: _rounds,
       ids: _ids,
       now: _clock.nowUtc(),
-      day: DateTime.utc(day.year, day.month, day.day),
+      day: theDay,
       approvedBy: principal.userId,
     );
+    final controls = _controls;
+    if (approved is Ok<H2hRound> && controls != null) {
+      // Approving a day by hand lifts its exclusion (0101); both are
+      // records, not conditions: the round stands either way.
+      await controls.include(theDay);
+      await controls.record(
+        id: _ids.newUuid(),
+        action: H2hAdminActionKind.roundApproved,
+        by: principal.userId,
+        detail: {'round': approved.value.number},
+      );
+    }
+    return approved;
   }
 
   /// Approves [day] as the next round of its month for [approvedBy], an
