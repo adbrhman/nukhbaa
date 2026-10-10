@@ -85,6 +85,7 @@ String h2hAdminActionLabel(String action) => switch (action) {
   'seat_added' => 'إضافة لاعب متأخر',
   'jobs_run' => 'تشغيل مهام الدوري',
   'pilot_started' => 'بدء الشهر التجريبي',
+  'groups_added' => 'إضافة مجموعات',
   _ => action,
 };
 
@@ -114,6 +115,10 @@ String h2hAdminActionDetail(Map<String, Object?> detail) {
   if (closed is int) parts.add('أُغلق $closed');
   final Object? seats = detail['drawn_seats'];
   if (seats is int) parts.add('مقاعد القرعة $seats');
+  final Object? groups = detail['groups'];
+  if (groups is int) parts.add('المجموعات $groups');
+  final Object? added = detail['seats'];
+  if (added is int) parts.add('المقاعد $added');
   return parts.join(' · ');
 }
 
@@ -902,6 +907,9 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
   int? _days;
   bool _busy = false;
 
+  /// Groups to add to the month open now.
+  int _extraGroups = 1;
+
   void _reload() => ref.invalidate(adminH2hControlsProvider(widget.day));
 
   Future<void> _save(H2hSettingsDto settings) async {
@@ -973,6 +981,33 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
     });
     _reload();
     ref.invalidate(adminH2hRoundsProvider(widget.day));
+  }
+
+  Future<void> _addGroups() async {
+    final int count = _extraGroups;
+    final bool sure = await _confirm(
+      context,
+      title: 'إضافة مجموعات إلى الشهر الجاري',
+      body:
+          'عدد المجموعات: $count، حتى ${count * 20} لاعباً من المنتظرين، '
+          'الأكثر مشاركة أولاً. لا يمكن التراجع عن الإضافة.',
+      action: 'إضافة',
+    );
+    if (!sure || !mounted) return;
+    setState(() => _busy = true);
+    final Result<H2hGroupsAddedDto> result = await ref
+        .read(adminApiProvider)
+        .addH2hGroups(groups: count);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _snack(context, switch (result) {
+      Ok<H2hGroupsAddedDto>(:final value) =>
+        'أُضيفت المجموعات: ${value.groups.length} · المقاعد: ${value.seats} '
+            '· بلا مقعد بعد: ${value.waiting}',
+      Err<H2hGroupsAddedDto>(:final error) => h2hAdminErrorMessage(error),
+    });
+    _reload();
+    ref.invalidate(adminH2hGroupsProvider(widget.day));
   }
 
   @override
@@ -1140,6 +1175,41 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
               label: 'تشغيل المهام الآن',
               icon: Icons.play_arrow_rounded,
               onPressed: _busy ? null : () => unawaited(_runJobs()),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      AdminCard(
+        key: const Key('admin.h2h.extraGroups'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text('مجموعات إضافية', style: _heading(context)),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'تُضاف إلى الشهر الجاري من اللاعبين الذين ليس لهم مقعد وتوقّعوا '
+              'في ${s.minActiveDays} أيام منه على الأقل، الأكثر أياماً أولاً، '
+              '20 لاعباً في كل مجموعة، في الدرجات التالية للمجموعات الموجودة. '
+              'تلعب المجموعة الجديدة كل جولات الشهر بتوقعات أعضائها.',
+              style: _muted(context),
+            ),
+            _Stepper(
+              keyPrefix: 'admin.h2h.extraGroups.count',
+              label: 'عدد المجموعات: $_extraGroups',
+              value: _extraGroups,
+              min: 1,
+              max: 10,
+              enabled: !_busy,
+              onChanged: (int v) => setState(() => _extraGroups = v),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AdminPrimaryButton(
+              key: const Key('admin.h2h.extraGroups.add'),
+              label: 'إضافة المجموعات',
+              icon: Icons.group_add_rounded,
+              loading: _busy,
+              onPressed: _busy ? null : () => unawaited(_addGroups()),
             ),
           ],
         ),

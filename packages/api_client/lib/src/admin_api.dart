@@ -558,4 +558,15 @@ final class AdminApi {
       parse: H2hJobsRunDto.fromJson,
     );
   }
+
+  /// `POST /admin/h2h/extra-groups` -- adds [groups] groups (1..10) to
+  /// the month open now, from the players waiting for a seat, most
+  /// days of predictions first, twenty to a group.
+  Future<Result<H2hGroupsAddedDto>> addH2hGroups({required int groups}) {
+    return _transport.postObject<H2hGroupsAddedDto>(
+      '/admin/h2h/extra-groups',
+      body: H2hAddGroupsRequestDto(groups: groups).toJson(),
+      parse: H2hGroupsAddedDto.fromJson,
+    );
+  }
 }

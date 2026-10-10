@@ -63,6 +63,12 @@ String h2hAdminErrorMessage(AppError error) => switch (error.code) {
   'h2h.player_unknown' => 'اللاعب غير موجود.',
   'h2h.slot_invalid' => 'رقم المقعد غير صالح.',
   'h2h.round_invalid' => 'رقم الجولة من 1 إلى 19.',
+  'h2h.groups_out_of_range' => 'أضف من مجموعة واحدة إلى 10 في كل مرة.',
+  'h2h.groups_invalid' => 'عدد المجموعات غير صالح.',
+  'h2h.groups_no_players' =>
+    'لا يوجد لاعبان على الأقل بلا مقعد وبأيام نشاط كافية.',
+  'h2h.group_taken' =>
+    'أُضيفت مجموعة في الوقت نفسه. حدّث الصفحة ثم أعد المحاولة.',
   _ => ErrorPresenter.message(error),
 };
 

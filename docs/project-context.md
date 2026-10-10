@@ -4205,6 +4205,12 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   predictions. Migration 0102 widens 0101's admin-log check with
   `groups_added` (logging is best-effort: before 0102 the groups are
   still added, the log line is lost).
+- **Batch 97 (extra groups, mobile, 2026-10-11)**:
+  `AdminApi.addH2hGroups`; the dashboard's settings tab has an
+  "مجموعات إضافية" card: a count from 1 to 10, a confirmation (the
+  addition cannot be undone), then the groups, seats and players
+  still waiting read back. The log names `groups_added` and its
+  groups and seats; the new refusals are in Arabic.
 
 ## 3. Version-Verification Log
 
