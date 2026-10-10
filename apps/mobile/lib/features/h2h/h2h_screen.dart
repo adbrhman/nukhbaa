@@ -28,6 +28,7 @@ import '../competition/widgets/async_list_view.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
 import 'widgets/h2h_division_card.dart';
+import 'widgets/h2h_group_matches.dart';
 import 'widgets/h2h_next_match.dart';
 import 'widgets/h2h_rounds.dart';
 import 'widgets/h2h_table.dart';
@@ -50,7 +51,7 @@ class H2hScreen extends ConsumerStatefulWidget {
   final DateTime Function()? now;
 
   /// The section a seated month opens on: 0 the match, 1 the table, 2 the
-  /// rounds.
+  /// rounds, 3 every match of a round in the group.
   final int initialSection;
 
   @override
@@ -58,7 +59,7 @@ class H2hScreen extends ConsumerStatefulWidget {
 }
 
 class _H2hScreenState extends ConsumerState<H2hScreen> {
-  late int _section = widget.initialSection.clamp(0, 2);
+  late int _section = widget.initialSection.clamp(0, 3);
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +138,8 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
         onOpenMatches: widget.onOpenMatches,
       ),
       1 => H2hTable(league: league),
-      _ => H2hRoundsList(league: league),
+      2 => H2hRoundsList(league: league),
+      _ => H2hGroupMatches(league: league),
     },
   ];
 }

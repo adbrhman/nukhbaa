@@ -32,3 +32,15 @@ final myH2hRoundProvider = FutureProvider.autoDispose
         Err<MyH2hRoundDto>(:final error) => throw error,
       };
     });
+
+/// `GET /me/h2h-league/rounds/{n}/matches` -- every match of one round in
+/// the caller's group: pairs, stored points and who is ahead. Nobody's
+/// prediction arrives here.
+final myH2hGroupRoundProvider = FutureProvider.autoDispose
+    .family<H2hGroupRoundDto, int>((ref, round) async {
+      final AuthApi api = ref.watch(authApiProvider);
+      return switch (await api.myH2hGroupRound(round)) {
+        Ok<H2hGroupRoundDto>(:final value) => value,
+        Err<H2hGroupRoundDto>(:final error) => throw error,
+      };
+    });

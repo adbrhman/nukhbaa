@@ -120,6 +120,7 @@ final List<_Screen> _screens = <_Screen>[
   _Screen('h2h.next', _h2hMonth(0)),
   _Screen('h2h.table', _h2hMonth(1)),
   _Screen('h2h.rounds', _h2hMonth(2)),
+  _Screen('h2h.matches', _h2hMatches()),
   const _Screen('bottom-nav', _bottomNav),
   const _Screen('admin.phone', _admin),
   const _Screen('admin.desktop', _admin, size: _desktop),
@@ -909,6 +910,73 @@ _Pump _h2hMonth(int section) =>
             scale,
             H2hScreen(
               initialSection: section,
+              onOpenMatches: () {},
+              now: () => DateTime.utc(2026, 10, 13, 11, 39, 30),
+            ),
+          ),
+        ),
+      );
+    };
+
+/// The live round of [_h2hLeague] as its group plays it: three pairs, the
+/// caller's first.
+const H2hGroupRoundDto _h2hGroup = H2hGroupRoundDto(
+  round: 3,
+  day: '2026-10-13',
+  status: 'live',
+  matches: <H2hGroupMatchDto>[
+    H2hGroupMatchDto(
+      homeUserId: 'u-2',
+      homeName: 'سليمان الرفاعي',
+      homeIsMe: true,
+      homePoints: 12,
+      awayUserId: 'u-1',
+      awayName: 'عبدالرحمن المغربي',
+      awayPoints: 15,
+      winner: 'away',
+    ),
+    H2hGroupMatchDto(
+      homeUserId: 'u-3',
+      homeName: 'ناصر هيثم',
+      homePoints: 9,
+      awayUserId: 'u-6',
+      awayName: '',
+      awayPoints: 9,
+      winner: 'draw',
+    ),
+    H2hGroupMatchDto(
+      homeUserId: 'u-4',
+      homeName: 'شادي الصرمي',
+      homePoints: 21,
+      awayPoints: 11.5,
+      winner: 'home',
+    ),
+  ],
+);
+
+_Pump _h2hMatches() =>
+    (WidgetTester tester, ThemeData theme, double scale) async {
+      final auth.AuthHarness harness = auth.buildAuthHarness((
+        http.Request request,
+      ) async {
+        if (request.url.path == '/me/h2h-league') {
+          return _json(_h2hLeague.toJson());
+        }
+        if (request.url.path == '/me/h2h-league/rounds/3/matches') {
+          return _json(_h2hGroup.toJson());
+        }
+        return http.Response('not found', 404);
+      }, seedToken: 'saved-jwt');
+      addTearDown(harness.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: harness.overrides,
+          retry: (retryCount, error) => null,
+          child: _app(
+            theme,
+            scale,
+            H2hScreen(
+              initialSection: 3,
               onOpenMatches: () {},
               now: () => DateTime.utc(2026, 10, 13, 11, 39, 30),
             ),

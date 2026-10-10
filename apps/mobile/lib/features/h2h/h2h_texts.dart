@@ -51,9 +51,10 @@ String h2hRoundStatusLabel(String status) => switch (status) {
 
 /// The three sections of a seated month, in order.
 const List<String> h2hSectionLabels = <String>[
-  'المواجهة',
+  'مواجهتي',
   'الترتيب',
   'الجولات',
+  'المواجهات',
 ];
 
 /// The Arabic month names, January first.

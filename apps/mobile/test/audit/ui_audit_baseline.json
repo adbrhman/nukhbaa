@@ -287,6 +287,22 @@
     "layout13": 0,
     "layout20": 0
   },
+  "h2h.matches/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.matches/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "sign-in/dark": {
     "contrast": 0,
     "tapTarget": 0,
