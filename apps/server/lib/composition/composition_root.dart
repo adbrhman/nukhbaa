@@ -154,6 +154,7 @@ final class CompositionRoot {
     required this.runH2hRounds,
     required this.closeH2hMonth,
     required this.drawH2hMonth,
+    required this.h2hAdminDesk,
     required this.evaluateBadges,
     required this.providerSyncMode,
     this.syncProviderFixtures,
@@ -349,6 +350,7 @@ final class CompositionRoot {
     RunH2hRounds? runH2hRounds,
     CloseH2hMonth? closeH2hMonth,
     DrawH2hMonth? drawH2hMonth,
+    H2hAdminDesk? h2hAdminDesk,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
     this.syncProviderFixtures,
@@ -581,6 +583,7 @@ final class CompositionRoot {
        runH2hRounds = runH2hRounds ?? _absentRunH2hRounds(),
        closeH2hMonth = closeH2hMonth ?? _absentCloseH2hMonth(),
        drawH2hMonth = drawH2hMonth ?? _absentDrawH2hMonth(),
+       h2hAdminDesk = h2hAdminDesk ?? _absentH2hAdminDesk(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
            registerDeviceToken ?? _absentRegisterDeviceToken(),
@@ -1380,6 +1383,38 @@ final class CompositionRoot {
     leagues: _unwiredH2h,
     source: _unwiredH2h,
     idGenerator: _unwiredIdGenerator,
+  );
+
+  /// Backs the "absent" [H2hAdminDesk]: every port throws, so a test
+  /// that reaches an admin slice it never wired fails loudly.
+  static H2hAdminDesk _absentH2hAdminDesk() => H2hAdminDesk(
+    groups: AdminGetH2hGroups(
+      leagues: _unwiredH2h,
+      rounds: _unwiredH2h,
+      sheets: _unwiredH2h,
+      profiles: _UnwiredWeeklyLeagueProfileReader(),
+      clock: _unwiredClock,
+    ),
+    groupRound: AdminGetH2hGroupRound(
+      leagues: _unwiredH2h,
+      rounds: _unwiredH2h,
+      sheets: _unwiredH2h,
+      profiles: _UnwiredWeeklyLeagueProfileReader(),
+      clock: _unwiredClock,
+    ),
+    player: AdminGetH2hPlayer(month: _absentGetMyH2hMonth()),
+    controls: AdminH2hControls(
+      controls: _UnwiredH2hControls(),
+      leagues: _unwiredH2h,
+      rounds: _unwiredH2h,
+      reports: _UnwiredH2hControls(),
+      profiles: _UnwiredWeeklyLeagueProfileReader(),
+      runRounds: _absentRunH2hRounds(),
+      closeMonth: _absentCloseH2hMonth(),
+      drawMonth: _absentDrawH2hMonth(),
+      idGenerator: _unwiredIdGenerator,
+      clock: _unwiredClock,
+    ),
   );
 
   /// Backs the "absent" [EvaluateBadges]: its reader throws, so a test that
@@ -2265,6 +2300,14 @@ final class CompositionRoot {
   /// scheduler, never by a request.
   final DrawH2hMonth drawH2hMonth;
 
+  /// The admin's desk over the head-to-head league: every group of a
+  /// month, a round of one group, one player's month, and the controls
+  /// (settings, excluded days, late seats, report, log, a manual run of
+  /// the jobs). Backs `/admin/h2h/groups`, `/players`, `/controls`,
+  /// `/settings`, `/exclusions`, `/seats`, `/report` and `/jobs`. Admin
+  /// only.
+  final H2hAdminDesk h2hAdminDesk;
+
   /// Awards each catalog badge a player has earned and not yet been given.
   /// Driven by the scheduler, never by a request.
   final EvaluateBadges evaluateBadges;
@@ -3037,11 +3080,71 @@ final class CompositionRoot {
         sheets: PostgresH2hSheetReader(connection),
         events: PostgresGamificationEventSink(connection),
         idGenerator: idGenerator,
+        controls: PostgresH2hControlStore(connection),
       ),
       drawH2hMonth: DrawH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),
         source: PostgresH2hDrawSource(connection),
         idGenerator: idGenerator,
+        controls: PostgresH2hControlStore(connection),
+      ),
+      h2hAdminDesk: H2hAdminDesk(
+        groups: AdminGetH2hGroups(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
+        groupRound: AdminGetH2hGroupRound(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
+        player: AdminGetH2hPlayer(
+          month: GetMyH2hMonth(
+            league: GetMyH2hLeague(
+              leagues: PostgresH2hLeagueStore(connection),
+              rounds: PostgresH2hRoundStore(connection),
+              sheets: PostgresH2hSheetReader(connection),
+              profiles: PostgresWeeklyLeagueProfileReader(connection),
+              clock: clock,
+            ),
+            rounds: PostgresH2hRoundStore(connection),
+            clock: clock,
+          ),
+        ),
+        controls: AdminH2hControls(
+          controls: PostgresH2hControlStore(connection),
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          reports: PostgresH2hMonthReportReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          runRounds: RunH2hRounds(
+            rounds: PostgresH2hRoundStore(connection),
+            leagues: PostgresH2hLeagueStore(connection),
+            idGenerator: idGenerator,
+            controls: PostgresH2hControlStore(connection),
+          ),
+          closeMonth: CloseH2hMonth(
+            leagues: PostgresH2hLeagueStore(connection),
+            rounds: PostgresH2hRoundStore(connection),
+            sheets: PostgresH2hSheetReader(connection),
+            events: PostgresGamificationEventSink(connection),
+            idGenerator: idGenerator,
+            controls: PostgresH2hControlStore(connection),
+          ),
+          drawMonth: DrawH2hMonth(
+            leagues: PostgresH2hLeagueStore(connection),
+            source: PostgresH2hDrawSource(connection),
+            idGenerator: idGenerator,
+            controls: PostgresH2hControlStore(connection),
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
       ),
       evaluateBadges: EvaluateBadges(
         progress: PostgresBadgeProgressReader(connection),
@@ -5106,4 +5209,58 @@ final class _UnwiredH2hFixtures implements H2hRoundFixtureReader {
     required UserId? opponent,
     required DateTime nowUtc,
   }) => throw StateError('GetMyH2hRound was not wired into this test root');
+}
+
+/// Backs the "absent" [H2hAdminDesk]'s controls and report (0101):
+/// throws, so a test that reaches them without wiring them fails loudly.
+final class _UnwiredH2hControls
+    implements H2hControlStore, H2hMonthReportReader {
+  Never _unwired() =>
+      throw StateError('The h2h admin desk was not wired into this test root');
+
+  @override
+  Future<Result<H2hSettings>> settings() => _unwired();
+
+  @override
+  Future<Result<void>> saveSettings({
+    required bool autoApprove,
+    required int leadHours,
+    required int minActiveDays,
+    required UserId by,
+  }) => _unwired();
+
+  @override
+  Future<Result<Set<DateTime>>> excludedDays({
+    required DateTime from,
+    required DateTime through,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> exclude({required DateTime day, required UserId by}) =>
+      _unwired();
+
+  @override
+  Future<Result<bool>> include(DateTime day) => _unwired();
+
+  @override
+  Future<Result<void>> addSeat({
+    required H2hLeagueId leagueId,
+    required DateTime monthStart,
+    required UserId userId,
+    required int slot,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> record({
+    required String id,
+    required H2hAdminActionKind action,
+    required UserId? by,
+    required Map<String, Object?> detail,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<H2hAdminAction>>> recentActions(int limit) => _unwired();
+
+  @override
+  Future<Result<H2hMonthReport>> reportOf(DateTime monthStart) => _unwired();
 }

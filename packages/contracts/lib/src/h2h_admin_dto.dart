@@ -22,6 +22,7 @@ final class H2hAdminGroupDto {
     required this.promotionZone,
     required this.relegationZone,
     required this.standings,
+    this.freeSlots = const <int>[],
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -35,6 +36,11 @@ final class H2hAdminGroupDto {
         relegationZone: (json['relegation_zone'] as int?) ?? 0,
         standings: [
           for (final m in _maps(json['standings'])) H2hStandingDto.fromJson(m),
+        ],
+        freeSlots: <int>[
+          for (final s
+              in (json['free_slots'] as List<Object?>?) ?? const <Object?>[])
+            if (s is int) s,
         ],
       );
 
@@ -59,6 +65,10 @@ final class H2hAdminGroupDto {
   /// The table over the settled rounds, best first.
   final List<H2hStandingDto> standings;
 
+  /// The seats of the round-robin no member holds, 0-based: where a
+  /// late player may be seated. Empty from servers before batch 92.
+  final List<int> freeSlots;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'league_id': leagueId,
@@ -68,6 +78,7 @@ final class H2hAdminGroupDto {
     'promotion_zone': promotionZone,
     'relegation_zone': relegationZone,
     'standings': [for (final s in standings) s.toJson()],
+    'free_slots': freeSlots,
   };
 }
 

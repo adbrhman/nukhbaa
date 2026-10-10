@@ -4108,6 +4108,24 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `DrawH2hMonth` and `CloseH2hMonth` take optional controls and read
   `min_active_days` from `h2h_settings` (the policy's five without
   them).
+- **Batch 92 (admin desk, server, 2026-10-11)**: contracts
+  `h2h_admin_controls_dto.dart` (`H2hSettingsDto` with its bounds,
+  `H2hSettingsRequestDto`, `H2hControlDayDto`, `H2hAdminActionDto`,
+  `H2hControlsDto`, `H2hDayExclusionRequestDto`, `H2hSeatRequestDto`,
+  `H2hMonthReportDto`, `H2hJobsRunDto`) and `free_slots` on
+  `H2hAdminGroupDto` (additive); mapper
+  `apps/server/lib/http/h2h_admin_dto_mapper.dart`. Routes (admin
+  only, the gate in the use-cases): `GET /admin/h2h/groups?day=`,
+  `GET /admin/h2h/groups/{id}/rounds/{n}?day=` (names and stored points,
+  no pick), `GET /admin/h2h/players/{id}` (the player's month as
+  `/me/h2h-league` reads it for them), `GET /admin/h2h/controls?day=`,
+  `PUT /admin/h2h/settings`, `POST /admin/h2h/exclusions`
+  (`{"changed"}`), `POST /admin/h2h/seats` (201 `{"seated": true}`),
+  `GET /admin/h2h/report?day=`, `POST /admin/h2h/jobs`.
+  `CompositionRoot.h2hAdminDesk` wires them; the scheduler's
+  `CloseH2hMonth` and `DrawH2hMonth` now read `min_active_days` from
+  `h2h_settings` (default 5: no change until an admin changes it).
+  Reads 0101 (applied).
 
 ## 3. Version-Verification Log
 
