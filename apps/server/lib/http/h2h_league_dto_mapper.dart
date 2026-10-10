@@ -267,3 +267,30 @@ H2hPickDto _pickToDto(H2hFixturePick pick) => H2hPickDto(
   points: pick.points,
   exact: pick.exact,
 );
+
+/// Every match of one round in the caller's group, as
+/// `GET /me/h2h-league/rounds/{n}/matches` sends it: names, pictures and
+/// stored points only -- nobody's prediction.
+H2hGroupRoundDto h2hGroupRoundToDto(MyH2hGroupRound group) => H2hGroupRoundDto(
+  round: group.round.number,
+  day: isoDayOf(group.round.day),
+  status: group.phase.name,
+  matches: [for (final pair in group.pairs) _groupMatchToDto(pair, group)],
+);
+
+H2hGroupMatchDto _groupMatchToDto(H2hGroupPair pair, MyH2hGroupRound group) {
+  final away = pair.away;
+  return H2hGroupMatchDto(
+    homeUserId: pair.home.value,
+    homeName: group.profiles[pair.home]?.displayName ?? '',
+    homeAvatarUrl: _avatarUrlOf(pair.home, group.profiles),
+    homeIsMe: pair.home == group.readerId,
+    homePoints: pair.homePoints,
+    awayUserId: away?.value,
+    awayName: away == null ? null : group.profiles[away]?.displayName ?? '',
+    awayAvatarUrl: away == null ? null : _avatarUrlOf(away, group.profiles),
+    awayIsMe: away != null && away == group.readerId,
+    awayPoints: pair.awayPoints,
+    winner: pair.winner?.wireName,
+  );
+}

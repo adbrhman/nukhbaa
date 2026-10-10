@@ -146,6 +146,7 @@ final class CompositionRoot {
     required this.getMyH2hLeague,
     required this.getMyH2hMonth,
     required this.getMyH2hRound,
+    required this.getMyH2hGroupRound,
     required this.listH2hRounds,
     required this.approveH2hRound,
     required this.withdrawH2hRound,
@@ -340,6 +341,7 @@ final class CompositionRoot {
     GetMyH2hLeague? getMyH2hLeague,
     GetMyH2hMonth? getMyH2hMonth,
     GetMyH2hRound? getMyH2hRound,
+    GetMyH2hGroupRound? getMyH2hGroupRound,
     ListH2hRounds? listH2hRounds,
     ApproveH2hRound? approveH2hRound,
     WithdrawH2hRound? withdrawH2hRound,
@@ -571,6 +573,7 @@ final class CompositionRoot {
        getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
        getMyH2hMonth = getMyH2hMonth ?? _absentGetMyH2hMonth(),
        getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
+       getMyH2hGroupRound = getMyH2hGroupRound ?? _absentGetMyH2hGroupRound(),
        listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
        approveH2hRound = approveH2hRound ?? _absentApproveH2hRound(),
        withdrawH2hRound = withdrawH2hRound ?? _absentWithdrawH2hRound(),
@@ -1327,6 +1330,9 @@ final class CompositionRoot {
     rounds: _unwiredH2h,
     clock: _unwiredClock,
   );
+
+  static GetMyH2hGroupRound _absentGetMyH2hGroupRound() =>
+      GetMyH2hGroupRound(league: _absentGetMyH2hLeague(), sheets: _unwiredH2h);
 
   static GetMyH2hRound _absentGetMyH2hRound() => GetMyH2hRound(
     league: _absentGetMyH2hLeague(),
@@ -2227,6 +2233,10 @@ final class CompositionRoot {
   /// `GET /me/h2h-league/rounds/{n}`).
   final GetMyH2hRound getMyH2hRound;
 
+  /// Every match of one round in the caller's head-to-head group (backs
+  /// `GET /me/h2h-league/rounds/{n}/matches`).
+  final GetMyH2hGroupRound getMyH2hGroupRound;
+
   /// Lists a month's head-to-head rounds and the days that may be
   /// approved next (backs `GET /admin/h2h/rounds`). Admin only.
   final ListH2hRounds listH2hRounds;
@@ -2963,6 +2973,16 @@ final class CompositionRoot {
         ),
         rounds: PostgresH2hRoundStore(connection),
         clock: clock,
+      ),
+      getMyH2hGroupRound: GetMyH2hGroupRound(
+        league: GetMyH2hLeague(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
+        sheets: PostgresH2hSheetReader(connection),
       ),
       getMyH2hRound: GetMyH2hRound(
         league: GetMyH2hLeague(

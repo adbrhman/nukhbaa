@@ -263,6 +263,16 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/h2h-league/rounds/{n}/matches` -- every match of round [round]
+  /// in the caller's group: pairs, stored points and who is ahead. No
+  /// prediction of anybody arrives here.
+  Future<Result<H2hGroupRoundDto>> myH2hGroupRound(int round) {
+    return _transport.getObject<H2hGroupRoundDto>(
+      '/me/h2h-league/rounds/$round/matches',
+      parse: H2hGroupRoundDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///
