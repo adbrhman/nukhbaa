@@ -4126,6 +4126,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `CloseH2hMonth` and `DrawH2hMonth` now read `min_active_days` from
   `h2h_settings` (default 5: no change until an admin changes it).
   Reads 0101 (applied).
+- **Batch 93 (admin dashboard, mobile, 2026-10-11)**: `AdminApi`
+  `h2hGroups`, `h2hGroupRound`, `h2hPlayer`, `h2hControls`,
+  `saveH2hSettings`, `setH2hDayExcluded`, `addH2hSeat`, `h2hReport`,
+  `runH2hJobs`. The admin hub's "دوري المواجهات" section is now five
+  tabs over one header (title, tab chips, this/next month chips but on
+  the player tab): الجولات (batch 6, unchanged), المجموعات (each group's
+  table with zone bars, a round's matches by names and points, and a
+  late seat: find the player by name or email, pick an empty seat),
+  لاعب (a player's month as they see it), الإعدادات (automatic approval,
+  lead hours, active days with the server's bounds; each upcoming day of
+  the month with a switch to keep it from automatic approval -- a day
+  that is already a round has none; run the jobs now behind a
+  confirmation) and التقرير والسجل (the 0101 month report and the admin
+  log in Arabic). `h2h_admin_tabs.dart` holds the four new tabs and
+  their providers; the new refusal codes read in Arabic in
+  `h2hAdminErrorMessage`.
 
 ## 3. Version-Verification Log
 

@@ -2,6 +2,9 @@
 /// المعتمدة مع سحب آخرها قبل أن تبدأ، والأيام التي يمكن اعتمادها جولةً،
 /// وزر بدء الشهر التجريبي قبل انطلاق الدوري. كل قاعدة على الخادم: هذه
 /// الصفحة تعرض ما قرّره وترسل الطلب، ولا تقرّر شيئاً.
+///
+/// منذ الدفعة 93 هي لوحة الدوري كاملة بخمسة تبويبات: الجولات (هنا)،
+/// والمجموعات، ولاعب، والإعدادات، والتقرير والسجل (`h2h_admin_tabs.dart`).
 library;
 
 import 'dart:async';
@@ -18,6 +21,7 @@ import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../../h2h/h2h_texts.dart';
 import '../../widgets/admin_ui_kit.dart';
+import 'h2h_admin_tabs.dart';
 
 /// `GET /admin/h2h/rounds?day=`: the month containing [day], or the
 /// server's current month when it is null.
@@ -45,6 +49,20 @@ String h2hAdminErrorMessage(AppError error) => switch (error.code) {
   'h2h.pilot_already_drawn' => 'أُجريت قرعة هذا الشهر من قبل.',
   'h2h.pilot_too_small' =>
     'أضف لاعبَين اثنين على الأقل إلى التجربة (h2h_pilot) أولاً.',
+  'h2h.settings_out_of_range' =>
+    'المهلة من 1 إلى 24 ساعة، وأيام النشاط من 1 إلى 28.',
+  'h2h.settings_invalid' => 'الإعدادات المرسلة غير مكتملة.',
+  'h2h.day_past' => 'مضى هذا اليوم، فلا يمكن تغييره.',
+  'h2h.excluded_invalid' => 'اختر الاستبعاد أو الإرجاع.',
+  'h2h.month_not_drawn' => 'لم تُجرَ قرعة هذا الشهر بعد.',
+  'h2h.month_closed' => 'أُغلق هذا الشهر، فلا يُضاف إليه أحد.',
+  'h2h.group_unknown' => 'المجموعة ليست من هذا الشهر.',
+  'h2h.seat_outside_group' => 'هذا المقعد خارج المجموعة.',
+  'h2h.seat_taken' => 'هذا المقعد مشغول. اختر مقعداً آخر.',
+  'h2h.player_seated' => 'لهذا اللاعب مقعد في هذا الشهر من قبل.',
+  'h2h.player_unknown' => 'اللاعب غير موجود.',
+  'h2h.slot_invalid' => 'رقم المقعد غير صالح.',
+  'h2h.round_invalid' => 'رقم الجولة من 1 إلى 19.',
   _ => ErrorPresenter.message(error),
 };
 
@@ -64,6 +82,19 @@ String? nextMonthOf(String monthStart) {
       '${month.toString().padLeft(2, '0')}-01';
 }
 
+/// The dashboard's tabs, in their order.
+enum _H2hAdminTab {
+  rounds('الجولات'),
+  groups('المجموعات'),
+  player('لاعب'),
+  controls('الإعدادات'),
+  report('التقرير والسجل');
+
+  const _H2hAdminTab(this.label);
+
+  final String label;
+}
+
 /// The head-to-head section of the admin hub.
 class H2hAdminSection extends ConsumerStatefulWidget {
   /// Creates the section.
@@ -80,6 +111,9 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
 
   /// The current month as the server named it, kept to return to it.
   String? _currentMonth;
+
+  /// The tab shown.
+  _H2hAdminTab _tab = _H2hAdminTab.rounds;
 
   bool _busy = false;
 
@@ -178,57 +212,49 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<H2hRoundsOverviewDto> overview = ref.watch(
-      adminH2hRoundsProvider(_day),
-    );
-    return overview.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              error is AppError
-                  ? h2hAdminErrorMessage(error)
-                  : 'تعذّر تحميل دوري المواجهات',
-              key: const Key('admin.h2h.error'),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextButton(onPressed: _reload, child: const Text('إعادة المحاولة')),
-          ],
-        ),
-      ),
-      data: (H2hRoundsOverviewDto data) {
-        if (_day == null) _currentMonth = data.monthStart;
-        return _body(context, data);
-      },
-    );
+    // The server's current month, for the month chips of every tab.
+    final String? current = ref
+        .watch(adminH2hRoundsProvider(null))
+        .value
+        ?.monthStart;
+    if (current != null) _currentMonth = current;
+    final List<Widget> header = _header(context);
+    return switch (_tab) {
+      _H2hAdminTab.rounds => _rounds(context, header),
+      _H2hAdminTab.groups => H2hAdminGroupsTab(day: _day, header: header),
+      _H2hAdminTab.player => H2hAdminPlayerTab(header: header),
+      _H2hAdminTab.controls => H2hAdminControlsTab(day: _day, header: header),
+      _H2hAdminTab.report => H2hAdminReportTab(day: _day, header: header),
+    };
   }
 
-  Widget _body(BuildContext context, H2hRoundsOverviewDto data) {
-    final AppTokens tokens = context.tokens;
+  /// The title, the tabs and, but on the player tab, the month chips.
+  List<Widget> _header(BuildContext context) {
     final String? next = _currentMonth == null
         ? null
         : nextMonthOf(_currentMonth!);
-    final bool beforeLaunch =
-        data.startsOn.isNotEmpty &&
-        data.monthStart.compareTo(data.startsOn) < 0;
-    final int? lastNumber = data.rounds.isEmpty ? null : data.rounds.last.round;
-    final TextStyle? heading = context.text.titleSmall?.copyWith(
-      color: tokens.textPrimary,
-      fontWeight: FontWeight.w700,
-    );
-    return ListView(
-      key: const Key('admin.h2h.list'),
-      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-      children: <Widget>[
-        const AdminSectionHeader(
-          title: h2hLeagueName,
-          subtitle:
-              'اعتمد أيام الجولات واسحب آخرها قبل أن يبدأ. الخادم يعتمد '
-              'وحده كل يوم فيه 6 مباريات أو أكثر قبل أول مباراة بـ24 ساعة.',
-        ),
+    return <Widget>[
+      const AdminSectionHeader(
+        title: h2hLeagueName,
+        subtitle:
+            'لوحة الدوري: الجولات، والمجموعات، واللاعبون، والإعدادات، '
+            'والتقرير والسجل.',
+      ),
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: <Widget>[
+          for (final _H2hAdminTab tab in _H2hAdminTab.values)
+            ChoiceChip(
+              key: Key('admin.h2h.tab.${tab.name}'),
+              label: Text(tab.label),
+              selected: _tab == tab,
+              onSelected: (_) => setState(() => _tab = tab),
+            ),
+        ],
+      ),
+      if (_tab != _H2hAdminTab.player) ...<Widget>[
+        const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
@@ -247,6 +273,74 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
                 onSelected: (_) => setState(() => _day = next),
               ),
           ],
+        ),
+      ],
+      const SizedBox(height: AppSpacing.md),
+    ];
+  }
+
+  /// The rounds tab: the draw, the approved rounds and the days that
+  /// may be approved next.
+  Widget _rounds(BuildContext context, List<Widget> header) {
+    final AsyncValue<H2hRoundsOverviewDto> overview = ref.watch(
+      adminH2hRoundsProvider(_day),
+    );
+    return overview.when(
+      loading: () => ListView(
+        children: <Widget>[
+          ...header,
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      ),
+      error: (Object error, _) => ListView(
+        children: <Widget>[
+          ...header,
+          Text(
+            error is AppError
+                ? h2hAdminErrorMessage(error)
+                : 'تعذّر تحميل دوري المواجهات',
+            key: const Key('admin.h2h.error'),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Center(
+            child: TextButton(
+              onPressed: _reload,
+              child: const Text('إعادة المحاولة'),
+            ),
+          ),
+        ],
+      ),
+      data: (H2hRoundsOverviewDto data) => _body(context, data, header),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    H2hRoundsOverviewDto data,
+    List<Widget> header,
+  ) {
+    final AppTokens tokens = context.tokens;
+    final bool beforeLaunch =
+        data.startsOn.isNotEmpty &&
+        data.monthStart.compareTo(data.startsOn) < 0;
+    final int? lastNumber = data.rounds.isEmpty ? null : data.rounds.last.round;
+    final TextStyle? heading = context.text.titleSmall?.copyWith(
+      color: tokens.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+    return ListView(
+      key: const Key('admin.h2h.list'),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      children: <Widget>[
+        ...header,
+        Text(
+          'اعتمد أيام الجولات واسحب آخرها قبل أن يبدأ. يعتمد الخادم وحده '
+          'الأيام التي فيها 6 مباريات أو أكثر حسب «الإعدادات».',
+          style: context.text.bodySmall?.copyWith(color: tokens.textSecondary),
         ),
         const SizedBox(height: AppSpacing.md),
         AdminCard(

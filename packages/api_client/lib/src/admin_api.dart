@@ -458,4 +458,104 @@ final class AdminApi {
       parse: (json) => H2hPilotStartedDto.fromJson(json).seated,
     );
   }
+
+  /// `GET /admin/h2h/groups` -- every group of a head-to-head month with its
+  /// table, zones and empty seats. [day] (`YYYY-MM-DD`) picks the month
+  /// containing it; the server's current month without it.
+  Future<Result<H2hAdminGroupsDto>> h2hGroups({String? day}) {
+    return _transport.getObject<H2hAdminGroupsDto>(
+      '/admin/h2h/groups',
+      query: day == null ? null : <String, String>{'day': day},
+      parse: H2hAdminGroupsDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/h2h/groups/{leagueId}/rounds/{round}` -- every match of a
+  /// round in one group: names and stored points only.
+  Future<Result<H2hGroupRoundDto>> h2hGroupRound({
+    required String leagueId,
+    required int round,
+    String? day,
+  }) {
+    return _transport.getObject<H2hGroupRoundDto>(
+      '/admin/h2h/groups/${Uri.encodeComponent(leagueId)}/rounds/$round',
+      query: day == null ? null : <String, String>{'day': day},
+      parse: H2hGroupRoundDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/h2h/players/{userId}` -- a player's head-to-head month as
+  /// they see it; their own table line is the one marked `is_me`.
+  Future<Result<MyH2hLeagueDto>> h2hPlayer(String userId) {
+    return _transport.getObject<MyH2hLeagueDto>(
+      '/admin/h2h/players/${Uri.encodeComponent(userId)}',
+      parse: MyH2hLeagueDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/h2h/controls` -- the settings, the month's days from today
+  /// on and the latest lines of the admin log.
+  Future<Result<H2hControlsDto>> h2hControls({String? day}) {
+    return _transport.getObject<H2hControlsDto>(
+      '/admin/h2h/controls',
+      query: day == null ? null : <String, String>{'day': day},
+      parse: H2hControlsDto.fromJson,
+    );
+  }
+
+  /// `PUT /admin/h2h/settings` -- replaces the settings; the server checks
+  /// every bound and answers the settings as stored.
+  Future<Result<H2hSettingsDto>> saveH2hSettings(
+    H2hSettingsRequestDto request,
+  ) {
+    return _transport.putObject<H2hSettingsDto>(
+      '/admin/h2h/settings',
+      body: request.toJson(),
+      parse: H2hSettingsDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/h2h/exclusions` -- keeps [day] (`YYYY-MM-DD`) from
+  /// automatic approval, or lifts that. Answers whether anything changed.
+  Future<Result<bool>> setH2hDayExcluded({
+    required String day,
+    required bool excluded,
+  }) {
+    return _transport.postObject<bool>(
+      '/admin/h2h/exclusions',
+      body: H2hDayExclusionRequestDto(day: day, excluded: excluded).toJson(),
+      parse: (json) => json['changed'] == true,
+    );
+  }
+
+  /// `POST /admin/h2h/seats` -- seats a player late in an empty seat of a
+  /// group. Every check (the month, the group, the seat, the player) is
+  /// the server's; a refusal arrives as an `Err` with its `h2h.*` code.
+  Future<Result<bool>> addH2hSeat(H2hSeatRequestDto request) {
+    return _transport.postObject<bool>(
+      '/admin/h2h/seats',
+      body: request.toJson(),
+      parse: (json) => json['seated'] == true,
+    );
+  }
+
+  /// `GET /admin/h2h/report` -- how a month went: its draw, seats, groups
+  /// and closing.
+  Future<Result<H2hMonthReportDto>> h2hReport({String? day}) {
+    return _transport.getObject<H2hMonthReportDto>(
+      '/admin/h2h/report',
+      query: day == null ? null : <String, String>{'day': day},
+      parse: H2hMonthReportDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/h2h/jobs` -- runs the league's jobs now, as the scheduler
+  /// does every five minutes. Answers what they did.
+  Future<Result<H2hJobsRunDto>> runH2hJobs() {
+    return _transport.postObject<H2hJobsRunDto>(
+      '/admin/h2h/jobs',
+      body: const <String, Object?>{},
+      parse: H2hJobsRunDto.fromJson,
+    );
+  }
 }
