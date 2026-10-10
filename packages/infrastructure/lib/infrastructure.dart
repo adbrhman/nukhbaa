@@ -60,6 +60,7 @@ export 'src/gamification/postgres_experiment_repository.dart';
 export 'src/gamification/postgres_gamification_event_sink.dart';
 export 'src/gamification/postgres_h2h_draw_source.dart';
 export 'src/gamification/postgres_h2h_league_store.dart';
+export 'src/gamification/postgres_h2h_round_fixture_reader.dart';
 export 'src/gamification/postgres_h2h_round_store.dart';
 export 'src/gamification/postgres_h2h_sheet_reader.dart';
 export 'src/gamification/postgres_match_day_settlement_store.dart';
