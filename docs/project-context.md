@@ -4079,6 +4079,19 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   withdrawH2hRound/startH2hPilot`. Server: `DELETE /admin/h2h/rounds/{id}`
   answers `{"withdrawn": true}` (the client decodes every answer as JSON),
   and `H2hRoundsOverviewDto` carries `starts_on`.
+- **Migration 0101 (admin controls, 2026-10-10)**: `h2h_settings` (one row:
+  `auto_approve`, `auto_approve_lead_hours` 1..24, `min_active_days` 1..28;
+  the defaults are the rules of 0100), `h2h_day_exclusions` (days the
+  system must not approve by itself), `h2h_admin_actions` (append-only
+  log of every admin action). Ports `H2hControlStore`,
+  `H2hMonthReportReader`; adapters `PostgresH2hControlStore` (a late seat
+  is a plain insert that 0100's constraints police: `h2h.seat_taken`,
+  `h2h.player_seated`, `h2h.seat_outside_group`, `h2h.player_unknown`)
+  and `PostgresH2hMonthReportReader`. Tests
+  `0101_h2h_admin_controls_test.sql` (12 checks) and
+  `0101_h2h_control_queries_test.sql` (16 checks, the adapters' SQL text).
+  **Apply 0101 in the Supabase SQL editor before pushing the server batch
+  that reads it (92).** Nothing reads these tables yet.
 
 ## 3. Version-Verification Log
 
