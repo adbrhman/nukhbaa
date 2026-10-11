@@ -4237,6 +4237,14 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   he sent (Machida, Ulsan, Chengdu, Al-Duhail, Sanfrecce, Melbourne
   City, Shanghai Shenhua, FC Seoul, Nasaf) are not in the 2026-27
   league stage and were not added; Ulsan already had a crest.
+- **Batch 101 (crest fix, mobile, 2026-10-11)**: `newcastle.png` and
+  `coventry-city.png` under `assets/team_logos/` were ~61 KB of
+  unreadable bytes (no PNG signature), so both clubs showed initials
+  though their names resolved; replaced with the 512x512 PNGs from
+  the owner's Premier League 2026-27 set. `logo_files_valid_test`
+  now fails on any bundled crest or league mark without the PNG
+  signature; `bayer-leverkusen.png` is the one known broken file
+  left, listed there until its crest arrives.
 
 ## 3. Version-Verification Log
 
