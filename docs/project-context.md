@@ -4323,6 +4323,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   club still without a crest (Gamba Osaka); `big_derbies_crests_test`
   is new. Every club of 0104 now shows a crest.
 
+### Super cups and the CAF Champions League (2026-10-12)
+
+- **Batch 107 (catalog, 2026-10-12)**: migration 0105 adds three super
+  cups beside the Spanish one of 0045 -- Italian, French, German, each its
+  own competition (decided with the owner) -- and the CAF Champions
+  League, all `is_continental` (the admin picker offers the whole
+  catalog), entered by an admin. The super cups need no club. The CAF
+  group stage is not drawn yet (second round 13-25 October 2026), so
+  the big contenders the catalog lacked are created under the identity
+  source `caf_cl` (Pyramids, RS Berkane, Orlando Pirates, Young
+  Africans, Simba; crest NULL); the others were there already (0050,
+  0104). Competition marks and the five crests are a later batch, from
+  the owner's PNGs. Applied by hand in the SQL Editor.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
