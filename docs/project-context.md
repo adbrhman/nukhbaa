@@ -4293,6 +4293,23 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   the predict sheet, the prediction screen) are unchanged. No server
   change, no migration.
 
+### The big derbies (2026-10-12)
+
+- **Batch 105 (catalog, 2026-10-12)**: migration 0104 adds
+  `ديربيات كبرى` (short `DRB`, `is_continental`, so the admin
+  picker offers the whole catalog) and the 31 clubs of fifteen derbies
+  whose league the app does not carry: Cairo, Casablanca, Tunis,
+  Omdurman, Algiers, Amman, Baghdad, Tehran, Buenos Aires, Rio, Glasgow,
+  Istanbul (three clubs), Athens, the Netherlands and Lisbon. Clubs of
+  0050 and 0103 are reused through their identities, clubs of the
+  2026-27 seeds by their Arabic name; the 14 new ones have `league_id`
+  and crest NULL (initials until a crest is added). All are mapped under
+  the identity source `big_derbies`. Decided with the owner: one derby
+  at a time, entered by an admin -- no provider rule -- so the matches
+  tab carries the derby and not the rest of its league. Applied by hand
+  in the SQL Editor like every migration. Crests for the new clubs are a
+  later batch, from the owner's PNGs.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
