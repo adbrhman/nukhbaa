@@ -428,8 +428,16 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // PERF: a fixture that has not kicked off cannot have been graded, so
     // asking the server for its scores is a guaranteed-empty round trip --
     // one per visible card, on a screen that is mostly upcoming matches.
+    // Nor can one still in play or waiting for its result: a grade needs
+    // the recorded result, which the feed item already carries. Asking
+    // before it sent one request per started card, again every 2
+    // minutes (2026-10-11: the scores route timed out at 'connections in
+    // use 8/8, waiting 99').
+    final bool resultRecorded =
+        widget.item.resultHomeGoals != null &&
+        widget.item.resultAwayGoals != null;
     final AsyncValue<FixtureScoresDto>? scoresAsync =
-        myPrediction == null || !locked
+        myPrediction == null || !locked || !resultRecorded
         ? null
         : ref.watch(
             fixtureScoresProvider(_fixture.seasonId, _fixture.fixtureId),

@@ -35,6 +35,9 @@ CurrentMonthFixturesHarness _harnessFor({
   required String kickoffAt,
   required List<Object?> myPredictions,
   required List<Object?> scores,
+  int? resultHome,
+  int? resultAway,
+  List<String>? scoreReads,
 }) {
   return buildCurrentMonthFixturesHarness((request) async {
     final path = request.url.path;
@@ -53,6 +56,8 @@ CurrentMonthFixturesHarness _harnessFor({
           ),
           homeWinPercentage: 68,
           awayWinPercentage: 32,
+          resultHomeGoals: resultHome,
+          resultAwayGoals: resultAway,
         ).toJson(),
       ]);
     }
@@ -79,6 +84,7 @@ CurrentMonthFixturesHarness _harnessFor({
       return okJsonList(myPredictions);
     }
     if (path == '/seasons/s-1/fixtures/f-1/scores') {
+      scoreReads?.add(path);
       return okJsonObject({
         'schema_version': 1,
         'fixture_id': 'f-1',
@@ -107,6 +113,8 @@ void main() {
     (tester) async {
       final harness = _harnessFor(
         kickoffAt: _pastIso(),
+        resultHome: 3,
+        resultAway: 3,
         myPredictions: [
           FixturePredictionDto(
             id: 'fp-1',
@@ -309,6 +317,8 @@ void main() {
     (tester) async {
       final harness = _harnessFor(
         kickoffAt: _pastIso(),
+        resultHome: 3,
+        resultAway: 3,
         myPredictions: [
           FixturePredictionDto(
             id: 'fp-1',
@@ -411,5 +421,58 @@ void main() {
       findsNothing,
     );
     expect(find.text('Result pending'), findsOneWidget);
+  });
+
+  FixturePredictionDto myCall() => FixturePredictionDto(
+    id: 'fp-1',
+    participantId: 'part-1',
+    fixtureId: 'f-1',
+    submittedAt: '2026-09-01T10:00:00.000Z',
+    homeGoals: 2,
+    awayGoals: 1,
+    isDouble: false,
+  );
+
+  testWidgets('a started card without a result asks for no scores', (
+    tester,
+  ) async {
+    final List<String> reads = <String>[];
+    final harness = _harnessFor(
+      kickoffAt: _pastIso(),
+      myPredictions: [myCall().toJson()],
+      scores: const [],
+      scoreReads: reads,
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_host(harness, const CurrentMonthFixturesScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Result pending'), findsOneWidget);
+    expect(
+      reads,
+      isEmpty,
+      reason: 'no grade exists before the result is recorded',
+    );
+  });
+
+  testWidgets('a started card with a recorded result asks for its scores', (
+    tester,
+  ) async {
+    final List<String> reads = <String>[];
+    final harness = _harnessFor(
+      kickoffAt: _pastIso(),
+      myPredictions: [myCall().toJson()],
+      scores: const [],
+      resultHome: 3,
+      resultAway: 3,
+      scoreReads: reads,
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(_host(harness, const CurrentMonthFixturesScreen()));
+    await tester.pumpAndSettle();
+
+    expect(reads, isNotEmpty);
   });
 }

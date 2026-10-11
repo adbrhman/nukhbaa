@@ -4276,6 +4276,23 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `_arabicTeamLogoAliases` and `_monthlyLogoSlugs`. Esteghlal
   (استقلال طهران) is the West club still on initials.
 
+### A match card reads its scores after the result (2026-10-11)
+
+- **Batch 104 (mobile, 2026-10-11)**: measured first: the error log's
+  samples (`ops.error_samples`) of 2026-10-11 on the scores route
+  (AGMU, U9H3, XT7E) read 'waited 8.8-9.6 s for a connection, ran
+  0.5-1.4 s; connections in use 8/8, waiting 71..99' (build e3e3153,
+  after batches 94-95): the queue, not the SQL. The matches screen
+  still sent one `GET .../fixtures/{id}/scores` per started card with a
+  call, again every 2 minutes while the grade was pending, so a day of
+  12 matches polled through every match's play. `FotmobMatchCard` now
+  reads the scores only once the feed item carries the recorded result
+  (`resultHomeGoals`/`resultAwayGoals`): no grade exists before it. The
+  feed itself refreshes every 2 minutes while a match is live, so the
+  grade follows the result as before. The other score readers (history,
+  the predict sheet, the prediction screen) are unchanged. No server
+  change, no migration.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
