@@ -70,6 +70,9 @@ const CompetitionLogoAsset _clubWorldCupLogo = CompetitionLogoAsset(
 const CompetitionLogoAsset _arabianGulfCupLogo = CompetitionLogoAsset(
   assetPath: 'assets/league_logos/arabian-gulf-cup.png',
 );
+const CompetitionLogoAsset _aclEliteLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/afc-champions-league-elite.png',
+);
 
 /// Local league-logo catalog keyed by the football league name shown on the
 /// fixture. The aliases mirror the current football-data/provider seed names.
@@ -103,6 +106,9 @@ const Map<String, CompetitionLogoAsset> kLeagueLogoAssetsByName =
       'كأس الخليج': _arabianGulfCupLogo,
       'Arabian Gulf Cup': _arabianGulfCupLogo,
       'Gulf Cup': _arabianGulfCupLogo,
+      'دوري أبطال آسيا للنخبة': _aclEliteLogo,
+      'دوري أبطال آسيا': _aclEliteLogo,
+      'AFC Champions League Elite': _aclEliteLogo,
     };
 
 String _normaliseLeagueName(String value) =>

@@ -4225,6 +4225,12 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   so a West-East tie shows both names. Decided with the owner: the
   West matches, entered by an admin -- no provider rule. Applied by
   hand in the SQL Editor like every migration.
+- **Batch 99 (league mark, mobile, 2026-10-11)**: the trophy of the
+  owner's AFC Champions League Elite logo (cropped from the full
+  mark, 374x512, palette PNG) as
+  `assets/league_logos/afc-champions-league-elite.png`, resolved by
+  `competitionLogoAsset` for `دوري أبطال آسيا للنخبة`,
+  `دوري أبطال آسيا` and `AFC Champions League Elite`.
 
 ## 3. Version-Verification Log
 
