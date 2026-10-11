@@ -14,7 +14,7 @@ const List<int> _pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
 
 /// Files known to be unreadable and still waiting for a real crest; each
 /// one shows initials meanwhile. Remove a name once its crest is replaced.
-const Set<String> _awaitingCrest = <String>{'bayer-leverkusen.png'};
+const Set<String> _awaitingCrest = <String>{};
 
 bool _isPng(File file) {
   final RandomAccessFile raf = file.openSync();

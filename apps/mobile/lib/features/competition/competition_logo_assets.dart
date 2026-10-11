@@ -73,6 +73,24 @@ const CompetitionLogoAsset _arabianGulfCupLogo = CompetitionLogoAsset(
 const CompetitionLogoAsset _aclEliteLogo = CompetitionLogoAsset(
   assetPath: 'assets/league_logos/afc-champions-league-elite.png',
 );
+const CompetitionLogoAsset _spanishSuperCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/supercopa-de-espana.png',
+);
+const CompetitionLogoAsset _italianSuperCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/supercoppa-italiana.png',
+);
+const CompetitionLogoAsset _frenchSuperCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/trophee-des-champions.png',
+);
+const CompetitionLogoAsset _germanSuperCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/dfl-supercup.png',
+);
+const CompetitionLogoAsset _cafChampionsLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/caf-champions-league.png',
+);
+const CompetitionLogoAsset _faCupLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/fa-cup.png',
+);
 
 /// Local league-logo catalog keyed by the football league name shown on the
 /// fixture. The aliases mirror the current football-data/provider seed names.
@@ -109,6 +127,22 @@ const Map<String, CompetitionLogoAsset> kLeagueLogoAssetsByName =
       'دوري أبطال آسيا للنخبة': _aclEliteLogo,
       'دوري أبطال آسيا': _aclEliteLogo,
       'AFC Champions League Elite': _aclEliteLogo,
+      'كأس السوبر الإسباني': _spanishSuperCupLogo,
+      'Supercopa de España': _spanishSuperCupLogo,
+      'Spanish Super Cup': _spanishSuperCupLogo,
+      'كأس السوبر الإيطالي': _italianSuperCupLogo,
+      'Supercoppa Italiana': _italianSuperCupLogo,
+      'Italian Super Cup': _italianSuperCupLogo,
+      'كأس السوبر الفرنسي': _frenchSuperCupLogo,
+      'Trophée des Champions': _frenchSuperCupLogo,
+      'كأس السوبر الألماني': _germanSuperCupLogo,
+      'DFL-Supercup': _germanSuperCupLogo,
+      'DFL Supercup': _germanSuperCupLogo,
+      'دوري أبطال إفريقيا': _cafChampionsLeagueLogo,
+      'دوري أبطال أفريقيا': _cafChampionsLeagueLogo,
+      'CAF Champions League': _cafChampionsLeagueLogo,
+      'كأس الاتحاد الإنجليزي': _faCupLogo,
+      'FA Cup': _faCupLogo,
     };
 
 String _normaliseLeagueName(String value) =>

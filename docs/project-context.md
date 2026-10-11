@@ -4336,6 +4336,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   Africans, Simba; crest NULL); the others were there already (0050,
   0104). Competition marks and the five crests are a later batch, from
   the owner's PNGs. Applied by hand in the SQL Editor.
+- **Batch 108 (marks and crests, mobile, 2026-10-12)**: the owner's
+  PNGs. Six competition marks under `assets/league_logos/`, each cut
+  to its emblem (the wordmark below is unreadable on the 14 px plate):
+  supercopa-de-espana, supercoppa-italiana, trophee-des-champions,
+  dfl-supercup, caf-champions-league (the trophy), fa-cup; each in
+  `kLeagueLogoAssetsByName` under its catalog name (0045, 0105) and its
+  English one. Six crests at 256x256: the five CAF clubs of 0105
+  (pyramids, rs-berkane, orlando-pirates, young-africans, simba) and
+  `bayer-leverkusen.png`, the last unreadable file, replaced, so
+  `logo_files_valid_test` waits for no crest any more. New test
+  `cup_marks_and_caf_crests_test`.
 
 ## 3. Version-Verification Log
 

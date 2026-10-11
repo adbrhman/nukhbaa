@@ -535,6 +535,12 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'باناثينايكوس': 'panathinaikos',
   'أياكس': 'ajax',
   'بشكتاش': 'besiktas',
+  // دوري أبطال إفريقيا (migration 0105)
+  'بيراميدز': 'pyramids',
+  'نهضة بركان': 'rs-berkane',
+  'أورلاندو بايرتس': 'orlando-pirates',
+  'يانغ أفريكانز': 'young-africans',
+  'سيمبا': 'simba',
 };
 
 /// نسخة مُطبَّعة من [_arabicTeamLogoAliases] تُبنى مرّة واحدة.
@@ -940,4 +946,10 @@ const Set<String> _monthlyLogoSlugs = <String>{
   'rangers',
   'usm-alger',
   'zamalek',
+  // دوري أبطال إفريقيا (migration 0105)
+  'pyramids',
+  'rs-berkane',
+  'orlando-pirates',
+  'young-africans',
+  'simba',
 };
