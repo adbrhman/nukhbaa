@@ -42,6 +42,6 @@ void main() {
   });
 
   test('a club without a crest yet keeps its initials', () {
-    expect(teamLogoAssetPath('استقلال طهران'), isNull);
+    expect(teamLogoAssetPath('غامبا أوساكا'), isNull);
   });
 }

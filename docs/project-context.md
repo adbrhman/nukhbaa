@@ -4309,6 +4309,19 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   tab carries the derby and not the rest of its league. Applied by hand
   in the SQL Editor like every migration. Crests for the new clubs are a
   later batch, from the owner's PNGs.
+- **Batch 106 (crests, mobile, 2026-10-12)**: the owner supplied the
+  crests of the 14 new derby clubs and of Esteghlal (PNG, 256-600 px;
+  Al-Merrikh on white and Al-Hilal Omdurman on a checkerboard, both cut
+  out here), made 256x256 transparent palette PNGs: zamalek,
+  raja-casablanca, club-africain, al-hilal-omdurman, al-merrikh,
+  mc-alger, usm-alger, al-faisaly-amman (the Jordanian club; the Saudi
+  al-faisaly keeps its own), al-wehdat, al-zawraa, persepolis,
+  esteghlal, rangers, panathinaikos, ajax; each in
+  `_arabicTeamLogoAliases` and `_monthlyLogoSlugs`. The catalog name
+  of Besiktas (from the provider map) gets an alias to the bundled
+  `besiktas` crest. `acl_elite_crests_test` now checks initials on a
+  club still without a crest (Gamba Osaka); `big_derbies_crests_test`
+  is new. Every club of 0104 now shows a crest.
 
 ## 3. Version-Verification Log
 
