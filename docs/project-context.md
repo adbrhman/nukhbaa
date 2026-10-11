@@ -4212,6 +4212,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   still waiting read back. The log names `groups_added` and its
   groups and seats; the new refusals are in Arabic.
 
+### AFC Champions League Elite in the catalog (2026-10-11)
+
+- **Batch 98 (catalog, 2026-10-11)**: migration 0103 adds
+  `دوري أبطال آسيا للنخبة` (short `ACLE`, `is_continental`, so the
+  admin picker offers the whole catalog) and the 32 clubs of the
+  2026-27 league stage (en.wikipedia.org, checked 2026-10-11): the
+  Saudi five (saudi seed) and Al Ain (0050) reused, 26 created with
+  Arabic names, `league_id` and crest NULL (initials until a crest is
+  added), all mapped under the identity source `acl_elite`; a club
+  already in the catalog by name is reused. East clubs are included
+  so a West-East tie shows both names. Decided with the owner: the
+  West matches, entered by an admin -- no provider rule. Applied by
+  hand in the SQL Editor like every migration.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
