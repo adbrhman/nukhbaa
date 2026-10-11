@@ -10,12 +10,14 @@ import 'package:shared/shared.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../competition/leagues_providers.dart';
 import '../../../competition/teams_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
+import '../../widgets/team_picker_league_scope.dart';
 
 /// شاشة تعديل مباراة مسجّلة.
 ///
@@ -96,23 +98,51 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     super.dispose();
   }
 
-  /// The clubs to suggest: the chosen league's when one is picked,
-  /// otherwise the whole catalog — an existing fixture's teams may well
-  /// predate any league, and refusing to suggest them would make a name
-  /// typo unfixable.
+  /// The clubs to suggest: the league's -- the one picked, else the one the
+  /// fixture already carries -- first and alone
+  /// (`team_picker_league_scope.dart`). The whole catalog when the fixture
+  /// has no league or none of the league's clubs matches what is typed: an
+  /// existing fixture's teams may well predate any league, and refusing to
+  /// suggest them would make a name typo unfixable.
   Iterable<String> _teamOptions(
     String query, {
     required List<TeamDto> catalog,
+    required List<LeagueDto> leagues,
+    required List<SeasonFixtureCardDto> monthFixtures,
   }) {
-    final List<String> options = <String>[
-      for (final TeamDto team in catalog)
-        if ((_leagueId == null ||
-                _isContinentalLeague ||
-                team.leagueId == _leagueId) &&
-            teamPickerMatchesQuery(query, team.name))
-          team.name,
-    ]..sort();
-    return options;
+    final LeagueDto? league = _effectiveLeague(leagues);
+    if (league == null) {
+      final Set<String> seen = <String>{};
+      return <String>[
+        for (final TeamDto team in catalog)
+          if (teamPickerMatchesQuery(query, team.name) &&
+              seen.add(team.name.trim().toLowerCase()))
+            team.name,
+      ]..sort();
+    }
+    return teamPickerLeagueOptions(
+      query,
+      catalog: catalog,
+      league: league,
+      monthFixtures: monthFixtures,
+      fallbackToCatalog: true,
+    );
+  }
+
+  /// The league whose clubs the team fields offer: the one picked, else the
+  /// one named on the fixture (the browse read carries its name, not its
+  /// id), else none.
+  LeagueDto? _effectiveLeague(List<LeagueDto> leagues) {
+    final String? picked = _leagueId;
+    final String current = (_currentLeagueName ?? '').trim();
+    for (final LeagueDto league in leagues) {
+      if (picked != null) {
+        if (league.id == picked) return league;
+      } else if (current.isNotEmpty && league.name.trim() == current) {
+        return league;
+      }
+    }
+    return null;
   }
 
   String? _resolveTeamId(List<TeamDto> catalog, String text) {
@@ -133,6 +163,13 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     final l10n = AppLocalizations.of(context);
     final List<TeamDto> catalog =
         ref.watch(teamCatalogProvider).value ?? const <TeamDto>[];
+    final List<LeagueDto> leagues =
+        ref.watch(leagueCatalogProvider).value ?? const <LeagueDto>[];
+    final String? seasonId = _seasonId;
+    final List<SeasonFixtureCardDto> monthFixtures = seasonId == null
+        ? const <SeasonFixtureCardDto>[]
+        : ref.watch(adminSeasonFixturesProvider(seasonId)).value ??
+              const <SeasonFixtureCardDto>[];
     final AsyncValue<FixtureScheduleDto>? state = ref.watch(
       fixtureScheduleControllerProvider,
     );
@@ -219,7 +256,12 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   label: l10n.adminHomeTeamLabel,
                   enabled: !inFlight,
                   catalog: catalog,
-                  optionsBuilder: (q) => _teamOptions(q, catalog: catalog),
+                  optionsBuilder: (q) => _teamOptions(
+                    q,
+                    catalog: catalog,
+                    leagues: leagues,
+                    monthFixtures: monthFixtures,
+                  ),
                   onChanged: () => setState(() {
                     _homeTeamId = _resolveTeamId(
                       catalog,
@@ -235,7 +277,12 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   label: l10n.adminAwayTeamLabel,
                   enabled: !inFlight,
                   catalog: catalog,
-                  optionsBuilder: (q) => _teamOptions(q, catalog: catalog),
+                  optionsBuilder: (q) => _teamOptions(
+                    q,
+                    catalog: catalog,
+                    leagues: leagues,
+                    monthFixtures: monthFixtures,
+                  ),
                   onChanged: () => setState(() {
                     _awayTeamId = _resolveTeamId(
                       catalog,

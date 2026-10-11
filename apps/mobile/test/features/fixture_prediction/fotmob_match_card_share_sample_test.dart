@@ -1,6 +1,6 @@
 /// The win shares and the league logo through the real matches screen, the
-/// real card and a fake server: a share over fewer than five decisive
-/// calls is not shown (one call read as "100%"), five or more are; a feed
+/// real card and a fake server: under five decisive calls both sides read
+/// 0% (one call read as "100%"), five or more show the shares; a feed
 /// from an older server, with no count, shows the shares as before; and a
 /// league logo sits whole on a light disc, readable on the dark card.
 library;
@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
+import 'package:mobile/features/fixture_prediction/widgets/fotmob_match_card.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/current_month_fixtures_harness.dart';
@@ -63,11 +64,20 @@ Future<void> _pump(WidgetTester tester, Map<String, Object?> item) async {
 }
 
 void main() {
-  testWidgets('one decisive call shows no share', (tester) async {
+  testWidgets('one decisive call reads 0% on both sides', (tester) async {
     await _pump(tester, _item(decisive: 1));
 
     expect(find.text('100%'), findsNothing);
-    expect(find.text('0%'), findsNothing);
+    expect(find.text('0%'), findsNWidgets(2));
+  });
+
+  testWidgets('four decisive calls still read 0% on both sides', (
+    tester,
+  ) async {
+    await _pump(tester, _item(decisive: minShareSample - 1));
+
+    expect(find.text('100%'), findsNothing);
+    expect(find.text('0%'), findsNWidgets(2));
   });
 
   testWidgets('five decisive calls show the shares', (tester) async {

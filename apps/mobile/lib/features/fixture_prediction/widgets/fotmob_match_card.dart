@@ -94,7 +94,8 @@ import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
 
 /// Fewest decisive predictions a win share is shown for: over one call a
-/// share read "100%", a verdict it is not (decided 2026-10-07).
+/// share read "100%", a verdict it is not (decided 2026-10-07). Below it
+/// the card before kickoff reads 0% on both sides (decided 2026-10-11).
 const int minShareSample = 5;
 
 /// The server's refusal of a second double on the same day.
@@ -633,12 +634,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
                         Expanded(
-                          child: showShares
-                              ? _WinPercentage(
-                                  percentage: homeWinShare,
-                                  teamName: home.displayName,
-                                )
-                              : const SizedBox.shrink(),
+                          child: _WinPercentage(
+                            percentage: showShares ? homeWinShare : 0,
+                            teamName: home.displayName,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         if (showEditableControls)
@@ -658,12 +657,10 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
-                          child: showShares
-                              ? _WinPercentage(
-                                  percentage: awayWinShare,
-                                  teamName: away.displayName,
-                                )
-                              : const SizedBox.shrink(),
+                          child: _WinPercentage(
+                            percentage: showShares ? awayWinShare : 0,
+                            teamName: away.displayName,
+                          ),
                         ),
                       ],
                     ),

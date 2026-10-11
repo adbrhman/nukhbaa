@@ -4246,6 +4246,29 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   signature; `bayer-leverkusen.png` is the one known broken file
   left, listed there until its crest arrives.
 
+### The admin's matches by day; a league's clubs first (2026-10-11)
+
+- **Batch 102 (mobile, 2026-10-11)**, requested by the owner from three
+  screenshots. (1) Before kickoff the card reads 0% on both sides under
+  `minShareSample` decisive calls, instead of leaving the place empty;
+  after kickoff the split stays hidden under the sample. The gate itself
+  dates from 2026-10-07, so a "100%" on a live card means at least five
+  decisive calls, all for one side (draws are not in that share). (2) The
+  admin's matches list puts each Riyadh day under its own header
+  (`adminFixtureDayOf`, `admin.matches.day.<yyyy-mm-dd>`, the day's count),
+  newest day first, like the edit form's fixture dropdown already did.
+  (3) Both match forms offer a league's clubs first and alone
+  (`teamPickerLeagueOptions`, `team_picker_league_scope.dart`): a national
+  league its clubs by `league_id`; a continental one -- whose clubs keep
+  their own league row, 0103 -- the rows filed under it plus the clubs
+  already on its matches in the month (by id, else by exact name), and
+  the whole catalog only when none of those matches what is typed. The
+  edit form takes the fixture's own league when none is picked (matched
+  by name: the browse read carries no league id). No migration, no new
+  dependency, no l10n key. Crests: 20 of 0103's 32 clubs still show
+  initials; the West ones (الوصل، شباب الأهلي، الشمال، استقلال طهران،
+  نفتشي فرغانة، باختاكور، القوة الجوية) wait for the owner's PNGs.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

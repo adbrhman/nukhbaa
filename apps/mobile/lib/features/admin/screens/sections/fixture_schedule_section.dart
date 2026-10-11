@@ -17,6 +17,7 @@ import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
+import '../../widgets/team_picker_league_scope.dart';
 
 /// سطر تحذير تحت حقل فريق لم يُطابق الكتالوج: نبرة تحذير لا خطأ، فالإرسال
 /// يبقى ممكنًا عمدًا.
@@ -101,22 +102,34 @@ class _FixtureScheduleSectionState
   /// `football_data.teams` carries a `league_id` (migration 0035). With no
   /// league chosen yet there is nothing legitimate to suggest, so the list
   /// is empty rather than the whole catalog.
+  ///
+  /// A continental league offers its own clubs too, not the whole catalog
+  /// (`team_picker_league_scope.dart`): the ones filed under it and the
+  /// ones already playing its matches this month, and the whole catalog
+  /// only when none of those matches what is typed.
   Iterable<String> _filterTeamsInLeague(
     String query, {
     required List<TeamDto> catalog,
-    required String? leagueId,
-    required bool continental,
+    required List<LeagueDto> leagues,
+    required List<SeasonFixtureCardDto> monthFixtures,
   }) {
-    if (leagueId == null) return const <String>[];
-    final Set<String> seen = <String>{};
-    final List<String> options = <String>[
-      for (final TeamDto team in catalog)
-        if ((continental || team.leagueId == leagueId) &&
-            seen.add(team.name.toLowerCase()) &&
-            teamPickerMatchesQuery(query, team.name))
-          team.name,
-    ]..sort();
-    return options;
+    final LeagueDto? league = _selectedLeague(leagues);
+    if (league == null) return const <String>[];
+    return teamPickerLeagueOptions(
+      query,
+      catalog: catalog,
+      league: league,
+      monthFixtures: monthFixtures,
+      fallbackToCatalog: league.isContinental,
+    );
+  }
+
+  /// The league picked in the form, read off the catalog.
+  LeagueDto? _selectedLeague(List<LeagueDto> leagues) {
+    for (final LeagueDto l in leagues) {
+      if (l.id == _leagueId) return l;
+    }
+    return null;
   }
 
   /// Resolves [text] to a team id *within* [leagueId].
@@ -209,6 +222,7 @@ class _FixtureScheduleSectionState
     final bool inFlight = state is AsyncLoading<AddMatchResult>;
 
     int nextDisplayOrder = 0;
+    List<SeasonFixtureCardDto> monthFixtures = const <SeasonFixtureCardDto>[];
     if (_seasonId != null) {
       // Hidden fixtures included: they keep their place in the month.
       final AsyncValue<List<SeasonFixtureCardDto>> fixturesState = ref.watch(
@@ -216,6 +230,7 @@ class _FixtureScheduleSectionState
       );
       if (fixturesState is AsyncData<List<SeasonFixtureCardDto>>) {
         nextDisplayOrder = fixturesState.value.length;
+        monthFixtures = fixturesState.value;
       }
     }
 
@@ -272,8 +287,8 @@ class _FixtureScheduleSectionState
                 optionsBuilder: (q) => _filterTeamsInLeague(
                   q,
                   catalog: catalog,
-                  leagueId: _leagueId,
-                  continental: continental,
+                  leagues: leagues,
+                  monthFixtures: monthFixtures,
                 ),
                 onChanged: () => setState(() {
                   _homeTeamId = _resolveTeamIdInLeague(
@@ -305,8 +320,8 @@ class _FixtureScheduleSectionState
                 optionsBuilder: (q) => _filterTeamsInLeague(
                   q,
                   catalog: catalog,
-                  leagueId: _leagueId,
-                  continental: continental,
+                  leagues: leagues,
+                  monthFixtures: monthFixtures,
                 ),
                 onChanged: () => setState(() {
                   _awayTeamId = _resolveTeamIdInLeague(

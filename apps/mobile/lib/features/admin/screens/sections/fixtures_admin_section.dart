@@ -19,6 +19,7 @@ import 'package:shared/shared.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
+import '../../../../core/time/riyadh_day_turnover.dart';
 import '../../../../core/ui/app_badge.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/competition_providers.dart';
@@ -61,6 +62,22 @@ bool adminFixtureFilterMatches(
   AdminFixtureFilter.hidden => fixture.hidden,
   AdminFixtureFilter.test => fixture.isTest,
 };
+
+/// The Riyadh day [fixture] kicks off on, as a day key
+/// (`RiyadhDayTurnover.dayKeyOf`), or `null` when its kickoff is unknown:
+/// the day the matches tab and the server count it on.
+DateTime? adminFixtureDayOf(SeasonFixtureCardDto fixture) {
+  final DateTime? kickoff = DateTime.tryParse(fixture.kickoffAt ?? '');
+  return kickoff == null ? null : RiyadhDayTurnover.dayKeyOf(kickoff);
+}
+
+/// The key of [day]'s header in the matches list: `2026-10-12`, or `none`
+/// for the fixtures with no kickoff.
+String adminFixtureDayKey(DateTime? day) => day == null
+    ? 'none'
+    : '${day.year.toString().padLeft(4, '0')}-'
+          '${day.month.toString().padLeft(2, '0')}-'
+          '${day.day.toString().padLeft(2, '0')}';
 
 /// قسم «المباريات» في لوحة الأدمن.
 class FixturesAdminSection extends ConsumerStatefulWidget {
@@ -234,7 +251,25 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
                 ], hidden: false),
               ),
               const SizedBox(height: AppSpacing.sm),
-              for (final SeasonFixtureCardDto fixture in shown) ...<Widget>[
+              // Each Riyadh day under its own header, newest day first:
+              // a month-long flat list buried one day's matches among the
+              // others (requested 2026-10-11).
+              for (final (int i, SeasonFixtureCardDto fixture)
+                  in shown.indexed) ...<Widget>[
+                if (i == 0 ||
+                    adminFixtureDayOf(shown[i - 1]) !=
+                        adminFixtureDayOf(fixture))
+                  _DayHeader(
+                    day: adminFixtureDayOf(fixture),
+                    count: shown
+                        .where(
+                          (SeasonFixtureCardDto f) =>
+                              adminFixtureDayOf(f) ==
+                              adminFixtureDayOf(fixture),
+                        )
+                        .length,
+                    first: i == 0,
+                  ),
                 _FixtureRow(
                   fixture: fixture,
                   selected: _selected.contains(fixture.fixtureId),
@@ -493,6 +528,60 @@ class _SelectionBar extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The header over one Riyadh day's fixtures: the day and how many of the
+/// view's fixtures it holds.
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({
+    required this.day,
+    required this.count,
+    required this.first,
+  });
+
+  /// The day key, or `null` for the fixtures with no kickoff.
+  final DateTime? day;
+  final int count;
+
+  /// The list's first header sits right under the selection bar.
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final DateTime? d = day;
+    final String label = d == null
+        ? 'بلا موعد'
+        : intl.DateFormat(
+            'EEEE d MMMM',
+            Localizations.localeOf(context).toString(),
+          ).format(d);
+    return Padding(
+      key: Key('admin.matches.day.${adminFixtureDayKey(d)}'),
+      padding: EdgeInsets.only(
+        top: first ? 0 : AppSpacing.md,
+        bottom: AppSpacing.sm,
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: context.text.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: t.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            '$count',
+            style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+          ),
         ],
       ),
     );
