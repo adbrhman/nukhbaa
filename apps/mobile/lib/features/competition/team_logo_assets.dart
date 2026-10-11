@@ -505,6 +505,13 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'ستراسبورغ': 'strasbourg',
   'تولوز': 'toulouse',
   'تروا': 'troyes',
+  // دوري أبطال آسيا للنخبة (migration 0103)
+  'فيسيل كوبي': 'vissel-kobe',
+  'السد': 'al-sadd',
+  'تراكتور': 'tractor',
+  'الغرافة': 'al-gharafa',
+  'جوهور دار التعظيم': 'johor-darul-tazim',
+  'شنغهاي بورت': 'shanghai-port',
 };
 
 /// نسخة مُطبَّعة من [_arabicTeamLogoAliases] تُبنى مرّة واحدة.
@@ -881,4 +888,11 @@ const Set<String> _monthlyLogoSlugs = <String>{
   'oman',
   'iraq',
   'kuwait',
+  // دوري أبطال آسيا للنخبة
+  'vissel-kobe',
+  'al-sadd',
+  'tractor',
+  'al-gharafa',
+  'johor-darul-tazim',
+  'shanghai-port',
 };

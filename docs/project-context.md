@@ -4231,6 +4231,12 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `assets/league_logos/afc-champions-league-elite.png`, resolved by
   `competitionLogoAsset` for `دوري أبطال آسيا للنخبة`,
   `دوري أبطال آسيا` and `AFC Champions League Elite`.
+- **Batch 100 (crests, mobile, 2026-10-11)**: six crests the owner
+  supplied (256x256, transparent) for clubs of 0103: فيسيل كوبي،
+  السد، تراكتور، الغرافة، جوهور دار التعظيم، شنغهاي بورت. Nine more
+  he sent (Machida, Ulsan, Chengdu, Al-Duhail, Sanfrecce, Melbourne
+  City, Shanghai Shenhua, FC Seoul, Nasaf) are not in the 2026-27
+  league stage and were not added; Ulsan already had a crest.
 
 ## 3. Version-Verification Log
 
