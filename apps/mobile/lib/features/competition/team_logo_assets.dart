@@ -512,6 +512,12 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'الغرافة': 'al-gharafa',
   'جوهور دار التعظيم': 'johor-darul-tazim',
   'شنغهاي بورت': 'shanghai-port',
+  'الوصل': 'al-wasl',
+  'شباب الأهلي': 'shabab-al-ahli',
+  'الشمال': 'al-shamal',
+  'باختاكور': 'pakhtakor',
+  'نفتشي فرغانة': 'neftchi-fergana',
+  'القوة الجوية': 'al-quwa-al-jawiya',
 };
 
 /// نسخة مُطبَّعة من [_arabicTeamLogoAliases] تُبنى مرّة واحدة.
@@ -895,4 +901,10 @@ const Set<String> _monthlyLogoSlugs = <String>{
   'al-gharafa',
   'johor-darul-tazim',
   'shanghai-port',
+  'al-wasl',
+  'shabab-al-ahli',
+  'al-shamal',
+  'pakhtakor',
+  'neftchi-fergana',
+  'al-quwa-al-jawiya',
 };

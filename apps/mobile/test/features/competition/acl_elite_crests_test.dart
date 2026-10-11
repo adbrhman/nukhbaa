@@ -14,6 +14,12 @@ void main() {
     'الغرافة': 'al-gharafa',
     'جوهور دار التعظيم': 'johor-darul-tazim',
     'شنغهاي بورت': 'shanghai-port',
+    'الوصل': 'al-wasl',
+    'شباب الأهلي': 'shabab-al-ahli',
+    'الشمال': 'al-shamal',
+    'باختاكور': 'pakhtakor',
+    'نفتشي فرغانة': 'neftchi-fergana',
+    'القوة الجوية': 'al-quwa-al-jawiya',
   };
 
   test('each club resolves by its catalog name', () {
@@ -36,6 +42,6 @@ void main() {
   });
 
   test('a club without a crest yet keeps its initials', () {
-    expect(teamLogoAssetPath('الوصل'), isNull);
+    expect(teamLogoAssetPath('استقلال طهران'), isNull);
   });
 }

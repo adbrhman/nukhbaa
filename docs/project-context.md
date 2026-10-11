@@ -4268,6 +4268,13 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   dependency, no l10n key. Crests: 20 of 0103's 32 clubs still show
   initials; the West ones (الوصل، شباب الأهلي، الشمال، استقلال طهران،
   نفتشي فرغانة، باختاكور، القوة الجوية) wait for the owner's PNGs.
+- **Batch 103 (crests, mobile, 2026-10-11)**: six of those crests the
+  owner supplied, 256x256 transparent PNGs (three sent at 512 resized
+  and reduced to a palette): الوصل `al-wasl`، شباب الأهلي
+  `shabab-al-ahli`، الشمال `al-shamal`، باختاكور `pakhtakor`، نفتشي
+  فرغانة `neftchi-fergana`، القوة الجوية `al-quwa-al-jawiya`, each in
+  `_arabicTeamLogoAliases` and `_monthlyLogoSlugs`. Esteghlal
+  (استقلال طهران) is the West club still on initials.
 
 ## 3. Version-Verification Log
 
