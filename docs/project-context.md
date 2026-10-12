@@ -4397,6 +4397,16 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   address is cut as `_LinkifiedBody` cuts it; http is never a chip.
   `notifications_screen.dart`; four new tests in
   `notifications_screen_test.dart`. No server change, no migration.
+- **Batch 116 (notification icon, Android, 2026-10-12)**: a push showed
+  a grey letter in the shade where the app's mark belongs: no small
+  icon was set, so Android fell back to the launcher icon. Five white
+  silhouettes of the mark (`assets/branding/notification/`,
+  ic_stat_nukhbaa 24/36/48/72/96 px, mdpi..xxxhdpi, not bundled in the
+  Flutter assets) are copied by build-verification.yml into the
+  generated `res/drawable-*`, with `nukhbaa_notification` = #1978D1, and
+  the manifest gets FCM's `default_notification_icon` and
+  `default_notification_color`. CI only; no Dart, server or migration
+  change. Takes effect with the next APK.
 
 ## 3. Version-Verification Log
 

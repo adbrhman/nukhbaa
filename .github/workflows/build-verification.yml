@@ -270,6 +270,47 @@ jobs:
           cp "$adp/ic_launcher_background.xml" android/app/src/main/res/values/ic_launcher_background.xml
           echo "NUKHBAA Android launcher icon installed (adaptive)"
 
+      # The status bar and the notification shade draw a notification's small
+      # icon as a white silhouette. With none set, a push fell back to the
+      # launcher icon (a solid square) and the shade showed a grey letter in
+      # its place. FCM's default_notification_icon / _color meta-data give
+      # every push the Nukhbaa mark in the brand blue (batch 116).
+      - name: Install NUKHBAA notification icon
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="assets/branding/notification"
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            test -s "$src/ic_stat_nukhbaa_$d.png"
+            mkdir -p "android/app/src/main/res/drawable-$d"
+            cp "$src/ic_stat_nukhbaa_$d.png" "android/app/src/main/res/drawable-$d/ic_stat_nukhbaa.png"
+          done
+          mkdir -p android/app/src/main/res/values
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' '<resources>' '    <color name="nukhbaa_notification">#1978D1</color>' '</resources>' > android/app/src/main/res/values/nukhbaa_notification_color.xml
+          python3 - <<'PYEOF'
+          import re
+          import sys
+
+          manifest = "android/app/src/main/AndroidManifest.xml"
+          m = open(manifest, encoding="utf-8").read()
+          if "default_notification_icon" not in m:
+              meta = (
+                  '\n        <meta-data android:name="com.google.firebase.messaging.default_notification_icon"'
+                  ' android:resource="@drawable/ic_stat_nukhbaa" />'
+                  '\n        <meta-data android:name="com.google.firebase.messaging.default_notification_color"'
+                  ' android:resource="@color/nukhbaa_notification" />'
+              )
+              m, n = re.subn(
+                  r"(<application\b[^>]*>)", lambda mo: mo.group(1) + meta, m, count=1
+              )
+              if n != 1:
+                  sys.exit("::error::<application> not found in AndroidManifest.xml")
+              open(manifest, "w", encoding="utf-8").write(m)
+          print("AndroidManifest.xml: notification icon and colour set")
+          PYEOF
+          echo "NUKHBAA notification icon installed"
+
       - name: Decode release keystore
         working-directory: apps/mobile
         env:
