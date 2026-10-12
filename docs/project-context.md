@@ -4365,6 +4365,12 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `sameAs` of the Organization in its JSON-LD, so nukhbaa.app can
   replace links.nukhbaa.app in profile bios. links.nukhbaa.app is not
   in this repository; its APK button pointed at build-07340aa.
+- **Batch 111 (compact link preview, 2026-10-12)**: the owner wants the
+  small logo beside the title, not the wide 1200x630 card. og:image is
+  now the square `icon-512.png` (512x512) and `twitter:card` is
+  `summary`, in the landing page and in the app's `web/index.html`;
+  WhatsApp, Telegram, Facebook and X show a square image as a small
+  thumbnail. `og.png` stays in the landing folder, unused.
 
 ## 3. Version-Verification Log
 
