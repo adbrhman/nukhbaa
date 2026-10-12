@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -206,6 +207,106 @@ class _LinkifiedBodyState extends ConsumerState<_LinkifiedBody> {
   }
 }
 
+/// The brand mark a source chip shows for the app's own addresses.
+const String _brandLogoAsset = 'assets/branding/nukhbaa_logo.png';
+
+/// True for nukhbaa.app and any of its sub-domains (links.nukhbaa.app).
+bool _isOwnHost(String host) =>
+    host == 'nukhbaa.app' || host.endsWith('.nukhbaa.app');
+
+/// Every distinct https address in [text], in order, cut as [_LinkifiedBody]
+/// cuts it (trailing sentence punctuation is not part of the address).
+List<Uri> _linksIn(String text) {
+  final List<Uri> links = <Uri>[];
+  for (final RegExpMatch match in _httpsLink.allMatches(text)) {
+    final Uri? uri = Uri.tryParse(_withoutTrailingPunctuation(match.group(0)!));
+    if (uri == null || uri.host.isEmpty || links.contains(uri)) {
+      continue;
+    }
+    links.add(uri);
+  }
+  return links;
+}
+
+/// Opens [uri] through [notificationLinkOpenerProvider]; a failure leaves the
+/// row as it was, as a tap on the link in the text does.
+Future<void> _openSource(WidgetRef ref, Uri uri) async {
+  try {
+    await ref.read(notificationLinkOpenerProvider)(uri);
+  } on Object {
+    // No app could open the address.
+  }
+}
+
+/// The addresses of an announcement as small source chips under its body:
+/// the site's mark and its name, the app's logo for nukhbaa.app and a link
+/// icon for any other site. Tapping a chip opens its address.
+class _SourceChips extends ConsumerWidget {
+  const _SourceChips({required this.notificationId, required this.links});
+
+  final String notificationId;
+  final List<Uri> links;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: <Widget>[
+        for (final Uri link in links)
+          GestureDetector(
+            key: Key(
+              'notifications.source.$notificationId.${links.indexOf(link)}',
+            ),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => unawaited(_openSource(ref, link)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: tokens.surfaceElevated,
+                borderRadius: AppRadius.brXl,
+                border: Border.all(color: tokens.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (_isOwnHost(link.host))
+                    ClipRRect(
+                      borderRadius: AppRadius.brXs,
+                      child: Image.asset(
+                        _brandLogoAsset,
+                        width: 16,
+                        height: 16,
+                      ),
+                    )
+                  else
+                    Icon(Icons.link, size: 16, color: tokens.textSecondary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      link.host,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.ltr,
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: AppFontSize.s12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _NotificationRow extends ConsumerWidget {
   const _NotificationRow({required this.notification});
   final NotificationDto notification;
@@ -299,6 +400,7 @@ class _NotificationRow extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final String? body = notification.body;
     final bool hasBody = body != null && body.isNotEmpty;
+    final List<Uri> links = _linksIn(body ?? '');
     final bool isDuel = notification.kind.startsWith('duel_');
     // A reaction row opens the predictions board of its match's day, when
     // the match is in the current month's feed.
@@ -365,6 +467,12 @@ class _NotificationRow extends ConsumerWidget {
                 decorationColor: tokens.primaryText,
               ),
             ),
+          ],
+          // The addresses of the body as source chips: the site's mark and
+          // name, the app's logo for nukhbaa.app.
+          if (links.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _SourceChips(notificationId: notification.id, links: links),
           ],
           // An invitation to a friends' league: who, which league, and
           // accept or decline (migration 0097).

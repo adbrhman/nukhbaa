@@ -4386,6 +4386,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   /s still showed the 512x512 logo as a large image; WhatsApp draws
   the small side thumbnail only for a small og:image. /s now points at
   a new `icon-200.png` (200x200, the smallest Facebook accepts).
+- **Batch 115 (source chips on announcements, mobile, 2026-10-12)**:
+  the owner wants an announcement's link to end with the small site
+  mark, as a chat assistant shows its sources. Under the body of a
+  notification, every distinct https address of the body is a chip:
+  the app's logo (`assets/branding/nukhbaa_logo.png`, already bundled)
+  and the host for nukhbaa.app and its sub-domains, a link icon and
+  the host for any other site; a tap opens it through
+  `notificationLinkOpenerProvider`, as the link in the text does. The
+  address is cut as `_LinkifiedBody` cuts it; http is never a chip.
+  `notifications_screen.dart`; four new tests in
+  `notifications_screen_test.dart`. No server change, no migration.
 
 ## 3. Version-Verification Log
 

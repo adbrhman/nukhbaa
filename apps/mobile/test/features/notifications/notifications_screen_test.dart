@@ -142,4 +142,56 @@ void main() {
 
     expect(opened, isEmpty);
   });
+
+  testWidgets('a nukhbaa.app address gets a source chip with the logo', (
+    tester,
+  ) async {
+    final List<Uri> opened = await _pumpInbox(
+      tester,
+      'حدّث التطبيق: https://nukhbaa.app',
+    );
+    final Finder chip = find.byKey(const Key('notifications.source.n1.0'));
+
+    expect(chip, findsOneWidget);
+    expect(
+      find.descendant(of: chip, matching: find.byType(Image)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: chip, matching: find.text('nukhbaa.app')),
+      findsOneWidget,
+    );
+
+    await tester.tap(chip);
+
+    expect(opened, <Uri>[Uri.parse('https://nukhbaa.app')]);
+  });
+
+  testWidgets('the same address twice gets one chip', (tester) async {
+    await _pumpInbox(tester, '$_link و $_link');
+
+    expect(find.byKey(const Key('notifications.source.n1.0')), findsOneWidget);
+    expect(find.byKey(const Key('notifications.source.n1.1')), findsNothing);
+  });
+
+  testWidgets('another site gets the link icon, not the logo', (tester) async {
+    await _pumpInbox(tester, 'https://example.com/x');
+    final Finder chip = find.byKey(const Key('notifications.source.n1.0'));
+
+    expect(chip, findsOneWidget);
+    expect(
+      find.descendant(of: chip, matching: find.byIcon(Icons.link)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: chip, matching: find.byType(Image)),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a body with no https address has no chip', (tester) async {
+    await _pumpInbox(tester, 'افتح http://example.com/x الآن');
+
+    expect(find.byKey(const Key('notifications.source.n1.0')), findsNothing);
+  });
 }
