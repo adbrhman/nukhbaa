@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>نُخبة — توقّع واصعد للقمة</title>
+  <meta name="description" content="نُخبة: توقّع نتائج المباريات، اجمع النقاط، وتصدّر الترتيب مع أصدقائك.">
+  <meta name="theme-color" content="#071426">
+
+  <!-- الأيقونة الصغيرة (favicon) -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="canonical" href="https://nukhbaa.app/">
+
+  <!-- بطاقة الرابط عند المشاركة -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ar_AR">
+  <meta property="og:site_name" content="نُخبة">
+  <meta property="og:title" content="نُخبة — توقّع واصعد للقمة">
+  <meta property="og:description" content="توقّع نتائج المباريات، اجمع النقاط، وتصدّر الترتيب مع أصدقائك.">
+  <meta property="og:url" content="https://nukhbaa.app/">
+  <meta property="og:image" content="https://nukhbaa.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="شعار نُخبة">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="نُخبة — توقّع واصعد للقمة">
+  <meta name="twitter:description" content="توقّع نتائج المباريات، اجمع النقاط، وتصدّر الترتيب مع أصدقائك.">
+  <meta name="twitter:image" content="https://nukhbaa.app/og.png">
+
+  <!-- لجوجل: اسم الموقع وشعاره -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"WebSite","name":"نُخبة","alternateName":"Nukhbaa","url":"https://nukhbaa.app/"},
+    {"@type":"Organization","name":"نُخبة","url":"https://nukhbaa.app/","logo":"https://nukhbaa.app/icon-512.png"}
+  ]}
+  </script>
+
+  <style>
+    @font-face { font-family: "Plex Ar"; font-weight: 400; font-display: swap; src: url("/IBMPlexSansArabic-Regular.woff") format("woff"); }
+    @font-face { font-family: "Plex Ar"; font-weight: 700; font-display: swap; src: url("/IBMPlexSansArabic-Bold.woff") format("woff"); }
+    :root {
+      --bg: #071426; --bg2: #0c1e36; --line: rgba(255,255,255,.08);
+      --text: #eef3fb; --muted: #9fb0c8; --brand: #1978D1; --accent: #2E6AFF;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body {
+      font-family: "Plex Ar", system-ui, sans-serif; line-height: 1.7;
+      min-height: 100vh; display: flex; flex-direction: column;
+      background:
+        radial-gradient(900px 500px at 50% -10%, rgba(25,120,209,.28), transparent 70%),
+        var(--bg);
+    }
+    main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 56px 16px 32px; }
+    .hero { text-align: center; }
+    .logo { width: 104px; height: 104px; border-radius: 26px; box-shadow: 0 12px 40px rgba(25,120,209,.45); }
+    h1 { font-size: clamp(40px, 9vw, 60px); margin: 18px 0 4px; letter-spacing: 0; }
+    .tag { font-size: clamp(17px, 4.2vw, 21px); color: var(--muted); margin: 0 auto 32px; max-width: 30ch; }
+    .actions { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; max-width: 340px; padding: 15px 22px; border-radius: 14px;
+      font: inherit; font-weight: 700; font-size: 18px; text-decoration: none;
+      transition: transform .12s ease, background .12s ease;
+    }
+    .btn:active { transform: scale(.98); }
+    .primary { background: var(--brand); color: #fff; }
+    .primary:hover { background: #1f86e6; }
+    .ghost { border: 1px solid var(--line); color: var(--text); background: rgba(255,255,255,.03); }
+    .ghost:hover { background: rgba(255,255,255,.07); }
+    .btn svg { width: 22px; height: 22px; flex: none; }
+    .note { font-size: 14px; color: var(--muted); margin-top: 6px; min-height: 1.7em; }
+    .features {
+      list-style: none; padding: 0; margin: 40px 0 0;
+      display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .features li { background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+    .features b { display: block; font-size: 17px; margin-bottom: 2px; }
+    .features span { color: var(--muted); font-size: 15px; }
+    .install { margin-top: 32px; padding: 18px; border-radius: 16px; border: 1px dashed var(--line); color: var(--muted); font-size: 15px; }
+    .install b { color: var(--text); }
+    .install ol { margin: 6px 0 0; padding-inline-start: 20px; }
+    footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 16px 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <img class="logo" src="/icon-512.png" width="104" height="104" alt="شعار نُخبة">
+      <h1>نُخبة</h1>
+      <p class="tag">توقّع نتائج المباريات، اجمع النقاط، وتصدّر الترتيب مع أصدقائك.</p>
+
+      <div class="actions">
+        <a id="dl" class="btn primary" href="https://github.com/adbrhman/nukhbaa/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          حمّل التطبيق لأندرويد
+        </a>
+        <a class="btn ghost" href="/nukhbaa/">افتح نسخة الويب</a>
+        <div id="dlnote" class="note"></div>
+      </div>
+    </section>
+
+    <ul class="features">
+      <li><b>توقّع كل مباراة</b><span>سجّل توقعك قبل صافرة البداية واكسب النقاط على النتيجة الصحيحة.</span></li>
+      <li><b>سلسلة الأيام</b><span>توقّع كل مباريات اليوم وحافظ على سلسلتك لتحصد المكافآت.</span></li>
+      <li><b>نافس أصدقاءك</b><span>ترتيب شهري ومنافسات ودوريات خاصة بينك وبين أصحابك.</span></li>
+    </ul>
+
+    <div class="install">
+      <b>طريقة التثبيت:</b>
+      <ol>
+        <li>اضغط «حمّل التطبيق» وانتظر اكتمال التحميل.</li>
+        <li>افتح الملف، وإذا طلب الجوال فاسمح بالتثبيت من هذا المصدر.</li>
+        <li>بعدها تصلك التحديثات من داخل التطبيق تلقائياً.</li>
+      </ol>
+    </div>
+  </main>
+
+  <footer>© نُخبة</footer>
+
+  <script>
+    // يجلب آخر إصدار ويضع رابط ملف الـ APK المناسب مباشرة على الزر.
+    // إن فشل الطلب يبقى الزر يفتح صفحة الإصدارات.
+    (function () {
+      var btn = document.getElementById('dl');
+      var note = document.getElementById('dlnote');
+      fetch('https://api.github.com/repos/adbrhman/nukhbaa/releases/latest')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (rel) {
+          var apks = (rel.assets || []).filter(function (a) { return /\.apk$/i.test(a.name); });
+          var pick = ['arm64-v8a', 'universal', 'armeabi-v7a'];
+          var asset = null;
+          for (var i = 0; i < pick.length && !asset; i++) {
+            asset = apks.find(function (a) { return a.name.indexOf(pick[i]) !== -1; }) || null;
+          }
+          asset = asset || apks[0];
+          if (!asset) return;
+          btn.href = asset.browser_download_url;
+          var mb = (asset.size / 1048576).toFixed(0);
+          var d = rel.published_at ? new Date(rel.published_at).toLocaleDateString('ar') : '';
+          note.textContent = 'الحجم ' + mb + ' م.ب' + (d ? ' · آخر تحديث ' + d : '');
+        })
+        .catch(function () {});
+    })();
+  </script>
+</body>
+</html>

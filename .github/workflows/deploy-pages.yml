@@ -127,6 +127,7 @@ jobs:
           rm -rf "$DIST"
           mkdir -p "$DIST/site"
           cp -R apps/mobile/build/web "$DIST/site/nukhbaa"
+          cp deploy/web-mirror/landing/* "$DIST/site/"
           cp deploy/web-mirror/Dockerfile deploy/web-mirror/nginx.conf "$DIST/"
           cd "$DIST"
           git init -q

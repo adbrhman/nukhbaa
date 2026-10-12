@@ -4347,6 +4347,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `bayer-leverkusen.png`, the last unreadable file, replaced, so
   `logo_files_valid_test` waits for no crest any more. New test
   `cup_marks_and_caf_crests_test`.
+- **Batch 109 (landing page at nukhbaa.app, 2026-10-12)**: the site root
+  of the web mirror served only `302 /nukhbaa/`, so a shared link had no
+  favicon and no preview card. `deploy/web-mirror/landing/` (index.html,
+  favicon.ico/-32/-48, icon-192/-512, apple-touch-icon, og.png 1200x630,
+  site.webmanifest, IBM Plex Sans Arabic subset as woff) is copied by
+  `deploy-pages.yml` into the root of `web-dist`; `nginx.conf` serves it
+  at `/` instead of the redirect. The app stays under `/nukhbaa/`. The
+  download button resolves the newest release's arm64-v8a APK through
+  `api.github.com` (falls back to the releases page). The app's own
+  `web/index.html` gains the same og: tags, so invite links show the
+  card. GitHub Pages is unchanged (it never served the root).
 
 ## 3. Version-Verification Log
 
