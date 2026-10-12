@@ -72,6 +72,42 @@ final class SupabaseAuthGateway implements AuthGateway {
     );
   }
 
+  @override
+  Future<Result<String>> verifyRecoveryCode({
+    required String email,
+    required String code,
+  }) async {
+    final Result<SupabaseSession> result = await _client.verifyRecoveryCode(
+      email: email,
+      code: code,
+    );
+    switch (result) {
+      case Ok<SupabaseSession>(:final value):
+        final String? token = value.accessToken;
+        if (token == null || token.isEmpty) {
+          return const Result.err(
+            AppError.transient(
+              'auth.malformed_response',
+              'Supabase Auth returned no access token',
+            ),
+          );
+        }
+        return Result.ok(token);
+      case Err<SupabaseSession>(:final error):
+        // GoTrue answers a wrong, used or expired code with a 4xx, which the
+        // client maps to `auth.rejected` with an English message.
+        if (error.code == 'auth.rejected') {
+          return const Result.err(
+            AppError.validation(
+              'auth.recovery_code_invalid',
+              'الرمز غير صحيح أو انتهت صلاحيته. اطلب رمزًا جديدًا.',
+            ),
+          );
+        }
+        return Result.err(error);
+    }
+  }
+
   IssuedSession _toIssuedSession(SupabaseSession session) => IssuedSession(
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,

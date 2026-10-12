@@ -52,6 +52,12 @@ final class _FakeGateway implements AuthGateway {
     required String recoveryToken,
     required String password,
   }) => throw UnimplementedError();
+
+  @override
+  Future<Result<String>> verifyRecoveryCode({
+    required String email,
+    required String code,
+  }) => throw UnimplementedError();
 }
 
 final class _FakeTargets implements AdminPushTargetReader {

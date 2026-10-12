@@ -4463,6 +4463,26 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   The pool size (8) is unchanged: nothing measured shows what Supabase
   allows. No migration, no client change.
 
+- **Batch 110 (password reset by code, 2026-10-13)**: a player's reset
+  e-mail link opened the web build, which stayed on its splash screen,
+  so the password could not be changed. The reset now stays in the
+  app: the e-mail also carries GoTrue's one-time code (`{{ .Token }}` in
+  the Reset Password template, set by hand in the Supabase dashboard),
+  the player types it, and `POST /auth/password-reset/verify`
+  (`{email, code}`) trades it through GoTrue `POST /verify`
+  (`type: recovery`) for the recovery token that
+  `/auth/password-reset/update` already takes. Port
+  `AuthGateway.verifyRecoveryCode`, use-case `VerifyRecoveryCode`; a
+  wrong, used or expired code is `auth.recovery_code_invalid` (Arabic
+  message), a code that is not 6..10 digits `auth.recovery_code_format`
+  before GoTrue is asked; five codes per address in 15 minutes
+  (`AuthAttempt.passwordResetCode`). Mobile: after 'send the code' the
+  screen asks for the code (digits only), then opens the new-password
+  step; a new code can be asked for after 60 s (GoTrue's own cooldown),
+  and the e-mail can be changed. Words in
+  `features/auth/password_reset_texts.dart` (generated l10n untouched).
+  The web link keeps working. No migration; needs a new APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

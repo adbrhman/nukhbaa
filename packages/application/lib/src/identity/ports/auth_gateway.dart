@@ -70,4 +70,12 @@ abstract class AuthGateway {
     required String recoveryToken,
     required String password,
   });
+
+  /// Trades the one-time code of a password-reset e-mail for a recovery
+  /// access token, the one [updatePassword] takes. An unknown, used or
+  /// expired code is a validation error (`auth.recovery_code_invalid`).
+  Future<Result<String>> verifyRecoveryCode({
+    required String email,
+    required String code,
+  });
 }

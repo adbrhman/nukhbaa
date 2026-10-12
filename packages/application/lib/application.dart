@@ -91,6 +91,7 @@ export 'src/identity/refresh_session.dart';
 export 'src/identity/register_with_password.dart';
 export 'src/identity/request_password_reset.dart';
 export 'src/identity/update_password.dart';
+export 'src/identity/verify_recovery_code.dart';
 export 'src/identity/set_avatar.dart';
 export 'src/identity/set_my_favorite_teams.dart';
 export 'src/identity/sign_in_with_google.dart';

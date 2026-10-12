@@ -28,6 +28,7 @@ final class CompositionRoot {
     required this.notifyNewUserRegistered,
     required this.requestPasswordReset,
     required this.updatePassword,
+    required this.verifyRecoveryCode,
     required this.signInWithGoogle,
     required this.refreshSession,
     required this.updateDisplayName,
@@ -224,6 +225,7 @@ final class CompositionRoot {
     NotifyNewUserRegistered? notifyNewUserRegistered,
     RequestPasswordReset? requestPasswordReset,
     UpdatePassword? updatePassword,
+    VerifyRecoveryCode? verifyRecoveryCode,
     SignInWithGoogle? signInWithGoogle,
     RefreshSession? refreshSession,
     AuthenticateRequest? authenticateRequest,
@@ -395,6 +397,7 @@ final class CompositionRoot {
        requestPasswordReset =
            requestPasswordReset ?? _absentRequestPasswordReset(),
        updatePassword = updatePassword ?? _absentUpdatePassword(),
+       verifyRecoveryCode = verifyRecoveryCode ?? _absentVerifyRecoveryCode(),
        signInWithGoogle = signInWithGoogle ?? _absentSignInWithGoogle(),
        refreshSession = refreshSession ?? _absentRefreshSession(),
        authenticateRequest =
@@ -649,6 +652,9 @@ final class CompositionRoot {
 
   static UpdatePassword _absentUpdatePassword() =>
       UpdatePassword(_UnwiredAuthGateway());
+
+  static VerifyRecoveryCode _absentVerifyRecoveryCode() =>
+      VerifyRecoveryCode(_UnwiredAuthGateway());
 
   static SignInWithGoogle _absentSignInWithGoogle() =>
       SignInWithGoogle(_UnwiredAuthGateway());
@@ -1805,6 +1811,10 @@ final class CompositionRoot {
   final RequestPasswordReset requestPasswordReset;
   final UpdatePassword updatePassword;
 
+  /// Trades the code of a reset e-mail for a recovery token (backs
+  /// `POST /auth/password-reset/verify`).
+  final VerifyRecoveryCode verifyRecoveryCode;
+
   /// Signs in with a Google ID token (backs `POST /auth/google`).
   final SignInWithGoogle signInWithGoogle;
 
@@ -2533,6 +2543,7 @@ final class CompositionRoot {
     final register = RegisterWithPassword(authGateway);
     final requestPasswordReset = RequestPasswordReset(authGateway);
     final updatePassword = UpdatePassword(authGateway);
+    final verifyRecoveryCode = VerifyRecoveryCode(authGateway);
     final signInWithGoogle = SignInWithGoogle(authGateway);
     final refreshSession = RefreshSession(authGateway);
 
@@ -2892,6 +2903,7 @@ final class CompositionRoot {
       notifyNewUserRegistered: notifyNewUserRegistered,
       requestPasswordReset: requestPasswordReset,
       updatePassword: updatePassword,
+      verifyRecoveryCode: verifyRecoveryCode,
       signInWithGoogle: signInWithGoogle,
       refreshSession: refreshSession,
       updateDisplayName: UpdateDisplayName(userDirectory: directory),
@@ -5228,6 +5240,12 @@ final class _UnwiredAuthGateway implements AuthGateway {
   Future<Result<void>> updatePassword({
     required String recoveryToken,
     required String password,
+  }) => throw StateError('An auth use-case was not wired into this root');
+
+  @override
+  Future<Result<String>> verifyRecoveryCode({
+    required String email,
+    required String code,
   }) => throw StateError('An auth use-case was not wired into this root');
 }
 

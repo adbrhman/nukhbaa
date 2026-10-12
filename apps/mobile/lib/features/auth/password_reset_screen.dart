@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/platform/browser_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
@@ -16,12 +17,14 @@ import '../../core/providers.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
+import 'password_reset_texts.dart';
 import 'session_gate.dart';
 
 /// Password recovery screen.
 ///
-/// Without [recoveryToken] it sends the recovery email.
-/// With a token it sets a new password.
+/// Without [recoveryToken] it sends the recovery email, then takes the code
+/// that email carries and trades it for a recovery token (batch 110), so the
+/// player never leaves the app. With a token it sets a new password.
 class PasswordResetScreen extends ConsumerStatefulWidget {
   const PasswordResetScreen({super.key, this.recoveryToken, this.initialEmail});
 
@@ -44,19 +47,112 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
 
   final TextEditingController _confirmController = TextEditingController();
 
+  final TextEditingController _codeController = TextEditingController();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _loading = false;
   AppError? _failure;
   bool _sent = false;
   bool _updated = false;
+  bool _resent = false;
+  bool _canResend = false;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _codeController.dispose();
     super.dispose();
+  }
+
+  /// The e-mail service refuses a new code for a minute after the last one.
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    _canResend = false;
+    _resendTimer = Timer(const Duration(seconds: 60), () {
+      if (mounted) setState(() => _canResend = true);
+    });
+  }
+
+  Future<void> _verifyCode() async {
+    if (_loading || !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _failure = null;
+      _resent = false;
+    });
+
+    final Result<PasswordResetCodeResponseDto> result = await ref
+        .read(authApiProvider)
+        .verifyPasswordResetCode(
+          email: _emailController.text.trim(),
+          code: _codeController.text.trim(),
+        );
+
+    if (!mounted) return;
+
+    switch (result) {
+      case Ok<PasswordResetCodeResponseDto>(:final value):
+        unawaited(
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  PasswordResetScreen(recoveryToken: value.recoveryToken),
+            ),
+          ),
+        );
+
+      case Err<PasswordResetCodeResponseDto>(:final error):
+        setState(() {
+          _loading = false;
+          _failure = error;
+        });
+    }
+  }
+
+  Future<void> _resend() async {
+    if (_loading || !_canResend) return;
+
+    setState(() {
+      _loading = true;
+      _failure = null;
+      _resent = false;
+    });
+
+    final Result<PasswordResetResponseDto> result = await ref
+        .read(authApiProvider)
+        .requestPasswordReset(email: _emailController.text.trim());
+
+    if (!mounted) return;
+
+    setState(() {
+      _loading = false;
+      switch (result) {
+        case Ok<PasswordResetResponseDto>():
+          _resent = true;
+          _codeController.clear();
+          _startResendCooldown();
+        case Err<PasswordResetResponseDto>(:final error):
+          _failure = error;
+      }
+    });
+  }
+
+  void _changeEmail() {
+    _resendTimer?.cancel();
+    setState(() {
+      _sent = false;
+      _resent = false;
+      _failure = null;
+      _codeController.clear();
+    });
   }
 
   Future<void> _submit() async {
@@ -89,6 +185,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
             _updated = true;
           } else {
             _sent = true;
+            _startResendCooldown();
           }
         });
 
@@ -167,7 +264,11 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                         Text(
                           widget.isReset
                               ? l10n.resetPasswordSubtitle
-                              : l10n.forgotPasswordSubtitle,
+                              : _sent
+                              ? resetCodeSentMessage(
+                                  _emailController.text.trim(),
+                                )
+                              : resetCodeRequestSubtitle,
                           textAlign: TextAlign.center,
                           style: text.bodyMedium?.copyWith(
                             color: tokens.textSecondary,
@@ -184,15 +285,79 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                         ],
-                        if (_sent || _updated)
+                        if (_resent && _failure == null) ...[
+                          Text(
+                            resetCodeResentMessage,
+                            textAlign: TextAlign.center,
+                            style: text.bodyMedium?.copyWith(
+                              color: tokens.primary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
+                        if (_updated)
                           _SuccessPanel(
-                            message: _updated
-                                ? l10n.passwordResetSuccess
-                                : l10n.passwordResetEmailSent,
+                            message: l10n.passwordResetSuccess,
                             buttonLabel: l10n.backToSignIn,
                             onPressed: _backToSignIn,
                           )
-                        else ...[
+                        else if (_sent) ...[
+                          AppTextField(
+                            fieldKey: const Key('passwordReset.codeField'),
+                            controller: _codeController,
+                            enabled: !_loading,
+                            label: resetCodeFieldLabel,
+                            hint: resetCodeFieldHint,
+                            prefixIcon: Icons.pin_outlined,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            onFieldSubmitted: (_) => unawaited(_verifyCode()),
+                            validator: (value) =>
+                                RegExp(r'^\d{6,10}$').hasMatch(value ?? '')
+                                ? null
+                                : resetCodeFormatError,
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          AppButton(
+                            key: const Key('passwordReset.verify'),
+                            label: resetCodeVerifyLabel,
+                            onPressed: _loading
+                                ? null
+                                : () => unawaited(_verifyCode()),
+                            loading: _loading,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          AppButton(
+                            key: const Key('passwordReset.resend'),
+                            label: _canResend
+                                ? resetCodeResendLabel
+                                : resetCodeResendWaitLabel,
+                            variant: AppButtonVariant.text,
+                            size: AppButtonSize.medium,
+                            onPressed: _loading || !_canResend
+                                ? null
+                                : () => unawaited(_resend()),
+                          ),
+                          AppButton(
+                            key: const Key('passwordReset.changeEmail'),
+                            label: resetCodeChangeEmailLabel,
+                            variant: AppButtonVariant.text,
+                            size: AppButtonSize.medium,
+                            onPressed: _loading ? null : _changeEmail,
+                          ),
+                          AppButton(
+                            key: const Key('passwordReset.back'),
+                            label: l10n.backToSignIn,
+                            variant: AppButtonVariant.text,
+                            size: AppButtonSize.medium,
+                            onPressed: _loading ? null : _backToSignIn,
+                          ),
+                        ] else ...[
                           if (!widget.isReset)
                             AppTextField(
                               fieldKey: const Key('passwordReset.emailField'),
@@ -246,7 +411,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                             key: const Key('passwordReset.submit'),
                             label: widget.isReset
                                 ? l10n.saveNewPassword
-                                : l10n.sendResetLink,
+                                : resetCodeSendLabel,
                             onPressed: _loading
                                 ? null
                                 : () => unawaited(_submit()),

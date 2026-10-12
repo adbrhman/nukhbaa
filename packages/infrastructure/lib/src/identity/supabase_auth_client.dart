@@ -169,6 +169,22 @@ final class SupabaseAuthClient {
     );
   }
 
+  /// Trades the one-time code of a password-reset e-mail for a session via
+  /// POST /verify (type `recovery`); its access token then changes the
+  /// password through [updatePassword]. The project's "Reset password"
+  /// e-mail template must show the code (`{{ .Token }}`).
+  Future<Result<SupabaseSession>> verifyRecoveryCode({
+    required String email,
+    required String code,
+  }) {
+    return _post(
+      path: 'verify',
+      query: const {},
+      body: {'type': 'recovery', 'email': email, 'token': code},
+      onSuccess: _sessionFromLogin,
+    );
+  }
+
   /// Shared request pipeline: builds the GoTrue request, applies the required
   /// apikey + JSON headers, bounds it with [_timeout], and maps the response.
   /// Never throws.

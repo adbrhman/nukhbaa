@@ -248,6 +248,38 @@ final class UpdatePasswordRequestDto {
   Map<String, dynamic> toJson() => {'password': password};
 }
 
+/// Request body for POST /auth/password-reset/verify: the one-time code of
+/// the reset e-mail, typed into the app.
+final class PasswordResetCodeRequestDto {
+  const PasswordResetCodeRequestDto({required this.email, required this.code});
+
+  factory PasswordResetCodeRequestDto.fromJson(Map<String, dynamic> json) =>
+      PasswordResetCodeRequestDto(
+        email: json['email']! as String,
+        code: json['code']! as String,
+      );
+
+  final String email;
+  final String code;
+
+  Map<String, dynamic> toJson() => {'email': email, 'code': code};
+}
+
+/// Response of POST /auth/password-reset/verify: the recovery token the app
+/// then sends to POST /auth/password-reset/update.
+final class PasswordResetCodeResponseDto {
+  const PasswordResetCodeResponseDto({required this.recoveryToken});
+
+  factory PasswordResetCodeResponseDto.fromJson(Map<String, dynamic> json) =>
+      PasswordResetCodeResponseDto(
+        recoveryToken: json['recovery_token']! as String,
+      );
+
+  final String recoveryToken;
+
+  Map<String, dynamic> toJson() => {'recovery_token': recoveryToken};
+}
+
 /// Generic acknowledgement for password-reset operations.
 final class PasswordResetResponseDto {
   const PasswordResetResponseDto({this.success = true});

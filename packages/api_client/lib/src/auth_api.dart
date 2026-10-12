@@ -75,6 +75,19 @@ final class AuthApi {
     );
   }
 
+  /// `POST /auth/password-reset/verify` -- trades the code of the reset
+  /// e-mail for the recovery token [updatePassword] takes.
+  Future<Result<PasswordResetCodeResponseDto>> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) {
+    return _transport.postObject<PasswordResetCodeResponseDto>(
+      '/auth/password-reset/verify',
+      body: PasswordResetCodeRequestDto(email: email, code: code).toJson(),
+      parse: PasswordResetCodeResponseDto.fromJson,
+    );
+  }
+
   Future<Result<MeResponseDto>> me() {
     return _transport.getObject<MeResponseDto>(
       '/me',

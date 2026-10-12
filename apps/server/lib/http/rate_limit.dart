@@ -159,6 +159,10 @@ enum AuthAttempt {
   /// `POST /auth/password-reset/request`: 3 per address in 15 minutes, so
   /// nobody can flood someone's inbox with reset e-mails.
   passwordReset,
+
+  /// `POST /auth/password-reset/verify`: 5 codes per address in 15
+  /// minutes, so the code of a reset e-mail cannot be guessed.
+  passwordResetCode,
 }
 
 final RateLimiter _loginLimiter = RateLimiter(
@@ -176,6 +180,11 @@ final RateLimiter _passwordResetLimiter = RateLimiter(
   window: const Duration(minutes: 15),
 );
 
+final RateLimiter _passwordResetCodeLimiter = RateLimiter(
+  limit: 5,
+  window: const Duration(minutes: 15),
+);
+
 /// The `429` for an [attempt] on [email] over its limit, or `null`.
 ///
 /// Counted per address rather than per IP: behind the mobile carriers' shared
@@ -186,6 +195,7 @@ Response? limitAuthAttempt(AuthAttempt attempt, String email) {
     AuthAttempt.login => _loginLimiter,
     AuthAttempt.register => _registerLimiter,
     AuthAttempt.passwordReset => _passwordResetLimiter,
+    AuthAttempt.passwordResetCode => _passwordResetCodeLimiter,
   };
   final wait = limiter.hit(email.trim().toLowerCase());
   return wait == null ? null : tooManyRequests(wait);
