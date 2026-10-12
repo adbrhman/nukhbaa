@@ -122,6 +122,7 @@ final class CompositionRoot {
     required this.sendPredictionReminders,
     required this.sendPreMatchReminders,
     required this.sendStreakSavers,
+    required this.sendIncompleteDayReminders,
     required this.sendOvertakenPushes,
     required this.recordPushOpen,
     required this.recordScreenViews,
@@ -320,6 +321,7 @@ final class CompositionRoot {
     SendPredictionReminders? sendPredictionReminders,
     SendPreMatchReminders? sendPreMatchReminders,
     SendStreakSavers? sendStreakSavers,
+    SendIncompleteDayReminders? sendIncompleteDayReminders,
     SendOvertakenPushes? sendOvertakenPushes,
     RecordPushOpen? recordPushOpen,
     RecordScreenViews? recordScreenViews,
@@ -545,6 +547,8 @@ final class CompositionRoot {
        sendPreMatchReminders =
            sendPreMatchReminders ?? _absentSendPreMatchReminders(),
        sendStreakSavers = sendStreakSavers ?? _absentSendStreakSavers(),
+       sendIncompleteDayReminders =
+           sendIncompleteDayReminders ?? _absentSendIncompleteDayReminders(),
        sendOvertakenPushes =
            sendOvertakenPushes ?? _absentSendOvertakenPushes(),
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
@@ -1479,6 +1483,14 @@ final class CompositionRoot {
     sender: const NoopPushSender(),
   );
 
+  /// Backs an "absent" [SendIncompleteDayReminders]: never reached by a
+  /// route test.
+  static SendIncompleteDayReminders _absentSendIncompleteDayReminders() =>
+      SendIncompleteDayReminders(
+        reminders: _UnwiredIncompleteDayReminderRepository(),
+        sender: const NoopPushSender(),
+      );
+
   /// Backs an "absent" [SendOvertakenPushes]: never reached by a route test.
   static SendOvertakenPushes _absentSendOvertakenPushes() =>
       SendOvertakenPushes(
@@ -2205,6 +2217,10 @@ final class CompositionRoot {
   /// Driven by the scheduler.
   final SendStreakSavers sendStreakSavers;
 
+  /// Tells a player who predicted part of today's matches how many are
+  /// still open (batch 117). Driven by the scheduler.
+  final SendIncompleteDayReminders sendIncompleteDayReminders;
+
   /// Tells a weekly-league member who was just overtaken (plan P3-4c).
   /// Driven by the scheduler.
   final SendOvertakenPushes sendOvertakenPushes;
@@ -2923,6 +2939,10 @@ final class CompositionRoot {
         savers: PostgresStreakSaverRepository(connection),
         streaks: PostgresStreakRepository(connection),
         budget: PostgresPredictionReminderRepository(connection),
+        sender: pushSender,
+      ),
+      sendIncompleteDayReminders: SendIncompleteDayReminders(
+        reminders: PostgresIncompleteDayReminderRepository(connection),
         sender: pushSender,
       ),
       recordPushOpen: RecordPushOpen(
@@ -4979,6 +4999,31 @@ final class _UnwiredStreakSaverRepository implements StreakSaverRepository {
   @override
   Future<Result<void>> markSent({
     required StreakSaverTarget target,
+    required String sendDate,
+    required DateTime now,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
+}
+
+/// Refuses every call: see [_absentSendIncompleteDayReminders].
+final class _UnwiredIncompleteDayReminderRepository
+    implements IncompleteDayReminderRepository {
+  static Never _unwired() =>
+      throw StateError('The incomplete-day sweep was not wired into this root');
+
+  @override
+  Future<Result<List<IncompleteDayTarget>>> dueTargets({
+    required String today,
+    required DateTime now,
+    required DateTime from,
+    required DateTime to,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markSent({
+    required UserId userId,
     required String sendDate,
     required DateTime now,
   }) => _unwired();

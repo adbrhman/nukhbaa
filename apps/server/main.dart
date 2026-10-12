@@ -4,6 +4,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/badge_evaluation_scheduler.dart';
 import 'package:server/scheduler/h2h_league_scheduler.dart';
+import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
@@ -38,6 +39,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Warns a player whose run breaks at the next kickoff (see
     // streak_saver_scheduler.dart).
     startStreakSaverScheduler(root);
+    // Tells a player who predicted part of the day how many matches are
+    // still open (see incomplete_day_scheduler.dart).
+    startIncompleteDayScheduler(root);
     // Tells a weekly-league member who was just overtaken (see
     // overtaken_scheduler.dart).
     startOvertakenScheduler(root);

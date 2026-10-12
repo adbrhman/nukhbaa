@@ -4407,6 +4407,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   the manifest gets FCM's `default_notification_icon` and
   `default_notification_color`. CI only; no Dart, server or migration
   change. Takes effect with the next APK.
+- **Batch 117 ("N matches still to predict" push, 2026-10-12)**: the
+  daily reminder (0040) reaches only a player who predicted none of the
+  day's matches. A player who predicted some and left others open now
+  gets one push a day, 75-105 minutes before the first match they left
+  open: "تبقى لديك N مباريات لم تتوقعها اليوم" (Arabic count forms for 1, 2, 3-10,
+  11+), N = that day's unpredicted matches not yet kicked off. Owner's
+  decisions: an hour and a half before; OUTSIDE the weekly budget of 5
+  (so its own table, migration 0106 `notification.incomplete_day_sends`,
+  PK (user_id, send_date), which the budget query does not count). It
+  obeys the `prediction_reminder` switch and the quiet hours.
+  `SendIncompleteDayReminders`, `IncompleteDayReminderRepository`,
+  `PostgresIncompleteDayReminderRepository` (SQL checked on a seeded
+  Postgres 16), `incomplete_day_scheduler.dart` (10-minute tick),
+  composition root and main.dart wiring. A player with a run of 2+ may
+  still get the streak saver (45-75 min) the same day. Apply 0106 in the
+  SQL Editor BEFORE pushing.
 
 ## 3. Version-Verification Log
 
