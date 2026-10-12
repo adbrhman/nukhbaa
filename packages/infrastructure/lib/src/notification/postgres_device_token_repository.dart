@@ -15,6 +15,14 @@ import 'package:shared/shared.dart';
 /// bookkeeping, not domain-modeled state, so no [Clock] dependency is
 /// threaded through the adapter for it.
 ///
+/// One push per phone (batch 118): a player who has the app (`android` or
+/// `ios`) keeps no `web` token. The browser on the same phone showed every
+/// push a second time, with a grey letter in place of the mark. So a native
+/// registration retires the player's web tokens, and a web registration
+/// from a player who already has a native token is not kept (the row is
+/// removed if the token was on file, so it never stays with someone else).
+/// A player with only the web build (the iPhone players) is unaffected.
+///
 /// The adapter is *total* (Application ADR §2): it never throws. A driver
 /// failure is [ErrorKind.transient]; the one integrity case that can fire —
 /// the user vanishing between authentication and this write — maps off the
@@ -27,8 +35,31 @@ final class PostgresDeviceTokenRepository implements DeviceTokenRepository {
   final PostgresConnection _connection;
 
   static const String _upsertSql = '''
+WITH native AS (
+  SELECT EXISTS (
+    SELECT 1
+    FROM notification.device_tokens
+    WHERE user_id = @user_id::uuid
+      AND platform <> 'web'
+      AND token <> @token::text
+  ) AS present
+),
+retired_web AS (
+  DELETE FROM notification.device_tokens
+  WHERE @platform::text <> 'web'
+    AND user_id = @user_id::uuid
+    AND platform = 'web'
+    AND token <> @token::text
+),
+skipped_web AS (
+  DELETE FROM notification.device_tokens
+  WHERE @platform::text = 'web'
+    AND token = @token::text
+    AND (SELECT present FROM native)
+)
 INSERT INTO notification.device_tokens (token, user_id, platform, updated_at)
-VALUES (@token, @user_id, @platform, now())
+SELECT @token::text, @user_id::uuid, @platform::text, now()
+WHERE @platform::text <> 'web' OR NOT (SELECT present FROM native)
 ON CONFLICT (token) DO UPDATE
   SET user_id = excluded.user_id,
       platform = excluded.platform,

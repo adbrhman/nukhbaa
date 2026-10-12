@@ -4423,6 +4423,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   composition root and main.dart wiring. A player with a run of 2+ may
   still get the streak saver (45-75 min) the same day. Apply 0106 in the
   SQL Editor BEFORE pushing.
+- **Batch 118 (one push per phone, 2026-10-12)**: five players (two of
+  them admins) had the Android app and also a browser token (`web`) on
+  file, so every push arrived twice; the browser copy showed a grey "N"
+  (the app's own copy already shows the mark, batch 116).
+  `PostgresDeviceTokenRepository.upsert` is now one statement: a native
+  (`android`/`ios`) registration deletes the player's `web` tokens, and a
+  `web` registration from a player who has a native token is not kept
+  (and is removed if that token was on file). Web-only players (the
+  iPhone players) are unaffected. No migration; the existing extra
+  tokens go the next time each player opens the app. SQL checked on a
+  seeded Postgres 16.
 
 ## 3. Version-Verification Log
 
