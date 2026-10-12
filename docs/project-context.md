@@ -4382,6 +4382,10 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   TikTok (https://www.tiktok.com/@nukhbaa.app) if batch 112 did not. `deploy-pages.yml` now
   copies the landing folder with `cp -R landing/.`, since `cp landing/*`
   fails on the s/ folder.
+- **Batch 114 (smaller image for /s, 2026-10-12)**: tested on WhatsApp,
+  /s still showed the 512x512 logo as a large image; WhatsApp draws
+  the small side thumbnail only for a small og:image. /s now points at
+  a new `icon-200.png` (200x200, the smallest Facebook accepts).
 
 ## 3. Version-Verification Log
 
