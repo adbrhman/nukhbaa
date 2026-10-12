@@ -1,5 +1,6 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:infrastructure/src/common/ttl_cache.dart';
 import 'package:shared/shared.dart';
 
@@ -11,6 +12,10 @@ import 'package:shared/shared.dart';
 /// database. Every score write passes through [saveFixtureScores] here, so
 /// the cached list is dropped the moment it changes; [ttl] only bounds an
 /// edit made outside this server.
+///
+/// Reads that arrive while the same list is loading share that load
+/// ([ReadCoalescer]): a fixture is dropped the moment it is scored, which is
+/// exactly when every open screen asks for it (2026-10-11, 20:41 UTC).
 final class CachedFixtureScoreRepository implements FixtureScoreRepository {
   /// Wraps [inner]; [now] is injectable for tests.
   CachedFixtureScoreRepository(
@@ -26,6 +31,8 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
 
   final FixtureScoreRepository _inner;
   final TtlCache<String, List<ParticipantFixtureScore>> _byFixture;
+  final ReadCoalescer<String, Result<List<ParticipantFixtureScore>>> _loads =
+      ReadCoalescer<String, Result<List<ParticipantFixtureScore>>>();
 
   @override
   Future<Result<void>> saveFixtureScores(
@@ -52,16 +59,25 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
       return Result.ok(cached);
     }
     final int startedAt = _byFixture.generation;
-    final Result<List<ParticipantFixtureScore>> result = await _inner
-        .listByFixture(fixture);
-    if (result case Ok<List<ParticipantFixtureScore>>(:final value)) {
-      _byFixture.write(fixture.value, value, startedAt: startedAt);
-    }
-    return result;
+    return _loads.run('$startedAt|${fixture.value}', () async {
+      final Result<List<ParticipantFixtureScore>> result = await _inner
+          .listByFixture(fixture);
+      if (result case Ok<List<ParticipantFixtureScore>>(:final value)) {
+        _byFixture.write(fixture.value, value, startedAt: startedAt);
+      }
+      return result;
+    });
   }
 
   @override
   Future<Result<List<ParticipantFixtureScore>>> listBySeasonFixtures(
     List<FixtureRef> fixtures,
-  ) => _inner.listBySeasonFixtures(fixtures);
+  ) {
+    final String key =
+        (fixtures.map((fixture) => fixture.value).toList()..sort()).join(',');
+    return _loads.run(
+      'batch|${_byFixture.generation}|$key',
+      () => _inner.listBySeasonFixtures(fixtures),
+    );
+  }
 }

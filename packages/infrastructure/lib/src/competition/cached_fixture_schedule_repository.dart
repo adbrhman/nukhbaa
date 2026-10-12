@@ -1,5 +1,6 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:infrastructure/src/common/ttl_cache.dart';
 import 'package:shared/shared.dart';
 
@@ -9,7 +10,8 @@ import 'package:shared/shared.dart';
 /// month's fixtures, so one answer can serve every user for [ttl]. Each
 /// schedule write (register, correct, provider sync) goes through [upsert]
 /// here and drops the whole cache, so a changed kickoff shows on the next
-/// read.
+/// read. Reads that arrive while the same batch is loading share that
+/// load ([ReadCoalescer]): a provider sync drops the whole cache.
 final class CachedFixtureScheduleRepository
     implements FixtureScheduleRepository {
   /// Wraps [inner]; [now] is injectable for tests.
@@ -26,6 +28,8 @@ final class CachedFixtureScheduleRepository
 
   final FixtureScheduleRepository _inner;
   final TtlCache<String, List<FixtureSchedule>> _batches;
+  final ReadCoalescer<String, Result<List<FixtureSchedule>>> _loads =
+      ReadCoalescer<String, Result<List<FixtureSchedule>>>();
 
   @override
   Future<Result<void>> upsert(FixtureSchedule schedule) async {
@@ -57,12 +61,14 @@ final class CachedFixtureScheduleRepository
       return Result.ok(cached);
     }
     final int startedAt = _batches.generation;
-    final Result<List<FixtureSchedule>> result = await _inner.findByFixtures(
-      fixtures,
-    );
-    if (result case Ok<List<FixtureSchedule>>(:final value)) {
-      _batches.write(key, value, startedAt: startedAt);
-    }
-    return result;
+    return _loads.run('$startedAt|$key', () async {
+      final Result<List<FixtureSchedule>> result = await _inner.findByFixtures(
+        fixtures,
+      );
+      if (result case Ok<List<FixtureSchedule>>(:final value)) {
+        _batches.write(key, value, startedAt: startedAt);
+      }
+      return result;
+    });
   }
 }

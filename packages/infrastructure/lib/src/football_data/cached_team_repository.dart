@@ -1,5 +1,6 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:infrastructure/src/common/ttl_cache.dart';
 import 'package:shared/shared.dart';
 
@@ -21,6 +22,8 @@ final class CachedTeamRepository implements TeamRepository {
 
   final TeamRepository _inner;
   final TtlCache<int, List<Team>> _all;
+  final ReadCoalescer<int, Result<List<Team>>> _loads =
+      ReadCoalescer<int, Result<List<Team>>>();
 
   @override
   Future<Result<List<Team>>> listAll() async {
@@ -29,10 +32,12 @@ final class CachedTeamRepository implements TeamRepository {
       return Result.ok(cached);
     }
     final int startedAt = _all.generation;
-    final Result<List<Team>> result = await _inner.listAll();
-    if (result case Ok<List<Team>>(:final value)) {
-      _all.write(_key, value, startedAt: startedAt);
-    }
-    return result;
+    return _loads.run(startedAt, () async {
+      final Result<List<Team>> result = await _inner.listAll();
+      if (result case Ok<List<Team>>(:final value)) {
+        _all.write(_key, value, startedAt: startedAt);
+      }
+      return result;
+    });
   }
 }

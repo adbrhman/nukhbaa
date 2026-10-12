@@ -1,5 +1,6 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:shared/shared.dart';
 
 /// Short-lived, in-process caches in front of the two leaderboard sums.
@@ -11,7 +12,8 @@ import 'package:shared/shared.dart';
 /// price is that a freshly scored result can take up to [ttl] to show.
 ///
 /// The cache lives in this server process only; it is a performance layer,
-/// never a source of truth.
+/// never a source of truth. Reads that arrive while the same answer is
+/// loading share that load ([ReadCoalescer]).
 final class _TtlCache<K, V> {
   _TtlCache({
     required this.ttl,
@@ -62,6 +64,8 @@ final class CachedFixtureTotalsReader implements FixtureTotalsReader {
 
   final FixtureTotalsReader _inner;
   final _TtlCache<String, List<ParticipantFixtureTotals>> _cache;
+  final ReadCoalescer<String, Result<List<ParticipantFixtureTotals>>> _loads =
+      ReadCoalescer<String, Result<List<ParticipantFixtureTotals>>>();
 
   @override
   Future<Result<List<ParticipantFixtureTotals>>> totalsFor(
@@ -73,11 +77,13 @@ final class CachedFixtureTotalsReader implements FixtureTotalsReader {
     if (cached != null) {
       return Result.ok(cached);
     }
-    final result = await _inner.totalsFor(fixtures);
-    if (result is Ok<List<ParticipantFixtureTotals>>) {
-      _cache.write(key, result.value);
-    }
-    return result;
+    return _loads.run(key, () async {
+      final result = await _inner.totalsFor(fixtures);
+      if (result is Ok<List<ParticipantFixtureTotals>>) {
+        _cache.write(key, result.value);
+      }
+      return result;
+    });
   }
 }
 
@@ -97,6 +103,8 @@ final class CachedSportingSeasonStandingsReader
 
   final SportingSeasonStandingsReader _inner;
   final _TtlCache<int, List<SportingSeasonStanding>> _cache;
+  final ReadCoalescer<int, Result<List<SportingSeasonStanding>>> _loads =
+      ReadCoalescer<int, Result<List<SportingSeasonStanding>>>();
 
   @override
   Future<Result<List<SportingSeasonStanding>>> standings(
@@ -106,10 +114,12 @@ final class CachedSportingSeasonStandingsReader
     if (cached != null) {
       return Result.ok(cached);
     }
-    final result = await _inner.standings(season);
-    if (result is Ok<List<SportingSeasonStanding>>) {
-      _cache.write(season.startYear, result.value);
-    }
-    return result;
+    return _loads.run(season.startYear, () async {
+      final result = await _inner.standings(season);
+      if (result is Ok<List<SportingSeasonStanding>>) {
+        _cache.write(season.startYear, result.value);
+      }
+      return result;
+    });
   }
 }

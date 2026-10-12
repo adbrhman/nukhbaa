@@ -4435,6 +4435,34 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   tokens go the next time each player opens the app. SQL checked on a
   seeded Postgres 16.
 
+- **Batch 109 (read coalescing, server, 2026-10-12)**: measured first:
+  after batch 104 reached the server, `ops.error_samples` still held a
+  burst on build 2b9f587 at 2026-10-11 20:41 UTC -- scores (AGMU),
+  predictions (FP3B) and U9H3 within eleven seconds, 'still waiting
+  for a connection; connections in use 8/8, waiting 150..180'. The
+  queries were not slow: the reads were all for the same fixture at the
+  same moment (a match ended), and every cache in front of them was
+  either missing or had just been dropped by the write (scores evicted
+  on scoring, schedules cleared on each sync), so each request ran its
+  own query. `ReadCoalescer` (`infrastructure/src/common`) lets the
+  requests that arrive while an answer is loading share that load; the
+  cache generation is in the key, so a read after a write never joins a
+  load begun before it. Used by `CachedFixtureScoreRepository` (and its
+  board batch, not cached), `CachedFixtureScheduleRepository`,
+  `CachedFixturePredictionTallyReader`, `CachedTeamRepository` and the
+  two leaderboard readers. New read-only decorators, wired into the
+  read use-cases only (`GetFixtureScores`, `GetFixtureResult`,
+  `ListFixturePredictions` and its reveal, `GetPredictionsBoard`):
+  `CachedFixtureResultReads` (a fixture's result and the board's,
+  'no result yet' included, 20 s) and `CachedFixturePredictionReads`
+  (the season link, 60 s; a kicked-off fixture's predictions, 20 s).
+  Scoring, the admin forms and submitting a prediction keep the plain
+  repositories, so they see every write at once; a result recorded
+  elsewhere takes up to 20 s to show on the players' screens. A scores
+  request now costs one query of its own (the caller's participation).
+  The pool size (8) is unchanged: nothing measured shows what Supabase
+  allows. No migration, no client change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

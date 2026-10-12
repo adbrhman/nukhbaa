@@ -2584,6 +2584,19 @@ final class CompositionRoot {
       PostgresFixtureScheduleRepository(connection),
     );
 
+    // The players' read routes (a fixture's scores, its predictions, the day
+    // board) ask for the same fixture's season link, predictions and result
+    // all at once when a match ends; these read-only decorators answer them
+    // from one query each (2026-10-12, after 150-180 requests queued for
+    // the pool on 2026-10-11). Writers -- submitting a prediction, the
+    // admin's links and results, scoring -- keep the plain repositories.
+    final fixturePredictionReads = CachedFixturePredictionReads(
+      fixturePredictionRepository,
+    );
+    final fixtureResultReads = CachedFixtureResultReads(
+      fixtureResultRepository,
+    );
+
     // Football Data slice: read-only team catalog backing `GET /teams`
     // (previously unwired schema — `football_data.teams`, migration
     // `0013_football_data.sql`), so a client can resolve a fixture's team ids
@@ -2818,7 +2831,7 @@ final class CompositionRoot {
     // predictions' own gate: whoever may see a prediction may react to it.
     final predictionReveal = ListFixturePredictions(
       competitionRepository: competitionRepository,
-      fixturePredictionRepository: fixturePredictionRepository,
+      fixturePredictionRepository: fixturePredictionReads,
       fixtureScheduleRepository: fixtureScheduleRepository,
       participantReader: participantReader,
       clock: clock,
@@ -3390,16 +3403,16 @@ final class CompositionRoot {
       ),
       getFixtureScores: GetFixtureScores(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
         fixtureScoreRepository: fixtureScoreRepository,
       ),
-      getFixtureResult: GetFixtureResult(results: fixtureResultRepository),
+      getFixtureResult: GetFixtureResult(results: fixtureResultReads),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
         fixturePredictionRepository: fixturePredictionRepository,
       ),
       listFixturePredictions: ListFixturePredictions(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
         fixtureScheduleRepository: fixtureScheduleRepository,
         participantReader: participantReader,
         clock: clock,
@@ -3411,7 +3424,7 @@ final class CompositionRoot {
       getPredictionsBoard: GetPredictionsBoard(
         reveal: predictionReveal,
         scores: fixtureScoreRepository,
-        results: fixtureResultRepository,
+        results: fixtureResultReads,
         reactions: predictionReactions,
       ),
       reactToPrediction: ReactToPrediction(

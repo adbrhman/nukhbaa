@@ -1,5 +1,6 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
+import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:infrastructure/src/common/ttl_cache.dart';
 import 'package:shared/shared.dart';
 
@@ -8,7 +9,8 @@ import 'package:shared/shared.dart';
 /// The split is the same for every user looking at the same fixtures, and it
 /// moves only as predictions arrive, so a percentage up to [ttl] old is
 /// indistinguishable to a reader. One grouped query then serves every open
-/// of the screen inside that window.
+/// of the screen inside that window, and reads that arrive while it loads
+/// share that load ([ReadCoalescer]).
 final class CachedFixturePredictionTallyReader
     implements FixturePredictionTallyReader {
   /// Wraps [inner]; [now] is injectable for tests.
@@ -25,6 +27,8 @@ final class CachedFixturePredictionTallyReader
 
   final FixturePredictionTallyReader _inner;
   final TtlCache<String, List<FixtureOutcomeTally>> _tallies;
+  final ReadCoalescer<String, Result<List<FixtureOutcomeTally>>> _loads =
+      ReadCoalescer<String, Result<List<FixtureOutcomeTally>>>();
 
   @override
   Future<Result<List<FixtureOutcomeTally>>> tallyByFixtures(
@@ -37,11 +41,13 @@ final class CachedFixturePredictionTallyReader
       return Result.ok(cached);
     }
     final int startedAt = _tallies.generation;
-    final Result<List<FixtureOutcomeTally>> result = await _inner
-        .tallyByFixtures(fixtures);
-    if (result case Ok<List<FixtureOutcomeTally>>(:final value)) {
-      _tallies.write(key, value, startedAt: startedAt);
-    }
-    return result;
+    return _loads.run('$startedAt|$key', () async {
+      final Result<List<FixtureOutcomeTally>> result = await _inner
+          .tallyByFixtures(fixtures);
+      if (result case Ok<List<FixtureOutcomeTally>>(:final value)) {
+        _tallies.write(key, value, startedAt: startedAt);
+      }
+      return result;
+    });
   }
 }
