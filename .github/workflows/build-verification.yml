@@ -821,6 +821,14 @@ jobs:
           json.dump(out, open("checksums.json", "w"), indent=2)
           print(json.dumps(out, indent=2))
           PYEOF
+          # One file under a name that never changes, for the links page's
+          # direct download (releases/latest/download/nukhbaa.apk, batch 111):
+          # the GitHub release page confused players. Copied after
+          # checksums.json on purpose: /app/latest-build reads only the
+          # checksummed per-ABI files, so the in-app updater never sees it.
+          if [ -f "nukhbaa-arm64-v8a-$SHORT_SHA.apk" ]; then
+            cp "nukhbaa-arm64-v8a-$SHORT_SHA.apk" nukhbaa.apk
+          fi
 
       - name: Publish an immutable per-build release
         uses: softprops/action-gh-release@v2
@@ -832,6 +840,7 @@ jobs:
           make_latest: true
           files: |
             apk/nukhbaa-*.apk
+            apk/nukhbaa.apk
             apk/checksums.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

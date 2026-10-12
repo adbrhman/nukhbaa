@@ -49,6 +49,27 @@ void main() {
       });
     });
 
+    test('the links page copy (nukhbaa.apk, no checksum) is ignored', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa.apk', 'url': 'https://x/stable.apk'},
+            {'name': 'nukhbaa-arm64-v8a-abc.apk', 'url': 'https://x/arm64.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/checksums.json'},
+          ]);
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-arm64-v8a-abc.apk': 'AA'}),
+          200,
+        );
+      });
+
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      final build = (result as Ok<LatestBuild>).value;
+      expect(build.apkUrl, 'https://x/arm64.apk');
+      expect(build.assets.map((a) => a.url), ['https://x/arm64.apk']);
+    });
+
     test(
       'apk without a checksum entry is skipped (=> transient error)',
       () async {

@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
 import '../../core/auth/google_id_token_source.dart';
 import '../../core/design/app_radius.dart';
@@ -15,10 +16,12 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import '../gamification/invite_friends_screen.dart';
+import '../update/update_gate.dart';
 import 'app_lock.dart';
 import 'session_controller.dart';
 import 'password_reset_screen.dart';
 import 'session_state.dart';
+import 'widgets/account_menu.dart';
 
 /// The brand logo shown in the sign-in header (declared in pubspec.yaml).
 const String kBrandLogoAsset = 'assets/branding/nukhbaa_logo.png';
@@ -92,6 +95,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final bool inFlight =
         asyncSession.isLoading || session is SessionAuthenticating;
     final AppError? failure = session is SessionFailed ? session.error : null;
+    // Android only: set by UpdateGate at launch, before sign-in. Shown here
+    // too, so a player who cannot sign in (a forgotten password, a fix not
+    // yet installed) can still update.
+    final LatestBuildDto? update = ref.watch(pendingUpdateProvider);
 
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
@@ -117,6 +124,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   children: [
                     const _Header(),
                     const SizedBox(height: AppSpacing.xxl),
+                    if (update != null) ...[
+                      AccountMenuCard(
+                        children: [
+                          AccountMenuRow(
+                            key: const Key('signIn.update'),
+                            icon: Icons.system_update_outlined,
+                            title: 'يتوفر تحديث جديد',
+                            subtitle: 'اضغط لتحديث التطبيق الآن',
+                            trailing: const Badge(),
+                            onTap: () =>
+                                unawaited(installUpdate(context, ref, update)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(

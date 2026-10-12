@@ -4483,6 +4483,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `features/auth/password_reset_texts.dart` (generated l10n untouched).
   The web link keeps working. No migration; needs a new APK.
 
+- **Batch 111 (update before sign-in, direct APK link, 2026-10-13)**:
+  a player who cannot sign in (the forgotten-password case batch 110
+  fixes) never saw the update row, which lived on the account tab only,
+  and the links page sent players to the GitHub release page (English,
+  six files). The sign-in screen now shows the same 'update available'
+  row (`signIn.update`, `pendingUpdateProvider`, set by `UpdateGate` at
+  launch -- `/app/latest-build` is public). The release job also
+  publishes the arm64-v8a APK as `nukhbaa.apk`, copied after
+  `checksums.json` so `/app/latest-build` and the in-app updater never
+  see it; the links page (`links.nukhbaa.app`, Netlify Drop, outside
+  this repo) links to `releases/latest/download/nukhbaa.apk`. 32-bit
+  (armeabi-v7a) phones still take their file from the release page.
+  No migration; needs a new APK for the sign-in row.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
