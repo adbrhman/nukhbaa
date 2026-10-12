@@ -4371,6 +4371,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `summary`, in the landing page and in the app's `web/index.html`;
   WhatsApp, Telegram, Facebook and X show a square image as a small
   thumbnail. `og.png` stays in the landing folder, unused.
+- **Batch 113 (two link previews, 2026-10-12)**: the owner picks the
+  preview per post. `https://nukhbaa.app` (and the app's
+  `web/index.html`, so invite links) carries the wide card (og.png
+  1200x630, summary_large_image); `https://nukhbaa.app/s` carries the
+  small square logo (icon-512.png, summary). `landing/s/index.html`
+  holds only the tags (og:url is /s/ itself, so Facebook does not
+  re-scrape the root) and a script that sends a visitor to `/`;
+  crawlers do not run it. Undoes batch 111's tags if it ran, adds
+  TikTok (https://www.tiktok.com/@nukhbaa.app) if batch 112 did not. `deploy-pages.yml` now
+  copies the landing folder with `cp -R landing/.`, since `cp landing/*`
+  fails on the s/ folder.
 
 ## 3. Version-Verification Log
 
