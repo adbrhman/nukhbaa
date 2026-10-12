@@ -36,7 +36,7 @@
   <script type="application/ld+json">
   {"@context":"https://schema.org","@graph":[
     {"@type":"WebSite","name":"نُخبة","alternateName":"Nukhbaa","url":"https://nukhbaa.app/"},
-    {"@type":"Organization","name":"نُخبة","url":"https://nukhbaa.app/","logo":"https://nukhbaa.app/icon-512.png"}
+    {"@type":"Organization","name":"نُخبة","url":"https://nukhbaa.app/","logo":"https://nukhbaa.app/icon-512.png","sameAs":["https://whatsapp.com/channel/0029VbDjBbEBlHpWTaJdKe2t","https://x.com/nukhbaa_app","https://www.instagram.com/nukhbaa_app","https://www.snapchat.com/add/nukhbaa_app","https://www.facebook.com/share/1QLKSvPGNt/"]}
   ]}
   </script>
 
@@ -85,6 +85,19 @@
     .install { margin-top: 32px; padding: 18px; border-radius: 16px; border: 1px dashed var(--line); color: var(--muted); font-size: 15px; }
     .install b { color: var(--text); }
     .install ol { margin: 6px 0 0; padding-inline-start: 20px; }
+    .social { margin-top: 40px; text-align: center; }
+    .social h2 { font-size: 18px; margin: 0 0 12px; color: var(--muted); font-weight: 400; }
+    .social-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .social-links a {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
+      border-radius: 999px; border: 1px solid var(--line); background: var(--bg2);
+      color: var(--text); text-decoration: none; font-weight: 700; font-size: 15px;
+    }
+    .social-links a::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot, var(--brand)); }
+    .social-links a:hover { background: rgba(255,255,255,.07); }
+    .social-links .wa { --dot: #25D366; } .social-links .x { --dot: #e7e9ea; }
+    .social-links .ig { --dot: #E1306C; } .social-links .sc { --dot: #FFFC00; }
+    .social-links .fb { --dot: #1877F2; }
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 16px 32px; }
   </style>
 </head>
@@ -102,6 +115,17 @@
         </a>
         <a class="btn ghost" href="/nukhbaa/">افتح نسخة الويب</a>
         <div id="dlnote" class="note"></div>
+      </div>
+    </section>
+
+    <section class="social" aria-label="تابعنا">
+      <h2>تابعنا</h2>
+      <div class="social-links">
+        <a class="wa" href="https://whatsapp.com/channel/0029VbDjBbEBlHpWTaJdKe2t" target="_blank" rel="noopener">قناة واتساب</a>
+        <a class="x" href="https://x.com/nukhbaa_app" target="_blank" rel="noopener">إكس</a>
+        <a class="ig" href="https://www.instagram.com/nukhbaa_app" target="_blank" rel="noopener">إنستغرام</a>
+        <a class="sc" href="https://www.snapchat.com/add/nukhbaa_app" target="_blank" rel="noopener">سناب شات</a>
+        <a class="fb" href="https://www.facebook.com/share/1QLKSvPGNt/" target="_blank" rel="noopener">فيسبوك</a>
       </div>
     </section>
 

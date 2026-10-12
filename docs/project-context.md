@@ -4358,6 +4358,13 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `api.github.com` (falls back to the releases page). The app's own
   `web/index.html` gains the same og: tags, so invite links show the
   card. GitHub Pages is unchanged (it never served the root).
+- **Batch 110 (social links on the landing page, 2026-10-12)**: the
+  links of the owner's links.nukhbaa.app page (WhatsApp channel, X,
+  Instagram, Snapchat, Facebook; handle nukhbaa_app) added to
+  `deploy/web-mirror/landing/index.html` under "تابعنا", and as
+  `sameAs` of the Organization in its JSON-LD, so nukhbaa.app can
+  replace links.nukhbaa.app in profile bios. links.nukhbaa.app is not
+  in this repository; its APK button pointed at build-07340aa.
 
 ## 3. Version-Verification Log
 
