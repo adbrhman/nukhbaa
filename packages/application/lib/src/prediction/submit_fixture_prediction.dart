@@ -41,7 +41,7 @@ import 'package:shared/shared.dart';
 ///    fixture's kickoff day, excluding this fixture itself so re-marking an
 ///    already-double fixture on amend never double-counts
 ///    (`prediction.daily_double_exceeded`). Only checked when [isDouble] is
-///    true.
+///    true and [keepStoredDouble] is not.
 /// 5. **The fixture is available to the caller** (migration 0098): nobody
 ///    predicts a hidden fixture, and only an admin predicts a test fixture
 ///    (`prediction.fixture_unavailable`). A test prediction feeds no
@@ -50,6 +50,11 @@ import 'package:shared/shared.dart';
 /// **Idempotent**: a first call for `(fixture, participant)` inserts; a
 /// repeat call amends the existing prediction in place — one row per
 /// `(fixture, participant)`, never a second.
+///
+/// **Keeping the stored double** (`keepStoredDouble: true`, used by duel
+/// acceptance, audit M-12): [isDouble] is ignored. An amend keeps whatever
+/// double the saved prediction already has, and a first prediction is never
+/// a double, so the score can change but the day's double never moves.
 ///
 /// Never throws; returns a typed [Result].
 final class SubmitFixturePrediction {
@@ -101,6 +106,7 @@ final class SubmitFixturePrediction {
     required int homeGoals,
     required int awayGoals,
     bool isDouble = false,
+    bool keepStoredDouble = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
@@ -199,8 +205,9 @@ final class SubmitFixturePrediction {
 
     // Rule 4: at most one double per Riyadh calendar day -- the day the
     // app shows and the daily challenge uses, the same day migration 0083
-    // enforces -- only when marking one.
-    if (isDouble) {
+    // enforces -- only when marking one. Keeping the stored double marks
+    // nothing new: that double already passed this rule when it was set.
+    if (isDouble && !keepStoredDouble) {
       final countResult = await _fixturePredictions.countDoublesOnDay(
         participant.id,
         riyadhDayOf(kickoffAt),
@@ -234,7 +241,7 @@ final class SubmitFixturePrediction {
         lock,
         homeGoals,
         awayGoals,
-        isDouble,
+        keepStoredDouble ? existing.prediction.isDouble : isDouble,
         now,
       );
     }
@@ -245,9 +252,10 @@ final class SubmitFixturePrediction {
       lock,
       homeGoals,
       awayGoals,
-      isDouble,
+      isDouble && !keepStoredDouble,
       now,
       recordPlacement: !schedule.isTest,
+      keepStoredDouble: keepStoredDouble,
     );
     // Only a first-time submission can change coverage: an amend rewrites a
     // score the participant already had, so the day is exactly as complete
@@ -396,6 +404,7 @@ final class SubmitFixturePrediction {
     bool isDouble,
     DateTime now, {
     bool recordPlacement = true,
+    bool keepStoredDouble = false,
   }) async {
     final idResult = PredictionId.tryParse(_idGenerator.newUuid());
     if (idResult is Err<PredictionId>) {
@@ -437,6 +446,7 @@ final class SubmitFixturePrediction {
                 isDouble,
                 now,
                 error,
+                keepStoredDouble: keepStoredDouble,
               )
             : Result.err(error),
     };
@@ -478,8 +488,9 @@ final class SubmitFixturePrediction {
     int awayGoals,
     bool isDouble,
     DateTime now,
-    AppError insertError,
-  ) async {
+    AppError insertError, {
+    bool keepStoredDouble = false,
+  }) async {
     final reread = await _fixturePredictions.findByFixtureAndParticipant(
       fixture,
       participantId,
@@ -492,7 +503,7 @@ final class SubmitFixturePrediction {
                 lock,
                 homeGoals,
                 awayGoals,
-                isDouble,
+                keepStoredDouble ? value.prediction.isDouble : isDouble,
                 now,
               )
             : Result.err(insertError),

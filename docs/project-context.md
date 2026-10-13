@@ -4640,6 +4640,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `supabase/tests/0107_hidden_fixtures_off_boards_test.sql`; the copy in
   `duel_wins_query_test.sql` follows the adapter. NOTE: apply 0107 in the
   SQL Editor before pushing. No APK.
+- **Batch 126 (accepting a duel never changes the double, 2026-10-13,
+  audit M-12)**: the accept sheet sent the score and double it showed, and
+  it showed 0-0 without a double until the caller's saved predictions had
+  loaded -- a sheet opened offline or straight from a code could overwrite
+  the saved score and clear the day's double. Server: `SubmitFixturePrediction`
+  takes `keepStoredDouble`; with it `isDouble` is ignored, an amend keeps
+  the saved prediction's double, a first prediction is never a double, and
+  the daily-double count is not consulted. `AcceptDuelChallenge` always
+  passes it and no longer takes `isDouble`; the route ignores the
+  `is_double` older apps still send. App: the sheet's steppers and accept
+  button stay disabled until the saved predictions load, a failed load says
+  so with a retry, and a line says the score sent becomes the caller's
+  prediction. Needs an APK for the app half; the server half protects
+  every installed app once released.
 
 ## 3. Version-Verification Log
 

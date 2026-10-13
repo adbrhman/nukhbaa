@@ -151,4 +151,78 @@ void main() {
     expect(duels.acceptCalls, 0);
     expect(predictions.count, 0);
   });
+
+  test('accepting keeps the saved double and changes only the score '
+      '(M-12)', () async {
+    final competition = FakeCompetitionRepository();
+    final predictions = FakeFixturePredictionRepository();
+    final schedules = FakeFixtureScheduleRepository();
+    final duels = FakeDuelChallengeRepository()..seedChallenge(_challengeRow());
+
+    competition.seedParticipant(
+      Participant.fromStored(
+        id: const ParticipantId(_opponentParticipant),
+        seasonId: const SeasonId(_season),
+        userId: const UserId(_opponent),
+        status: ParticipantStatus.active,
+        joinedAt: _now.subtract(const Duration(days: 1)),
+      ),
+    );
+    predictions
+      ..seedSeasonFixture(
+        SeasonFixture.fromStored(
+          seasonId: const SeasonId(_season),
+          fixture: const FixtureRef(_fixture),
+          displayOrder: 1,
+        ),
+      )
+      ..seedPrediction(
+        const FixturePrediction.fromStored(
+          id: PredictionId('33333333-3333-3333-3333-333333333333'),
+          fixture: FixtureRef(_fixture),
+          participantId: ParticipantId(_opponentParticipant),
+          homeGoals: 3,
+          awayGoals: 2,
+          isDouble: true,
+        ),
+        _now.subtract(const Duration(hours: 1)),
+      );
+    schedules.seed(
+      FixtureSchedule.fromStored(
+        fixture: const FixtureRef(_fixture),
+        homeTeam: 'A',
+        awayTeam: 'B',
+        kickoffAt: _now.add(const Duration(hours: 2)),
+      ),
+    );
+
+    final result =
+        await AcceptDuelChallenge(
+          duels: duels,
+          submitPrediction: _submit(
+            competition: competition,
+            predictions: predictions,
+            schedules: schedules,
+          ),
+          clock: FixedClock(_now),
+        ).call(
+          principal: userPrincipal(_opponent),
+          challengeId: _challenge,
+          homeGoals: 1,
+          awayGoals: 0,
+        );
+
+    expect(result, isA<Ok<Duel>>());
+    final saved =
+        (await predictions.findByFixtureAndParticipant(
+                  const FixtureRef(_fixture),
+                  const ParticipantId(_opponentParticipant),
+                )
+                as Ok<FixturePredictionView?>)
+            .value!;
+    expect(saved.prediction.homeGoals, 1);
+    expect(saved.prediction.awayGoals, 0);
+    expect(saved.prediction.isDouble, isTrue);
+    expect(predictions.count, 1);
+  });
 }

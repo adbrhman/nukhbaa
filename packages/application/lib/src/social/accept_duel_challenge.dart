@@ -14,6 +14,12 @@ import 'package:shared/shared.dart';
 /// the final acceptance loses a race, the prediction remains safely saved and
 /// no partial duel row is created. The challenger is then told (best
 /// effort, never failing the acceptance).
+///
+/// **Accepting never changes the double** (audit M-12). Only the score is
+/// taken from the request: a saved double stays a double, and a prediction
+/// first made here is never one. The sheet that sends this shows the double
+/// as fixed, so a request sent before the saved prediction reached the phone
+/// can no longer clear it, and a stale one can no longer add one.
 final class AcceptDuelChallenge {
   const AcceptDuelChallenge({
     required DuelChallengeRepository duels,
@@ -35,7 +41,6 @@ final class AcceptDuelChallenge {
     required String challengeId,
     required int homeGoals,
     required int awayGoals,
-    bool isDouble = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) return Result.err(auth.error);
@@ -82,7 +87,7 @@ final class AcceptDuelChallenge {
       fixtureId: challenge.fixture.value,
       homeGoals: homeGoals,
       awayGoals: awayGoals,
-      isDouble: isDouble,
+      keepStoredDouble: true,
     );
     if (prediction is Err<FixturePredictionView>) {
       return Result.err(prediction.error);

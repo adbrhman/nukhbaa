@@ -11,11 +11,15 @@ import 'package:shared/shared.dart';
 /// `POST /duels/challenges/{id}/accept` -- accept a duel challenge with the
 /// caller's own prediction (migration 0090).
 ///
-/// Body: `{"home_goals": 2, "away_goals": 1, "is_double": false}`. The
-/// prediction is saved through the ordinary prediction path first; the
-/// database then locks the challenge and creates the duel only if both
-/// predictions exist. A refused acceptance leaves the saved prediction as
-/// it is. Answers `200` with the duel.
+/// Body: `{"home_goals": 2, "away_goals": 1}`. The prediction is saved
+/// through the ordinary prediction path first; the database then locks the
+/// challenge and creates the duel only if both predictions exist. A refused
+/// acceptance leaves the saved prediction as it is. Answers `200` with the
+/// duel.
+///
+/// Accepting never changes the double (audit M-12): a saved double stays
+/// and a new prediction is never one. The `is_double` that older apps still
+/// send is therefore ignored.
 ///
 /// A player who has not opened the app since the month began is not in the
 /// season yet; like `POST /seasons/{id}/fixtures/{fixtureId}/prediction`,
@@ -39,16 +43,6 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (away is Err<int>) {
     return errorResponse(away.error);
   }
-  final rawDouble = body['is_double'];
-  if (rawDouble != null && rawDouble is! bool) {
-    return errorResponse(
-      const AppError.validation(
-        'request.field_missing',
-        'Field "is_double" must be a boolean',
-      ),
-    );
-  }
-
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
@@ -57,7 +51,6 @@ Future<Response> onRequest(RequestContext context, String id) async {
     challengeId: id,
     homeGoals: (home as Ok<int>).value,
     awayGoals: (away as Ok<int>).value,
-    isDouble: rawDouble == true,
   );
 
   var result = await accept();

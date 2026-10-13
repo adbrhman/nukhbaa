@@ -509,6 +509,30 @@ void main() {
       );
       expect(response.statusCode, HttpStatus.badRequest);
     });
+
+    test('the is_double an older app sends is ignored (M-12)', () async {
+      final setup = _Setup(predicted: false);
+      setup.duels.stored = _challenge(
+        challengerParticipantId: _rivalParticipantId,
+      );
+      final response = await accept_route.onRequest(
+        wireContext(
+          root: setup.root(),
+          principal: userPrincipal(),
+          body: const {'home_goals': 2, 'away_goals': 1, 'is_double': true},
+        ),
+        _challengeId,
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      final saved = await setup.predictions.findByFixtureAndParticipant(
+        _fixture,
+        const ParticipantId(kParticipantId),
+      );
+      final view = (saved as Ok<FixturePredictionView?>).value!;
+      expect(view.prediction.homeGoals, 2);
+      expect(view.prediction.isDouble, isFalse);
+    });
   });
 
   group('cancel and decline', () {

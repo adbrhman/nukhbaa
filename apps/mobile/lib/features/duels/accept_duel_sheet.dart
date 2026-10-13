@@ -4,7 +4,11 @@
 /// The scoreline starts from the caller's saved prediction for the fixture
 /// when there is one, and keeps its double, so accepting never quietly
 /// removes the day's double. The server saves the prediction first, then
-/// creates the duel.
+/// creates the duel, and never changes the double (audit M-12).
+///
+/// Nothing can be sent before the saved predictions have loaded: a sheet
+/// opened offline or straight from a code used to send 0-0 over the saved
+/// score. A failed load says so and offers a retry.
 library;
 
 import 'dart:async';
@@ -61,9 +65,8 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
   bool _busy = false;
   String? _error;
 
-  FixturePredictionDto? get _saved => ref
-      .watch(myFixturePredictionsByFixtureProvider)
-      .value?[widget.challenge.fixtureId];
+  /// Retries the read the sheet waits for.
+  void _retryLoad() => ref.invalidate(myFixturePredictionsProvider);
 
   Future<void> _accept({
     required int home,
@@ -102,7 +105,15 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
     final DuelChallengeDto challenge = widget.challenge;
-    final FixturePredictionDto? saved = _saved;
+    final AsyncValue<Map<String, FixturePredictionDto>> mine = ref.watch(
+      myFixturePredictionsByFixtureProvider,
+    );
+    // Until the saved predictions arrive the sheet cannot know the score it
+    // would overwrite, so nothing can be changed or sent.
+    final bool ready = mine.hasValue;
+    final bool loadFailed = !ready && mine.hasError;
+    final bool enabled = ready && !_busy;
+    final FixturePredictionDto? saved = mine.value?[challenge.fixtureId];
     final int home = _home ?? saved?.homeGoals ?? 0;
     final int away = _away ?? saved?.awayGoals ?? 0;
     // The double is the saved prediction's, never changed here.
@@ -153,7 +164,7 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
                   keyPrefix: 'acceptDuel.home',
                   label: teamDisplayName(challenge.homeTeam),
                   value: home,
-                  enabled: !_busy,
+                  enabled: enabled,
                   onChanged: (int v) => setState(() => _home = v),
                 ),
                 Padding(
@@ -171,11 +182,22 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
                   keyPrefix: 'acceptDuel.away',
                   label: teamDisplayName(challenge.awayTeam),
                   value: away,
-                  enabled: !_busy,
+                  enabled: enabled,
                   onChanged: (int v) => setState(() => _away = v),
                 ),
               ],
             ),
+            if (ready) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                saved == null
+                    ? 'هذه النتيجة تُحفظ توقعَك لهذه المباراة.'
+                    : 'تغيير النتيجة هنا يغيّر توقعك المحفوظ لهذه المباراة.',
+                key: const Key('acceptDuel.note'),
+                textAlign: TextAlign.center,
+                style: text.bodySmall?.copyWith(color: tokens.textMuted),
+              ),
+            ],
             if (isDouble) ...<Widget>[
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -184,15 +206,35 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
                 style: text.bodySmall?.copyWith(color: tokens.goldAccent),
               ),
             ],
+            if (loadFailed) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'تعذّر تحميل توقعك المحفوظ لهذه المباراة.',
+                key: const Key('acceptDuel.loadError'),
+                textAlign: TextAlign.center,
+                style: text.bodyMedium?.copyWith(color: tokens.errorText),
+              ),
+              TextButton(
+                key: const Key('acceptDuel.retry'),
+                onPressed: _retryLoad,
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
               key: const Key('acceptDuel.accept'),
-              onPressed: _busy
-                  ? null
-                  : () => unawaited(
+              onPressed: enabled
+                  ? () => unawaited(
                       _accept(home: home, away: away, isDouble: isDouble),
-                    ),
-              child: Text(_busy ? 'جارٍ القبول…' : 'اقبل التحدي'),
+                    )
+                  : null,
+              child: Text(
+                _busy
+                    ? 'جارٍ القبول…'
+                    : ready || loadFailed
+                    ? 'اقبل التحدي'
+                    : 'جارٍ تحميل توقعك…',
+              ),
             ),
             if (_error case final String message) ...<Widget>[
               const SizedBox(height: AppSpacing.md),
