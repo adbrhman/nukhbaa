@@ -20,9 +20,10 @@ import 'package:shared/shared.dart';
 /// per-fixture, never waiting for the rest of the season's fixtures to be
 /// scored.
 ///
-/// [rank] is the standard-competition ("1224") rank assigned by
-/// `FixtureLeaderboard.rank` over the fully ordered board — never computed
-/// by this value in isolation.
+/// [rank] is assigned by `FixtureLeaderboard.rank` over the fully ordered
+/// board — never computed by this value in isolation. Two lines share a rank
+/// only when level on every tie-break, the join time included (batch 129),
+/// which in practice gives every player a place of his own.
 final class FixtureLeaderboardEntry {
   const FixtureLeaderboardEntry._({
     required this.participantId,
@@ -32,6 +33,8 @@ final class FixtureLeaderboardEntry {
     required this.exactCount,
     required this.decidedCount,
     required this.referralPoints,
+    required this.outcomeCount,
+    required this.joinedAt,
     required this.previousRank,
     required this.avatarUserId,
     required this.avatarUpdatedAt,
@@ -51,6 +54,8 @@ final class FixtureLeaderboardEntry {
     int exactCount = 0,
     int decidedCount = 0,
     int referralPoints = 0,
+    int outcomeCount = 0,
+    DateTime? joinedAt,
     int? previousRank,
     UserId? avatarUserId,
     DateTime? avatarUpdatedAt,
@@ -63,6 +68,8 @@ final class FixtureLeaderboardEntry {
       exactCount: exactCount,
       decidedCount: decidedCount,
       referralPoints: referralPoints,
+      outcomeCount: outcomeCount,
+      joinedAt: joinedAt?.toUtc(),
       previousRank: previousRank,
       avatarUserId: avatarUserId,
       avatarUpdatedAt: avatarUpdatedAt,
@@ -113,6 +120,14 @@ final class FixtureLeaderboardEntry {
   /// board that does not break ties by invitations (the day board).
   final int referralPoints;
 
+  /// Decided fixtures with the right outcome but not the exact score: the
+  /// tie-break after [exactCount] (batch 129).
+  final int outcomeCount;
+
+  /// When the participant joined the contest (UTC), or null when unknown:
+  /// the earlier joiner wins the last tie (batch 129).
+  final DateTime? joinedAt;
+
   /// The share of decided fixtures called exactly right, in `0.0..1.0`, or
   /// `null` when nothing has been decided yet. A participant with no decided
   /// fixture has NO accuracy -- not zero accuracy -- so the absence is
@@ -149,8 +164,8 @@ final class FixtureLeaderboardEntry {
   int? get movement =>
       previousRank == null || !isRanked ? null : previousRank! - rank;
 
-  /// The participant's standard-competition ("1224") rank on the board, or
-  /// `0` while unassigned. Assigned by `FixtureLeaderboard`.
+  /// The participant's place on the board, or `0` while unassigned.
+  /// Assigned by `FixtureLeaderboard`.
   final int rank;
 
   /// Whether this entry has been placed on a board (has a meaningful [rank]).
@@ -179,6 +194,8 @@ final class FixtureLeaderboardEntry {
         exactCount: exactCount,
         decidedCount: decidedCount,
         referralPoints: referralPoints,
+        outcomeCount: outcomeCount,
+        joinedAt: joinedAt,
         previousRank: previousRank,
         avatarUserId: avatarUserId,
         avatarUpdatedAt: avatarUpdatedAt,
@@ -197,6 +214,8 @@ final class FixtureLeaderboardEntry {
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.referralPoints == referralPoints &&
+      other.outcomeCount == outcomeCount &&
+      other.joinedAt == joinedAt &&
       other.previousRank == previousRank &&
       other.avatarUserId == avatarUserId &&
       other.avatarUpdatedAt == avatarUpdatedAt &&
@@ -211,6 +230,8 @@ final class FixtureLeaderboardEntry {
     exactCount,
     decidedCount,
     referralPoints,
+    outcomeCount,
+    joinedAt,
     previousRank,
     avatarUserId,
     avatarUpdatedAt,

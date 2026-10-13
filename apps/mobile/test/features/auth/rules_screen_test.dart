@@ -75,4 +75,37 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // Batch 129: a tie on points goes down the whole chain, so every player
+  // has a place of his own.
+  testWidgets('the rules page states the whole tie-break chain', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const RulesScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder rule = find.byKey(const Key('rules.tieBreak'));
+    for (final String step in <String>[
+      'نقاط الدعوة الأكثر',
+      'التوقعات الدقيقة الأكثر',
+      'الاتجاهات الصحيحة الأكثر',
+      'الأسبق انضماماً',
+    ]) {
+      expect(
+        find.descendant(of: rule, matching: find.textContaining(step)),
+        findsOneWidget,
+        reason: step,
+      );
+    }
+  });
 }

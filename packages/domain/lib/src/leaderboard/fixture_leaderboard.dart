@@ -29,11 +29,16 @@ import 'package:shared/shared.dart';
 ///    invitation points break a points tie and are never added to the
 ///    points (decided 2026-09-27, migration 0073);
 /// 3. [FixtureLeaderboardEntry.exactCount] descending;
-/// 4. participant id value ascending, for a stable display order only.
+/// 4. [FixtureLeaderboardEntry.outcomeCount] descending -- right outcome,
+///    wrong score (batch 129);
+/// 5. [FixtureLeaderboardEntry.joinedAt] ascending -- the earlier joiner of
+///    the contest; an unknown join time goes last (batch 129);
+/// 6. participant id value ascending, for a stable display order only.
 ///
-/// **Rank rule:** standard competition ("1224") ranking over steps 1-3:
-/// entries level on points, invitation points AND exact scorelines share a
-/// rank. The daily snapshot (migration 0074) ranks the same way.
+/// **Rank rule:** entries share a rank only when level on steps 1-5. Real
+/// players never join at the same instant, so every player gets a place of
+/// his own (decided 2026-10-14: three players on 45 points all showed 10).
+/// The daily snapshot (migration 0108) ranks the same way.
 final class FixtureLeaderboard {
   const FixtureLeaderboard._({required this.seasonId, required this.entries});
 
@@ -58,6 +63,7 @@ final class FixtureLeaderboard {
     final totals = <String, int>{};
     final counts = <String, int>{};
     final exact = <String, int>{};
+    final outcome = <String, int>{};
     final decided = <String, int>{};
     final byId = <String, ParticipantId>{};
 
@@ -75,6 +81,8 @@ final class FixtureLeaderboard {
           exact[key] = (exact[key] ?? 0) + 1;
           decided[key] = (decided[key] ?? 0) + 1;
         case FixtureScoreGrade.correctOutcome:
+          outcome[key] = (outcome[key] ?? 0) + 1;
+          decided[key] = (decided[key] ?? 0) + 1;
         case FixtureScoreGrade.incorrect:
           decided[key] = (decided[key] ?? 0) + 1;
         case FixtureScoreGrade.missed:
@@ -99,6 +107,7 @@ final class FixtureLeaderboard {
           totalPoints: totals[key]!,
           fixturesScored: counts[key]!,
           exactCount: exact[key] ?? 0,
+          outcomeCount: outcome[key] ?? 0,
           decidedCount: decided[key] ?? 0,
           // Absent from the snapshot means absent from the comparison: a
           // participant who first scored today gets no arrow rather than a
@@ -176,6 +185,8 @@ final class FixtureLeaderboard {
           exactCount: line.exactCount,
           decidedCount: line.decidedCount,
           referralPoints: breakTiesByReferrals ? line.referralPoints : 0,
+          outcomeCount: line.outcomeCount,
+          joinedAt: line.joinedAt,
           previousRank: previousRanks[line.participantId.value],
           avatarUserId: avatarUserIds[line.participantId.value],
           avatarUpdatedAt: avatarUpdatedAt[line.participantId.value],
@@ -216,15 +227,33 @@ final class FixtureLeaderboard {
     if (byExact != 0) {
       return byExact;
     }
+    final byOutcome = b.outcomeCount.compareTo(a.outcomeCount);
+    if (byOutcome != 0) {
+      return byOutcome;
+    }
+    final byJoined = _byJoinedAt(a.joinedAt, b.joinedAt);
+    if (byJoined != 0) {
+      return byJoined;
+    }
     return a.participantId.value.compareTo(b.participantId.value);
   }
 
-  /// Whether two neighbours share a rank: level on points, invitation points
-  /// and exact scorelines.
+  /// The earlier join first; an unknown join time after every known one.
+  static int _byJoinedAt(DateTime? a, DateTime? b) {
+    if (a == null || b == null) {
+      return a == null ? (b == null ? 0 : 1) : -1;
+    }
+    return a.compareTo(b);
+  }
+
+  /// Whether two neighbours share a rank: level on points, invitation
+  /// points, exact scorelines, right outcomes and join time.
   static bool _level(FixtureLeaderboardEntry a, FixtureLeaderboardEntry b) =>
       a.totalPoints == b.totalPoints &&
       a.referralPoints == b.referralPoints &&
-      a.exactCount == b.exactCount;
+      a.exactCount == b.exactCount &&
+      a.outcomeCount == b.outcomeCount &&
+      a.joinedAt == b.joinedAt;
 
   /// The season these standings are for.
   final SeasonId seasonId;

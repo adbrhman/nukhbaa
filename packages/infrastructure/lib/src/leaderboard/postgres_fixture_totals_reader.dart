@@ -16,7 +16,9 @@ import 'package:shared/shared.dart';
 ///
 /// Each line also carries the month's invitation points of the user behind
 /// the participant (`gamification.referral_month_points`, migration 0073):
-/// a tie-break only, never added to `total_points`.
+/// a tie-break only, never added to `total_points`. The right outcomes
+/// (`correct_outcome`) and the participant's join time are the last two
+/// tie-breaks (batch 129).
 final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   /// Creates the reader over [_connection].
   const PostgresFixtureTotalsReader(this._connection);
@@ -32,7 +34,10 @@ SELECT fs.participant_id::text AS participant_id,
        count(*) FILTER (
          WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
        )::bigint AS decided_count,
-       COALESCE(max(rm.referral_points), 0)::bigint AS referral_points
+       COALESCE(max(rm.referral_points), 0)::bigint AS referral_points,
+       count(*) FILTER (WHERE fs.grade = 'correct_outcome')::bigint
+         AS outcome_count,
+       min(p.joined_at) AS joined_at
 FROM scoring.fixture_scores fs
 JOIN competition.participants p
   ON p.id = fs.participant_id
@@ -103,6 +108,8 @@ GROUP BY fs.participant_id
         exactCount: exactCount,
         decidedCount: decidedCount,
         referralPoints: _readInt(row['referral_points']) ?? 0,
+        outcomeCount: _readInt(row['outcome_count']) ?? 0,
+        joinedAt: _readTime(row['joined_at']),
       );
       if (totals is Err<ParticipantFixtureTotals>) {
         return Result.err(totals.error);
@@ -121,6 +128,16 @@ GROUP BY fs.participant_id
     }
     if (raw is String) {
       return int.tryParse(raw);
+    }
+    return null;
+  }
+
+  static DateTime? _readTime(Object? raw) {
+    if (raw is DateTime) {
+      return raw.toUtc();
+    }
+    if (raw is String) {
+      return DateTime.tryParse(raw)?.toUtc();
     }
     return null;
   }

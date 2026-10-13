@@ -4676,6 +4676,26 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   المشرف" to "إدارة النخبة" (`adminDashboard`; English "Nukhba admin"). It is the
   only place that name appears: inside the area the app bar shows the
   open section ("الرئيسية", ...), unchanged. Text only; needs an APK.
+- **Batch 129 (every player gets a place of his own, 2026-10-14)**: three
+  players on 45 points all showed tenth -- the month board shared a place
+  among players level on points, invitation points and exact scorelines.
+  Decided: two more tie-breaks follow, the right outcomes with the wrong
+  score (`correct_outcome`), then the earlier join of the contest
+  (`competition.participants.joined_at`; for the sporting season the first
+  join of any of its months). Players share a place only when level on all
+  five, which real players never are. `FixtureLeaderboard` (month, day,
+  group month board, crown, "ترتيبك الآن") and `SportingSeasonLeaderboard`
+  order this way; `PostgresFixtureTotalsReader` and
+  `PostgresSportingSeasonStandingsReader` read `outcome_count` and the
+  join time. Migration 0108 adds `outcome_count` to
+  `leaderboard.season_fixture_standings`, ranks the daily snapshot by the
+  same five keys, and re-orders each season's latest snapshot among players
+  level on its points, so no arrow points down the day it ships. The rules
+  page states the whole chain. Not changed: the round-era
+  `SeasonLeaderboard` (the match card's season board and a group's season
+  board), still points then join time. NOTE: apply 0108 in the SQL Editor
+  before pushing; the rules text needs an APK, the places change with the
+  server.
 
 ## 3. Version-Verification Log
 

@@ -14,7 +14,8 @@ import 'package:shared/shared.dart';
 /// monthly contest is identified by its `MM/YYYY` label -- the same rule
 /// `GET /months` applies -- and the label, not the stored instants, decides
 /// which season a month belongs to, so no time-zone offset can move a month
-/// across the September boundary.
+/// across the September boundary. The right outcomes and the user's first
+/// join of a month of the season are the last two tie-breaks (batch 129).
 final class PostgresSportingSeasonStandingsReader
     implements SportingSeasonStandingsReader {
   /// Creates the reader over [_connection].
@@ -44,7 +45,10 @@ scores AS (
            AS exact_count,
          count(*) FILTER (
            WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
-         )::bigint AS decided_count
+         )::bigint AS decided_count,
+         count(*) FILTER (WHERE fs.grade = 'correct_outcome')::bigint
+           AS outcome_count,
+         min(p.joined_at) AS joined_at
   FROM months m
   JOIN competition.participants p
     ON p.season_id = m.id
@@ -71,7 +75,9 @@ SELECT s.user_id::text AS user_id,
        sum(s.exact_count)::bigint AS exact_count,
        sum(s.decided_count)::bigint AS decided_count,
        count(DISTINCT s.season_id)::bigint AS months_played,
-       COALESCE(max(rp.referral_points), 0)::bigint AS referral_points
+       COALESCE(max(rp.referral_points), 0)::bigint AS referral_points,
+       sum(s.outcome_count)::bigint AS outcome_count,
+       min(s.joined_at) AS joined_at
 FROM scores s
 LEFT JOIN gamification.referral_season_points rp
   ON rp.user_id = s.user_id
@@ -129,6 +135,8 @@ GROUP BY s.user_id
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
         referralPoints: _readInt(row['referral_points']) ?? 0,
+        outcomeCount: _readInt(row['outcome_count']) ?? 0,
+        joinedAt: _readTime(row['joined_at']),
       );
       if (standing is Err<SportingSeasonStanding>) {
         return Result.err(standing.error);
@@ -147,6 +155,16 @@ GROUP BY s.user_id
     }
     if (raw is String) {
       return int.tryParse(raw);
+    }
+    return null;
+  }
+
+  static DateTime? _readTime(Object? raw) {
+    if (raw is DateTime) {
+      return raw.toUtc();
+    }
+    if (raw is String) {
+      return DateTime.tryParse(raw)?.toUtc();
     }
     return null;
   }

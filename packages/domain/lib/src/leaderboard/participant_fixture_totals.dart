@@ -2,7 +2,7 @@ import 'package:domain/src/competition/participant_id.dart';
 import 'package:shared/shared.dart';
 
 /// One participant's already-summed fixture results for a set of fixtures:
-/// the same four numbers `FixtureLeaderboard.rank` folds out of individual
+/// the same numbers `FixtureLeaderboard.rank` folds out of individual
 /// `ParticipantFixtureScore` rows, delivered pre-summed by the store so the
 /// rows never have to travel. Summing is not scoring: every point here was
 /// produced by `ScoreFixture` (Axioms 2/5).
@@ -14,9 +14,13 @@ final class ParticipantFixtureTotals {
     required this.exactCount,
     required this.decidedCount,
     required this.referralPoints,
+    required this.outcomeCount,
+    required this.joinedAt,
   });
 
   /// Builds the totals, refusing numbers no set of fixture scores can sum to.
+  /// [outcomeCount] and [joinedAt] are tie-breaks (batch 129): a store that
+  /// does not read them leaves them at 0 and null.
   static Result<ParticipantFixtureTotals> of({
     required ParticipantId participantId,
     required int totalPoints,
@@ -24,12 +28,15 @@ final class ParticipantFixtureTotals {
     required int exactCount,
     required int decidedCount,
     int referralPoints = 0,
+    int outcomeCount = 0,
+    DateTime? joinedAt,
   }) {
     if (totalPoints < 0 ||
         fixturesScored < 0 ||
         exactCount < 0 ||
         decidedCount < 0 ||
-        referralPoints < 0) {
+        referralPoints < 0 ||
+        outcomeCount < 0) {
       return const Result.err(
         AppError.invariant(
           'fixture_totals.negative',
@@ -37,11 +44,12 @@ final class ParticipantFixtureTotals {
         ),
       );
     }
-    if (exactCount > decidedCount || decidedCount > fixturesScored) {
+    if (exactCount + outcomeCount > decidedCount ||
+        decidedCount > fixturesScored) {
       return const Result.err(
         AppError.invariant(
           'fixture_totals.inconsistent',
-          'exact <= decided <= scored must hold for fixture totals',
+          'exact + outcome <= decided <= scored must hold for fixture totals',
         ),
       );
     }
@@ -53,6 +61,8 @@ final class ParticipantFixtureTotals {
         exactCount: exactCount,
         decidedCount: decidedCount,
         referralPoints: referralPoints,
+        outcomeCount: outcomeCount,
+        joinedAt: joinedAt?.toUtc(),
       ),
     );
   }
@@ -77,6 +87,14 @@ final class ParticipantFixtureTotals {
   /// [totalPoints].
   final int referralPoints;
 
+  /// Decided fixtures with the right outcome but not the exact score
+  /// (`correct_outcome`): the tie-break after [exactCount] (batch 129).
+  final int outcomeCount;
+
+  /// When the participant joined the contest, or null when the store did
+  /// not read it: the earlier joiner wins the last tie (batch 129).
+  final DateTime? joinedAt;
+
   @override
   bool operator ==(Object other) =>
       other is ParticipantFixtureTotals &&
@@ -85,7 +103,9 @@ final class ParticipantFixtureTotals {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
-      other.referralPoints == referralPoints;
+      other.referralPoints == referralPoints &&
+      other.outcomeCount == outcomeCount &&
+      other.joinedAt == joinedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -95,5 +115,7 @@ final class ParticipantFixtureTotals {
     exactCount,
     decidedCount,
     referralPoints,
+    outcomeCount,
+    joinedAt,
   );
 }

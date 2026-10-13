@@ -58,10 +58,13 @@ final class SportingSeasonStanding {
     required this.decidedCount,
     required this.monthsPlayed,
     required this.referralPoints,
+    required this.outcomeCount,
+    required this.joinedAt,
     required this.rank,
   });
 
   /// Builds an unranked projection, refusing impossible counts.
+  /// [outcomeCount] and [joinedAt] are tie-breaks (batch 129).
   static Result<SportingSeasonStanding> projected({
     required UserId userId,
     required String displayName,
@@ -71,12 +74,15 @@ final class SportingSeasonStanding {
     required int decidedCount,
     required int monthsPlayed,
     int referralPoints = 0,
+    int outcomeCount = 0,
+    DateTime? joinedAt,
   }) {
     if (fixturesScored < 0 ||
         exactCount < 0 ||
         decidedCount < 0 ||
         monthsPlayed < 0 ||
-        referralPoints < 0) {
+        referralPoints < 0 ||
+        outcomeCount < 0) {
       return const Result.err(
         AppError.invariant(
           'sporting_season.count_negative',
@@ -84,7 +90,7 @@ final class SportingSeasonStanding {
         ),
       );
     }
-    if (exactCount > decidedCount) {
+    if (exactCount + outcomeCount > decidedCount) {
       return const Result.err(
         AppError.invariant(
           'sporting_season.exact_exceeds_decided',
@@ -102,6 +108,8 @@ final class SportingSeasonStanding {
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
         referralPoints: referralPoints,
+        outcomeCount: outcomeCount,
+        joinedAt: joinedAt?.toUtc(),
         rank: _unassignedRank,
       ),
     );
@@ -135,7 +143,16 @@ final class SportingSeasonStanding {
   /// added to it.
   final int referralPoints;
 
-  /// Standard-competition ("1224") rank; 0 until ranked.
+  /// Right outcomes with the wrong score over the season: the tie-break
+  /// after [exactCount] (batch 129).
+  final int outcomeCount;
+
+  /// The user's first join of a month of the season (UTC), or null when
+  /// unknown: the earlier joiner wins the last tie (batch 129).
+  final DateTime? joinedAt;
+
+  /// The place on the board; 0 until ranked. Shared only when level on
+  /// every tie-break, the join time included.
   final int rank;
 
   /// Returns this line placed at [assignedRank].
@@ -158,6 +175,8 @@ final class SportingSeasonStanding {
         decidedCount: decidedCount,
         monthsPlayed: monthsPlayed,
         referralPoints: referralPoints,
+        outcomeCount: outcomeCount,
+        joinedAt: joinedAt,
         rank: assignedRank,
       ),
     );
@@ -174,6 +193,8 @@ final class SportingSeasonStanding {
       other.decidedCount == decidedCount &&
       other.monthsPlayed == monthsPlayed &&
       other.referralPoints == referralPoints &&
+      other.outcomeCount == outcomeCount &&
+      other.joinedAt == joinedAt &&
       other.rank == rank;
 
   @override
@@ -186,14 +207,18 @@ final class SportingSeasonStanding {
     decidedCount,
     monthsPlayed,
     referralPoints,
+    outcomeCount,
+    joinedAt,
     rank,
   );
 }
 
 /// The ranked sporting-season board: most points first; a points tie is
 /// broken by the season's invitation points, then by exact scorelines
-/// (decided 2026-09-27). Entries level on all three share a rank (standard
-/// competition ranking); the user id only makes the display order stable.
+/// (decided 2026-09-27), then by right outcomes, then by the earlier first
+/// join (batch 129). Entries share a rank only when level on all five,
+/// which real players never are; the user id only makes the display order
+/// stable.
 final class SportingSeasonLeaderboard {
   const SportingSeasonLeaderboard._({
     required this.season,
@@ -254,15 +279,33 @@ final class SportingSeasonLeaderboard {
     if (byExact != 0) {
       return byExact;
     }
+    final byOutcome = b.outcomeCount.compareTo(a.outcomeCount);
+    if (byOutcome != 0) {
+      return byOutcome;
+    }
+    final byJoined = _byJoinedAt(a.joinedAt, b.joinedAt);
+    if (byJoined != 0) {
+      return byJoined;
+    }
     return a.userId.value.compareTo(b.userId.value);
   }
 
-  /// Whether two neighbours share a rank: level on points, invitation points
-  /// and exact scorelines.
+  /// The earlier join first; an unknown join time after every known one.
+  static int _byJoinedAt(DateTime? a, DateTime? b) {
+    if (a == null || b == null) {
+      return a == null ? (b == null ? 0 : 1) : -1;
+    }
+    return a.compareTo(b);
+  }
+
+  /// Whether two neighbours share a rank: level on points, invitation
+  /// points, exact scorelines, right outcomes and first join.
   static bool _level(SportingSeasonStanding a, SportingSeasonStanding b) =>
       a.totalPoints == b.totalPoints &&
       a.referralPoints == b.referralPoints &&
-      a.exactCount == b.exactCount;
+      a.exactCount == b.exactCount &&
+      a.outcomeCount == b.outcomeCount &&
+      a.joinedAt == b.joinedAt;
 
   /// The season this board ranks.
   final SportingSeason season;

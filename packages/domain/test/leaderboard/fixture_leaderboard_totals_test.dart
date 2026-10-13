@@ -29,14 +29,16 @@ ParticipantFixtureTotals _totals(
   int points,
   int scored,
   int exact,
-  int decided,
-) =>
+  int decided, {
+  int outcome = 0,
+}) =>
     (ParticipantFixtureTotals.of(
               participantId: ParticipantId(participantId),
               totalPoints: points,
               fixturesScored: scored,
               exactCount: exact,
               decidedCount: decided,
+              outcomeCount: outcome,
             )
             as Ok<ParticipantFixtureTotals>)
         .value;
@@ -64,14 +66,16 @@ void main() {
       totals: [
         _totals(_p3, 0, 2, 0, 1),
         _totals(_p2, 4, 1, 1, 1),
-        _totals(_p1, 4, 2, 1, 2),
+        _totals(_p1, 4, 2, 1, 2, outcome: 1),
       ],
     );
 
     final rows = (fromRows as Ok<FixtureLeaderboard>).value;
     final summed = (fromTotals as Ok<FixtureLeaderboard>).value;
     expect(summed, rows);
-    expect(summed.entries.map((e) => e.rank), [1, 1, 3]);
+    // Level on points and exact calls: _p1's right outcome breaks the tie
+    // (batch 129).
+    expect(summed.entries.map((e) => e.rank), [1, 2, 3]);
   });
 
   test('a participant listed twice is refused', () {

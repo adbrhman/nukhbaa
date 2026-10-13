@@ -176,4 +176,28 @@ void main() {
       'db.query_failed',
     );
   });
+
+  test('reads the right outcomes and the join time (batch 129)', () async {
+    final conn = _rows([
+      {
+        'participant_id': _participantId,
+        'total_points': BigInt.from(45),
+        'fixtures_scored': BigInt.from(115),
+        'exact_count': BigInt.from(14),
+        'decided_count': BigInt.from(110),
+        'outcome_count': BigInt.from(31),
+        'joined_at': DateTime.utc(2026, 10, 1, 6, 30),
+      },
+    ]);
+
+    final result = await PostgresFixtureTotalsReader(
+      conn,
+    ).totalsFor(const [FixtureRef(_fixtureId)]);
+
+    final totals = (result as Ok<List<ParticipantFixtureTotals>>).value;
+    expect(totals.single.outcomeCount, 31);
+    expect(totals.single.joinedAt, DateTime.utc(2026, 10, 1, 6, 30));
+    expect(conn.sqls.single, contains("fs.grade = 'correct_outcome'"));
+    expect(conn.sqls.single, contains('min(p.joined_at)'));
+  });
 }

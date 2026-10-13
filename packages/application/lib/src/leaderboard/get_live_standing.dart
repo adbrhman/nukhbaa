@@ -387,6 +387,8 @@ final class GetLiveStanding {
         exactCount: line.exactCount + gain.exact,
         decidedCount: decided,
         referralPoints: line.referralPoints,
+        outcomeCount: line.outcomeCount + gain.outcome,
+        joinedAt: line.joinedAt,
       );
       if (next is Err<ParticipantFixtureTotals>) return Result.err(next.error);
       out.add((next as Ok<ParticipantFixtureTotals>).value);
@@ -399,6 +401,7 @@ final class GetLiveStanding {
         fixturesScored: e.value.decided,
         exactCount: e.value.exact,
         decidedCount: e.value.decided,
+        outcomeCount: e.value.outcome,
       );
       if (next is Err<ParticipantFixtureTotals>) return Result.err(next.error);
       out.add((next as Ok<ParticipantFixtureTotals>).value);
@@ -436,17 +439,21 @@ final class _Place {
 
 /// What a player's predictions on the matches in play would add.
 final class _Gain {
-  const _Gain(this.points, this.exact, this.decided);
+  const _Gain(this.points, this.exact, this.decided, this.outcome);
 
-  static const _Gain none = _Gain(0, 0, 0);
+  static const _Gain none = _Gain(0, 0, 0, 0);
 
   final int points;
   final int exact;
   final int decided;
 
+  /// Right outcome, wrong score: a tie-break on the board (batch 129).
+  final int outcome;
+
   _Gain plus(FixtureScoreResult graded) => _Gain(
     points + graded.points,
     exact + (graded.grade == FixtureScoreGrade.exactScoreline ? 1 : 0),
     decided + 1,
+    outcome + (graded.grade == FixtureScoreGrade.correctOutcome ? 1 : 0),
   );
 }
