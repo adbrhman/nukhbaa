@@ -4654,6 +4654,23 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   so with a retry, and a line says the score sent becomes the caller's
   prediction. Needs an APK for the app half; the server half protects
   every installed app once released.
+- **Batch 127 (the rules say only the exact score scores, 2026-10-13,
+  audit M-07 and L-58)**: the ruleset is exact score 3, right outcome 0,
+  wrong 0, the double x2 (`ConfiguredRulesetProvider` v3), but the rules
+  said "التوقع الصحيح: 3 نقاط", which players read as "I called the winner",
+  and the history badge showed "اتجاه صحيح · 0 نقطة". Texts only, no scoring
+  change: `rulesCorrectPrediction` names the exact score with an example,
+  `rulesWrongPrediction` says any other prediction is 0 even with the right
+  outcome, `rulesDoubleMatch` says the double doubles the exact score's 3
+  into 6, `historyGradeExact` / `historyGradeOutcome` read "أصبت النتيجة" /
+  "أصبت الاتجاه لا النتيجة". `RulesScreen` adds the three rules it left
+  out: one double per Riyadh day (`DailyDoublePolicy`), the prediction
+  locks at kickoff (`FixtureLock`), and each month starts from zero while
+  the sporting season (September-August) adds its months up. The sign-in
+  rules card reads the same keys. L-58: the protocol no longer restores the
+  whole `lib/l10n/` folder (it holds the ARB sources); a text batch
+  regenerates with `flutter gen-l10n` and stages the ARB files with the
+  generated ones. Needs an APK.
 
 ## 3. Version-Verification Log
 

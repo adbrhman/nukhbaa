@@ -113,13 +113,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Predict matches from the major leagues';
 
   @override
-  String get rulesCorrectPrediction => 'Correct prediction: 3 points';
+  String get rulesCorrectPrediction => 'Exact score (e.g. 2-1): 3 points';
 
   @override
-  String get rulesWrongPrediction => 'Wrong prediction: 0 points';
+  String get rulesWrongPrediction =>
+      'Any other prediction: 0 points, even with the right outcome (winner or draw)';
 
   @override
-  String get rulesDoubleMatch => 'Match picked as double: 6 points';
+  String get rulesDoubleMatch =>
+      'Your double doubles the points: an exact score on it is 6 points';
+
+  @override
+  String get rulesOneDoublePerDay =>
+      'One double per day, picked from that day\'s matches';
+
+  @override
+  String get rulesLockAtKickoff =>
+      'You can change your prediction until kick-off; then it locks';
+
+  @override
+  String get rulesMonthStartsAtZero =>
+      'Each month is a new contest that starts from zero; the season (September to August) adds its months up';
 
   @override
   String get notifications => 'Notifications';
@@ -288,10 +302,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyStatusUpcoming => 'Not started';
 
   @override
-  String get historyGradeExact => 'Correct';
+  String get historyGradeExact => 'Exact score';
 
   @override
-  String get historyGradeOutcome => 'Right outcome';
+  String get historyGradeOutcome => 'Right outcome, wrong score';
 
   @override
   String get historyGradeWrong => 'Incorrect';

@@ -19,4 +19,60 @@ void main() {
     expect(find.textContaining('الأشواط الإضافية'), findsWidgets);
     expect(find.textContaining('ركلات الترجيح'), findsWidgets);
   });
+
+  // Audit M-07: only the exact score earns points, and the page must say
+  // it in those words -- "التوقع الصحيح" read as "I called the winner".
+  testWidgets('the rules page says only the exact score scores', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const RulesScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The last row is built, so every findsNothing below is meaningful.
+    expect(find.byKey(const Key('rules.tieBreak')), findsOneWidget);
+
+    expect(find.text('النتيجة الدقيقة (مثل 2-1): 3 نقاط'), findsOneWidget);
+    expect(
+      find.text('أي توقع آخر: 0 نقطة، حتى لو أصبت الاتجاه (الفائز أو التعادل)'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('الدبل يضاعف النقاط: النتيجة الدقيقة فيه 6 نقاط'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('التوقع الصحيح'), findsNothing);
+
+    // The three rules the page left out.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('rules.oneDouble')),
+        matching: find.textContaining('دبل واحد فقط في اليوم'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('rules.lock')),
+        matching: find.textContaining('حتى انطلاق المباراة'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('rules.month')),
+        matching: find.textContaining('من الصفر'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

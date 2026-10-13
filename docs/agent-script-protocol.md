@@ -38,12 +38,23 @@ One bash script per batch, named `NN_short_name.sh`, downloaded to
   `docs/project-context.md` exist; no uncommitted changes in tracked files
   (`git status --porcelain --untracked-files=no`); the batches this one
   builds on are in the tree (grep for a line they added).
-- **Never discard the owner's work.** If the generated l10n output
-  (`apps/mobile/lib/l10n/`) has local changes, the script **stops and
-  explains** -- it prints the files and the command the owner may run
-  himself -- and does not run `git checkout` on it. Only what the script's
-  own `flutter` run regenerated is restored at the end, and only because
-  l10n was clean at the guard.
+- **Never discard the owner's work.** If `apps/mobile/lib/l10n/` has local
+  changes, the script **stops and explains** -- it prints the files and the
+  command the owner may run himself -- and does not run `git checkout` on
+  it.
+- **l10n holds sources and output.** `app_ar.arb` and `app_en.arb` are the
+  sources, edited by hand; `app_localizations.dart`,
+  `app_localizations_ar.dart` and `app_localizations_en.dart` are generated
+  from them by `flutter gen-l10n` (and by every `flutter test`, through
+  `generate: true`). Never restore the folder: it holds the sources too
+  (audit L-58).
+  - A batch that does not change text restores only the three generated
+    files, listed by name (`$L10N_GEN`), after its own `flutter` run.
+  - A batch that changes text edits both ARB files in its patch, runs
+    `flutter gen-l10n` in `apps/mobile`, and puts the two ARB files and the
+    three generated files in `$MOD`, so they are staged together. It runs
+    `flutter gen-l10n` again after the tests, then checks that nothing
+    outside `$MOD $NEW` changed.
 - **The patch** is a Python script, ASCII only (non-ASCII text escaped as
   `\uXXXX`), using `str.replace` on literal anchors copied from the file's
   actual text:
@@ -192,12 +203,14 @@ cd "$REPO"
 
 MOD="path/to/changed_file.dart"
 NEW="path/to/new_file.dart"
+# Generated l10n output only -- never the folder, which holds the ARB sources.
+L10N_GEN="apps/mobile/lib/l10n/app_localizations.dart apps/mobile/lib/l10n/app_localizations_ar.dart apps/mobile/lib/l10n/app_localizations_en.dart"
 rollback() {
   trap - ERR; cd "$REPO"
   for f in $MOD $NEW; do git reset -q HEAD -- "$f" 2>/dev/null || true; done
   git checkout HEAD -- $MOD 2>/dev/null || true
   rm -f $NEW
-  git checkout -- apps/mobile/lib/l10n/ 2>/dev/null || true
+  git checkout HEAD -- $L10N_GEN 2>/dev/null || true
   echo "FAILED at step: $STEP; tree restored, nothing committed. log: $LOG"; exit 1
 }
 trap rollback ERR
@@ -216,7 +229,7 @@ cd apps/mobile
 flutter test --reporter=failures-only test/path/to/new_test.dart
 flutter test --reporter=failures-only
 cd "$REPO"
-[ -z "$(git status --porcelain -- apps/mobile/lib/l10n/)" ] || git checkout -- apps/mobile/lib/l10n/
+git checkout -- $L10N_GEN   # a text batch regenerates instead (section 2)
 
 step commit
 git add -- $MOD $NEW

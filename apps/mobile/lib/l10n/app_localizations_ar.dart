@@ -112,13 +112,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rulesPredictMajorLeagues => 'توقع مباريات الدوريات الكبرى';
 
   @override
-  String get rulesCorrectPrediction => 'التوقع الصحيح: 3 نقاط';
+  String get rulesCorrectPrediction => 'النتيجة الدقيقة (مثل 2-1): 3 نقاط';
 
   @override
-  String get rulesWrongPrediction => 'التوقع الخاطئ: 0 نقطة';
+  String get rulesWrongPrediction =>
+      'أي توقع آخر: 0 نقطة، حتى لو أصبت الاتجاه (الفائز أو التعادل)';
 
   @override
-  String get rulesDoubleMatch => 'المباراة المختارة كدبل: 6 نقاط';
+  String get rulesDoubleMatch =>
+      'الدبل يضاعف النقاط: النتيجة الدقيقة فيه 6 نقاط';
+
+  @override
+  String get rulesOneDoublePerDay =>
+      'دبل واحد فقط في اليوم، تختاره من مباريات ذلك اليوم';
+
+  @override
+  String get rulesLockAtKickoff =>
+      'تستطيع تعديل توقعك حتى انطلاق المباراة، ثم يُغلق';
+
+  @override
+  String get rulesMonthStartsAtZero =>
+      'كل شهر مسابقة جديدة تبدأ فيها النقاط من الصفر، ونقاط الموسم (من سبتمبر إلى أغسطس) مجموع شهوره';
 
   @override
   String get notifications => 'الإشعارات';
@@ -294,10 +308,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get historyStatusUpcoming => 'لم تبدأ';
 
   @override
-  String get historyGradeExact => 'توقع صحيح';
+  String get historyGradeExact => 'أصبت النتيجة';
 
   @override
-  String get historyGradeOutcome => 'اتجاه صحيح';
+  String get historyGradeOutcome => 'أصبت الاتجاه لا النتيجة';
 
   @override
   String get historyGradeWrong => 'توقع غير صحيح';

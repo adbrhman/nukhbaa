@@ -305,20 +305,38 @@ abstract class AppLocalizations {
   /// No description provided for @rulesCorrectPrediction.
   ///
   /// In en, this message translates to:
-  /// **'Correct prediction: 3 points'**
+  /// **'Exact score (e.g. 2-1): 3 points'**
   String get rulesCorrectPrediction;
 
   /// No description provided for @rulesWrongPrediction.
   ///
   /// In en, this message translates to:
-  /// **'Wrong prediction: 0 points'**
+  /// **'Any other prediction: 0 points, even with the right outcome (winner or draw)'**
   String get rulesWrongPrediction;
 
   /// No description provided for @rulesDoubleMatch.
   ///
   /// In en, this message translates to:
-  /// **'Match picked as double: 6 points'**
+  /// **'Your double doubles the points: an exact score on it is 6 points'**
   String get rulesDoubleMatch;
+
+  /// No description provided for @rulesOneDoublePerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'One double per day, picked from that day\'s matches'**
+  String get rulesOneDoublePerDay;
+
+  /// No description provided for @rulesLockAtKickoff.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change your prediction until kick-off; then it locks'**
+  String get rulesLockAtKickoff;
+
+  /// No description provided for @rulesMonthStartsAtZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Each month is a new contest that starts from zero; the season (September to August) adds its months up'**
+  String get rulesMonthStartsAtZero;
 
   /// No description provided for @notifications.
   ///
@@ -575,13 +593,13 @@ abstract class AppLocalizations {
   /// No description provided for @historyGradeExact.
   ///
   /// In en, this message translates to:
-  /// **'Correct'**
+  /// **'Exact score'**
   String get historyGradeExact;
 
   /// No description provided for @historyGradeOutcome.
   ///
   /// In en, this message translates to:
-  /// **'Right outcome'**
+  /// **'Right outcome, wrong score'**
   String get historyGradeOutcome;
 
   /// No description provided for @historyGradeWrong.
@@ -2907,7 +2925,7 @@ abstract class AppLocalizations {
   /// No description provided for @championsLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn't load the champions.'**
+  /// **'Couldn\'t load the champions.'**
   String get championsLoadFailed;
 
   /// No description provided for @championSpotlightCollapse.

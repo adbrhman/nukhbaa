@@ -1,6 +1,8 @@
 /// "كيف تلعب؟" for signed-in users: the scoring rules, including how a
 /// knockout match that goes to extra time or penalties is settled (the UEFA
-/// Predict Six rule, adopted 2026-09-17).
+/// Predict Six rule, adopted 2026-09-17). Only the exact score earns points
+/// (3, or 6 on the day's one double); the right outcome alone earns 0, and
+/// the page says so in those words (audit M-07).
 library;
 
 import 'package:flutter/material.dart';
@@ -70,11 +72,23 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                       color: tokens.gold,
                       label: l10n.rulesDoubleMatch,
                     ),
+                    _RuleRow(
+                      key: const Key('rules.oneDouble'),
+                      icon: Icons.today_rounded,
+                      color: tokens.gold,
+                      label: l10n.rulesOneDoublePerDay,
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 _RulesCard(
                   children: <Widget>[
+                    _RuleRow(
+                      key: const Key('rules.lock'),
+                      icon: Icons.lock_outline_rounded,
+                      color: tokens.textSecondary,
+                      label: l10n.rulesLockAtKickoff,
+                    ),
                     _RuleRow(
                       icon: Icons.timer_outlined,
                       color: tokens.textSecondary,
@@ -92,6 +106,12 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                 const SizedBox(height: AppSpacing.lg),
                 _RulesCard(
                   children: <Widget>[
+                    _RuleRow(
+                      key: const Key('rules.month'),
+                      icon: Icons.calendar_month_rounded,
+                      color: tokens.primary,
+                      label: l10n.rulesMonthStartsAtZero,
+                    ),
                     _RuleRow(
                       key: const Key('rules.tieBreak'),
                       icon: Icons.group_add_rounded,

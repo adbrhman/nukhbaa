@@ -1,7 +1,9 @@
 /// A finished prediction shows the recorded final score under the call,
 /// with the verdict and the server's points -- through the real
 /// [PredictionHistoryScreen] and the real scores read. A double that hit
-/// reads "🔥 6 نقاط"; a miss "❌ 0 نقطة"; before any result, no line.
+/// reads "🔥 6 نقاط"; a miss "❌ 0 نقطة"; before any result, no line. A
+/// right outcome graded before the result line says the score missed, never
+/// a bare "اتجاه صحيح" beside 0 (audit M-07).
 library;
 
 import 'package:contracts/contracts.dart';
@@ -72,23 +74,27 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
-http.Response _scores({required int points, int? home, int? away}) =>
-    ph.okJsonObject(
-      FixtureScoresDto(
+http.Response _scores({
+  required int points,
+  int? home,
+  int? away,
+  String? grade,
+}) => ph.okJsonObject(
+  FixtureScoresDto(
+    fixtureId: _fixture,
+    scores: <ParticipantFixtureScoreDto>[
+      ParticipantFixtureScoreDto(
         fixtureId: _fixture,
-        scores: <ParticipantFixtureScoreDto>[
-          ParticipantFixtureScoreDto(
-            fixtureId: _fixture,
-            participantId: 'part-1',
-            rulesetVersion: 1,
-            grade: points > 0 ? 'exact_scoreline' : 'incorrect',
-            points: points,
-          ),
-        ],
-        resultHomeGoals: home,
-        resultAwayGoals: away,
-      ).toJson(),
-    );
+        participantId: 'part-1',
+        rulesetVersion: 1,
+        grade: grade ?? (points > 0 ? 'exact_scoreline' : 'incorrect'),
+        points: points,
+      ),
+    ],
+    resultHomeGoals: home,
+    resultAwayGoals: away,
+  ).toJson(),
+);
 
 void main() {
   const Key line = Key('history.final.fp-final');
@@ -138,5 +144,19 @@ void main() {
     );
 
     expect(find.byKey(line), findsNothing);
+  });
+
+  testWidgets('right outcome, wrong score: the badge says so beside 0', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      prediction: _call(isDouble: false),
+      scores: _scores(points: 0, grade: 'correct_outcome'),
+    );
+
+    expect(find.byKey(line), findsNothing);
+    expect(find.text('أصبت الاتجاه لا النتيجة · 0 نقطة'), findsOneWidget);
+    expect(find.textContaining('اتجاه صحيح'), findsNothing);
   });
 }
