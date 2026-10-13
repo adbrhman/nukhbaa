@@ -125,8 +125,16 @@ void main() {
       expect(second.entryCount, 0);
 
       // SQL shape + binding; no ORDER BY (ranking lives in the domain).
-      expect(conn.sqls.single, contains('FROM leaderboard.season_standings'));
-      expect(conn.sqls.single, contains('WHERE season_id = @season_id'));
+      // The fixture-era store, never the empty round-era ledger (C-01).
+      expect(
+        conn.sqls.single,
+        contains('LEFT JOIN leaderboard.season_fixture_standings f'),
+      );
+      expect(
+        conn.sqls.single,
+        isNot(contains('season_standings_with_movement')),
+      );
+      expect(conn.sqls.single, contains('WHERE p.season_id = @season_id'));
       expect(conn.sqls.single, isNot(contains('ORDER BY')));
       expect(conn.parameters.single, {'season_id': _seasonId});
     });

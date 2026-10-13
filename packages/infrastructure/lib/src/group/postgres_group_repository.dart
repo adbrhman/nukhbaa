@@ -271,26 +271,27 @@ ORDER BY gm.joined_at DESC, g.id ASC
   // groupSeasonStandings — the reused season projection ∩ group membership
   // --------------------------------------------------------------------------
 
-  // Intersect the ratified season-standings projection with the group's
-  // membership: a member appears ONLY IF they are also a season participant of
-  // the same season (join the VIEW's participant → its user via
-  // competition.participants, then require that user to be a member of the
-  // group). NO ORDER BY — the pure domain SeasonLeaderboard.rank owns ordering
-  // and "1224" ranks (decision #4: no new ranking logic). The VIEW already
-  // scopes the SUM to the season and nets in corrections (Axiom 5).
+  // The season's participants who are members of the group, with their
+  // points from the SAME store the monthly board reads:
+  // `leaderboard.season_fixture_standings` (migration 0034) over
+  // `scoring.fixture_scores`, LEFT-joined so a member with nothing scored
+  // yet reads 0. The previous source, `leaderboard.season_standings`, sums
+  // the round-era `ledger.point_entries`, empty since fixtures moved to
+  // seasons -- every member read 0 (audit C-01). NO ORDER BY -- the pure
+  // domain SeasonLeaderboard.rank owns ordering and "1224" ranks.
   static const String _selectGroupSeasonStandingsSql = '''
 SELECT
-  s.participant_id AS participant_id,
-  p.user_id        AS user_id,
-  s.display_name   AS display_name,
-  s.total_points   AS total_points,
-  s.entry_count    AS entry_count,
-  s.joined_at      AS joined_at
-FROM leaderboard.season_standings s
-JOIN competition.participants p ON p.id = s.participant_id
+  p.id         AS participant_id,
+  p.user_id    AS user_id,
+  u.display_name AS display_name,
+  COALESCE(f.total_points, 0)::bigint    AS total_points,
+  COALESCE(f.fixtures_scored, 0)::bigint AS entry_count,
+  p.joined_at  AS joined_at
+FROM competition.participants p
 JOIN "group".group_memberships m ON m.user_id = p.user_id
 JOIN identity.users u ON u.id = p.user_id
-WHERE s.season_id = @season_id
+LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
+WHERE p.season_id = @season_id
   AND m.group_id = @group_id
   AND u.status <> 'suspended'
 ''';

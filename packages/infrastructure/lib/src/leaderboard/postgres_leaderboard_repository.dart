@@ -4,22 +4,17 @@ import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:shared/shared.dart';
 
 /// Postgres-backed [LeaderboardRepository] over two projection VIEWs:
-/// `leaderboard.season_standings` (migration `0006_leaderboard.sql`, one row
-/// per season participant) and `leaderboard.hall_of_fame_standings`
-/// (migration `0011_hall_of_fame.sql`, one row per user aggregated across
-/// every season — the Hall of Fame).
+/// `leaderboard.season_fixture_standings` (migration `0034`, read with every
+/// participant of a season; audit C-01 moved the season board off the
+/// round-era `leaderboard.season_standings`, which sums an empty ledger) and
+/// `leaderboard.hall_of_fame_standings` (migration `0011_hall_of_fame.sql`,
+/// one row per user aggregated across every season -- the Hall of Fame).
 ///
-/// A leaderboard is a **read-side projection** over the ratified append-only
-/// ledger (Axiom 5; Leaderboards architecture decision in project-context §2) —
-/// NEVER a second source of truth for points. This adapter therefore issues a
-/// single read: a `SELECT` over the VIEW, which is itself a
-/// `SUM(amount) … GROUP BY participant` over a season-scoped join of
-/// `ledger.point_entries` → `competition.rounds` (to bound the sum to the
-/// season) LEFT-joined from `competition.participants` (so an enrolled-but-
-/// never-credited participant still appears with a zero total). The adapter
-/// carries no ranking logic: it returns **unranked** entries; the total order
-/// (points desc, joinedAt asc, participant-id asc) and standard-competition
-/// ("1224") ranks are applied by the pure domain [SeasonLeaderboard.rank] in
+/// A leaderboard is a **read-side projection** -- NEVER a second source of
+/// truth for points. The adapter carries no ranking logic: it returns
+/// **unranked** entries; the total order (points desc, joinedAt asc,
+/// participant-id asc) and standard-competition ("1224") ranks are applied by
+/// the pure domain [SeasonLeaderboard.rank] in
 /// the use-case, so the ranking rule is framework-free and identical whoever
 /// runs the query.
 ///
@@ -34,31 +29,42 @@ final class PostgresLeaderboardRepository implements LeaderboardRepository {
 
   final PostgresConnection _connection;
 
-  // Read the season's standings from the projection VIEW. The VIEW already
-  // scopes the SUM to the season (via the round→season join inside it) and
-  // LEFT-joins from participants, so every ACTIVE/WITHDRAWN participant of the
-  // season appears exactly once — a never-credited one with total 0, count 0.
-  // The order here is unspecified on purpose (the domain sorts + ranks); we do
-  // not ORDER BY in SQL so the ranking rule lives in exactly one place.
+  // Every non-suspended participant of the season, once, with the points of
+  // the SAME store the monthly board reads: `leaderboard.season_fixture_
+  // standings` (migration 0034) over `scoring.fixture_scores`, LEFT-joined so
+  // a participant with nothing scored yet reads 0. The previous source,
+  // `season_standings_with_movement`, summed the round-era
+  // `ledger.point_entries`, empty since fixtures moved to seasons -- every
+  // row read 0 points beside real accuracy and movement (audit C-01).
   //
-  // The read is against `leaderboard.season_standings_with_movement`
-  // (migration `0030`), a superset of `season_standings`: the same columns
-  // plus `previous_rank`, the participant's rank at the most recent daily
-  // pg_cron snapshot. The view's own `current_rank`/`movement` columns are
-  // deliberately NOT selected — the current rank is the domain's to assign,
-  // and reading a second, SQL-computed rank alongside it would let the arrow
-  // and the place disagree. The domain subtracts instead.
+  // `previous_rank` is the participant's rank at the season's latest daily
+  // snapshot (`leaderboard.season_rank_snapshots`, captured from the same
+  // store since 0034), null when there is none. No current rank is read:
+  // the domain assigns it and subtracts. No ORDER BY either -- the ranking
+  // rule lives in the domain only. `settled_count` is the board's
+  // `decided_count`, so the accuracy matches the monthly board's.
   static const String _selectSeasonStandingsSql = '''
-SELECT participant_id, display_name, total_points, entry_count, joined_at,
-       previous_rank, exact_count, settled_count
-FROM leaderboard.season_standings_with_movement
-WHERE season_id = @season_id
-  AND participant_id NOT IN (
-    SELECT p.id
-    FROM competition.participants p
-    JOIN identity.users u ON u.id = p.user_id
-    WHERE u.status = 'suspended'
-  )
+SELECT p.id AS participant_id,
+       u.display_name AS display_name,
+       COALESCE(f.total_points, 0)::bigint AS total_points,
+       COALESCE(f.fixtures_scored, 0)::bigint AS entry_count,
+       p.joined_at AS joined_at,
+       snap.rank AS previous_rank,
+       COALESCE(f.exact_count, 0)::bigint AS exact_count,
+       COALESCE(f.decided_count, 0)::bigint AS settled_count
+FROM competition.participants p
+JOIN identity.users u ON u.id = p.user_id
+LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
+LEFT JOIN leaderboard.season_rank_snapshots snap
+  ON snap.season_id = p.season_id
+ AND snap.participant_id = p.id
+ AND snap.captured_on = (
+       SELECT max(x.captured_on)
+       FROM leaderboard.season_rank_snapshots x
+       WHERE x.season_id = p.season_id
+     )
+WHERE p.season_id = @season_id
+  AND u.status <> 'suspended'
 ''';
 
   // Read the all-time standings from the projection VIEW, capped by an

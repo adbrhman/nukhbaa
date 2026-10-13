@@ -21,8 +21,8 @@ import 'package:test/test.dart';
 ///   * `findMembership` / `listMemberships` — mapping to [GroupMembership]
 ///     (role wire-token, UTC joinedAt), `Ok(null)`/empty on absence, and the
 ///     `ORDER BY joined_at ASC` list shape;
-///   * `groupSeasonStandings` — the season∩group SELECT over the reused
-///     `leaderboard.season_standings` VIEW (SQL shape, `@group_id`/`@season_id`
+///   * `groupSeasonStandings` — the season∩group SELECT over
+///     `leaderboard.season_fixture_standings` (SQL shape, `@group_id`/`@season_id`
 ///     binding, NO ORDER BY — the domain ranks), row → [GroupStandingEntry]
 ///     mapping incl. a `bigint` total arriving as [BigInt] and a zero row;
 ///   * verbatim pass-through of a transient query failure on every read;
@@ -555,9 +555,14 @@ void main() {
         expect(entries.last.entry.entryCount, 0);
 
         // SQL shape + binding; no ORDER BY (ranking lives in the domain).
-        expect(conn.sqls.single, contains('FROM leaderboard.season_standings'));
+        // The fixture-era store, never the empty round-era ledger (C-01).
+        expect(
+          conn.sqls.single,
+          contains('LEFT JOIN leaderboard.season_fixture_standings f'),
+        );
+        expect(conn.sqls.single, isNot(contains('season_standings s')));
         expect(conn.sqls.single, contains('"group".group_memberships'));
-        expect(conn.sqls.single, contains('WHERE s.season_id = @season_id'));
+        expect(conn.sqls.single, contains('WHERE p.season_id = @season_id'));
         expect(conn.sqls.single, contains('m.group_id = @group_id'));
         expect(conn.sqls.single, isNot(contains('ORDER BY')));
         expect(conn.parameters.single, {

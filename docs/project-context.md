@@ -4539,6 +4539,24 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   its nine checks). No migration, no client change. A read-only check for
   links made before this fix is in the batch's delivery note.
 
+- **Batch 120 (season boards read the fixture store, 2026-10-13, audit
+  C-01)**: the "season points" tab (`PostgresLeaderboardRepository.
+  _selectSeasonStandingsSql`) and a group's season board
+  (`PostgresGroupRepository._selectGroupSeasonStandingsSql`) still read
+  `leaderboard.season_standings(_with_movement)`, which sum the round-era
+  `ledger.point_entries`, empty since fixtures moved to seasons: every
+  player showed 0 points beside real accuracy and movement. Both now read
+  every non-suspended participant of the season LEFT-joined to
+  `leaderboard.season_fixture_standings` (the monthly board's store; 0
+  when nothing is scored), the group one restricted to the group's
+  members; the season one takes `previous_rank` from the latest
+  `season_rank_snapshots` row and `settled_count` = `decided_count`. The
+  old views stay (other objects may read them); nothing in the app reads
+  them now. SQL test `supabase/tests/season_and_group_standings_queries_
+  test.sql` (the adapters' text; the old views read 0 on its data). Still
+  open from C-01: the admin "points ledger" lookup reads the round-era
+  ledger too. No migration, no client change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
