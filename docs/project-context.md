@@ -4557,6 +4557,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   open from C-01: the admin "points ledger" lookup reads the round-era
   ledger too. No migration, no client change.
 
+- **Batch 121 (GoTrue busy is not a rejection, 2026-10-13, audit C-02)**:
+  `SupabaseAuthClient` answered every non-2xx from GoTrue as
+  `validation auth.rejected` (400), so a refresh that met GoTrue's rate
+  limit (429; every player shares this server's one address) or a 5xx
+  read, in the app, as a refused token -- and the app signed the player
+  out. `_rejection` now keeps `auth.rejected` for a 4xx and makes 429
+  (`auth.rate_limited`), 408 and 5xx (`auth.upstream_error`) `transient`,
+  answered 503, which the app's `SessionRefresher` already treats as
+  "keep the session, retry". Applies to login, register, refresh, Google,
+  the reset code and the reset/update actions; a reset code GoTrue could
+  not check is no longer called wrong. Still open from C-02 (they need
+  the owner's Supabase settings): IP forwarding (`Sb-Forwarded-For` with
+  a secret key) so each player has their own GoTrue quota, and a per-IP
+  limit on `/auth/refresh` and `/auth/google`. No migration, no client
+  change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

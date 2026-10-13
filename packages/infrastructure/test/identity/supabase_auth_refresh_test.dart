@@ -67,6 +67,66 @@ void main() {
     expect(error.code, 'auth.rejected');
   });
 
+  group('GoTrue busy or failing is transient, never a rejection (C-02)', () {
+    Future<AppError> refreshAgainst(int status) async {
+      final client = SupabaseAuthClient(
+        config: _config(),
+        httpClient: MockClient(
+          (_) async => _json({'msg': 'upstream says no'}, status),
+        ),
+      );
+      final result = await client.refresh(refreshToken: 'fine');
+      return (result as Err<SupabaseSession>).error;
+    }
+
+    test('429 (the shared auth rate limit)', () async {
+      final error = await refreshAgainst(429);
+      expect(error.kind, ErrorKind.transient);
+      expect(error.code, 'auth.rate_limited');
+    });
+
+    test('a 5xx', () async {
+      for (final status in [500, 502, 503, 504]) {
+        final error = await refreshAgainst(status);
+        expect(error.kind, ErrorKind.transient, reason: '$status');
+        expect(error.code, 'auth.upstream_error', reason: '$status');
+      }
+    });
+
+    test('408', () async {
+      final error = await refreshAgainst(408);
+      expect(error.kind, ErrorKind.transient);
+    });
+
+    test('while any other 4xx stays a rejection', () async {
+      for (final status in [400, 401, 403, 422]) {
+        final error = await refreshAgainst(status);
+        expect(error.kind, ErrorKind.validation, reason: '$status');
+        expect(error.code, 'auth.rejected', reason: '$status');
+      }
+    });
+
+    test('a reset code GoTrue could not check is not called wrong', () async {
+      final gateway = SupabaseAuthGateway(
+        SupabaseAuthClient(
+          config: _config(),
+          httpClient: MockClient(
+            (_) async => _json({'msg': 'over_request_rate_limit'}, 429),
+          ),
+        ),
+      );
+
+      final result = await gateway.verifyRecoveryCode(
+        email: 'a@example.com',
+        code: '123456',
+      );
+
+      final error = (result as Err<String>).error;
+      expect(error.kind, ErrorKind.transient);
+      expect(error.code, isNot('auth.recovery_code_invalid'));
+    });
+  });
+
   test('the gateway hands the renewed pair to the application', () async {
     final gateway = SupabaseAuthGateway(
       SupabaseAuthClient(

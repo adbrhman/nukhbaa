@@ -323,10 +323,7 @@ final class SupabaseAuthClient {
       }
 
       return Result.err(
-        AppError.validation(
-          'auth.rejected',
-          _errorMessage(json) ?? 'Authentication action failed',
-        ),
+        _rejection(status, json, 'Authentication action failed'),
       );
     } on TimeoutException catch (cause) {
       return Result.err(
@@ -377,8 +374,35 @@ final class SupabaseAuthClient {
     // detail) and reports the wrong HTTP status (401 instead of 400) for
     // things like "email already registered". `validation` preserves
     // GoTrue's actual message end-to-end via `ErrorPresenter`.
-    final message = _errorMessage(json) ?? 'Authentication failed';
-    return Result.err(AppError.validation('auth.rejected', message));
+    //
+    // Except when GoTrue itself is busy or failing (429, 408, 5xx): that
+    // says nothing about the credentials, so it is `transient` -- see
+    // [_rejection] (audit C-02).
+    return Result.err(_rejection(status, json, 'Authentication failed'));
+  }
+
+  /// A non-2xx answer from GoTrue as an [AppError].
+  ///
+  /// A 4xx refuses what was sent (a wrong password, a spent refresh token)
+  /// and is terminal: `validation`, code `auth.rejected`. But 429 (the
+  /// project's auth rate limit, shared by every player behind this server's
+  /// one address), 408 and any 5xx mean GoTrue is busy or failing, which says
+  /// nothing about the credentials: `transient`, answered 503, which the app
+  /// retries. Classed as a rejection, a renewal that met one signed the
+  /// player out (audit C-02).
+  static AppError _rejection(
+    int status,
+    Map<String, Object?> json,
+    String fallback,
+  ) {
+    final message = _errorMessage(json) ?? fallback;
+    if (status == 429) {
+      return AppError.transient('auth.rate_limited', message);
+    }
+    if (status == 408 || status >= 500) {
+      return AppError.transient('auth.upstream_error', message);
+    }
+    return AppError.validation('auth.rejected', message);
   }
 
   /// Extracts a human-readable error message from a GoTrue error body, trying
