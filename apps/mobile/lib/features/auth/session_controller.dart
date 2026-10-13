@@ -24,9 +24,15 @@
 /// as a sign-in does, so a returning user with a still-valid token lands
 /// directly on the authenticated screen, and one whose token has since expired
 /// is routed to sign-in with the stale token cleared.
+///
+/// When the profile `GET /me` last confirmed is remembered on the device, the
+/// app opens on it at once and `/me` is asked in the background (audit M-04:
+/// on a slow network the splash waited up to 35 s for it): a refused token
+/// still ends the session, a failed network keeps it.
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
@@ -67,9 +73,72 @@ class SessionController extends _$SessionController {
     if (token == null || token.isEmpty) {
       return const SessionUnauthenticated();
     }
+    final AuthenticatedUserDto? remembered = await _rememberedProfile();
+    if (remembered != null) {
+      // Open on the remembered profile; /me confirms it in the background.
+      unawaited(_confirmInBackground(token));
+      return SessionAuthenticated(remembered);
+    }
     // A token is on disk — confirm the server still accepts it before treating
     // the user as signed in.
     return _validateHeldToken(clearOnAuthFailure: true);
+  }
+
+  /// The profile `GET /me` last confirmed, or `null` when none is
+  /// remembered or it cannot be read back.
+  Future<AuthenticatedUserDto?> _rememberedProfile() async {
+    try {
+      final String? raw = await _store.readProfile();
+      if (raw == null || raw.isEmpty) return null;
+      final Object? decoded = jsonDecode(raw);
+      if (decoded is! Map<String, Object?>) return null;
+      return MeResponseDto.fromJson(decoded).user;
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Remembers [me] for the next launch. Losing it only costs that launch
+  /// its wait for `/me`.
+  Future<void> _rememberProfile(MeResponseDto me) async {
+    try {
+      await _store.writeProfile(jsonEncode(me.toJson()));
+    } on Object {
+      // See above.
+    }
+  }
+
+  /// Asks `/me` after a launch opened on the remembered profile. Acts only
+  /// while that session still stands with the same [token] (a sign-out or a
+  /// new sign-in meanwhile wins): a refused token ends it, as a launch
+  /// without a remembered profile would; a confirmed one refreshes the
+  /// profile; anything else (offline, slow) leaves the player in the app.
+  Future<void> _confirmInBackground(String token) async {
+    final Result<MeResponseDto> result = await _authApi.me();
+    if (!ref.mounted) return;
+    try {
+      // The launch that started this must have finished first.
+      await future;
+    } on Object {
+      return;
+    }
+    if (!ref.mounted) return;
+    if (state.value is! SessionAuthenticated) return;
+    if (await _store.read() != token) return;
+    if (!ref.mounted) return;
+    switch (result) {
+      case Ok<MeResponseDto>(:final value):
+        await _rememberProfile(value);
+        if (!ref.mounted) return;
+        state = AsyncData(SessionAuthenticated(value.user));
+      case Err<MeResponseDto>(:final error)
+          when error.kind == ErrorKind.authorization:
+        await _store.clear();
+        if (!ref.mounted) return;
+        state = AsyncData(SessionFailed(error));
+      case Err<MeResponseDto>():
+        break;
+    }
   }
 
   /// Signs in with an access [token] (minted by Supabase / supplied by the
@@ -361,13 +430,16 @@ class SessionController extends _$SessionController {
     required bool clearOnAuthFailure,
   }) async {
     final Result<MeResponseDto> result = await _authApi.me();
-    return switch (result) {
-      Ok<MeResponseDto>(:final value) => SessionAuthenticated(value.user),
-      Err<MeResponseDto>(:final error) => await _onValidationError(
-        error,
-        clearOnAuthFailure: clearOnAuthFailure,
-      ),
-    };
+    switch (result) {
+      case Ok<MeResponseDto>(:final value):
+        await _rememberProfile(value);
+        return SessionAuthenticated(value.user);
+      case Err<MeResponseDto>(:final error):
+        return _onValidationError(
+          error,
+          clearOnAuthFailure: clearOnAuthFailure,
+        );
+    }
   }
 
   Future<SessionState> _onValidationError(

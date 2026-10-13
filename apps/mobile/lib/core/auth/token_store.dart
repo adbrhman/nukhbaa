@@ -31,7 +31,16 @@ abstract interface class TokenStore {
   /// Persists [token] as the refresh token that renews the session.
   Future<void> writeRefreshToken(String token);
 
-  /// Removes the persisted access and refresh tokens (sign-out).
+  /// Returns the profile last confirmed by `GET /me` (its JSON), or `null`.
+  /// Lets a launch open the app at once while `/me` is asked again in the
+  /// background (audit M-04).
+  Future<String?> readProfile();
+
+  /// Remembers the profile `GET /me` just confirmed (its JSON).
+  Future<void> writeProfile(String json);
+
+  /// Removes the persisted access and refresh tokens and the remembered
+  /// profile (sign-out).
   Future<void> clear();
 }
 
@@ -60,6 +69,9 @@ final class SecureTokenStore implements TokenStore {
 
   /// The storage key under which the refresh token is persisted.
   static const String refreshTokenKey = 'nukhba.refresh_token';
+
+  /// The storage key under which the last confirmed profile is persisted.
+  static const String profileKey = 'nukhba.profile';
 
   @override
   Future<String?> read() async {
@@ -99,12 +111,27 @@ final class SecureTokenStore implements TokenStore {
   Future<void> writeRefreshToken(String token) =>
       _storage.write(key: refreshTokenKey, value: token);
 
+  // Read once per launch, so not cached either.
+  @override
+  Future<String?> readProfile() async {
+    try {
+      return await _storage.read(key: profileKey);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> writeProfile(String json) =>
+      _storage.write(key: profileKey, value: json);
+
   @override
   Future<void> clear() async {
     _cached = null;
     _loaded = true;
     await _storage.delete(key: tokenKey);
     await _storage.delete(key: refreshTokenKey);
+    await _storage.delete(key: profileKey);
   }
 }
 
@@ -130,9 +157,18 @@ final class InMemoryTokenStore implements TokenStore {
   @override
   Future<void> writeRefreshToken(String token) async => _refreshToken = token;
 
+  String? _profile;
+
+  @override
+  Future<String?> readProfile() async => _profile;
+
+  @override
+  Future<void> writeProfile(String json) async => _profile = json;
+
   @override
   Future<void> clear() async {
     _token = null;
     _refreshToken = null;
+    _profile = null;
   }
 }

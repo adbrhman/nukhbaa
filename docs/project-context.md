@@ -4573,6 +4573,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   limit on `/auth/refresh` and `/auth/google`. No migration, no client
   change.
 
+- **Batch 122 (open on the remembered profile, 2026-10-13, audit M-04)**:
+  measured first: `ops.error_groups` held `api_client.timeout` for 23
+  Android and 15 web players since 2026-10-03 (363 times), the samples
+  all at launch, four or five routes failing in the same second from one
+  device -- a weak link, not the server (no server error beside them;
+  responses are already gzip-compressed by the Northflank edge, so audit
+  M-33 does not hold). A launch waited for `GET /me` behind a bare
+  spinner, up to the 35 s timeout. `TokenStore` now also keeps the profile
+  `/me` last confirmed (`nukhba.profile`, secure storage, erased with the
+  tokens on sign-out); `SessionController._restore` opens on it at once
+  and asks `/me` in the background: a refused token still ends the
+  session, a confirmed one refreshes the profile, a failed network leaves
+  the player in the app. Only a launch with nothing remembered (the first
+  after this update) waits, and its splash now says what it waits for.
+  Needs a new APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

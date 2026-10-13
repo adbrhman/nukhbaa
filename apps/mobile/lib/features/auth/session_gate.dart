@@ -184,6 +184,8 @@ class _ConnectionRetry extends ConsumerWidget {
 }
 
 /// A minimal boot splash shown while the persisted session is being resolved.
+/// Says what it waits for: on a slow network it can stand for a while
+/// (audit M-04), and a bare spinner reads as a frozen app.
 class _Splash extends StatelessWidget {
   const _Splash();
 
@@ -191,7 +193,20 @@ class _Splash extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       key: Key('session.splash'),
-      body: Center(child: CircularProgressIndicator()),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'جارٍ الاتصال بنُخبة…',
+              key: Key('session.splash.message'),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

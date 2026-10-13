@@ -5,8 +5,10 @@
 /// asserting both the resulting [SessionState] and the token-store side effect.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/auth/session_controller.dart';
@@ -232,6 +234,139 @@ void main() {
         );
       },
     );
+  });
+
+  group('a remembered profile opens the app at once (M-04)', () {
+    const AuthenticatedUserDto renamed = AuthenticatedUserDto(
+      userId: 'u-1',
+      role: 'user',
+      status: 'active',
+      email: 'a@example.com',
+      displayName: 'Renamed',
+    );
+
+    Future<void> settle() async {
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    // In the app the session gate watches the controller for good. Here a
+    // bare read would let the auto-dispose provider go between reads, and
+    // the background check would find it gone; listen, as the gate does.
+    void keepAlive(AuthHarness harness) {
+      final sub = harness.container.listen(
+        sessionControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+    }
+
+    test(
+      'a confirmed profile is remembered, and sign-out forgets it',
+      () async {
+        final harness = buildAuthHarness(
+          (_) async => okMe(sampleUser),
+          seedToken: 'saved-jwt',
+        );
+        addTearDown(harness.dispose);
+
+        await harness.container.read(sessionControllerProvider.future);
+        expect(await harness.store.readProfile(), isNotNull);
+
+        await harness.container
+            .read(sessionControllerProvider.notifier)
+            .signOut();
+        expect(await harness.store.readProfile(), isNull);
+      },
+    );
+
+    test(
+      'opens on it before /me answers, then takes the fresh profile',
+      () async {
+        final answer = Completer<http.Response>();
+        final harness = buildAuthHarness(
+          (_) => answer.future,
+          seedToken: 'saved-jwt',
+        );
+        addTearDown(harness.dispose);
+        await harness.store.writeProfile(
+          jsonEncode(const MeResponseDto(user: sampleUser).toJson()),
+        );
+        keepAlive(harness);
+
+        final first = await harness.container.read(
+          sessionControllerProvider.future,
+        );
+        expect(first, const SessionAuthenticated(sampleUser));
+
+        answer.complete(okMe(renamed));
+        await settle();
+
+        expect(
+          harness.container.read(sessionControllerProvider).value,
+          const SessionAuthenticated(renamed),
+        );
+      },
+    );
+
+    test('a token refused in the background still ends the session', () async {
+      final harness = buildAuthHarness(
+        (_) async => errorEnvelope(401, 'auth.token_expired', 'Token expired.'),
+        seedToken: 'stale-jwt',
+      );
+      addTearDown(harness.dispose);
+      await harness.store.writeProfile(
+        jsonEncode(const MeResponseDto(user: sampleUser).toJson()),
+      );
+      keepAlive(harness);
+
+      await harness.container.read(sessionControllerProvider.future);
+      await settle();
+
+      final state = harness.container.read(sessionControllerProvider).value;
+      expect(state, isA<SessionFailed>());
+      expect((state! as SessionFailed).error.kind, ErrorKind.authorization);
+      expect(await harness.store.read(), isNull);
+      expect(await harness.store.readProfile(), isNull);
+    });
+
+    test('offline, the player stays in the app with the token kept', () async {
+      final harness = buildAuthHarness(
+        (_) async => throw Exception('offline'),
+        seedToken: 'kept-jwt',
+      );
+      addTearDown(harness.dispose);
+      await harness.store.writeProfile(
+        jsonEncode(const MeResponseDto(user: sampleUser).toJson()),
+      );
+      keepAlive(harness);
+
+      await harness.container.read(sessionControllerProvider.future);
+      await settle();
+
+      expect(
+        harness.container.read(sessionControllerProvider).value,
+        const SessionAuthenticated(sampleUser),
+      );
+      expect(await harness.store.read(), 'kept-jwt');
+    });
+
+    test('a profile that cannot be read back falls back to waiting', () async {
+      final harness = buildAuthHarness(
+        (_) async => okMe(sampleUser),
+        seedToken: 'saved-jwt',
+      );
+      addTearDown(harness.dispose);
+      await harness.store.writeProfile('not json');
+
+      final state = await harness.container.read(
+        sessionControllerProvider.future,
+      );
+
+      expect(state, const SessionAuthenticated(sampleUser));
+      expect(harness.captured, hasLength(1));
+    });
   });
 
   group('malformed /me body', () {
