@@ -4621,6 +4621,26 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   a missing migration leaves the server where it was, and after applying
   it the owner runs Release Server by hand. No Dart, no migration, no APK.
 
+- **Batch 125 (hidden fixtures off every board, 2026-10-13, audit M-23)**:
+  decided 2026-10-13: hiding a fixture (0098) cancels it for as long as it
+  stays hidden -- its points leave every board, and showing it again
+  brings them back unchanged (nothing is deleted). Until now it was out of
+  the head-to-head rounds, the streak and the daily challenge but still in
+  the monthly, weekly and season boards and the crown, so a board could
+  be decided by a fixture nobody could see. Migration 0107 redefines
+  `leaderboard.season_fixture_standings` (same columns) without hidden or
+  test fixtures -- it feeds the season tab, a group's season board, the
+  personal record and the daily rank snapshot. The readers that do not go
+  through it apply the same filter: `PostgresFixtureTotalsReader` (monthly
+  board, group month board, live standing, the crown's totals),
+  `PostgresSportingSeasonStandingsReader`, `PostgresWeeklyLeague
+  StandingsReader` (with the streak bonus of a hidden fixture), and
+  `PostgresDuelRecordReader`; the crown's "unscored fixtures" count no
+  longer waits for a hidden fixture's result. SQL test
+  `supabase/tests/0107_hidden_fixtures_off_boards_test.sql`; the copy in
+  `duel_wins_query_test.sql` follows the adapter. NOTE: apply 0107 in the
+  SQL Editor before pushing. No APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

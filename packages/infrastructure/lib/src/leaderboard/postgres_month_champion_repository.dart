@@ -29,10 +29,13 @@ SELECT s.id::text AS season_id,
           LEFT JOIN scoring.fixture_results r ON r.fixture_id = sf.fixture_id
          WHERE sf.season_id = s.id
            AND r.fixture_id IS NULL
-           -- A test fixture never counts (0098): it is never scored.
+           -- A test fixture never counts (0098): it is never scored. Nor
+           -- does a hidden one (0107): it is off the boards, so a result
+           -- it lacks must not hold the crown back.
            AND NOT EXISTS (
              SELECT 1 FROM competition.fixture_schedules t
-              WHERE t.fixture_id = sf.fixture_id AND t.is_test
+              WHERE t.fixture_id = sf.fixture_id
+                AND (t.is_test OR t.hidden_at IS NOT NULL)
            ))::bigint AS unscored
 FROM competition.seasons s
 WHERE s.id = @season_id::uuid

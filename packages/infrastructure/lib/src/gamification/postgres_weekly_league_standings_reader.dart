@@ -65,6 +65,10 @@ week_fixtures AS (
     ON fs.fixture_id = sf.fixture_id
   WHERE (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date
         BETWEEN @week_start::date AND @week_end::date
+    -- A hidden fixture is off every board while it stays hidden (0107,
+    -- audit M-23), its streak bonus with it; a test fixture never counts.
+    AND fs.hidden_at IS NULL
+    AND NOT fs.is_test
 ),
 scores AS (
   SELECT wf.user_id,

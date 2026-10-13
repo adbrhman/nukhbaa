@@ -45,6 +45,14 @@ LEFT JOIN gamification.referral_month_points rm
   ON rm.season_id = p.season_id
  AND rm.user_id = p.user_id
 WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
+  -- A hidden fixture is off every board while it stays hidden (0107,
+  -- audit M-23); a test fixture never counts.
+  AND NOT EXISTS (
+    SELECT 1
+    FROM competition.fixture_schedules sch
+    WHERE sch.fixture_id = fs.fixture_id
+      AND (sch.hidden_at IS NOT NULL OR sch.is_test)
+  )
 GROUP BY fs.participant_id
 ''';
 

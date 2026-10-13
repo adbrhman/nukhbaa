@@ -54,6 +54,14 @@ scores AS (
     ON u.id = p.user_id
    AND u.status <> 'suspended'
   WHERE m.month_key BETWEEN @first_key AND @last_key
+    -- A hidden fixture is off every board while it stays hidden (0107,
+    -- audit M-23); a test fixture never counts.
+    AND NOT EXISTS (
+      SELECT 1
+      FROM competition.fixture_schedules sch
+      WHERE sch.fixture_id = fs.fixture_id
+        AND (sch.hidden_at IS NOT NULL OR sch.is_test)
+    )
   GROUP BY p.user_id, p.season_id, u.display_name
 )
 SELECT s.user_id::text AS user_id,

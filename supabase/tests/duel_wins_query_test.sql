@@ -35,6 +35,14 @@ WITH settled AS (
   WHERE c.season_id = p_season
     AND sa.grade <> 'pending'
     AND sb.grade <> 'pending'
+    -- A duel on a hidden fixture is off the record while it stays hidden
+    -- (0107, audit M-23).
+    AND NOT EXISTS (
+      SELECT 1
+      FROM competition.fixture_schedules sch
+      WHERE sch.fixture_id = d.fixture_id
+        AND (sch.hidden_at IS NOT NULL OR sch.is_test)
+    )
 )
 SELECT w.participant_id::text AS participant_id, count(*)::int AS wins
 FROM (
