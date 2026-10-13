@@ -8,6 +8,7 @@
 /// (retryable) transient message.
 library;
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -284,5 +285,45 @@ void main() {
     expect(handled, isTrue, reason: 'the shell keeps the app open');
     expect(find.byKey(const Key('home.welcome')), findsOneWidget);
     expect(find.byKey(const Key('account.title')), findsNothing);
+  });
+
+  // Batch 128: the admin entry on the account tab is named "إدارة النخبة".
+  _authTest('an admin opens the admin area from "إدارة النخبة"', (
+    tester,
+  ) async {
+    const AuthenticatedUserDto admin = AuthenticatedUserDto(
+      userId: 'u-1',
+      role: 'admin',
+      status: 'active',
+      email: 'a@example.com',
+    );
+    final harness = buildAuthHarness(
+      (_) async => okMe(admin),
+      seedToken: 'saved-jwt',
+    );
+    addTearDown(harness.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: harness.overrides,
+        child: MaterialApp(
+          locale: const Locale('ar'),
+          home: const SessionGate(),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openAccountTab(tester);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('account.adminDashboard')),
+        matching: find.text('إدارة النخبة'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('لوحة تحكم المشرف'), findsNothing);
   });
 }

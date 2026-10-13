@@ -4671,6 +4671,11 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   whole `lib/l10n/` folder (it holds the ARB sources); a text batch
   regenerates with `flutter gen-l10n` and stages the ARB files with the
   generated ones. Needs an APK.
+- **Batch 128 (the admin area is named "إدارة النخبة", 2026-10-14)**: the
+  owner renamed the account tab's entry to the admin area from "لوحة تحكم
+  المشرف" to "إدارة النخبة" (`adminDashboard`; English "Nukhba admin"). It is the
+  only place that name appears: inside the area the app bar shows the
+  open section ("الرئيسية", ...), unchanged. Text only; needs an APK.
 
 ## 3. Version-Verification Log
 

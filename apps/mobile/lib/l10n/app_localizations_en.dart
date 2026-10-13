@@ -166,7 +166,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get joinGroup => 'Join a group';
 
   @override
-  String get adminDashboard => 'Admin dashboard';
+  String get adminDashboard => 'Nukhba admin';
 
   @override
   String get homePerformanceSection => 'Performance & Predictions';

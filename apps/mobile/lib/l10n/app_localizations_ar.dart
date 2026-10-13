@@ -165,7 +165,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get joinGroup => 'الانضمام إلى مجموعة';
 
   @override
-  String get adminDashboard => 'لوحة تحكم المشرف';
+  String get adminDashboard => 'إدارة النخبة';
 
   @override
   String get homePerformanceSection => 'الأداء والتوقعات';

@@ -401,7 +401,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminDashboard.
   ///
   /// In en, this message translates to:
-  /// **'Admin dashboard'**
+  /// **'Nukhba admin'**
   String get adminDashboard;
 
   /// No description provided for @homePerformanceSection.
