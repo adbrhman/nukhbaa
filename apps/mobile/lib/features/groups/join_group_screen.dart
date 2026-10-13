@@ -69,6 +69,10 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
             TextField(
               key: const Key('joinGroup.codeField'),
               controller: _codeController,
+              // The codes are upper case: the keyboard starts there, and
+              // what is sent is upper-cased anyway (audit M-08).
+              textCapitalization: TextCapitalization.characters,
+              autocorrect: false,
               decoration: InputDecoration(
                 labelText: l10n.inviteCodeLabel,
                 border: const OutlineInputBorder(),
@@ -90,7 +94,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
               onPressed: inFlight
                   ? null
                   : () {
-                      final code = _codeController.text.trim();
+                      final code = _codeController.text.trim().toUpperCase();
                       if (code.isEmpty) return;
                       ref.read(joinGroupControllerProvider.notifier).join(code);
                     },

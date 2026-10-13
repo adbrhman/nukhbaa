@@ -4696,6 +4696,27 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   board), still points then join time. NOTE: apply 0108 in the SQL Editor
   before pushing; the rules text needs an APK, the places change with the
   server.
+- **Batch 130 (invitations and group codes, 2026-10-14, audit M-13, M-08,
+  M-22)**: M-13 -- an invitation link opened the web app, where an
+  invitation never counts (0086: the app only). `inviteLinkFor` now opens
+  the site's landing page (`https://<host>/?ref=CODE`, the host serving the
+  web app under `/nukhbaa/`; GitHub Pages keeps the web link, it has no
+  landing page of ours). The landing page shows the code with a copy
+  button, says to paste it into the Android app at sign-up within 24
+  hours, and passes `?ref=` on to the web app. The rules on the invitation
+  page read the month's cap from `summary.monthCap` and say where an
+  invitation counts. The owner's 0086 rule stands: an iPhone user plays on
+  the web but his invitation does not count. M-08 -- a group code typed in
+  lower case or with a space joins (`JoinGroupByInvite` trims and
+  upper-cases; the field starts in capitals), and `group.invite_code_*` /
+  `group.invite_invalid` read as Arabic sentences. M-22 -- migration 0109:
+  `gamification.normalized_email` folds an address (lower case, '+' tag
+  dropped, Gmail dots dropped), and `claim_referral` refuses
+  `duplicate_account` when another account has the same folded mailbox;
+  `ReferralClaimOutcome.duplicateAccount`, with the reason shown in the app.
+  The crown stays the admin's choice. NOTE: apply 0109 in the SQL Editor
+  before pushing; the app texts need an APK, the landing page ships with
+  Deploy Web.
 
 ## 3. Version-Verification Log
 

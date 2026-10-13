@@ -73,6 +73,15 @@ void main() {
       },
     );
 
+    test('a code typed in lower case with spaces still joins', () async {
+      final h = _harness();
+      final result = await h.useCase.call(
+        principal: principalUser(userId: _joiner),
+        inviteCode: '  ${sampleCode.toLowerCase()} ',
+      );
+      expect((result as Ok<GroupMembership>).value.groupId.value, _groupId);
+    });
+
     test('a malformed code is a validation error', () async {
       final h = _harness();
       final result = await h.useCase.call(

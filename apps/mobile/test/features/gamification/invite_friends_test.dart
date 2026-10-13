@@ -25,19 +25,24 @@ http.Response _json(Object body) => http.Response(
 
 /// Answers the two invitation routes and records what reached them.
 final class _Server {
+  _Server({this.monthCap = 20});
+
+  /// The month's cap the server reports.
+  final int monthCap;
+
   final List<http.Request> requests = <http.Request>[];
 
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
     if (request.url.path == '/me/referral') {
-      return _json(const {
+      return _json({
         'schema_version': 1,
         'code': 'ABCDEFGH',
         'month_points': 3,
         'season_points': 7,
         'invited_count': 5,
         'pending_count': 2,
-        'month_cap': 20,
+        'month_cap': monthCap,
       });
     }
     if (request.url.path == '/me/referral/claim') {
@@ -169,5 +174,43 @@ void main() {
   test('the link carries the code; a late claim names the 24 hours', () {
     expect(inviteLinkFor('ABCDEFGH'), '$inviteWebBase?ref=ABCDEFGH');
     expect(referralClaimMessage('window_closed'), contains('24'));
+    // Audit M-22: a second account behind one mailbox is told why.
+    expect(referralClaimMessage('duplicate_account'), contains('بريد حسابك'));
+  });
+
+  // Audit M-13: on the site's own host the link opens the landing page,
+  // which shows the code for the Android app, not the web app.
+  test('on the site host the link opens the landing page', () {
+    expect(
+      inviteLinkFor('ABCDEFGH', webBase: 'https://nukhbaa.app/nukhbaa/'),
+      'https://nukhbaa.app/?ref=ABCDEFGH',
+    );
+    expect(
+      inviteLinkFor(
+        'ABCDEFGH',
+        webBase: 'https://p01--nukhbaa-web--42bcqlpqwp8m.code.run/nukhbaa/',
+      ),
+      'https://p01--nukhbaa-web--42bcqlpqwp8m.code.run/?ref=ABCDEFGH',
+    );
+  });
+
+  testWidgets('the rules name the month cap the server sets', (tester) async {
+    await _open(tester, _Server(monthCap: 12));
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('invite.rules')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('invite.rules')),
+        matching: find.textContaining('حتى 12 نقطة'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('حتى 20 نقطة'), findsNothing);
   });
 }

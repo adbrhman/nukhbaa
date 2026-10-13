@@ -38,8 +38,20 @@ const String inviteWebBase = _inviteBaseFromBuild == ''
     ? 'https://adbrhman.github.io/nukhbaa/'
     : _inviteBaseFromBuild;
 
-/// The invitation link that carries [code].
-String inviteLinkFor(String code) => '$inviteWebBase?ref=$code';
+/// The invitation link that carries [code] (audit M-13): the site's landing
+/// page, at the root of the host that serves the web app under `/nukhbaa/`.
+/// It shows the code to paste into the Android app, where an invitation
+/// counts, and passes it on to the web app. GitHub Pages has no landing
+/// page of ours, so a link there opens the web app itself.
+String inviteLinkFor(String code, {String webBase = inviteWebBase}) {
+  final Uri base = Uri.parse(webBase);
+  if (base.host != 'adbrhman.github.io' && base.path == '/nukhbaa/') {
+    return base
+        .replace(path: '/', queryParameters: <String, String>{'ref': code})
+        .toString();
+  }
+  return '$webBase?ref=$code';
+}
 
 /// The invitation code the app was opened with (`?ref=` on the web), or an
 /// empty string when there is none or it is not code-shaped.
@@ -62,6 +74,7 @@ String referralClaimMessage(String status) => switch (status) {
   'window_closed' => 'رمز الدعوة يُقبل خلال 24 ساعة من إنشاء الحساب فقط.',
   'app_required' => referralAppRequiredMessage,
   'same_device' => referralSameDeviceMessage,
+  'duplicate_account' => referralDuplicateAccountMessage,
   _ => 'تعذّر تأكيد الرمز. حاول مجدداً.',
 };
 
@@ -238,7 +251,7 @@ class _InviteFriendsScreenState extends ConsumerState<InviteFriendsScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                for (final String line in _rules)
+                for (final String line in _rulesFor(summary.monthCap))
                   Text(
                     '• $line',
                     style: context.text.bodyMedium?.copyWith(
@@ -294,11 +307,14 @@ class _InviteFriendsScreenState extends ConsumerState<InviteFriendsScreen> {
   }
 }
 
-const List<String> _rules = <String>[
+/// The rules, with the month's cap as the server sets it (audit M-13).
+List<String> _rulesFor(int monthCap) => <String>[
   'كل صديق يسجّل برمزك ثم يتوقع مباراة تُحتسب يمنحك نقطة دعوة.',
+  'تُحتسب الدعوة حين يُدخل صديقك الرمز من تطبيق أندرويد على جواله هو، خلال '
+      '24 ساعة من إنشاء حسابه. الرابط يعرض له الرمز وطريقة التحميل.',
   'نقاط الدعوة لا تُضاف إلى نقاط توقعاتك، وتُستخدم فقط عند تساوي النقاط.',
-  'في ترتيب الشهر: يتقدم صاحب نقاط دعوة الشهر الأكثر، حتى 20 نقطة، وتبدأ من '
-      'الصفر مع كل شهر.',
+  'في ترتيب الشهر: يتقدم صاحب نقاط دعوة الشهر الأكثر، حتى $monthCap نقطة، '
+      'وتبدأ من الصفر مع كل شهر.',
   'في ترتيب الموسم: يُحسم التعادل بمجموع نقاط الدعوة طوال الموسم.',
   'التسجيل وحده لا يمنح نقطة، والحسابات المشبوهة تُراجع قبل احتسابها.',
 ];

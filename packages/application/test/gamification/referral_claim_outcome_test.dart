@@ -13,4 +13,11 @@ void main() {
       ReferralClaimOutcome.sameDevice,
     );
   });
+
+  test('duplicate_account (migration 0109) is a known outcome', () {
+    expect(
+      ReferralClaimOutcome.fromWire('duplicate_account'),
+      ReferralClaimOutcome.duplicateAccount,
+    );
+  });
 }

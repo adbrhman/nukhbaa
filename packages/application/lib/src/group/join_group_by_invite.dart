@@ -53,7 +53,9 @@ final class JoinGroupByInvite {
       return Result.err(auth.error);
     }
 
-    final codeResult = InviteCode.tryParse(inviteCode);
+    // A code typed on a phone keyboard arrives in lower case, often with a
+    // stray space; the codes are upper case (audit M-08).
+    final codeResult = InviteCode.tryParse(inviteCode.trim().toUpperCase());
     if (codeResult is Err<InviteCode>) {
       return Result.err(codeResult.error);
     }

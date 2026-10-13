@@ -114,6 +114,12 @@ abstract final class ErrorPresenter {
         return 'لا يمكن تسجيل نتيجة مباراة قبل موعد انطلاقها.';
       case 'api_client.timeout':
         return 'تأخر الخادم في الرد. حاول مرة أخرى.';
+      case 'group.invite_code_empty':
+      case 'group.invite_code_malformed':
+        return 'رمز المجموعة 10 أحرف وأرقام إنجليزية. تأكد منه وحاول مجدداً.';
+      case 'group.invite_invalid':
+        return 'لا توجد مجموعة بهذا الرمز. تأكد منه أو اطلب رمزاً جديداً من '
+            'صاحب المجموعة.';
     }
 
     return switch (error.kind) {

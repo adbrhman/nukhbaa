@@ -19,10 +19,17 @@ const String referralSameDeviceMessage =
     'لا تُقبل الدعوة من جوال صاحب الرابط. يجب أن يسجّل المدعو من جواله هو. '
     'حسابك يعمل طبيعياً، لكن الدعوة لم تُحتسب.';
 
+/// Shown when the account's mailbox is another account's (migration 0109,
+/// audit M-22).
+const String referralDuplicateAccountMessage =
+    'بريد حسابك هو بريد حساب آخر في نُخبة بصيغة مختلفة (نقطة أو علامة +)، '
+    'فلا تُحتسب الدعوة. حسابك يعمل طبيعياً.';
+
 /// The notice owed for a claim [status], or null when none is.
 String? referralDeviceNotice(String status) => switch (status) {
   'app_required' => referralAppRequiredMessage,
   'same_device' => referralSameDeviceMessage,
+  'duplicate_account' => referralDuplicateAccountMessage,
   _ => null,
 };
 

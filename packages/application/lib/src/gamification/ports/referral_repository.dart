@@ -30,7 +30,11 @@ enum ReferralClaimOutcome {
   appRequired('app_required'),
 
   /// The claim came from a phone the inviter uses (migration 0086).
-  sameDevice('same_device');
+  sameDevice('same_device'),
+
+  /// The account's mailbox is another account's -- Gmail dots, a '+' tag
+  /// (migration 0109, audit M-22).
+  duplicateAccount('duplicate_account');
 
   const ReferralClaimOutcome(this.wireName);
 
