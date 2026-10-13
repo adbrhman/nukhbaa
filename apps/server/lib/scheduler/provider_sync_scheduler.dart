@@ -8,9 +8,10 @@ import 'package:shared/shared.dart';
 /// First fixtures sync after boot: also covers today.
 const Duration providerFixturesFirstRunDelay = Duration(minutes: 3);
 
-/// Later fixtures syncs: the next two Riyadh days, once a day. A day is seen
-/// twice before it arrives, so a late schedule change is still picked up.
-const Duration providerFixturesTick = Duration(hours: 24);
+/// Later fixtures syncs: today and the next two Riyadh days, twice a day.
+/// Today is included so a kickoff moved on match day reaches the schedule
+/// (C-03); Highlightly, capped at two days, then sees today and tomorrow.
+const Duration providerFixturesTick = Duration(hours: 12);
 
 /// Results checks. Each run only calls the provider when a synced fixture is
 /// due, so most runs cost nothing.
@@ -142,7 +143,7 @@ void startProviderSyncScheduler(CompositionRoot root) {
     unawaited(runFixtures(includeToday: true));
   });
   Timer.periodic(providerFixturesTick, (_) {
-    unawaited(runFixtures(includeToday: false));
+    unawaited(runFixtures(includeToday: true));
   });
   Timer.periodic(providerResultsTick, (_) {
     unawaited(runResults());

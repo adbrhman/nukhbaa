@@ -4497,6 +4497,29 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   (armeabi-v7a) phones still take their file from the release page.
   No migration; needs a new APK for the sign-in row.
 
+- **Batch 112 (kickoff follows the provider, 2026-10-13, audit C-03)**:
+  every lock, reveal and results window follows `kickoff_at`, and the
+  fixtures sync wrote it once and never again -- a match brought forward
+  stayed open while it was played, one put back locked early and missed
+  its result. `SyncProviderFixtures` now compares a known fixture's
+  stored kickoff with the provider's (scheduled, live or finished) and,
+  when they differ by a minute or more, moves it while the STORED kickoff
+  is still ahead, the new one is in the same monthly contest (the
+  freeze rule of `CorrectFixtureSchedule`) and the provider's two teams
+  are the catalog ids on file -- so a match linked to the wrong fixture
+  (audit C-04) never drags that fixture's kickoff. A provider kickoff already
+  past is written as it is, which locks the fixture at once. Anything
+  else (stored kickoff passed, another month, other teams) is left for an admin and
+  named in the sync notes. `ScoreFixture` grades a prediction stamped at
+  or after the stored kickoff `incorrect` for zero points once the result
+  is in: the lock refuses such a prediction, so one exists only when the
+  kickoff was brought forward after it was sent (by the sync or by an
+  admin). `incorrect`, not `missed`: `fixture_scores` allows no `missed`
+  and every reader already knows `incorrect`. The periodic fixtures sync
+  now runs every 12 hours and includes today (Highlightly, capped at two
+  days, sees today and tomorrow: 12 requests a day instead of 6). No
+  migration, no client change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

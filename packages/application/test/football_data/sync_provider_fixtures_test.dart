@@ -396,6 +396,213 @@ void main() {
     },
   );
 
+  group('a known fixture follows the provider kickoff (C-03)', () {
+    const known = 'e1000000-0000-0000-0000-0000000000c3';
+
+    setUp(() {
+      store.seed('fixture', 'm1', known);
+      schedules.seed(
+        (FixtureSchedule.create(
+                  fixture: const FixtureRef(known),
+                  homeTeam: 'أرسنال',
+                  awayTeam: 'تشيلسي',
+                  kickoffAt: _kickoff,
+                  homeTeamId: const TeamRef(_arsenal),
+                  awayTeamId: const TeamRef(_chelsea),
+                  leagueId: const LeagueRef(_pl),
+                )
+                as Ok<FixtureSchedule>)
+            .value,
+      );
+    });
+
+    Future<DateTime> storedKickoff() async =>
+        ((await schedules.findByFixture(const FixtureRef(known)))
+                as Ok<FixtureSchedule?>)
+            .value!
+            .kickoffAt;
+
+    test('a kickoff brought forward is moved', () async {
+      final earlier = _kickoff.subtract(const Duration(hours: 3));
+      provider.answer('PL', riyadhDayOf(earlier), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: earlier,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: _now,
+                    riyadhDays: [riyadhDayOf(earlier)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.alreadyKnown, 1);
+      expect(report.applied, 0);
+      expect(report.notes.single, startsWith('moved kickoff'));
+      expect(await storedKickoff(), earlier);
+    });
+
+    test(
+      'a match that started before its stored kickoff locks at once',
+      () async {
+        final started = _now.subtract(const Duration(minutes: 10));
+        provider.answer('PL', riyadhDayOf(started), [
+          providerMatch(
+            id: 'm1',
+            league: 'PL',
+            home: 'ars',
+            away: 'che',
+            kickoff: started,
+            status: ProviderMatchStatus.live,
+          ),
+        ]);
+
+        final report =
+            ((await sync.call(
+                      now: _now,
+                      riyadhDays: [riyadhDayOf(started)],
+                      apply: true,
+                    ))
+                    as Ok<ProviderSyncReport>)
+                .value;
+
+        expect(report.notes.single, startsWith('moved kickoff'));
+        expect(await storedKickoff(), started);
+      },
+    );
+
+    test('shadow mode only reports the move', () async {
+      final later = _kickoff.add(const Duration(hours: 2));
+      provider.answer('PL', riyadhDayOf(later), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: later,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: _now,
+                    riyadhDays: [riyadhDayOf(later)],
+                    apply: false,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.notes.single, startsWith('would move kickoff'));
+      expect(await storedKickoff(), _kickoff);
+    });
+
+    test('a stored kickoff already past is left for an admin', () async {
+      final now = _kickoff.add(const Duration(minutes: 5));
+      final later = _kickoff.add(const Duration(hours: 4));
+      provider.answer('PL', riyadhDayOf(later), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: later,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: now,
+                    riyadhDays: [riyadhDayOf(later)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.notes.single, contains('needs admin'));
+      expect(await storedKickoff(), _kickoff);
+    });
+
+    test('a kickoff moved into another month is left for an admin', () async {
+      final october = DateTime.utc(2026, 10, 2, 14);
+      provider.answer('PL', riyadhDayOf(october), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: october,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: _now,
+                    riyadhDays: [riyadhDayOf(october)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.notes.single, contains('another month'));
+      expect(await storedKickoff(), _kickoff);
+    });
+
+    test(
+      'a match whose teams are not the ones on file moves nothing',
+      () async {
+        final earlier = _kickoff.subtract(const Duration(hours: 3));
+        provider.answer('PL', riyadhDayOf(earlier), [
+          providerMatch(
+            id: 'm1',
+            league: 'PL',
+            home: 'ars',
+            away: 'rm',
+            kickoff: earlier,
+          ),
+        ]);
+
+        final report =
+            ((await sync.call(
+                      now: _now,
+                      riyadhDays: [riyadhDayOf(earlier)],
+                      apply: true,
+                    ))
+                    as Ok<ProviderSyncReport>)
+                .value;
+
+        expect(report.notes.single, contains('not the ones on file'));
+        expect(await storedKickoff(), _kickoff);
+      },
+    );
+
+    test('the same kickoff writes nothing and says nothing', () async {
+      provider.answer('PL', _day, [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: _kickoff,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(now: _now, riyadhDays: [_day], apply: true))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.alreadyKnown, 1);
+      expect(report.notes, isEmpty);
+    });
+  });
+
   test('a quota stop ends the run', () async {
     provider.answers['PL|${isoDay(_day)}'] = const Result.err(
       AppError.transient(providerQuotaErrorCode, 'reserve'),

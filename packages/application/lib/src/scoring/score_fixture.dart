@@ -48,6 +48,11 @@ import 'package:shared/shared.dart';
 /// fixture is scored once it is shown again (the rescore sweep finds it); a
 /// test fixture never is. Applied when the schedule repository is wired.
 ///
+/// **Sent after kickoff** (same condition): once the result is in, a
+/// prediction stamped at or after the stored kickoff is graded `incorrect`
+/// for zero points. The lock refuses such a prediction, so one exists only
+/// when the kickoff was brought forward after it was sent.
+///
 /// Never throws; returns a typed [Result] carrying the scored
 /// [ParticipantFixtureScore]s.
 final class ScoreFixture {
@@ -95,17 +100,21 @@ final class ScoreFixture {
     final fixture = (fixtureRefResult as Ok<FixtureRef>).value;
 
     final schedules = _schedules;
-    if (schedules != null) {
-      final scheduleResult = await schedules.findByFixture(fixture);
-      if (scheduleResult is Err<FixtureSchedule?>) {
-        return Result.err(scheduleResult.error);
-      }
-      if (!FixtureVisibility.scorable(
-        (scheduleResult as Ok<FixtureSchedule?>).value,
-      )) {
-        return const Result.ok(<ParticipantFixtureScore>[]);
-      }
+    final Result<FixtureSchedule?> scheduleResult = schedules == null
+        ? const Result.ok(null)
+        : await schedules.findByFixture(fixture);
+    if (scheduleResult is Err<FixtureSchedule?>) {
+      return Result.err(scheduleResult.error);
     }
+    final schedule = (scheduleResult as Ok<FixtureSchedule?>).value;
+    if (!FixtureVisibility.scorable(schedule)) {
+      return const Result.ok(<ParticipantFixtureScore>[]);
+    }
+    // A prediction stamped at or after the stored kickoff was sent once the
+    // match had started -- possible only when the kickoff was brought
+    // forward after it was sent (provider sync or an admin correction, C-03).
+    // It earns nothing, whatever it says.
+    final DateTime? kickoffAt = schedule?.kickoffAt.toUtc();
 
     final snapshotResult = await _rulesetProvider.currentSnapshotFor(
       FormatType.footballScoreline,
@@ -139,12 +148,27 @@ final class ScoreFixture {
 
     final fixtureScores = <ParticipantFixtureScore>[];
     for (final view in predictions) {
-      final scored = Scoring.scoreFixture(
-        prediction: view.prediction,
-        result: result,
-        ruleset: ruleset,
-        rulesetVersion: ruleset.rulesetVersion,
-      );
+      final bool sentAfterKickoff =
+          result != null &&
+          kickoffAt != null &&
+          !view.submittedAt.toUtc().isBefore(kickoffAt);
+      final scored = sentAfterKickoff
+          ? ParticipantFixtureScore.fromGraded(
+              fixture: view.prediction.fixture,
+              participantId: view.prediction.participantId,
+              rulesetVersion: ruleset.rulesetVersion,
+              result: FixtureScoreResult(
+                fixture: view.prediction.fixture,
+                grade: FixtureScoreGrade.incorrect,
+                points: 0,
+              ),
+            )
+          : Scoring.scoreFixture(
+              prediction: view.prediction,
+              result: result,
+              ruleset: ruleset,
+              rulesetVersion: ruleset.rulesetVersion,
+            );
       if (scored is Err<ParticipantFixtureScore>) {
         return Result.err(scored.error);
       }

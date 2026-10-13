@@ -22,7 +22,9 @@ import 'package:shared/shared.dart';
 /// contest. With `apply: false` (shadow mode) nothing is written and the
 /// report says what would have been added.
 ///
-/// Additive only. Never throws.
+/// Adds fixtures; the only change it makes to one already on the schedule is
+/// its kickoff, kept in step with the provider's while the stored kickoff is
+/// still ahead (C-03). Never throws.
 final class SyncProviderFixtures {
   /// Creates the use-case.
   const SyncProviderFixtures({
@@ -39,6 +41,7 @@ final class SyncProviderFixtures {
     this.duplicateWindow = const Duration(hours: 12),
     this.minimumInterval = const Duration(hours: 1),
     this.daysBySource = const <String, int>{},
+    this.kickoffTolerance = const Duration(minutes: 1),
   }) : _providers = providers,
        _store = store,
        _leagues = leagueRepository,
@@ -77,6 +80,10 @@ final class SyncProviderFixtures {
   /// once before it arrives, so asking a small-quota provider about two
   /// days instead of three still picks up a late schedule change.
   final Map<String, int> daysBySource;
+
+  /// A known fixture whose provider kickoff differs from the stored one by
+  /// less than this is left as it is.
+  final Duration kickoffTolerance;
 
   static final RegExp _monthlyLabel = RegExp(r'^\d{2}/\d{4}$');
 
@@ -189,19 +196,20 @@ final class SyncProviderFixtures {
 
         final fetchedMatches = (fetched as Ok<List<ProviderMatch>>).value;
 
-        // Two categories are handled:
-        // 1. future scheduled matches may be added normally;
+        // Three categories are handled:
+        // 1. future scheduled matches may be added normally (outside
+        //    [minimumLead] only);
         // 2. live/finished matches may adopt an already-existing fixture so
         //    result sync can later record and score it. We never create a new
-        //    fixture after kickoff.
+        //    fixture after kickoff;
+        // 3. a match already on the schedule keeps its kickoff in step with
+        //    the provider's (C-03), however close it is.
         final candidates = fetchedMatches
             .where(
               (match) =>
                   rule.admits(match) &&
-                  ((match.status == ProviderMatchStatus.scheduled &&
-                          match.kickoffAt.isAfter(nowUtc.add(minimumLead))) ||
-                      (match.status != ProviderMatchStatus.scheduled &&
-                          match.kickoffAt.isBefore(nowUtc))),
+                  (match.status == ProviderMatchStatus.scheduled ||
+                      match.kickoffAt.isBefore(nowUtc)),
             )
             .toList(growable: false);
 
@@ -236,8 +244,30 @@ final class SyncProviderFixtures {
         final fixtureIds = (fixtureIdsResult as Ok<Map<String, String>>).value;
 
         for (final match in candidates) {
-          if (fixtureIds.containsKey(match.externalId)) {
+          final knownId = fixtureIds[match.externalId];
+          if (knownId != null) {
             known++;
+            if (match.status == ProviderMatchStatus.scheduled ||
+                match.status == ProviderMatchStatus.live ||
+                match.status == ProviderMatchStatus.finished) {
+              final moved = await _followKickoff(
+                fixtureId: knownId,
+                match: match,
+                homeTeamId: teamIds[match.homeTeamExternalId],
+                awayTeamId: teamIds[match.awayTeamExternalId],
+                months: months,
+                nowUtc: nowUtc,
+                apply: apply,
+              );
+              if (moved != null) {
+                notes.add(moved);
+              }
+            }
+            continue;
+          }
+          if (match.status == ProviderMatchStatus.scheduled &&
+              !match.kickoffAt.isAfter(nowUtc.add(minimumLead))) {
+            // Too late to predict: a new match this close is not added.
             continue;
           }
           final home = teamById[teamIds[match.homeTeamExternalId]];
@@ -435,6 +465,94 @@ final class SyncProviderFixtures {
     }
     nextOrder[month.id.value] = order + 1;
     return const Result.ok(null);
+  }
+
+  /// Keeps a known fixture's kickoff in step with the provider's (C-03):
+  /// the prediction lock, the reveal and the results window all follow
+  /// `kickoff_at`, so a match brought forward would stay open while it is
+  /// played, and one put back would lock early and miss its result.
+  ///
+  /// Moves it only while the STORED kickoff is still ahead -- the same
+  /// freeze rule as `CorrectFixtureSchedule` -- and only inside the same
+  /// monthly contest. A provider kickoff already past (a match that started
+  /// earlier than stored) is written as it is, which locks the fixture at
+  /// once; `ScoreFixture` then gives nothing to a prediction sent after it.
+  /// The provider's two teams must be the ones on file ([homeTeamId] and
+  /// [awayTeamId], catalog ids), so a match linked to the wrong fixture
+  /// (C-04) never drags that fixture's kickoff along. Anything else is left
+  /// for an admin and named in the notes. Returns the note, or `null` when
+  /// the kickoff already agrees.
+  Future<String?> _followKickoff({
+    required String fixtureId,
+    required ProviderMatch match,
+    required String? homeTeamId,
+    required String? awayTeamId,
+    required List<CompetitionSeason> months,
+    required DateTime nowUtc,
+    required bool apply,
+  }) async {
+    final refResult = FixtureRef.tryParse(fixtureId);
+    if (refResult is Err<FixtureRef>) {
+      return 'kickoff check skipped (${refResult.error.code}): $fixtureId';
+    }
+    final found = await _schedules.findByFixture(
+      (refResult as Ok<FixtureRef>).value,
+    );
+    if (found is Err<FixtureSchedule?>) {
+      return 'kickoff check failed (${found.error.code}): $fixtureId';
+    }
+    final stored = (found as Ok<FixtureSchedule?>).value;
+    if (stored == null) {
+      return null;
+    }
+    final storedAt = stored.kickoffAt.toUtc();
+    final providerAt = match.kickoffAt.toUtc();
+    if (storedAt.difference(providerAt).abs() < kickoffTolerance) {
+      return null;
+    }
+
+    final label =
+        '${stored.homeTeam} - ${stored.awayTeam} '
+        '${storedAt.toIso8601String()} -> ${providerAt.toIso8601String()}';
+    if (homeTeamId == null ||
+        awayTeamId == null ||
+        stored.homeTeamId?.value != homeTeamId ||
+        stored.awayTeamId?.value != awayTeamId) {
+      return 'kickoff differs but the teams are not the ones on file, '
+          'needs admin: $label';
+    }
+    if (!storedAt.isAfter(nowUtc)) {
+      // Frozen: it has kicked off by the stored time. A match still to be
+      // played (put back) needs an admin; a played one is left alone.
+      return match.status == ProviderMatchStatus.scheduled
+          ? 'kickoff changed after the stored one passed, needs admin: $label'
+          : null;
+    }
+    if (_monthContaining(months, providerAt)?.id.value !=
+        _monthContaining(months, storedAt)?.id.value) {
+      return 'kickoff moved to another month, needs admin: $label';
+    }
+    if (!apply) {
+      return 'would move kickoff: $label';
+    }
+
+    final moved = FixtureSchedule.create(
+      fixture: stored.fixture,
+      homeTeam: stored.homeTeam,
+      awayTeam: stored.awayTeam,
+      kickoffAt: providerAt,
+      homeTeamId: stored.homeTeamId,
+      awayTeamId: stored.awayTeamId,
+      leagueId: stored.leagueId,
+      isTest: stored.isTest,
+    );
+    if (moved is Err<FixtureSchedule>) {
+      return 'kickoff move failed (${moved.error.code}): $label';
+    }
+    final saved = await _schedules.upsert((moved as Ok<FixtureSchedule>).value);
+    return saved is Err<void>
+        ? 'kickoff move failed (${saved.error.code}): $label'
+        : 'moved kickoff: $label';
   }
 
   static CompetitionSeason? _monthContaining(

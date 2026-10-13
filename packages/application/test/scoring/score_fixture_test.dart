@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import '../competition/fakes.dart';
 import '../prediction/fake_fixture_prediction_repository.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
 import 'fake_fixture_score_repository.dart';
 import 'fakes.dart';
 
@@ -108,6 +109,60 @@ void main() {
         expect((result as Ok<List<ParticipantFixtureScore>>).value, isEmpty);
       },
     );
+
+    group('a prediction sent at or after the stored kickoff (C-03)', () {
+      Future<ParticipantFixtureScore> scoreWithKickoff(DateTime kickoff) async {
+        final schedules = FakeFixtureScheduleRepository()
+          ..seed(
+            (FixtureSchedule.create(
+                      fixture: const FixtureRef(fixtureId),
+                      homeTeam: 'أ',
+                      awayTeam: 'ب',
+                      kickoffAt: kickoff,
+                    )
+                    as Ok<FixtureSchedule>)
+                .value,
+          );
+        seedPrediction(home: 2, away: 1, isDouble: true);
+        results.seed(
+          const FixtureResult.fromStored(
+            fixture: FixtureRef(fixtureId),
+            homeGoals: 2,
+            awayGoals: 1,
+          ),
+        );
+        final result = await ScoreFixture(
+          fixturePredictionRepository: fixturePredictions,
+          resultRepository: results,
+          scoreRepository: scores,
+          rulesetProvider: FakeRulesetProvider(Result.ok(scoringSnapshot())),
+          fixtureScheduleRepository: schedules,
+        )(principal: adminPrincipal('admin-1'), fixtureId: fixtureId);
+        return (result as Ok<List<ParticipantFixtureScore>>).value.single;
+      }
+
+      test('earns nothing, even with the exact score doubled', () async {
+        // seedPrediction stamps 2026-08-01 00:00; the kickoff was brought
+        // forward to before it.
+        final score = await scoreWithKickoff(DateTime.utc(2026, 7, 31, 20));
+
+        expect(score.result.grade, FixtureScoreGrade.incorrect);
+        expect(score.points, 0);
+      });
+
+      test('a kickoff exactly at the stamp is already too late', () async {
+        final score = await scoreWithKickoff(DateTime.utc(2026, 8));
+
+        expect(score.points, 0);
+      });
+
+      test('one sent before the kickoff is scored as usual', () async {
+        final score = await scoreWithKickoff(DateTime.utc(2026, 8, 2));
+
+        expect(score.result.grade, FixtureScoreGrade.exactScoreline);
+        expect(score.points, greaterThan(0));
+      });
+    });
 
     test('rejects a non-admin caller', () async {
       seedPrediction(home: 1, away: 0);
