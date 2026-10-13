@@ -94,6 +94,8 @@ final class FcmPushSender implements PushSender {
       'https://fcm.googleapis.com/v1/projects/$_projectId/messages:send',
     );
     final dead = <String>[];
+    var delivered = 0;
+    var failed = 0;
 
     for (final token in tokens) {
       try {
@@ -115,28 +117,50 @@ final class FcmPushSender implements PushSender {
             )
             .timeout(_requestTimeout);
         if (response.statusCode == 200) {
+          delivered++;
           continue;
         }
         if (_isPermanentlyInvalid(response.statusCode, response.body)) {
           dead.add(token);
+          continue;
         }
-        // Anything else (429, 5xx) is transient: the token stays, and the next
-        // sweep will try again -- retiring it here would unsubscribe a real
-        // user over a blip.
+        // Anything else (429, 5xx) is transient: the token stays --
+        // retiring it here would unsubscribe a real user over a blip.
+        failed++;
       } on Object {
         // A network failure on one message must not abandon the rest.
+        failed++;
         continue;
       }
     }
 
+    // Nothing reached a phone, and at least one message failed for a
+    // reason that may pass (429, 5xx, a network error or timeout): an
+    // error, so the sweeps do not record this push as sent and try again
+    // on their next tick. As an `Ok` it was marked sent and lost -- a short
+    // FCM outage cost a whole day's reminders, unseen (audit M-28).
+    if (delivered == 0 && failed > 0) {
+      return Result.err(
+        AppError.transient(
+          'push.not_delivered',
+          'No message reached FCM: $failed failed, ${dead.length} retired',
+        ),
+      );
+    }
     return Result.ok(dead);
   }
 
   // 404 UNREGISTERED = the app was uninstalled or the token rotated.
   // 400 INVALID_ARGUMENT on the token field = a malformed token.
+  // 403 SENDER_ID_MISMATCH = a token of another Firebase project; retried,
+  // it would fail every sweep for ever now that a push nobody got is an
+  // error (M-28).
   bool _isPermanentlyInvalid(int status, String body) {
     if (status == 404) {
       return true;
+    }
+    if (status == 403) {
+      return body.contains('SENDER_ID_MISMATCH');
     }
     if (status != 400) {
       return false;

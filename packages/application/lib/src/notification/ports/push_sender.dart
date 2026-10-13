@@ -9,9 +9,10 @@ abstract interface class PushSender {
   ///
   /// Returns the subset of [tokens] the transport rejected as PERMANENTLY
   /// invalid (unregistered device, malformed token) so the caller can retire
-  /// them. A transient failure is NOT in that list -- it is a `Result.err`, or
-  /// simply an absent entry, because retiring a token over a network blip
-  /// would silently unsubscribe a real user.
+  /// them. A transient failure is NOT in that list, because retiring a token
+  /// over a network blip would silently unsubscribe a real user: it is an
+  /// absent entry when another token got the message, and a `Result.err`
+  /// when none did -- so a caller records the push as sent only on `Ok`.
   ///
   /// [link] (a `PushLink` name) travels in the data payload so a tap opens
   /// the screen the push is about; null opens the app as it is.

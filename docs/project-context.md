@@ -4589,6 +4589,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   after this update) waits, and its splash now says what it waits for.
   Needs a new APK.
 
+- **Batch 123 (a push nobody got is not "sent", 2026-10-13, audit M-28)**:
+  `FcmPushSender.send` answered `Ok` whatever happened to each message,
+  so a 429, a 5xx or a network failure on every device looked delivered:
+  the reminder, pre-match, streak-saver, incomplete-day and overtaken
+  sweeps marked it sent and never tried again -- a short FCM outage cost
+  a day's reminders with nothing in any log. Now, when no message
+  reached FCM and at least one failed for a reason that may pass, it is
+  `transient push.not_delivered`: those sweeps already skip marking on an
+  error, so the next tick tries again (the daily reminder, sent in one
+  call, retries as a whole). One device reached is still `Ok` (the other
+  is kept); every device gone is still `Ok` with them all retired; a
+  403 SENDER_ID_MISMATCH (a token of another Firebase project) is now
+  retired instead of retried. Still open from M-28: the quiet-hours queue
+  stays at-most-once by design (0064), and the server has no graceful
+  shutdown. No migration, no client change.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

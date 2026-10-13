@@ -75,9 +75,11 @@ void main() {
           .send(tokens: const <String>['a', 'b'], title: 't', body: 'b')
           .timeout(const Duration(seconds: 5));
 
-      expect(result, isA<Ok<List<String>>>());
-      // A silent token is a transient failure: it is never retired as dead.
-      expect((result as Ok<List<String>>).value, isEmpty);
+      // Nothing was delivered: an error the sweeps retry, not a success
+      // (M-28). A silent token is never retired as dead either.
+      expect(result, isA<Err<List<String>>>());
+      expect((result as Err<List<String>>).error.code, 'push.not_delivered');
+      expect(result.error.kind, ErrorKind.transient);
       // The first silent message did not stop the second from being tried.
       expect(sends, 2);
     });
@@ -120,6 +122,83 @@ void main() {
       );
 
       expect((result as Ok<List<String>>).value, <String>['gone']);
+    });
+  });
+
+  group('FcmPushSender delivery outcome (M-28)', () {
+    FcmPushSender senderAnswering(int Function(String token) statusFor) =>
+        FcmPushSender(
+          serviceAccount: _account(),
+          httpClient: MockClient((request) async {
+            if (_isTokenEndpoint(request)) {
+              return _tokenResponse();
+            }
+            final Map<String, Object?> sent =
+                jsonDecode(request.body) as Map<String, Object?>;
+            final Map<String, Object?> message =
+                sent['message']! as Map<String, Object?>;
+            final int status = statusFor(message['token']! as String);
+            return http.Response(status == 404 ? 'UNREGISTERED' : '{}', status);
+          }),
+        );
+
+    test('every message refused for a passing reason is an error', () async {
+      final result = await senderAnswering(
+        (_) => 503,
+      ).send(tokens: const <String>['a', 'b'], title: 't', body: 'b');
+
+      expect(result, isA<Err<List<String>>>());
+      expect((result as Err<List<String>>).error.code, 'push.not_delivered');
+    });
+
+    test('a 429 on the only device is an error too', () async {
+      final result = await senderAnswering(
+        (_) => 429,
+      ).send(tokens: const <String>['a'], title: 't', body: 'b');
+
+      expect(result, isA<Err<List<String>>>());
+    });
+
+    test('one device reached is a success, the other kept', () async {
+      final result = await senderAnswering(
+        (token) => token == 'a' ? 200 : 503,
+      ).send(tokens: const <String>['a', 'b'], title: 't', body: 'b');
+
+      expect((result as Ok<List<String>>).value, isEmpty);
+    });
+
+    test(
+      'a token of another Firebase project is retired, not retried',
+      () async {
+        final sender = FcmPushSender(
+          serviceAccount: _account(),
+          httpClient: MockClient((request) async {
+            if (_isTokenEndpoint(request)) {
+              return _tokenResponse();
+            }
+            return http.Response(
+              '{"error":{"status":"SENDER_ID_MISMATCH"}}',
+              403,
+            );
+          }),
+        );
+
+        final result = await sender.send(
+          tokens: const <String>['foreign'],
+          title: 't',
+          body: 'b',
+        );
+
+        expect((result as Ok<List<String>>).value, <String>['foreign']);
+      },
+    );
+
+    test('every device gone is a success that retires them all', () async {
+      final result = await senderAnswering(
+        (_) => 404,
+      ).send(tokens: const <String>['a', 'b'], title: 't', body: 'b');
+
+      expect((result as Ok<List<String>>).value, <String>['a', 'b']);
     });
   });
 }
