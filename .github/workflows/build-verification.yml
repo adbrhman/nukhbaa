@@ -794,6 +794,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The build falls back to a placeholder API so a pull request still
+      # compiles; a release must never carry it. An APK that points nowhere
+      # would also never see the fix, since the update check goes through
+      # that same API (audit M-38; Deploy Web has the same guard).
+      - name: Require API base URL
+        run: |
+          if [ -z "${{ vars.NUKHBA_API_BASE_URL }}" ]; then
+            echo "::error::NUKHBA_API_BASE_URL repository variable is not set. Refusing to publish an APK pointing at a placeholder API."
+            exit 1
+          fi
+
       - uses: actions/download-artifact@v4
         with:
           name: nukhba-android-apk

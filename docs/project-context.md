@@ -4605,6 +4605,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   stays at-most-once by design (0064), and the server has no graceful
   shutdown. No migration, no client change.
 
+- **Batch 124 (release guards, 2026-10-13, audit M-38 and M-37)**: two
+  gaps in the release path, CI only. (1) `build-verification.yml` falls
+  back to a placeholder API (`https://api.nukhba.example`) so a pull
+  request compiles; nothing stopped `publish_latest_apk` from releasing
+  such a build as the latest APK, and an app pointing nowhere never sees
+  the fix (its update check uses that API). The job now starts with the
+  same "Require API base URL" guard Deploy Web has. (2)
+  `release-server.yml` took "no migration-drift run for this commit" as
+  a pass, so a push that did not touch `supabase/migrations` could move
+  `server-release` to a server needing a migration the live database
+  lacked. It now compares the commit's migrations with
+  `ops.applied_migrations` itself before moving the branch (read-only,
+  the same SELECT, the `SUPABASE_DB_URL` secret migration-drift uses);
+  a missing migration leaves the server where it was, and after applying
+  it the owner runs Release Server by hand. No Dart, no migration, no APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
