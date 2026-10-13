@@ -4520,6 +4520,25 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   days, sees today and tomorrow: 12 requests a day instead of 6). No
   migration, no client change.
 
+- **Batch 119 (stricter fixture adoption, 2026-10-13, audit C-04)**:
+  before adding a provider match the fixtures sync adopts a hand-added
+  fixture of the same match, and `findExistingFixture` accepted one team
+  plus a name contained in another within three hours: Al Ahli (Saudi)
+  took a hand-added Al Ahly (Egypt) card and was never added, and Inter
+  could take Milan's, two links on one card, so one result could land on
+  the other. `_existingSql` now: never adopts a fixture already linked to
+  a provider match; compares a side that has a team on file by that team
+  only (a different id is a different club, whatever the name); compares
+  only a side typed by hand by its normalised name (equal, or contained,
+  three letters at least); needs both sides, except one side certain by
+  its team with the other typed by hand and no team on file, within
+  three hours; and prefers both teams on file, then both sides agreeing,
+  then the nearest kickoff. SQL test
+  `supabase/tests/provider_sync_existing_fixture_query_test.sql` (the
+  adapter's text, parameters as arguments; the old query fails five of
+  its nine checks). No migration, no client change. A read-only check for
+  links made before this fix is in the batch's delivery note.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -48,8 +48,12 @@ LIMIT 200
 
   // Hand-added fixtures often carry free-text names whose spelling differs
   // from the catalog (hamza forms, taa marbuta, spaces, a shorter name), so
-  // names are compared normalised, equal or one containing the other, and
-  // only when both normalised names have at least three letters.
+  // a side typed by hand is compared by its normalised name -- equal, or
+  // one containing the other, three letters at least. A side with a team
+  // on file is compared by that team only, both sides must agree, and a
+  // fixture already linked to a provider match is never adopted again
+  // (audit C-04). Tested in
+  // supabase/tests/provider_sync_existing_fixture_query_test.sql.
   static const String _existingSql = '''
 WITH target AS (
   SELECT regexp_replace(translate(btrim(@home_name::text), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
@@ -67,27 +71,53 @@ candidates AS (
     AND s.kickoff_at < @to::timestamptz
     -- A test fixture is never the real match a provider reports (0098).
     AND NOT s.is_test
-)
-SELECT c.fixture_id::text AS fixture_id
-FROM candidates c, target t
-WHERE (c.home_team_id = @home_id::uuid AND c.away_team_id = @away_id::uuid)
-   OR (
-        length(t.h) >= 3 AND length(t.a) >= 3
-    AND length(c.h) >= 3 AND length(c.a) >= 3
-    AND (c.h = t.h OR strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0)
-    AND (c.a = t.a OR strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0)
-   )
-   OR (
-        abs(extract(epoch from (c.kickoff_at - @kickoff::timestamptz))) <= 10800
-    AND (
-          c.home_team_id = @home_id::uuid OR c.away_team_id = @away_id::uuid
-       OR (length(t.h) >= 3 AND length(c.h) >= 3
-           AND (c.h = t.h OR strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0))
-       OR (length(t.a) >= 3 AND length(c.a) >= 3
-           AND (c.a = t.a OR strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0))
+    -- A fixture already linked to a provider match is that match, never
+    -- this one (audit C-04: a second link let one result land on both).
+    AND NOT EXISTS (
+      SELECT 1
+      FROM football_data.external_identity_map m
+      WHERE m.canonical_table = 'fixture'
+        AND m.canonical_id = s.fixture_id
     )
-   )
-ORDER BY c.kickoff_at
+),
+sides AS (
+  SELECT c.fixture_id,
+         c.kickoff_at,
+         COALESCE(c.home_team_id = @home_id::uuid, false) AS home_id_same,
+         COALESCE(c.away_team_id = @away_id::uuid, false) AS away_id_same,
+         c.home_team_id IS NULL AS home_untyped,
+         c.away_team_id IS NULL AS away_untyped,
+         -- A side with a team on file is that team and no other, whatever
+         -- its name says (audit C-04: a name can sit inside another club name).
+         -- Only a side without one is matched by its normalised name:
+         -- equal, or one inside the other, three letters at least.
+         CASE
+           WHEN c.home_team_id IS NOT NULL THEN c.home_team_id = @home_id::uuid
+           ELSE c.h = t.h
+             OR (length(t.h) >= 3 AND length(c.h) >= 3
+                 AND (strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0))
+         END AS home_same,
+         CASE
+           WHEN c.away_team_id IS NOT NULL THEN c.away_team_id = @away_id::uuid
+           ELSE c.a = t.a
+             OR (length(t.a) >= 3 AND length(c.a) >= 3
+                 AND (strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0))
+         END AS away_same,
+         abs(extract(epoch from (c.kickoff_at - @kickoff::timestamptz))) AS gap
+  FROM candidates c, target t
+)
+SELECT s.fixture_id::text AS fixture_id
+FROM sides s
+WHERE (s.home_same AND s.away_same)
+   -- One side certain by its team, the other typed by hand with no team
+   -- on file under a name the catalog does not use, within three hours.
+   OR (s.gap <= 10800
+       AND ((s.home_id_same AND s.away_untyped)
+         OR (s.away_id_same AND s.home_untyped)))
+ORDER BY (s.home_id_same AND s.away_id_same) DESC,
+         (s.home_same AND s.away_same) DESC,
+         s.gap,
+         s.fixture_id
 LIMIT 1
 ''';
 
