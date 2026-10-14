@@ -99,6 +99,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     // too, so a player who cannot sign in (a forgotten password, a fix not
     // yet installed) can still update.
     final LatestBuildDto? update = ref.watch(pendingUpdateProvider);
+    // A new account waiting for its email confirmation is not a mistake:
+    // the form moves to signing in, with the email kept, and the line reads
+    // as news rather than an error (audit M-01).
+    final bool awaitingConfirmation = failure?.code == _confirmationRequired;
+    ref.listen<AsyncValue<SessionState>>(sessionControllerProvider, (_, next) {
+      final SessionState? state = next.value;
+      if (_isRegister &&
+          state is SessionFailed &&
+          state.error.code == _confirmationRequired) {
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+        setState(() => _isRegister = false);
+      }
+    });
 
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
@@ -185,8 +199,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             ],
                             if (failure != null) ...[
                               _ErrorBanner(
-                                key: const Key('signIn.errorBanner'),
+                                key: Key(
+                                  awaitingConfirmation
+                                      ? 'signIn.infoBanner'
+                                      : 'signIn.errorBanner',
+                                ),
                                 message: ErrorPresenter.message(failure),
+                                info: awaitingConfirmation,
                               ),
                               const SizedBox(height: AppSpacing.lg),
                             ],
@@ -241,9 +260,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               onFieldSubmitted: _isRegister
                                   ? null
                                   : (_) => _submit(session),
+                              // A new password is 8 characters, as on the
+                              // reset screen; signing in accepts any, so an
+                              // older, shorter password still works (L-01).
                               validator: (String? value) =>
                                   (value == null || value.trim().isEmpty)
                                   ? l10n.passwordRequired
+                                  : (_isRegister && value.length < 8)
+                                  ? l10n.passwordTooShort
                                   : null,
                             ),
                             if (!_isRegister) ...[
@@ -637,27 +661,35 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// The code the server answers a new account awaiting its email
+/// confirmation with.
+const String _confirmationRequired = 'auth.confirmation_required';
+
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({super.key, required this.message});
+  const _ErrorBanner({super.key, required this.message, this.info = false});
   final String message;
+
+  /// News, not a mistake: drawn in the success colours (audit M-01).
+  final bool info;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
+    final Color tone = info ? tokens.success : tokens.error;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: tokens.errorContainer,
+        color: info ? tokens.successContainer : tokens.errorContainer,
         borderRadius: AppRadius.brMd,
-        border: Border.all(color: tokens.error.withValues(alpha: 0.4)),
+        border: Border.all(color: tone.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.error_outline_rounded,
-            color: tokens.error,
+            info ? Icons.mark_email_read_outlined : Icons.error_outline_rounded,
+            color: tone,
             size: AppSizes.iconMd,
           ),
           const SizedBox(width: AppSpacing.sm),

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/platform/browser_url.dart';
+import '../../core/platform/reset_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
@@ -483,9 +484,6 @@ String? recoveryTokenFromWebUrl() {
   return match == null ? null : Uri.decodeComponent(match.group(1)!);
 }
 
-bool isPasswordResetWebUrl() {
-  if (!kIsWeb) return false;
-
-  return Uri.base.path.endsWith('/reset-password') ||
-      Uri.base.fragment.contains('access_token=');
-}
+/// Whether the web app was opened by a password-reset link (audit M-02:
+/// a sign-up confirmation link is not one).
+bool isPasswordResetWebUrl() => kIsWeb && isPasswordResetUrl(Uri.base);

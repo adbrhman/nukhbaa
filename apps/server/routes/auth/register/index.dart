@@ -85,7 +85,8 @@ Response _sessionResponse(IssuedSession session) {
     return errorResponse(
       const AppError.validation(
         'auth.confirmation_required',
-        'Please check your email to confirm your account, then sign in.',
+        // Arabic, so every installed app shows it as it is (audit M-01).
+        'أرسلنا رابط تأكيد إلى بريدك. افتحه، ثم ارجع وسجّل الدخول.',
       ),
     );
   }

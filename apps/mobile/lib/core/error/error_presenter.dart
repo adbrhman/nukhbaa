@@ -114,6 +114,11 @@ abstract final class ErrorPresenter {
         return 'لا يمكن تسجيل نتيجة مباراة قبل موعد انطلاقها.';
       case 'api_client.timeout':
         return 'تأخر الخادم في الرد. حاول مرة أخرى.';
+      case 'auth.confirmation_required':
+        return 'أرسلنا رابط تأكيد إلى بريدك. افتحه، ثم ارجع وسجّل الدخول.';
+      case 'auth.rate_limited':
+      case 'request.rate_limited':
+        return 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم حاول مجدداً.';
       case 'group.invite_code_empty':
       case 'group.invite_code_malformed':
         return 'رمز المجموعة 10 أحرف وأرقام إنجليزية. تأكد منه وحاول مجدداً.';
@@ -123,8 +128,12 @@ abstract final class ErrorPresenter {
     }
 
     return switch (error.kind) {
-      ErrorKind.authorization =>
+      // Only a refused credential means the session is over; a signed-in
+      // player refused one action (not a member, not the owner) keeps his
+      // session and is told so (audit M-09).
+      ErrorKind.authorization when _sessionIsOver(error) =>
         'انتهت جلستك أو لم تسجّل الدخول. سجّل الدخول مرة أخرى.',
+      ErrorKind.authorization => 'لا تملك صلاحية هذا الإجراء.',
       ErrorKind.invariant => _arabicOr(
         error,
         'لا يمكن تنفيذ هذا الإجراء الآن.',
@@ -137,6 +146,15 @@ abstract final class ErrorPresenter {
         'تعذّر الاتصال بالخادم. تحقّق من اتصالك وحاول مرة أخرى.',
     };
   }
+
+  /// Whether an authorization [error] is about the credential itself -- an
+  /// `auth.*` code other than a missing role, or no envelope at all -- the
+  /// same rule the transport uses to end a session.
+  static bool _sessionIsOver(AppError error) =>
+      error.code == apiErrorUnexpectedStatus ||
+      (error.code.startsWith('auth.') &&
+          error.code != 'auth.insufficient_role') ||
+      error.code.startsWith('identity.user_id_');
 
   /// Arabic script, to tell a server message written for users apart from a
   /// developer-facing English one.

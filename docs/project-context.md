@@ -4717,6 +4717,28 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   The crown stays the admin's choice. NOTE: apply 0109 in the SQL Editor
   before pushing; the app texts need an APK, the landing page ships with
   Deploy Web.
+- **Batch 131 (what sign-in tells a player, 2026-10-14, audit M-17, M-01,
+  M-09, M-02, L-01, L-10)**: M-17 -- `SupabaseAuthClient` keeps the code
+  `auth.rejected` (callers branch on it) but turns GoTrue's refusal into an
+  Arabic sentence by its `error_code` or, for older versions, its message:
+  wrong email or password, email not confirmed, email taken, weak password,
+  same password, bad address, sign-ups off, banned. An unknown refusal keeps
+  GoTrue's message. The app shows an Arabic server message as it is, so
+  every installed app reads them once the server ships. M-01 -- register
+  and login answer `auth.confirmation_required` in Arabic; the app draws it
+  as news (success colours, key `signIn.infoBanner`), moves the form to
+  signing in and keeps the email. M-09 -- `ErrorPresenter` says "session
+  over" only for a refused credential (the transport's own rule: `auth.*`
+  but `auth.insufficient_role`, `identity.user_id_*`, no envelope); a
+  refused action reads "لا تملك صلاحية هذا الإجراء"; `request.rate_limited`
+  and `auth.rate_limited` say to wait. M-02 -- `isPasswordResetUrl` needs
+  `type=recovery` beside `access_token`, so a sign-up confirmation link
+  opens the app. L-10 -- after a web reset the address bar returns to the
+  app's page (`/nukhbaa/`), not the landing page at the root
+  (`core/platform/reset_url.dart`, pure and tested). L-01 -- a new password
+  needs 8 characters on registration as on the reset screen; signing in
+  accepts any, for older passwords. No migration; the server half ships
+  with the server, the app half needs an APK.
 
 ## 3. Version-Verification Log
 

@@ -402,7 +402,56 @@ final class SupabaseAuthClient {
     if (status == 408 || status >= 500) {
       return AppError.transient('auth.upstream_error', message);
     }
-    return AppError.validation('auth.rejected', message);
+    return AppError.validation(
+      'auth.rejected',
+      _arabicRejection(json, message) ?? message,
+    );
+  }
+
+  /// GoTrue's refusal in the player's words (audit M-17). The code stays
+  /// `auth.rejected` -- callers branch on it -- but the message says what
+  /// went wrong, and the app shows an Arabic message as it is, so every
+  /// installed app reads it without an update. Matched on GoTrue's
+  /// `error_code` and, for versions without one, its message. Null keeps
+  /// GoTrue's own message (the app then shows its generic line).
+  static String? _arabicRejection(Map<String, Object?> json, String message) {
+    final Object? code = json['error_code'];
+    final String said =
+        '${code is String ? code : ''} ${message.toLowerCase()}';
+    bool any(List<String> needles) => needles.any(said.contains);
+    if (any(const ['invalid_credentials', 'invalid login credentials'])) {
+      return 'البريد أو كلمة المرور غير صحيحة.';
+    }
+    if (any(const ['email_not_confirmed', 'email not confirmed'])) {
+      return 'لم تؤكد بريدك بعد. افتح رسالة التأكيد التي وصلتك، ثم سجّل '
+          'الدخول.';
+    }
+    if (any(const [
+      'user_already_exists',
+      'email_exists',
+      'already registered',
+      'already been registered',
+    ])) {
+      return 'هذا البريد مسجّل من قبل. سجّل الدخول، أو استعد كلمة المرور إن '
+          'نسيتها.';
+    }
+    if (any(const ['weak_password', 'password should', 'password is too'])) {
+      return 'كلمة المرور ضعيفة. استعمل 8 أحرف على الأقل تجمع أحرفاً وأرقاماً.';
+    }
+    if (any(const ['same_password', 'different from the old'])) {
+      return 'اختر كلمة مرور مختلفة عن السابقة.';
+    }
+    if (said.contains('email_address_invalid') ||
+        (said.contains('email') && said.contains('invalid'))) {
+      return 'صيغة البريد غير صحيحة. تأكد منه وحاول مجدداً.';
+    }
+    if (any(const ['signup_disabled', 'signups not allowed'])) {
+      return 'التسجيل الجديد متوقف مؤقتاً.';
+    }
+    if (any(const ['user_banned', 'banned'])) {
+      return 'هذا الحساب موقوف.';
+    }
+    return null;
   }
 
   /// Extracts a human-readable error message from a GoTrue error body, trying
