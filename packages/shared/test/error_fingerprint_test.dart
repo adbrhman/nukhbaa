@@ -130,6 +130,40 @@ void main() {
       expect(frames.single.line, 4);
     });
 
+    test('a content-named main.dart.js is one file across builds', () {
+      const before =
+          '    at Object.a2 (https://nukhbaa.app/nukhbaa/main.dart.a6609ea10140.js:4:3)';
+      const after =
+          '    at Object.a2 (https://nukhbaa.app/nukhbaa/main.dart.0f1e2d3c4b5a.js:9:1)';
+
+      expect(ErrorFingerprint.frames(before).single.file, 'main.dart.js');
+      expect(
+        ErrorFingerprint.of(
+          source: 'web',
+          errorType: 'TypeError',
+          stack: before,
+        ).fingerprint,
+        ErrorFingerprint.of(
+          source: 'web',
+          errorType: 'TypeError',
+          stack: after,
+        ).fingerprint,
+      );
+      expect(
+        ErrorFingerprint.of(
+          source: 'web',
+          errorType: 'TypeError',
+          stack: before,
+        ).fingerprint,
+        ErrorFingerprint.of(
+          source: 'web',
+          errorType: 'TypeError',
+          stack:
+              '    at Object.a2 (https://nukhbaa.app/nukhbaa/main.dart.js:4:3)',
+        ).fingerprint,
+      );
+    });
+
     test('first-party frames come before the framework', () {
       final top = ErrorFingerprint.topFrames('''
 #0      RenderFlex.performLayout (package:flutter/src/rendering/flex.dart:1:1)

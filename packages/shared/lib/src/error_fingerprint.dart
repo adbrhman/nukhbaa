@@ -104,6 +104,12 @@ final class ErrorFingerprint {
   );
   static final RegExp _digits = RegExp(r'\d+');
 
+  // The web build's entry point, named by its content
+  // (deploy/web-mirror/finalize_build.mjs).
+  static final RegExp _contentNamedMain = RegExp(
+    r'^main\.dart\.[0-9a-f]{12}\.js$',
+  );
+
   /// Replaces the parts of [text] that differ between two occurrences of
   /// the same error: uuids and long hex become `:id`, numbers `:n`.
   static String normalizeVariable(String text) => text
@@ -165,7 +171,10 @@ final class ErrorFingerprint {
       }
     }
     final slash = location.lastIndexOf('/');
-    return slash >= 0 ? location.substring(slash + 1) : location;
+    final name = slash >= 0 ? location.substring(slash + 1) : location;
+    // main.dart.<hash>.js gets a new name with every web build; the hash
+    // would make each build's copy of an error a new error.
+    return name.replaceFirst(_contentNamedMain, 'main.dart.js');
   }
 
   // FNV-1a over 32 bits. Every intermediate stays below 2^53, so the web

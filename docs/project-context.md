@@ -4941,6 +4941,50 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   names and the JSON answers ship with the server, the screens need an
   APK.
 
+### The web app loads faster (web speed 71, 2026-10-14)
+
+Outside the audit plan. Measured 2026-10-14 by the Web Speed workflow
+(branch `web-speed`: Puppeteer, a fresh profile, Slow 4G and 4x CPU, the
+live nukhbaa.app/nukhbaa/): a first visit waited a median 26.7 s for the
+app, 19 requests and 3.96 MB, of which CanvasKit (2.09 MB gzip) and
+main.dart.js (1.36 MB) were 87%. Every file was `no-cache` (batch 72), so a
+returning visitor asked again for each one.
+
+- **Brotli on the mirror, stock nginx:** `deploy/web-mirror/
+  finalize_build.mjs compress` writes a quality-11 `.br` copy of
+  main.dart, both CanvasKit variants and the fonts (Node's own zlib,
+  nothing installed). `nginx.conf` sends it to a browser that accepts br
+  (`map` on Accept-Encoding and the path, a rewrite to an internal `\.br$`
+  location with the original type and `gzip off`), gzip otherwise. What
+  Chrome fetches went from 4.01 MB to 3.01 MB.
+- **Names made from content:** `finalize_build.mjs version`, after
+  `flutter build web` and before either host, renames `main.dart.js` to
+  `main.dart.<sha256:12>.js` (the build config's `mainJsPath`) and
+  `canvaskit/` to `canvaskit-<engine revision:12>/` (the loader call gets
+  `config.canvasKitBaseUrl`). The mirror keeps them a year (`immutable`;
+  an unknown name is a 404, never the app page) and the fonts a month;
+  index.html and flutter_bootstrap.js stay `no-cache` and bring the new
+  names. A build with dart2js deferred parts is refused (they are named
+  after main.dart.js).
+- **The gate:** the deploy workflow stages web-dist, builds the Dockerfile
+  Northflank builds and runs `check_mirror.mjs` against it before GitHub
+  Pages or the mirror is published: each compressed file, asked with br,
+  with gzip and with neither, decodes to the bytes on disk with its type
+  and cache rule; an old content name and a `.br` name asked directly are
+  404; a deep link is the app page.
+- `ErrorFingerprint` reads `main.dart.<hash>.js` as `main.dart.js`, so a
+  web error keeps its identity across builds.
+- Measured in the assistant's sandbox on the build of e0f5239 (nginx 1.28
+  with the official mime.types, headless Chromium 141, Slow 4G and 4x CPU,
+  two runs each): first visit 25.3 s -> 19.7 s; returning visit 7.2 s ->
+  5.5 s, with 9 KB over the network. The sign-in screen renders the same.
+- Left as they were: the three font weights (600 is used 34 times;
+  dropping it saves 86 KB and changes the look), Google Sign-In's script
+  (the `google_sign_in_web` plugin loads it when it registers) and Sentry
+  (already after `runApp` on the web).
+
+No migration, no APK, no new dependency.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

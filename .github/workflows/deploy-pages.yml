@@ -134,8 +134,34 @@ jobs:
           --dart-define=NUKHBA_INVITE_BASE_URL=${{ vars.NUKHBA_INVITE_BASE_URL }}
           --dart-define=NUKHBA_BUILD_SHA=$(git rev-parse HEAD | cut -c1-7)
 
+      # main.dart.js and CanvasKit take names made from their content
+      # (main.dart.<hash>.js, canvaskit-<engine>/), so the mirror lets a
+      # browser keep them a year; index.html and flutter_bootstrap.js stay
+      # no-cache and bring the new names. Both hosts get this build.
+      - name: Name the heaviest files by their content
+        run: node deploy/web-mirror/finalize_build.mjs version apps/mobile/build/web
+
       - name: SPA fallback
         run: cp apps/mobile/build/web/index.html apps/mobile/build/web/404.html
+
+      # The mirror is staged here and served by the very image Northflank
+      # builds from web-dist, before either host is published: a wrong
+      # header, a missing .br copy or a name the loader cannot find stops
+      # the deploy, and both sites keep the build they have.
+      - name: Stage the mirror and check it in its own image
+        run: |
+          set -euo pipefail
+          DIST="$RUNNER_TEMP/web-dist"
+          rm -rf "$DIST"
+          mkdir -p "$DIST/site"
+          cp -R apps/mobile/build/web "$DIST/site/nukhbaa"
+          cp -R deploy/web-mirror/landing/. "$DIST/site/"
+          cp deploy/web-mirror/Dockerfile deploy/web-mirror/nginx.conf "$DIST/"
+          node deploy/web-mirror/finalize_build.mjs compress "$DIST/site/nukhbaa"
+          docker build -q -t nukhbaa-web-check "$DIST" > /dev/null
+          docker run -d --rm --name nukhbaa-web-check -p 127.0.0.1:8080:8080 nukhbaa-web-check > /dev/null
+          trap 'docker stop nukhbaa-web-check > /dev/null 2>&1 || true' EXIT
+          node deploy/web-mirror/check_mirror.mjs http://127.0.0.1:8080 "$DIST/site"
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -156,12 +182,9 @@ jobs:
         run: |
           set -euo pipefail
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          # Staged and checked above, .br copies included.
           DIST="$RUNNER_TEMP/web-dist"
-          rm -rf "$DIST"
-          mkdir -p "$DIST/site"
-          cp -R apps/mobile/build/web "$DIST/site/nukhbaa"
-          cp -R deploy/web-mirror/landing/. "$DIST/site/"
-          cp deploy/web-mirror/Dockerfile deploy/web-mirror/nginx.conf "$DIST/"
+          test -f "$DIST/nginx.conf"
           cd "$DIST"
           git init -q
           git checkout -q -b web-dist
