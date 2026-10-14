@@ -3377,9 +3377,12 @@ final class CompositionRoot {
         clock: clock,
         auditRecorder: auditRecorder,
       ),
+      // A match already on the schedule (the sync's or an admin's) is
+      // refused, so one match never shows twice (batch 138).
       registerFixtureSchedule: RegisterFixtureSchedule(
         repository: fixtureScheduleRepository,
         idGenerator: idGenerator,
+        sameMatchFinder: PostgresSameMatchFinder(connection),
       ),
       correctFixtureSchedule: CorrectFixtureSchedule(
         fixtureScheduleRepository,

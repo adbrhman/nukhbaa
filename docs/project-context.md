@@ -4855,6 +4855,24 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   and the C-01 performance note (`f.season_id` in batch 120's two joins)
   joins account (b)'s batch 201. No migration, no APK.
 
+- **Batch 138 (one match is added once, 2026-10-14)**: the Europa League
+  evening of 2026-10-15 showed twice. The fixtures sync added its ten
+  matches at 01:03 (Riyadh, 10-14) and an admin added the same ten by hand
+  between 01:07 and 01:13, with the same catalog teams: `POST /fixtures`
+  (`RegisterFixtureSchedule`) never looked at what was already on the
+  schedule. (The other order was already safe: the sync adopts a
+  hand-added card of the same two teams, batch 119.) An admin's new fixture
+  is now refused (409 `competition.fixture_duplicate`, an Arabic message
+  naming the stored match and its Riyadh kickoff, shown as it is by the
+  admin form) when a visible, non-test fixture of the same two sides kicks
+  off within 12 h -- the same team, the same normalised name, or a
+  hand-typed side inside the other, never two different teams on file by a
+  name inside another (C-04) (`SameMatchFinder`, `PostgresSameMatchFinder`,
+  `same_match_query_test.sql`). A test fixture is never checked, and a
+  hidden copy is not in the way. The copies made before this batch stay as
+  they are (the owner hid one of each pair). No migration; server only, no
+  APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

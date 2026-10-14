@@ -241,6 +241,34 @@ void main() {
       expect(setup.schedules.count, 0);
     });
 
+    test('a match already on the schedule is refused 409 in Arabic '
+        '(batch 138)', () async {
+      final schedules = InMemoryFixtureScheduleRepository();
+      final root = CompositionRoot.forTesting(
+        registerFixtureSchedule: RegisterFixtureSchedule(
+          repository: schedules,
+          idGenerator: ScriptedIdGenerator([kFixtureId]),
+          sameMatchFinder: _OneMatchFinder(
+            SameMatch(
+              fixtureId: kUnregisteredFixtureId,
+              homeTeam: 'Al Hilal',
+              awayTeam: 'Al Nassr',
+              kickoffAt: kickoff,
+            ),
+          ),
+        ),
+      );
+
+      final response = await post(root, adminPrincipal());
+
+      expect(response.statusCode, HttpStatus.conflict);
+      final body = await decodeBody(response);
+      expect(body['code'], RegisterFixtureSchedule.duplicateCode);
+      expect(body['message'], contains('Al Hilal - Al Nassr'));
+      // Nothing was written on the refused path.
+      expect(schedules.count, 0);
+    });
+
     test('a non-POST method is 405', () async {
       final setup = rootFor();
       final response = await register_route.onRequest(
@@ -411,4 +439,21 @@ void main() {
       expect(response.statusCode, HttpStatus.methodNotAllowed);
     });
   });
+}
+
+/// A [SameMatchFinder] that always finds [_match].
+final class _OneMatchFinder implements SameMatchFinder {
+  _OneMatchFinder(this._match);
+
+  final SameMatch _match;
+
+  @override
+  Future<Result<SameMatch?>> find({
+    required String homeTeam,
+    required String awayTeam,
+    required String? homeTeamId,
+    required String? awayTeamId,
+    required DateTime from,
+    required DateTime to,
+  }) async => Result.ok(_match);
 }
