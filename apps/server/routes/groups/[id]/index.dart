@@ -12,6 +12,7 @@ import 'package:shared/shared.dart';
 /// Routes for a single group resource:
 ///   * `GET  /groups/{id}` — read the group (member-gated).
 ///   * `PATCH /groups/{id}` — rename the group (owner-only).
+///   * `DELETE /groups/{id}` — delete the group (owner-only, audit M-26).
 ///
 /// Both authorization gates live entirely inside the use-cases (Security ADR §2)
 /// — the route makes no authz decision, only wires the verified principal + the
@@ -21,6 +22,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   return switch (context.request.method) {
     HttpMethod.get => _get(context, id),
     HttpMethod.patch => _rename(context, id),
+    HttpMethod.delete => _delete(context, id),
     _ => Future.value(Response(statusCode: HttpStatus.methodNotAllowed)),
   };
 }
@@ -110,5 +112,22 @@ Future<Response> _reReadForCount(
     Err<GroupWithMemberCount>() => Response.json(
       body: groupToDto(renamed.value, memberCount: 1).toJson(),
     ),
+  };
+}
+
+/// DELETE /groups/{id} — the owner deletes the league (command intent
+/// `DeleteGroup`, audit M-26): its memberships, invitations, reactions and
+/// notifications go with it; nobody's points change. `204` on success; a
+/// member is refused `401` `group.not_owner`, a non-member `401`
+/// `group.not_a_member` (no existence oracle).
+Future<Response> _delete(RequestContext context, String id) async {
+  final root = await context.read<Future<CompositionRoot>>();
+  final principal = context.read<AuthenticatedUser>();
+
+  final result = await root.deleteGroup(principal: principal, groupId: id);
+
+  return switch (result) {
+    Ok<void>() => Response(statusCode: HttpStatus.noContent),
+    Err<void>(:final error) => errorResponse(error),
   };
 }

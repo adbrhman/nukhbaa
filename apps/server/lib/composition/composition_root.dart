@@ -95,6 +95,9 @@ final class CompositionRoot {
     required this.listMyGroupInvitations,
     required this.renameGroup,
     required this.regenerateInvite,
+    required this.leaveGroup,
+    required this.removeGroupMember,
+    required this.deleteGroup,
     required this.listGroupMembers,
     required this.listMyGroups,
     required this.getGroupLeaderboard,
@@ -295,6 +298,9 @@ final class CompositionRoot {
     ListMyGroupInvitations? listMyGroupInvitations,
     RenameGroup? renameGroup,
     RegenerateInvite? regenerateInvite,
+    LeaveGroup? leaveGroup,
+    RemoveGroupMember? removeGroupMember,
+    DeleteGroup? deleteGroup,
     ListGroupMembers? listGroupMembers,
     ListMyGroups? listMyGroups,
     GetGroupLeaderboard? getGroupLeaderboard,
@@ -505,6 +511,9 @@ final class CompositionRoot {
            listMyGroupInvitations ?? _absentListMyGroupInvitations(),
        renameGroup = renameGroup ?? _absentRenameGroup(),
        regenerateInvite = regenerateInvite ?? _absentRegenerateInvite(),
+       leaveGroup = leaveGroup ?? _absentLeaveGroup(),
+       removeGroupMember = removeGroupMember ?? _absentRemoveGroupMember(),
+       deleteGroup = deleteGroup ?? _absentDeleteGroup(),
        listGroupMembers = listGroupMembers ?? _absentListGroupMembers(),
        listMyGroups = listMyGroups ?? _absentListMyGroups(),
        getGroupLeaderboard =
@@ -1182,6 +1191,21 @@ final class CompositionRoot {
   static RegenerateInvite _absentRegenerateInvite() => RegenerateInvite(
     repository: _unwiredGroupRepository,
     inviteCodeGenerator: _unwiredInviteCodeGenerator,
+  );
+
+  static LeaveGroup _absentLeaveGroup() => LeaveGroup(
+    groups: _unwiredGroupRepository,
+    roster: _unwiredGroupRepository,
+  );
+
+  static RemoveGroupMember _absentRemoveGroupMember() => RemoveGroupMember(
+    groups: _unwiredGroupRepository,
+    roster: _unwiredGroupRepository,
+  );
+
+  static DeleteGroup _absentDeleteGroup() => DeleteGroup(
+    groups: _unwiredGroupRepository,
+    roster: _unwiredGroupRepository,
   );
 
   static ListGroupMembers _absentListGroupMembers() =>
@@ -2104,6 +2128,15 @@ final class CompositionRoot {
   /// Regenerates a group's invite code, revoking the previously-shared link
   /// (owner-only — Groups decision #2/#3).
   final RegenerateInvite regenerateInvite;
+
+  /// A member leaves a league (`DELETE /groups/{id}/members/me`, audit M-26).
+  final LeaveGroup leaveGroup;
+
+  /// The owner removes a member (`DELETE /groups/{id}/members/{userId}`).
+  final RemoveGroupMember removeGroupMember;
+
+  /// The owner deletes a league (`DELETE /groups/{id}`).
+  final DeleteGroup deleteGroup;
 
   /// Lists a group's members (member-only visibility gate, no existence oracle —
   /// Groups decision #3).
@@ -3551,6 +3584,15 @@ final class CompositionRoot {
         repository: groupRepository,
         inviteCodeGenerator: inviteCodeGenerator,
       ),
+      leaveGroup: LeaveGroup(groups: groupRepository, roster: groupRepository),
+      removeGroupMember: RemoveGroupMember(
+        groups: groupRepository,
+        roster: groupRepository,
+      ),
+      deleteGroup: DeleteGroup(
+        groups: groupRepository,
+        roster: groupRepository,
+      ),
       listGroupMembers: ListGroupMembers(repository: groupRepository),
       listMyGroups: ListMyGroups(repository: groupRepository),
       getGroupLeaderboard: GetGroupLeaderboard(
@@ -3565,6 +3607,8 @@ final class CompositionRoot {
           PostgresFixtureTotalsReader(connection),
         ),
         participants: participantReader,
+        // One read for the members' participants (audit L-40).
+        roster: groupRepository,
       ),
       reactToRound: ReactToRound(
         reactions: reactionRepository,
@@ -4572,9 +4616,22 @@ final class _UnwiredLeaderboardRepository implements LeaderboardRepository {
 /// (mirroring the production `PostgresGroupRepository`), so a single instance
 /// backs the group commands and the group-leaderboard read alike.
 final class _UnwiredGroupRepository
-    implements GroupRepository, GroupStandingsReader {
+    implements GroupRepository, GroupStandingsReader, GroupRosterStore {
   static Never _unwired() =>
       throw StateError('A group use-case was not wired into this root');
+
+  @override
+  Future<Result<bool>> removeMembership(GroupId groupId, UserId userId) =>
+      _unwired();
+
+  @override
+  Future<Result<bool>> deleteGroup(GroupId groupId) => _unwired();
+
+  @override
+  Future<Result<Set<String>>> memberParticipantIds(
+    GroupId groupId,
+    SeasonId seasonId,
+  ) => _unwired();
 
   @override
   Future<Result<void>> createGroupWithOwner(

@@ -417,13 +417,14 @@ void main() {
       expect((await decodeBody(response))['code'], 'group.not_a_member');
     });
 
-    test('a non-GET/PATCH method is 405', () async {
+    // DELETE is served since batch 140 (the owner deletes the league).
+    test('a method other than GET/PATCH/DELETE is 405', () async {
       final setup = rootFor();
       final response = await group_route.onRequest(
         wireContext(
           root: setup.root,
           principal: ownerPrincipal(),
-          method: HttpMethod.delete,
+          method: HttpMethod.put,
         ),
         kGroupId,
       );

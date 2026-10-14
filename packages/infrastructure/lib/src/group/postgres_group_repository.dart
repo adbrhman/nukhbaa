@@ -36,8 +36,12 @@ import 'package:shared/shared.dart';
 /// its owner membership inside a single [PostgresConnection.runInTransaction],
 /// so a group can never exist without its owner row (a mid-write failure rolls
 /// both back).
+///
+/// It is also the [GroupRosterStore] (audit M-26, L-40): leaving, removal
+/// and deletion are single statements, and a full league's join
+/// (`group_memberships_capacity`, migration 0111) maps to `group.full`.
 final class PostgresGroupRepository
-    implements GroupRepository, GroupStandingsReader {
+    implements GroupRepository, GroupStandingsReader, GroupRosterStore {
   /// Creates the repository over an open [PostgresConnection].
   const PostgresGroupRepository(this._connection);
 
@@ -264,6 +268,95 @@ ORDER BY gm.joined_at DESC, g.id ASC
     return switch (result) {
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
       Ok<List<Map<String, dynamic>>>(:final value) => _mapMemberships(value),
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // GroupRosterStore — leave / remove / delete, the members of a month
+  // --------------------------------------------------------------------------
+
+  // One statement: the membership goes with the invitation that brought the
+  // player in, so he can be invited again. Only a member row: the owner's
+  // is never removed here (the use-cases refuse it first).
+  static const String _removeMembershipSql = '''
+WITH gone AS (
+  DELETE FROM "group".group_memberships
+  WHERE group_id = @group_id::uuid
+    AND user_id = @user_id::uuid
+    AND role = 'member'
+  RETURNING user_id
+), invitation AS (
+  DELETE FROM "group".group_invitations i
+  USING gone
+  WHERE i.group_id = @group_id::uuid
+    AND i.invitee_user_id = gone.user_id
+)
+SELECT count(*)::int AS removed FROM gone
+''';
+
+  // Memberships, invitations, reactions and the league's notifications
+  // follow by ON DELETE CASCADE (0007, 0008, 0009, 0020, 0097).
+  static const String _deleteGroupSql = '''
+WITH gone AS (
+  DELETE FROM "group".groups
+  WHERE id = @group_id::uuid
+  RETURNING id
+)
+SELECT count(*)::int AS deleted FROM gone
+''';
+
+  static const String _memberParticipantIdsSql = '''
+SELECT p.id::text AS participant_id
+FROM "group".group_memberships gm
+JOIN competition.participants p
+  ON p.user_id = gm.user_id
+ AND p.season_id = @season_id::uuid
+WHERE gm.group_id = @group_id::uuid
+''';
+
+  @override
+  Future<Result<bool>> removeMembership(GroupId groupId, UserId userId) async {
+    final result = await _connection.query(
+      _removeMembershipSql,
+      parameters: {'group_id': groupId.value, 'user_id': userId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isNotEmpty && (_readInt(value.first['removed']) ?? 0) > 0,
+      ),
+    };
+  }
+
+  @override
+  Future<Result<bool>> deleteGroup(GroupId groupId) async {
+    final result = await _connection.query(
+      _deleteGroupSql,
+      parameters: {'group_id': groupId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isNotEmpty && (_readInt(value.first['deleted']) ?? 0) > 0,
+      ),
+    };
+  }
+
+  @override
+  Future<Result<Set<String>>> memberParticipantIds(
+    GroupId groupId,
+    SeasonId seasonId,
+  ) async {
+    final result = await _connection.query(
+      _memberParticipantIdsSql,
+      parameters: {'group_id': groupId.value, 'season_id': seasonId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok({
+        for (final row in value)
+          if (row['participant_id'] != null) row['participant_id'].toString(),
+      }),
     };
   }
 
@@ -605,6 +698,8 @@ WHERE p.season_id = @season_id
           'group.user_not_found',
           'User not found',
         );
+      case 'group_memberships_capacity':
+        return JoinGroupByInvite.full;
       case 'groups_name_len_chk':
         return const AppError.invariant(
           'group.integrity_violation',

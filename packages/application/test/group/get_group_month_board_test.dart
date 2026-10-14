@@ -71,11 +71,41 @@ GroupMembership _member(String id, String user) => GroupMembership.fromStored(
   joinedAt: DateTime.utc(2026, 10),
 );
 
-GetGroupMonthBoard _useCase() {
+/// [oneRead]: the members' participants come from the roster store in one
+/// read (audit L-40); the competition fake then knows only the stranger, so
+/// the old per-member path would find nobody.
+GetGroupMonthBoard _useCase({bool oneRead = false}) {
   final groups = InMemoryGroupRepository()
     ..seedMembership(_member('61111111-1111-1111-1111-111111111111', _me))
     ..seedMembership(_member('62222222-1111-1111-1111-111111111111', _friend))
-    ..seedMembership(_member('63333333-1111-1111-1111-111111111111', _idle));
+    ..seedMembership(_member('63333333-1111-1111-1111-111111111111', _idle))
+    ..seedParticipant(_season, _me, _pMe)
+    ..seedParticipant(_season, _friend, _pFriend)
+    ..seedParticipant(_season, _stranger, _pStranger);
+  if (oneRead) {
+    return GetGroupMonthBoard(
+      groups: groups,
+      competition: FakeCompetitionRepository()
+        ..seedParticipant(
+          scoringParticipant(
+            id: _pStranger,
+            seasonId: _season,
+            userId: _stranger,
+          ),
+        ),
+      fixturePredictions: FakeFixturePredictionRepository()
+        ..seedSeasonFixture(
+          const SeasonFixture.fromStored(
+            seasonId: SeasonId(_season),
+            fixture: FixtureRef(_fixture),
+            displayOrder: 1,
+          ),
+        ),
+      totals: _Totals(),
+      participants: _Participants(),
+      roster: groups,
+    );
+  }
   final competition = FakeCompetitionRepository()
     ..seedParticipant(
       scoringParticipant(id: _pMe, seasonId: _season, userId: _me),
@@ -104,6 +134,23 @@ GetGroupMonthBoard _useCase() {
 }
 
 void main() {
+  test('one roster read gives the same board (audit L-40)', () async {
+    final result = await _useCase(oneRead: true)(
+      principal: userPrincipal(_me),
+      groupId: _group,
+      seasonId: _season,
+    );
+
+    final FixtureLeaderboard board = (result as Ok<FixtureLeaderboard>).value;
+    expect(
+      [
+        for (final FixtureLeaderboardEntry e in board.entries)
+          (e.rank, e.participantId.value, e.totalPoints),
+      ],
+      [(1, _pFriend, 9), (2, _pMe, 6)],
+    );
+  });
+
   test('the month board of the members only, ranked among them', () async {
     final result = await _useCase()(
       principal: userPrincipal(_me),

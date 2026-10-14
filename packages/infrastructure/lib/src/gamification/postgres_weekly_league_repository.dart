@@ -15,6 +15,12 @@ import 'package:shared/shared.dart';
 /// group inserts does nothing and its caller falls back to the open group
 /// the other just created.
 ///
+/// Two different players placed into the same tier at once could both read
+/// one group with a single free seat and both take it (audit L-45). The
+/// transaction now starts by taking an advisory lock on the week and tier,
+/// so placements into one tier run one after the other and the second sees
+/// the group full; migration 0111's trigger is the backstop.
+///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
 final class PostgresWeeklyLeagueRepository implements WeeklyLeagueRepository {
@@ -32,6 +38,13 @@ FROM gamification.weekly_league_members m
 JOIN gamification.weekly_leagues l ON l.id = m.league_id
 WHERE m.user_id = @user_id::uuid
   AND m.week_start = @week_start::date
+''';
+
+  // Held until the placement's transaction ends.
+  static const String _placementLockSql = '''
+SELECT pg_advisory_xact_lock(
+  hashtext('gamification.weekly_league:' || @week_start::text || ':' || @tier::text)
+)
 ''';
 
   static const String _openGroupSql = '''
@@ -108,6 +121,14 @@ LIMIT 1
     final isoWeek = _isoDay(weekStart);
 
     return _connection.runInTransaction<WeeklyLeagueSeat>((tx) async {
+      final locked = await tx.query(
+        _placementLockSql,
+        parameters: {'week_start': isoWeek, 'tier': tier.level.toString()},
+      );
+      if (locked is Err<List<Map<String, dynamic>>>) {
+        return Result.err(locked.error);
+      }
+
       final openResult = await tx.query(
         _openGroupSql,
         parameters: {'week_start': isoWeek, 'tier': tier.level},

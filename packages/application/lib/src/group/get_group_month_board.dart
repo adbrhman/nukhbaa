@@ -1,5 +1,6 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/group/ports/group_repository.dart';
+import 'package:application/src/group/ports/group_roster_store.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/leaderboard/ports/fixture_totals_reader.dart';
 import 'package:application/src/ledger/ports/participant_reader.dart';
@@ -19,6 +20,9 @@ import 'package:shared/shared.dart';
 /// on it, as on the month's board. No movement arrows: the daily rank
 /// snapshot is the whole month's.
 ///
+/// With a [GroupRosterStore] the members' participant ids come in one read
+/// (audit L-40); without one, one read per member, as before.
+///
 /// Never throws; returns a typed [Result].
 final class GetGroupMonthBoard {
   /// Creates the use-case over its collaborators.
@@ -28,12 +32,15 @@ final class GetGroupMonthBoard {
     required FixturePredictionRepository fixturePredictions,
     required FixtureTotalsReader totals,
     required ParticipantReader participants,
+    GroupRosterStore? roster,
   }) : _groups = groups,
        _competition = competition,
        _fixturePredictions = fixturePredictions,
        _totals = totals,
-       _participants = participants;
+       _participants = participants,
+       _roster = roster;
 
+  final GroupRosterStore? _roster;
   final GroupRepository _groups;
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
@@ -74,20 +81,11 @@ final class GetGroupMonthBoard {
       );
     }
 
-    final members = await _groups.listMemberships(group);
-    if (members is Err<List<GroupMembership>>) {
-      return Result.err(members.error);
+    final inGroupResult = await _memberParticipants(group, season);
+    if (inGroupResult is Err<Set<String>>) {
+      return Result.err(inGroupResult.error);
     }
-    final Set<String> inGroup = <String>{};
-    for (final GroupMembership m
-        in (members as Ok<List<GroupMembership>>).value) {
-      final participant = await _competition.findParticipant(season, m.userId);
-      if (participant is Err<Participant?>) {
-        return Result.err(participant.error);
-      }
-      final Participant? p = (participant as Ok<Participant?>).value;
-      if (p != null) inGroup.add(p.id.value);
-    }
+    final Set<String> inGroup = (inGroupResult as Ok<Set<String>>).value;
 
     final fixtures = await _fixturePredictions.listSeasonFixtures(season);
     if (fixtures is Err<List<FixtureRef>>) {
@@ -130,5 +128,31 @@ final class GetGroupMonthBoard {
         for (final entry in avatars.entries) entry.key: entry.value.updatedAt,
       },
     );
+  }
+
+  /// The participant ids, in [season], of [group]'s members.
+  Future<Result<Set<String>>> _memberParticipants(
+    GroupId group,
+    SeasonId season,
+  ) async {
+    final roster = _roster;
+    if (roster != null) {
+      return roster.memberParticipantIds(group, season);
+    }
+    final members = await _groups.listMemberships(group);
+    if (members is Err<List<GroupMembership>>) {
+      return Result.err(members.error);
+    }
+    final Set<String> inGroup = <String>{};
+    for (final GroupMembership m
+        in (members as Ok<List<GroupMembership>>).value) {
+      final participant = await _competition.findParticipant(season, m.userId);
+      if (participant is Err<Participant?>) {
+        return Result.err(participant.error);
+      }
+      final Participant? p = (participant as Ok<Participant?>).value;
+      if (p != null) inGroup.add(p.id.value);
+    }
+    return Result.ok(inGroup);
   }
 }

@@ -28,6 +28,10 @@ import 'package:shared/shared.dart';
 /// The owner is already a member (created with the group), so an owner "joining"
 /// their own group via the code is a no-op that returns their owner membership.
 ///
+/// A league holds at most [memberLimit] members (audit M-26): a newcomer to
+/// a full league is refused `group.full`, in Arabic so the app shows it as
+/// it is. Migration 0111's trigger is the backstop for two joins at once.
+///
 /// Never throws; returns a typed [Result].
 final class JoinGroupByInvite {
   /// Creates the use-case over its collaborators.
@@ -42,6 +46,16 @@ final class JoinGroupByInvite {
   final GroupRepository _repository;
   final IdGenerator _idGenerator;
   final Clock _clock;
+
+  /// The most members one league holds (the owner included); the same
+  /// number as migration 0111's trigger.
+  static const int memberLimit = 50;
+
+  /// The refusal for a league already at [memberLimit].
+  static const AppError full = AppError.invariant(
+    'group.full',
+    'اكتمل عدد أعضاء هذا الدوري (50 عضواً)، فلا يمكن الانضمام إليه.',
+  );
 
   /// Joins [principal] to the group identified by [inviteCode].
   Future<Result<GroupMembership>> call({
@@ -90,6 +104,14 @@ final class JoinGroupByInvite {
         }
       case Err<GroupMembership?>(:final error):
         return Result.err(error);
+    }
+
+    final roster = await _repository.listMemberships(group.id);
+    if (roster is Err<List<GroupMembership>>) {
+      return Result.err(roster.error);
+    }
+    if ((roster as Ok<List<GroupMembership>>).value.length >= memberLimit) {
+      return const Result.err(full);
     }
 
     final membershipIdResult = GroupMembershipId.tryParse(

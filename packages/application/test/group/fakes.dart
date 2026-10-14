@@ -13,7 +13,10 @@ import 'package:shared/shared.dart';
 ///   longer resolves — mirrors the live-code semantics).
 /// * `listMemberships` returns joinedAt-ascending (owner first).
 /// It never throws; a scripted transient failure proves propagation.
-final class InMemoryGroupRepository implements GroupRepository {
+/// It is also the [GroupRosterStore] (leave, remove, delete, the members
+/// of a month), as the Postgres adapter is.
+final class InMemoryGroupRepository
+    implements GroupRepository, GroupRosterStore {
   final Map<String, Group> _groups = {};
   final List<GroupMembership> _memberships = [];
 
@@ -34,6 +37,15 @@ final class InMemoryGroupRepository implements GroupRepository {
   /// Seeds a membership directly.
   void seedMembership(GroupMembership membership) =>
       _memberships.add(membership);
+
+  final Map<String, String> _participants = {};
+
+  /// Seeds [userId]'s participant id in [seasonId].
+  void seedParticipant(String seasonId, String userId, String participantId) =>
+      _participants['$seasonId::$userId'] = participantId;
+
+  /// Test observability: whether [groupId] is still stored.
+  bool hasGroup(String groupId) => _groups.containsKey(groupId);
 
   /// Test observability: how many memberships are stored for [groupId].
   int membershipCount(String groupId) =>
@@ -173,6 +185,44 @@ final class InMemoryGroupRepository implements GroupRepository {
       );
     }
     return Result.ok(List<MyGroupSummary>.unmodifiable(list));
+  }
+
+  @override
+  Future<Result<bool>> removeMembership(GroupId groupId, UserId userId) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final before = _memberships.length;
+    _memberships.removeWhere(
+      (m) =>
+          m.groupId.value == groupId.value &&
+          m.userId.value == userId.value &&
+          !m.isOwner,
+    );
+    return Result.ok(_memberships.length < before);
+  }
+
+  @override
+  Future<Result<bool>> deleteGroup(GroupId groupId) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    final existed = _groups.remove(groupId.value) != null;
+    _memberships.removeWhere((m) => m.groupId.value == groupId.value);
+    return Result.ok(existed);
+  }
+
+  @override
+  Future<Result<Set<String>>> memberParticipantIds(
+    GroupId groupId,
+    SeasonId seasonId,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    return Result.ok({
+      for (final m in _memberships)
+        if (m.groupId.value == groupId.value &&
+            _participants['${seasonId.value}::${m.userId.value}'] != null)
+          _participants['${seasonId.value}::${m.userId.value}']!,
+    });
   }
 }
 

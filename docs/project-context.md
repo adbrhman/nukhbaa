@@ -4894,6 +4894,32 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   Migration 0110 (apply in the SQL Editor before pushing); server only, no
   APK.
 
+- **Batch 140 (friends' leagues: leave, remove, delete, a limit, 2026-10-14,
+  audit M-26 server, L-40, L-45)**: M-26 -- a league's roster could only
+  grow: no leaving, no removal, no deletion, no limit, so strangers who
+  came in by a link posted in a public chat stayed on its board, feed and
+  pushes for good. `LeaveGroup` (`DELETE /groups/{id}/members/me`; the owner
+  cannot leave, `group.owner_cannot_leave`), `RemoveGroupMember` (owner
+  only, `DELETE /groups/{id}/members/{userId}`) and `DeleteGroup` (owner
+  only, `DELETE /groups/{id}`; memberships, invitations, reactions and the
+  league's notifications follow by cascade, nobody's points move) over a
+  new `GroupRosterStore` port that `PostgresGroupRepository` implements;
+  the leaver's invitation row goes with him, so he can be invited again.
+  Ownership does not move: the owner deletes. `JoinGroupByInvite` refuses a
+  51st member (`group.full`, in Arabic so the app shows it as it is);
+  migration 0111's trigger `group_memberships_capacity` is the backstop.
+  L-40 -- `GetGroupMonthBoard` read each member's participant one query at
+  a time; `GroupRosterStore.memberParticipantIds` reads them in one (the old
+  path stays for a root without the store). L-45 -- two players placed into
+  one tier at once could both take a group's last seat; the placement
+  transaction first takes an advisory lock on the week and tier, and 0111's
+  trigger `weekly_league_members_capacity` refuses a seat over capacity
+  (a player already seated this week is left to the unique constraint).
+  The plan's later batches of account (a) move by three (138 and 139 were
+  the duplicate-match batches; groups are split into 140 server and 141
+  app). Migration 0111 (apply in the SQL Editor before pushing); server
+  only, the buttons come with batch 141's APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
