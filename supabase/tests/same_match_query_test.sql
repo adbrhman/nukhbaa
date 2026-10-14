@@ -4,9 +4,16 @@
 -- by the fixtures sync or by hand -- under the same two sides within the
 -- window, whichever catalog row of a club either one picked. Batch 138:
 -- the Europa League evening of 2026-10-15 was added twice. No migration:
--- the query reads 0012, 0024 and 0098 columns.
+-- the query reads 0012, 0024 and 0098 columns and 0110's name key. Batch
+-- 139: home and away the other way round, and case, are the same match.
 \set ON_ERROR_STOP on
 begin;
+
+-- Case 10 places two copies of one match on purpose; since 0110 the
+-- schedule refuses a second copy, so its guard is off inside this
+-- rolled-back test (rows written before 0110 can still be such copies).
+alter table competition.fixture_schedules
+  disable trigger fixture_schedules_one_match;
 
 -- PostgresSameMatchFinder._sameMatchSql
 create function pg_temp.same_match(
@@ -15,8 +22,8 @@ create function pg_temp.same_match(
 returns table (fixture_id text, home_team text, away_team text, kickoff_at timestamptz)
 language sql as $q$
 WITH target AS (
-  SELECT regexp_replace(translate(btrim(p_home_name), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
-         regexp_replace(translate(btrim(p_away_name), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a,
+  SELECT competition.team_name_key(p_home_name) AS h,
+         competition.team_name_key(p_away_name) AS a,
          p_home_id AS home_id,
          p_away_id AS away_id,
          p_from + (p_to - p_from) / 2 AS kickoff
@@ -28,8 +35,8 @@ candidates AS (
          s.kickoff_at,
          s.home_team_id,
          s.away_team_id,
-         regexp_replace(translate(btrim(s.home_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
-         regexp_replace(translate(btrim(s.away_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a
+         competition.team_name_key(s.home_team) AS h,
+         competition.team_name_key(s.away_team) AS a
   FROM competition.fixture_schedules s
   WHERE s.kickoff_at >= p_from
     AND s.kickoff_at < p_to
@@ -37,29 +44,39 @@ candidates AS (
     -- out of the contest by an admin (0098).
     AND NOT s.is_test
     AND s.hidden_at IS NULL
+),
+-- Each stored fixture against the new match as given and with its sides
+-- swapped: home and away entered the other way round are the same match.
+sides AS (
+  SELECT c.*, t.h AS new_h, t.a AS new_a,
+         t.home_id AS new_home_id, t.away_id AS new_away_id, t.kickoff
+  FROM candidates c, target t
+  UNION ALL
+  SELECT c.*, t.a, t.h, t.away_id, t.home_id, t.kickoff
+  FROM candidates c, target t
 )
-SELECT c.fixture_id::text AS fixture_id,
-       c.home_team,
-       c.away_team,
-       c.kickoff_at
-FROM candidates c, target t
--- A side agrees when it is the same catalog team, or the same name once
--- spelling is normalised (one club, two catalog rows), or -- only when a
--- side has no team on file -- one name inside the other, three letters
--- at least. Two different teams on file never agree by a name that sits
--- inside another (audit C-04).
-WHERE ((c.home_team_id IS NOT NULL AND c.home_team_id = t.home_id)
-       OR c.h = t.h
-       OR ((c.home_team_id IS NULL OR t.home_id IS NULL)
-           AND length(t.h) >= 3 AND length(c.h) >= 3
-           AND (strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0)))
-  AND ((c.away_team_id IS NOT NULL AND c.away_team_id = t.away_id)
-       OR c.a = t.a
-       OR ((c.away_team_id IS NULL OR t.away_id IS NULL)
-           AND length(t.a) >= 3 AND length(c.a) >= 3
-           AND (strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0)))
-ORDER BY abs(extract(epoch from (c.kickoff_at - t.kickoff))),
-         c.fixture_id
+SELECT s.fixture_id::text AS fixture_id,
+       s.home_team,
+       s.away_team,
+       s.kickoff_at
+FROM sides s
+-- A side agrees when it is the same catalog team, or the same name key
+-- (competition.team_name_key, 0110: one club, two catalog rows), or --
+-- only when a side has no team on file -- one name inside the other,
+-- three letters at least. Two different teams on file never agree by a
+-- name that sits inside another (audit C-04).
+WHERE ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
+       OR s.h = s.new_h
+       OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
+           AND length(s.new_h) >= 3 AND length(s.h) >= 3
+           AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
+  AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
+       OR s.a = s.new_a
+       OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
+           AND length(s.new_a) >= 3 AND length(s.a) >= 3
+           AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0)))
+ORDER BY abs(extract(epoch from (s.kickoff_at - s.kickoff))),
+         s.fixture_id
 LIMIT 1
 $q$;
 
@@ -116,6 +133,10 @@ begin
   -- 3. Typed by hand, no team found, another spelling.
   hit := (select m.fixture_id from pg_temp.same_match(null, null, 'ليون ', 'كريستال  بالاس', k - w, k + w) m);
   perform pg_temp.check(hit = synced::text, 'hand-typed names that agree are the same match');
+
+  -- 3b. Home and away entered the other way round (batch 139).
+  hit := (select m.fixture_id from pg_temp.same_match(palace, lyon_a, 'كريستال بالاس', 'ليون', k - w, k + w) m);
+  perform pg_temp.check(hit = synced::text, 'the sides swapped are the same match');
 
   -- 4. A different opponent is a different match.
   hit := (select m.fixture_id from pg_temp.same_match(lyon_a, leverkusen, 'ليون', 'باير ليفركوزن', k - w, k + w) m);

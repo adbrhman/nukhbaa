@@ -4873,6 +4873,27 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   they are (the owner hid one of each pair). No migration; server only, no
   APK.
 
+- **Batch 139 (the schedule itself holds one copy of a match, 2026-10-14)**:
+  batch 138 stops an admin's second copy at the server; the owner asked
+  that no path, for any role or competition, can ever put one match on the
+  schedule twice. Migration 0110 adds `competition.team_name_key` (hamza
+  forms, alif maqsura, taa marbuta, case and spaces folded) and a trigger
+  on `competition.fixture_schedules` that refuses (23505
+  `fixture_schedules_one_match`) any insert or update leaving a visible,
+  non-test fixture beside another visible, non-test fixture of the same two
+  sides -- either order, the same catalog team or the same name key, never
+  a name inside another (C-04) -- less than 12 h apart: the sync with a
+  second provider id, a correction moving a fixture onto another, a hidden
+  copy shown again, a hand-run insert. Two writers of one pair are
+  serialised by an advisory lock. Hiding, and updates that change no team,
+  kickoff or visibility, always pass; rows already there are not checked.
+  The schedule adapter maps the refusal to `competition.fixture_duplicate`
+  (Arabic). `PostgresSameMatchFinder` now uses the same name key and also
+  matches home and away swapped. Two SQL tests that place two copies on
+  purpose turn the trigger off inside their rolled-back transaction.
+  Migration 0110 (apply in the SQL Editor before pushing); server only, no
+  APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

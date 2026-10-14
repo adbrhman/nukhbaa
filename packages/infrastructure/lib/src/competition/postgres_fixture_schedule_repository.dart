@@ -264,6 +264,18 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
         'The fixture schedule violated an integrity rule',
       );
     }
+    // 23505 from the one-match trigger (migration 0110) — another visible
+    // copy of this match is on the schedule within 12 hours. The server
+    // checks first (RegisterFixtureSchedule); this is the backstop for a
+    // race or any other writer, with the same code.
+    if (cause.code == '23505' &&
+        cause.constraintName == 'fixture_schedules_one_match') {
+      return const AppError.invariant(
+        RegisterFixtureSchedule.duplicateCode,
+        'هذه المباراة مضافة من قبل بفارق أقل من 12 ساعة. '
+        'لم تُضَف مرة ثانية.',
+      );
+    }
     // 23503 foreign_key_violation — an admin-supplied home_team_id/
     // away_team_id does not name a row in football_data.teams.
     if (cause.code == '23503') {

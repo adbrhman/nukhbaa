@@ -4,14 +4,16 @@ import 'package:shared/shared.dart';
 
 /// Postgres [SameMatchFinder] over `competition.fixture_schedules`.
 ///
-/// Spelling is normalised as in the fixtures sync's adoption query
-/// (`PostgresProviderSyncStore`): hamza forms, alif maqsura, taa marbuta
-/// and spaces. A side agrees when it is the same catalog team, the same
-/// normalised name, or -- only when one of the two has no team on file --
-/// one name inside the other, three letters at least; two different teams
-/// on file never agree by a name inside another (audit C-04). Test and
-/// hidden fixtures are skipped. The nearest kickoff to the middle of the
-/// window wins. Tested in supabase/tests/same_match_query_test.sql.
+/// Names are compared by `competition.team_name_key` (migration 0110):
+/// hamza forms, alif maqsura, taa marbuta, case and spaces folded. A side
+/// agrees when it is the same catalog team, the same name key, or -- only
+/// when one of the two has no team on file -- one name inside the other,
+/// three letters at least; two different teams on file never agree by a
+/// name inside another (audit C-04). Home and away entered the other way
+/// round are the same match. Test and hidden fixtures are skipped. The
+/// nearest kickoff to the middle of the window wins. Tested in
+/// supabase/tests/same_match_query_test.sql; the schedule's own trigger
+/// (0110) refuses whatever slips past.
 ///
 /// Total: never throws, binds every value through a `@named` parameter.
 final class PostgresSameMatchFinder implements SameMatchFinder {
@@ -22,8 +24,8 @@ final class PostgresSameMatchFinder implements SameMatchFinder {
 
   static const String _sameMatchSql = '''
 WITH target AS (
-  SELECT regexp_replace(translate(btrim(@home_name::text), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
-         regexp_replace(translate(btrim(@away_name::text), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a,
+  SELECT competition.team_name_key(@home_name::text) AS h,
+         competition.team_name_key(@away_name::text) AS a,
          @home_id::uuid AS home_id,
          @away_id::uuid AS away_id,
          @from::timestamptz + (@to::timestamptz - @from::timestamptz) / 2 AS kickoff
@@ -35,8 +37,8 @@ candidates AS (
          s.kickoff_at,
          s.home_team_id,
          s.away_team_id,
-         regexp_replace(translate(btrim(s.home_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS h,
-         regexp_replace(translate(btrim(s.away_team), 'أإآٱىة', 'اااايه'), '[[:space:]]+', '', 'g') AS a
+         competition.team_name_key(s.home_team) AS h,
+         competition.team_name_key(s.away_team) AS a
   FROM competition.fixture_schedules s
   WHERE s.kickoff_at >= @from::timestamptz
     AND s.kickoff_at < @to::timestamptz
@@ -44,29 +46,39 @@ candidates AS (
     -- out of the contest by an admin (0098).
     AND NOT s.is_test
     AND s.hidden_at IS NULL
+),
+-- Each stored fixture against the new match as given and with its sides
+-- swapped: home and away entered the other way round are the same match.
+sides AS (
+  SELECT c.*, t.h AS new_h, t.a AS new_a,
+         t.home_id AS new_home_id, t.away_id AS new_away_id, t.kickoff
+  FROM candidates c, target t
+  UNION ALL
+  SELECT c.*, t.a, t.h, t.away_id, t.home_id, t.kickoff
+  FROM candidates c, target t
 )
-SELECT c.fixture_id::text AS fixture_id,
-       c.home_team,
-       c.away_team,
-       c.kickoff_at
-FROM candidates c, target t
--- A side agrees when it is the same catalog team, or the same name once
--- spelling is normalised (one club, two catalog rows), or -- only when a
--- side has no team on file -- one name inside the other, three letters
--- at least. Two different teams on file never agree by a name that sits
--- inside another (audit C-04).
-WHERE ((c.home_team_id IS NOT NULL AND c.home_team_id = t.home_id)
-       OR c.h = t.h
-       OR ((c.home_team_id IS NULL OR t.home_id IS NULL)
-           AND length(t.h) >= 3 AND length(c.h) >= 3
-           AND (strpos(t.h, c.h) > 0 OR strpos(c.h, t.h) > 0)))
-  AND ((c.away_team_id IS NOT NULL AND c.away_team_id = t.away_id)
-       OR c.a = t.a
-       OR ((c.away_team_id IS NULL OR t.away_id IS NULL)
-           AND length(t.a) >= 3 AND length(c.a) >= 3
-           AND (strpos(t.a, c.a) > 0 OR strpos(c.a, t.a) > 0)))
-ORDER BY abs(extract(epoch from (c.kickoff_at - t.kickoff))),
-         c.fixture_id
+SELECT s.fixture_id::text AS fixture_id,
+       s.home_team,
+       s.away_team,
+       s.kickoff_at
+FROM sides s
+-- A side agrees when it is the same catalog team, or the same name key
+-- (competition.team_name_key, 0110: one club, two catalog rows), or --
+-- only when a side has no team on file -- one name inside the other,
+-- three letters at least. Two different teams on file never agree by a
+-- name that sits inside another (audit C-04).
+WHERE ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
+       OR s.h = s.new_h
+       OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
+           AND length(s.new_h) >= 3 AND length(s.h) >= 3
+           AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
+  AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
+       OR s.a = s.new_a
+       OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
+           AND length(s.new_a) >= 3 AND length(s.a) >= 3
+           AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0)))
+ORDER BY abs(extract(epoch from (s.kickoff_at - s.kickoff))),
+         s.fixture_id
 LIMIT 1
 ''';
 

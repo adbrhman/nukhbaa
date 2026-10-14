@@ -9,6 +9,13 @@
 \set ON_ERROR_STOP on
 begin;
 
+-- Some cases place two cards of one match on purpose, to see which one the
+-- sync picks; since 0110 the schedule refuses a second copy, so its guard
+-- is off inside this rolled-back test. The query must still behave on rows
+-- written before 0110.
+alter table competition.fixture_schedules
+  disable trigger fixture_schedules_one_match;
+
 -- PostgresProviderSyncStore._existingSql
 create function pg_temp.existing_fixture(
   p_home_id uuid, p_away_id uuid, p_home_name text, p_away_name text,
