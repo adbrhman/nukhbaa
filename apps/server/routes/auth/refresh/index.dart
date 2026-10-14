@@ -4,7 +4,9 @@
 /// expired, so this route sits outside `bearerAuth`. The client calls it once
 /// after a `401` and repeats the original request with the new token. A
 /// spent or revoked refresh token is answered `400 auth.rejected`, never
-/// `401`, so the client's renewal hook cannot recurse.
+/// `401`, so the client's renewal hook cannot recurse. One network address
+/// may renew 100 times in 10 minutes (audit C-02, `AuthCall.refresh`); over
+/// that it is `429`, which the app takes as "try again later".
 library;
 
 import 'dart:io';
@@ -15,6 +17,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -36,6 +39,15 @@ Future<Response> _handle(
   final tokenResult = requireString(body, 'refresh_token');
   if (tokenResult is Err<String>) {
     return errorResponse(tokenResult.error);
+  }
+
+  // Every renewal spends this server's one GoTrue quota (audit C-02).
+  final limited = limitAuthCall(
+    AuthCall.refresh,
+    address: clientAddress(context.request.headers),
+  );
+  if (limited != null) {
+    return limited;
   }
 
   final root = await context.read<Future<CompositionRoot>>();

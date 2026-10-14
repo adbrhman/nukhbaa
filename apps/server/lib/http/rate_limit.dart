@@ -175,7 +175,9 @@ enum AuthAttempt {
   /// `POST /auth/password-reset/verify`: 5 codes per e-mail in 15 minutes,
   /// counted per e-mail alone so the code of a reset e-mail cannot be
   /// guessed from many networks. Only someone already waiting for a code
-  /// can be held back by it, for 15 minutes.
+  /// can be held back by it, for 15 minutes. One network address may also
+  /// try 30 codes in 15 minutes, whatever the e-mails (audit C-02): every
+  /// check spends this server's one GoTrue quota.
   passwordResetCode,
 }
 
@@ -190,6 +192,11 @@ final RateLimiter _registerAddressLimiter = RateLimiter(
 );
 
 final RateLimiter _passwordResetAddressLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(minutes: 15),
+);
+
+final RateLimiter _passwordResetCodeAddressLimiter = RateLimiter(
   limit: 30,
   window: const Duration(minutes: 15),
 );
@@ -226,7 +233,7 @@ Response? limitAuthAttempt(
     AuthAttempt.login => _loginAddressLimiter,
     AuthAttempt.register => _registerAddressLimiter,
     AuthAttempt.passwordReset => _passwordResetAddressLimiter,
-    AuthAttempt.passwordResetCode => null,
+    AuthAttempt.passwordResetCode => _passwordResetCodeAddressLimiter,
   };
   if (perAddress != null && address != null) {
     final wait = perAddress.hit(address);
@@ -255,6 +262,53 @@ String _authKey(AuthAttempt attempt, String email, String? address) {
   final String who = email.trim().toLowerCase();
   if (attempt == AuthAttempt.passwordResetCode) return who;
   return '$who|${address ?? ''}';
+}
+
+/// The anonymous `/auth/*` calls that name no account, counted per network
+/// address alone (audit C-02).
+///
+/// Every player's sign-in, renewal and Google sign-in reach GoTrue from this
+/// server's one address, so they share one GoTrue quota. These two had no
+/// limit at all: one caller sending made-up refresh or Google tokens could
+/// spend the quota, and then nobody could sign in or renew a session. Each
+/// address now gets a share wide enough for many players behind one carrier
+/// address and too small for one caller to spend the quota alone. A refused
+/// call is `429`, which the app takes as "try again later", never as a
+/// refused token, so nobody is signed out by it. A request with no address
+/// is not counted. The real fix, each player's own GoTrue quota through IP
+/// forwarding, needs the owner's Supabase settings.
+enum AuthCall {
+  /// `POST /auth/refresh`: 100 per address in 10 minutes, the allowance of
+  /// a sign-in. A player renews only when his access token runs out.
+  refresh,
+
+  /// `POST /auth/google`: 30 per address in 10 minutes, the allowance of a
+  /// sign-up (a first Google sign-in creates the account).
+  google,
+}
+
+final RateLimiter _refreshAddressLimiter = RateLimiter(
+  limit: 100,
+  window: const Duration(minutes: 10),
+);
+
+final RateLimiter _googleAddressLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(minutes: 10),
+);
+
+/// The `429` for a [call] from [address] over its share, or `null`. Without
+/// an address nothing is counted.
+Response? limitAuthCall(AuthCall call, {String? address}) {
+  if (address == null) {
+    return null;
+  }
+  final limiter = switch (call) {
+    AuthCall.refresh => _refreshAddressLimiter,
+    AuthCall.google => _googleAddressLimiter,
+  };
+  final wait = limiter.hit(address);
+  return wait == null ? null : tooManyRequests(wait);
 }
 
 /// Error reports one device may send (`POST /errors/report`, migration

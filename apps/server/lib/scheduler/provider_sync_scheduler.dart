@@ -51,6 +51,9 @@ void startProviderSyncScheduler(CompositionRoot root) {
       ];
       final report = await fixtures(now: now, riyadhDays: days, apply: apply);
       _report(tag, 'fixtures', report);
+      if (apply) {
+        await _askAdmins(root, 'provider-sync fixtures', report);
+      }
       if (report case Err<ProviderSyncReport>(:final error)) {
         await reportJobFailure(
           root,
@@ -77,6 +80,9 @@ void startProviderSyncScheduler(CompositionRoot root) {
     try {
       final report = await results(now: DateTime.now().toUtc(), apply: apply);
       _report(tag, 'results', report);
+      if (apply) {
+        await _askAdmins(root, 'provider-sync results', report);
+      }
       if (report case Err<ProviderSyncReport>(:final error)) {
         await reportJobFailure(
           root,
@@ -148,6 +154,27 @@ void startProviderSyncScheduler(CompositionRoot root) {
   Timer.periodic(providerResultsTick, (_) {
     unawaited(runResults());
   });
+}
+
+/// Keeps every match a run left for an admin in the error log, which tells
+/// the admins (audit C-03): before this they were lines in the container
+/// log nobody reads. Shadow runs only print them.
+Future<void> _askAdmins(
+  CompositionRoot root,
+  String job,
+  Result<ProviderSyncReport> result,
+) async {
+  if (result case Ok<ProviderSyncReport>(:final value)) {
+    for (final item in value.attention) {
+      await reportNeedsAdmin(
+        root,
+        job: job,
+        subject: item.match,
+        code: item.code,
+        message: item.message,
+      );
+    }
+  }
 }
 
 void _report(String tag, String job, Result<ProviderSyncReport> result) {

@@ -13,7 +13,8 @@ import 'package:shared/shared.dart';
 /// Trades the one-time code of the reset e-mail (`{"email", "code"}`) for
 /// the recovery token that `POST /auth/password-reset/update` takes, so a
 /// player resets the password inside the app instead of opening the web
-/// build from the e-mail's link. Five codes per address in 15 minutes.
+/// build from the e-mail's link. Five codes per address in 15 minutes, and
+/// 30 per network address whatever the e-mails (audit C-02).
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -63,7 +64,11 @@ Future<Response> _handle(
     );
   }
 
-  final limited = limitAuthAttempt(AuthAttempt.passwordResetCode, email);
+  final limited = limitAuthAttempt(
+    AuthAttempt.passwordResetCode,
+    email,
+    address: clientAddress(context.request.headers),
+  );
   if (limited != null) {
     return limited;
   }

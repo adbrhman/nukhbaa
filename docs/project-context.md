@@ -4818,6 +4818,43 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   out of the repo (public repo, open security findings); the owner
   attaches it. `docs/next-task.md` points to the plan. Docs only.
 
+- **Batch 137 (the audit's verification notes, 2026-10-14, audit C-03, M-37,
+  C-02)**: the re-check of the audit at 62f9bc2 (report section 0.3) found
+  three things the plan did not hold. C-03 -- a kickoff brought forward
+  that the fixtures sync saw only after the STORED kickoff passed was
+  dropped without a word, so predictions sent while the match was played
+  kept their points. An earlier kickoff never re-opens the lock, so it is
+  now followed at any time: `FollowProviderKickoff` (the kickoff logic,
+  moved out of `SyncProviderFixtures`) moves it (teams on file, same
+  monthly contest) and, when the fixture already has a result,
+  `RescoreEarlierKickoff` scores and posts it again through the rescore
+  sweep's `FixtureRescorer` (`ScoreFixture` gives the late predictions 0,
+  the ledger gets a correction, nobody is pushed twice). A kickoff put back
+  after the stored one passed still moves nothing. `SyncProviderResults`
+  asks the same follower just before it records a result, the last time
+  the provider's kickoff is seen: a change announced too late for the
+  12-hourly fixtures sync is caught there. The admin's correction
+  (`CorrectFixtureSchedule`) also takes an earlier kickoff after the
+  stored one passed and rescores (`competition.rescore_failed` if that
+  fails; the move stands); a later one is still
+  `competition.kickoff_frozen`. Every case left for an admin (teams not on
+  file, put back after the stored kickoff, another month, a failed move or
+  rescore, a postponed or cancelled match) is a `ProviderSyncAttention` in
+  the report, and the scheduler files each in the error log
+  (`reportNeedsAdmin`: critical, one entry per match and kind), so the
+  admins get a push the first time and «يحتاج تدخلك» counts it; shadow
+  runs only print. M-37 -- `publish_latest_apk` and Deploy Web run Release
+  Server's migration check (batch 124) before publishing; a missing
+  migration fails the job (apply it, then re-run the failed jobs). C-02 --
+  `/auth/refresh` (100 per network address in 10 min) and `/auth/google`
+  (30) are counted per address (`limitAuthCall`), and the reset code also
+  per address (30 in 15 min), since each spends the server's one GoTrue
+  quota; a 429 is transient in the app, so it never signs anyone out. IP
+  forwarding stays the owner's Supabase setting. The plan gains batch 137,
+  account (a)'s later batches move up by one (groups 138, decisions 147),
+  and the C-01 performance note (`f.season_id` in batch 120's two joins)
+  joins account (b)'s batch 201. No migration, no APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

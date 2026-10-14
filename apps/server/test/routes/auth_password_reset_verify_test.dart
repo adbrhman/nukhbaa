@@ -77,6 +77,7 @@ _MockRequestContext _wire(_CodeGateway gateway, Map<String, Object?> body) {
   final encoded = jsonEncode(body);
   final request = _MockRequest();
   when(() => request.method).thenReturn(HttpMethod.post);
+  when(() => request.headers).thenReturn(const <String, String>{});
   when(request.body).thenAnswer((_) async => encoded);
   when(
     request.bytes,

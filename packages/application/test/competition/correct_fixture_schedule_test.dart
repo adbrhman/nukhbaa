@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import '../admin/fakes.dart' show InMemoryAuditLogRepository;
 import '../prediction/fake_fixture_schedule_repository.dart';
+import '../scoring/fakes.dart' show FakeFixtureResultRepository;
 import 'fakes.dart';
 
 const _fixtureId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -28,7 +29,7 @@ FixtureSchedule _seeded({DateTime? kickoffAt}) {
   FakeFixtureScheduleRepository schedules,
   InMemoryAuditLogRepository audit,
 })
-_build(DateTime now) {
+_build(DateTime now, {RescoreEarlierKickoff? rescore}) {
   final schedules = FakeFixtureScheduleRepository();
   final audit = InMemoryAuditLogRepository();
   final useCase = CorrectFixtureSchedule(
@@ -39,6 +40,7 @@ _build(DateTime now) {
       clock: FixedClock(now),
     ),
     clock: FixedClock(now),
+    rescoreEarlierKickoff: rescore,
   );
   return (useCase: useCase, schedules: schedules, audit: audit);
 }
@@ -103,6 +105,103 @@ void main() {
         expect((result as Ok<FixtureSchedule>).value.homeTeam, 'Man United');
       },
     );
+  });
+
+  // Audit C-03: an earlier kickoff never re-opens the lock, so it is taken
+  // even after the stored one passed, and a scored fixture is scored again.
+  group('CorrectFixtureSchedule — a kickoff brought forward', () {
+    late FakeFixtureResultRepository results;
+    late List<String> rescored;
+    late Result<void> answer;
+
+    RescoreEarlierKickoff rescorer() => RescoreEarlierKickoff(
+      resultRepository: results,
+      rescore: ({required String fixtureId}) async {
+        rescored.add(fixtureId);
+        return answer;
+      },
+    );
+
+    setUp(() {
+      results = FakeFixtureResultRepository();
+      rescored = <String>[];
+      answer = const Result.ok(null);
+    });
+
+    Future<Result<FixtureSchedule>> bringForward(
+      CorrectFixtureSchedule useCase,
+    ) => useCase(
+      principal: adminPrincipal(_adminId),
+      fixtureId: _fixtureId,
+      homeTeam: 'Manchester United',
+      awayTeam: 'Manchester City',
+      kickoffAt: _kickoff.subtract(const Duration(hours: 1)),
+    );
+
+    test('is accepted after the stored kickoff passed', () async {
+      final setup = _build(
+        _kickoff.add(const Duration(hours: 2)),
+        rescore: rescorer(),
+      );
+      setup.schedules.seed(_seeded());
+
+      final result = await bringForward(setup.useCase);
+
+      expect(
+        (result as Ok<FixtureSchedule>).value.kickoffAt,
+        _kickoff.subtract(const Duration(hours: 1)),
+      );
+      expect(setup.audit.rows, hasLength(1));
+      expect(rescored, isEmpty, reason: 'no result yet: nothing to rescore');
+    });
+
+    test('scores the fixture again once its result is in', () async {
+      results.seed(
+        const FixtureResult.fromStored(
+          fixture: FixtureRef(_fixtureId),
+          homeGoals: 1,
+          awayGoals: 0,
+        ),
+      );
+      final setup = _build(
+        _kickoff.add(const Duration(hours: 3)),
+        rescore: rescorer(),
+      );
+      setup.schedules.seed(_seeded());
+
+      final result = await bringForward(setup.useCase);
+
+      expect(result, isA<Ok<FixtureSchedule>>());
+      expect(rescored, [_fixtureId]);
+    });
+
+    test('a rescore that fails says so, and the kickoff stays moved', () async {
+      results.seed(
+        const FixtureResult.fromStored(
+          fixture: FixtureRef(_fixtureId),
+          homeGoals: 1,
+          awayGoals: 0,
+        ),
+      );
+      answer = const Result.err(AppError.transient('db.timeout', 'timed out'));
+      final setup = _build(
+        _kickoff.add(const Duration(hours: 3)),
+        rescore: rescorer(),
+      );
+      setup.schedules.seed(_seeded());
+
+      final result = await bringForward(setup.useCase);
+
+      expect(
+        (result as Err<FixtureSchedule>).error.code,
+        'competition.rescore_failed',
+      );
+      final stored =
+          ((await setup.schedules.findByFixture(const FixtureRef(_fixtureId)))
+                  as Ok<FixtureSchedule?>)
+              .value!;
+      expect(stored.kickoffAt, _kickoff.subtract(const Duration(hours: 1)));
+    });
   });
 
   group('CorrectFixtureSchedule — the audit trace', () {

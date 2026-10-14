@@ -11,15 +11,25 @@ import 'package:test/test.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a
 // relative import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
+import '../../routes/auth/google/index.dart' as google_route;
+// ignore: always_use_package_imports
 import '../../routes/auth/login/index.dart' as login_route;
 // ignore: always_use_package_imports
 import '../../routes/auth/password-reset/request/index.dart' as reset_route;
+// ignore: always_use_package_imports
+import '../../routes/auth/password-reset/verify/index.dart' as code_route;
+// ignore: always_use_package_imports
+import '../../routes/auth/refresh/index.dart' as refresh_route;
 
 /// An [AuthGateway] that refuses every password but [_rightPassword] and
-/// accepts every reset request, counting how many calls reached it.
+/// accepts every reset request, renewal and Google sign-in, refuses every
+/// reset code, and counts how many calls reached it.
 final class _CountingGateway implements AuthGateway {
   int signIns = 0;
   int resets = 0;
+  int renewals = 0;
+  int googleSignIns = 0;
+  int codes = 0;
 
   @override
   Future<Result<IssuedSession>> signInWithPassword({
@@ -51,12 +61,18 @@ final class _CountingGateway implements AuthGateway {
   Future<Result<IssuedSession>> signInWithIdToken({
     required String provider,
     required String idToken,
-  }) => throw UnimplementedError();
+  }) async {
+    googleSignIns++;
+    return const Result.ok(_session);
+  }
 
   @override
   Future<Result<IssuedSession>> refreshSession({
     required String refreshToken,
-  }) => throw UnimplementedError();
+  }) async {
+    renewals++;
+    return const Result.ok(_session);
+  }
 
   @override
   Future<Result<IssuedSession>> signUpWithPassword({
@@ -75,10 +91,21 @@ final class _CountingGateway implements AuthGateway {
   Future<Result<String>> verifyRecoveryCode({
     required String email,
     required String code,
-  }) => throw UnimplementedError();
+  }) async {
+    codes++;
+    return const Result.err(
+      AppError.validation('auth.recovery_code_invalid', 'wrong'),
+    );
+  }
 }
 
 const String _rightPassword = 'right-password';
+
+const IssuedSession _session = IssuedSession(
+  accessToken: 'jwt',
+  refreshToken: 'refresh',
+  emailConfirmationRequired: false,
+);
 
 class _MockRequestContext extends Mock implements RequestContext {}
 
@@ -93,6 +120,9 @@ _MockRequestContext _wire(
     CompositionRoot.forTesting(
       login: LoginWithPassword(gateway),
       requestPasswordReset: RequestPasswordReset(gateway),
+      refreshSession: RefreshSession(gateway),
+      signInWithGoogle: SignInWithGoogle(gateway),
+      verifyRecoveryCode: VerifyRecoveryCode(gateway),
     ),
   );
   final encoded = jsonEncode(body);
@@ -219,6 +249,29 @@ void main() {
       expect((await from('198.51.100.3')).statusCode, HttpStatus.ok);
     });
 
+    test('one network trying many reset codes is bounded', () async {
+      final gateway = _CountingGateway();
+      Response? last;
+      for (var i = 0; i < 31; i++) {
+        last = await code_route.onRequest(
+          _wire(gateway, {
+            'email': 'code$i@example.com',
+            'code': '123456',
+          }, address: '203.0.113.31'),
+        );
+      }
+      expect(last!.statusCode, HttpStatus.tooManyRequests);
+      expect(gateway.codes, 30);
+
+      final elsewhere = await code_route.onRequest(
+        _wire(gateway, {
+          'email': 'code0@example.com',
+          'code': '123456',
+        }, address: '198.51.100.31'),
+      );
+      expect(elsewhere.statusCode, HttpStatus.badRequest);
+    });
+
     test('one network trying many accounts is still bounded', () async {
       final gateway = _CountingGateway();
       Response? last;
@@ -232,6 +285,61 @@ void main() {
       }
       expect(last!.statusCode, HttpStatus.tooManyRequests);
       expect(gateway.signIns, 100);
+    });
+  });
+
+  // Audit C-02: every renewal and Google sign-in spends this server's one
+  // GoTrue quota, so one network address gets a share of it.
+  group('calls that name no account are counted per address', () {
+    test('the 101st renewal from one address within 10 minutes is refused '
+        'before it reaches Supabase', () async {
+      final gateway = _CountingGateway();
+      Future<Response> renew(String address) => refresh_route.onRequest(
+        _wire(gateway, {'refresh_token': 'made-up'}, address: address),
+      );
+
+      for (var i = 0; i < 100; i++) {
+        expect((await renew('203.0.113.40')).statusCode, HttpStatus.ok);
+      }
+      final refused = await renew('203.0.113.40');
+
+      expect(refused.statusCode, HttpStatus.tooManyRequests);
+      expect(refused.headers[HttpHeaders.retryAfterHeader], isNotNull);
+      expect(await _codeOf(refused), 'request.rate_limited');
+      expect(gateway.renewals, 100);
+
+      // Another network renews as before.
+      expect((await renew('198.51.100.40')).statusCode, HttpStatus.ok);
+      expect(gateway.renewals, 101);
+    });
+
+    test('the 31st Google sign-in from one address within 10 minutes is '
+        'refused', () async {
+      final gateway = _CountingGateway();
+      Future<Response> google(String address) => google_route.onRequest(
+        _wire(gateway, {'id_token': 'made-up'}, address: address),
+      );
+
+      for (var i = 0; i < 30; i++) {
+        expect((await google('203.0.113.41')).statusCode, HttpStatus.ok);
+      }
+      final refused = await google('203.0.113.41');
+
+      expect(refused.statusCode, HttpStatus.tooManyRequests);
+      expect(await _codeOf(refused), 'request.rate_limited');
+      expect(gateway.googleSignIns, 30);
+      expect((await google('198.51.100.41')).statusCode, HttpStatus.ok);
+    });
+
+    test('a request with no address is not counted', () async {
+      final gateway = _CountingGateway();
+      for (var i = 0; i < 101; i++) {
+        final response = await refresh_route.onRequest(
+          _wire(gateway, {'refresh_token': 'made-up'}),
+        );
+        expect(response.statusCode, HttpStatus.ok);
+      }
+      expect(gateway.renewals, 101);
     });
   });
 }

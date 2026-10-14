@@ -7,6 +7,7 @@ import '../competition/fake_competition_repository.dart';
 import '../competition/fakes.dart' show FakeIdGenerator;
 import '../prediction/fake_fixture_prediction_repository.dart';
 import '../prediction/fake_fixture_schedule_repository.dart';
+import '../scoring/fakes.dart' show FakeFixtureResultRepository;
 import 'fakes.dart';
 
 const _pl = 'a1000000-0000-0000-0000-000000000001';
@@ -58,6 +59,9 @@ void main() {
   late FakeFixtureScheduleRepository schedules;
   late FakeFixturePredictionRepository links;
   late SyncProviderFixtures sync;
+  late FakeFixtureResultRepository results;
+  late List<String> rescored;
+  late Result<void> rescoreAnswer;
 
   setUp(() {
     provider = FakeFootballDataProvider();
@@ -68,6 +72,9 @@ void main() {
       ..seed('team', 'get', _getafe);
     schedules = FakeFixtureScheduleRepository();
     links = FakeFixturePredictionRepository();
+    results = FakeFixtureResultRepository();
+    rescored = <String>[];
+    rescoreAnswer = const Result.ok(null);
     final competitions = FakeCompetitionRepository()
       ..seedSeason(
         CompetitionSeason.fromStored(
@@ -113,6 +120,15 @@ void main() {
       fixturePredictionRepository: links,
       idGenerator: FakeIdGenerator(const [_newFixture]),
       rules: _rules,
+      // A fixture is scored again through this when its kickoff comes
+      // earlier after its result (C-03); `results` starts empty.
+      rescoreEarlierKickoff: RescoreEarlierKickoff(
+        resultRepository: results,
+        rescore: ({required String fixtureId}) async {
+          rescored.add(fixtureId);
+          return rescoreAnswer;
+        },
+      ),
     );
   });
 
@@ -446,8 +462,156 @@ void main() {
       expect(report.alreadyKnown, 1);
       expect(report.applied, 0);
       expect(report.notes.single, startsWith('moved kickoff'));
+      expect(report.attention, isEmpty);
+      expect(await storedKickoff(), earlier);
+      expect(rescored, isEmpty, reason: 'no result yet: nothing to rescore');
+    });
+
+    test(
+      'a kickoff brought forward is moved even after the stored one passed',
+      () async {
+        // Seen only once the stored kickoff had passed: the match started
+        // three hours earlier and is being played. Earlier never re-opens
+        // the lock, so it moves (C-03).
+        final now = _kickoff.add(const Duration(minutes: 30));
+        final earlier = _kickoff.subtract(const Duration(hours: 3));
+        provider.answer('PL', riyadhDayOf(earlier), [
+          providerMatch(
+            id: 'm1',
+            league: 'PL',
+            home: 'ars',
+            away: 'che',
+            kickoff: earlier,
+            status: ProviderMatchStatus.live,
+          ),
+        ]);
+
+        final report =
+            ((await sync.call(
+                      now: now,
+                      riyadhDays: [riyadhDayOf(earlier)],
+                      apply: true,
+                    ))
+                    as Ok<ProviderSyncReport>)
+                .value;
+
+        expect(report.notes.single, startsWith('moved kickoff: '));
+        expect(report.attention, isEmpty);
+        expect(await storedKickoff(), earlier);
+        expect(rescored, isEmpty, reason: 'no result yet');
+      },
+    );
+
+    test('a fixture already scored is scored again when its kickoff comes '
+        'earlier', () async {
+      results.seed(
+        const FixtureResult.fromStored(
+          fixture: FixtureRef(known),
+          homeGoals: 2,
+          awayGoals: 1,
+        ),
+      );
+      final now = _kickoff.add(const Duration(hours: 2));
+      final earlier = _kickoff.subtract(const Duration(hours: 3));
+      provider.answer('PL', riyadhDayOf(earlier), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: earlier,
+          status: ProviderMatchStatus.finished,
+          homeGoals: 2,
+          awayGoals: 1,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: now,
+                    riyadhDays: [riyadhDayOf(earlier)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.notes.single, startsWith('moved kickoff and rescored'));
+      expect(rescored, [known]);
       expect(await storedKickoff(), earlier);
     });
+
+    test('a rescore that fails is left for an admin', () async {
+      results.seed(
+        const FixtureResult.fromStored(
+          fixture: FixtureRef(known),
+          homeGoals: 0,
+          awayGoals: 0,
+        ),
+      );
+      rescoreAnswer = const Result.err(
+        AppError.transient('db.timeout', 'timed out'),
+      );
+      final now = _kickoff.add(const Duration(hours: 2));
+      final earlier = _kickoff.subtract(const Duration(hours: 3));
+      provider.answer('PL', riyadhDayOf(earlier), [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'ars',
+          away: 'che',
+          kickoff: earlier,
+          status: ProviderMatchStatus.finished,
+          homeGoals: 0,
+          awayGoals: 0,
+        ),
+      ]);
+
+      final report =
+          ((await sync.call(
+                    now: now,
+                    riyadhDays: [riyadhDayOf(earlier)],
+                    apply: true,
+                  ))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(report.notes.single, startsWith('moved kickoff, rescore failed'));
+      expect(report.attention.single.code, 'provider_sync.rescore_failed');
+      expect(report.attention.single.match, 'أرسنال - تشيلسي');
+      expect(report.attention.single.message, contains('احتساب المباراة'));
+      expect(await storedKickoff(), earlier, reason: 'the move stands');
+    });
+
+    test(
+      'a played match a few minutes later than stored is left alone',
+      () async {
+        final now = _kickoff.add(const Duration(minutes: 30));
+        final later = _kickoff.add(const Duration(minutes: 5));
+        provider.answer('PL', riyadhDayOf(later), [
+          providerMatch(
+            id: 'm1',
+            league: 'PL',
+            home: 'ars',
+            away: 'che',
+            kickoff: later,
+            status: ProviderMatchStatus.live,
+          ),
+        ]);
+
+        final report =
+            ((await sync.call(
+                      now: now,
+                      riyadhDays: [riyadhDayOf(later)],
+                      apply: true,
+                    ))
+                    as Ok<ProviderSyncReport>)
+                .value;
+
+        expect(report.notes, isEmpty);
+        expect(report.attention, isEmpty);
+        expect(await storedKickoff(), _kickoff);
+      },
+    );
 
     test(
       'a match that started before its stored kickoff locks at once',
@@ -500,6 +664,7 @@ void main() {
               .value;
 
       expect(report.notes.single, startsWith('would move kickoff'));
+      expect(report.attention, isEmpty);
       expect(await storedKickoff(), _kickoff);
     });
 
@@ -526,6 +691,11 @@ void main() {
               .value;
 
       expect(report.notes.single, contains('needs admin'));
+      // Not only a log line: the scheduler files it for the admins.
+      final asked = report.attention.single;
+      expect(asked.code, 'provider_sync.kickoff_put_back_late');
+      expect(asked.match, 'أرسنال - تشيلسي');
+      expect(asked.message, startsWith('«أرسنال - تشيلسي»'));
       expect(await storedKickoff(), _kickoff);
     });
 
@@ -551,6 +721,7 @@ void main() {
               .value;
 
       expect(report.notes.single, contains('another month'));
+      expect(report.attention.single.code, 'provider_sync.kickoff_other_month');
       expect(await storedKickoff(), _kickoff);
     });
 
@@ -578,6 +749,10 @@ void main() {
                 .value;
 
         expect(report.notes.single, contains('not the ones on file'));
+        expect(
+          report.attention.single.code,
+          'provider_sync.kickoff_teams_differ',
+        );
         expect(await storedKickoff(), _kickoff);
       },
     );
@@ -600,6 +775,7 @@ void main() {
 
       expect(report.alreadyKnown, 1);
       expect(report.notes, isEmpty);
+      expect(report.attention, isEmpty);
     });
   });
 

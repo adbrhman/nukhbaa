@@ -1,3 +1,4 @@
+import 'package:application/src/football_data/follow_provider_kickoff.dart';
 import 'package:application/src/football_data/ports/football_data_provider.dart';
 import 'package:application/src/football_data/ports/league_repository.dart';
 import 'package:application/src/football_data/ports/provider_sync_store.dart';
@@ -23,8 +24,15 @@ typedef ProviderResultRecorder =
 /// of the provider while no added match can have ended. Fixtures are grouped
 /// by provider competition and Riyadh day, one provider call per group, at
 /// most [maxCallsPerRun] per run. A postponed or cancelled match is never
-/// given a result; it is logged for an admin. Results the admin already
-/// entered are never touched (such fixtures are not pending).
+/// given a result; it is left for an admin, in the report's `attention`.
+/// Results the admin already entered are never touched (such fixtures are
+/// not pending).
+///
+/// Just before a result is recorded, the provider's kickoff is compared with
+/// the stored one ([FollowProviderKickoff], audit C-03): a kickoff brought
+/// forward that the fixtures sync never saw (announced late) moves then, so
+/// the result is scored from the real kickoff and a prediction sent after it
+/// earns nothing.
 ///
 /// A finished score is not recorded the first time a provider reports it: a
 /// provider can flip a match to finished with a score it corrects a little
@@ -42,6 +50,7 @@ final class SyncProviderResults {
     required LeagueRepository leagueRepository,
     required List<ProviderLeagueRule> rules,
     required ProviderResultRecorder recorder,
+    FollowProviderKickoff? kickoffFollower,
     this.settleTime = const Duration(minutes: 90),
     this.confirmAfter = const Duration(minutes: 15),
     this.lookback = const Duration(hours: 6),
@@ -50,13 +59,18 @@ final class SyncProviderResults {
        _store = store,
        _leagues = leagueRepository,
        _rules = rules,
-       _recorder = recorder;
+       _recorder = recorder,
+       _kickoffs = kickoffFollower;
 
   final Map<String, FootballDataProvider> _providers;
   final ProviderSyncStore _store;
   final LeagueRepository _leagues;
   final List<ProviderLeagueRule> _rules;
   final ProviderResultRecorder _recorder;
+
+  /// Moves a kickoff brought forward before the result is recorded; null in
+  /// tests that do not look at it, where kickoffs are not compared.
+  final FollowProviderKickoff? _kickoffs;
 
   /// How long after kickoff a match is first looked up.
   final Duration settleTime;
@@ -141,6 +155,7 @@ final class SyncProviderResults {
     // A fixture linked to a provider that does not serve its competition is
     // left to the provider that does.
     final notes = <String>[];
+    final attention = <ProviderSyncAttention>[];
     final groups = <String, List<PendingProviderFixture>>{};
     final groupRule = <String, ProviderLeagueRule>{};
     final groupDay = <String, DateTime>{};
@@ -220,6 +235,26 @@ final class SyncProviderResults {
               'needs admin (${match.status.name}): ${match.homeTeamName} - '
               '${match.awayTeamName}, fixture ${fixture.fixtureId}',
             );
+            // Kept in the error log by the scheduler, which tells the admins.
+            final game = '${match.homeTeamName} - ${match.awayTeamName}';
+            attention.add(
+              match.status == ProviderMatchStatus.postponed
+                  ? ProviderSyncAttention(
+                      code: 'provider_sync.match_postponed',
+                      match: game,
+                      message:
+                          '«$game»: المزوّد يقول إنها مؤجّلة، فلن تُسجَّل '
+                          'نتيجتها آلياً. سجّل نتيجتها بنفسك إن لُعبت، أو '
+                          'أخفِها.',
+                    )
+                  : ProviderSyncAttention(
+                      code: 'provider_sync.match_cancelled',
+                      match: game,
+                      message:
+                          '«$game»: المزوّد يقول إنها أُلغيت، فلن تُسجَّل '
+                          'لها نتيجة. أخفِها لتخرج من الترتيب.',
+                    ),
+            );
             continue;
           case ProviderMatchStatus.scheduled:
           case ProviderMatchStatus.live:
@@ -267,6 +302,39 @@ final class SyncProviderResults {
           }
           continue;
         }
+        // The last look at this match before its result is recorded: a
+        // kickoff brought forward that the fixtures sync never saw moves now,
+        // so the result is scored from the real kickoff (C-03).
+        final kickoffs = _kickoffs;
+        if (kickoffs != null &&
+            match.kickoffAt
+                    .toUtc()
+                    .difference(fixture.kickoffAt.toUtc())
+                    .abs() >=
+                kickoffs.kickoffTolerance) {
+          final teamIds = await _store.canonicalIds(
+            source: rule.source,
+            table: 'team',
+            externalIds: [match.homeTeamExternalId, match.awayTeamExternalId],
+          );
+          if (teamIds is Err<Map<String, String>>) {
+            notes.add('kickoff check failed (${teamIds.error.code}): $label');
+          } else {
+            final ids = (teamIds as Ok<Map<String, String>>).value;
+            final followed = await kickoffs(
+              fixtureId: fixture.fixtureId,
+              match: match,
+              homeTeamId: ids[match.homeTeamExternalId],
+              awayTeamId: ids[match.awayTeamExternalId],
+              nowUtc: nowUtc,
+              apply: apply,
+              attention: attention,
+            );
+            if (followed != null) {
+              notes.add(followed);
+            }
+          }
+        }
         if (!apply) {
           applied++;
           recordedIds.add(fixture.fixtureId);
@@ -296,6 +364,7 @@ final class SyncProviderResults {
         alreadyKnown: waiting,
         skipped: skipped,
         notes: notes,
+        attention: attention,
       ),
     );
   }

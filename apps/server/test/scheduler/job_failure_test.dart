@@ -89,6 +89,36 @@ void main() {
     expect(kept.stack, isNotEmpty);
   });
 
+  // Audit C-03: a match the sync left for an admin is an error-log entry
+  // of its own, so the admins are told the first time it is seen.
+  test('a matter left for an admin is kept per match, as critical', () async {
+    final log = _MemoryErrorLog();
+    final root = _root(log);
+
+    Future<void> ask(String subject) => reportNeedsAdmin(
+      root,
+      job: 'provider-sync fixtures',
+      subject: subject,
+      code: 'provider_sync.kickoff_put_back_late',
+      message: '«$subject»: تأخّر موعدها',
+    );
+    await ask('أرسنال - تشيلسي');
+    await ask('أرسنال - تشيلسي');
+    await ask('الهلال - النصر');
+
+    expect(log.kept, hasLength(3));
+    final first = log.kept.first;
+    expect(first.severity, ErrorSeverity.critical);
+    expect(first.errorCode, 'provider_sync.kickoff_put_back_late');
+    expect(first.route, 'job provider-sync fixtures: أرسنال - تشيلسي');
+    expect(first.message, startsWith('«أرسنال - تشيلسي»'));
+    expect(
+      log.kept.map((o) => o.fingerprint).toSet(),
+      hasLength(2),
+      reason: 'one entry per match, however many runs see it',
+    );
+  });
+
   test('without a recorder a failure is only printed', () async {
     await reportJobFailure(
       CompositionRoot.forTesting(),

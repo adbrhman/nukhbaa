@@ -2,6 +2,7 @@ import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/scoring/rescore_earlier_kickoff.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -15,13 +16,19 @@ import 'package:shared/shared.dart';
 /// pushed the kickoff of a match that had already been played into the future
 /// would re-open the lock on a fixture whose result is public knowledge.
 ///
-/// **The freeze rule.** The kickoff may be changed only while the *stored*
-/// kickoff is still in the future. Once it has passed, the time is frozen for
-/// good and a change is refused as `competition.kickoff_frozen`. A genuine
-/// data-entry mistake is still fixable right up to the moment the match
-/// starts; a retroactive re-opening is impossible. Every other field stays
-/// correctable at any time — a misspelt team name carries no competitive
-/// consequence.
+/// **The freeze rule.** The kickoff may be put back only while the *stored*
+/// kickoff is still in the future. Once it has passed, a later time is
+/// refused as `competition.kickoff_frozen`. A genuine data-entry mistake is
+/// still fixable right up to the moment the match starts; a retroactive
+/// re-opening is impossible. Every other field stays correctable at any
+/// time — a misspelt team name carries no competitive consequence.
+///
+/// **Brought forward (audit C-03).** An earlier kickoff never re-opens the
+/// lock, so it is accepted even after the stored one passed: a match that
+/// really started earlier than stored is then locked from its real kickoff,
+/// and `ScoreFixture` gives nothing to a prediction sent after it. A fixture
+/// already scored is scored again ([RescoreEarlierKickoff]); if that fails,
+/// the kickoff stays moved and the admin is told to score it again.
 ///
 /// **The audit trace.** Every correction records an immutable
 /// [AuditAction.fixtureScheduleCorrected] entry naming the actor, the fixture,
@@ -34,12 +41,18 @@ final class CorrectFixtureSchedule {
     this._repository, {
     required AuditRecorder auditRecorder,
     required Clock clock,
+    RescoreEarlierKickoff? rescoreEarlierKickoff,
   }) : _audit = auditRecorder,
-       _clock = clock;
+       _clock = clock,
+       _rescore = rescoreEarlierKickoff;
 
   final FixtureScheduleRepository _repository;
   final AuditRecorder _audit;
   final Clock _clock;
+
+  /// Scores the fixture again when its kickoff is brought forward; null in
+  /// the test roots, where nothing is scored again.
+  final RescoreEarlierKickoff? _rescore;
 
   /// Corrects fixture [fixtureId] on behalf of admin [principal].
   Future<Result<FixtureSchedule>> call({
@@ -90,8 +103,14 @@ final class CorrectFixtureSchedule {
     final bool kickoffMoved =
         previousKickoff != null &&
         !previousKickoff.isAtSameMomentAs(nextKickoff);
+    // Earlier never re-opens the lock (C-03): only a later kickoff freezes.
+    final bool broughtForward =
+        previousKickoff != null && nextKickoff.isBefore(previousKickoff);
 
-    if (kickoffMoved && !previousKickoff.isAfter(_clock.nowUtc())) {
+    if (previousKickoff != null &&
+        kickoffMoved &&
+        !broughtForward &&
+        !previousKickoff.isAfter(_clock.nowUtc())) {
       return Result.err(
         AppError.invariant(
           'competition.kickoff_frozen',
@@ -129,6 +148,23 @@ final class CorrectFixtureSchedule {
     );
     if (audit is Err<AuditEntry>) {
       return Result.err(audit.error);
+    }
+
+    // A prediction sent between the new kickoff and the old one is late now:
+    // a fixture already scored is scored again.
+    final rescore = _rescore;
+    if (broughtForward && rescore != null) {
+      final rescored = await rescore(fixture);
+      if (rescored is Err<bool>) {
+        return Result.err(
+          AppError.transient(
+            'competition.rescore_failed',
+            'قُدّم الموعد، لكن تعذّرت إعادة احتساب المباراة. اضغط «احتساب '
+                'المباراة» لها في «النتائج والاحتساب».',
+            rescored.error,
+          ),
+        );
+      }
     }
 
     return Result.ok(schedule);

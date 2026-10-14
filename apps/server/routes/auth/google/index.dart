@@ -3,7 +3,8 @@
 /// Public like /auth/login. The device's Google account picker mints the ID
 /// token for the project's Web OAuth client; Supabase Auth verifies it,
 /// creates the account on first use and links it to an existing account
-/// with the same verified email.
+/// with the same verified email. One network address may try 30 times in 10
+/// minutes (audit C-02, `AuthCall.google`).
 library;
 
 import 'dart:io';
@@ -14,6 +15,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -35,6 +37,15 @@ Future<Response> _handle(
   final tokenResult = requireString(body, 'id_token');
   if (tokenResult is Err<String>) {
     return errorResponse(tokenResult.error);
+  }
+
+  // Every Google sign-in spends this server's one GoTrue quota (audit C-02).
+  final limited = limitAuthCall(
+    AuthCall.google,
+    address: clientAddress(context.request.headers),
+  );
+  if (limited != null) {
+    return limited;
   }
 
   final root = await context.read<Future<CompositionRoot>>();

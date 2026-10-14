@@ -3,6 +3,8 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
+import '../competition/fake_competition_repository.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
 import 'fakes.dart';
 
 const _pl = 'a1000000-0000-0000-0000-000000000001';
@@ -150,6 +152,30 @@ void main() {
 
     expect(recorded, isEmpty);
     expect(report.notes.first, startsWith('needs admin (postponed)'));
+    // Not only a log line: the scheduler files it for the admins.
+    expect(report.attention.single.code, 'provider_sync.match_postponed');
+    expect(report.attention.single.match, 'home-a - away-b');
+  });
+
+  test('a cancelled match is left for an admin', () async {
+    provider.answer('PL', _day, [
+      providerMatch(
+        id: 'm1',
+        league: 'PL',
+        home: 'a',
+        away: 'b',
+        kickoff: _kickoff,
+        status: ProviderMatchStatus.cancelled,
+      ),
+    ]);
+
+    final report =
+        ((await sync.call(now: _now, apply: true)) as Ok<ProviderSyncReport>)
+            .value;
+
+    expect(recorded, isEmpty);
+    expect(report.attention.single.code, 'provider_sync.match_cancelled');
+    expect(report.attention.single.message, contains('أخفِها'));
   });
 
   test('nothing is fetched before a match can have ended', () async {
@@ -285,6 +311,174 @@ void main() {
 
       await runAt(use, const Duration(minutes: 35));
       expect(recorded, [(fixtureId: _f1, home: 1, away: 0)]);
+    });
+  });
+
+  // C-03: a kickoff brought forward and announced too late for the fixtures
+  // sync is seen here, the last time before the result is recorded.
+  group('a kickoff brought forward is followed before the result', () {
+    const arsenal = 'b1000000-0000-0000-0000-000000000001';
+    const chelsea = 'b1000000-0000-0000-0000-000000000002';
+    const september = 'd1000000-0000-0000-0000-000000000009';
+    const competition = 'c1000000-0000-0000-0000-000000000001';
+    late FakeFixtureScheduleRepository schedules;
+    late List<DateTime> kickoffWhenRecorded;
+    late SyncProviderResults following;
+
+    setUp(() {
+      store
+        ..seed('team', 'a', arsenal)
+        ..seed('team', 'b', chelsea);
+      schedules = FakeFixtureScheduleRepository()
+        ..seed(
+          (FixtureSchedule.create(
+                    fixture: const FixtureRef(_f1),
+                    homeTeam: 'أرسنال',
+                    awayTeam: 'تشيلسي',
+                    kickoffAt: _kickoff,
+                    homeTeamId: const TeamRef(arsenal),
+                    awayTeamId: const TeamRef(chelsea),
+                    leagueId: const LeagueRef(_pl),
+                  )
+                  as Ok<FixtureSchedule>)
+              .value,
+        );
+      final competitions = FakeCompetitionRepository()
+        ..seedSeason(
+          CompetitionSeason.fromStored(
+            id: const SeasonId(september),
+            competitionId: const CompetitionId(competition),
+            label: '09/2026',
+            startAt: DateTime.utc(2026, 9),
+            endAt: DateTime.utc(2026, 10),
+          ),
+        );
+      kickoffWhenRecorded = <DateTime>[];
+      following = SyncProviderResults(
+        providers: {'highlightly': provider},
+        store: store,
+        leagueRepository: FakeLeagueRepository(const [
+          League(
+            id: LeagueRef(_pl),
+            name: 'الإنجليزي',
+            shortName: null,
+            logoUrl: null,
+          ),
+        ]),
+        rules: const [
+          ProviderLeagueRule(
+            source: 'highlightly',
+            externalLeagueId: 'PL',
+            leagueName: 'الإنجليزي',
+          ),
+        ],
+        confirmAfter: Duration.zero,
+        kickoffFollower: FollowProviderKickoff(
+          fixtureScheduleRepository: schedules,
+          competitionRepository: competitions,
+        ),
+        recorder:
+            ({
+              required String fixtureId,
+              required int homeGoals,
+              required int awayGoals,
+            }) async {
+              final stored = await schedules.findByFixture(
+                FixtureRef(fixtureId),
+              );
+              kickoffWhenRecorded.add(
+                (stored as Ok<FixtureSchedule?>).value!.kickoffAt,
+              );
+              recorded.add((
+                fixtureId: fixtureId,
+                home: homeGoals,
+                away: awayGoals,
+              ));
+              return const Result.ok(null);
+            },
+      );
+    });
+
+    test('the kickoff moves before the result is recorded', () async {
+      final earlier = _kickoff.subtract(const Duration(hours: 3));
+      provider.answer('PL', _day, [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'a',
+          away: 'b',
+          kickoff: earlier,
+          status: ProviderMatchStatus.finished,
+          homeGoals: 2,
+          awayGoals: 0,
+        ),
+      ]);
+
+      final report =
+          ((await following.call(now: _now, apply: true))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(recorded, [(fixtureId: _f1, home: 2, away: 0)]);
+      expect(kickoffWhenRecorded, [
+        earlier,
+      ], reason: 'ScoreFixture grades from the real kickoff');
+      expect(report.notes, contains(startsWith('moved kickoff')));
+      expect(report.attention, isEmpty);
+    });
+
+    test(
+      'a kickoff within a minute of the stored one is not looked up',
+      () async {
+        provider.answer('PL', _day, [
+          providerMatch(
+            id: 'm1',
+            league: 'PL',
+            home: 'a',
+            away: 'b',
+            kickoff: _kickoff.add(const Duration(seconds: 30)),
+            status: ProviderMatchStatus.finished,
+            homeGoals: 1,
+            awayGoals: 1,
+          ),
+        ]);
+
+        final report =
+            ((await following.call(now: _now, apply: true))
+                    as Ok<ProviderSyncReport>)
+                .value;
+
+        expect(kickoffWhenRecorded, [_kickoff]);
+        expect(report.notes.where((n) => n.contains('kickoff')), isEmpty);
+      },
+    );
+
+    test('a match whose teams are not on file is recorded and left for an '
+        'admin', () async {
+      final earlier = _kickoff.subtract(const Duration(hours: 3));
+      provider.answer('PL', _day, [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'a',
+          away: 'zzz',
+          kickoff: earlier,
+          status: ProviderMatchStatus.finished,
+          homeGoals: 1,
+          awayGoals: 0,
+        ),
+      ]);
+
+      final report =
+          ((await following.call(now: _now, apply: true))
+                  as Ok<ProviderSyncReport>)
+              .value;
+
+      expect(kickoffWhenRecorded, [_kickoff]);
+      expect(
+        report.attention.single.code,
+        'provider_sync.kickoff_teams_differ',
+      );
     });
   });
 }

@@ -49,3 +49,33 @@ Future<void> reportJobFailure(
     ),
   );
 }
+
+/// Keeps a matter a scheduled job left for an admin in the error log (audit
+/// C-03): a match whose provider data the sync could not apply by itself.
+///
+/// It is filed as critical under the job and its [subject] (the match), so
+/// each matter is an entry of its own: the admins are pushed the first time
+/// it is seen (`AlertAdminsOfError`), and the home page's «يحتاج تدخلك»
+/// counts it until it is handled. The same matter seen on a later run only
+/// adds to its counter. [code] says what kind of matter it is; [message]
+/// says, in Arabic, what happened and what to do.
+///
+/// Never throws (see [keepErrorReport]).
+Future<void> reportNeedsAdmin(
+  CompositionRoot root, {
+  required String job,
+  required String subject,
+  required String code,
+  required String message,
+}) => keepErrorReport(
+  () async => root.recordError,
+  ErrorReport(
+    source: 'server',
+    errorType: 'NeedsAdmin',
+    errorCode: code,
+    message: message,
+    route: 'job $job: $subject',
+    severity: ErrorSeverity.critical,
+    build: serverBuild(Platform.environment),
+  ),
+);

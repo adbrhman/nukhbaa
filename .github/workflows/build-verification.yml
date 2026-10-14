@@ -805,6 +805,42 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v4
+
+      # The check Release Server runs before it moves the server (batch 124),
+      # here too (audit M-37, batch 137): an APK published while the live
+      # database lacks a migration of its commit reaches players beside a
+      # server still waiting for it (it happened with batch 130). Read-only,
+      # the same SELECT. Apply the migration in the SQL Editor, then re-run
+      # the failed jobs: the APK, the web build and the server follow.
+      - name: Live database has every migration of this commit
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::the SUPABASE_DB_URL secret is required: APK not published"
+            exit 1
+          fi
+          for f in supabase/migrations/*.sql; do
+            basename "$f" .sql
+          done | sort > "$RUNNER_TEMP/repo-migrations.txt"
+          if ! docker run --rm -e SUPABASE_DB_URL postgres:17-alpine \
+               sh -c 'psql "$SUPABASE_DB_URL" -X -q -tA -v ON_ERROR_STOP=1 -c "select version from ops.applied_migrations"' \
+               > "$RUNNER_TEMP/live-migrations.txt"; then
+            echo "::error::could not read ops.applied_migrations: APK not published"
+            exit 1
+          fi
+          sort -o "$RUNNER_TEMP/live-migrations.txt" "$RUNNER_TEMP/live-migrations.txt"
+          missing="$(comm -23 "$RUNNER_TEMP/repo-migrations.txt" "$RUNNER_TEMP/live-migrations.txt")"
+          if [ -n "$missing" ]; then
+            echo "::error::the live database lacks $(echo "$missing" | wc -l) migration(s) of $SHORT_SHA: APK not published. Apply them in the SQL Editor, then re-run the failed jobs of this run:"
+            echo "$missing"
+            exit 1
+          fi
+          echo "the live database has all $(wc -l < "$RUNNER_TEMP/repo-migrations.txt") migrations of $SHORT_SHA"
+
       - uses: actions/download-artifact@v4
         with:
           name: nukhba-android-apk

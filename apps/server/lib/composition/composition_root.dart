@@ -2762,6 +2762,37 @@ final class CompositionRoot {
     final liveScoreBoard = InMemoryLiveScoreBoard();
     RefreshLiveScores? refreshLiveScores;
     late final CompositionRoot root;
+    // Scores one fixture again and posts it to the ledger as the service
+    // principal: the same two steps every result recorder runs after the
+    // write, both idempotent. The rescore sweep uses it, and so does a
+    // kickoff brought forward on a fixture already scored (C-03), which turns
+    // the predictions sent in between into late ones.
+    Future<Result<void>> rescoreFixture({required String fixtureId}) async {
+      const principal = AuthenticatedUser(
+        userId: UserId(_providerSyncUserId),
+        role: PlatformRole.service,
+      );
+      final scored = await root.scoreFixture(
+        principal: principal,
+        fixtureId: fixtureId,
+      );
+      if (scored is Err<List<ParticipantFixtureScore>>) {
+        return Result.err(scored.error);
+      }
+      final posted = await root.postFixtureToLedger(
+        principal: principal,
+        fixtureId: fixtureId,
+      );
+      if (posted is Err<List<FixturePointEntry>>) {
+        return Result.err(posted.error);
+      }
+      return const Result.ok(null);
+    }
+
+    final rescoreEarlierKickoff = RescoreEarlierKickoff(
+      resultRepository: fixtureResultRepository,
+      rescore: rescoreFixture,
+    );
     SyncProviderFixtures? syncProviderFixtures;
     SyncProviderResults? syncProviderResults;
     if (providerSyncMode != ProviderSyncMode.off) {
@@ -2784,6 +2815,7 @@ final class CompositionRoot {
         // Highlightly allows 100 requests a day and they are wanted for
         // results; two days of schedules still sees every day twice.
         daysBySource: const <String, int>{highlightlySource: 2},
+        rescoreEarlierKickoff: rescoreEarlierKickoff,
       );
       refreshLiveScores = RefreshLiveScores(
         providers: providers,
@@ -2799,6 +2831,14 @@ final class CompositionRoot {
         store: syncStore,
         leagueRepository: syncLeagues,
         rules: phaseOneRules,
+        // The last look at a match before its result is recorded: a kickoff
+        // brought forward that the fixtures sync never saw moves here, so
+        // ScoreFixture grades from the real one (C-03).
+        kickoffFollower: FollowProviderKickoff(
+          fixtureScheduleRepository: fixtureScheduleRepository,
+          competitionRepository: competitionRepository,
+          rescoreEarlierKickoff: rescoreEarlierKickoff,
+        ),
         recorder:
             ({
               required String fixtureId,
@@ -3251,27 +3291,7 @@ final class CompositionRoot {
       // idempotent, so a fixture scored twice converges on the same rows.
       rescoreUnscoredResults: RescoreUnscoredResults(
         finder: PostgresUnscoredResultFinder(connection),
-        rescore: ({required String fixtureId}) async {
-          const principal = AuthenticatedUser(
-            userId: UserId(_providerSyncUserId),
-            role: PlatformRole.service,
-          );
-          final scored = await root.scoreFixture(
-            principal: principal,
-            fixtureId: fixtureId,
-          );
-          if (scored is Err<List<ParticipantFixtureScore>>) {
-            return Result.err(scored.error);
-          }
-          final posted = await root.postFixtureToLedger(
-            principal: principal,
-            fixtureId: fixtureId,
-          );
-          if (posted is Err<List<FixturePointEntry>>) {
-            return Result.err(posted.error);
-          }
-          return const Result.ok(null);
-        },
+        rescore: rescoreFixture,
       ),
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
@@ -3365,6 +3385,8 @@ final class CompositionRoot {
         fixtureScheduleRepository,
         auditRecorder: auditRecorder,
         clock: clock,
+        // A kickoff brought forward after the result scores it again (C-03).
+        rescoreEarlierKickoff: rescoreEarlierKickoff,
       ),
       scoreFixture: ScoreFixture(
         fixturePredictionRepository: fixturePredictionRepository,

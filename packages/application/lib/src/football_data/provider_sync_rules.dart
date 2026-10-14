@@ -1,4 +1,5 @@
 import 'package:application/src/football_data/ports/football_data_provider.dart';
+import 'package:domain/domain.dart';
 
 /// How the automatic provider sync behaves.
 enum ProviderSyncMode {
@@ -76,6 +77,59 @@ String isoDay(DateTime day) =>
     '${day.month.toString().padLeft(2, '0')}-'
     '${day.day.toString().padLeft(2, '0')}';
 
+/// `yyyy-mm-dd hh:mm` of [instant] on the Riyadh clock (UTC+3), for what an
+/// admin reads.
+String riyadhClock(DateTime instant) {
+  final local = instant.toUtc().add(const Duration(hours: 3));
+  return '${isoDay(riyadhDayOf(instant))} '
+      '${local.hour.toString().padLeft(2, '0')}:'
+      '${local.minute.toString().padLeft(2, '0')}';
+}
+
+final RegExp _monthlyLabel = RegExp(r'^\d{2}/\d{4}$');
+
+/// Whether [season] is a monthly contest (`MM/yyyy`), not a sporting season.
+bool isMonthlyContest(CompetitionSeason season) =>
+    _monthlyLabel.hasMatch(season.label);
+
+/// The monthly contest of [months] that [instant] falls in, or null.
+CompetitionSeason? monthContaining(
+  List<CompetitionSeason> months,
+  DateTime instant,
+) {
+  final at = instant.toUtc();
+  for (final month in months) {
+    if (!at.isBefore(month.startAt.toUtc()) &&
+        at.isBefore(month.endAt.toUtc())) {
+      return month;
+    }
+  }
+  return null;
+}
+
+/// A match one sync run could not settle by itself and leaves for an admin
+/// (audit C-03): a kickoff it may not move, one it failed to move, a fixture
+/// it could not score again, a match postponed or cancelled. The server
+/// keeps each one in the error log, which tells the admins; a note reaches
+/// only the container log.
+final class ProviderSyncAttention {
+  /// Creates the entry.
+  const ProviderSyncAttention({
+    required this.code,
+    required this.match,
+    required this.message,
+  });
+
+  /// What kind of matter it is (`provider_sync.kickoff_put_back_late`, ...).
+  final String code;
+
+  /// The match, `home - away`: one error-log entry per match and [code].
+  final String match;
+
+  /// What happened and what to do, in Arabic, for the admin.
+  final String message;
+}
+
 /// What one sync run did, for the server log.
 final class ProviderSyncReport {
   /// Creates the report.
@@ -85,6 +139,7 @@ final class ProviderSyncReport {
     required this.alreadyKnown,
     required this.skipped,
     required this.notes,
+    this.attention = const <ProviderSyncAttention>[],
   });
 
   /// Provider calls made.
@@ -101,4 +156,8 @@ final class ProviderSyncReport {
 
   /// One line per notable event.
   final List<String> notes;
+
+  /// The matches left for an admin, each kept in the error log by the
+  /// scheduler when the sync writes ([ProviderSyncAttention]).
+  final List<ProviderSyncAttention> attention;
 }

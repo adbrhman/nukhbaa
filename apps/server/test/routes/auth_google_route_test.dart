@@ -79,6 +79,7 @@ _MockRequestContext _wire(
   );
   final request = _MockRequest();
   when(() => request.method).thenReturn(method);
+  when(() => request.headers).thenReturn(const <String, String>{});
   when(request.body).thenAnswer((_) async => body);
   when(
     request.bytes,

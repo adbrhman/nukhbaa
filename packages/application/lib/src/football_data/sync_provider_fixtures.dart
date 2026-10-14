@@ -1,12 +1,14 @@
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/football_data/follow_provider_kickoff.dart';
 import 'package:application/src/football_data/ports/football_data_provider.dart';
 import 'package:application/src/football_data/ports/league_repository.dart';
 import 'package:application/src/football_data/ports/provider_sync_store.dart';
 import 'package:application/src/football_data/ports/team_repository.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/scoring/rescore_earlier_kickoff.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -23,11 +25,14 @@ import 'package:shared/shared.dart';
 /// report says what would have been added.
 ///
 /// Adds fixtures; the only change it makes to one already on the schedule is
-/// its kickoff, kept in step with the provider's while the stored kickoff is
-/// still ahead (C-03). Never throws.
+/// its kickoff, kept in step with the provider's by [FollowProviderKickoff]
+/// (C-03): what it may not move is left for an admin, in the report's
+/// `attention`. Never throws.
 final class SyncProviderFixtures {
-  /// Creates the use-case.
-  const SyncProviderFixtures({
+  /// Creates the use-case. [rescoreEarlierKickoff] scores a fixture again
+  /// when its kickoff comes earlier after its result; without it (tests that
+  /// do not look at it) nothing is scored again.
+  SyncProviderFixtures({
     required Map<String, FootballDataProvider> providers,
     required ProviderSyncStore store,
     required LeagueRepository leagueRepository,
@@ -42,6 +47,7 @@ final class SyncProviderFixtures {
     this.minimumInterval = const Duration(hours: 1),
     this.daysBySource = const <String, int>{},
     this.kickoffTolerance = const Duration(minutes: 1),
+    RescoreEarlierKickoff? rescoreEarlierKickoff,
   }) : _providers = providers,
        _store = store,
        _leagues = leagueRepository,
@@ -50,7 +56,13 @@ final class SyncProviderFixtures {
        _schedules = fixtureScheduleRepository,
        _fixturePredictions = fixturePredictionRepository,
        _ids = idGenerator,
-       _rules = rules;
+       _rules = rules,
+       _kickoffs = FollowProviderKickoff(
+         fixtureScheduleRepository: fixtureScheduleRepository,
+         competitionRepository: competitionRepository,
+         rescoreEarlierKickoff: rescoreEarlierKickoff,
+         kickoffTolerance: kickoffTolerance,
+       );
 
   final Map<String, FootballDataProvider> _providers;
   final ProviderSyncStore _store;
@@ -61,6 +73,7 @@ final class SyncProviderFixtures {
   final FixturePredictionRepository _fixturePredictions;
   final IdGenerator _ids;
   final List<ProviderLeagueRule> _rules;
+  final FollowProviderKickoff _kickoffs;
 
   /// Matches kicking off sooner than this are not added.
   final Duration minimumLead;
@@ -84,8 +97,6 @@ final class SyncProviderFixtures {
   /// A known fixture whose provider kickoff differs from the stored one by
   /// less than this is left as it is.
   final Duration kickoffTolerance;
-
-  static final RegExp _monthlyLabel = RegExp(r'^\d{2}/\d{4}$');
 
   /// Runs every rule over [riyadhDays] at [now]; writes only when [apply].
   Future<Result<ProviderSyncReport>> call({
@@ -138,10 +149,11 @@ final class SyncProviderFixtures {
         team.id.value: team,
     };
     final months = (seasonsResult as Ok<List<CompetitionSeason>>).value
-        .where((season) => _monthlyLabel.hasMatch(season.label))
+        .where(isMonthlyContest)
         .toList(growable: false);
 
     final notes = <String>[];
+    final attention = <ProviderSyncAttention>[];
     final nextOrder = <String, int>{};
     var requests = 0;
     var applied = 0;
@@ -250,14 +262,15 @@ final class SyncProviderFixtures {
             if (match.status == ProviderMatchStatus.scheduled ||
                 match.status == ProviderMatchStatus.live ||
                 match.status == ProviderMatchStatus.finished) {
-              final moved = await _followKickoff(
+              final moved = await _kickoffs(
                 fixtureId: knownId,
                 match: match,
                 homeTeamId: teamIds[match.homeTeamExternalId],
                 awayTeamId: teamIds[match.awayTeamExternalId],
-                months: months,
                 nowUtc: nowUtc,
                 apply: apply,
+                attention: attention,
+                months: months,
               );
               if (moved != null) {
                 notes.add(moved);
@@ -293,7 +306,7 @@ final class SyncProviderFixtures {
             skipped++;
             continue;
           }
-          final month = _monthContaining(months, match.kickoffAt);
+          final month = monthContaining(months, match.kickoffAt);
           if (month == null) {
             skipped++;
             notes.add(
@@ -391,6 +404,7 @@ final class SyncProviderFixtures {
         alreadyKnown: known,
         skipped: skipped,
         notes: notes,
+        attention: attention,
       ),
     );
   }
@@ -465,107 +479,5 @@ final class SyncProviderFixtures {
     }
     nextOrder[month.id.value] = order + 1;
     return const Result.ok(null);
-  }
-
-  /// Keeps a known fixture's kickoff in step with the provider's (C-03):
-  /// the prediction lock, the reveal and the results window all follow
-  /// `kickoff_at`, so a match brought forward would stay open while it is
-  /// played, and one put back would lock early and miss its result.
-  ///
-  /// Moves it only while the STORED kickoff is still ahead -- the same
-  /// freeze rule as `CorrectFixtureSchedule` -- and only inside the same
-  /// monthly contest. A provider kickoff already past (a match that started
-  /// earlier than stored) is written as it is, which locks the fixture at
-  /// once; `ScoreFixture` then gives nothing to a prediction sent after it.
-  /// The provider's two teams must be the ones on file ([homeTeamId] and
-  /// [awayTeamId], catalog ids), so a match linked to the wrong fixture
-  /// (C-04) never drags that fixture's kickoff along. Anything else is left
-  /// for an admin and named in the notes. Returns the note, or `null` when
-  /// the kickoff already agrees.
-  Future<String?> _followKickoff({
-    required String fixtureId,
-    required ProviderMatch match,
-    required String? homeTeamId,
-    required String? awayTeamId,
-    required List<CompetitionSeason> months,
-    required DateTime nowUtc,
-    required bool apply,
-  }) async {
-    final refResult = FixtureRef.tryParse(fixtureId);
-    if (refResult is Err<FixtureRef>) {
-      return 'kickoff check skipped (${refResult.error.code}): $fixtureId';
-    }
-    final found = await _schedules.findByFixture(
-      (refResult as Ok<FixtureRef>).value,
-    );
-    if (found is Err<FixtureSchedule?>) {
-      return 'kickoff check failed (${found.error.code}): $fixtureId';
-    }
-    final stored = (found as Ok<FixtureSchedule?>).value;
-    if (stored == null) {
-      return null;
-    }
-    final storedAt = stored.kickoffAt.toUtc();
-    final providerAt = match.kickoffAt.toUtc();
-    if (storedAt.difference(providerAt).abs() < kickoffTolerance) {
-      return null;
-    }
-
-    final label =
-        '${stored.homeTeam} - ${stored.awayTeam} '
-        '${storedAt.toIso8601String()} -> ${providerAt.toIso8601String()}';
-    if (homeTeamId == null ||
-        awayTeamId == null ||
-        stored.homeTeamId?.value != homeTeamId ||
-        stored.awayTeamId?.value != awayTeamId) {
-      return 'kickoff differs but the teams are not the ones on file, '
-          'needs admin: $label';
-    }
-    if (!storedAt.isAfter(nowUtc)) {
-      // Frozen: it has kicked off by the stored time. A match still to be
-      // played (put back) needs an admin; a played one is left alone.
-      return match.status == ProviderMatchStatus.scheduled
-          ? 'kickoff changed after the stored one passed, needs admin: $label'
-          : null;
-    }
-    if (_monthContaining(months, providerAt)?.id.value !=
-        _monthContaining(months, storedAt)?.id.value) {
-      return 'kickoff moved to another month, needs admin: $label';
-    }
-    if (!apply) {
-      return 'would move kickoff: $label';
-    }
-
-    final moved = FixtureSchedule.create(
-      fixture: stored.fixture,
-      homeTeam: stored.homeTeam,
-      awayTeam: stored.awayTeam,
-      kickoffAt: providerAt,
-      homeTeamId: stored.homeTeamId,
-      awayTeamId: stored.awayTeamId,
-      leagueId: stored.leagueId,
-      isTest: stored.isTest,
-    );
-    if (moved is Err<FixtureSchedule>) {
-      return 'kickoff move failed (${moved.error.code}): $label';
-    }
-    final saved = await _schedules.upsert((moved as Ok<FixtureSchedule>).value);
-    return saved is Err<void>
-        ? 'kickoff move failed (${saved.error.code}): $label'
-        : 'moved kickoff: $label';
-  }
-
-  static CompetitionSeason? _monthContaining(
-    List<CompetitionSeason> months,
-    DateTime instant,
-  ) {
-    final at = instant.toUtc();
-    for (final month in months) {
-      if (!at.isBefore(month.startAt.toUtc()) &&
-          at.isBefore(month.endAt.toUtc())) {
-        return month;
-      }
-    }
-    return null;
   }
 }
