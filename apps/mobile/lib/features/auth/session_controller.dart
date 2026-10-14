@@ -383,6 +383,16 @@ class SessionController extends _$SessionController {
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {
+    // While the session still holds: this phone stops receiving the
+    // player's pushes (audit M-05). Bounded, and never in the way.
+    try {
+      await ref
+          .read(pushTokenServiceProvider)
+          .unregisterCurrentDevice()
+          .timeout(const Duration(seconds: 8));
+    } on Object {
+      // A push to a signed-out phone, at worst.
+    }
     try {
       await _keepForFingerprint();
     } on Object {

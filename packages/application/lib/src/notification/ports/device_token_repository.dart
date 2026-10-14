@@ -19,4 +19,9 @@ abstract interface class DeviceTokenRepository {
     required String token,
     required String platform,
   });
+
+  /// Forgets [token] when it is [userId]'s: this device no longer receives
+  /// [userId]'s pushes (sign-out, audit M-05). A token on file for someone
+  /// else, or not on file, is left alone and is not an error.
+  Future<Result<void>> remove({required UserId userId, required String token});
 }

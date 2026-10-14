@@ -35,6 +35,9 @@ class PushTokenService {
 
   bool _listeningForLinks = false;
 
+  /// The token this service last registered, so sign-out can unbind it.
+  String? _registeredToken;
+
   static String get _platform =>
       defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
 
@@ -92,6 +95,7 @@ class PushTokenService {
         token: token,
         platform: 'web',
       );
+      if (result.isOk) _registeredToken = token;
       return result.isOk;
     } on Object catch (error) {
       if (kDebugMode) {
@@ -177,8 +181,32 @@ class PushTokenService {
       token: token,
       platform: _platform,
     );
+    if (result.isOk) _registeredToken = token;
     if (kDebugMode && result.isErr) {
       debugPrint('PushTokenService: the server rejected the token');
+    }
+  }
+
+  /// Unbinds this device from the signed-in player's pushes, while his
+  /// session still holds (audit M-05): called by sign-out before the token
+  /// is erased. [token] is the token to unbind; by default the one this
+  /// service registered, else the phone's current one. Best effort: a
+  /// failure costs a push to a signed-out phone, never the sign-out.
+  Future<void> unregisterCurrentDevice({String? token}) async {
+    try {
+      String? current = token ?? _registeredToken;
+      if (current == null && !kIsWeb) {
+        current = await FirebaseMessaging.instance.getToken().timeout(
+          const Duration(seconds: 5),
+        );
+      }
+      if (current == null || current.isEmpty) return;
+      final result = await _authApi.unregisterDeviceToken(token: current);
+      if (result.isOk) _registeredToken = null;
+    } on Object catch (error) {
+      if (kDebugMode) {
+        debugPrint('PushTokenService: unregistering failed: $error');
+      }
     }
   }
 }

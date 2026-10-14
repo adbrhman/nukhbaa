@@ -159,6 +159,19 @@ final class AuthApi {
     );
   }
 
+  /// `POST /me/device-token/remove` — unbinds this device's push token from
+  /// the caller at sign-out (audit M-05), so a shared phone stops receiving
+  /// the previous player's pushes. Only the caller's own token is removed.
+  Future<Result<DeviceTokenAckDto>> unregisterDeviceToken({
+    required String token,
+  }) {
+    return _transport.postObject<DeviceTokenAckDto>(
+      '/me/device-token/remove',
+      body: <String, Object?>{'token': token},
+      parse: DeviceTokenAckDto.fromJson,
+    );
+  }
+
   /// `POST /me/time-zone` — reports this device's current offset from UTC, so
   /// a later notification can respect the reader's own clock.
   ///

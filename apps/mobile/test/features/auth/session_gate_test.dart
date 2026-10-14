@@ -73,6 +73,9 @@ void main() {
     expect(find.byKey(const Key('account.title')), findsOneWidget);
     expect(find.byKey(const Key('account.userId')), findsOneWidget);
     expect(find.text('u-1'), findsOneWidget);
+    // Audit L-19: the player sees the address he signs in with, once.
+    expect(find.byKey(const Key('account.email')), findsOneWidget);
+    expect(find.text('a@example.com'), findsOneWidget);
   });
 
   _authTest('no token -> sign-in form; successful sign-in -> account screen', (

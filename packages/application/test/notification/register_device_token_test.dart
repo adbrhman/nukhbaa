@@ -7,6 +7,16 @@ const _user = '11111111-1111-1111-1111-111111111111';
 
 final class _Tokens implements DeviceTokenRepository {
   final List<(String, String)> saved = [];
+  final List<(String, String)> removed = [];
+
+  @override
+  Future<Result<void>> remove({
+    required UserId userId,
+    required String token,
+  }) async {
+    removed.add((userId.value, token));
+    return const Result.ok(null);
+  }
 
   @override
   Future<Result<void>> upsert({
@@ -62,5 +72,30 @@ void main() {
       'notification.device_token_platform_unsupported',
     );
     expect(tokens.saved, isEmpty);
+  });
+
+  // Audit M-05: signing out unbinds this phone from the player's pushes.
+  group('unregister', () {
+    test('removes the token of the caller', () async {
+      final tokens = _Tokens();
+
+      final result = await RegisterDeviceToken(
+        deviceTokens: tokens,
+      ).unregister(principal: _principal(), token: 'phone-token');
+
+      expect(result.isOk, isTrue);
+      expect(tokens.removed, [(_user, 'phone-token')]);
+    });
+
+    test('an empty token is refused before any write', () async {
+      final tokens = _Tokens();
+
+      final result = await RegisterDeviceToken(
+        deviceTokens: tokens,
+      ).unregister(principal: _principal(), token: '  ');
+
+      expect(result.isOk, isFalse);
+      expect(tokens.removed, isEmpty);
+    });
   });
 }

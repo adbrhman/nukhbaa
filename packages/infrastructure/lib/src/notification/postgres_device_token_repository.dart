@@ -88,6 +88,29 @@ ON CONFLICT (token) DO UPDATE
     };
   }
 
+  // Only the caller's own row: a token since rebound to another player
+  // (the phone changed hands) is not his to remove.
+  static const String _removeSql = '''
+DELETE FROM notification.device_tokens
+WHERE token = @token::text
+  AND user_id = @user_id::uuid
+''';
+
+  @override
+  Future<Result<void>> remove({
+    required UserId userId,
+    required String token,
+  }) async {
+    final result = await _connection.query(
+      _removeSql,
+      parameters: {'token': token, 'user_id': userId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>() => const Result.ok(null),
+    };
+  }
+
   AppError _reclassify(AppError error) {
     final cause = error.cause;
     if (cause is! ServerException) {

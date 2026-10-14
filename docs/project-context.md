@@ -4791,6 +4791,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   place counts other seasons' and suspended players' gains) and L-35 (the
   insights call a right outcome "صحيحة"). No migration; the boards change
   with the server, the screens need an APK.
+- **Batch 135 (sign-out unbinds the phone, the account shows its e-mail,
+  2026-10-14, audit M-05 part, L-19)**: M-05 -- signing out left the
+  phone's push token bound to the player, so a shared phone kept receiving
+  his pushes (duels by name, "so-and-so passed you"). Sign-out now asks the
+  server, while the session still holds, to unbind this device:
+  `POST /me/device-token/remove` (`RegisterDeviceToken.unregister`,
+  `DeviceTokenRepository.remove`, which deletes only the caller's own row);
+  `PushTokenService` remembers the token it registered (else asks Firebase),
+  bounded and best effort. Not done: revoking the refresh token in Supabase
+  (the fingerprint sign-in keeps it on purpose after a sign-out) and
+  deleting an account (waits for the owner's choice between anonymising
+  and deleting). L-19 -- the account screen shows the account's e-mail in
+  every build; id, role and status stay debug-only. No migration; the
+  server half ships with the server, the app half needs an APK.
 
 ## 3. Version-Verification Log
 

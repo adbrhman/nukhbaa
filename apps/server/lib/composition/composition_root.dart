@@ -4708,6 +4708,14 @@ final class _UnwiredDeviceTokenRepository implements DeviceTokenRepository {
   }) => throw StateError(
     'DeviceTokenRepository was not wired into this test root',
   );
+
+  @override
+  Future<Result<void>> remove({
+    required UserId userId,
+    required String token,
+  }) => throw StateError(
+    'DeviceTokenRepository was not wired into this test root',
+  );
 }
 
 /// Backs the "absent" new-user admin push: throws if a test reaches an

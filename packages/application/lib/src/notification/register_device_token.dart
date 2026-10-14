@@ -66,4 +66,27 @@ final class RegisterDeviceToken {
       platform: platform,
     );
   }
+
+  /// Unbinds [token] from [principal] at sign-out (audit M-05): a shared
+  /// phone stops receiving the previous player's pushes -- duels by name,
+  /// "so-and-so passed you" -- the moment he signs out. Only the caller's
+  /// own token is removed.
+  Future<Result<void>> unregister({
+    required AuthenticatedUser principal,
+    required String token,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+    if (token.trim().isEmpty) {
+      return const Result.err(
+        AppError.validation(
+          'notification.device_token_empty',
+          'رمز الجهاز فارغ',
+        ),
+      );
+    }
+    return _deviceTokens.remove(userId: principal.userId, token: token);
+  }
 }

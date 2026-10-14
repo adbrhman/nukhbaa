@@ -199,12 +199,24 @@ class AccountScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  // The account's e-mail, so a player knows which address
+                  // to sign in with on another phone (audit L-19).
+                  if (user.email != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _Field(
+                      label: l10n.email,
+                      value: user.email!,
+                      valueKey: const Key('account.email'),
+                      tokens: tokens,
+                      text: text,
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
                   _SignOutCard(
                     label: l10n.signOut,
                     onTap: () => unawaited(_confirmSignOut(context, ref, l10n)),
                   ),
-                  // Raw identity fields (id/role/status/email) are debug-only
+                  // Raw identity fields (id/role/status) are debug-only
                   // diagnostics, never production UI.
                   if (kDebugMode) ...[
                     const SizedBox(height: AppSpacing.lg),
@@ -229,14 +241,6 @@ class AccountScreen extends ConsumerWidget {
                       tokens: tokens,
                       text: text,
                     ),
-                    if (user.email != null)
-                      _Field(
-                        label: l10n.email,
-                        value: user.email!,
-                        valueKey: const Key('account.email'),
-                        tokens: tokens,
-                        text: text,
-                      ),
                   ],
                 ],
               ),
