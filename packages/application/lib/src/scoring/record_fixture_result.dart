@@ -1,3 +1,4 @@
+import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -20,6 +21,13 @@ import 'package:shared/shared.dart';
 /// upserts in place, so an admin can correct a mistyped scoreline before the
 /// round is scored, and a retried call converges on the same stored value.
 ///
+/// **Audited** (audit M-25): a result an admin records or corrects decides
+/// points, boards and the crown, so it leaves `fixture_result_recorded` in
+/// `admin.audit_log` with the admin and the score before and after
+/// (`2-1`, or `1-1 -> 2-1` for a correction). The provider sync records
+/// under the service principal, which is not a user, and is not audited:
+/// its source is the feed itself.
+///
 /// Never throws; returns a typed [Result].
 final class RecordFixtureResult {
   /// Creates the use-case over its collaborators.
@@ -27,13 +35,16 @@ final class RecordFixtureResult {
     required FixtureResultRepository resultRepository,
     required FixtureScheduleRepository fixtureScheduleRepository,
     required Clock clock,
+    AuditRecorder? auditRecorder,
   }) : _results = resultRepository,
        _fixtureSchedules = fixtureScheduleRepository,
-       _clock = clock;
+       _clock = clock,
+       _audit = auditRecorder;
 
   final FixtureResultRepository _results;
   final FixtureScheduleRepository _fixtureSchedules;
   final Clock _clock;
+  final AuditRecorder? _audit;
 
   /// Records that [fixtureId] finished [homeGoals]–[awayGoals], on behalf of the
   /// admin [principal]. Validates the id and the scoreline (via the domain
@@ -87,10 +98,38 @@ final class RecordFixtureResult {
       );
     }
 
+    // The score before, for the audit trail; a failed read only loses the
+    // "before" half of the reason, never the recording.
+    final AuditRecorder? audit = principal.role == PlatformRole.admin
+        ? _audit
+        : null;
+    FixtureResult? previous;
+    if (audit != null) {
+      final before = await _results.findByFixture(fixture);
+      if (before is Ok<FixtureResult?>) previous = before.value;
+    }
+
     final saved = await _results.upsert(result, now);
-    return switch (saved) {
-      Ok<void>() => Result.ok(result),
-      Err<void>(:final error) => Result.err(error),
-    };
+    if (saved is Err<void>) {
+      return Result.err(saved.error);
+    }
+
+    if (audit != null) {
+      final recorded = await audit.record(
+        actorId: principal.userId,
+        action: AuditAction.fixtureResultRecorded,
+        targetRef: fixture.value,
+        reason: previous == null
+            ? _score(result)
+            : '${_score(previous)} -> ${_score(result)}',
+      );
+      if (recorded is Err<AuditEntry>) {
+        return Result.err(recorded.error);
+      }
+    }
+    return Result.ok(result);
   }
+
+  static String _score(FixtureResult result) =>
+      '${result.homeGoals}-${result.awayGoals}';
 }

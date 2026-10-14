@@ -68,4 +68,37 @@ final class GetMyStreak {
       ], newestIsPendingToday: pendingToday),
     );
   }
+
+  /// The match days of [principal]'s current run, newest first: the days
+  /// [call] counts, so its length is always `call`'s `current`. Today is
+  /// left out while it is pending, as [call] skips it. The streak bonus
+  /// reads the day each rung was reached from this (audit M-24).
+  Future<Result<List<DateTime>>> currentRun({
+    required AuthenticatedUser principal,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+    final today = riyadhDayOf(_clock.nowUtc());
+    final calendarResult = await _streaks.completionCalendar(
+      userId: principal.userId,
+      upToDay: today,
+      limitDays: windowDays,
+    );
+    if (calendarResult is Err<List<MatchDayCompletion>>) {
+      return Result.err(calendarResult.error);
+    }
+    final calendar = (calendarResult as Ok<List<MatchDayCompletion>>).value;
+    final run = <DateTime>[];
+    for (var i = 0; i < calendar.length; i++) {
+      final entry = calendar[i];
+      final pendingToday =
+          i == 0 && entry.day.isAtSameMomentAs(today) && !entry.completed;
+      if (pendingToday) continue;
+      if (!entry.completed) break;
+      run.add(entry.day);
+    }
+    return Result.ok(List<DateTime>.unmodifiable(run));
+  }
 }

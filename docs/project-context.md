@@ -4758,6 +4758,21 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   several batch scripts in order and commits each one locally once its
   checks pass; pushing stays his. No migration; the server half ships
   with the server, the app half needs an APK.
+- **Batch 133 (streak rungs once, results audited, 2026-10-14, audit M-24,
+  M-25)**: M-24 -- a participant is one month and a run crosses months, so
+  a run carried into a new month was paid all its rungs again on its first
+  completed day there (5+10+20 in one weekly-league week). `AwardStreakBonus`
+  now pays a rung only when the run reached it on a match day of the same
+  month as the day being paid (`matchDay`, the completed fixture's Riyadh
+  day from `SubmitFixturePrediction`); the month before paid it or missed it
+  for good. `GetMyStreak.currentRun` gives the run's days, newest first, by
+  the same rule as the count. M-25 -- `RecordFixtureResult` writes
+  `fixture_result_recorded` to `admin.audit_log` with the admin and the
+  score (`2-1`, or `1-1 -> 2-1` for a correction); the provider sync (the
+  service principal, not a user) is not audited. Still not audited:
+  referral switch, champion photo, season and competition creation, H2H
+  pilot start (they need new enum values). L-25 and L-27 are left for a
+  later batch. No migration; server only.
 
 ## 3. Version-Verification Log
 

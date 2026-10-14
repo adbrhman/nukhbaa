@@ -3355,6 +3355,7 @@ final class CompositionRoot {
         resultRepository: fixtureResultRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
+        auditRecorder: auditRecorder,
       ),
       registerFixtureSchedule: RegisterFixtureSchedule(
         repository: fixtureScheduleRepository,

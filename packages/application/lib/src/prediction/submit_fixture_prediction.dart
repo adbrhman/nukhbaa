@@ -275,6 +275,7 @@ final class SubmitFixturePrediction {
           participantId: participant.id,
           fixture: fixture,
           now: now,
+          matchDay: riyadhDayOf(kickoffAt),
         );
       }
     }
@@ -357,6 +358,7 @@ final class SubmitFixturePrediction {
     required ParticipantId participantId,
     required FixtureRef fixture,
     required DateTime now,
+    required DateTime matchDay,
   }) async {
     final bonus = _streakBonus;
     if (bonus == null) {
@@ -367,6 +369,7 @@ final class SubmitFixturePrediction {
       participantId: participantId,
       fixture: fixture,
       now: now,
+      matchDay: matchDay,
     );
   }
 

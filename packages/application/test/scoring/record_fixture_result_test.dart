@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
+import '../admin/fakes.dart' show InMemoryAuditLogRepository, auditRecorderOver;
 import '../competition/fakes.dart';
 import '../prediction/fake_fixture_schedule_repository.dart';
 import 'fakes.dart';
@@ -145,5 +146,76 @@ void main() {
     );
     expect(r, isA<Ok<FixtureResult>>());
     expect(results.count, 1);
+  });
+
+  // Audit M-25: a result an admin records or corrects leaves a trail.
+  group('the audit trail', () {
+    late InMemoryAuditLogRepository auditLog;
+    late RecordFixtureResult audited;
+
+    setUp(() {
+      auditLog = InMemoryAuditLogRepository();
+      audited = RecordFixtureResult(
+        resultRepository: results,
+        fixtureScheduleRepository: schedules,
+        clock: FixedClock(DateTime.utc(2026, 7, 11, 18)),
+        auditRecorder: auditRecorderOver(auditLog),
+      );
+    });
+
+    Future<Result<FixtureResult>> record(
+      AuthenticatedUser who,
+      int home,
+      int away,
+    ) => audited.call(
+      principal: who,
+      fixtureId: _fixture,
+      homeGoals: home,
+      awayGoals: away,
+    );
+
+    test('a result names the admin and the score', () async {
+      await record(adminPrincipal(_admin), 2, 1);
+
+      final entry = auditLog.rows.single;
+      expect(entry.action, AuditAction.fixtureResultRecorded);
+      expect(entry.actorId, const UserId(_admin));
+      expect(entry.targetRef, _fixture);
+      expect(entry.reason, '2-1');
+    });
+
+    test('a correction keeps the score it replaced', () async {
+      await record(adminPrincipal(_admin), 1, 1);
+      await record(adminPrincipal(_admin), 2, 1);
+
+      expect(auditLog.rows.map((e) => e.reason), <String?>[
+        '1-1',
+        '1-1 -> 2-1',
+      ]);
+    });
+
+    test('the provider sync (service, not a user) is not audited', () async {
+      final r = await record(
+        const AuthenticatedUser(
+          userId: UserId(_admin),
+          role: PlatformRole.service,
+        ),
+        3,
+        0,
+      );
+
+      expect(r, isA<Ok<FixtureResult>>());
+      expect(auditLog.rows, isEmpty);
+    });
+
+    test('a trail that cannot be written is reported', () async {
+      auditLog.failNextWith(
+        const AppError.transient('admin.db_down', 'audit log is down'),
+      );
+
+      final r = await record(adminPrincipal(_admin), 2, 2);
+
+      expect((r as Err<FixtureResult>).error.code, 'admin.db_down');
+    });
   });
 }

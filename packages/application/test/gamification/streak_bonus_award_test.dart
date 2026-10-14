@@ -262,6 +262,62 @@ void main() {
       expect(ledger.count, 0);
     });
 
+    // Audit M-24: a run that carries into a new month was paid every rung
+    // again on its first day there (5+10+20 in one weekly-league week).
+    group('a rung is paid in the month it was reached', () {
+      AwardStreakBonus awardEndingOn(DateTime newest, int days) =>
+          AwardStreakBonus(
+            getMyStreak: GetMyStreak(
+              streaks: _RunEndingOn(newest, days),
+              clock: FixedClock(newest.add(const Duration(hours: 10))),
+            ),
+            fixtureLedgerRepository: ledger,
+            idGenerator: ids,
+          );
+
+      Future<List<String>> payOn(AwardStreakBonus award, DateTime day) async {
+        final result = await award(
+          principal: userPrincipal(_userId),
+          participantId: const ParticipantId('participant-sept'),
+          fixture: fixture,
+          now: day.add(const Duration(hours: 10)),
+          matchDay: day,
+        );
+        return [
+          for (final entry in (result as Ok<List<FixturePointEntry>>).value)
+            entry.sourceRef,
+        ];
+      }
+
+      test(
+        'the first day of a month pays nothing reached the month before',
+        () async {
+          final sept1 = DateTime.utc(2026, 9, 1);
+          // 31 days, 2026-08-02 .. 2026-09-01: 7, 14 and 30 were all reached
+          // in August.
+          expect(await payOn(awardEndingOn(sept1, 31), sept1), isEmpty);
+          expect(ledger.count, 0);
+        },
+      );
+
+      test('a rung reached in the new month is still paid there', () async {
+        final sept10 = DateTime.utc(2026, 9, 10);
+        // 30 days, 2026-08-12 .. 2026-09-10: 7 and 14 were reached in
+        // August, 30 on 2026-09-10.
+        expect(await payOn(awardEndingOn(sept10, 30), sept10), <String>[
+          'streak:30',
+        ]);
+      });
+
+      test('a rung missed earlier in the same month is caught up', () async {
+        final sept20 = DateTime.utc(2026, 9, 20);
+        // 9 days, 2026-09-12 .. 2026-09-20: 7 was reached on 2026-09-18.
+        expect(await payOn(awardEndingOn(sept20, 9), sept20), <String>[
+          'streak:7',
+        ]);
+      });
+    });
+
     test('refuses a non-UTC instant instead of writing it', () async {
       final result = await awardFor(7)(
         principal: userPrincipal(_userId),
@@ -506,6 +562,27 @@ final class _ScriptedStreaks implements StreakRepository {
   }) async => Result.ok(<MatchDayCompletion>[
     for (var i = 0; i < days; i++)
       MatchDayCompletion(day: DateTime.utc(2026, 8, 31 - i), completed: true),
+  ]);
+}
+
+/// A run of [days] completed match days ending on [newest], newest first.
+final class _RunEndingOn implements StreakRepository {
+  _RunEndingOn(this.newest, this.days);
+
+  final DateTime newest;
+  final int days;
+
+  @override
+  Future<Result<List<MatchDayCompletion>>> completionCalendar({
+    required UserId userId,
+    required DateTime upToDay,
+    required int limitDays,
+  }) async => Result.ok(<MatchDayCompletion>[
+    for (var i = 0; i < days; i++)
+      MatchDayCompletion(
+        day: DateTime.utc(newest.year, newest.month, newest.day - i),
+        completed: true,
+      ),
   ]);
 }
 

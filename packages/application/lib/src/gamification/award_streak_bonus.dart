@@ -24,8 +24,14 @@ import 'package:shared/shared.dart';
 /// the index; the adapter reports that as `ledger.already_posted`, which is
 /// the same fact as "someone paid it" and is treated as success.
 ///
-/// **Per participant means per season.** A participant belongs to one season,
-/// so a run that carries into a new season is paid its rungs again there.
+/// **A rung is paid in the month it was reached** (audit M-24). A
+/// participant belongs to one monthly season and the run crosses months, so
+/// a run that carried into a new month used to be paid all its rungs again
+/// on the first completed day there -- up to 35 points in one weekly-league
+/// week. A rung now counts only when the run reached it on a match day of
+/// the same month as [matchDay] (the completed day being paid): the month
+/// before already paid it, or missed it for good. Within a month the `>=`
+/// catch-up still holds.
 ///
 /// Each rung is appended in its own call, so one refused rung cannot take
 /// the others down with it.
@@ -59,14 +65,22 @@ final class AwardStreakBonus {
     required ParticipantId participantId,
     required FixtureRef fixture,
     required DateTime now,
+    DateTime? matchDay,
   }) async {
-    final streakResult = await _getMyStreak(principal: principal);
-    if (streakResult is Err<StreakTally>) {
-      return Result.err(streakResult.error);
+    final runResult = await _getMyStreak.currentRun(principal: principal);
+    if (runResult is Err<List<DateTime>>) {
+      return Result.err(runResult.error);
     }
-    final streak = (streakResult as Ok<StreakTally>).value;
+    // Newest first: the run reached rung T on run[run.length - T].
+    final run = (runResult as Ok<List<DateTime>>).value;
 
-    final reached = StreakBonusPolicy.reachedBy(streak.current);
+    final DateTime? month = matchDay ?? (run.isEmpty ? null : run.first);
+    final reached = <StreakBonusRung>[
+      for (final rung in StreakBonusPolicy.reachedBy(run.length))
+        if (month == null ||
+            _sameMonth(run[run.length - rung.threshold], month))
+          rung,
+    ];
     if (reached.isEmpty) {
       return const Result.ok(<FixturePointEntry>[]);
     }
@@ -116,4 +130,9 @@ final class AwardStreakBonus {
     }
     return Result.ok(List<FixturePointEntry>.unmodifiable(paid));
   }
+
+  /// Whether two Riyadh days (UTC midnights) fall in one calendar month --
+  /// one monthly contest (migration 0076).
+  static bool _sameMonth(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
 }
