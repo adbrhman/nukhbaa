@@ -32,10 +32,10 @@ const String _inviteBaseFromBuild = String.fromEnvironment(
   'NUKHBA_INVITE_BASE_URL',
 );
 
-/// The web app's address; an invitation link opens it with `?ref=`.
-/// GitHub Pages unless the build names another host.
+/// The web app's address. The site at nukhbaa.app unless the build names
+/// another host: it opens in Yemen, where github.io is blocked (audit M-03).
 const String inviteWebBase = _inviteBaseFromBuild == ''
-    ? 'https://adbrhman.github.io/nukhbaa/'
+    ? 'https://nukhbaa.app/nukhbaa/'
     : _inviteBaseFromBuild;
 
 /// The invitation link that carries [code] (audit M-13): the site's landing

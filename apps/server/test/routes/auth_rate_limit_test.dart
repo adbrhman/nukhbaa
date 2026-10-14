@@ -15,8 +15,8 @@ import '../../routes/auth/login/index.dart' as login_route;
 // ignore: always_use_package_imports
 import '../../routes/auth/password-reset/request/index.dart' as reset_route;
 
-/// An [AuthGateway] that refuses every password and accepts every reset
-/// request, counting how many calls reached it.
+/// An [AuthGateway] that refuses every password but [_rightPassword] and
+/// accepts every reset request, counting how many calls reached it.
 final class _CountingGateway implements AuthGateway {
   int signIns = 0;
   int resets = 0;
@@ -27,6 +27,15 @@ final class _CountingGateway implements AuthGateway {
     required String password,
   }) async {
     signIns++;
+    if (password == _rightPassword) {
+      return const Result.ok(
+        IssuedSession(
+          accessToken: 'jwt',
+          refreshToken: 'refresh',
+          emailConfirmationRequired: false,
+        ),
+      );
+    }
     return const Result.err(
       AppError.validation('auth.invalid_credentials', 'Wrong password'),
     );
@@ -69,11 +78,17 @@ final class _CountingGateway implements AuthGateway {
   }) => throw UnimplementedError();
 }
 
+const String _rightPassword = 'right-password';
+
 class _MockRequestContext extends Mock implements RequestContext {}
 
 class _MockRequest extends Mock implements Request {}
 
-_MockRequestContext _wire(_CountingGateway gateway, Map<String, Object?> body) {
+_MockRequestContext _wire(
+  _CountingGateway gateway,
+  Map<String, Object?> body, {
+  String? address,
+}) {
   final root = Future<CompositionRoot>.value(
     CompositionRoot.forTesting(
       login: LoginWithPassword(gateway),
@@ -83,6 +98,9 @@ _MockRequestContext _wire(_CountingGateway gateway, Map<String, Object?> body) {
   final encoded = jsonEncode(body);
   final request = _MockRequest();
   when(() => request.method).thenReturn(HttpMethod.post);
+  when(() => request.headers).thenReturn(<String, String>{
+    if (address != null) 'x-forwarded-for': '10.0.0.1, $address',
+  });
   when(request.body).thenAnswer((_) async => encoded);
   when(
     request.bytes,
@@ -141,4 +159,79 @@ void main() {
       expect(gateway.resets, 3);
     },
   );
+
+  // Audit M-16: the count is per e-mail AND network, so a stranger's
+  // failures do not lock the real player out.
+  group('a stranger cannot lock a player out', () {
+    test('failures from one network leave the real network free', () async {
+      final gateway = _CountingGateway();
+      Future<Response> from(String address, String password) =>
+          login_route.onRequest(
+            _wire(gateway, {
+              'email': 'rival@example.com',
+              'password': password,
+            }, address: address),
+          );
+
+      for (var i = 0; i < 10; i++) {
+        await from('203.0.113.7', 'guess');
+      }
+      expect(
+        (await from('203.0.113.7', 'guess')).statusCode,
+        HttpStatus.tooManyRequests,
+      );
+
+      final own = await from('198.51.100.2', _rightPassword);
+      expect(own.statusCode, HttpStatus.ok);
+    });
+
+    test('a successful sign-in clears the failures before it', () async {
+      final gateway = _CountingGateway();
+      Future<Response> attempt(String password) => login_route.onRequest(
+        _wire(gateway, {
+          'email': 'forgetful@example.com',
+          'password': password,
+        }, address: '198.51.100.9'),
+      );
+
+      for (var i = 0; i < 9; i++) {
+        await attempt('guess');
+      }
+      expect((await attempt(_rightPassword)).statusCode, HttpStatus.ok);
+      for (var i = 0; i < 9; i++) {
+        expect((await attempt('guess')).statusCode, HttpStatus.badRequest);
+      }
+    });
+
+    test('reset e-mails asked elsewhere do not block the real one', () async {
+      final gateway = _CountingGateway();
+      Future<Response> from(String address) => reset_route.onRequest(
+        _wire(gateway, {'email': 'victim@example.com'}, address: address),
+      );
+
+      for (var i = 0; i < 3; i++) {
+        await from('203.0.113.8');
+      }
+      expect(
+        (await from('203.0.113.8')).statusCode,
+        HttpStatus.tooManyRequests,
+      );
+      expect((await from('198.51.100.3')).statusCode, HttpStatus.ok);
+    });
+
+    test('one network trying many accounts is still bounded', () async {
+      final gateway = _CountingGateway();
+      Response? last;
+      for (var i = 0; i < 101; i++) {
+        last = await login_route.onRequest(
+          _wire(gateway, {
+            'email': 'player$i@example.com',
+            'password': 'guess',
+          }, address: '203.0.113.99'),
+        );
+      }
+      expect(last!.statusCode, HttpStatus.tooManyRequests);
+      expect(gateway.signIns, 100);
+    });
+  });
 }

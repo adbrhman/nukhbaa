@@ -63,6 +63,11 @@ Future<void> _startApp() async {
     runApp(_ConfigErrorApp(message: e.message));
     return;
   }
+  // The one token store of the app: the reporter below and every session's
+  // providers read the same instance, so a report carries the token the
+  // session holds now -- a separate store cached the first token it read
+  // and kept sending it after renewals and sign-outs (audit L-02).
+  final TokenStore tokenStore = SecureTokenStore(const FlutterSecureStorage());
   // Unexpected errors go to the admin dashboard's error log (migration
   // 0087) over a transport of their own, so a report never waits on, or
   // feeds back into, the app's own calls. A signed-in player's token names
@@ -73,7 +78,7 @@ Future<void> _startApp() async {
         ApiTransport(
           baseUri: config.apiBaseUrl,
           httpClient: createHttpClient(),
-          tokenProvider: SecureTokenStore(const FlutterSecureStorage()).read,
+          tokenProvider: tokenStore.read,
         ),
       ).reportError,
       build: const String.fromEnvironment('NUKHBA_BUILD_SHA'),
@@ -85,7 +90,10 @@ Future<void> _startApp() async {
   // so one account's cached reads never reach the next account.
   runApp(
     SessionScope(
-      overrides: [appConfigProvider.overrideWithValue(config)],
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        tokenStoreProvider.overrideWithValue(tokenStore),
+      ],
       child: const NukhbaApp(),
     ),
   );

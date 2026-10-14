@@ -4739,6 +4739,25 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   needs 8 characters on registration as on the reset screen; signing in
   accepts any, for older passwords. No migration; the server half ships
   with the server, the app half needs an APK.
+- **Batch 132 (sign-in safety, 2026-10-14, audit M-16, M-03, L-02)**:
+  M-16 -- the sign-in, sign-up and reset-e-mail limits were counted per
+  e-mail alone, so anyone who knew a rival's address could lock him out of
+  signing in and out of a reset by failing on purpose. `limitAuthAttempt`
+  now counts per e-mail AND network address (`clientAddress`), with a
+  wider allowance per address (sign-in 100, sign-up 30 / 10 min, reset 30
+  / 15 min) for one caller trying many accounts; a successful sign-in
+  forgets its failures (`forgiveAuthAttempts`, `RateLimiter.reset`). The
+  reset code stays per e-mail, so it cannot be guessed from many networks.
+  M-03 -- the defaults no longer point at github.io, blocked in Yemen: the
+  reset redirect is `https://nukhbaa.app/nukhbaa/reset-password` and the
+  invitation web base `https://nukhbaa.app/nukhbaa/` (so the link is the
+  landing page, batch 130). L-02 -- `main` creates one `SecureTokenStore`
+  and gives it to the error reporter and, through `SessionScope`'s root
+  overrides, to every session; a second store had cached the first token
+  it read. Protocol: the owner approved (2026-10-14) a runner that runs
+  several batch scripts in order and commits each one locally once its
+  checks pass; pushing stays his. No migration; the server half ships
+  with the server, the app half needs an APK.
 
 ## 3. Version-Verification Log
 

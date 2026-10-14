@@ -46,7 +46,11 @@ Future<Response> _handle(
     );
   }
 
-  final limited = limitAuthAttempt(AuthAttempt.passwordReset, email);
+  final limited = limitAuthAttempt(
+    AuthAttempt.passwordReset,
+    email,
+    address: clientAddress(context.request.headers),
+  );
   if (limited != null) {
     return limited;
   }

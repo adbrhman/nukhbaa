@@ -38,7 +38,8 @@ Future<Response> _handle(
 
   // One cast, read once: a second would be flagged unnecessary.
   final email = (emailResult as Ok<String>).value;
-  final limited = limitAuthAttempt(AuthAttempt.login, email);
+  final address = clientAddress(context.request.headers);
+  final limited = limitAuthAttempt(AuthAttempt.login, email, address: address);
   if (limited != null) {
     return limited;
   }
@@ -48,6 +49,10 @@ Future<Response> _handle(
     email: email,
     password: (passwordResult as Ok<String>).value,
   );
+  if (result is Ok<IssuedSession>) {
+    // Only failures count against a player (audit M-16).
+    forgiveAuthAttempts(AuthAttempt.login, email, address: address);
+  }
 
   return switch (result) {
     Ok<IssuedSession>(:final value) => _sessionResponse(value),

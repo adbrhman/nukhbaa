@@ -50,6 +50,9 @@ final class RateLimiter {
     current.count++;
     return null;
   }
+
+  /// Forgets [key]'s window, so its next request starts a fresh count.
+  void reset(String key) => _windows.remove(key);
 }
 
 final class _Window {
@@ -147,7 +150,16 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
   return wait == null ? null : tooManyRequests(wait);
 }
 
-/// The anonymous `/auth/*` attempts that are counted, each per e-mail.
+/// The anonymous `/auth/*` attempts that are counted.
+///
+/// Each is counted per e-mail AND network address (audit M-16): counted per
+/// e-mail alone, anyone who knew a rival's address could lock him out of
+/// signing in, and out of a password reset, by failing on purpose. A
+/// stranger's failures from his own network now spend only his own
+/// allowance. A wider allowance per network address bounds one caller
+/// trying many accounts; it is wide because many players reach the API
+/// from one carrier address. The reset code is the exception: see
+/// [passwordResetCode].
 enum AuthAttempt {
   /// `POST /auth/login`: 10 tries per address in 10 minutes, so a password
   /// cannot be guessed through the API.
@@ -160,10 +172,27 @@ enum AuthAttempt {
   /// nobody can flood someone's inbox with reset e-mails.
   passwordReset,
 
-  /// `POST /auth/password-reset/verify`: 5 codes per address in 15
-  /// minutes, so the code of a reset e-mail cannot be guessed.
+  /// `POST /auth/password-reset/verify`: 5 codes per e-mail in 15 minutes,
+  /// counted per e-mail alone so the code of a reset e-mail cannot be
+  /// guessed from many networks. Only someone already waiting for a code
+  /// can be held back by it, for 15 minutes.
   passwordResetCode,
 }
+
+final RateLimiter _loginAddressLimiter = RateLimiter(
+  limit: 100,
+  window: const Duration(minutes: 10),
+);
+
+final RateLimiter _registerAddressLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(minutes: 10),
+);
+
+final RateLimiter _passwordResetAddressLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(minutes: 15),
+);
 
 final RateLimiter _loginLimiter = RateLimiter(
   limit: 10,
@@ -185,20 +214,47 @@ final RateLimiter _passwordResetCodeLimiter = RateLimiter(
   window: const Duration(minutes: 15),
 );
 
-/// The `429` for an [attempt] on [email] over its limit, or `null`.
-///
-/// Counted per address rather than per IP: behind the mobile carriers' shared
-/// addresses many players reach the API from one IP, and an IP limit would
-/// refuse them together.
-Response? limitAuthAttempt(AuthAttempt attempt, String email) {
-  final limiter = switch (attempt) {
-    AuthAttempt.login => _loginLimiter,
-    AuthAttempt.register => _registerLimiter,
-    AuthAttempt.passwordReset => _passwordResetLimiter,
-    AuthAttempt.passwordResetCode => _passwordResetCodeLimiter,
+/// The `429` for an [attempt] on [email] from [address] over its limit, or
+/// `null`. [address] is the caller's network address ([clientAddress]);
+/// without one the e-mail alone is the key, as before.
+Response? limitAuthAttempt(
+  AuthAttempt attempt,
+  String email, {
+  String? address,
+}) {
+  final RateLimiter? perAddress = switch (attempt) {
+    AuthAttempt.login => _loginAddressLimiter,
+    AuthAttempt.register => _registerAddressLimiter,
+    AuthAttempt.passwordReset => _passwordResetAddressLimiter,
+    AuthAttempt.passwordResetCode => null,
   };
-  final wait = limiter.hit(email.trim().toLowerCase());
+  if (perAddress != null && address != null) {
+    final wait = perAddress.hit(address);
+    if (wait != null) return tooManyRequests(wait);
+  }
+  final wait = _limiterFor(attempt).hit(_authKey(attempt, email, address));
   return wait == null ? null : tooManyRequests(wait);
+}
+
+/// Forgets the failures counted for [email] from [address]: a player who
+/// signs in has nothing left to answer for (audit M-16).
+void forgiveAuthAttempts(
+  AuthAttempt attempt,
+  String email, {
+  String? address,
+}) => _limiterFor(attempt).reset(_authKey(attempt, email, address));
+
+RateLimiter _limiterFor(AuthAttempt attempt) => switch (attempt) {
+  AuthAttempt.login => _loginLimiter,
+  AuthAttempt.register => _registerLimiter,
+  AuthAttempt.passwordReset => _passwordResetLimiter,
+  AuthAttempt.passwordResetCode => _passwordResetCodeLimiter,
+};
+
+String _authKey(AuthAttempt attempt, String email, String? address) {
+  final String who = email.trim().toLowerCase();
+  if (attempt == AuthAttempt.passwordResetCode) return who;
+  return '$who|${address ?? ''}';
 }
 
 /// Error reports one device may send (`POST /errors/report`, migration

@@ -43,7 +43,11 @@ Future<Response> _handle(
 
   // One cast, read once: a second would be flagged unnecessary.
   final email = (emailResult as Ok<String>).value;
-  final limited = limitAuthAttempt(AuthAttempt.register, email);
+  final limited = limitAuthAttempt(
+    AuthAttempt.register,
+    email,
+    address: clientAddress(context.request.headers),
+  );
   if (limited != null) {
     return limited;
   }

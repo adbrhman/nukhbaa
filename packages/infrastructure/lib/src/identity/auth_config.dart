@@ -130,10 +130,11 @@ final class AuthConfig {
   /// server env is safe; it is still never logged.
   final String? anonKey;
 
-  /// Default recovery landing page. Deployments may override this with
-  /// NUKHBA_PASSWORD_RESET_REDIRECT_URL.
+  /// Default recovery landing page: the web mirror at nukhbaa.app, which
+  /// opens in Yemen, where github.io is blocked (audit M-03). Deployments
+  /// may override this with NUKHBA_PASSWORD_RESET_REDIRECT_URL.
   static const String defaultPasswordResetRedirectUrl =
-      'https://adbrhman.github.io/nukhbaa/reset-password';
+      'https://nukhbaa.app/nukhbaa/reset-password';
 
   static Uri _parseResetRedirect(String? raw) {
     final value = (raw == null || raw.trim().isEmpty)

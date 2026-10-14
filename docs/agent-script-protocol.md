@@ -92,6 +92,13 @@ One bash script per batch, named `NN_short_name.sh`, downloaded to
   `git rm --cached -- $DEL`). Never `git add -A`. A re-run that finds nothing
   to commit says so and ends cleanly. Never push: pushing needs the owner's
   permission every session.
+- **A runner for several batches** (approved by the owner 2026-10-14): one
+  script runs the batch scripts in order and commits each one locally
+  (`git commit -F .git/NK_COMMIT_NN`, the files the batch staged by name)
+  as soon as its checks pass; it stops at the first failure, whose batch
+  rolls itself back, so what passed before it stays committed. It never
+  pushes, and it ends by listing the migrations to apply in the SQL Editor
+  before the owner pushes.
 
 ## 3. Tests
 

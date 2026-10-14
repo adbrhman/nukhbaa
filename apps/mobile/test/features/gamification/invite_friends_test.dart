@@ -133,7 +133,7 @@ void main() {
       (c) => c.method == 'Clipboard.setData',
     );
     final Map<Object?, Object?> args = copy.arguments as Map<Object?, Object?>;
-    expect(args['text'], 'https://adbrhman.github.io/nukhbaa/?ref=ABCDEFGH');
+    expect(args['text'], 'https://nukhbaa.app/?ref=ABCDEFGH');
   });
 
   testWidgets('a claim sends the code with the install id and shows the '
@@ -167,12 +167,17 @@ void main() {
     expect(find.text(referralClaimMessage('unknown_code')), findsOneWidget);
   });
 
-  test('without a host from the build, the link opens GitHub Pages', () {
-    expect(inviteWebBase, 'https://adbrhman.github.io/nukhbaa/');
+  // Audit M-03: github.io is blocked in Yemen.
+  test('without a host from the build, the link opens nukhbaa.app', () {
+    expect(inviteWebBase, 'https://nukhbaa.app/nukhbaa/');
   });
 
   test('the link carries the code; a late claim names the 24 hours', () {
-    expect(inviteLinkFor('ABCDEFGH'), '$inviteWebBase?ref=ABCDEFGH');
+    expect(inviteLinkFor('ABCDEFGH'), 'https://nukhbaa.app/?ref=ABCDEFGH');
+    expect(
+      inviteLinkFor('ABCDEFGH', webBase: 'https://adbrhman.github.io/nukhbaa/'),
+      'https://adbrhman.github.io/nukhbaa/?ref=ABCDEFGH',
+    );
     expect(referralClaimMessage('window_closed'), contains('24'));
     // Audit M-22: a second account behind one mailbox is told why.
     expect(referralClaimMessage('duplicate_account'), contains('بريد حسابك'));
