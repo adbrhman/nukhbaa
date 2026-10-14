@@ -75,6 +75,8 @@ FrameReport _report({
   int frozen = 1,
   int worst = 900,
   String? model,
+  int? atStart,
+  int? atResume,
 }) => FrameReport(
   build: build,
   platform: platform,
@@ -84,6 +86,8 @@ FrameReport _report({
   frozenFrames: frozen,
   worstFrameMs: worst,
   deviceModel: model,
+  frozenAtStart: atStart,
+  frozenAtResume: atResume,
 );
 
 FrameTotals _totals(String? build, int frames, {String? platform}) =>
@@ -135,6 +139,10 @@ void main() {
         _report(model: 'Galaxy/A10'),
         _report(model: 'x' * 61),
         _report(model: ''),
+        _report(frozen: 3, atStart: 2),
+        _report(frozen: 3, atResume: 1),
+        _report(frozen: 3, atStart: 3, atResume: 1),
+        _report(frozen: 3, atStart: -1, atResume: 0),
       ]) {
         final result = await use(principal: _player, report: bad);
         expect(result.isErr, isTrue);
@@ -142,6 +150,19 @@ void main() {
       }
       expect(reports.kept, isEmpty);
     });
+  });
+
+  test('when the frozen frames happened is kept with the report', () async {
+    final reports = _FakeReports();
+
+    final result = await RecordFrameReport(
+      reports: reports,
+      clock: _FixedClock(now),
+    )(principal: _player, report: _report(frozen: 3, atStart: 2, atResume: 1));
+
+    expect(result.isOk, isTrue);
+    expect(reports.kept.single.$2.frozenAtStart, 2);
+    expect(reports.kept.single.$2.frozenAtResume, 1);
   });
 
   test('a device model in the allowed shape is kept', () async {

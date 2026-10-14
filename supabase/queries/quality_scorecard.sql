@@ -8,7 +8,10 @@
 -- Last 7 days:
 --   platforms   -- per platform: sessions reported (POST /me/frame-report,
 --                  0070), sessions with a frozen frame (> 700 ms), frames
---                  drawn and frames slower than one refresh interval;
+--                  drawn and frames slower than one refresh interval; and,
+--                  of the sessions that say when their frames froze (0170,
+--                  script 73), how many froze at the opening, at a return
+--                  from the background, or later;
 --   open_errors -- per severity and source: error groups (0087) still new
 --                  or in progress, critical or high, seen in the window.
 -- Tested by supabase/tests/quality_scorecard_query_test.sql.
@@ -21,7 +24,14 @@ select json_build_object(
              count(*) as sessions,
              count(*) filter (where r.frozen_frames > 0) as frozen_sessions,
              sum(r.frames)::bigint as frames,
-             sum(r.slow_frames)::bigint as slow_frames
+             sum(r.slow_frames)::bigint as slow_frames,
+             count(*) filter (where r.frozen_at_start is not null) as timed_sessions,
+             count(*) filter (where r.frozen_at_start > 0) as frozen_at_start_sessions,
+             count(*) filter (where r.frozen_at_resume > 0) as frozen_at_resume_sessions,
+             count(*) filter (
+               where r.frozen_at_start is not null
+                 and r.frozen_frames - r.frozen_at_start - r.frozen_at_resume > 0
+             ) as frozen_later_sessions
       from ops.frame_reports r
       where r.reported_at >= now() - interval '7 days'
       group by r.platform

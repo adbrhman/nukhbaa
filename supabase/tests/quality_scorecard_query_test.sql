@@ -13,15 +13,18 @@ insert into identity.users (id, email, display_name) values
   ('00000000-0000-4000-8172-0000000000a2', 'b172@t.io', 'B172');
 
 -- Three Android sessions (one with a frozen frame), one web session, and
--- one Android session eight days old that the window leaves out.
+-- one Android session eight days old that the window leaves out. Since
+-- 0170 a report may say when its frames froze: the web session froze once
+-- at the opening, once at a return and once later; the second Android
+-- session is from an app older than 0170 and says nothing.
 insert into ops.frame_reports
-  (user_id, reported_at, build, platform, refresh_rate_hz, frames, slow_frames, frozen_frames, worst_frame_ms)
+  (user_id, reported_at, build, platform, refresh_rate_hz, frames, slow_frames, frozen_frames, worst_frame_ms, frozen_at_start, frozen_at_resume)
 values
-  ('00000000-0000-4000-8172-0000000000a1', now() - interval '1 hour', 'b172', 'android', 60, 1000, 50, 0, 40),
-  ('00000000-0000-4000-8172-0000000000a1', now() - interval '2 days', 'b172', 'android', 60, 2000, 100, 2, 900),
-  ('00000000-0000-4000-8172-0000000000a2', now() - interval '6 days', 'b172', 'android', 90, 1000, 0, 0, 10),
-  ('00000000-0000-4000-8172-0000000000a2', now() - interval '3 hours', 'b172', 'web', 60, 500, 25, 0, 60),
-  ('00000000-0000-4000-8172-0000000000a2', now() - interval '8 days', 'b172', 'android', 60, 9000, 9000, 900, 5000);
+  ('00000000-0000-4000-8172-0000000000a1', now() - interval '1 hour', 'b172', 'android', 60, 1000, 50, 0, 40, 0, 0),
+  ('00000000-0000-4000-8172-0000000000a1', now() - interval '2 days', 'b172', 'android', 60, 2000, 100, 2, 900, null, null),
+  ('00000000-0000-4000-8172-0000000000a2', now() - interval '6 days', 'b172', 'android', 90, 1000, 0, 0, 10, 0, 0),
+  ('00000000-0000-4000-8172-0000000000a2', now() - interval '3 hours', 'b172', 'web', 60, 500, 25, 3, 960, 1, 1),
+  ('00000000-0000-4000-8172-0000000000a2', now() - interval '8 days', 'b172', 'android', 60, 9000, 9000, 900, 5000, 900, 0);
 
 -- Counted: a new critical server error and an in-progress high Android
 -- error, both seen this week. Left out: a fixed high error, a high error
@@ -60,12 +63,22 @@ begin
   raise notice 'ok - android: 3 sessions this week, 1 with a frozen frame, 150 of 4000 frames slow (the 8-day-old session is out)';
   if web->>'platform' is distinct from 'web'
      or (web->>'sessions')::int is distinct from 1
-     or (web->>'frozen_sessions')::int is distinct from 0
+     or (web->>'frozen_sessions')::int is distinct from 1
      or (web->>'frames')::bigint is distinct from 500
-     or (web->>'slow_frames')::bigint is distinct from 25 then
+     or (web->>'slow_frames')::bigint is distinct from 25
+     or (web->>'timed_sessions')::int is distinct from 1
+     or (web->>'frozen_at_start_sessions')::int is distinct from 1
+     or (web->>'frozen_at_resume_sessions')::int is distinct from 1
+     or (web->>'frozen_later_sessions')::int is distinct from 1 then
     raise exception 'FAILED: web row %', web;
   end if;
-  raise notice 'ok - web: 1 session, no frozen frame, 25 of 500 frames slow';
+  raise notice 'ok - web: 1 session, frozen at the opening, at a return and later (3 frozen frames: 1, 1, 1)';
+  if (android->>'timed_sessions')::int is distinct from 2
+     or (android->>'frozen_at_start_sessions')::int is distinct from 0
+     or (android->>'frozen_later_sessions')::int is distinct from 0 then
+    raise exception 'FAILED: android timing %', android;
+  end if;
+  raise notice 'ok - android: 2 of 3 sessions say when (one is from an older app), none froze at a known time';
   if json_array_length(c->'open_errors') is distinct from 2
      or c->'open_errors'->0->>'severity' is distinct from 'critical'
      or c->'open_errors'->0->>'source' is distinct from 'server'

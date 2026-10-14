@@ -5022,6 +5022,35 @@ APK.
 
 No migration, no APK. Puppeteer, the web-speed check's, now runs from main.
 
+### When a web frame freezes (script 73, 2026-10-15)
+
+The quality scorecard's first card (2026-10-15): 33.7% of web sessions had
+a frame over 700 ms, against 2.8% on Android. A frame report said how many
+froze, not when.
+
+- Migration 0170: `ops.frame_reports` gains `frozen_at_start` and
+  `frozen_at_resume`, a subset of `frozen_frames` each (both or neither,
+  together never more; null from older apps). Numbered outside the audit
+  plan's ranges; the plan's rule 4 now gives this series 0170-0179.
+- `FrameReporter` places each frozen frame: within
+  `FrameReporter.openingWindow` (5 s) of the first frame of an opening --
+  the app opening, or a return from the background (resumed after paused
+  or hidden) -- on the frame's own vsync (`FramePhase.vsyncStart`), so no
+  second clock is mixed in; the rest froze while the player used the app.
+  `FrameReportDto`, `POST /me/frame-report` (two optional integers),
+  `FrameReport`, `RecordFrameReport` (refuses one without the other, a
+  negative count, or more than the frozen frames) and
+  `PostgresFrameReportRepository` carry the two counts.
+- `supabase/queries/quality_scorecard.sql` counts, per platform, the
+  sessions that say when, and those that froze at the opening, at a return
+  and later; the card adds the split to the frozen row once 30 sessions in
+  the week carry it.
+- The web build reports it as soon as it is deployed; Android with the
+  next APK.
+
+Migration 0170 (apply in the SQL Editor before pushing); no APK for the
+web.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

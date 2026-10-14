@@ -15,8 +15,9 @@ import 'package:shared/shared.dart';
 ///
 /// Inherits `bearerAuth` from `routes/me/_middleware.dart`, so an
 /// unauthenticated request never arrives here. Every field is required; the
-/// use-case refuses a report that cannot be true. `device_model` is the
-/// one optional field (migration 0071): an app from before it omits it.
+/// use-case refuses a report that cannot be true. Optional: `device_model`
+/// (migration 0071) and `frozen_at_start` / `frozen_at_resume` (0170);
+/// an app from before them omits them.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -61,6 +62,20 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
+  final openings = <String, int?>{};
+  for (final field in const ['frozen_at_start', 'frozen_at_resume']) {
+    final Object? raw = body[field];
+    if (raw != null && raw is! int) {
+      return errorResponse(
+        AppError.validation(
+          'request.field_invalid',
+          'Field "$field" must be an integer',
+        ),
+      );
+    }
+    openings[field] = raw as int?;
+  }
+
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
@@ -80,6 +95,8 @@ Future<Response> onRequest(RequestContext context) async {
       frozenFrames: value('frozen_frames'),
       worstFrameMs: value('worst_frame_ms'),
       deviceModel: rawModel as String?,
+      frozenAtStart: openings['frozen_at_start'],
+      frozenAtResume: openings['frozen_at_resume'],
     ),
   );
 

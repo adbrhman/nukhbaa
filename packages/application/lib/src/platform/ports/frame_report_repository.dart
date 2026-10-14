@@ -17,6 +17,8 @@ final class FrameReport {
     required this.frozenFrames,
     required this.worstFrameMs,
     this.deviceModel,
+    this.frozenAtStart,
+    this.frozenAtResume,
   });
 
   /// The build's short commit sha, as the OTA check knows it.
@@ -43,6 +45,14 @@ final class FrameReport {
   /// The device's maker and model (`samsung SM-A105F`); null when the app
   /// could not read it or predates migration 0071.
   final String? deviceModel;
+
+  /// Of [frozenFrames], those in the first 5 seconds after the app opened;
+  /// null, with [frozenAtResume], when the app predates migration 0170.
+  final int? frozenAtStart;
+
+  /// Of [frozenFrames], those in the first 5 seconds after a return from
+  /// the background; null, with [frozenAtStart], before migration 0170.
+  final int? frozenAtResume;
 }
 
 /// Summed [FrameReport]s over a window: for every build ([build] is null),

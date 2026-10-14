@@ -16,11 +16,13 @@ final class PostgresFrameReportRepository implements FrameReportRepository {
   static const String _insertSql = '''
 INSERT INTO ops.frame_reports (
   user_id, reported_at, build, platform, refresh_rate_hz,
-  frames, slow_frames, frozen_frames, worst_frame_ms, device_model
+  frames, slow_frames, frozen_frames, worst_frame_ms, device_model,
+  frozen_at_start, frozen_at_resume
 )
 VALUES (
   @user_id, @reported_at, @build, @platform, @refresh_rate_hz,
-  @frames, @slow_frames, @frozen_frames, @worst_frame_ms, @device_model
+  @frames, @slow_frames, @frozen_frames, @worst_frame_ms, @device_model,
+  @frozen_at_start, @frozen_at_resume
 )
 ''';
 
@@ -115,6 +117,8 @@ LIMIT @limit
         'frozen_frames': report.frozenFrames,
         'worst_frame_ms': report.worstFrameMs,
         'device_model': report.deviceModel,
+        'frozen_at_start': report.frozenAtStart,
+        'frozen_at_resume': report.frozenAtResume,
       },
     );
     return switch (result) {

@@ -11,6 +11,8 @@ final class FrameReportDto {
     required this.frozenFrames,
     required this.worstFrameMs,
     this.deviceModel,
+    this.frozenAtStart,
+    this.frozenAtResume,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -25,6 +27,8 @@ final class FrameReportDto {
     frozenFrames: (json['frozen_frames'] as int?) ?? 0,
     worstFrameMs: (json['worst_frame_ms'] as int?) ?? 0,
     deviceModel: json['device_model'] as String?,
+    frozenAtStart: json['frozen_at_start'] as int?,
+    frozenAtResume: json['frozen_at_resume'] as int?,
   );
 
   /// The current schema version for this DTO.
@@ -54,6 +58,15 @@ final class FrameReportDto {
   /// The device's maker and model (migration 0071); omitted when unknown.
   final String? deviceModel;
 
+  /// Of [frozenFrames], those in the first 5 seconds after the app opened
+  /// (migration 0170); omitted by apps from before it.
+  final int? frozenAtStart;
+
+  /// Of [frozenFrames], those in the first 5 seconds after the app came
+  /// back from the background (migration 0170); omitted by apps from
+  /// before it.
+  final int? frozenAtResume;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -68,6 +81,8 @@ final class FrameReportDto {
     'frozen_frames': frozenFrames,
     'worst_frame_ms': worstFrameMs,
     if (deviceModel != null) 'device_model': deviceModel,
+    if (frozenAtStart != null) 'frozen_at_start': frozenAtStart,
+    if (frozenAtResume != null) 'frozen_at_resume': frozenAtResume,
   };
 }
 

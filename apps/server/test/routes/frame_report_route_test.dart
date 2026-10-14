@@ -103,6 +103,58 @@ void main() {
       expect(reports.kept.single.deviceModel, isNull);
     });
 
+    test('when the frozen frames happened is kept (0170)', () async {
+      final reports = _MemoryReports();
+
+      final response = await _call(
+        reports,
+        HttpMethod.post,
+        body: {..._body(), 'frozen_at_start': 1, 'frozen_at_resume': 0},
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(reports.kept.single.frozenAtStart, 1);
+      expect(reports.kept.single.frozenAtResume, 0);
+    });
+
+    test('an app from before 0170 sends no openings and is kept', () async {
+      final reports = _MemoryReports();
+
+      final response = await _call(reports, HttpMethod.post, body: _body());
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(reports.kept.single.frozenAtStart, isNull);
+      expect(reports.kept.single.frozenAtResume, isNull);
+    });
+
+    test(
+      'openings that are not integers, or cannot be true, are 400',
+      () async {
+        final reports = _MemoryReports();
+
+        final text = await _call(
+          reports,
+          HttpMethod.post,
+          body: {..._body(), 'frozen_at_start': '1', 'frozen_at_resume': 0},
+        );
+        final half = await _call(
+          reports,
+          HttpMethod.post,
+          body: {..._body(), 'frozen_at_start': 1},
+        );
+        final tooMany = await _call(
+          reports,
+          HttpMethod.post,
+          body: {..._body(), 'frozen_at_start': 1, 'frozen_at_resume': 1},
+        );
+
+        expect(text.statusCode, HttpStatus.badRequest);
+        expect(half.statusCode, HttpStatus.badRequest);
+        expect(tooMany.statusCode, HttpStatus.badRequest);
+        expect(reports.kept, isEmpty);
+      },
+    );
+
     test('an impossible or incomplete report is 400, nothing kept', () async {
       final reports = _MemoryReports();
 

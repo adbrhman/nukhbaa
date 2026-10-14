@@ -71,7 +71,33 @@ void main() {
       'frozen_frames': 1,
       'worst_frame_ms': 900,
       'device_model': null,
+      'frozen_at_start': null,
+      'frozen_at_resume': null,
     });
+  });
+
+  test('record binds when the frozen frames happened (0170)', () async {
+    final connection = _FakeConnection(const Result.ok([]));
+
+    await PostgresFrameReportRepository(connection).record(
+      userId: const UserId(_user),
+      report: const FrameReport(
+        build: 'abc1234',
+        platform: 'web',
+        refreshRateHz: 60,
+        frames: 1000,
+        slowFrames: 30,
+        frozenFrames: 3,
+        worstFrameMs: 1200,
+        frozenAtStart: 2,
+        frozenAtResume: 1,
+      ),
+      reportedAt: DateTime.utc(2026, 10, 15),
+    );
+
+    expect(connection.sqls.single, contains('frozen_at_start'));
+    expect(connection.params.single['frozen_at_start'], 2);
+    expect(connection.params.single['frozen_at_resume'], 1);
   });
 
   test('devices map rows and pass the privacy floor', () async {

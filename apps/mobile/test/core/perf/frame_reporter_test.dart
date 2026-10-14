@@ -97,6 +97,59 @@ void main() {
     expect(sent, isEmpty);
   });
 
+  test('a frozen frame is placed at the opening, a return, or later', () async {
+    final sent = <FrameReportDto>[];
+    final r = reporter(sent, hz: 60);
+    Duration at(num seconds) => Duration(microseconds: (seconds * 1e6).round());
+
+    // The app opens: one freeze at 1 s, one at 4.9 s, then one at 30 s.
+    r.addFrame(build: _ms(3), raster: _ms(4), at: at(100));
+    r.addFrame(build: _ms(3), raster: _ms(900), at: at(101));
+    r.addFrame(build: _ms(3), raster: _ms(800), at: at(104.9));
+    for (int i = 0; i < 150; i++) {
+      r.addFrame(build: _ms(3), raster: _ms(4), at: at(105 + i / 60));
+    }
+    r.addFrame(build: _ms(3), raster: _ms(1200), at: at(130));
+
+    // Another tab, then back: the return's window starts at its first frame.
+    r.didChangeAppLifecycleState(AppLifecycleState.hidden);
+    await Future<void>.delayed(Duration.zero);
+    r.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    r.addFrame(build: _ms(3), raster: _ms(950), at: at(500));
+    r.addFrame(build: _ms(3), raster: _ms(760), at: at(506));
+    for (int i = 0; i < 150; i++) {
+      r.addFrame(build: _ms(3), raster: _ms(4), at: at(507 + i / 60));
+    }
+    await r.flush();
+
+    expect(sent, hasLength(2));
+    expect(sent[0].frozenFrames, 3);
+    expect(sent[0].frozenAtStart, 2);
+    expect(sent[0].frozenAtResume, 0);
+    expect(sent[1].frozenFrames, 2);
+    expect(sent[1].frozenAtStart, 0);
+    expect(
+      sent[1].frozenAtResume,
+      1,
+      reason: 'the one at 6 s is past the window',
+    );
+  });
+
+  test('a frame without a vsync is counted but not placed', () async {
+    final sent = <FrameReportDto>[];
+    final r = reporter(sent, hz: 60);
+    for (int i = 0; i < 150; i++) {
+      r.addFrame(build: _ms(3), raster: _ms(4));
+    }
+    r.addFrame(build: _ms(3), raster: _ms(900));
+
+    await r.flush();
+
+    expect(sent.single.frozenFrames, 1);
+    expect(sent.single.frozenAtStart, 0);
+    expect(sent.single.frozenAtResume, 0);
+  });
+
   test('the device model read at start rides on the report', () async {
     final sent = <FrameReportDto>[];
     final r = FrameReporter(

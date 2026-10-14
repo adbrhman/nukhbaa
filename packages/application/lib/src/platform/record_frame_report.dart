@@ -48,6 +48,15 @@ final class RecordFrameReport {
     r'^[0-9A-Za-z ._()+-]{1,60}$',
   );
 
+  /// The frozen-frame openings (migration 0170): both or neither, never
+  /// negative, together never more than the frozen frames.
+  static bool _openingsValid(FrameReport report) {
+    final int? start = report.frozenAtStart;
+    final int? resume = report.frozenAtResume;
+    if (start == null || resume == null) return start == null && resume == null;
+    return start >= 0 && resume >= 0 && start + resume <= report.frozenFrames;
+  }
+
   /// Keeps [report] from [principal].
   Future<Result<void>> call({
     required AuthenticatedUser principal,
@@ -71,7 +80,8 @@ final class RecordFrameReport {
         report.worstFrameMs >= 0 &&
         report.worstFrameMs <= maxFrameMs &&
         (report.deviceModel == null ||
-            deviceModelPattern.hasMatch(report.deviceModel!));
+            deviceModelPattern.hasMatch(report.deviceModel!)) &&
+        _openingsValid(report);
     if (!valid) {
       return const Result.err(
         AppError.validation('perf.invalid_report', 'Invalid frame report'),

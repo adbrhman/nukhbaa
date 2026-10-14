@@ -5,7 +5,7 @@ library;
 
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show FrameTiming;
+import 'dart:ui' show FramePhase, FrameTiming;
 
 import 'package:contracts/contracts.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -20,6 +20,12 @@ import 'package:flutter/widgets.dart';
 /// interval (16.7 ms at 60 Hz, 8.3 ms at 120 Hz): the two phases run in
 /// parallel on different threads, so the longer one is what the eye sees.
 /// It is frozen past 700 ms. Nothing about screens or content is kept.
+///
+/// A frozen frame is also placed in time (migration 0170): within
+/// [openingWindow] of the app opening, within it of a return from the
+/// background, or later, while the player used the app. The window starts
+/// at the first frame of the opening, measured on the engine's own frame
+/// clock (the frame's vsync), so no second clock is mixed in.
 class FrameReporter with WidgetsBindingObserver {
   /// Creates a reporter that hands each report to [send].
   ///
@@ -62,11 +68,27 @@ class FrameReporter with WidgetsBindingObserver {
   /// too few frames to say anything.
   static const int minFrames = 120;
 
+  /// How long after the app opens, or comes back from the background, a
+  /// frozen frame counts as part of that opening.
+  static const Duration openingWindow = Duration(seconds: 5);
+
   int _frames = 0;
   int _slow = 0;
   int _frozen = 0;
+  int _frozenAtStart = 0;
+  int _frozenAtResume = 0;
   int _worstMicros = 0;
   bool _started = false;
+
+  /// Whether the frames now belong to a return from the background rather
+  /// than to the app opening.
+  bool _resumed = false;
+
+  /// The vsync of the opening's first frame; null until that frame.
+  int? _openingZeroMicros;
+
+  /// Whether the app went to the background since the last opening.
+  bool _away = false;
 
   /// Frames counted since the last report.
   int get frames => _frames;
@@ -139,26 +161,56 @@ class FrameReporter with WidgetsBindingObserver {
 
   void _onTimings(List<FrameTiming> timings) {
     for (final FrameTiming t in timings) {
-      addFrame(build: t.buildDuration, raster: t.rasterDuration);
+      addFrame(
+        build: t.buildDuration,
+        raster: t.rasterDuration,
+        at: Duration(
+          microseconds: t.timestampInMicroseconds(FramePhase.vsyncStart),
+        ),
+      );
     }
   }
 
-  /// Counts one frame whose phases took [build] and [raster].
-  void addFrame({required Duration build, required Duration raster}) {
+  /// Counts one frame whose phases took [build] and [raster]. [at] is the
+  /// frame's vsync on the engine's frame clock; without it the frame is
+  /// counted but not placed in an opening.
+  void addFrame({
+    required Duration build,
+    required Duration raster,
+    Duration? at,
+  }) {
     final int micros = math.max(build.inMicroseconds, raster.inMicroseconds);
     if (micros > suspendedAfter.inMicroseconds) return;
     final int budget = (1000000 / _refreshRateHz()).round();
     _frames++;
     if (micros > budget) _slow++;
-    if (micros > frozenAfter.inMicroseconds) _frozen++;
     if (micros > _worstMicros) _worstMicros = micros;
+    bool opening = false;
+    if (at != null) {
+      final int zero = _openingZeroMicros ??= at.inMicroseconds;
+      opening = at.inMicroseconds - zero < openingWindow.inMicroseconds;
+    }
+    if (micros > frozenAfter.inMicroseconds) {
+      _frozen++;
+      if (opening && _resumed) {
+        _frozenAtResume++;
+      } else if (opening) {
+        _frozenAtStart++;
+      }
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
+      _away = true;
       unawaited(flush());
+    } else if (state == AppLifecycleState.resumed && _away) {
+      // A new opening: its window starts at its own first frame.
+      _away = false;
+      _resumed = true;
+      _openingZeroMicros = null;
     }
   }
 
@@ -175,10 +227,14 @@ class FrameReporter with WidgetsBindingObserver {
       frozenFrames: _frozen,
       worstFrameMs: (_worstMicros / 1000).round(),
       deviceModel: _deviceModel,
+      frozenAtStart: _frozenAtStart,
+      frozenAtResume: _frozenAtResume,
     );
     _frames = 0;
     _slow = 0;
     _frozen = 0;
+    _frozenAtStart = 0;
+    _frozenAtResume = 0;
     _worstMicros = 0;
     try {
       await _send(report);

@@ -23,6 +23,39 @@ void main() {
     expect(back.toJson(), dto.toJson());
   });
 
+  test('the frozen-frame openings round-trip, and an old report has none', () {
+    const dto = FrameReportDto(
+      build: 'abc1234',
+      platform: 'web',
+      refreshRateHz: 60,
+      frames: 1000,
+      slowFrames: 30,
+      frozenFrames: 3,
+      worstFrameMs: 1200,
+      frozenAtStart: 2,
+      frozenAtResume: 1,
+    );
+
+    final back = FrameReportDto.fromJson(
+      (jsonDecode(jsonEncode(dto.toJson())) as Map<String, Object?>),
+    );
+
+    expect(back.frozenAtStart, 2);
+    expect(back.frozenAtResume, 1);
+    expect(dto.toJson()['frozen_at_start'], 2);
+    final old = FrameReportDto.fromJson(const {
+      'build': 'abc1234',
+      'platform': 'web',
+      'refresh_rate_hz': 60,
+      'frames': 1000,
+      'slow_frames': 30,
+      'frozen_frames': 3,
+      'worst_frame_ms': 1200,
+    });
+    expect(old.frozenAtStart, isNull);
+    expect(old.toJson().containsKey('frozen_at_start'), isFalse);
+  });
+
   test('AdminFrameStatsDto round-trips; shares are per frame', () {
     const totals = FrameTotalsDto(
       build: null,

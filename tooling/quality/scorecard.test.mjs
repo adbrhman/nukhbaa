@@ -110,6 +110,25 @@ test('a missing source is shown as not measured and keeps the last web value', (
   assert.equal(r.state.webFirstFrameMs, 19000);
 });
 
+test('when the frames froze is shown once enough sessions say so', () => {
+  const db = {
+    ...goodDb,
+    platforms: [
+      {
+        platform: 'web', sessions: 200, frozen_sessions: 60, frames: 500000, slow_frames: 20000,
+        timed_sessions: 100, frozen_at_start_sessions: 40, frozen_at_resume_sessions: 10, frozen_later_sessions: 5,
+      },
+      {
+        platform: 'android', sessions: 200, frozen_sessions: 4, frames: 500000, slow_frames: 20000,
+        timed_sessions: 3, frozen_at_start_sessions: 1, frozen_at_resume_sessions: 0, frozen_later_sessions: 0,
+      },
+    ],
+  };
+  const r = run({ db, build: green, web: webResults(19000) });
+  assert.match(r.summary, /web 30\.0% \(عند الفتح 40\.0%، عند العودة 10\.0%، أثناء الاستعمال 5\.0%\)/);
+  assert.match(r.summary, /android 2\.0%(?! \()/, 'too few timed sessions: no split');
+});
+
 test('too few sessions is not judged', () => {
   const db = { ...goodDb, platforms: [{ platform: 'android', sessions: 5, frozen_sessions: 5, frames: 100, slow_frames: 100 }] };
   const r = run({ db, build: green, web: webResults(19000) });

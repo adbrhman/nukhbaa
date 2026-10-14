@@ -125,6 +125,17 @@ export function errorsRow(db) {
   return { ...row, status: total === 0 ? 'pass' : 'fail', value: total === 0 ? '0' : `${total} (${parts.join('، ')})` };
 }
 
+// When a platform's frames froze (migration 0170, script 73), as shares of
+// the sessions that say so: at the opening, at a return from the
+// background, or later. A session may count in more than one. Shown once
+// enough sessions carry it; apps older than 0170 do not.
+export function whenFrozen(p) {
+  const timed = Number(p.timed_sessions);
+  if (!Number.isFinite(timed) || timed < LIMITS.minSessions) return '';
+  const share = (n) => pct((100 * Number(n || 0)) / timed);
+  return ` (عند الفتح ${share(p.frozen_at_start_sessions)}، عند العودة ${share(p.frozen_at_resume_sessions)}، أثناء الاستعمال ${share(p.frozen_later_sessions)})`;
+}
+
 function framesRows(db) {
   const frozen = {
     id: 'frozen',
@@ -147,9 +158,9 @@ function framesRows(db) {
     const v = 'بيانات قليلة هذا الأسبوع';
     return [{ ...frozen, status: 'na', value: v }, { ...slow, status: 'na', value: v }];
   }
-  const fz = judged.map((p) => ({ p: p.platform, v: (100 * Number(p.frozen_sessions)) / Number(p.sessions) }));
+  const fz = judged.map((p) => ({ p: p.platform, v: (100 * Number(p.frozen_sessions)) / Number(p.sessions), when: whenFrozen(p) }));
   const sl = judged.map((p) => ({ p: p.platform, v: (100 * Number(p.slow_frames)) / Number(p.frames) }));
-  const show = (xs) => xs.map((x) => `${x.p} ${pct(x.v)}`).join('، ');
+  const show = (xs) => xs.map((x) => `${x.p} ${pct(x.v)}${x.when || ''}`).join('، ');
   return [
     { ...frozen, status: fz.every((x) => x.v <= LIMITS.frozenSessionPct) ? 'pass' : 'fail', value: show(fz) },
     { ...slow, status: sl.every((x) => x.v <= LIMITS.slowFramePct) ? 'pass' : 'fail', value: show(sl) },
