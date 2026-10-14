@@ -111,13 +111,12 @@ void main() {
         expect(entries[0]['total_points'], 9);
         expect(entries[0]['entry_count'], 3);
 
-        // Tie on 5: standard "1224" — both share rank 2; the earlier joiner
-        // (kParticipantThird joined 07-01) displays before kParticipantOther
-        // (joined 07-02).
+        // Level on 5: the earlier joiner (kParticipantThird, 07-01) takes
+        // 2nd and kParticipantOther (07-02) 3rd -- a place each (batch 134).
         expect(entries[1]['participant_id'], kParticipantThird);
         expect(entries[1]['rank'], 2);
         expect(entries[2]['participant_id'], kParticipantOther);
-        expect(entries[2]['rank'], 2);
+        expect(entries[2]['rank'], 3);
 
         // No group reference leaks onto an entry (Axiom 4).
         expect(entries[0].containsKey('group_id'), isFalse);

@@ -4773,6 +4773,24 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   referral switch, champion photo, season and competition creation, H2H
   pilot start (they need new enum values). L-25 and L-27 are left for a
   later batch. No migration; server only.
+- **Batch 134 (one ranking everywhere, 2026-10-14)**: the month board
+  ranks by points, invitation points, exact calls, right outcomes, then the
+  earlier join (batch 129), but the same month read from the match card
+  ("نقاط الموسم", `SeasonLeaderboard`), a group's season board and the
+  personal record still shared places on points alone. `SeasonLeaderboard`
+  now orders by the same five keys and shares a place only when level on
+  all of them; `LeaderboardEntry` carries `referralPoints` and
+  `outcomeCount`; `PostgresLeaderboardRepository` (season board, and the
+  personal record's `rank()`) and `PostgresGroupRepository` (group season
+  board, which now also reads exact and decided counts) read them;
+  `season_and_group_standings_queries_test.sql` follows the adapters. The
+  points badge on the season fixtures screen (and the unused predict sheet)
+  follows the points: a right outcome's 0 is no longer green. L-16: "نقاطي"
+  showed the gap to the leader twice; the second tile now counts the exact
+  calls ("أصبت النتيجة"). Left for later: L-30 (the live "if it ended now"
+  place counts other seasons' and suspended players' gains) and L-35 (the
+  insights call a right outcome "صحيحة"). No migration; the boards change
+  with the server, the screens need an APK.
 
 ## 3. Version-Verification Log
 

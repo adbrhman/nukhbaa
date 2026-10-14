@@ -49,7 +49,7 @@ _harness() {
 void main() {
   group('GetGroupLeaderboard — member-only + ranking', () {
     test(
-      'a member reads the ranked group board (points desc, "1224" ties)',
+      'a member reads the ranked group board (points, then the earlier join)',
       () async {
         final h = _harness();
         h.reader.seed(_groupId, _season, [
@@ -77,8 +77,8 @@ void main() {
                 .value;
         expect(board.groupId.value, _groupId);
         expect(board.seasonId.value, _season);
-        // Ranks: pA & pB tied at 10 → both rank 1, pC rank 3.
-        expect(board.standings.map((s) => s.entry.rank).toList(), [1, 1, 3]);
+        // Level on 10: pA joined first and takes 1st (batch 134).
+        expect(board.standings.map((s) => s.entry.rank).toList(), [1, 2, 3]);
         // Display order pA (earlier join) then pB then pC.
         expect(
           board.standings.map((s) => s.entry.participantId.value).toList(),

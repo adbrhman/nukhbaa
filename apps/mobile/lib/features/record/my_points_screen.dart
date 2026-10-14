@@ -156,6 +156,8 @@ class _SeasonPointsCard extends ConsumerWidget {
               : (me.exactCount * 100 / me.decidedCount).round());
 
     final int settledMatches = me?.fixturesScored ?? record.settledCount;
+    // Exact calls: a tile of its own instead of the gap shown twice (L-16).
+    final int exactHits = me?.exactCount ?? record.exactCount;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -269,12 +271,9 @@ class _SeasonPointsCard extends ConsumerWidget {
                     SizedBox(
                       width: cell,
                       child: _StatTile(
-                        label: l10n.myPointsNeededForFirst,
-                        value: gap == null
-                            ? '—'
-                            : isLeader
-                            ? l10n.myPointsLeading
-                            : l10n.pointsAbbreviated(gap),
+                        key: const Key('myPoints.exactHits'),
+                        label: l10n.historyGradeExact,
+                        value: '$exactHits',
                         tokens: tokens,
                       ),
                     ),
@@ -308,6 +307,7 @@ class _SeasonPointsCard extends ConsumerWidget {
 
 class _StatTile extends StatelessWidget {
   const _StatTile({
+    super.key,
     required this.label,
     required this.value,
     required this.tokens,

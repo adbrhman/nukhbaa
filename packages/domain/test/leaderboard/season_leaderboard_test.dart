@@ -16,6 +16,9 @@ LeaderboardEntry _entry(
   int totalPoints, {
   DateTime? joinedAt,
   int entryCount = 1,
+  int exact = 0,
+  int outcome = 0,
+  int referral = 0,
 }) {
   final result = LeaderboardEntry.projected(
     participantId: ParticipantId(participant),
@@ -23,6 +26,10 @@ LeaderboardEntry _entry(
     totalPoints: totalPoints,
     entryCount: entryCount,
     joinedAt: joinedAt ?? DateTime.utc(2026, 7, 1, 9),
+    exactCount: exact,
+    settledCount: exact + outcome,
+    outcomeCount: outcome,
+    referralPoints: referral,
   );
   return (result as Ok<LeaderboardEntry>).value;
 }
@@ -112,14 +119,14 @@ void main() {
   });
 
   group('SeasonLeaderboard.rank — standard competition ("1224") ranks', () {
-    test('two tied for 1st are followed by rank 3 (the tie is skipped)', () {
+    test('two level on every key share 1st, then rank 3', () {
       final at = DateTime.utc(2026, 7, 2);
       final board = _rank([
         _entry(_pA, 10, joinedAt: at),
-        _entry(_pB, 10, joinedAt: at.add(const Duration(hours: 1))),
+        _entry(_pB, 10, joinedAt: at),
         _entry(_pC, 4),
       ]);
-      // pA and pB tie on 10 → both rank 1; pC is the 3rd position → rank 3.
+      // pA and pB are level on every key → both rank 1; pC is rank 3.
       expect(board.entries.map((e) => e.rank).toList(), [1, 1, 3]);
       // Display order among the tie still honours the tie-break (pA joined
       // earlier than pB).
@@ -127,24 +134,78 @@ void main() {
       expect(board.entries[1].participantId.value, _pB);
     });
 
-    test('three-way tie then a distinct total: 1,1,1,4', () {
+    test('three level on every key, then a distinct total: 1,1,1,4', () {
+      final at = DateTime.utc(2026, 7, 1);
       final board = _rank([
-        _entry(_pA, 6, joinedAt: DateTime.utc(2026, 7, 1)),
-        _entry(_pB, 6, joinedAt: DateTime.utc(2026, 7, 2)),
-        _entry(_pC, 6, joinedAt: DateTime.utc(2026, 7, 3)),
+        _entry(_pA, 6, joinedAt: at),
+        _entry(_pB, 6, joinedAt: at),
+        _entry(_pC, 6, joinedAt: at),
         _entry(_pD, 1),
       ]);
       expect(board.entries.map((e) => e.rank).toList(), [1, 1, 1, 4]);
     });
 
-    test('tie in the middle: 1,2,2,4', () {
+    test('level in the middle: 1,2,2,4', () {
+      final at = DateTime.utc(2026, 7, 1);
       final board = _rank([
         _entry(_pA, 10),
-        _entry(_pB, 7, joinedAt: DateTime.utc(2026, 7, 1)),
-        _entry(_pC, 7, joinedAt: DateTime.utc(2026, 7, 2)),
+        _entry(_pB, 7, joinedAt: at),
+        _entry(_pC, 7, joinedAt: at),
         _entry(_pD, 3),
       ]);
       expect(board.entries.map((e) => e.rank).toList(), [1, 2, 2, 4]);
+    });
+
+    // Batch 134: the month board's chain. Three players on 45 points all
+    // showed tenth; each now has a place of his own.
+    test('equal points: invitations, exact calls, right outcomes, then '
+        'the earlier join decide the place', () {
+      final board = _rank([
+        _entry(
+          _pA,
+          45,
+          exact: 14,
+          outcome: 48,
+          joinedAt: DateTime.utc(2026, 9, 30, 21),
+        ),
+        _entry(
+          _pB,
+          45,
+          exact: 14,
+          outcome: 52,
+          joinedAt: DateTime.utc(2026, 10, 1, 2),
+        ),
+        _entry(
+          _pC,
+          45,
+          exact: 14,
+          outcome: 50,
+          joinedAt: DateTime.utc(2026, 9, 30, 23),
+        ),
+        _entry(
+          _pD,
+          45,
+          exact: 15,
+          outcome: 48,
+          joinedAt: DateTime.utc(2026, 9, 30, 21),
+        ),
+      ]);
+      expect(board.entries.map((e) => e.participantId.value).toList(), [
+        _pD,
+        _pB,
+        _pC,
+        _pA,
+      ]);
+      expect(board.entries.map((e) => e.rank).toList(), [1, 2, 3, 4]);
+    });
+
+    test('an invitation point comes before exact calls', () {
+      final board = _rank([
+        _entry(_pA, 10, exact: 3),
+        _entry(_pB, 10, exact: 1, referral: 1),
+      ]);
+      expect(board.entries.first.participantId.value, _pB);
+      expect(board.entries.map((e) => e.rank).toList(), [1, 2]);
     });
 
     test('every ranked entry has a positive rank', () {

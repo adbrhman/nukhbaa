@@ -51,10 +51,15 @@ SELECT p.id AS participant_id,
        p.joined_at AS joined_at,
        snap.rank AS previous_rank,
        COALESCE(f.exact_count, 0)::bigint AS exact_count,
-       COALESCE(f.decided_count, 0)::bigint AS settled_count
+       COALESCE(f.decided_count, 0)::bigint AS settled_count,
+       COALESCE(f.outcome_count, 0)::bigint AS outcome_count,
+       COALESCE(rm.referral_points, 0)::bigint AS referral_points
 FROM competition.participants p
 JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
+LEFT JOIN gamification.referral_month_points rm
+  ON rm.season_id = p.season_id
+ AND rm.user_id = p.user_id
 LEFT JOIN leaderboard.season_rank_snapshots snap
   ON snap.season_id = p.season_id
  AND snap.participant_id = p.id
@@ -113,7 +118,9 @@ board AS (
            PARTITION BY p.season_id
            ORDER BY COALESCE(f.total_points, 0) DESC,
                     COALESCE(rm.referral_points, 0) DESC,
-                    COALESCE(f.exact_count, 0) DESC
+                    COALESCE(f.exact_count, 0) DESC,
+                    COALESCE(f.outcome_count, 0) DESC,
+                    p.joined_at ASC
          ) AS current_rank
   FROM competition.participants p
   JOIN identity.users u
@@ -304,6 +311,9 @@ ORDER BY s.start_at DESC, s.id DESC
     // reads as 0/0 -- "no accuracy yet", never a corrupt row.
     final exactCount = _readInt(row['exact_count']) ?? 0;
     final settledCount = _readInt(row['settled_count']) ?? 0;
+    // Tie-breaks (batch 134): absent reads as none.
+    final outcomeCount = _readInt(row['outcome_count']) ?? 0;
+    final referralPoints = _readInt(row['referral_points']) ?? 0;
 
     if (participantIdResult is Err<ParticipantId>) {
       return Result.err(
@@ -348,6 +358,8 @@ ORDER BY s.start_at DESC, s.id DESC
       previousRank: previousRank,
       exactCount: exactCount,
       settledCount: settledCount,
+      outcomeCount: outcomeCount,
+      referralPoints: referralPoints,
     );
     if (projected is Err<LeaderboardEntry>) {
       return Result.err(

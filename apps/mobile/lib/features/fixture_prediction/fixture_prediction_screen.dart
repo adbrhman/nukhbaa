@@ -418,10 +418,15 @@ class _FixturePredictionCardState
                     ),
                     if (isGraded && myPoints != null)
                       AppBadge(
+                        key: Key(
+                          'fixturePrediction.points.${widget.fixture.fixtureId}',
+                        ),
                         label: l10n.pointsAbbreviated(myPoints),
-                        tone: myGrade == 'incorrect'
-                            ? AppBadgeTone.muted
-                            : AppBadgeTone.success,
+                        // The tone follows the points, as on the match card:
+                        // a right outcome scores 0 and is not a success.
+                        tone: myPoints > 0
+                            ? AppBadgeTone.success
+                            : AppBadgeTone.muted,
                         icon: myGrade == 'exact_scoreline' ? Icons.star : null,
                       )
                     else if (!isGraded)

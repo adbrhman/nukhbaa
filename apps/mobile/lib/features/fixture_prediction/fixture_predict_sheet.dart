@@ -238,9 +238,11 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
                       if (isGraded && myPoints != null)
                         AppBadge(
                           label: l10n.pointsAbbreviated(myPoints),
-                          tone: myGrade == 'incorrect'
-                              ? AppBadgeTone.muted
-                              : AppBadgeTone.success,
+                          // The tone follows the points: a right outcome
+                          // scores 0 and is not a success.
+                          tone: myPoints > 0
+                              ? AppBadgeTone.success
+                              : AppBadgeTone.muted,
                           icon: myGrade == 'exact_scoreline'
                               ? Icons.star
                               : null,

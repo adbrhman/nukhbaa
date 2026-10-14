@@ -17,20 +17,20 @@ import 'package:shared/shared.dart';
 /// them is the whole of the domain's Leaderboards responsibility; where the
 /// totals come from (a live ledger view) is Infrastructure's concern.
 ///
-/// **Total order (deterministic, reproducible — never arbitrary DB order):**
+/// **Total order (deterministic, reproducible — never arbitrary DB order),
+/// the month board's chain (batch 129, applied here in batch 134):**
 /// 1. [LeaderboardEntry.totalPoints] descending (more points ranks higher);
-/// 2. tie-break: [LeaderboardEntry.joinedAt] ascending (the earlier joiner ranks
-///    first among equal totals);
-/// 3. final tie-break: [ParticipantId] value ascending (a stable, total order
-///    even if two participants somehow share a joinedAt instant).
+/// 2. [LeaderboardEntry.referralPoints] descending;
+/// 3. [LeaderboardEntry.exactCount] descending;
+/// 4. [LeaderboardEntry.outcomeCount] descending;
+/// 5. [LeaderboardEntry.joinedAt] ascending (the earlier joiner first);
+/// 6. final tie-break: [ParticipantId] value ascending, for a stable display
+///    order only.
 ///
-/// **Rank rule — standard competition ranking ("1224"):** entries with equal
-/// [LeaderboardEntry.totalPoints] SHARE a rank; the next distinct total skips by
-/// the number of tied competitors (two tied for rank 1 are followed by rank 3).
-/// This is the widely-understood sports-standings convention and is what a
-/// social-first product (Axiom 1) needs so "you and a friend are joint-2nd"
-/// reads correctly. Note the tie-break keys (2) and (3) still impose a total
-/// *display order* on tied entries even though they share a rank.
+/// **Rank rule:** entries share a rank (and the next skips, "1224") only
+/// when level on keys 1-5. Real players never join at the same instant, so
+/// every player gets a place of his own, as on the month board -- the same
+/// month read from the match card no longer shows three players tenth.
 final class SeasonLeaderboard {
   const SeasonLeaderboard._({required this.seasonId, required this.entries});
 
@@ -43,11 +43,10 @@ final class SeasonLeaderboard {
   /// 1. reject a duplicate [ParticipantId] (a projection must carry each
   ///    participant at most once — a repeated participant would double-count and
   ///    corrupt the standings, an [ErrorKind.invariant] failure — Axiom 5);
-  /// 2. sort by the [SeasonLeaderboard] total order (points desc, joinedAt asc,
-  ///    id asc) — the input order is irrelevant, so an unordered DB read is
-  ///    ranked identically;
-  /// 3. assign standard-competition ("1224") ranks: position 1-based, equal
-  ///    totals share the rank of the first of their group.
+  /// 2. sort by the [SeasonLeaderboard] total order — the input order is
+  ///    irrelevant, so an unordered DB read is ranked identically;
+  /// 3. assign ranks: position 1-based, entries level on every ranking key
+  ///    share the rank of the first of their group.
   ///
   /// An empty [projections] yields an empty board (a season with no participants
   /// — a legitimate empty result, not an error).
@@ -74,12 +73,11 @@ final class SeasonLeaderboard {
     final ranked = <LeaderboardEntry>[];
     for (var i = 0; i < ordered.length; i++) {
       final entry = ordered[i];
-      // Standard competition ranking: a participant tied on total with the one
-      // before them shares that rank; otherwise their rank is their 1-based
-      // position (which naturally produces the "skip" after a tie).
+      // A participant level with the one before on every key shares its
+      // rank; otherwise the rank is the 1-based position ("1224").
       final int position = i + 1;
       final int assigned;
-      if (i > 0 && ordered[i - 1].totalPoints == entry.totalPoints) {
+      if (i > 0 && _level(ordered[i - 1], entry)) {
         assigned = ranked[i - 1].rank;
       } else {
         assigned = position;
@@ -99,13 +97,24 @@ final class SeasonLeaderboard {
     );
   }
 
-  /// The total order over entries: points descending, then joinedAt ascending,
-  /// then participant id ascending (a stable, total tie-break).
+  /// The total order over entries (see the class comment).
   static int _compare(LeaderboardEntry a, LeaderboardEntry b) {
     // Points descending.
     final byPoints = b.totalPoints.compareTo(a.totalPoints);
     if (byPoints != 0) {
       return byPoints;
+    }
+    final byReferrals = b.referralPoints.compareTo(a.referralPoints);
+    if (byReferrals != 0) {
+      return byReferrals;
+    }
+    final byExact = b.exactCount.compareTo(a.exactCount);
+    if (byExact != 0) {
+      return byExact;
+    }
+    final byOutcome = b.outcomeCount.compareTo(a.outcomeCount);
+    if (byOutcome != 0) {
+      return byOutcome;
     }
     // joinedAt ascending (earlier joiner first).
     final byJoined = a.joinedAt.compareTo(b.joinedAt);
@@ -115,6 +124,14 @@ final class SeasonLeaderboard {
     // participant id ascending (final stable tie-break).
     return a.participantId.value.compareTo(b.participantId.value);
   }
+
+  /// Whether two neighbours share a rank: level on every ranking key.
+  static bool _level(LeaderboardEntry a, LeaderboardEntry b) =>
+      a.totalPoints == b.totalPoints &&
+      a.referralPoints == b.referralPoints &&
+      a.exactCount == b.exactCount &&
+      a.outcomeCount == b.outcomeCount &&
+      a.joinedAt == b.joinedAt;
 
   /// The season these standings are for.
   final SeasonId seasonId;

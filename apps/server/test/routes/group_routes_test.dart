@@ -577,77 +577,73 @@ void main() {
   });
 
   group('GET /groups/{id}/seasons/{seasonId}/leaderboard', () {
-    test(
-      'a member reads the ranked group board (200), "1224" tie sharing',
-      () async {
-        final setup = rootFor();
-        seedOwnedGroup(setup.groups);
-        // Two more members so the group has three members ∩ season participants.
-        setup.groups
-          ..seedMembership(
-            storedMembership(id: kMemberMembershipId, userId: kMemberUserId),
-          )
-          ..seedMembership(
-            storedMembership(
-              id: 'a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1',
-              userId: kNonMemberUserId,
-            ),
-          );
-        // Seed the unranked group∩season projection (non-sorted input order).
-        setup.standings.seed(kGroupId, kSeasonId, [
-          groupStanding(
-            userId: kMemberUserId,
-            participantId: kParticipantId,
-            totalPoints: 5,
-            joinedAt: DateTime.utc(2026, 7, 2),
-          ),
-          groupStanding(
-            userId: kOwnerUserId,
-            participantId: kParticipantId2,
-            totalPoints: 9,
-            entryCount: 3,
-            joinedAt: DateTime.utc(2026, 7, 1),
-          ),
-          groupStanding(
+    test('a member reads the ranked group board (200), a place each', () async {
+      final setup = rootFor();
+      seedOwnedGroup(setup.groups);
+      // Two more members so the group has three members ∩ season participants.
+      setup.groups
+        ..seedMembership(
+          storedMembership(id: kMemberMembershipId, userId: kMemberUserId),
+        )
+        ..seedMembership(
+          storedMembership(
+            id: 'a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1',
             userId: kNonMemberUserId,
-            participantId: 'a2a2a2a2-a2a2-a2a2-a2a2-a2a2a2a2a2a2',
-            totalPoints: 5,
-            joinedAt: DateTime.utc(2026, 7, 1),
           ),
-        ]);
-
-        final response = await group_leaderboard_route.onRequest(
-          wireContext(
-            root: setup.root,
-            principal: ownerPrincipal(),
-            method: HttpMethod.get,
-          ),
-          kGroupId,
-          kSeasonId,
         );
+      // Seed the unranked group∩season projection (non-sorted input order).
+      setup.standings.seed(kGroupId, kSeasonId, [
+        groupStanding(
+          userId: kMemberUserId,
+          participantId: kParticipantId,
+          totalPoints: 5,
+          joinedAt: DateTime.utc(2026, 7, 2),
+        ),
+        groupStanding(
+          userId: kOwnerUserId,
+          participantId: kParticipantId2,
+          totalPoints: 9,
+          entryCount: 3,
+          joinedAt: DateTime.utc(2026, 7, 1),
+        ),
+        groupStanding(
+          userId: kNonMemberUserId,
+          participantId: 'a2a2a2a2-a2a2-a2a2-a2a2-a2a2a2a2a2a2',
+          totalPoints: 5,
+          joinedAt: DateTime.utc(2026, 7, 1),
+        ),
+      ]);
 
-        expect(response.statusCode, HttpStatus.ok);
-        final body = await decodeBody(response);
-        expect(body['group_id'], kGroupId);
-        expect(body['season_id'], kSeasonId);
-        final entries = (body['entries']! as List)
-            .cast<Map<Object?, Object?>>();
-        expect(entries.length, 3);
+      final response = await group_leaderboard_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: ownerPrincipal(),
+          method: HttpMethod.get,
+        ),
+        kGroupId,
+        kSeasonId,
+      );
 
-        // Rank 1: highest total (9), owner.
-        expect(entries[0]['rank'], 1);
-        expect(entries[0]['user_id'], kOwnerUserId);
-        expect(entries[0]['participant_id'], kParticipantId2);
-        expect(entries[0]['total_points'], 9);
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      expect(body['group_id'], kGroupId);
+      expect(body['season_id'], kSeasonId);
+      final entries = (body['entries']! as List).cast<Map<Object?, Object?>>();
+      expect(entries.length, 3);
 
-        // Tie on 5 → both share rank 2; earlier joiner (07-01, nonMember pid)
-        // displays before the 07-02 joiner.
-        expect(entries[1]['rank'], 2);
-        expect(entries[2]['rank'], 2);
-        expect(entries[1]['user_id'], kNonMemberUserId);
-        expect(entries[2]['user_id'], kMemberUserId);
-      },
-    );
+      // Rank 1: highest total (9), owner.
+      expect(entries[0]['rank'], 1);
+      expect(entries[0]['user_id'], kOwnerUserId);
+      expect(entries[0]['participant_id'], kParticipantId2);
+      expect(entries[0]['total_points'], 9);
+
+      // Level on 5 → the earlier joiner (07-01, nonMember pid) takes 2nd
+      // and the 07-02 joiner 3rd (batch 134).
+      expect(entries[1]['rank'], 2);
+      expect(entries[2]['rank'], 3);
+      expect(entries[1]['user_id'], kNonMemberUserId);
+      expect(entries[2]['user_id'], kMemberUserId);
+    });
 
     test(
       'an empty board is a legitimate 200 (no member is a participant)',

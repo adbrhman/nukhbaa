@@ -101,37 +101,41 @@ void main() {
   });
 
   group('GetSeasonLeaderboard — projection + ranking', () {
-    test('ranks the seeded standings (points desc, "1224" ties)', () async {
-      final h = _harness();
-      _enrolMember(h.competition);
-      h.leaderboard.seed(_season, [
-        boardEntry(
-          participantId: _pA,
-          totalPoints: 10,
-          joinedAt: DateTime.utc(2026, 7, 1),
-        ),
-        boardEntry(
-          participantId: _pB,
-          totalPoints: 10,
-          joinedAt: DateTime.utc(2026, 7, 2),
-        ),
-        boardEntry(participantId: _pC, totalPoints: 4),
-      ]);
-      final board =
-          (await h.useCase.call(
-                    principal: principalUser(userId: _memberUser),
-                    seasonId: _season,
-                  )
-                  as Ok<SeasonLeaderboard>)
-              .value;
-      expect(board.seasonId.value, _season);
-      expect(board.entries.map((e) => e.rank).toList(), [1, 1, 3]);
-      expect(board.entries.map((e) => e.participantId.value).toList(), [
-        _pA,
-        _pB,
-        _pC,
-      ]);
-    });
+    test(
+      'ranks the seeded standings (points, then the earlier join)',
+      () async {
+        final h = _harness();
+        _enrolMember(h.competition);
+        h.leaderboard.seed(_season, [
+          boardEntry(
+            participantId: _pA,
+            totalPoints: 10,
+            joinedAt: DateTime.utc(2026, 7, 1),
+          ),
+          boardEntry(
+            participantId: _pB,
+            totalPoints: 10,
+            joinedAt: DateTime.utc(2026, 7, 2),
+          ),
+          boardEntry(participantId: _pC, totalPoints: 4),
+        ]);
+        final board =
+            (await h.useCase.call(
+                      principal: principalUser(userId: _memberUser),
+                      seasonId: _season,
+                    )
+                    as Ok<SeasonLeaderboard>)
+                .value;
+        expect(board.seasonId.value, _season);
+        // Level on points: the earlier joiner takes the place (batch 134).
+        expect(board.entries.map((e) => e.rank).toList(), [1, 2, 3]);
+        expect(board.entries.map((e) => e.participantId.value).toList(), [
+          _pA,
+          _pB,
+          _pC,
+        ]);
+      },
+    );
 
     test('an empty season yields an empty board (not an error)', () async {
       final h = _harness();
