@@ -1,0 +1,113 @@
+name: Quality Scorecard
+
+# Every morning: nukhbaa against the standards it can be measured by, with
+# no one checking by hand (tooling/quality/scorecard.mjs lists the rows and
+# their limits). Read-only everywhere: the live database inside a read-only
+# transaction, the live web app as a new visitor, this repository's files
+# and its Build Verification runs.
+#
+# The run fails -- and GitHub e-mails the owner -- only when something got
+# worse since the previous run. The previous verdicts live in this
+# workflow's cache, not in the repository, which is public: the summary
+# shows rates and verdicts, never how many players there are.
+on:
+  schedule:
+    # 07:18 Riyadh (04:18 UTC), off the hour.
+    - cron: '18 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: quality-scorecard
+  cancel-in-progress: false
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: The scorecard's own tests
+        run: node --test tooling/quality/scorecard.test.mjs
+
+      # The same read-only access Deploy Web uses for its migration check.
+      # A failure is a "could not measure" row, not a broken run.
+      - name: Players' data, last 7 days (read-only)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/db.json"
+          if [ -n "$SUPABASE_DB_URL" ] && docker run --rm \
+               -e SUPABASE_DB_URL -v "$PWD/supabase/queries:/q:ro" postgres:17-alpine \
+               sh -c 'psql "$SUPABASE_DB_URL" -X -q -tA -v ON_ERROR_STOP=1 -c "begin transaction read only" -f /q/quality_scorecard.sql -c "commit"' > "$out"; then
+            echo "players' data read"
+          else
+            echo '{"unavailable":true}' > "$out"
+            echo "::warning::the players' data could not be read"
+          fi
+
+      - name: Last Build Verification on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh run list -R "$GITHUB_REPOSITORY" --workflow "Build Verification" --branch main \
+            --status completed --limit 1 --json conclusion,headSha > "$RUNNER_TEMP/build.json" \
+            || echo '[]' > "$RUNNER_TEMP/build.json"
+
+      # The live web app opened by a brand-new visitor (.github/web-speed),
+      # three times on a mid-range phone over slow 4G.
+      - name: Web app as a new visitor
+        continue-on-error: true
+        working-directory: .github/web-speed
+        env:
+          TARGET_URL: https://nukhbaa.app/nukhbaa/
+          RUNS: '3'
+          OUT_DIR: ${{ runner.temp }}/web-speed-report
+        run: |
+          npm install --no-audit --no-fund
+          GITHUB_STEP_SUMMARY= node measure.mjs
+
+      - name: Previous verdicts
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/quality-state
+          key: quality-state-${{ github.run_id }}
+          restore-keys: quality-state-
+
+      - name: Scorecard
+        run: |
+          mkdir -p "$RUNNER_TEMP/quality-state"
+          node tooling/quality/scorecard.mjs \
+            --db "$RUNNER_TEMP/db.json" \
+            --build "$RUNNER_TEMP/build.json" \
+            --web "$RUNNER_TEMP/web-speed-report/results.json" \
+            --plan docs/remediation-plan.md \
+            --a11y apps/mobile/test/audit/ui_audit_baseline.json \
+            --state "$RUNNER_TEMP/quality-state/scorecard.json" \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep today's verdicts
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/quality-state
+          key: quality-state-${{ github.run_id }}
+
+      - name: Web speed details and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-speed-report
+          path: ${{ runner.temp }}/web-speed-report/
+          retention-days: 14
+          if-no-files-found: ignore

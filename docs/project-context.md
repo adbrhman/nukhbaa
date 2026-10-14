@@ -4985,6 +4985,43 @@ returning visitor asked again for each one.
 
 No migration, no APK, no new dependency.
 
+### The quality scorecard (script 72, 2026-10-15)
+
+Requested 2026-10-15: nukhbaa measured against the published standards
+every day, with no manual check. The owner chose a daily report in GitHub
+Actions first, then an admin screen and the real startup time in the next
+APK.
+
+- `.github/workflows/quality-scorecard.yml`, daily at 07:18 Riyadh and by
+  hand, reads: the players' data of the last 7 days
+  (`supabase/queries/quality_scorecard.sql`, the `SUPABASE_DB_URL` Deploy
+  Web's migration check uses, inside a read-only transaction); the last
+  completed Build Verification on main; the live web app opened three
+  times by a new visitor (`.github/web-speed/measure.mjs`, brought over
+  from the `web-speed` branch); `docs/remediation-plan.md`; and the UI
+  audit ratchet. `tooling/quality/scorecard.mjs` writes the card to the
+  run summary.
+- Rows and limits: Build Verification green (ISO/IEC/IEEE 29119); open
+  critical or high error groups seen in the week = 0 (ISO/IEC 25010
+  reliability); sessions with a frozen frame <= 5% and slow frames <= 10%
+  per platform (Android vitals' definitions; Google publishes no share, so
+  the percentages are the project's); the web app's first frame <= 2.5 s
+  (Core Web Vitals LCP); open critical audit items = 0; UI audit findings
+  = 0 (WCAG 2.2 AA, the automated part). Startup time and native Android
+  crashes are listed as not measured yet. A platform with fewer than 30
+  sessions in the week is not judged.
+- The run fails, and GitHub e-mails the owner, only when something got
+  worse since the previous run: a passing row now fails, or the web first
+  frame is 20% slower. The previous verdicts live in the workflow's cache,
+  not in the repository; the repository is public, so the summary shows
+  rates and verdicts, never how many players or sessions there were.
+- Tests: `tooling/quality/scorecard.test.mjs` (`node --test`, through the
+  command line, on the real plan and baseline) runs first in the workflow;
+  `supabase/tests/quality_scorecard_query_test.sql` checks the query on
+  Postgres 16 in db-tests.
+
+No migration, no APK. Puppeteer, the web-speed check's, now runs from main.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
