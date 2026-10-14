@@ -1,0 +1,9 @@
+{
+  "name": "nukhbaa-web-speed",
+  "private": true,
+  "type": "module",
+  "description": "Read-only first-visit load-time check for the Nukhbaa web app",
+  "dependencies": {
+    "puppeteer": "25.8.0"
+  }
+}

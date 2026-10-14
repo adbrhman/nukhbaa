@@ -1,0 +1,64 @@
+name: Web Speed
+
+# Read-only check: opens the live web app the way a brand-new visitor would
+# and measures how long until the real app (not the splash) is ready.
+# It never touches the database, the server or the deployed site.
+on:
+  # Runs when this check itself changes on the web-speed branch, so it can be
+  # tried without pushing to main (a push to main triggers the release chain).
+  push:
+    branches: [web-speed]
+    paths:
+      - '.github/workflows/web-speed.yml'
+      - '.github/web-speed/**'
+  # Manual button in the Actions tab (available once this file is on main).
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Runs per profile (1-10)'
+        required: false
+        default: '5'
+  # Daily at 07:37 Riyadh time; GitHub only runs schedules from main.
+  schedule:
+    - cron: '37 4 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-speed
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/web-speed
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install Puppeteer and its Chrome
+        working-directory: .github/web-speed
+        run: npm install --no-audit --no-fund
+
+      - name: Measure first-visit load time
+        working-directory: .github/web-speed
+        env:
+          TARGET_URL: https://nukhbaa.app/nukhbaa/
+          RUNS: ${{ inputs.runs || '5' }}
+          OUT_DIR: ${{ github.workspace }}/web-speed-report
+        run: node measure.mjs
+
+      - name: Upload report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-speed-report
+          path: web-speed-report/
+          retention-days: 30
+          if-no-files-found: ignore
