@@ -4806,6 +4806,18 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   every build; id, role and status stay debug-only. No migration; the
   server half ships with the server, the app half needs an APK.
 
+- **Batch 136 (the remediation plan in the repo, 2026-10-14)**: the plan
+  for the 2026-10-13 audit lived only outside the repo, so a second Claude
+  account could not see it. `docs/remediation-plan.md` now holds every
+  finding (103 ids) with its status, owner and batch, the split between
+  account (a) (batches 136-199, migrations 0110-0149) and account (b)
+  (batches 201-299, migrations 0150-0169), the shared rules (read the
+  latest main, touch only your own findings, one script at a time, each
+  batch updates its rows), the owner's open decisions (M-05 deletion,
+  M-21, L-24, L-59) and the manual items. The audit report itself stays
+  out of the repo (public repo, open security findings); the owner
+  attaches it. `docs/next-task.md` points to the plan. Docs only.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
