@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_tokens.dart';
+import '../../core/format/timestamps.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../competition/widgets/async_list_view.dart';
@@ -48,7 +49,7 @@ class GroupFeedScreen extends ConsumerWidget implements NamedScreen {
         ],
       ),
       body: AsyncListView<ActivityEventDto>(
-        value: feed.whenData((dto) => dto.events),
+        value: feed.whenData(visibleFeedEvents),
         emptyMessage: l10n.groupFeedEmpty,
         onRetry: () => ref.invalidate(groupFeedProvider(groupId)),
         itemBuilder: (context, event) => _FeedRow(event: event),
@@ -116,6 +117,14 @@ class GroupFeedScreen extends ConsumerWidget implements NamedScreen {
   }
 }
 
+/// The events worth showing (audit L-03): `round_scored` belongs to the
+/// round model the contest left, so it only ever repeats old rounds.
+List<ActivityEventDto> visibleFeedEvents(GroupActivityFeedDto feed) =>
+    <ActivityEventDto>[
+      for (final ActivityEventDto e in feed.events)
+        if (e.type != 'round_scored') e,
+    ];
+
 class _FeedRow extends StatelessWidget {
   const _FeedRow({required this.event});
   final ActivityEventDto event;
@@ -149,8 +158,10 @@ class _FeedRow extends StatelessWidget {
         _labelFor(event, l10n),
         key: Key('groupFeed.label.${event.occurredAt}'),
       ),
+      // A date and time in the viewer's zone, not the raw ISO string
+      // (audit L-03).
       subtitle: Text(
-        event.occurredAt,
+        formatTimestamp(context, event.occurredAt),
         key: Key('groupFeed.occurredAt.${event.occurredAt}'),
         style: TextStyle(color: tokens.textSecondary),
       ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:application/application.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
@@ -28,12 +29,15 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
-  final result = await root.listGroupMembers(principal: principal, groupId: id);
+  final result = await root.listGroupMembers.withNames(
+    principal: principal,
+    groupId: id,
+  );
 
   return switch (result) {
-    Ok<List<GroupMembership>>(:final value) => Response.json(
-      body: groupMembersJson(id, value),
+    Ok<GroupRosterView>(:final value) => Response.json(
+      body: groupMembersJson(id, value.members, names: value.names),
     ),
-    Err<List<GroupMembership>>(:final error) => errorResponse(error),
+    Err<GroupRosterView>(:final error) => errorResponse(error),
   };
 }

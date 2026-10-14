@@ -3593,7 +3593,11 @@ final class CompositionRoot {
         groups: groupRepository,
         roster: groupRepository,
       ),
-      listGroupMembers: ListGroupMembers(repository: groupRepository),
+      // The roster carries each member's name (batch 141).
+      listGroupMembers: ListGroupMembers(
+        repository: groupRepository,
+        roster: groupRepository,
+      ),
       listMyGroups: ListMyGroups(repository: groupRepository),
       getGroupLeaderboard: GetGroupLeaderboard(
         repository: groupRepository,
@@ -4626,6 +4630,10 @@ final class _UnwiredGroupRepository
 
   @override
   Future<Result<bool>> deleteGroup(GroupId groupId) => _unwired();
+
+  @override
+  Future<Result<Map<String, String>>> memberDisplayNames(GroupId groupId) =>
+      _unwired();
 
   @override
   Future<Result<Set<String>>> memberParticipantIds(

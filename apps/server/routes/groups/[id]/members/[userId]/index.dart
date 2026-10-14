@@ -15,7 +15,8 @@ import 'package:shared/shared.dart';
 ///     member is refused `401` `group.not_owner`, someone not in the league
 ///     is `409` `group.member_not_found`.
 ///
-/// `204` on success. A non-member is refused `401` `group.not_a_member`
+/// `200` with `{"left": true}` or `{"removed": true}` on success (the app's
+/// DELETE reads a JSON object; batch 141). A non-member is refused `401` `group.not_a_member`
 /// whether or not the league exists. Both gates live in the use-cases; the
 /// `/groups` subtree is already behind `bearerAuth`.
 Future<Response> onRequest(
@@ -39,7 +40,9 @@ Future<Response> onRequest(
         );
 
   return switch (result) {
-    Ok<void>() => Response(statusCode: HttpStatus.noContent),
+    Ok<void>() => Response.json(
+      body: <String, Object?>{(userId == 'me' ? 'left' : 'removed'): true},
+    ),
     Err<void>(:final error) => errorResponse(error),
   };
 }

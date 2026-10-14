@@ -117,7 +117,8 @@ Future<Response> _reReadForCount(
 
 /// DELETE /groups/{id} — the owner deletes the league (command intent
 /// `DeleteGroup`, audit M-26): its memberships, invitations, reactions and
-/// notifications go with it; nobody's points change. `204` on success; a
+/// notifications go with it; nobody's points change. `200` with
+/// `{"deleted": true}` on success (the app's DELETE reads a JSON object); a
 /// member is refused `401` `group.not_owner`, a non-member `401`
 /// `group.not_a_member` (no existence oracle).
 Future<Response> _delete(RequestContext context, String id) async {
@@ -127,7 +128,7 @@ Future<Response> _delete(RequestContext context, String id) async {
   final result = await root.deleteGroup(principal: principal, groupId: id);
 
   return switch (result) {
-    Ok<void>() => Response(statusCode: HttpStatus.noContent),
+    Ok<void>() => Response.json(body: const <String, Object?>{'deleted': true}),
     Err<void>(:final error) => errorResponse(error),
   };
 }

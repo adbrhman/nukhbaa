@@ -240,6 +240,7 @@ final class GroupMembershipDto {
     required this.userId,
     required this.role,
     required this.joinedAt,
+    this.displayName,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -253,6 +254,7 @@ final class GroupMembershipDto {
       userId: json['user_id']! as String,
       role: json['role']! as String,
       joinedAt: json['joined_at']! as String,
+      displayName: json['display_name'] as String?,
     );
   }
 
@@ -274,6 +276,11 @@ final class GroupMembershipDto {
   /// When the user joined (UTC ISO-8601).
   final String joinedAt;
 
+  /// The member's display name, on the roster only (batch 141: the owner
+  /// must see who he removes); absent on a join answer and from an older
+  /// server.
+  final String? displayName;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -285,6 +292,7 @@ final class GroupMembershipDto {
     'user_id': userId,
     'role': role,
     'joined_at': joinedAt,
+    if (displayName != null) 'display_name': displayName,
   };
 
   @override
@@ -295,11 +303,19 @@ final class GroupMembershipDto {
       other.userId == userId &&
       other.role == role &&
       other.joinedAt == joinedAt &&
+      other.displayName == displayName &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(id, groupId, userId, role, joinedAt, schemaVersion);
+  int get hashCode => Object.hash(
+    id,
+    groupId,
+    userId,
+    role,
+    joinedAt,
+    displayName,
+    schemaVersion,
+  );
 }
 
 /// The wire shape of a group's member list — the response of

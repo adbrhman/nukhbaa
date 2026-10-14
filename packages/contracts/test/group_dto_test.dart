@@ -63,6 +63,22 @@ void main() {
         json.keys,
         containsAll(<String>['group_id', 'user_id', 'joined_at']),
       );
+      // No name on a join answer: the key is left out, not sent as null.
+      expect(json.containsKey('display_name'), isFalse);
+    });
+
+    test('a roster row carries the display name (batch 141)', () {
+      const named = GroupMembershipDto(
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        groupId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        userId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        role: 'member',
+        joinedAt: '2026-07-11T10:00:00.000Z',
+        displayName: 'Sara',
+      );
+      expect(named.toJson()['display_name'], 'Sara');
+      expect(GroupMembershipDto.fromJson(named.toJson()), named);
+      expect(named == dto, isFalse);
     });
   });
 

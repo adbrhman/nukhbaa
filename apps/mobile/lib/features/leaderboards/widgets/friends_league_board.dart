@@ -16,6 +16,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../duels/duels_providers.dart';
 import '../../groups/create_group_screen.dart';
+import '../../groups/group_members_screen.dart';
 import '../../groups/groups_providers.dart';
 import '../../groups/join_group_screen.dart';
 import '../../groups/league_invite.dart';
@@ -81,11 +82,12 @@ class _FriendsLeagueBoardState extends ConsumerState<FriendsLeagueBoard> {
                 onJoin: () => unawaited(_open(const JoinGroupScreen())),
               );
             }
-            final GroupDto group = <MyGroupEntryDto>[
+            final MyGroupEntryDto entry = <MyGroupEntryDto>[
               for (final MyGroupEntryDto e in mine.groups)
                 if (e.group.id == _groupId) e,
               mine.groups.first,
-            ].first.group;
+            ].first;
+            final GroupDto group = entry.group;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -131,6 +133,21 @@ class _FriendsLeagueBoardState extends ConsumerState<FriendsLeagueBoard> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      ),
+                      // Members, and leaving or deleting the league
+                      // (audit M-26, batch 141).
+                      IconButton(
+                        key: Key('$k.members'),
+                        tooltip: 'الأعضاء',
+                        onPressed: () => unawaited(
+                          _open(
+                            GroupMembersScreen(
+                              group: group,
+                              isOwner: entry.role == 'owner',
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.groups_rounded),
                       ),
                       TextButton.icon(
                         key: Key('$k.invite'),

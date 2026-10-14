@@ -216,4 +216,47 @@ void main() {
       expect(result, isA<Ok<GroupMembership>>());
     });
   });
+
+  group('ListGroupMembers.withNames (batch 141)', () {
+    test('the roster comes with its members names', () async {
+      final repo = _repo()
+        ..seedName(_owner, 'Owner')
+        ..seedName(_member, 'Member');
+
+      final result = await ListGroupMembers(repository: repo, roster: repo)
+          .withNames(
+            principal: principalUser(userId: _member),
+            groupId: _groupId,
+          );
+
+      final view = (result as Ok<GroupRosterView>).value;
+      expect(view.members.map((m) => m.userId.value), [_owner, _member]);
+      expect(view.names, {_owner: 'Owner', _member: 'Member'});
+    });
+
+    test('without a roster store the names are empty, not an error', () async {
+      final repo = _repo();
+
+      final result = await ListGroupMembers(repository: repo).withNames(
+        principal: principalUser(userId: _member),
+        groupId: _groupId,
+      );
+
+      final view = (result as Ok<GroupRosterView>).value;
+      expect(view.members, hasLength(2));
+      expect(view.names, isEmpty);
+    });
+
+    test('a non-member is refused before any name is read', () async {
+      final repo = _repo();
+
+      final result = await ListGroupMembers(repository: repo, roster: repo)
+          .withNames(
+            principal: principalUser(userId: _stranger),
+            groupId: _groupId,
+          );
+
+      expect((result as Err<GroupRosterView>).error.code, 'group.not_a_member');
+    });
+  });
 }

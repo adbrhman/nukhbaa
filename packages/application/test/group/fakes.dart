@@ -44,6 +44,11 @@ final class InMemoryGroupRepository
   void seedParticipant(String seasonId, String userId, String participantId) =>
       _participants['$seasonId::$userId'] = participantId;
 
+  final Map<String, String> _names = {};
+
+  /// Seeds [userId]'s display name.
+  void seedName(String userId, String name) => _names[userId] = name;
+
   /// Test observability: whether [groupId] is still stored.
   bool hasGroup(String groupId) => _groups.containsKey(groupId);
 
@@ -199,6 +204,19 @@ final class InMemoryGroupRepository
           !m.isOwner,
     );
     return Result.ok(_memberships.length < before);
+  }
+
+  @override
+  Future<Result<Map<String, String>>> memberDisplayNames(
+    GroupId groupId,
+  ) async {
+    final f = _takeFailure();
+    if (f != null) return Result.err(f);
+    return Result.ok({
+      for (final m in _memberships)
+        if (m.groupId.value == groupId.value && _names[m.userId.value] != null)
+          m.userId.value: _names[m.userId.value]!,
+    });
   }
 
   @override

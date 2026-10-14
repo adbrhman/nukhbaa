@@ -1,5 +1,8 @@
 library;
 
+import 'dart:async';
+
+import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +12,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import 'groups_providers.dart';
 
@@ -52,7 +56,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       next,
     ) {
       if (next is AsyncData<GroupMembershipDto>) {
+        // The join no longer closes in silence (audit M-11): the screen
+        // closes and the league's name is announced over what is under it.
+        final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+        final GroupsApi api = ref.read(groupsApiProvider);
         Navigator.of(context).pop(next.value);
+        unawaited(_announceJoin(messenger, api, next.value.groupId));
       }
     });
     final bool inFlight = state is AsyncLoading<GroupMembershipDto>;
@@ -114,4 +123,22 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       ),
     );
   }
+}
+
+/// Says which league the player just joined; the name is read once, and
+/// without it the message still says the join worked.
+Future<void> _announceJoin(
+  ScaffoldMessengerState messenger,
+  GroupsApi api,
+  String groupId,
+) async {
+  final Result<GroupDto> group = await api.getGroup(groupId);
+  final String text = switch (group) {
+    Ok<GroupDto>(:final value) => 'انضممت إلى «${value.name}».',
+    Err<GroupDto>() => 'انضممت إلى الدوري.',
+  };
+  if (!messenger.mounted) return;
+  messenger.showSnackBar(
+    SnackBar(key: const Key('joinGroup.joined'), content: Text(text)),
+  );
 }

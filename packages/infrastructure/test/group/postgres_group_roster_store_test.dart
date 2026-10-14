@@ -118,4 +118,21 @@ void main() {
       'season_id': _seasonId,
     });
   });
+
+  test('memberDisplayNames keys names by user id, skipping blanks', () async {
+    final connection = _FakeConnection(
+      const Result.ok([
+        {'user_id': 'u-1', 'display_name': ' Owner '},
+        {'user_id': 'u-2', 'display_name': null},
+        {'user_id': 'u-3', 'display_name': '  '},
+      ]),
+    );
+
+    final result = await PostgresGroupRepository(
+      connection,
+    ).memberDisplayNames(const GroupId(_groupId));
+
+    expect((result as Ok<Map<String, String>>).value, {'u-1': 'Owner'});
+    expect(connection.lastParameters, {'group_id': _groupId});
+  });
 }

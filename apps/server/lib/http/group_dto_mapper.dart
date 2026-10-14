@@ -61,7 +61,10 @@ Map<String, Object?> myGroupsJson(List<MyGroupSummary> summaries) {
 /// The per-group [role] crosses the wire as its stable [GroupRole.wireValue]
 /// token (`owner`/`member`), never the Dart enum name. Carries no competition
 /// reference (decision #1/#2 — membership is independent of participation).
-GroupMembershipDto membershipToDto(GroupMembership membership) {
+GroupMembershipDto membershipToDto(
+  GroupMembership membership, {
+  String? displayName,
+}) {
   return GroupMembershipDto(
     id: membership.id.value,
     groupId: membership.groupId.value,
@@ -69,19 +72,28 @@ GroupMembershipDto membershipToDto(GroupMembership membership) {
     role: membership.role.wireValue,
     // Always UTC (the domain factories enforce isUtc); ISO-8601.
     joinedAt: membership.joinedAt.toUtc().toIso8601String(),
+    displayName: displayName,
   );
 }
 
 /// Shapes the response of `GET /groups/{id}/members` — the group's roster in the
 /// server-defined order (joinedAt ascending, the owner first). [groupId] is the
 /// requested id every membership shares.
+///
+/// [names] (user id -> display name) puts each member's name on his row, so
+/// the owner sees who he removes (batch 141); a member without one is sent
+/// without it.
 Map<String, Object?> groupMembersJson(
   String groupId,
-  List<GroupMembership> members,
-) {
+  List<GroupMembership> members, {
+  Map<String, String> names = const <String, String>{},
+}) {
   return GroupMembersDto(
     groupId: groupId,
-    members: [for (final m in members) membershipToDto(m)],
+    members: [
+      for (final m in members)
+        membershipToDto(m, displayName: names[m.userId.value]),
+    ],
   ).toJson();
 }
 

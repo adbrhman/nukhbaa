@@ -144,6 +144,33 @@ final class GroupsApi {
     );
   }
 
+  /// `DELETE /groups/{groupId}/members/me` — the caller leaves the league
+  /// (audit M-26). The owner is refused `group.owner_cannot_leave`.
+  Future<Result<bool>> leaveGroup(String groupId) {
+    return _transport.deleteObject<bool>(
+      '/groups/${Uri.encodeComponent(groupId)}/members/me',
+      parse: (json) => json['left'] == true,
+    );
+  }
+
+  /// `DELETE /groups/{groupId}/members/{userId}` — the owner removes a
+  /// member (audit M-26).
+  Future<Result<bool>> removeMember(String groupId, String userId) {
+    return _transport.deleteObject<bool>(
+      '/groups/${Uri.encodeComponent(groupId)}/members/'
+      '${Uri.encodeComponent(userId)}',
+      parse: (json) => json['removed'] == true,
+    );
+  }
+
+  /// `DELETE /groups/{groupId}` — the owner deletes the league (audit M-26).
+  Future<Result<bool>> deleteGroup(String groupId) {
+    return _transport.deleteObject<bool>(
+      '/groups/${Uri.encodeComponent(groupId)}',
+      parse: (json) => json['deleted'] == true,
+    );
+  }
+
   /// `GET /groups/{groupId}/feed` — the group's activity feed, newest first.
   /// [limit] is an optional cap; the server clamps an untrusted value rather
   /// than rejecting it.

@@ -28,4 +28,8 @@ abstract interface class GroupRosterStore {
     GroupId groupId,
     SeasonId seasonId,
   );
+
+  /// The display names of [groupId]'s members, by user id (batch 141: the
+  /// roster shows who is who). A member without a name is absent.
+  Future<Result<Map<String, String>>> memberDisplayNames(GroupId groupId);
 }

@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_card.dart';
 import '../../l10n/app_localizations.dart';
 import 'groups_providers.dart';
+import 'league_invite_sheet.dart';
 
 /// A name-only form that creates a new private group owned by the caller,
 /// then surfaces the server-generated invite code so it can be shared.
@@ -57,7 +60,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       final GroupDto group = state.value;
       return Scaffold(
         appBar: AppBar(title: Text(l10n.groupCreatedTitle)),
-        body: Padding(
+        // Scrolls: with the share button, large text no longer fits a
+        // small phone.
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,6 +106,16 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // The link, not only the code (audit M-11): WhatsApp and the
+              // rest through the share sheet, or a player found by name.
+              OutlinedButton.icon(
+                key: const Key('createGroup.shareButton'),
+                onPressed: () =>
+                    unawaited(showLeagueInviteSheet(context, group)),
+                icon: const Icon(Icons.share_rounded),
+                label: const Text('شارك رابط الدعوة'),
               ),
               const SizedBox(height: AppSpacing.xl),
               FilledButton(

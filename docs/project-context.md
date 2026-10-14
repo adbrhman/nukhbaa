@@ -4920,6 +4920,27 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   app). Migration 0111 (apply in the SQL Editor before pushing); server
   only, the buttons come with batch 141's APK.
 
+- **Batch 141 (friends' leagues in the app, 2026-10-14, audit M-11, M-26
+  app, L-03)**: M-26 -- a new `GroupMembersScreen` lists a league's
+  members by name (the roster now carries `display_name`:
+  `GroupRosterStore.memberDisplayNames`, `ListGroupMembers.withNames`,
+  optional on `GroupMembershipDto`, so older apps read it unchanged); the
+  owner removes a member and deletes the league, a member leaves, each
+  after a confirmation, through `GroupsApi.removeMember` / `deleteGroup` /
+  `leaveGroup`. Batch 140's DELETE routes answered `204` with no body,
+  which the app's DELETE reads as a malformed answer; they now answer
+  `200` with `{"left"|"removed"|"deleted": true}`. M-11 -- the league
+  already lived in the leaderboard's friends tab; its header gains a
+  members button, My Groups a members button per league, the creation
+  screen a "share the invitation link" button (the invitation sheet), and
+  a join closes with "انضممت إلى «X»" instead of in silence. L-03 -- the
+  group feed shows the time in the viewer's zone (`formatTimestamp`)
+  instead of the raw ISO string and drops `round_scored`, which only
+  repeated the round model's old rounds; the invitation sheet's search by
+  name says when it found nobody or failed. No migration; the roster
+  names and the JSON answers ship with the server, the screens need an
+  APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

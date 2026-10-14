@@ -13,6 +13,7 @@ import '../../core/ui/app_card.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'group_feed_screen.dart';
+import 'group_members_screen.dart';
 import 'groups_providers.dart';
 
 /// Lists every group the caller belongs to (`GET /me/groups`), each row
@@ -107,16 +108,34 @@ class _GroupRow extends StatelessWidget {
                 color: tokens.textSecondary,
               ),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                entry.group.inviteCode,
-                key: const Key('myGroups.item.inviteCode'),
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: tokens.primaryText,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.bold,
+              // Expanded: two buttons now share the row with the code, so
+              // large text shortens the code instead of overflowing.
+              Expanded(
+                child: Text(
+                  entry.group.inviteCode,
+                  key: const Key('myGroups.item.inviteCode'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Spacer(),
+              IconButton(
+                key: const Key('myGroups.item.members'),
+                icon: Icon(Icons.groups_rounded, color: tokens.primary),
+                tooltip: 'الأعضاء',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GroupMembersScreen(
+                      group: entry.group,
+                      isOwner: entry.role == 'owner',
+                    ),
+                  ),
+                ),
+              ),
               IconButton(
                 key: const Key('myGroups.item.copyButton'),
                 icon: Icon(Icons.copy_outlined, color: tokens.primary),

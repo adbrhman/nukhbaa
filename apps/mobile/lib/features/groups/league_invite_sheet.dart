@@ -16,6 +16,7 @@ import 'package:shared/shared.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/error/error_presenter.dart';
 import '../../core/providers.dart';
 import '../duels/duels_providers.dart';
 import 'league_invite.dart';
@@ -49,6 +50,10 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
   Timer? _debounce;
   int _searchSeq = 0;
   List<DuelPlayerDto> _players = const <DuelPlayerDto>[];
+
+  /// What the last search came to (audit L-03: a failed or empty search
+  /// showed nothing at all). Null while nothing was searched.
+  String? _searchNote;
   final Map<String, _Invite> _invites = <String, _Invite>{};
 
   @override
@@ -65,7 +70,10 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
     _searchSeq++;
     final String query = text.trim();
     if (query.length < 2) {
-      setState(() => _players = const <DuelPlayerDto>[]);
+      setState(() {
+        _players = const <DuelPlayerDto>[];
+        _searchNote = null;
+      });
       return;
     }
     _debounce = Timer(
@@ -84,6 +92,12 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
       _players = switch (result) {
         Ok<DuelPlayersDto>(:final value) => value.players,
         Err<DuelPlayersDto>() => const <DuelPlayerDto>[],
+      };
+      _searchNote = switch (result) {
+        Ok<DuelPlayersDto>(:final value) when value.players.isEmpty =>
+          'لا يوجد لاعب بهذا الاسم.',
+        Ok<DuelPlayersDto>() => null,
+        Err<DuelPlayersDto>(:final error) => ErrorPresenter.message(error),
       };
     });
   }
@@ -157,6 +171,16 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
+            if (_searchNote != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Text(
+                  _searchNote!,
+                  key: const Key('leagueInvite.searchNote'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
+              ),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 280),
               child: ListView(

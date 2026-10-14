@@ -10,6 +10,8 @@ import 'package:test/test.dart';
 import '../../routes/groups/[id]/index.dart' as group_route;
 // ignore: always_use_package_imports
 import '../../routes/groups/[id]/members/[userId]/index.dart' as member_route;
+// ignore: always_use_package_imports
+import '../../routes/groups/[id]/members/index.dart' as members_route;
 import 'competition_route_harness.dart';
 
 /// Route tests for leaving a league, removing a member and deleting a league
@@ -33,8 +35,11 @@ void main() {
           joinedAt: DateTime.utc(2026, 7, 2),
         ),
       );
-    final roster = _Roster(groups);
+    final roster = _Roster(groups)
+      ..names[kOwnerUserId] = 'Owner'
+      ..names[kMemberUserId] = 'Member';
     final root = CompositionRoot.forTesting(
+      listGroupMembers: ListGroupMembers(repository: groups, roster: roster),
       leaveGroup: LeaveGroup(groups: groups, roster: roster),
       removeGroupMember: RemoveGroupMember(groups: groups, roster: roster),
       deleteGroup: DeleteGroup(groups: groups, roster: roster),
@@ -53,12 +58,13 @@ void main() {
   );
 
   group('DELETE /groups/{id}/members/{userId}', () {
-    test('a member leaves with "me": 204, off the roster', () async {
+    test('a member leaves with "me": 200, off the roster', () async {
       final setup = rootFor();
 
       final response = await deleteMember(setup.root, memberPrincipal(), 'me');
 
-      expect(response.statusCode, HttpStatus.noContent);
+      expect(response.statusCode, HttpStatus.ok);
+      expect((await decodeBody(response))['left'], isTrue);
       expect(setup.groups.memberships.map((m) => m.userId.value), [
         kOwnerUserId,
       ]);
@@ -74,7 +80,7 @@ void main() {
       expect(setup.groups.memberships, hasLength(2));
     });
 
-    test('the owner removes a member: 204', () async {
+    test('the owner removes a member: 200', () async {
       final setup = rootFor();
 
       final response = await deleteMember(
@@ -83,7 +89,8 @@ void main() {
         kMemberUserId,
       );
 
-      expect(response.statusCode, HttpStatus.noContent);
+      expect(response.statusCode, HttpStatus.ok);
+      expect((await decodeBody(response))['removed'], isTrue);
       expect(setup.groups.memberships, hasLength(1));
     });
 
@@ -118,8 +125,31 @@ void main() {
     });
   });
 
+  test('GET /groups/{id}/members names each member (batch 141)', () async {
+    final setup = rootFor();
+
+    final response = await members_route.onRequest(
+      wireContext(
+        root: setup.root,
+        principal: memberPrincipal(),
+        method: HttpMethod.get,
+      ),
+      kGroupId,
+    );
+
+    expect(response.statusCode, HttpStatus.ok);
+    final members = (await decodeBody(response))['members']! as List<Object?>;
+    expect(
+      [
+        for (final m in members.cast<Map<String, Object?>>())
+          (m['user_id'], m['role'], m['display_name']),
+      ],
+      [(kOwnerUserId, 'owner', 'Owner'), (kMemberUserId, 'member', 'Member')],
+    );
+  });
+
   group('DELETE /groups/{id}', () {
-    test('the owner deletes the league: 204', () async {
+    test('the owner deletes the league: 200', () async {
       final setup = rootFor();
 
       final response = await group_route.onRequest(
@@ -131,7 +161,8 @@ void main() {
         kGroupId,
       );
 
-      expect(response.statusCode, HttpStatus.noContent);
+      expect(response.statusCode, HttpStatus.ok);
+      expect((await decodeBody(response))['deleted'], isTrue);
       expect(setup.groups.groups, isEmpty);
       expect(setup.groups.memberships, isEmpty);
     });
@@ -161,6 +192,9 @@ final class _Roster implements GroupRosterStore {
 
   final InMemoryGroupRepository _groups;
 
+  /// Display names by user id.
+  final Map<String, String> names = <String, String>{};
+
   @override
   Future<Result<bool>> removeMembership(GroupId groupId, UserId userId) async {
     final before = _groups.memberships.length;
@@ -185,4 +219,9 @@ final class _Roster implements GroupRosterStore {
     GroupId groupId,
     SeasonId seasonId,
   ) async => const Result.ok(<String>{});
+
+  @override
+  Future<Result<Map<String, String>>> memberDisplayNames(
+    GroupId groupId,
+  ) async => Result.ok(names);
 }

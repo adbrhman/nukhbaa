@@ -314,6 +314,34 @@ JOIN competition.participants p
 WHERE gm.group_id = @group_id::uuid
 ''';
 
+  static const String _memberDisplayNamesSql = '''
+SELECT gm.user_id::text AS user_id,
+       u.display_name   AS display_name
+FROM "group".group_memberships gm
+JOIN identity.users u ON u.id = gm.user_id
+WHERE gm.group_id = @group_id::uuid
+''';
+
+  @override
+  Future<Result<Map<String, String>>> memberDisplayNames(
+    GroupId groupId,
+  ) async {
+    final result = await _connection.query(
+      _memberDisplayNamesSql,
+      parameters: {'group_id': groupId.value},
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok({
+        for (final row in value)
+          if (row['user_id'] != null &&
+              row['display_name'] is String &&
+              (row['display_name'] as String).trim().isNotEmpty)
+            row['user_id'].toString(): (row['display_name'] as String).trim(),
+      }),
+    };
+  }
+
   @override
   Future<Result<bool>> removeMembership(GroupId groupId, UserId userId) async {
     final result = await _connection.query(

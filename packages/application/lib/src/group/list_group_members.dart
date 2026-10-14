@@ -1,4 +1,5 @@
 import 'package:application/src/group/ports/group_repository.dart';
+import 'package:application/src/group/ports/group_roster_store.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -18,13 +19,47 @@ import 'package:shared/shared.dart';
 /// body (Security ADR §2). The returned memberships are in the repository's
 /// joinedAt-ascending order (the owner, who joined first, appears first).
 ///
+/// [withNames] adds each member's display name from a [GroupRosterStore]
+/// (batch 141: the owner sees who he removes); without one, or when that
+/// read fails, the roster comes without names rather than not at all.
+///
 /// Never throws; returns a typed [Result].
 final class ListGroupMembers {
-  /// Creates the use-case over its collaborator.
-  const ListGroupMembers({required GroupRepository repository})
-    : _repository = repository;
+  /// Creates the use-case over its collaborators.
+  const ListGroupMembers({
+    required GroupRepository repository,
+    GroupRosterStore? roster,
+  }) : _repository = repository,
+       _roster = roster;
 
   final GroupRepository _repository;
+  final GroupRosterStore? _roster;
+
+  /// The roster of [groupId] with its members' display names, by user id.
+  Future<Result<GroupRosterView>> withNames({
+    required AuthenticatedUser principal,
+    required String groupId,
+  }) async {
+    final listed = await call(principal: principal, groupId: groupId);
+    if (listed is Err<List<GroupMembership>>) {
+      return Result.err(listed.error);
+    }
+    final members = (listed as Ok<List<GroupMembership>>).value;
+    final roster = _roster;
+    if (roster == null || members.isEmpty) {
+      return Result.ok(GroupRosterView(members: members));
+    }
+    final names = await roster.memberDisplayNames(members.first.groupId);
+    return Result.ok(
+      GroupRosterView(
+        members: members,
+        names: switch (names) {
+          Ok<Map<String, String>>(:final value) => value,
+          Err<Map<String, String>>() => const <String, String>{},
+        },
+      ),
+    );
+  }
 
   /// Lists the members of group [groupId], visible to [principal] as a member.
   Future<Result<List<GroupMembership>>> call({
@@ -67,4 +102,19 @@ final class ListGroupMembers {
     // this member, so this list is theirs to see.
     return _repository.listMemberships(gId);
   }
+}
+
+/// A league's roster with its members' display names (by user id).
+final class GroupRosterView {
+  /// Pairs [members] with their [names].
+  const GroupRosterView({
+    required this.members,
+    this.names = const <String, String>{},
+  });
+
+  /// The memberships, owner first.
+  final List<GroupMembership> members;
+
+  /// Display names by user id; a member without one is absent.
+  final Map<String, String> names;
 }
