@@ -172,7 +172,7 @@ class AdminSecondaryButton extends StatelessWidget {
     final t = context.tokens;
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        foregroundColor: t.primary,
+        foregroundColor: t.primaryText,
         side: BorderSide(color: t.primary.withValues(alpha: 0.5)),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.brButton),

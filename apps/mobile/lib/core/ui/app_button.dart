@@ -44,7 +44,9 @@ class AppButton extends StatelessWidget {
 
     final (Color bg, Color fg, Color? border) = switch (variant) {
       AppButtonVariant.primary => (tokens.primary, tokens.onPrimary, null),
-      AppButtonVariant.danger => (tokens.error, tokens.onPrimary, null),
+      // errorFill, not error: white on the dark theme's bright red read
+      // 3.5:1 on every destructive confirm (sign out, leave, delete).
+      AppButtonVariant.danger => (tokens.errorFill, tokens.onPrimary, null),
       AppButtonVariant.secondary => (
         Colors.transparent,
         tokens.textPrimary,

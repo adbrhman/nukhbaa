@@ -5172,8 +5172,8 @@ Owner's request: no screen or colour defect in either theme. Report:
   themes) and `test/audit/text_color_tokens_test.dart` (reads all of `lib/`
   and fails on a `TextStyle`, `TextSpan` or `copyWith` whose `color:` names
   a fill token; a self-test proves it catches one and passes the right one).
-- Next: script 78 extends the screen survey to the 15 screens it does not
-  reach (CA-09); 79 on fix what it measures, with CA-08.
+- Next: the screen survey's extension to the 15 screens it does not reach
+  (CA-09) moved to script 79, after the button labels (78).
 
 No migration, no server change; the web on deploy, Android with the next
 APK.
@@ -5190,6 +5190,23 @@ APK.
   crown and the double button's rim take `goldAccent` (3:1 or better on
   every light surface; the same gold in the dark theme). Test: a medal-gold
   check in `app_theme_components_contrast_test.dart`.
+
+No migration; the web on deploy, Android with the next APK.
+
+### Colour audit: button labels (script 78, 2026-10-15)
+
+- CA-12: `AppButton.danger` -- every destructive confirm through
+  `AppDialog.confirm` -- was white on the dark theme's bright `error`
+  (3.51:1); it fills with `errorFill` (5.39:1). The home card's white
+  "start predicting" button is labelled in `scheme.primaryContainer`
+  (6.7:1 dark, 10.4:1 light) instead of `primary` (4.54:1 dark, the edge).
+- CA-13: `AdminSecondaryButton` is labelled in `primaryText`.
+- Defences: `test/audit/button_label_tokens_test.dart` (reads all of `lib/`
+  and fails on a `styleFrom(foregroundColor:)` naming a fill token, with a
+  self-test) and `test/core/theme/button_labels_contrast_test.dart` (the
+  destructive confirm and the home button, pumped in both themes).
+- Next: script 79 extends the screen survey to CA-09; 80 on fix what it
+  measures, with CA-08.
 
 No migration; the web on deploy, Android with the next APK.
 

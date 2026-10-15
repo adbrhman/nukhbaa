@@ -672,7 +672,9 @@ class _OverviewCard extends StatelessWidget {
             onPressed: onOpenMatches,
             style: FilledButton.styleFrom(
               backgroundColor: tokens.onPrimary,
-              foregroundColor: tokens.primary,
+              // The deeper blue: the dark theme's bright primary sat at
+              // 4.54:1 on white, on the edge (colour audit, CA-12).
+              foregroundColor: context.scheme.primaryContainer,
               minimumSize: const Size.fromHeight(AppSizes.controlMd),
               // A button's textStyle replaces the theme's instead of merging
               // with it, so the family has to be named or the label falls
