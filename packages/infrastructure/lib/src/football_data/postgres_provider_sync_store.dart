@@ -31,7 +31,8 @@ ON CONFLICT (external_source, external_id, canonical_table) DO NOTHING
 SELECT m.canonical_id::text AS fixture_id,
        m.external_id,
        s.kickoff_at,
-       s.league_id::text AS league_id
+       s.league_id::text AS league_id,
+       s.home_team || ' - ' || s.away_team AS game
 FROM football_data.external_identity_map m
 JOIN competition.fixture_schedules s
   ON s.fixture_id = m.canonical_id
@@ -289,6 +290,7 @@ ON CONFLICT (job) DO UPDATE
               externalId: row['external_id'].toString(),
               kickoffAt: kickoff.toUtc(),
               leagueId: row['league_id']?.toString(),
+              game: row['game']?.toString() ?? '',
             ),
           );
         }

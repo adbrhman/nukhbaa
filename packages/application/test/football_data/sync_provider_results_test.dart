@@ -481,4 +481,143 @@ void main() {
       );
     });
   });
+
+  // Review of 2026-10-16: a match still without a result six hours
+  // after kickoff was dropped without a word to anyone, and a postponed
+  // match was asked about on every run.
+  group('a result still missing six hours after kickoff', () {
+    final kickoff = DateTime.utc(2026, 10, 15, 19);
+    final day = riyadhDayOf(kickoff);
+
+    // The production timings: confirmation, look-back and rests.
+    SyncProviderResults chasing() => SyncProviderResults(
+      providers: {'highlightly': provider},
+      store: store,
+      leagueRepository: FakeLeagueRepository(const [
+        League(
+          id: LeagueRef(_pl),
+          name: 'الإنجليزي',
+          shortName: null,
+          logoUrl: null,
+        ),
+      ]),
+      rules: const [
+        ProviderLeagueRule(
+          source: 'highlightly',
+          externalLeagueId: 'PL',
+          leagueName: 'الإنجليزي',
+        ),
+      ],
+      recorder:
+          ({
+            required String fixtureId,
+            required int homeGoals,
+            required int awayGoals,
+          }) async {
+            recorded.add((
+              fixtureId: fixtureId,
+              home: homeGoals,
+              away: awayGoals,
+            ));
+            return const Result.ok(null);
+          },
+    );
+
+    void provides(ProviderMatchStatus status, {int? home, int? away}) {
+      provider.answer('PL', day, [
+        providerMatch(
+          id: 'm1',
+          league: 'PL',
+          home: 'a',
+          away: 'b',
+          kickoff: kickoff,
+          status: status,
+          homeGoals: home,
+          awayGoals: away,
+        ),
+      ]);
+    }
+
+    Future<ProviderSyncReport> runAt(
+      SyncProviderResults use,
+      Duration fromKickoff,
+    ) async =>
+        ((await use.call(now: kickoff.add(fromKickoff), apply: true))
+                as Ok<ProviderSyncReport>)
+            .value;
+
+    setUp(() {
+      store.pending = [
+        PendingProviderFixture(
+          fixtureId: _f1,
+          externalId: 'm1',
+          kickoffAt: kickoff,
+          leagueId: _pl,
+          game: 'بنفيكا - سلتيك',
+        ),
+      ];
+    });
+
+    test('is put to the admins once, with the reason', () async {
+      final use = chasing();
+      provider.answers['PL|${isoDay(day)}'] = const Result.err(
+        AppError.transient(providerQuotaErrorCode, 'quota'),
+      );
+
+      final first = await runAt(use, const Duration(hours: 6, minutes: 5));
+      expect(first.attention.single.code, 'provider_sync.result_overdue');
+      expect(first.attention.single.match, 'بنفيكا - سلتيك');
+      expect(first.attention.single.message, contains('نفدت حصة المزوّد'));
+
+      final again = await runAt(use, const Duration(hours: 8, minutes: 10));
+      expect(again.attention, isEmpty);
+      expect(provider.calls, hasLength(2));
+    });
+
+    test('is asked about every two hours, and recorded at once', () async {
+      final use = chasing();
+      provides(ProviderMatchStatus.live);
+      await runAt(use, const Duration(hours: 7));
+      await runAt(use, const Duration(hours: 7, minutes: 10));
+      expect(provider.calls, hasLength(1));
+
+      provides(ProviderMatchStatus.finished, home: 2, away: 1);
+      await runAt(use, const Duration(hours: 8, minutes: 50));
+      expect(recorded, isEmpty);
+
+      final report = await runAt(use, const Duration(hours: 9));
+      expect(provider.calls, hasLength(2));
+      expect(recorded, [(fixtureId: _f1, home: 2, away: 1)]);
+      expect(report.applied, 1);
+    });
+
+    test('is no longer asked about a day after kickoff', () async {
+      final use = chasing();
+      provides(ProviderMatchStatus.live);
+      final report = await runAt(use, const Duration(hours: 24, minutes: 1));
+      expect(provider.calls, isEmpty);
+      expect(report.requests, 0);
+    });
+
+    test('a postponed match is asked about again only after an hour', () async {
+      final use = chasing();
+      provides(ProviderMatchStatus.postponed);
+
+      final first = await runAt(use, const Duration(hours: 2));
+      expect(first.attention.single.code, 'provider_sync.match_postponed');
+      await runAt(use, const Duration(hours: 2, minutes: 10));
+      await runAt(use, const Duration(hours: 2, minutes: 50));
+      expect(provider.calls, hasLength(1));
+
+      await runAt(use, const Duration(hours: 3));
+      expect(provider.calls, hasLength(2));
+
+      // Its own entry already tells the admins; it is not overdue too.
+      final later = await runAt(use, const Duration(hours: 7));
+      expect(provider.calls, hasLength(3));
+      expect(later.attention.map((item) => item.code), [
+        'provider_sync.match_postponed',
+      ]);
+    });
+  });
 }

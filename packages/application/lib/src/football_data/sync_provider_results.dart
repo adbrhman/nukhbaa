@@ -41,6 +41,16 @@ typedef ProviderResultRecorder =
 /// changed score starts the wait again. The wait is kept in memory per
 /// provider and fixture, so a server restart just starts it over.
 ///
+/// A match still without a result [lookback] after kickoff is put to the
+/// admins once, with the reason when one is known, and is still asked
+/// about, every [lateInterval] at most, until [lateLookback] from kickoff;
+/// its first finished score then is recorded at once, having long stood.
+/// Before this a match was dropped at [lookback] and nobody was told
+/// (review of 2026-10-16, after the Europa League night of 2026-10-15,
+/// whose results came on time). A match the provider calls postponed or
+/// cancelled is asked about again only after [parkFor], so it does not
+/// spend a request every run.
+///
 /// With `apply: false` (shadow mode) nothing is written. Never throws.
 final class SyncProviderResults {
   /// Creates the use-case.
@@ -54,6 +64,9 @@ final class SyncProviderResults {
     this.settleTime = const Duration(minutes: 90),
     this.confirmAfter = const Duration(minutes: 15),
     this.lookback = const Duration(hours: 6),
+    this.lateLookback = const Duration(hours: 24),
+    this.lateInterval = const Duration(hours: 2),
+    this.parkFor = const Duration(hours: 1),
     this.maxCallsPerRun = 8,
   }) : _providers = providers,
        _store = store,
@@ -75,8 +88,18 @@ final class SyncProviderResults {
   /// How long after kickoff a match is first looked up.
   final Duration settleTime;
 
-  /// How far back pending fixtures are still chased.
+  /// How far back pending fixtures are chased on every run; a fixture
+  /// older than this is late.
   final Duration lookback;
+
+  /// How far back late fixtures are still chased.
+  final Duration lateLookback;
+
+  /// How often, at most, a provider is asked about late fixtures alone.
+  final Duration lateInterval;
+
+  /// How long a match the provider calls postponed or cancelled rests.
+  final Duration parkFor;
 
   /// How long the same finished score must stand, seen on two runs at least
   /// this far apart, before it is recorded. [Duration.zero] records at once.
@@ -86,6 +109,15 @@ final class SyncProviderResults {
   /// has stood.
   final Map<String, _FinishedSighting> _sightings =
       <String, _FinishedSighting>{};
+
+  /// When each `source|fixtureId` was last reported postponed or cancelled.
+  final Map<String, DateTime> _parked = <String, DateTime>{};
+
+  /// The late fixtures already put to the admins, by `source|fixtureId`.
+  final Set<String> _overdue = <String>{};
+
+  /// When each group of late fixtures alone was last asked about.
+  final Map<String, DateTime> _lateCalls = <String, DateTime>{};
 
   /// Provider calls allowed in one run.
   final int maxCallsPerRun;
@@ -108,7 +140,9 @@ final class SyncProviderResults {
     for (final source in sources) {
       final pendingResult = await _store.fixturesAwaitingResult(
         source: source,
-        kickedOffFrom: nowUtc.subtract(lookback),
+        kickedOffFrom: nowUtc.subtract(
+          lateLookback > lookback ? lateLookback : lookback,
+        ),
         kickedOffBefore: nowUtc.subtract(settleTime),
       );
       if (pendingResult is Err<List<PendingProviderFixture>>) {
@@ -126,8 +160,11 @@ final class SyncProviderResults {
         for (final fixture in entry.value) '${entry.key}|${fixture.fixtureId}',
     };
     _sightings.removeWhere((key, _) => !waitingKeys.contains(key));
+    _parked.removeWhere((key, _) => !waitingKeys.contains(key));
+    _overdue.removeWhere((key) => !waitingKeys.contains(key));
 
     if (pendingBySource.isEmpty) {
+      _lateCalls.clear();
       return const Result.ok(
         ProviderSyncReport(
           requests: 0,
@@ -176,34 +213,109 @@ final class SyncProviderResults {
       }
     }
 
+    _lateCalls.removeWhere((key, _) => !groups.containsKey(key));
+
+    bool isLate(PendingProviderFixture fixture) =>
+        nowUtc.difference(fixture.kickoffAt.toUtc()) >= lookback;
+
+    bool resting(String source, PendingProviderFixture fixture) {
+      final at = _parked['$source|${fixture.fixtureId}'];
+      return at != null && nowUtc.difference(at) < parkFor;
+    }
+
+    // Puts each late fixture of [fixtures] to the admins, once; a match the
+    // provider called postponed or cancelled has its own entry already.
+    void flagOverdue(
+      String source,
+      Iterable<PendingProviderFixture> fixtures,
+      String Function(PendingProviderFixture fixture) why,
+    ) {
+      for (final fixture in fixtures) {
+        final key = '$source|${fixture.fixtureId}';
+        if (!isLate(fixture) ||
+            _parked.containsKey(key) ||
+            !_overdue.add(key)) {
+          continue;
+        }
+        final game = fixture.game.isEmpty
+            ? 'fixture ${fixture.fixtureId}'
+            : fixture.game;
+        final reason = why(fixture);
+        notes.add('overdue ($reason): $game');
+        attention.add(
+          ProviderSyncAttention(
+            code: 'provider_sync.result_overdue',
+            match: game,
+            message:
+                '«$game»: لم تصل نتيجتها من المزوّد بعد '
+                '${lookback.inHours} ساعات من انطلاقها ($reason). سيعود '
+                'الخادم يسأل عنها على فترات خلال ${lateLookback.inHours} '
+                'ساعة من انطلاقها؛ إن عرفت النتيجة فسجّلها بنفسك الآن.',
+          ),
+        );
+      }
+    }
+
+    String failure(String code) => code == providerQuotaErrorCode
+        ? 'نفدت حصة المزوّد اليومية'
+        : 'تعذّر الجلب من المزوّد: $code';
+
     var requests = 0;
     var applied = 0;
     var waiting = 0;
     var skipped = 0;
     final recordedIds = <String>{};
-    final exhausted = <String>{};
+    final exhausted = <String, String?>{};
     final calls = <String, int>{};
     for (final entry in groups.entries) {
       final rule = groupRule[entry.key]!;
-      if (exhausted.contains(rule.source)) {
+      // A match the provider called postponed or cancelled rests a while.
+      final due = <PendingProviderFixture>[
+        for (final fixture in entry.value)
+          if (!resting(rule.source, fixture)) fixture,
+      ];
+      if (due.isEmpty) {
+        continue;
+      }
+      if (exhausted.containsKey(rule.source)) {
+        final code = exhausted[rule.source];
+        flagOverdue(
+          rule.source,
+          due,
+          (_) => code == null ? 'نفدت طلبات هذه الجولة' : failure(code),
+        );
+        continue;
+      }
+      // Late fixtures alone are asked about every [lateInterval] at most.
+      final lateOnly = due.every(isLate);
+      final lastLate = _lateCalls[entry.key];
+      if (lateOnly &&
+          lastLate != null &&
+          nowUtc.difference(lastLate) < lateInterval) {
         continue;
       }
       if ((calls[rule.source] ?? 0) >= maxCallsPerRun) {
         notes.add('call budget reached for ${rule.source}; the rest waits');
-        exhausted.add(rule.source);
+        exhausted[rule.source] = null;
+        flagOverdue(rule.source, due, (_) => 'نفدت طلبات هذه الجولة');
         continue;
       }
       calls[rule.source] = (calls[rule.source] ?? 0) + 1;
       requests++;
+      if (lateOnly) {
+        _lateCalls[entry.key] = nowUtc;
+      }
       final fetched = await _providers[rule.source]!.matchesOn(
         leagueExternalId: rule.externalLeagueId,
         riyadhDay: groupDay[entry.key]!,
       );
       if (fetched is Err<List<ProviderMatch>>) {
-        notes.add('fetch ${entry.key} failed: ${fetched.error.code}');
-        if (fetched.error.code == providerQuotaErrorCode) {
-          exhausted.add(rule.source);
+        final code = fetched.error.code;
+        notes.add('fetch ${entry.key} failed: $code');
+        if (code == providerQuotaErrorCode) {
+          exhausted[rule.source] = code;
         }
+        flagOverdue(rule.source, due, (_) => failure(code));
         continue;
       }
       final byId = <String, ProviderMatch>{
@@ -211,7 +323,9 @@ final class SyncProviderResults {
           match.externalId: match,
       };
 
-      for (final fixture in entry.value) {
+      // Why each fixture of this group is still without a result.
+      final why = <String, String>{};
+      for (final fixture in due) {
         if (recordedIds.contains(fixture.fixtureId)) {
           continue;
         }
@@ -219,9 +333,12 @@ final class SyncProviderResults {
         // finished score puts one back (below).
         final sightingKey = '${rule.source}|${fixture.fixtureId}';
         final previous = _sightings.remove(sightingKey);
+        _parked.remove(sightingKey);
+        why[fixture.fixtureId] = 'لم يُعلن المزوّد انتهاءها';
         final match = byId[fixture.externalId];
         if (match == null) {
           skipped++;
+          why[fixture.fixtureId] = 'المزوّد لا يُرجع هذه المباراة';
           notes.add(
             'match ${fixture.externalId} not returned for ${entry.key}',
           );
@@ -231,6 +348,7 @@ final class SyncProviderResults {
           case ProviderMatchStatus.postponed:
           case ProviderMatchStatus.cancelled:
             skipped++;
+            _parked[sightingKey] = nowUtc;
             notes.add(
               'needs admin (${match.status.name}): ${match.homeTeamName} - '
               '${match.awayTeamName}, fixture ${fixture.fixtureId}',
@@ -275,7 +393,8 @@ final class SyncProviderResults {
             '${match.awayTeamName} (fixture ${fixture.fixtureId})';
 
         // The same finished score must stand for [confirmAfter] before it is
-        // recorded; a different score starts the wait again.
+        // recorded; a different score starts the wait again. A late match's
+        // score has long stood: it is recorded at once.
         final unchangedSince =
             previous != null &&
                 previous.homeGoals == homeGoals &&
@@ -288,7 +407,7 @@ final class SyncProviderResults {
           awayGoals,
           since,
         );
-        if (nowUtc.difference(since) < confirmAfter) {
+        if (!isLate(fixture) && nowUtc.difference(since) < confirmAfter) {
           waiting++;
           if (unchangedSince == null) {
             notes.add(
@@ -347,6 +466,7 @@ final class SyncProviderResults {
           awayGoals: awayGoals,
         );
         if (recorded is Err<void>) {
+          why[fixture.fixtureId] = 'تعذّر حفظها: ${recorded.error.code}';
           notes.add('record failed (${recorded.error.code}): $label');
           continue;
         }
@@ -355,6 +475,11 @@ final class SyncProviderResults {
         _sightings.remove(sightingKey);
         notes.add('recorded: $label');
       }
+      flagOverdue(
+        rule.source,
+        due.where((fixture) => !recordedIds.contains(fixture.fixtureId)),
+        (fixture) => why[fixture.fixtureId] ?? 'لم يُعلن المزوّد انتهاءها',
+      );
     }
 
     return Result.ok(

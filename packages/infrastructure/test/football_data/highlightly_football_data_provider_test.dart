@@ -107,4 +107,78 @@ void main() {
       providerQuotaErrorCode,
     );
   });
+
+  // The stop could hold until a restart: no request went out to learn
+  // that the provider's day had turned (review of 2026-10-16).
+  test('a quota stop holds for an hour, then one request is tried', () async {
+    var now = DateTime.utc(2026, 10, 15, 21, 7);
+    var sent = 0;
+    var status = 200;
+    final provider = HighlightlyFootballDataProvider(
+      apiKey: 'k',
+      clock: () => now,
+      httpClient: MockClient((request) async {
+        sent++;
+        return http.Response(
+          jsonEncode({'data': <Object?>[]}),
+          status,
+          headers: {
+            'content-type': 'application/json',
+            'x-ratelimit-requests-remaining': status == 429 ? '0' : '100',
+          },
+        );
+      }),
+    );
+    Future<Result<List<ProviderMatch>>> ask() => provider.matchesOn(
+      leagueExternalId: '3337',
+      riyadhDay: DateTime.utc(2026, 10, 15),
+    );
+
+    status = 429;
+    expect(
+      ((await ask()) as Err<List<ProviderMatch>>).error.code,
+      providerQuotaErrorCode,
+    );
+    expect(sent, 1);
+
+    now = now.add(const Duration(minutes: 50));
+    expect(
+      ((await ask()) as Err<List<ProviderMatch>>).error.code,
+      providerQuotaErrorCode,
+    );
+    expect(sent, 1, reason: 'held: nothing sent within the hour');
+
+    status = 200;
+    now = now.add(const Duration(minutes: 10));
+    expect(await ask(), isA<Ok<List<ProviderMatch>>>());
+    expect(sent, 2, reason: 'the day turned; the next request is answered');
+    expect(provider.remainingRequests, 100);
+  });
+
+  test('with no reserve, results may spend the last requests', () async {
+    var sent = 0;
+    final provider = HighlightlyFootballDataProvider(
+      apiKey: 'k',
+      quotaReserve: 0,
+      httpClient: MockClient((request) async {
+        sent++;
+        return http.Response(
+          jsonEncode({'data': <Object?>[]}),
+          200,
+          headers: {
+            'content-type': 'application/json',
+            'x-ratelimit-requests-remaining': '3',
+          },
+        );
+      }),
+    );
+    for (var i = 0; i < 3; i++) {
+      final answer = await provider.matchesOn(
+        leagueExternalId: '3337',
+        riyadhDay: DateTime.utc(2026, 10, 15),
+      );
+      expect(answer, isA<Ok<List<ProviderMatch>>>());
+    }
+    expect(sent, 3);
+  });
 }

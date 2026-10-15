@@ -9,6 +9,7 @@ final class PendingProviderFixture {
     required this.externalId,
     required this.kickoffAt,
     required this.leagueId,
+    this.game = '',
   });
 
   /// The app's fixture id.
@@ -22,6 +23,9 @@ final class PendingProviderFixture {
 
   /// The app's league id stored on the schedule, if any.
   final String? leagueId;
+
+  /// The schedule's `home - away`, to name the match to an admin.
+  final String game;
 }
 
 /// The job name the fixtures sync records its last successful run under.

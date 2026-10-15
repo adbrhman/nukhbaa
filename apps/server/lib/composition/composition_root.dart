@@ -2894,7 +2894,17 @@ final class CompositionRoot {
         liveSources: const {footballDataSource},
       );
       syncProviderResults = SyncProviderResults(
-        providers: providers,
+        // The reserve the schedule calls keep is for results: theirs is an
+        // adapter of its own that keeps none. Sharing one, a stop at the
+        // reserve stopped results too (review of 2026-10-16).
+        providers: <String, FootballDataProvider>{
+          ...providers,
+          if (highlightlyKey.isNotEmpty)
+            highlightlySource: HighlightlyFootballDataProvider(
+              apiKey: highlightlyKey,
+              quotaReserve: 0,
+            ),
+        },
         store: syncStore,
         leagueRepository: syncLeagues,
         rules: phaseOneRules,

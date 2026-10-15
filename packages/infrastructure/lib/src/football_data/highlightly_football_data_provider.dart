@@ -13,8 +13,12 @@ import 'package:shared/shared.dart';
 /// * **Quota:** the free plan allows 100 requests a day. The provider reports
 ///   what is left in `x-ratelimit-requests-remaining`; once it drops to
 ///   [quotaReserve] this adapter stops calling and returns
-///   [providerQuotaErrorCode], so results for today's matches always have
-///   room. A 429 is treated the same way.
+///   [providerQuotaErrorCode]. A 429 is treated the same way. The stop
+///   holds for [quotaRecheck], then one request is tried again: nothing
+///   else tells the adapter that the provider's day has turned. The stop
+///   could hold until the server restarted (review of 2026-10-16).
+///   The schedule calls keep a reserve; the results calls have an adapter
+///   of their own with none, so the reserve is theirs to spend.
 /// * **Days:** a day is asked for in Riyadh time (`timezone=Asia/Riyadh`), the
 ///   day the app's users live in; kickoffs come back as UTC instants.
 /// * **Scores:** `state.score.current` (`"2 - 1"`) is the score after extra
@@ -27,10 +31,13 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
     required String apiKey,
     http.Client? httpClient,
     this.quotaReserve = 25,
+    this.quotaRecheck = const Duration(hours: 1),
     Uri? baseUri,
+    DateTime Function()? clock,
   }) : _apiKey = apiKey,
        _http = httpClient ?? http.Client(),
-       _base = baseUri ?? Uri.parse('https://soccer.highlightly.net');
+       _base = baseUri ?? Uri.parse('https://soccer.highlightly.net'),
+       _clock = clock ?? DateTime.now;
 
   final String _apiKey;
   final http.Client _http;
@@ -39,7 +46,15 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
   /// Requests kept in hand before this adapter stops calling.
   final int quotaReserve;
 
+  /// How long a stop at [quotaReserve] holds before one request is tried.
+  final Duration quotaRecheck;
+
+  final DateTime Function() _clock;
+
   int? _remaining;
+
+  /// When [_remaining] was reported.
+  DateTime? _remainingAt;
 
   /// The provider's last reported remaining daily requests, if any.
   int? get remainingRequests => _remaining;
@@ -54,7 +69,11 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
     required DateTime riyadhDay,
   }) async {
     final left = _remaining;
-    if (left != null && left <= quotaReserve) {
+    final seenAt = _remainingAt;
+    if (left != null &&
+        left <= quotaReserve &&
+        seenAt != null &&
+        _clock().difference(seenAt) < quotaRecheck) {
       return Result.err(
         AppError.transient(
           providerQuotaErrorCode,
@@ -100,10 +119,12 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
     );
     if (reported != null) {
       _remaining = reported;
+      _remainingAt = _clock();
     }
 
     if (response.statusCode == 429) {
       _remaining = 0;
+      _remainingAt = _clock();
       return const Result.err(
         AppError.transient(
           providerQuotaErrorCode,

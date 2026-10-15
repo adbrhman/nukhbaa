@@ -5504,6 +5504,52 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Provider results: the quota stop, late matches, the admins told (script 88, 2026-10-16)
+
+Prompted by the Europa League night of 2026-10-15, whose results came on
+time: shortly after midnight the 22:00 matches had no result yet, which
+is expected (90 min settle, 15 min confirmation, 10-minute ticks), and
+the sync recorded and scored them soon after. Reading the chain at that
+point found these defects in the code, none of which caused a loss that
+night:
+
+- The Highlightly adapter stops calling once the provider reports 25
+  requests left and would not call again until a restart: the count was
+  only refreshed by a response. The reserve meant for results would stop
+  results too, since both syncs shared one adapter.
+- A postponed match was asked about every 10 minutes for 6 hours.
+- A match still without a result 6 hours after kickoff was dropped
+  without a word to the admins; quota and fetch failures were only
+  container-log lines.
+
+Changes:
+
+- `HighlightlyFootballDataProvider`: a stop at the reserve (or a 429)
+  holds for `quotaRecheck` (1 h), then one request is tried; a `clock`
+  is injectable. The results sync gets its own adapter with
+  `quotaReserve: 0` (composition root); the fixtures sync keeps 25.
+- `SyncProviderResults`: fixtures are chased for `lateLookback` (24 h);
+  past `lookback` (6 h) a group of late fixtures alone is asked about
+  every `lateInterval` (2 h) at most, and a finished score is recorded at
+  once. A late fixture is put to the admins once
+  (`provider_sync.result_overdue`, Arabic, with the reason: quota, fetch
+  error, not returned, not finished, or not saved). A postponed or
+  cancelled match rests `parkFor` (1 h) between requests and is never
+  also reported overdue.
+- `PendingProviderFixture.game` (`home - away`, from `_pendingSql`) names
+  the match in the admins' entry.
+- Tests: the adapter's stop and its expiry, and the no-reserve adapter;
+  the results sync's overdue entry, two-hourly late chase, the 24 h end
+  and the resting postponed match, through `SyncProviderResults.call`.
+
+Not changed: the database pool on match nights (425 `db.query_timeout`,
+8/8 connections in use, about 85 waiting, at 23:54-23:55 on 2026-10-15),
+which is the C-01 performance work. The hand-added copy of Hoffenheim -
+Besiktas that players predicted on is not linked to a provider and takes
+its result from an admin.
+
+No migration; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
