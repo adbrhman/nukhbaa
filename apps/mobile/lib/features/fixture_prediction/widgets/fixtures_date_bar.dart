@@ -51,7 +51,9 @@ class FixturesDateStrip extends StatefulWidget {
 
   /// The strip's height at normal text size, for the app bar's
   /// `PreferredSize`: a 58px chip (badge, weekday, date) plus its margin.
-  static const double height = 70;
+  /// It was 70 with twice the margin; the owner asked for a tighter strip
+  /// (2026-10-15).
+  static const double height = 64;
 
   /// The strip's height at the reader's text size: the chips grow with it
   /// instead of shrinking their text to a fixed height (UI-17), so the app
@@ -62,8 +64,8 @@ class FixturesDateStrip extends StatefulWidget {
         _DayTab.badgeHeightFor(scaler) +
         scaler.scale(AppFontSize.s13) * 1.2 +
         scaler.scale(AppFontSize.s10) * 1.2;
-    // Margin 12, chip padding 8, border 2, and 4 to spare for rounding.
-    final double fitted = content + 26;
+    // Margin 6, chip padding 8, border 2, and 4 to spare for rounding.
+    final double fitted = content + 20;
     return fitted > height ? fitted : height;
   }
 
@@ -146,7 +148,7 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
-          vertical: 6,
+          vertical: 3,
         ),
         child: Row(
           children: <Widget>[
@@ -200,7 +202,10 @@ class _DayTab extends StatelessWidget {
   final VoidCallback onTap;
 
   /// The narrowest chip; a longer weekday at large text makes it wider.
-  static const double _minWidth = 80;
+  /// 64 rather than 80, with half the gap between chips: about six days on
+  /// a phone instead of four and a half, each still a 48 px target or more
+  /// (the owner asked for smaller chips, 2026-10-15).
+  static const double _minWidth = 64;
 
   /// The relative badge's height: 15 at normal size, and room for its
   /// 10px text, line height 1.1, once the reader's text is larger.
@@ -216,7 +221,7 @@ class _DayTab extends StatelessWidget {
     // Full white on the selected chip: at 85% it read 3.7:1 (UI-02).
     final Color secondaryText = selected ? tokens.onPrimary : tokens.textMuted;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs / 2),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -227,7 +232,7 @@ class _DayTab extends StatelessWidget {
             constraints: const BoxConstraints(minWidth: _minWidth),
             padding: const EdgeInsets.symmetric(
               vertical: 4,
-              horizontal: AppSpacing.sm,
+              horizontal: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
               color: selected ? tokens.primary : tokens.surface,

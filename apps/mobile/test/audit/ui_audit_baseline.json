@@ -81,7 +81,7 @@
   },
   "calendar/dark": {
     "contrast": 0,
-    "tapTarget": 60,
+    "tapTarget": 0,
     "label": 0,
     "layout10": 0,
     "layout13": 0,
@@ -89,7 +89,7 @@
   },
   "calendar/light": {
     "contrast": 0,
-    "tapTarget": 60,
+    "tapTarget": 0,
     "label": 0,
     "layout10": 0,
     "layout13": 0,

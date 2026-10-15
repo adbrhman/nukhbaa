@@ -5351,6 +5351,23 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; tests and docs only.
 
+### Colour audit: the calendar's targets and a tighter day strip (script 82, 2026-10-15)
+
+Script 81's run found one defect on its 12 screens, in both themes: the
+calendar's days were 44 x 44 targets (60 of them), under Android's 48.
+
+- CA-17: `fixtures_calendar_page.dart` -- the whole cell (a seventh of the
+  row by 52) takes the tap; the drawn day stays a 44 px circle.
+- The day strip under the matches app bar, smaller at the owner's request:
+  a chip is at least 64 wide instead of 80, with half the gap and half the
+  side padding, and the strip is 64 high instead of 70 -- about six days
+  on a phone instead of four and a half. The chips still grow with the
+  reader's text (`heightFor`, UI-17) and stay 48 px targets or more.
+- The survey baseline is zero on all 51 screens.
+- Next: script 83, CA-08.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

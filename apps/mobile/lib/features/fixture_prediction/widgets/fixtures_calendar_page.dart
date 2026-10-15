@@ -188,13 +188,17 @@ class _MonthBlock extends StatelessWidget {
     final bool isSelected = isSameFixtureDay(day, selectedDay);
     final bool isToday = isSameFixtureDay(day, today);
 
-    return SizedBox(
-      height: 52,
-      child: Center(
-        child: InkResponse(
-          key: Key('fixturesCalendar.day.${day.toIso8601String()}'),
-          radius: 24,
-          onTap: () => Navigator.of(context).pop(day),
+    // The whole cell takes the tap -- a seventh of the row by 52, 48 or
+    // more on a phone -- while the drawn day stays a 44 px circle: the
+    // circle alone was the target, under Android's 48 (UI audit survey,
+    // 2026-10-15).
+    return InkResponse(
+      key: Key('fixturesCalendar.day.${day.toIso8601String()}'),
+      radius: 24,
+      onTap: () => Navigator.of(context).pop(day),
+      child: SizedBox(
+        height: 52,
+        child: Center(
           child: Container(
             width: 44,
             height: 44,
