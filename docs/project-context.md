@@ -5013,6 +5013,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   shown now. Needs an APK (and the web deploy); no migration. M-35 and
   L-53 (avatars kept on the phone, medals without the emoji font) are
   batch 153.
+- **Batch 153 (profile pictures kept on the phone, 2026-10-15, audit
+  M-35)**: the server answers a picture `immutable` for a year under a
+  `?v=` URL, but the app reads the bytes through `api_client`, which has
+  no disk cache, and held them two minutes in memory: every board, group
+  and duel opened later, and every launch, downloaded every face again.
+  `avatarBytesProvider` now reads `AvatarDiskCache` first and keeps what
+  it downloads: on Android a file per URL (base64url of the whole URL) in
+  `nukhba_avatars` under the app's temporary folder, trimmed oldest first
+  from 20 MB to 15 MB; on the web nothing (the browser's cache already
+  honours the header; conditional import `avatar_disk_cache_io.dart` /
+  `_stub.dart`); under `flutter test` nothing, so every test starts empty.
+  A replaced picture is a new URL, so an old face never returns. Every
+  read and write is best effort. `UserAvatar` decodes at its drawn size
+  on native (`cacheWidth`), as the crests do. L-53 moves to batch 154:
+  `RankBadge`, the medal widget, is not used anywhere; the emoji left are
+  the marks beside the points. Needs an APK; no migration.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

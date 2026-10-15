@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../providers.dart';
+import 'avatar_disk_cache.dart';
 
 /// Fetches [avatarPath] through `api_client` and caches it by URL.
 ///
@@ -24,6 +25,10 @@ import '../providers.dart';
 /// and forth re-downloads nothing, and bounded enough that memory cannot grow
 /// without end.
 ///
+/// Before the network, the copy kept on the phone ([AvatarDiskCache],
+/// audit M-35): a face seen yesterday is not downloaded again today. A
+/// downloaded picture is kept for next time.
+///
 /// A failure resolves to `null` rather than an error state. A picture that
 /// will not load is not worth an error affordance -- the initial is a
 /// complete answer -- and the widget treats "no bytes" identically whether
@@ -34,10 +39,24 @@ final avatarBytesProvider = FutureProvider.autoDispose
       final Timer expiry = Timer(const Duration(minutes: 2), link.close);
       ref.onDispose(expiry.cancel);
 
+      final AvatarDiskCache disk = ref.watch(avatarDiskCacheProvider);
+      final Uint8List? kept = await disk.read(avatarPath);
+      if (kept != null) {
+        return kept;
+      }
+
       final api = ref.watch(authApiProvider);
       final result = await api.avatarBytes(avatarPath);
       return switch (result) {
-        Ok<Uint8List?>(:final value) => value,
+        Ok<Uint8List?>(:final value) => _kept(disk, avatarPath, value),
         Err<Uint8List?>() => null,
       };
     });
+
+/// Keeps [bytes] for next time, without waiting for the write.
+Uint8List? _kept(AvatarDiskCache disk, String url, Uint8List? bytes) {
+  if (bytes != null && bytes.isNotEmpty) {
+    unawaited(disk.write(url, bytes));
+  }
+  return bytes;
+}

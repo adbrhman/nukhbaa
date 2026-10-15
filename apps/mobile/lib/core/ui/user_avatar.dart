@@ -3,6 +3,7 @@ library;
 
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -138,11 +139,18 @@ class UserAvatar extends ConsumerWidget {
       return outerFallback;
     }
 
+    // Decoded at the size it is drawn (audit M-35), not the upload's full
+    // 512 pixels: a 34-pixel circle on a 3x phone needs 102. Native only, as
+    // for the crests (team_logo.dart): on the web this decode path can lose
+    // the alpha channel.
+    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
+    final int? decodeSize = kIsWeb ? null : (inner * density).ceil();
     final Widget picture = ClipOval(
       child: Image.memory(
         bytes,
         width: inner,
         height: inner,
+        cacheWidth: decodeSize,
         fit: BoxFit.cover,
         gaplessPlayback: true,
         errorBuilder: (_, _, _) => _fallback(context, inner, ring == null),
