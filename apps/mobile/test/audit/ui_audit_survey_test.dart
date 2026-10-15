@@ -31,24 +31,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/auth/biometric_unlock.dart';
+import 'package:mobile/core/auth/install_id.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/theme/theme_controller.dart';
 import 'package:mobile/features/admin/admin_hub_screen.dart';
 import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/auth/account_settings_screen.dart';
 import 'package:mobile/features/auth/home_screen.dart';
 import 'package:mobile/features/auth/nukhbaa_shell.dart';
+import 'package:mobile/features/auth/password_reset_screen.dart';
+import 'package:mobile/features/auth/rules_screen.dart';
 import 'package:mobile/features/auth/session_gate.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
+import 'package:mobile/features/duels/duels_screen.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
+import 'package:mobile/features/gamification/insights_screen.dart';
+import 'package:mobile/features/gamification/invite_friends_screen.dart';
+import 'package:mobile/features/gamification/my_badges_screen.dart';
+import 'package:mobile/features/h2h/h2h_round_screen.dart';
 import 'package:mobile/features/h2h/h2h_screen.dart';
+import 'package:mobile/features/history/prediction_history_providers.dart';
 import 'package:mobile/features/history/prediction_history_screen.dart';
 import 'package:mobile/features/history/prediction_lookup_providers.dart';
+import 'package:mobile/features/leaderboards/champions_providers.dart';
+import 'package:mobile/features/leaderboards/champions_record_screen.dart';
+import 'package:mobile/features/leaderboards/leaderboards_providers.dart';
 import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
+import 'package:mobile/features/leaderboards/season_leaderboard_screen.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
+import 'package:mobile/features/notifications/favorite_teams_screen.dart';
+import 'package:mobile/features/notifications/notification_settings_screen.dart';
 import 'package:mobile/features/notifications/notifications_providers.dart';
+import 'package:mobile/features/record/elite_card_screen.dart';
+import 'package:mobile/features/record/my_points_screen.dart';
+import 'package:mobile/features/record/my_seasons_screen.dart';
+import 'package:mobile/features/record/season_record_providers.dart';
+import 'package:mobile/features/record/season_record_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../support/auth_harness.dart' as auth;
@@ -124,6 +146,100 @@ final List<_Screen> _screens = <_Screen>[
   const _Screen('bottom-nav', _bottomNav),
   const _Screen('admin.phone', _admin),
   const _Screen('admin.desktop', _admin, size: _desktop),
+  // The screens a player opens from these (colour audit of 2026-10-15,
+  // CA-09): signing in and its recovery, the account's pages, the records,
+  // the badges and the rest of the game.
+  const _Screen('sign-in.fingerprint', _signInFingerprint),
+  _Screen('password-reset.email', _served(const PasswordResetScreen())),
+  _Screen(
+    'password-reset.new',
+    _served(const PasswordResetScreen(recoveryToken: 'recovery-token')),
+  ),
+  const _Screen('name-setup', _nameSetup),
+  _Screen('rules', _served(const RulesScreen())),
+  _Screen('settings', _served(const AccountSettingsScreen())),
+  _Screen(
+    'notification-settings',
+    _served(
+      const NotificationSettingsScreen(),
+      answers: const <String, Object>{
+        '/me/notification-preferences': <String, Object?>{
+          'schema_version': 1,
+          'prediction_reminder': true,
+          'pre_match': false,
+          'overtaken': true,
+        },
+      },
+    ),
+  ),
+  _Screen(
+    'favorite-teams',
+    _served(const FavoriteTeamsScreen(), answers: _favoriteTeams),
+  ),
+  _Screen('my-points', _served(const MyPointsScreen(), overrides: _records)),
+  _Screen('my-seasons', _served(const MySeasonsScreen(), overrides: _records)),
+  _Screen(
+    'season-record',
+    _served(const SeasonRecordScreen(), overrides: _records),
+  ),
+  _Screen(
+    'elite-card',
+    _served(const EliteCardScreen(user: _player), overrides: _records),
+  ),
+  _Screen('badges', _served(const MyBadgesScreen(), answers: _badges)),
+  _Screen('insights', _served(const InsightsScreen(), answers: _insights)),
+  _Screen(
+    'invite',
+    _served(
+      const InviteFriendsScreen(),
+      answers: const <String, Object>{
+        '/me/referral': <String, Object?>{
+          'schema_version': 1,
+          'code': 'ABCDEFGH',
+          'month_points': 3,
+          'season_points': 7,
+          'invited_count': 5,
+          'pending_count': 2,
+          'month_cap': 20,
+        },
+      },
+      overrides: <Override>[
+        installIdStoreProvider.overrideWithValue(
+          const FixedInstallIdStore('inst-12345678'),
+        ),
+      ],
+    ),
+  ),
+  _Screen(
+    'champions-record',
+    _served(
+      const ChampionsRecordScreen(),
+      overrides: <Override>[
+        monthChampionsProvider.overrideWith((ref) async => _champions),
+      ],
+    ),
+  ),
+  _Screen(
+    'season-leaderboard',
+    _served(
+      const SeasonLeaderboardScreen(seasonId: 's-10', seasonLabel: '10/2026'),
+      answers: <String, Object>{
+        '/seasons/s-10/fixture-leaderboard': _monthBoard('s-10').toJson(),
+        '/champions': _champions.toJson(),
+      },
+    ),
+  ),
+  _Screen('duels', _served(const DuelsScreen(), answers: _duels)),
+  _Screen(
+    'h2h.round',
+    _served(
+      const H2hRoundScreen(round: 3),
+      answers: <String, Object>{
+        '/me/h2h-league': _h2hLeague.toJson(),
+        '/me/h2h-league/rounds/3': _h2hRound.toJson(),
+      },
+    ),
+  ),
 ];
 
 Widget _app(ThemeData theme, double scale, Widget home) => MaterialApp(
@@ -978,3 +1094,507 @@ _Pump _h2hMatches() =>
         ),
       );
     };
+
+// ---------------------------------------------------------------------------
+// The screens a player opens from the tabs (colour audit of 2026-10-15,
+// CA-09), each through its real providers over the real transport.
+// ---------------------------------------------------------------------------
+
+/// [home] over the real transport: each path in [answers] is answered with
+/// its JSON body, any other with 404; [overrides] go after the harness's.
+_Pump _served(
+  Widget home, {
+  Map<String, Object> answers = const <String, Object>{},
+  List<Override> overrides = const <Override>[],
+}) => (WidgetTester tester, ThemeData theme, double scale) async {
+  final auth.AuthHarness harness = auth.buildAuthHarness((
+    http.Request request,
+  ) async {
+    final Object? body = answers[request.url.path];
+    if (body == null) return http.Response('not found', 404);
+    return http.Response(
+      jsonEncode(body),
+      200,
+      headers: const <String, String>{'content-type': 'application/json'},
+    );
+  }, seedToken: 'saved-jwt');
+  addTearDown(harness.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: <Override>[...harness.overrides, ...overrides],
+      retry: (retryCount, error) => null,
+      child: _app(theme, scale, home),
+    ),
+  );
+};
+
+/// A sensor that is there and would pass; the survey never taps it.
+final class _Sensor implements BiometricAuthenticator {
+  const _Sensor();
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<bool> authenticate({required String reason}) async => true;
+}
+
+/// The sign-in screen after a sign-out with fingerprint unlock on: the
+/// fingerprint button over the password form.
+Future<void> _signInFingerprint(
+  WidgetTester tester,
+  ThemeData theme,
+  double scale,
+) async {
+  final InMemoryBiometricPreferenceStore prefs =
+      InMemoryBiometricPreferenceStore(enabled: true, offered: true);
+  await prefs.saveRefreshToken('r1');
+  final auth.AuthHarness harness = auth.buildAuthHarness(
+    (http.Request request) async => auth.okMe(auth.sampleUser),
+    biometricStore: prefs,
+    biometricAuthenticator: const _Sensor(),
+  );
+  addTearDown(harness.dispose);
+  await tester.pumpWidget(
+    SessionScope(
+      overrides: <Override>[...harness.overrides, _themeStore()],
+      child: _app(theme, scale, const SessionGate()),
+    ),
+  );
+}
+
+/// A first Google sign-in: the account still carries the automatic name,
+/// and the gate asks for one before the app opens.
+Future<void> _nameSetup(
+  WidgetTester tester,
+  ThemeData theme,
+  double scale,
+) async {
+  final auth.AuthHarness harness = auth.buildAuthHarness(
+    (http.Request request) async => auth.okMe(
+      const AuthenticatedUserDto(
+        userId: 'u-1',
+        role: 'user',
+        status: 'active',
+        email: 'n72914939@gmail.com',
+        displayName: 'n72914939',
+      ),
+    ),
+    seedToken: 'saved-jwt',
+  );
+  addTearDown(harness.dispose);
+  await tester.pumpWidget(
+    SessionScope(
+      overrides: <Override>[...harness.overrides, _themeStore()],
+      child: _app(theme, scale, const SessionGate()),
+    ),
+  );
+}
+
+const AuthenticatedUserDto _player = AuthenticatedUserDto(
+  userId: 'u-1',
+  role: 'user',
+  status: 'active',
+  displayName: 'عبدالرحمن المغربي',
+);
+
+const List<String> _boardNames = <String>[
+  'وليد العريقي (عاشق النخبة)',
+  'ابو الياس',
+  'المستشار',
+  'حذيفه عبدالخالق حميد المجيدي',
+  'Ahmed Alyateem',
+  'عبدالرحمن المغربي',
+];
+
+/// A month's board: a three-way tie on top, the caller sixth.
+FixtureLeaderboardDto _monthBoard(String seasonId) => FixtureLeaderboardDto(
+  seasonId: seasonId,
+  entries: <FixtureLeaderboardEntryDto>[
+    for (int i = 0; i < _boardNames.length; i++)
+      FixtureLeaderboardEntryDto(
+        rank: i < 3 ? 1 : i + 1,
+        participantId: i == _boardNames.length - 1 ? 'p-me' : 'p-$i',
+        displayName: _boardNames[i],
+        totalPoints: i < 3 ? 60 : 60 - i * 3,
+        fixturesScored: 115 - i,
+        exactCount: 14 - i,
+        decidedCount: 110 - i,
+      ),
+  ],
+);
+
+/// Two finished months and the current one, for the record pages.
+const List<MySeasonRecordDto> _seasonRecords = <MySeasonRecordDto>[
+  MySeasonRecordDto(
+    competitionId: 'c-1',
+    competitionName: 'شهر 10',
+    seasonId: 's-10',
+    seasonLabel: '10/2026',
+    startAt: '2026-09-30T21:00:00.000Z',
+    endAt: '2026-10-31T21:00:00.000Z',
+    rank: 6,
+    totalPoints: 45,
+    entryCount: 111,
+    exactCount: 14,
+    settledCount: 110,
+  ),
+  MySeasonRecordDto(
+    competitionId: 'c-1',
+    competitionName: 'شهر 9',
+    seasonId: 's-9',
+    seasonLabel: '09/2026',
+    startAt: '2026-08-31T21:00:00.000Z',
+    endAt: '2026-09-30T21:00:00.000Z',
+    rank: 1,
+    totalPoints: 128,
+    entryCount: 240,
+    exactCount: 31,
+    settledCount: 236,
+  ),
+  MySeasonRecordDto(
+    competitionId: 'c-1',
+    competitionName: 'شهر 8',
+    seasonId: 's-8',
+    seasonLabel: '08/2026',
+    startAt: '2026-07-31T21:00:00.000Z',
+    endAt: '2026-08-31T21:00:00.000Z',
+    rank: 23,
+    totalPoints: 71,
+  ),
+];
+
+/// The records, each month's board and one prediction, as the record pages
+/// read them.
+final List<Override> _records = <Override>[
+  mySeasonRecordsProvider.overrideWith((ref) async => _seasonRecords),
+  for (final MySeasonRecordDto record in _seasonRecords)
+    fixtureLeaderboardProvider(
+      record.seasonId,
+    ).overrideWith((ref) async => _monthBoard(record.seasonId)),
+  myFixturePredictionsProvider.overrideWith(
+    (ref) async => const <FixturePredictionDto>[
+      FixturePredictionDto(
+        id: 'fp-1',
+        participantId: 'p-me',
+        fixtureId: 'f-1',
+        seasonId: 's-10',
+        submittedAt: '2026-10-02T10:00:00.000Z',
+        homeGoals: 1,
+        awayGoals: 0,
+        isDouble: false,
+      ),
+    ],
+  ),
+];
+
+/// Two crowned months: a shared crown, then a single champion.
+const MonthChampionsDto _champions = MonthChampionsDto(
+  champions: <MonthChampionDto>[
+    MonthChampionDto(
+      seasonId: 's-9',
+      seasonLabel: '09/2026',
+      userId: 'u-2',
+      displayName: 'وليد العريقي (عاشق النخبة)',
+      points: 128,
+      exactCount: 31,
+      decidedCount: 236,
+      referralPoints: 4,
+      crownedAt: '2026-10-01T09:00:00.000Z',
+      celebrateUntil: '2026-10-04T09:00:00.000Z',
+      prize: 'اشتراك شهري',
+    ),
+    MonthChampionDto(
+      seasonId: 's-9',
+      seasonLabel: '09/2026',
+      userId: 'u-3',
+      displayName: 'ابو الياس',
+      points: 128,
+      exactCount: 29,
+      decidedCount: 236,
+      referralPoints: 0,
+      crownedAt: '2026-10-01T09:00:00.000Z',
+      celebrateUntil: '2026-10-04T09:00:00.000Z',
+    ),
+    MonthChampionDto(
+      seasonId: 's-8',
+      seasonLabel: '08/2026',
+      userId: 'u-4',
+      displayName: 'حذيفه عبدالخالق حميد المجيدي',
+      points: 97,
+      exactCount: 22,
+      decidedCount: 180,
+      referralPoints: 2,
+      crownedAt: '2026-09-01T09:00:00.000Z',
+      celebrateUntil: '2026-09-04T09:00:00.000Z',
+    ),
+  ],
+);
+
+const List<String> _badgeCodes = <String>[
+  'first_prediction',
+  'predictions_25',
+  'predictions_100',
+  'first_perfect_day',
+  'perfect_days_7',
+  'perfect_days_30',
+  'league_first_week',
+  'league_promoted',
+  'league_champion',
+  'league_elite',
+];
+
+/// The whole wall: one badge held, two on their way, the rest locked.
+final Map<String, Object> _badges = <String, Object>{
+  '/me/badges': <String, Object?>{
+    'schema_version': 1,
+    'badges': <Map<String, Object?>>[
+      for (final String code in _badgeCodes)
+        <String, Object?>{
+          'code': code,
+          'current': switch (code) {
+            'first_prediction' => 1,
+            'predictions_25' || 'predictions_100' => 7,
+            _ => 0,
+          },
+          'target': switch (code) {
+            'predictions_25' => 25,
+            'predictions_100' => 100,
+            'perfect_days_7' => 7,
+            'perfect_days_30' => 30,
+            _ => 1,
+          },
+          'unlocked_at': code == 'first_prediction'
+              ? '2026-09-20T08:00:00.000Z'
+              : null,
+        },
+    ],
+  },
+};
+
+const List<String> _weekStarts = <String>[
+  '2026-08-10',
+  '2026-08-17',
+  '2026-08-24',
+  '2026-08-31',
+  '2026-09-07',
+  '2026-09-14',
+  '2026-09-21',
+  '2026-09-28',
+];
+
+/// The month, the recap of last week and eight weeks of accuracy.
+final Map<String, Object> _insights = <String, Object>{
+  '/me/insights': <String, Object?>{
+    'schema_version': 1,
+    'month': <String, Object?>{
+      'decided': 40,
+      'correct': 23,
+      'exact': 6,
+      'percent': 58,
+    },
+    'community_percent': 51,
+    'leagues': <Object?>[],
+    'best_league': 'دوري روشن السعودي',
+    'longest_correct_run': 5,
+    'weeks': <Object?>[
+      for (int i = 0; i < _weekStarts.length; i++)
+        <String, Object?>{
+          'week_start': _weekStarts[i],
+          'decided': 10 + i,
+          'correct': 5,
+          'exact': 1,
+          'percent': i == 0 ? null : 40 + i * 4,
+        },
+    ],
+    'last_week': <String, Object?>{
+      'week_start': '2026-10-05',
+      'decided': 12,
+      'correct': 8,
+      'exact': 2,
+      'percent': 67,
+      'points': 14,
+      'best': <String, Object?>{
+        'home_team': 'الهلال',
+        'away_team': 'النصر',
+        'points': 6,
+        'exact': true,
+      },
+    },
+  },
+};
+
+Map<String, Object?> _team(String id, String name) => <String, Object?>{
+  'schema_version': 1,
+  'id': id,
+  'name': name,
+  'short_name': null,
+  'crest_url': null,
+  'league_id': null,
+};
+
+/// Four teams, two of them chosen.
+final Map<String, Object> _favoriteTeams = <String, Object>{
+  '/teams': <Object?>[
+    _team('11111111-1111-4111-8111-111111111111', 'Al Hilal'),
+    _team('22222222-2222-4222-8222-222222222222', 'Al Nassr'),
+    _team('33333333-3333-4333-8333-333333333333', 'Al Ittihad'),
+    _team('44444444-4444-4444-8444-444444444444', 'Al Ahli'),
+  ],
+  '/me/favorite-teams': <String, Object?>{
+    'schema_version': 1,
+    'team_ids': <String>[
+      '11111111-1111-4111-8111-111111111111',
+      '33333333-3333-4333-8333-333333333333',
+    ],
+  },
+};
+
+Map<String, Object?> _challenge({
+  required String id,
+  required String code,
+  bool isMine = false,
+  bool isForMe = false,
+}) => <String, Object?>{
+  'schema_version': 1,
+  'id': id,
+  'code': code,
+  'season_id': 's-1',
+  'fixture_id': 'f-1',
+  'home_team': 'الهلال',
+  'away_team': 'النصر',
+  'kickoff_at': '2099-01-01T18:00:00.000Z',
+  'challenger_user_id': isMine ? 'me' : 'rival',
+  'challenger_name': isMine ? 'عبدالرحمن المغربي' : 'سليمان الرفاعي',
+  'is_private': isForMe,
+  'capacity': isForMe ? 1 : 5,
+  'accepted_count': 0,
+  'state': 'open',
+  'is_mine': isMine,
+  'is_for_me': isForMe,
+};
+
+Map<String, Object?> _duel({
+  required String id,
+  required String state,
+  required String kickoffAt,
+  int? myPoints,
+  int? opponentPoints,
+  String? outcome,
+}) => <String, Object?>{
+  'schema_version': 1,
+  'id': id,
+  'challenge_id': 'c-$id',
+  'fixture_id': 'f-$id',
+  'home_team': 'الاتحاد',
+  'away_team': 'الأهلي',
+  'kickoff_at': kickoffAt,
+  'accepted_at': '2026-10-05T12:00:00.000Z',
+  'is_challenger': state == 'upcoming',
+  'opponent_user_id': 'rival',
+  'opponent_name': 'حذيفه عبدالخالق حميد المجيدي',
+  'my_home_goals': 2,
+  'my_away_goals': 1,
+  'my_is_double': state == 'settled',
+  'opponent_home_goals': state == 'settled' ? 0 : null,
+  'opponent_away_goals': state == 'settled' ? 0 : null,
+  'opponent_is_double': state == 'settled' ? false : null,
+  'state': state,
+  'my_points': myPoints,
+  'opponent_points': opponentPoints,
+  'outcome': outcome,
+};
+
+/// An invitation for the caller, the caller's own open challenge, a duel
+/// still to play and one won.
+final Map<String, Object> _duels = <String, Object>{
+  '/me/duels': <String, Object?>{
+    'schema_version': 1,
+    'challenges': <Object?>[
+      _challenge(id: 'c-in', code: 'INVITEDCODE2', isForMe: true),
+      _challenge(id: 'c-own', code: 'MYOWNCODE234', isMine: true),
+    ],
+    'duels': <Object?>[
+      _duel(id: 'up', state: 'upcoming', kickoffAt: '2099-01-01T18:00:00.000Z'),
+      _duel(
+        id: 'done',
+        state: 'settled',
+        kickoffAt: '2026-10-01T18:00:00.000Z',
+        myPoints: 6,
+        opponentPoints: 0,
+        outcome: 'won',
+      ),
+    ],
+  },
+  '/me/fixture-predictions': <Object?>[
+    <String, Object?>{
+      'schema_version': 1,
+      'id': 'fp-1',
+      'participant_id': 'p-1',
+      'fixture_id': 'f-1',
+      'submitted_at': '2026-10-05T10:00:00.000Z',
+      'home_goals': 3,
+      'away_goals': 2,
+      'is_double': true,
+    },
+  ],
+};
+
+/// The live round of [_h2hLeague] in detail: a finished match with both
+/// picks, one not started with the opponent's hidden, one moved off.
+final MyH2hRoundDto _h2hRound = MyH2hRoundDto(
+  round: 3,
+  day: '2026-10-13',
+  status: 'live',
+  fixtureCount: 3,
+  firstKickoff: '2026-10-13T12:00:00.000Z',
+  opponentUserId: 'u-1',
+  opponentName: 'عبدالرحمن المغربي',
+  myPoints: 12,
+  opponentPoints: 15,
+  result: 'loss',
+  mine: const H2hSideTotalsDto(predicted: 2, exact: 1, doubles: 1),
+  theirs: const H2hSideTotalsDto(predicted: 3, exact: 1, doubles: 0),
+  fixtures: <H2hRoundFixtureDto>[
+    H2hRoundFixtureDto(
+      fixtureId: 'f1',
+      homeTeam: 'الهلال',
+      awayTeam: 'النصر',
+      kickoffAt: '2026-10-13T12:00:00.000Z',
+      state: 'finished',
+      homeGoals: 2,
+      awayGoals: 1,
+      mine: const H2hPickDto(
+        homeGoals: 2,
+        awayGoals: 1,
+        isDouble: true,
+        points: 6,
+        exact: true,
+      ),
+      theirs: const H2hPickDto(
+        homeGoals: 0,
+        awayGoals: 3,
+        isDouble: false,
+        points: 0,
+      ),
+      theirsHidden: false,
+    ),
+    H2hRoundFixtureDto(
+      fixtureId: 'f2',
+      homeTeam: 'الاتحاد',
+      awayTeam: 'الأهلي',
+      kickoffAt: '2026-10-13T15:00:00.000Z',
+      state: 'not_started',
+      mine: const H2hPickDto(homeGoals: 1, awayGoals: 0, isDouble: false),
+      theirsHidden: true,
+    ),
+    H2hRoundFixtureDto(
+      fixtureId: 'f3',
+      homeTeam: 'الشباب',
+      awayTeam: 'الفتح',
+      kickoffAt: '2026-10-14T18:00:00.000Z',
+      state: 'void',
+      theirsHidden: true,
+    ),
+  ],
+);

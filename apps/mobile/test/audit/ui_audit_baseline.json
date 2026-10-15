@@ -31,6 +31,22 @@
     "layout13": 0,
     "layout20": 0
   },
+  "badges/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "badges/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "board.widget/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -63,6 +79,150 @@
     "layout13": 0,
     "layout20": 0
   },
+  "champions-record/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "champions-record/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "duels/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "duels/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "elite-card/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "elite-card/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "favorite-teams/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "favorite-teams/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.matches/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.matches/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.next/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.next/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.round/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.round/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.rounds/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.rounds/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.table/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "h2h.table/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "home.data/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -72,6 +232,38 @@
     "layout20": 0
   },
   "home.data/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "insights/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "insights/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "invite/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "invite/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
@@ -127,6 +319,102 @@
     "layout13": 0,
     "layout20": 0
   },
+  "my-points/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "my-points/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "my-seasons/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "my-seasons/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "name-setup/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "name-setup/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "notification-settings/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 4,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "notification-settings/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 4,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "password-reset.email/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "password-reset.email/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "password-reset.new/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "password-reset.new/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "predictions.data/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -143,6 +431,70 @@
     "layout13": 0,
     "layout20": 0
   },
+  "rules/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "rules/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "season-leaderboard/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "season-leaderboard/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "season-record/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "season-record/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 1
+  },
+  "settings/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "settings/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "shell.account/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -152,6 +504,22 @@
     "layout20": 0
   },
   "shell.account/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "shell.h2h/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "shell.h2h/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
@@ -223,7 +591,7 @@
     "layout13": 0,
     "layout20": 0
   },
-  "shell.h2h/dark": {
+  "sign-in.fingerprint/dark": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
@@ -231,71 +599,7 @@
     "layout13": 0,
     "layout20": 0
   },
-  "shell.h2h/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.next/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.next/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.table/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.table/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.rounds/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.rounds/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.matches/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "h2h.matches/light": {
+  "sign-in.fingerprint/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,

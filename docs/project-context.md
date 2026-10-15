@@ -5210,6 +5210,29 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: the screen survey reaches 19 more screens (script 79, 2026-10-15)
+
+- `test/audit/ui_audit_survey_test.dart` measures, in both themes and at
+  text scales 1.0, 1.3 and 2.0, the screens a player opens from the tabs:
+  fingerprint sign-in, password reset (e-mail and new password), name
+  setup, rules, settings, notification settings, favourite teams, my
+  points, my seasons, season record, the elite card, badges, insights,
+  invite friends, the champions' record, a season's leaderboard, duels and
+  an H2H round. Each through its real providers -- over the real transport
+  with the server faked (`_served`), or with the records read given.
+- The script measures them on the device, writes their counts into
+  `ui_audit_baseline.json` only after checking that no screen already
+  there gained a finding, and keeps the findings in
+  `docs/reviews/ui-audit-survey-2026-10-15.md`.
+- Not reachable from the app, so not measured: `FixturePredictionScreen`
+  and `showFixturePredictSheet`, `CompetitionSeasonsScreen`,
+  `MyActiveSeasonsScreen`, `LedgerScreen`.
+- Next: script 80 adds the groups pages, the players' predictions board
+  and the fixtures calendar; 81 on fix what the survey measures, with
+  CA-08.
+
+No migration; tests and docs only.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
