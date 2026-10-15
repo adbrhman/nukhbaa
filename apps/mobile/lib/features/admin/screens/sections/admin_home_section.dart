@@ -593,7 +593,7 @@ class _Pulse extends StatelessWidget {
         label: 'لعبوا هذا الأسبوع',
         value: thisWeek,
         icon: Icons.insights_rounded,
-        color: t.gold,
+        color: t.goldAccent,
         section: AdminSection.analytics,
       ),
       _MetricData(

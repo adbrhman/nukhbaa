@@ -69,13 +69,13 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                     ),
                     _RuleRow(
                       icon: Icons.star_rounded,
-                      color: tokens.gold,
+                      color: tokens.goldAccent,
                       label: l10n.rulesDoubleMatch,
                     ),
                     _RuleRow(
                       key: const Key('rules.oneDouble'),
                       icon: Icons.today_rounded,
-                      color: tokens.gold,
+                      color: tokens.goldAccent,
                       label: l10n.rulesOneDoublePerDay,
                     ),
                   ],
@@ -115,7 +115,7 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                     _RuleRow(
                       key: const Key('rules.tieBreak'),
                       icon: Icons.group_add_rounded,
-                      color: tokens.gold,
+                      color: tokens.goldAccent,
                       label:
                           'عند تساوي النقاط يتقدم صاحب نقاط الدعوة الأكثر، '
                           'ثم صاحب التوقعات الدقيقة الأكثر، ثم صاحب '

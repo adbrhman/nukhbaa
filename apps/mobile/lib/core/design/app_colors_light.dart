@@ -38,6 +38,15 @@ abstract final class AppColorsLight {
   /// white, enough for a non-text mark; never carries text (UI-32).
   static const Color goldAccent = Color(0xFFA87B00);
   static const Color goldDark = Color(0xFF6B5300);
+
+  /// Gold as a fill under dark content -- a selected chip, a tonal button,
+  /// the day strip's badge: the dark theme's own goldenrod, so the two
+  /// themes fill gold alike. [goldDark] under white read olive brown on the
+  /// light surfaces (the owner's screenshots, colour audit CA-20).
+  static const Color goldFill = Color(0xFFB8860B);
+
+  /// Content on [goldFill]: 5.0:1.
+  static const Color onGoldFill = Color(0xFF2A1E04);
   static const Color silver = Color(0xFF64748B);
   static const Color bronze = Color(0xFF9B5E1E);
 

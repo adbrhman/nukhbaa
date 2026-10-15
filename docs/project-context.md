@@ -5460,6 +5460,25 @@ not track.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: gold fills from the owner's light screenshots (script 87, 2026-10-15)
+
+- CA-20: in the light theme gold filled with its dark text gold (#6B5300
+  for the scheme's `secondaryContainer`, #755D00 for the day strip's
+  badge) under white, which read olive brown: the selected friends'
+  league chip, tonal buttons, the "today / yesterday / tomorrow" badges.
+- The light scheme's `secondaryContainer` is `AppColorsLight.goldFill`
+  (#B8860B, the dark theme's own goldenrod) with `onGoldFill` (#2A1E04,
+  5.0:1); the day strip's badge takes the scheme's gold fill and its
+  content colour, so both themes fill gold alike.
+- Icons drawn in the text gold (three on the rules page, two admin
+  metrics) take the medal gold `goldAccent`.
+- Defence: `gold_fill_test.dart` -- the scheme's gold fill is goldenrod
+  (gold's hue, saturated, bright enough not to read olive) with its
+  content at 4.5:1, and the real day strip's "today" badge is drawn on
+  it, in both themes; UI-02 keeps the badge label at 4.5:1.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

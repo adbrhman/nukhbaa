@@ -675,7 +675,7 @@ class _HistoryData extends StatelessWidget {
               label: 'دبل صحيح',
               value: '${history.correctDoubleCount}',
               icon: Icons.local_fire_department_rounded,
-              color: tokens.gold,
+              color: tokens.goldAccent,
             ),
             _StatCard(
               label: 'مجموع النقاط',

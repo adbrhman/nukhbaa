@@ -255,21 +255,23 @@ class _DayTab extends StatelessWidget {
                       : Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           alignment: Alignment.center,
+                          // The scheme's gold fill: goldenrod in both
+                          // themes; the light theme's text gold read olive
+                          // as a fill (CA-20).
                           decoration: BoxDecoration(
-                            color: tokens.gold,
+                            color: context.scheme.secondaryContainer,
                             borderRadius: AppRadius.brSm,
                           ),
                           child: Text(
                             relative,
                             maxLines: 1,
-                            // The theme's own content colour on gold: a
-                            // fixed dark brown read 2.9:1 on the light
-                            // theme's gold (UI-02).
+                            // The theme's own content colour on its gold
+                            // fill (UI-02): 5.0:1 in both themes.
                             style: TextStyle(
                               fontSize: AppFontSize.s10,
                               height: 1.1,
                               fontWeight: FontWeight.w800,
-                              color: tokens.onGold,
+                              color: context.scheme.onSecondaryContainer,
                             ),
                           ),
                         ),
