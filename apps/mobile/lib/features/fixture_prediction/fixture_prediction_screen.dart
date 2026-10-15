@@ -482,7 +482,7 @@ class _FixturePredictionCardState
                     ErrorPresenter.message(submission.error),
                     key: Key('fixturePrediction.failure.message.$fixtureId'),
                     style: TextStyle(
-                      color: tokens.error,
+                      color: tokens.errorText,
                       fontSize: AppFontSize.s12,
                     ),
                   ),

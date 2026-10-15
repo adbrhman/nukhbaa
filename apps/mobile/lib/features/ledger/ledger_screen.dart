@@ -119,7 +119,7 @@ class _EntryRow extends StatelessWidget {
         key: Key('ledger.entry.amount.${entry.id}'),
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: negative ? tokens.error : tokens.primaryText,
+          color: negative ? tokens.errorText : tokens.primaryText,
         ),
       ),
     );

@@ -511,7 +511,7 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
               textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: AppFontSize.s12,
-                color: context.tokens.error,
+                color: context.tokens.errorText,
               ),
             ),
           ],

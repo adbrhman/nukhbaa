@@ -64,7 +64,7 @@ class AdminRetentionCard extends ConsumerWidget {
             AsyncError() => Text(
               'تعذّر تحميل أرقام الاحتفاظ',
               key: const Key('admin.retention.error'),
-              style: context.text.bodySmall?.copyWith(color: t.error),
+              style: context.text.bodySmall?.copyWith(color: t.errorText),
             ),
             _ => const LinearProgressIndicator(),
           },

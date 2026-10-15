@@ -203,7 +203,7 @@ class _AcceptDuelSheetState extends ConsumerState<AcceptDuelSheet> {
               Text(
                 'توقعك على هذه المباراة مضاعف، ويبقى كذلك.',
                 textAlign: TextAlign.center,
-                style: text.bodySmall?.copyWith(color: tokens.goldAccent),
+                style: text.bodySmall?.copyWith(color: tokens.gold),
               ),
             ],
             if (loadFailed) ...<Widget>[

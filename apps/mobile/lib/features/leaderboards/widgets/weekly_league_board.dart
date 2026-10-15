@@ -251,7 +251,7 @@ class _TierBanner extends StatelessWidget {
                     child: Text(
                       l10n.weeklyLeaguePromotionZone(league.promotionZone),
                       key: Key('$keyPrefix.zone.up'),
-                      style: zoneStyle?.copyWith(color: t.success),
+                      style: zoneStyle?.copyWith(color: t.successText),
                     ),
                   ),
                 if (league.relegationZone > 0)
@@ -260,7 +260,7 @@ class _TierBanner extends StatelessWidget {
                       l10n.weeklyLeagueRelegationZone(league.relegationZone),
                       key: Key('$keyPrefix.zone.down'),
                       textAlign: TextAlign.end,
-                      style: zoneStyle?.copyWith(color: t.error),
+                      style: zoneStyle?.copyWith(color: t.errorText),
                     ),
                   ),
               ],

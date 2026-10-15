@@ -23,7 +23,10 @@ abstract final class AppTheme {
       secondary: AppColors.gold,
       onSecondary: AppColors.onGold,
       secondaryContainer: AppColors.goldDark,
-      onSecondaryContainer: AppColors.textPrimary,
+      // Dark text on the dark gold: white read 3.3:1 there, on every tonal
+      // button (the retry buttons, sign-in by fingerprint, the duels) and a
+      // selected chip (2026-10-15 colour audit); this is 5.0:1.
+      onSecondaryContainer: AppColors.onGold,
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
       surfaceContainerHighest: AppColors.surfaceElevated,
@@ -78,12 +81,14 @@ abstract final class AppTheme {
     required Color appBarBg,
     required Color divider,
   }) {
-    // WCAG AA on the dark palette: the plain `primary` blue reads at 4.1:1 on
-    // the background, under the 4.5:1 text needs, so text buttons and links
-    // take the lighter blue there (5.4:1). Light mode keeps `primary` (6.2:1).
-    final Color linkColor = brightness == Brightness.dark
-        ? tokens.primaryLight
-        : scheme.primary;
+    // WCAG AA: blue text is `primaryText` in both themes -- the plain
+    // `primary` reads 3.5:1 on a dark card and `primaryLight` only 4.5:1 on a
+    // dark field (2026-10-15 colour audit). The same blue labels the
+    // selected tab, a focused field's label, a selected list tile, the
+    // snack bar's action and today in the date picker, whose Material
+    // defaults are `primary` (or white, for the snack bar action, which
+    // vanished on the light bar).
+    final Color linkColor = tokens.primaryText;
     // A field's outline must reach 3:1 against what surrounds it (WCAG
     // 1.4.11). The shared hairline `border` token sits near 1.3:1, which
     // left text fields almost invisible on the dark background.
@@ -143,6 +148,16 @@ abstract final class AppTheme {
         filled: true,
         fillColor: tokens.surfaceElevated,
         hintStyle: textTheme.bodyMedium?.copyWith(color: tokens.textMuted),
+        floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+          (Set<WidgetState> states) => textTheme.bodyMedium!.copyWith(
+            color: states.contains(WidgetState.error)
+                ? tokens.errorText
+                : (states.contains(WidgetState.focused)
+                      ? linkColor
+                      : tokens.textSecondary),
+          ),
+        ),
+        errorStyle: textTheme.bodySmall?.copyWith(color: tokens.errorText),
         labelStyle: textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -197,8 +212,22 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: linkColor,
+        unselectedLabelColor: tokens.textSecondary,
+        indicatorColor: scheme.primary,
+      ),
+      listTileTheme: ListTileThemeData(selectedColor: linkColor),
+      datePickerTheme: DatePickerThemeData(
+        todayForegroundColor: WidgetStateProperty.resolveWith(
+          (Set<WidgetState> states) => states.contains(WidgetState.selected)
+              ? scheme.onPrimary
+              : linkColor,
+        ),
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
+        actionTextColor: linkColor,
         backgroundColor: tokens.surfaceHigh,
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: tokens.textPrimary,

@@ -5149,6 +5149,35 @@ history row: 389 database timeouts on that route on 2026-10-14/15.
 Migration 0171 (apply in the SQL Editor before pushing); the server on
 push, the web on deploy, Android with the next APK.
 
+### Colour audit, round two: text tokens and theme defaults (script 76, 2026-10-15)
+
+Owner's request: no screen or colour defect in either theme. Report:
+`docs/reviews/colour-audit-2026-10-15.md` (CA-01 to CA-09; the plan's batch
+145 items stay with account (a)).
+
+- CA-01: 38 texts drawn in a fill token -- `error` 28, `primary` /
+  `primaryLight` 4, `success` 5, `goldAccent` 1, in 22 files -- now use the
+  text shades (`errorText`, `primaryText`, `successText`, `gold`), which
+  reach 4.5:1 on every surface of both themes.
+- `app_theme.dart`: the dark `onSecondaryContainer` is `onGold` (tonal
+  buttons and selected chips: white on dark gold was 3.25:1, now 5.0:1);
+  links and text buttons, the selected tab, a focused field's label, a
+  selected list tile, the snack bar's action (white on the light bar,
+  1.25:1) and today in the date picker all use `primaryText`; a field's
+  label in error and its error line use `errorText`.
+- Defences: `test/core/theme/app_theme_components_contrast_test.dart` (every
+  text token on every surface, every content colour on its fill, a pumped
+  tonal button, the tab, the field label and error line, the list tile, the
+  snack bar action, today, the links -- from the real `AppTheme`, both
+  themes) and `test/audit/text_color_tokens_test.dart` (reads all of `lib/`
+  and fails on a `TextStyle`, `TextSpan` or `copyWith` whose `color:` names
+  a fill token; a self-test proves it catches one and passes the right one).
+- Next: script 77 extends the screen survey to the 15 screens it does not
+  reach (CA-09); 78 on fix what it measures, with CA-08.
+
+No migration, no server change; the web on deploy, Android with the next
+APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

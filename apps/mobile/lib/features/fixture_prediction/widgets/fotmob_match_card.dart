@@ -711,7 +711,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                               'currentMonthFixtures.failure.message.$fixtureId',
                             ),
                             style: TextStyle(
-                              color: tokens.error,
+                              color: tokens.errorText,
                               fontSize: AppFontSize.s12,
                             ),
                           ),

@@ -238,8 +238,8 @@ class _UserNamesSectionState extends ConsumerState<UserNamesSection> {
                   key: const Key('admin.names.status'),
                   style: TextStyle(
                     color: selected.status == 'suspended'
-                        ? tokens.error
-                        : tokens.success,
+                        ? tokens.errorText
+                        : tokens.successText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -264,7 +264,7 @@ class _UserNamesSectionState extends ConsumerState<UserNamesSection> {
                   Text(
                     error,
                     key: const Key('admin.names.error'),
-                    style: TextStyle(color: tokens.error),
+                    style: TextStyle(color: tokens.errorText),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.md),
@@ -340,7 +340,7 @@ class _DuplicatesCard extends ConsumerWidget {
               error is AppError
                   ? ErrorPresenter.message(error)
                   : 'تعذّر تحميل الأسماء المكررة',
-              style: TextStyle(color: tokens.error),
+              style: TextStyle(color: tokens.errorText),
             ),
             TextButton(
               onPressed: () => ref.invalidate(adminDuplicateNamesProvider),

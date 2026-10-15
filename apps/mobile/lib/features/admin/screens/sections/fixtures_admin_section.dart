@@ -714,7 +714,7 @@ class _FixtureRow extends StatelessWidget {
                 key: Key('admin.matches.delete.$id'),
                 onPressed: enabled ? onDelete : null,
                 icon: Icon(Icons.delete_outline_rounded, color: t.error),
-                label: Text('حذف', style: TextStyle(color: t.error)),
+                label: Text('حذف', style: TextStyle(color: t.errorText)),
               ),
             ],
           ),

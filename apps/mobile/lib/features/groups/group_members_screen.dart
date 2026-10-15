@@ -223,7 +223,7 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                       ),
                       label: Text(
                         'حذف الدوري',
-                        style: TextStyle(color: tokens.error),
+                        style: TextStyle(color: tokens.errorText),
                       ),
                     )
                   : OutlinedButton.icon(
@@ -232,7 +232,7 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                       icon: Icon(Icons.logout_rounded, color: tokens.error),
                       label: Text(
                         'مغادرة الدوري',
-                        style: TextStyle(color: tokens.error),
+                        style: TextStyle(color: tokens.errorText),
                       ),
                     ),
             ),

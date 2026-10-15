@@ -115,7 +115,7 @@ class MatchCard extends StatelessWidget {
               Text(
                 kickoff,
                 style: TextStyle(
-                  color: tokens.primaryLight,
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w800,
                   fontSize: AppFontSize.s12,
                 ),

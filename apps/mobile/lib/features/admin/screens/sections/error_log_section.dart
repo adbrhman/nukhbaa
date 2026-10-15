@@ -327,7 +327,7 @@ class _ErrorLogSectionState extends ConsumerState<ErrorLogSection> {
                     error is AppError
                         ? ErrorPresenter.message(error)
                         : 'تعذّر تحميل سجل الأخطاء',
-                    style: TextStyle(color: tokens.error),
+                    style: TextStyle(color: tokens.errorText),
                   ),
                   TextButton(
                     onPressed: () =>
@@ -439,7 +439,7 @@ class _ReleasesCard extends ConsumerWidget {
           error is AppError
               ? ErrorPresenter.message(error)
               : 'تعذّر تحميل ملخّص الإصدارات',
-          style: TextStyle(color: tokens.error),
+          style: TextStyle(color: tokens.errorText),
         ),
         data: (AdminErrorReleasesDto data) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -679,7 +679,7 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
             error is AppError
                 ? ErrorPresenter.message(error)
                 : 'تعذّر تحميل الخطأ',
-            style: TextStyle(color: tokens.error),
+            style: TextStyle(color: tokens.errorText),
           ),
           data: (AdminErrorDetailDto data) {
             final AdminErrorDto e = data.error;
@@ -779,7 +779,7 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
                   Text(
                     error,
                     key: const Key('admin.errors.error'),
-                    style: TextStyle(color: tokens.error),
+                    style: TextStyle(color: tokens.errorText),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.md),

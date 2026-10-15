@@ -342,7 +342,7 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
                     ErrorPresenter.message(submission.error),
                     key: Key('fixturePredictSheet.failure.$fixtureId'),
                     style: TextStyle(
-                      color: tokens.error,
+                      color: tokens.errorText,
                       fontSize: AppFontSize.s12,
                     ),
                   ),

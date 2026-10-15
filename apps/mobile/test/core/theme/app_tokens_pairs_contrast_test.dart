@@ -174,7 +174,7 @@ List<_Pair> _pairs(AppTokens t, ThemeData theme) {
     ),
     (
       name: 'my predictions: a scoring verdict',
-      fg: t.success,
+      fg: t.successText,
       bg: t.surface,
       min: 4.5,
       skip: null,

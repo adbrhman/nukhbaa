@@ -154,7 +154,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 child: Text(
                   ErrorPresenter.message(state.error as AppError),
                   key: const Key('createGroup.error'),
-                  style: TextStyle(color: tokens.error),
+                  style: TextStyle(color: tokens.errorText),
                 ),
               ),
             FilledButton(

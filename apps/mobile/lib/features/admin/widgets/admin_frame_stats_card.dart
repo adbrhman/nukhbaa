@@ -61,7 +61,7 @@ class AdminFrameStatsCard extends ConsumerWidget {
             AsyncError() => Text(
               'تعذّر تحميل قياس السلاسة',
               key: const Key('admin.frameStats.error'),
-              style: context.text.bodySmall?.copyWith(color: t.error),
+              style: context.text.bodySmall?.copyWith(color: t.errorText),
             ),
             _ => const LinearProgressIndicator(),
           },

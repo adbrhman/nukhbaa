@@ -199,7 +199,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
                 : 'نشط: ظاهر في اللوحات',
             key: const Key('admin.users.selectedStatus'),
             style: TextStyle(
-              color: suspended ? tokens.error : tokens.success,
+              color: suspended ? tokens.errorText : tokens.successText,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -234,7 +234,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
                 renameMessage,
                 key: const Key('admin.users.renameMessage'),
                 style: TextStyle(
-                  color: _renameFailed ? tokens.error : tokens.success,
+                  color: _renameFailed ? tokens.errorText : tokens.successText,
                 ),
               ),
             ),
@@ -245,7 +245,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
               child: Text(
                 ErrorPresenter.message(sanctionState.error as AppError),
                 key: const Key('admin.users.error'),
-                style: TextStyle(color: tokens.error),
+                style: TextStyle(color: tokens.errorText),
               ),
             ),
           if (sanctionState is AsyncData<UserSanctionResultDto> &&
@@ -425,7 +425,7 @@ class _UserPredictionSearchCardState
               ),
               error: (error, _) => Text(
                 ErrorPresenter.message(error as AppError),
-                style: TextStyle(color: tokens.error),
+                style: TextStyle(color: tokens.errorText),
               ),
               data: (dto) => dto.users.isEmpty
                   ? const Text('لا يوجد مستخدمون مطابقون.')

@@ -281,7 +281,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                             ErrorPresenter.message(_failure!),
                             textAlign: TextAlign.center,
                             style: text.bodyMedium?.copyWith(
-                              color: tokens.error,
+                              color: tokens.errorText,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
@@ -291,7 +291,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                             resetCodeResentMessage,
                             textAlign: TextAlign.center,
                             style: text.bodyMedium?.copyWith(
-                              color: tokens.primary,
+                              color: tokens.primaryText,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.lg),

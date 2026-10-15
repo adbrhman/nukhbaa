@@ -180,7 +180,7 @@ class _InviteFriendsScreenState extends ConsumerState<InviteFriendsScreen> {
                   key: const Key('invite.code'),
                   textAlign: TextAlign.center,
                   style: context.text.headlineMedium?.copyWith(
-                    color: tokens.primary,
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 4,
                   ),

@@ -477,7 +477,7 @@ class _SignOutCard extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: context.text.bodyLarge?.copyWith(
-                    color: tokens.error,
+                    color: tokens.errorText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -534,7 +534,7 @@ class _AvatarSheetState extends ConsumerState<_AvatarSheet> {
                 ),
                 title: Text(
                   l10n.avatarRemove,
-                  style: TextStyle(color: context.tokens.error),
+                  style: TextStyle(color: context.tokens.errorText),
                 ),
                 onTap: _remove,
               ),

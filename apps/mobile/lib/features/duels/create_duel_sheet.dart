@@ -327,7 +327,7 @@ class _CreateDuelSheetState extends ConsumerState<CreateDuelSheet> {
                         created.code,
                         key: const Key('createDuel.code'),
                         style: text.headlineSmall?.copyWith(
-                          color: tokens.primary,
+                          color: tokens.primaryText,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 3,
                         ),

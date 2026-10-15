@@ -498,7 +498,7 @@ class _FinalLine extends StatelessWidget {
             style: style?.copyWith(
               color: scored == null
                   ? null
-                  : (scored > 0 ? tokens.success : tokens.error),
+                  : (scored > 0 ? tokens.successText : tokens.errorText),
             ),
           ),
         ),

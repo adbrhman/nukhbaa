@@ -95,7 +95,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 child: Text(
                   ErrorPresenter.message(state.error as AppError),
                   key: const Key('joinGroup.error'),
-                  style: TextStyle(color: tokens.error),
+                  style: TextStyle(color: tokens.errorText),
                 ),
               ),
             FilledButton(
