@@ -28,7 +28,7 @@ import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
-import '../history/fixture_scores_providers.dart';
+import '../history/my_fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
 import 'fixture_prediction_controller.dart';
 import 'fixture_prediction_submission.dart';
@@ -139,23 +139,16 @@ class _FixturePredictSheetState extends ConsumerState<_FixturePredictSheet> {
       myPredictionsAsync.value,
     );
 
-    final AsyncValue<FixtureScoresDto>? scoresAsync = myPrediction == null
+    // The caller's grade and points come from the one read every card
+    // shares (myFixtureScoresProvider, script 75).
+    final MyFixtureScoreDto? myScore = myPrediction == null
         ? null
-        : ref.watch(
-            fixtureScoresProvider(_fixture.seasonId, _fixture.fixtureId),
+        : myFixtureScoreOf(
+            ref.watch(myFixtureScoresProvider).value,
+            myPrediction,
           );
-    String? myGrade;
-    int? myPoints;
-    if (myPrediction != null) {
-      for (final ParticipantFixtureScoreDto s
-          in scoresAsync?.value?.scores ?? const []) {
-        if (s.participantId == myPrediction.participantId) {
-          myGrade = s.grade;
-          myPoints = s.points;
-          break;
-        }
-      }
-    }
+    final String? myGrade = myScore?.grade;
+    final int? myPoints = myScore?.points;
 
     if (!_prefilledFromPrediction && myPrediction != null) {
       _homeGoals = myPrediction.homeGoals;

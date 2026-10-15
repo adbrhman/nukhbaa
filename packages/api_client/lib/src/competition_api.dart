@@ -293,6 +293,19 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /me/fixture-scores` -- the caller's own grade, points and final
+  /// score for every prediction that has a score or a recorded result, in
+  /// one read (query intent `ListMyFixtureScores`, script 75). What the
+  /// match cards and the history rows show, in place of one
+  /// [getFixtureScores] per match. Nothing scored or recorded yet is a
+  /// legitimate `Ok(<empty list>)`.
+  Future<Result<List<MyFixtureScoreDto>>> myFixtureScores() {
+    return _transport.getList<MyFixtureScoreDto>(
+      '/me/fixture-scores',
+      parseElement: MyFixtureScoreDto.fromJson,
+    );
+  }
+
   /// `GET /me/active-seasons` -- every season the caller is an **active**
   /// participant in, right now (query intent `ListMyActiveSeasons`; Axiom 4
   /// Amendment). The participant-scoped "my seasons" read the client fans

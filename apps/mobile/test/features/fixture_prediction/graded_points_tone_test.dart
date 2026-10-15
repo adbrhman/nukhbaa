@@ -51,23 +51,17 @@ Future<AppBadge> _pointsBadge(
         ).toJson(),
       ]);
     }
-    if (path == '/seasons/$_season/fixtures/$_fixture/scores') {
-      return okJsonObject(
-        FixtureScoresDto(
+    if (path == '/me/fixture-scores') {
+      return okJsonList(<Object?>[
+        MyFixtureScoreDto(
+          participantId: 'part-1',
           fixtureId: _fixture,
-          scores: <ParticipantFixtureScoreDto>[
-            ParticipantFixtureScoreDto(
-              fixtureId: _fixture,
-              participantId: 'part-1',
-              rulesetVersion: 3,
-              grade: grade,
-              points: points,
-            ),
-          ],
+          grade: grade,
+          points: points,
           resultHomeGoals: 1,
           resultAwayGoals: 0,
         ).toJson(),
-      );
+      ]);
     }
     return okJsonList(const <Object?>[]);
   });

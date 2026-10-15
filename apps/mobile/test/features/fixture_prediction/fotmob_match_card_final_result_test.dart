@@ -53,23 +53,17 @@ Future<void> _pump(WidgetTester tester, {required bool predicted}) async {
               seasonId: 's-1',
             ).toJson(),
         ]);
-      case '/seasons/s-1/fixtures/f-1/scores':
-        return okJsonObject(
-          const FixtureScoresDto(
+      case '/me/fixture-scores':
+        return okJsonList([
+          const MyFixtureScoreDto(
+            participantId: 'p-me',
             fixtureId: 'f-1',
+            grade: 'incorrect',
+            points: 0,
             resultHomeGoals: 2,
             resultAwayGoals: 1,
-            scores: <ParticipantFixtureScoreDto>[
-              ParticipantFixtureScoreDto(
-                fixtureId: 'f-1',
-                participantId: 'p-me',
-                rulesetVersion: 3,
-                grade: 'incorrect',
-                points: 0,
-              ),
-            ],
           ).toJson(),
-        );
+        ]);
       case '/teams':
         return okJsonList(const []);
     }

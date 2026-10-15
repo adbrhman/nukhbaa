@@ -43,7 +43,7 @@ Future<void> _pump(
     if (path == '/me/fixture-predictions') {
       return ph.okJsonList(<Object?>[prediction.toJson()]);
     }
-    if (path == '/seasons/s-1/fixtures/$_fixture/scores') return scores;
+    if (path == '/me/fixture-scores') return scores;
     return ph.okJsonList(const <Object?>[]);
   });
   addTearDown(harness.dispose);
@@ -74,27 +74,22 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+/// What `GET /me/fixture-scores` answers: the caller's one row.
 http.Response _scores({
   required int points,
   int? home,
   int? away,
   String? grade,
-}) => ph.okJsonObject(
-  FixtureScoresDto(
+}) => ph.okJsonList(<Object?>[
+  MyFixtureScoreDto(
+    participantId: 'part-1',
     fixtureId: _fixture,
-    scores: <ParticipantFixtureScoreDto>[
-      ParticipantFixtureScoreDto(
-        fixtureId: _fixture,
-        participantId: 'part-1',
-        rulesetVersion: 1,
-        grade: grade ?? (points > 0 ? 'exact_scoreline' : 'incorrect'),
-        points: points,
-      ),
-    ],
+    grade: grade ?? (points > 0 ? 'exact_scoreline' : 'incorrect'),
+    points: points,
     resultHomeGoals: home,
     resultAwayGoals: away,
   ).toJson(),
-);
+]);
 
 void main() {
   const Key line = Key('history.final.fp-final');

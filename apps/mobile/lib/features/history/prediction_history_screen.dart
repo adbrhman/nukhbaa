@@ -20,7 +20,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
 import '../fixture_prediction/widgets/live_matches_chip.dart';
 import 'exact_hit_share.dart';
-import 'fixture_scores_providers.dart';
+import 'my_fixture_scores_providers.dart';
 import 'prediction_history_providers.dart';
 import 'prediction_lookup_providers.dart';
 
@@ -33,7 +33,7 @@ import 'prediction_lookup_providers.dart';
 ///
 /// Each card shows the fixture's kickoff, the forecast scoreline, when it
 /// was submitted, and one labelled status: the server's verdict and points
-/// once [fixtureScoresProvider] resolves a grade, otherwise where the
+/// once [myFixtureScoresProvider] resolves a grade, otherwise where the
 /// fixture stands against its kickoff (not started / live / awaiting).
 ///
 /// A filter on top narrows the list: all, upcoming (not finished yet --
@@ -132,7 +132,7 @@ class _PredictionHistoryScreenState
   Future<void> _refresh() async {
     ref.invalidate(currentMonthFixturesProvider);
     ref.invalidate(seasonFixturesProvider);
-    ref.invalidate(fixtureScoresProvider);
+    ref.invalidate(myFixtureScoresProvider);
     ref.invalidate(myFixturePredictionsProvider);
     try {
       await ref.read(myFixturePredictionsProvider.future);
@@ -167,8 +167,8 @@ class _PredictionHistoryScreenState
 ///
 /// Kickoff and submission are two separate, labelled lines: the card used
 /// to show only the submission instant at the top, where it read like the
-/// match time. The verdict and points come from [fixtureScoresProvider]
-/// (server-computed; the client derives no point). A `null` seasonId, a
+/// match time. The verdict and points come from [myFixtureScoresProvider]
+/// (server-computed; the client derives no point). No row yet, a
 /// still-loading read, or any read error all degrade the same way: no
 /// verdict, only the kickoff-relative status.
 class _FixturePredictionCard extends ConsumerWidget {
@@ -179,7 +179,6 @@ class _FixturePredictionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String? seasonId = prediction.seasonId;
     // Team names and kickoff: the current-month feed first, then the
     // prediction's own season for a fixture outside it (see
     // historyFixturesByIdProvider). Read BEFORE the scores below, which
@@ -190,28 +189,23 @@ class _FixturePredictionCard extends ConsumerWidget {
       ),
     );
     final String? kickoffAt = fixture?.kickoffAt;
-    // PERF: one scores request per visible row, over the caller's whole
-    // history. A fixture whose kickoff is still ahead cannot carry a grade,
-    // so that request can only come back empty -- skip it. An unknown
-    // kickoff (a fixture outside the current month) still asks: "unknown"
+    // PERF: every row reads the caller's points from one shared read
+    // (myFixtureScoresProvider, script 75); it used to be one scores request
+    // per visible row over the whole history. A fixture whose kickoff is
+    // still ahead cannot carry a grade, so it does not watch it. An unknown
+    // kickoff (a fixture outside the current month) still does: "unknown"
     // is not "not yet".
-    final AsyncValue<FixtureScoresDto>? scoresAsync =
-        seasonId == null || _kickoffAhead(kickoffAt)
+    final MyFixtureScoreDto? myScore = _kickoffAhead(kickoffAt)
         ? null
-        : ref.watch(fixtureScoresProvider(seasonId, prediction.fixtureId));
-    String? grade;
-    int? points;
-    for (final ParticipantFixtureScoreDto s
-        in scoresAsync?.value?.scores ?? const []) {
-      if (s.participantId == prediction.participantId) {
-        grade = s.grade;
-        points = s.points;
-        break;
-      }
-    }
+        : myFixtureScoreOf(
+            ref.watch(myFixtureScoresProvider).value,
+            prediction,
+          );
+    final String? grade = myScore?.grade;
+    final int? points = myScore?.points;
 
-    final int? resultHome = scoresAsync?.value?.resultHomeGoals;
-    final int? resultAway = scoresAsync?.value?.resultAwayGoals;
+    final int? resultHome = myScore?.resultHomeGoals;
+    final int? resultAway = myScore?.resultAwayGoals;
     final bool finished = resultHome != null && resultAway != null;
     // Once the final score is recorded its line carries the verdict and the
     // points; the first line then keeps the kickoff alone.
@@ -453,7 +447,7 @@ class _ScoreLine extends StatelessWidget {
 /// "انتهت" under the home side, the recorded final score under the call,
 /// and the verdict with the points scoring gave -- ❌ for none, ✅ for
 /// points, 🔥 for a double that scored. The points are the server's own
-/// (`fixtureScoresProvider`); nothing here works a score out.
+/// (`myFixtureScoresProvider`); nothing here works a score out.
 class _FinalLine extends StatelessWidget {
   const _FinalLine({
     required this.home,

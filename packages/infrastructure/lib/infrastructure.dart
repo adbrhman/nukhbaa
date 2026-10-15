@@ -100,6 +100,7 @@ export 'src/prediction/cached_fixture_prediction_tally_reader.dart';
 export 'src/prediction/postgres_prediction_repository.dart';
 export 'src/scoring/postgres_fixture_result_repository.dart';
 export 'src/scoring/postgres_fixture_score_repository.dart';
+export 'src/scoring/postgres_my_fixture_score_reader.dart';
 export 'src/scoring/cached_fixture_result_reads.dart';
 export 'src/scoring/cached_fixture_score_repository.dart';
 export 'src/scoring/postgres_score_repository.dart';

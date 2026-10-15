@@ -187,6 +187,7 @@ final class CompositionRoot {
     required this.adminListFixturePredictions,
     required this.adminGetUserFixturePredictions,
     required this.listMyFixturePredictions,
+    required this.listMyFixtureScores,
     required this.listMyActiveSeasons,
     required this.listTeams,
     required this.listLeagues,
@@ -390,6 +391,7 @@ final class CompositionRoot {
     AdminListFixturePredictions? adminListFixturePredictions,
     AdminGetUserFixturePredictions? adminGetUserFixturePredictions,
     ListMyFixturePredictions? listMyFixturePredictions,
+    ListMyFixtureScores? listMyFixtureScores,
     ListMyActiveSeasons? listMyActiveSeasons,
     ListTeams? listTeams,
     ListLeagues? listLeagues,
@@ -631,6 +633,8 @@ final class CompositionRoot {
            _absentAdminGetUserFixturePredictions(),
        listMyFixturePredictions =
            listMyFixturePredictions ?? _absentListMyFixturePredictions(),
+       listMyFixtureScores =
+           listMyFixtureScores ?? _absentListMyFixtureScores(),
        listMyActiveSeasons =
            listMyActiveSeasons ?? _absentListMyActiveSeasons(),
        listTeams = listTeams ?? _absentListTeams(),
@@ -1797,6 +1801,9 @@ final class CompositionRoot {
     auditRecorder: _absentAuditRecorder(),
   );
 
+  static ListMyFixtureScores _absentListMyFixtureScores() =>
+      ListMyFixtureScores(reader: _UnwiredMyFixtureScoreReader());
+
   static ListMyFixturePredictions _absentListMyFixturePredictions() =>
       ListMyFixturePredictions(
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
@@ -2507,6 +2514,11 @@ final class CompositionRoot {
   /// and season, newest first. Always the caller's own forecasts; no
   /// season-membership gate.
   final ListMyFixturePredictions listMyFixturePredictions;
+
+  /// The caller's own grade, points and final score for every prediction
+  /// that has a score or a recorded result, in one read (backs
+  /// `GET /me/fixture-scores`, script 75).
+  final ListMyFixtureScores listMyFixtureScores;
 
   /// Lists every season [principal] is an active participant in right now
   /// (participant-scoped analogue of [listMyFixturePredictions]; the client
@@ -3766,6 +3778,11 @@ final class CompositionRoot {
         fixtureScoreRepository: fixtureScoreRepository,
         auditRecorder: auditRecorder,
       ),
+      // One query for every card and history row (migration 0171), in
+      // place of a scores request per match (script 75).
+      listMyFixtureScores: ListMyFixtureScores(
+        reader: PostgresMyFixtureScoreReader(connection),
+      ),
       listMyFixturePredictions: ListMyFixturePredictions(
         fixturePredictionRepository:
             fixturePredictionRepository, // already built
@@ -4401,6 +4418,15 @@ final class _UnwiredFixturePredictionRepository
 /// Backs every "absent" scoring use-case's fixture-result port: any method
 /// throws so a test that reaches an unwired scoring slice fails loudly instead
 /// of touching a real database.
+/// Backs the "absent" [ListMyFixtureScores]: throws so a test that reaches
+/// `GET /me/fixture-scores` without wiring it fails loudly instead of
+/// touching a real database.
+final class _UnwiredMyFixtureScoreReader implements MyFixtureScoreReader {
+  @override
+  Future<Result<List<MyFixtureScore>>> listByUser(UserId userId) =>
+      throw StateError('ListMyFixtureScores was not wired into this root');
+}
+
 /// Holds no result: backs the quiet absent [GetFixtureResult].
 final class _NoFixtureResults implements FixtureResultRepository {
   @override

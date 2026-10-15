@@ -343,23 +343,17 @@ Future<void> _predictionsWithData(
             ).toJson(),
           ]);
         }
-        if (path == '/seasons/s-9/fixtures/f-9/scores') {
-          return predictions.okJsonObject(
-            const FixtureScoresDto(
+        if (path == '/me/fixture-scores') {
+          return predictions.okJsonList(<Object?>[
+            const MyFixtureScoreDto(
+              participantId: 'part-9',
               fixtureId: 'f-9',
+              grade: 'exact_scoreline',
+              points: 3,
               resultHomeGoals: 2,
               resultAwayGoals: 1,
-              scores: <ParticipantFixtureScoreDto>[
-                ParticipantFixtureScoreDto(
-                  fixtureId: 'f-9',
-                  participantId: 'part-9',
-                  rulesetVersion: 1,
-                  grade: 'exact_scoreline',
-                  points: 3,
-                ),
-              ],
             ).toJson(),
-          );
+          ]);
         }
         return predictions.okJsonList(const <Object?>[]);
       });

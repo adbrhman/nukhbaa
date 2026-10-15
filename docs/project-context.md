@@ -5089,6 +5089,45 @@ retries).
 No migration, no server change; the web takes it on deploy, Android with
 the next APK.
 
+### The caller's own points in one read (script 75, 2026-10-15)
+
+Part (b) of the match-night fix. Every finished match card, every row of
+"my predictions", the match screen and the prediction sheet asked
+`GET /seasons/{id}/fixtures/{fixtureId}/scores` for their own match --
+four queries and every participant's score, to show one line -- and asked
+again every 2 minutes while the score was pending. When a match ended
+every player's app did that at once for each finished card and each
+history row: 389 database timeouts on that route on 2026-10-14/15.
+
+- `GET /me/fixture-scores` (`ListMyFixtureScores` over the
+  `MyFixtureScoreReader` port, `PostgresMyFixtureScoreReader`) returns the
+  caller's own grade, points and final score for every prediction that has
+  a score or a recorded result, from one call of
+  `scoring.my_fixture_scores(user_id)` (migration 0171; grade and points
+  null while the result waits for scoring). Wire shape
+  `MyFixtureScoreDto`, keyed by (participant_id, fixture_id). A scoring
+  read beside `/me/fixture-predictions`, not fields on it: a prediction's
+  wire shape carries no points (the route tests check that `points` is
+  absent).
+- The app: `myFixtureScoresProvider` (hand-written,
+  `features/history/my_fixture_scores_providers.dart`) replaces
+  `fixtureScoresProvider` in the match card, the history card, the match
+  screen and the sheet. It asks once the month's feed has answered, again
+  when the feed shows a new result, and every 2 minutes while a recorded
+  result has no grade; it is kept two minutes past its last watcher.
+- `GET /seasons/{id}/fixtures/{fixtureId}/scores` stays on the server for
+  apps installed before this one.
+- Tests: SQL `0171_my_fixture_scores_test.sql`; contracts, application,
+  infrastructure, api_client and the route; mobile
+  `my_fixture_scores_providers_test.dart` through the real matches screen
+  (two finished cards, one read and no per-match request; a waiting grade
+  asked again after 2 minutes, then not; a new result in the feed reads
+  again, a feed refresh with nothing new does not); the card, history,
+  match screen and UI audit tests answer the new read.
+
+Migration 0171 (apply in the SQL Editor before pushing); the server on
+push, the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -82,7 +82,7 @@ import '../../competition/team_catalog_index.dart';
 import '../../competition/team_registry.dart';
 import '../../competition/team_identity.dart';
 import '../../duels/duel_offer.dart';
-import '../../history/fixture_scores_providers.dart';
+import '../../history/my_fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
@@ -425,35 +425,24 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final FixturePredictionDto? myPrediction =
         myPredictionsAsync.value?[_fixture.fixtureId];
 
-    // PERF: a fixture that has not kicked off cannot have been graded, so
-    // asking the server for its scores is a guaranteed-empty round trip --
-    // one per visible card, on a screen that is mostly upcoming matches.
-    // Nor can one still in play or waiting for its result: a grade needs
-    // the recorded result, which the feed item already carries. Asking
-    // before it sent one request per started card, again every 2
-    // minutes (2026-10-11: the scores route timed out at 'connections in
-    // use 8/8, waiting 99').
+    // PERF: a grade needs the recorded result, which the feed item already
+    // carries, so a card watches the caller's points only once it has one.
+    // Every card shares the one read of them (myFixtureScoresProvider,
+    // script 75): it used to ask for its own match's scores, again every 2
+    // minutes while pending (2026-10-11: 'connections in use 8/8, waiting
+    // 99'; 2026-10-14/15: 389 timeouts on that route).
     final bool resultRecorded =
         widget.item.resultHomeGoals != null &&
         widget.item.resultAwayGoals != null;
-    final AsyncValue<FixtureScoresDto>? scoresAsync =
+    final MyFixtureScoreDto? myScore =
         myPrediction == null || !locked || !resultRecorded
         ? null
-        : ref.watch(
-            fixtureScoresProvider(_fixture.seasonId, _fixture.fixtureId),
+        : myFixtureScoreOf(
+            ref.watch(myFixtureScoresProvider).value,
+            myPrediction,
           );
-    String? myGrade;
-    int? myPoints;
-    if (myPrediction != null) {
-      for (final ParticipantFixtureScoreDto s
-          in scoresAsync?.value?.scores ?? const []) {
-        if (s.participantId == myPrediction.participantId) {
-          myGrade = s.grade;
-          myPoints = s.points;
-          break;
-        }
-      }
-    }
+    final String? myGrade = myScore?.grade;
+    final int? myPoints = myScore?.points;
     final bool isGraded =
         myGrade == 'exact_scoreline' ||
         myGrade == 'correct_outcome' ||

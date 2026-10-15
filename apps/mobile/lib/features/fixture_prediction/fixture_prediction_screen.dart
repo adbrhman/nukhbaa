@@ -19,9 +19,9 @@
 /// badge/grade reuse the exact same reads CurrentMonthFixturesScreen
 /// already uses — a linear scan over [myFixturePredictionsProvider]'s
 /// full history matched by fixture id, then (only if a prediction was
-/// found) [fixtureScoresProvider] matched by participant id for the
-/// grade/points. No new endpoint, no new provider — see this file's
-/// `_findMyPrediction` doc.
+/// found) [myFixtureScoresProvider] -- the caller's own points, one read
+/// shared with every card (script 75) -- matched by participant and fixture
+/// for the grade/points. See this file's `_findMyPrediction` doc.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -43,7 +43,7 @@ import '../../core/ui/team_logo.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/team_identity.dart';
 import '../competition/teams_providers.dart';
-import '../history/fixture_scores_providers.dart';
+import '../history/my_fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/season_leaderboard_screen.dart';
 import 'fixture_prediction_controller.dart';
@@ -313,30 +313,21 @@ class _FixturePredictionCardState
 
     // Reuse-only reads (no new architecture): "تم التوقع" comes from
     // matching this fixture in myFixturePredictionsProvider; "نتيجة/شارة"
-    // comes from fixtureScoresProvider, matched by participantId — exactly
-    // as current_month_fixtures_screen.dart already does.
+    // comes from myFixtureScoresProvider, matched by participant and
+    // fixture -- exactly as the match cards do.
     final myPredictionsAsync = ref.watch(myFixturePredictionsProvider);
     final FixturePredictionDto? myPrediction = _findMyPrediction(
       myPredictionsAsync.value,
     );
 
-    final AsyncValue<FixtureScoresDto>? scoresAsync = myPrediction == null
+    final MyFixtureScoreDto? myScore = myPrediction == null
         ? null
-        : ref.watch(
-            fixtureScoresProvider(widget.seasonId, widget.fixture.fixtureId),
+        : myFixtureScoreOf(
+            ref.watch(myFixtureScoresProvider).value,
+            myPrediction,
           );
-    String? myGrade;
-    int? myPoints;
-    if (myPrediction != null) {
-      for (final ParticipantFixtureScoreDto s
-          in scoresAsync?.value?.scores ?? const []) {
-        if (s.participantId == myPrediction.participantId) {
-          myGrade = s.grade;
-          myPoints = s.points;
-          break;
-        }
-      }
-    }
+    final String? myGrade = myScore?.grade;
+    final int? myPoints = myScore?.points;
 
     // One-time prefill from an existing prediction — guarded so it never
     // clobbers an edit already in progress once the async read resolves.
@@ -568,7 +559,7 @@ class _TeamHeader extends ConsumerWidget {
 /// current_month_fixtures_screen.dart's _CenterStatus with the same
 /// four-branch precedence (graded > predicted > locked > upcoming).
 /// [myPrediction]/[grade] are fed from the same
-/// myFixturePredictionsProvider/fixtureScoresProvider reads as that screen
+/// myFixturePredictionsProvider/myFixtureScoresProvider reads as that screen
 /// (see _FixturePredictionCardState.build), so all four branches are
 /// reachable here too.
 class _CenterStatus extends StatelessWidget {

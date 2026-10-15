@@ -51,7 +51,7 @@ import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/app_tab_header.dart';
 import '../../l10n/app_localizations.dart';
-import '../history/fixture_scores_providers.dart';
+import '../history/my_fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
 import 'current_month_fixtures_providers.dart';
 import 'feed_refresh_signal.dart';
@@ -227,7 +227,7 @@ class _CurrentMonthFixturesScreenState
     ref.read(feedRefreshSignalProvider.notifier).consume();
     ref.invalidate(currentMonthFixturesProvider);
     ref.invalidate(myFixturePredictionsProvider);
-    ref.invalidate(fixtureScoresProvider);
+    ref.invalidate(myFixtureScoresProvider);
     try {
       await ref.read(currentMonthFixturesProvider.future);
     } on Object {

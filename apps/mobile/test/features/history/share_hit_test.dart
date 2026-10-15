@@ -31,22 +31,17 @@ FixturePredictionDto _call({required bool isDouble}) => FixturePredictionDto(
   isDouble: isDouble,
 );
 
-http.Response _scores(int points) => ph.okJsonObject(
-  FixtureScoresDto(
+/// What `GET /me/fixture-scores` answers: the caller's one row.
+http.Response _scores(int points) => ph.okJsonList(<Object?>[
+  MyFixtureScoreDto(
+    participantId: 'part-1',
     fixtureId: _fixture,
-    scores: <ParticipantFixtureScoreDto>[
-      ParticipantFixtureScoreDto(
-        fixtureId: _fixture,
-        participantId: 'part-1',
-        rulesetVersion: 1,
-        grade: points > 0 ? 'exact_scoreline' : 'incorrect',
-        points: points,
-      ),
-    ],
+    grade: points > 0 ? 'exact_scoreline' : 'incorrect',
+    points: points,
     resultHomeGoals: points > 0 ? 2 : 0,
     resultAwayGoals: points > 0 ? 1 : 0,
   ).toJson(),
-);
+]);
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -61,7 +56,7 @@ Future<void> _pump(
     if (path == '/me/fixture-predictions') {
       return ph.okJsonList(<Object?>[prediction.toJson()]);
     }
-    if (path == '/seasons/s-1/fixtures/$_fixture/scores') {
+    if (path == '/me/fixture-scores') {
       return _scores(points);
     }
     if (path == '/seasons/s-1/fixture-leaderboard') {

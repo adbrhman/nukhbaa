@@ -101,21 +101,15 @@ void main() {
               ).toJson(),
             ]);
           }
-          if (path == '/seasons/s-9/fixtures/f-9/scores') {
-            return okJsonObject(
-              FixtureScoresDto(
+          if (path == '/me/fixture-scores') {
+            return okJsonList([
+              const MyFixtureScoreDto(
+                participantId: 'part-9',
                 fixtureId: 'f-9',
-                scores: <ParticipantFixtureScoreDto>[
-                  ParticipantFixtureScoreDto(
-                    fixtureId: 'f-9',
-                    participantId: 'part-9',
-                    rulesetVersion: 1,
-                    grade: 'incorrect',
-                    points: 0,
-                  ),
-                ],
+                grade: 'incorrect',
+                points: 0,
               ).toJson(),
-            );
+            ]);
           }
           // The current month's feed: nothing from last month in it.
           return okJsonList(<Object>[]);

@@ -17,7 +17,7 @@ import '../providers.dart';
 /// showing the same person on one leaderboard share one fetch.
 ///
 /// Auto-disposed, then held for two minutes past its last watcher (the shape
-/// `fixture_scores_providers.dart` already uses). Kept forever, as it was,
+/// `my_fixture_scores_providers.dart` uses too). Kept forever, as it was,
 /// every face the user had ever scrolled past stayed decoded in memory for
 /// the life of the process -- and a monthly board is the entire user base, at
 /// up to 512 KB each. Two minutes is long enough that scrolling a board back

@@ -83,13 +83,9 @@ CurrentMonthFixturesHarness _harnessFor({
     if (path == '/me/fixture-predictions') {
       return okJsonList(myPredictions);
     }
-    if (path == '/seasons/s-1/fixtures/f-1/scores') {
+    if (path == '/me/fixture-scores') {
       scoreReads?.add(path);
-      return okJsonObject({
-        'schema_version': 1,
-        'fixture_id': 'f-1',
-        'scores': scores,
-      });
+      return okJsonList(_myScores(scores, resultHome, resultAway));
     }
     if (path == '/teams') {
       return okJsonList(const []);
@@ -97,6 +93,24 @@ CurrentMonthFixturesHarness _harnessFor({
     throw StateError('Unexpected request: ${request.method} $path');
   });
 }
+
+/// What `GET /me/fixture-scores` (script 75) answers for [scores], the
+/// participants' rows of the one match, with its recorded result.
+List<Object?> _myScores(
+  List<Object?> scores,
+  int? resultHome,
+  int? resultAway,
+) => <Object?>[
+  for (final Map<String, Object?> s in scores.cast<Map<String, Object?>>())
+    MyFixtureScoreDto(
+      participantId: s['participant_id']! as String,
+      fixtureId: s['fixture_id']! as String,
+      grade: s['grade'] as String?,
+      points: s['points'] as int?,
+      resultHomeGoals: resultHome,
+      resultAwayGoals: resultAway,
+    ).toJson(),
+];
 
 String _futureIso() =>
     DateTime.now().toUtc().add(const Duration(days: 365)).toIso8601String();
@@ -456,7 +470,7 @@ void main() {
     );
   });
 
-  testWidgets('a started card with a recorded result asks for its scores', (
+  testWidgets('a started card with a recorded result asks for my points', (
     tester,
   ) async {
     final List<String> reads = <String>[];
