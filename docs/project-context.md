@@ -5417,6 +5417,30 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Dead screens removed (script 86, 2026-10-15)
+
+Nothing in the app opened them, so no player could reach them and the
+screen survey could not measure them; each colour round still had to edit
+them. Removed, about 2,100 lines:
+
+- `fixture_prediction/fixture_prediction_screen.dart` (the season-scoped
+  match screen) and `fixture_predict_sheet.dart`, reached only from
+- `competition/competition_seasons_screen.dart` and
+  `my_active_seasons_screen.dart`, which nothing opened;
+- `fixture_prediction/kickoff_countdown.dart`, used only by the match
+  screen;
+- `ledger/ledger_screen.dart` and `ledger_providers.dart` (the player's
+  ledger page; the admin's ledger lookup has its own section and stays);
+- `test/.../graded_points_tone_test.dart`, which drew the removed screen.
+
+Kept: the prediction controller and submission (the matches tab saves
+through them), `ScreenNames.fixturePrediction` and `ScreenNames.ledger`
+(the server's list of names), the server routes, and the contracts. The
+script also removes the generated `ledger_providers.g.dart`, which git does
+not track.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -8,7 +8,7 @@ import '../design/app_stroke.dart';
 import '../design/app_tokens.dart';
 
 /// شعار فريق موحّد يستبدل النمط المكرر ثلاث مرات (في
-/// current_month_fixtures_screen.dart، fixture_prediction_screen.dart،
+/// current_month_fixtures_screen.dart، شاشة المباراة التي حُذفت لاحقًا،
 /// وprediction_history_screen.dart): صورة شبكة (crestUrl) عند توفرها، وإلا
 /// دائرة مموّهة بأول حرفين من اسم الفريق — لا دائرة فارغة بلا نص إطلاقًا،
 /// سواء لفريق غير معروف أو لفشل تحميل شعار فريق معروف.
