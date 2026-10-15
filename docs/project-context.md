@@ -5051,6 +5051,44 @@ froze, not when.
 Migration 0170 (apply in the SQL Editor before pushing); no APK for the
 web.
 
+### One retry policy for every read (script 74, 2026-10-15)
+
+The error log after the Champions League night of 2026-10-14/15: 389
+database timeouts on `GET /seasons/{id}/fixtures/{fixtureId}/scores`
+(28 players) and 464 "the server took too long" on phones and the web.
+Riverpod 3.3.2's default retry (`ProviderContainer.defaultRetry`: ten
+more tries, 0.2 s doubling to 6.4 s, about 38 s, for anything that is not
+an `Error` -- `AppError` is not) applied to every provider of the app
+but the 11 with a policy of their own, so each request that timed out
+came back as up to eleven while the server
+was already waiting on its database, and the screen sat in loading the
+whole time (`triggerRetry` keeps the state `AsyncLoading` while it
+retries).
+
+- `SessionScope` sets `retry: appReadRetry` on the root `ProviderScope`:
+  an `ErrorKind.transient` failure (no network, a timeout, a 503) is read
+  again twice, after 3 and then 10 seconds (`appReadRetryDelays`);
+  anything else -- a refusal, a bad request, a `ProviderException` from a
+  provider it reads -- is not retried, and the screen shows it with its own
+  retry button. Providers with a policy of their own (the predictions
+  board's `predictionsBoardRetry`, the admin reads) keep it.
+- Test: `test/core/session/session_scope_retry_test.dart`, through the
+  app's own scope: a transient failure runs three times in all, a refusal
+  once.
+- The UI audit's `shell.matches` (every read answered with a body the app
+  cannot read) now measures the matches tab's real error state -- it
+  measured the loading skeleton while Riverpod kept retrying -- and caught
+  it overflowing by 57 px at x2.0 on a phone. The error now scrolls and
+  pulls to refresh like the empty states
+  (`current_month_fixtures_screen.dart`; test:
+  `feed_refresh_failure_test.dart`, a failed first load pulled down loads
+  the list).
+- Part (b), next: the caller's own points in one read, so cards and
+  history rows stop asking for scores one match at a time.
+
+No migration, no server change; the web takes it on deploy, Android with
+the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

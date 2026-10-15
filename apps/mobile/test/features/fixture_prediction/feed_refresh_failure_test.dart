@@ -1,7 +1,8 @@
 /// Coming back to the matches tab from the background: the minute tick
 /// refreshes the feed at once, and when that one refresh fails the list the
 /// user was looking at stays -- it is not replaced by "could not reach the
-/// server". Only a first load with nothing to show falls back to the error.
+/// server". Only a first load with nothing to show falls back to the error,
+/// and that error is pulled down to load again, like the empty states.
 /// Pumped through the real [CurrentMonthFixturesScreen].
 library;
 
@@ -81,5 +82,22 @@ void main() {
 
     expect(find.byKey(error), findsOneWidget);
     expect(find.byKey(card), findsNothing);
+  });
+
+  testWidgets('a first load that fails is pulled down to load again', (
+    tester,
+  ) async {
+    offline = true;
+    final h = harness();
+    addTearDown(h.dispose);
+    await pump(tester, h);
+    expect(find.byKey(error), findsOneWidget);
+
+    offline = false;
+    await tester.fling(find.byKey(error), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(error), findsNothing);
+    expect(find.byKey(card), findsOneWidget);
   });
 }

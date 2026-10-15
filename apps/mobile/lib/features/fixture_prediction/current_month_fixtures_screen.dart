@@ -318,9 +318,14 @@ class _CurrentMonthFixturesScreenState
             key: Key('currentMonthFixtures.loading'),
             itemHeight: 96,
           ),
-          error: (error, _) => _CurrentMonthFixturesError(
-            error: error,
-            onRetry: () => ref.invalidate(currentMonthFixturesProvider),
+          // Scrolls and pulls to refresh like the empty states: at large
+          // text the message did not fit under the date strip (x2.0 on a
+          // phone overflowed by 57 px, ui_audit_survey_test shell.matches).
+          error: (error, _) => _refreshable(
+            _CurrentMonthFixturesError(
+              error: error,
+              onRetry: () => ref.invalidate(currentMonthFixturesProvider),
+            ),
           ),
           data: (items) {
             if (items.isEmpty) {
