@@ -16,6 +16,10 @@ import 'package:shared/shared.dart';
 /// in-app update, then downloads/installs the ABI-matched APK natively
 /// (ADR-002 §2.8 — no HTTP in apps/mobile). Schema-v1 clients ignore the new
 /// `assets`/`sha256` fields and keep working. `405` on any non-GET method.
+///
+/// Since batch 147 it also carries the release's `build_number` and the
+/// oldest build the service still supports, `min_supported_build`, when an
+/// admin set one: an app older than it asks the player to update first.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -33,6 +37,8 @@ Future<Response> onRequest(RequestContext context) async {
         assets: value.assets
             .map((a) => BuildAssetDto(abi: a.abi, url: a.url, sha256: a.sha256))
             .toList(),
+        buildNumber: value.buildNumber,
+        minSupportedBuild: value.minSupportedBuild,
       ).toJson(),
     ),
     Err<LatestBuild>(:final error) => errorResponse(error),

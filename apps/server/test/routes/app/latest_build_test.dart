@@ -74,6 +74,41 @@ void main() {
       expect(body['schema_version'], 2);
     });
 
+    test('carries the build number and the oldest supported build '
+        '(batch 147)', () async {
+      final wired = _wire(
+        response: Result.ok(
+          LatestBuild(
+            publishedAt: DateTime.utc(2026, 10, 15),
+            apkUrl: 'https://example.com/a.apk',
+            buildNumber: 214,
+            minSupportedBuild: 210,
+          ),
+        ),
+      );
+
+      final body = await _decodeBody(await route.onRequest(wired.context));
+
+      expect(body['build_number'], 214);
+      expect(body['min_supported_build'], 210);
+    });
+
+    test('leaves both out when unknown', () async {
+      final wired = _wire(
+        response: Result.ok(
+          LatestBuild(
+            publishedAt: DateTime.utc(2026, 10, 15),
+            apkUrl: 'https://example.com/a.apk',
+          ),
+        ),
+      );
+
+      final body = await _decodeBody(await route.onRequest(wired.context));
+
+      expect(body.containsKey('build_number'), isFalse);
+      expect(body.containsKey('min_supported_build'), isFalse);
+    });
+
     test('surfaces a transient error as 503', () async {
       final wired = _wire(
         response: const Result.err(

@@ -15,6 +15,19 @@
 /// player is never interrupted: the row waits on the account tab, and the
 /// update installs only when they tap it.
 ///
+/// Batch 147 adds three things (audit L-15, L-62):
+/// * a minimum: when the server says the oldest supported build is newer
+///   than this one ([LatestBuildDto.minSupportedBuild] against the
+///   build number CI compiles in), the app shows [RequiredUpdateScreen]
+///   instead of itself, with the same in-app install. An admin raises it
+///   after a fix that matters; it is null otherwise.
+/// * a reminder: an Android build more than [nudgeAfter] old with a newer
+///   release waiting raises [updateNudgeProvider], a small card on the
+///   home page, until the player closes it.
+/// * the web build reloads by itself only at launch. On a return to a page
+///   left open it raises the same card instead: reloading then threw away
+///   what the player was doing.
+///
 /// PRIMARY download path: [InAppUpdater] (native OTA) — download progress,
 /// SHA-256 INTEGRITY verification and the platform installer all happen
 /// IN-APP; the release APK is NEVER handed to Chrome in the normal path. Only
@@ -114,6 +127,49 @@ final pendingUpdateProvider = NotifierProvider<PendingUpdate, LatestBuildDto?>(
   PendingUpdate.new,
 );
 
+/// The release this build must install before going on: set when the
+/// server's oldest supported build is newer than this one, cleared when it
+/// no longer is (the admin lowered or cleared the minimum).
+class RequiredUpdate extends Notifier<LatestBuildDto?> {
+  @override
+  LatestBuildDto? build() => null;
+
+  /// Holds the app on [build] until it is installed.
+  void require(LatestBuildDto build) => state = build;
+
+  /// Lets the app go on.
+  void release() => state = null;
+}
+
+/// [UpdateGate] watches this to show [RequiredUpdateScreen].
+final requiredUpdateProvider =
+    NotifierProvider<RequiredUpdate, LatestBuildDto?>(RequiredUpdate.new);
+
+/// Whether the home page shows its "a newer version is ready" card. Once
+/// the player closes it, it stays closed until the app is started again.
+class UpdateNudge extends Notifier<bool> {
+  bool _closed = false;
+
+  @override
+  bool build() => false;
+
+  /// Shows the card, unless the player already closed it.
+  void show() {
+    if (!_closed) state = true;
+  }
+
+  /// Closes the card for this run of the app.
+  void close() {
+    _closed = true;
+    state = false;
+  }
+}
+
+/// See [UpdateNudge].
+final updateNudgeProvider = NotifierProvider<UpdateNudge, bool>(
+  UpdateNudge.new,
+);
+
 /// Wraps [child], performing one silent update check after the first frame.
 class UpdateGate extends ConsumerStatefulWidget {
   /// Creates the gate around [child].
@@ -121,8 +177,15 @@ class UpdateGate extends ConsumerStatefulWidget {
     required this.child,
     this.isWeb = kIsWeb,
     this.buildSha = const String.fromEnvironment('NUKHBA_BUILD_SHA'),
+    this.buildNumber = const int.fromEnvironment('NUKHBA_BUILD_NUMBER'),
+    this.builtAt = const String.fromEnvironment('NUKHBA_BUILT_AT'),
+    this.webRecheck = const Duration(minutes: 30),
     super.key,
   });
+
+  /// How old an Android build may get, with a newer release waiting,
+  /// before the home page reminds the player.
+  static const Duration nudgeAfter = Duration(days: 7);
 
   /// The app's root screen, rendered unconditionally.
   final Widget child;
@@ -134,6 +197,16 @@ class UpdateGate extends ConsumerStatefulWidget {
   /// The short commit of this build, injected by CI (`--dart-define`);
   /// empty on a local run.
   final String buildSha;
+
+  /// This build's number (the CI run number, batch 147); 0 on a local run
+  /// or a build from before batch 147, which no minimum ever holds back.
+  final int buildNumber;
+
+  /// When CI built this app (ISO-8601); empty on a local run.
+  final String builtAt;
+
+  /// How long a page left open waits before asking again on a return.
+  final Duration webRecheck;
 
   @override
   ConsumerState<UpdateGate> createState() => _UpdateGateState();
@@ -149,7 +222,6 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
   DateTime? _lastWebCheck;
   bool _webChecking = false;
   bool _androidChecking = false;
-  static const Duration _webRecheck = Duration(minutes: 30);
 
   @override
   void initState() {
@@ -179,8 +251,10 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
       return;
     }
     final DateTime? last = _lastWebCheck;
-    if (last != null && DateTime.now().difference(last) < _webRecheck) return;
-    unawaited(_checkWeb());
+    if (last != null && DateTime.now().difference(last) < widget.webRecheck) {
+      return;
+    }
+    unawaited(_checkWeb(atLaunch: false));
   }
 
   Future<void> _checkForUpdate() async {
@@ -190,7 +264,7 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     // used to return here, so a page left open, or one added to the home
     // screen, kept the old build and nothing told the player.
     if (widget.isWeb) {
-      await _checkWeb();
+      await _checkWeb(atLaunch: true);
       return;
     }
 
@@ -218,6 +292,19 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     final LatestBuildDto dto = result.value;
     final DateTime? publishedAt = DateTime.tryParse(dto.publishedAt);
     if (publishedAt == null) return; // malformed server payload — silent
+
+    // Older than the oldest build the service still supports: the app
+    // waits behind the update screen. A local run (0) is never held back.
+    final int? minimum = dto.minSupportedBuild;
+    final RequiredUpdate holdBack = ref.read(requiredUpdateProvider.notifier);
+    if (widget.buildNumber > 0 &&
+        minimum != null &&
+        widget.buildNumber < minimum) {
+      holdBack.require(dto);
+      ref.read(pendingUpdateProvider.notifier).offer(dto);
+      return;
+    }
+    holdBack.release();
 
     // The short commit sha of THIS build, injected by CI at
     // `flutter build apk` time. The published release lives under the tag
@@ -247,34 +334,48 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 
     // No dialog: the account tab shows a quiet row until the player updates.
     ref.read(pendingUpdateProvider.notifier).offer(dto);
+
+    // A build left for a week with a release waiting: a card on the home
+    // page as well, which the player can close.
+    final DateTime? builtAt = DateTime.tryParse(widget.builtAt);
+    if (builtAt != null &&
+        DateTime.now().difference(builtAt) > UpdateGate.nudgeAfter) {
+      ref.read(updateNudgeProvider.notifier).show();
+    }
   }
 
   /// The web build's check. The newest release and the web build come from
   /// the same commit, so a release under another commit means this page
-  /// runs an older build, and it reloads by itself -- at launch, or when the
-  /// player comes back after [_webRecheck]. Each release is reloaded for at
-  /// most once per [_webRecheck]: the release goes up a few minutes before
-  /// the web build does, and a reload in that window still gets the old one.
-  Future<void> _checkWeb() async {
+  /// runs an older build. At launch it reloads by itself; on a return after
+  /// [UpdateGate.webRecheck] it only raises [updateNudgeProvider], so a
+  /// reload never throws away what the player was doing (audit L-62). Each
+  /// release is reloaded for at most once per [UpdateGate.webRecheck]: the
+  /// release goes up a few minutes before the web build does, and a reload
+  /// in that window still gets the old one.
+  Future<void> _checkWeb({required bool atLaunch}) async {
     final String sha = widget.buildSha;
     // A local run carries no build id: nothing to compare against.
     if (sha.isEmpty || _webChecking) return;
     _webChecking = true;
     _lastWebCheck = DateTime.now();
     try {
-      await _checkWebAgainst(sha);
+      await _checkWebAgainst(sha, atLaunch: atLaunch);
     } finally {
       _webChecking = false;
     }
   }
 
-  Future<void> _checkWebAgainst(String sha) async {
+  Future<void> _checkWebAgainst(String sha, {required bool atLaunch}) async {
     final Result<LatestBuildDto> result = await ref
         .read(appApiProvider)
         .latestBuild();
     if (!mounted || result is! Ok<LatestBuildDto>) return;
     final LatestBuildDto dto = result.value;
     if (dto.apkUrl.contains('/build-$sha/')) return;
+    if (!atLaunch) {
+      ref.read(updateNudgeProvider.notifier).show();
+      return;
+    }
 
     final UpdateOfferMemory memory = ref.read(updateOfferMemoryProvider);
     String? offered;
@@ -291,7 +392,7 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
       if (at > 0 &&
           offered.substring(0, at) == dto.publishedAt &&
           when != null &&
-          DateTime.now().difference(when) < _webRecheck) {
+          DateTime.now().difference(when) < widget.webRecheck) {
         return;
       }
     }
@@ -316,7 +417,75 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    final LatestBuildDto? mustInstall = widget.isWeb
+        ? null
+        : ref.watch(requiredUpdateProvider);
+    if (mustInstall != null) return RequiredUpdateScreen(update: mustInstall);
+    return widget.child;
+  }
+}
+
+/// The one screen of a build older than the oldest one the service still
+/// supports (batch 147): why, and the in-app install. Nothing else opens
+/// until the new build is installed.
+class RequiredUpdateScreen extends ConsumerWidget {
+  /// Creates the screen for [update].
+  const RequiredUpdateScreen({required this.update, super.key});
+
+  /// The release to install.
+  final LatestBuildDto update;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    return Scaffold(
+      key: const Key('update.required'),
+      backgroundColor: tokens.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.system_update_rounded,
+                  size: 64,
+                  color: tokens.primaryText,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'حدِّث نُخبة لتكمل',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: AppFontSize.s22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'هذه النسخة لم تعد مدعومة. التحديث يأخذ دقيقة، وتبقى '
+                  'توقعاتك ونقاطك كما هي.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  key: const Key('update.required.install'),
+                  onPressed: () =>
+                      unawaited(installUpdate(context, ref, update)),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('حدِّث الآن'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Downloads and installs [dto] in-app ([InAppUpdater]): download progress,
@@ -421,6 +590,9 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
     percent: 0,
   );
 
+  /// Whether the plugin's own words are shown (audit L-15).
+  bool _showDetails = false;
+
   @override
   void initState() {
     super.initState();
@@ -457,7 +629,14 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
 
   void _armWatchdog() {
     _watchdog?.cancel();
-    _watchdog = Timer(_silenceTimeout, () => _settle(UpdatePhase.failed));
+    _watchdog = Timer(_silenceTimeout, () {
+      // A download that went quiet is stopped, not left running behind
+      // the browser fallback (audit L-15).
+      if (_current.phase == UpdatePhase.downloading) {
+        unawaited(widget.onCancel());
+      }
+      _settle(UpdatePhase.failed);
+    });
   }
 
   /// Closes the dialog exactly once, handing [phase] back to the parent.
@@ -502,18 +681,27 @@ class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
             Text('$pct%', textAlign: TextAlign.center),
           ] else if (_current.phase == UpdatePhase.installing)
             const Center(child: CircularProgressIndicator()),
-          // TEMP DIAGNOSTIC: surface the raw native error on-screen so it
-          // can be read without adb/logcat. Remove once root-caused.
+          // The plugin's own words are English and technical: kept behind
+          // "details" for whoever asks to read them, never in the player's
+          // face (audit L-15).
           if (_current.message != null) ...[
             const SizedBox(height: 12),
-            SelectableText(
-              _current.message!,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: AppFontSize.s12,
-                color: context.tokens.errorText,
+            if (_showDetails)
+              SelectableText(
+                _current.message!,
+                key: const Key('update.progress.message'),
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: AppFontSize.s12,
+                  color: context.tokens.errorText,
+                ),
+              )
+            else
+              TextButton(
+                key: const Key('update.progress.details'),
+                onPressed: () => setState(() => _showDetails = true),
+                child: const Text('التفاصيل'),
               ),
-            ),
           ],
         ],
       ),

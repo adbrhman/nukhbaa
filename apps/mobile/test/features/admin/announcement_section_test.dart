@@ -92,7 +92,9 @@ void main() {
     tester,
   ) async {
     var calls = 0;
-    final AdminHarness harness = await _open(tester, (_) async {
+    final AdminHarness harness = await _open(tester, (request) async {
+      // Only the announcement counts; the release card reads too.
+      if (request.url.path != _path) return okJsonObject(const {});
       calls++;
       return calls == 1
           ? errorEnvelope(503, 'api_client.timeout', 'timeout')

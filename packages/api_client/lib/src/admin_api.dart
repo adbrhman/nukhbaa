@@ -344,6 +344,19 @@ final class AdminApi {
     );
   }
 
+  /// `PUT /admin/app/min-build` -- makes the newest published release the
+  /// oldest supported Android build ([toLatest]) or clears that (batch
+  /// 147); answers the newest build number and the stored minimum.
+  Future<Result<AppUpdatePolicyDto>> setMinSupportedBuild({
+    required bool toLatest,
+  }) {
+    return _transport.putObject<AppUpdatePolicyDto>(
+      '/admin/app/min-build',
+      body: AppUpdatePolicyDto.request(toLatest: toLatest),
+      parse: AppUpdatePolicyDto.fromJson,
+    );
+  }
+
   /// `PUT /admin/referral-switch` -- turns the invitation system on or off;
   /// answers what the server stored.
   Future<Result<ReferralSwitchDto>> setReferralsEnabled({

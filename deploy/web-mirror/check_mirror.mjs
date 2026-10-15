@@ -11,7 +11,8 @@
 // * index.html and flutter_bootstrap.js: no-cache, the bootstrap naming
 //   the files that exist;
 // * an old content name: 404, never the app page; a .br name asked for
-//   directly: 404; a deep link: the app page.
+//   directly: 404; a deep link: the app page;
+// * a team crest: kept a week (audit L-54).
 // Node's own modules only.
 
 import fs from 'node:fs';
@@ -27,6 +28,7 @@ if (!base || !site) {
 const app = path.join(site, 'nukhbaa');
 const YEAR = 'public, max-age=31536000, immutable';
 const MONTH = 'public, max-age=2592000';
+const WEEK = 'public, max-age=604800';
 const problems = [];
 let checks = 0;
 
@@ -149,6 +151,15 @@ async function main() {
   }
   const served = decode(await get('/nukhbaa/flutter_bootstrap.js', 'gzip')).toString('utf8');
   expect(served === boot, 'the served flutter_bootstrap.js is not the one on disk');
+
+  const logos = path.join(app, 'assets/assets/team_logos');
+  const crest = fs.existsSync(logos) ? fs.readdirSync(logos).find((f) => f.endsWith('.png')) : undefined;
+  expect(Boolean(crest), 'no team crest under assets/assets/team_logos');
+  if (crest) {
+    const res = await get(`/nukhbaa/assets/assets/team_logos/${crest}`, 'gzip, deflate, br');
+    expect(res.status === 200, `team_logos/${crest}: status ${res.status}`);
+    expect(res.headers['cache-control'] === WEEK, `team_logos/${crest}: cache-control ${res.headers['cache-control']}, expected ${WEEK}`);
+  }
 
   const old = await get('/nukhbaa/main.dart.000000000000.js', 'gzip, deflate, br');
   expect(old.status === 404, `an old content name answered ${old.status}, expected 404`);

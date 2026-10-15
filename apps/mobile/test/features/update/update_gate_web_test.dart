@@ -2,8 +2,9 @@
 /// `AppApi` and `GET /app/latest-build`, with only the socket faked
 /// ([buildAuthHarness]): a page running an older build than the newest
 /// release reloads by itself with nothing to answer, the current build is
-/// left alone, a quick return does not reload again, and a local run without
-/// a build id never checks at all.
+/// left alone, a quick return does not reload again, a later return only
+/// raises the home reminder and never reloads (audit L-62), and a local run
+/// without a build id never checks at all.
 library;
 
 import 'dart:convert';
@@ -19,6 +20,9 @@ import '../../support/auth_harness.dart';
 final class _Server {
   final List<http.Request> requests = <http.Request>[];
 
+  /// The newest release's commit.
+  String newest = 'bbbbbbb';
+
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
     if (request.url.path == '/app/latest-build') {
@@ -28,7 +32,7 @@ final class _Server {
           'published_at': '2026-09-29T03:00:00Z',
           'apk_url':
               'https://github.com/adbrhman/nukhbaa/releases/download/'
-              'build-bbbbbbb/app-arm64-v8a-release.apk',
+              'build-$newest/app-arm64-v8a-release.apk',
         }),
         200,
         headers: const {'content-type': 'application/json'},
@@ -60,6 +64,7 @@ Future<List<int>> _open(
   _Server server, {
   required String buildSha,
   _Memory? memory,
+  Duration webRecheck = const Duration(minutes: 30),
 }) async {
   final List<int> reloads = <int>[];
   final harness = buildAuthHarness(server.handle, seedToken: 'jwt');
@@ -76,7 +81,12 @@ Future<List<int>> _open(
         home: UpdateGate(
           isWeb: true,
           buildSha: buildSha,
-          child: const Text('child-visible'),
+          webRecheck: webRecheck,
+          child: Consumer(
+            builder: (context, ref, _) => Text(
+              ref.watch(updateNudgeProvider) ? 'child-nudged' : 'child-visible',
+            ),
+          ),
         ),
       ),
     ),
@@ -118,6 +128,28 @@ void main() {
 
     expect(server.checks, 1);
     expect(reloads, hasLength(1));
+  });
+
+  testWidgets('a later return to an older page offers the update and never '
+      'reloads', (tester) async {
+    final server = _Server();
+    final List<int> reloads = await _open(
+      tester,
+      server,
+      buildSha: 'bbbbbbb',
+      webRecheck: Duration.zero,
+    );
+    expect(reloads, isEmpty);
+
+    // A newer build goes up while the page sits open.
+    server.newest = 'ccccccc';
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(server.checks, 2);
+    expect(reloads, isEmpty);
+    expect(find.text('child-nudged'), findsOneWidget);
   });
 
   testWidgets('a release reloaded for minutes ago is not reloaded again', (

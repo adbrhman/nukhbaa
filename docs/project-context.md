@@ -5059,6 +5059,31 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   dialog says "تعذّرت المشاركة. حاول مرة أخرى.". The duel score buttons
   carry tooltips with the team. Needs an APK and the web deploy; no
   migration.
+- **Batch 147 (one supported version, 2026-10-15, audit L-15, L-20,
+  L-54, L-62; migration 0113)**: 19 Android builds were in use at once and
+  fixes already shipped kept arriving from old phones, because the app
+  only offered an update as a quiet row on the account tab. Each release
+  is now numbered: the CI run number goes into the APK
+  (`NUKHBA_BUILD_NUMBER`, with `NUKHBA_BUILT_AT`) and into the release
+  name, `Build <sha> #<number>`, which `GithubBuildInfoRepository` reads
+  back. `ops.app_update_policy` (0113, one row) holds the oldest build
+  still supported; `GET /app/latest-build` carries `build_number` and
+  `min_supported_build`, and `PUT /admin/app/min-build {"to_latest"}`
+  (admin, `SetMinSupportedBuild`) makes the newest release the minimum or
+  clears it, never a typed number. An app older than the minimum shows
+  `RequiredUpdateScreen` ("حدِّث نُخبة لتكمل") with the in-app install
+  instead of itself; a local run (number 0) is never held. An Android
+  build more than 7 days old with a release waiting raises a home card,
+  closable for the run. The web build reloads by itself only at launch;
+  a return to a page left open raises the same card (L-62). The admin's
+  card sits under the announcement form ("إصدار التطبيق"), so the
+  announcement reaches the builds older than this batch, which do not
+  know the minimum. The progress dialog's watchdog cancels a download
+  that went quiet, and the plugin's raw message waits behind "التفاصيل"
+  (L-15). The landing page's manifest installs `/nukhbaa/` (L-20); the
+  mirror keeps `assets/assets/` pictures a week (L-54). Releases still go
+  out on every green push. Apply 0113 before pushing; needs an APK and the
+  web deploy. M-04's offline content moved to batch 155.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

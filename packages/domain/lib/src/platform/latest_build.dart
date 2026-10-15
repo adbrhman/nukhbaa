@@ -10,6 +10,11 @@
 /// A build may ship one [BuildAsset] per Android ABI (`--split-per-abi`),
 /// each with its own SHA-256. [apkUrl]/[sha256] carry the primary asset used
 /// as a universal fallback when a device ABI has no dedicated asset.
+///
+/// [buildNumber] is the release's CI run number (batch 147), rising with
+/// every release; [minSupportedBuild] is the oldest build number the
+/// service still supports, set by an admin. Either is null when unknown:
+/// a release published before batch 147, or no minimum set.
 final class LatestBuild {
   /// Creates a latest-build snapshot.
   const LatestBuild({
@@ -17,6 +22,8 @@ final class LatestBuild {
     required this.apkUrl,
     this.sha256,
     this.assets = const <BuildAsset>[],
+    this.buildNumber,
+    this.minSupportedBuild,
   });
 
   /// When this release was published, per the GitHub API.
@@ -31,17 +38,41 @@ final class LatestBuild {
   /// Per-ABI assets. Empty when the release carries only a universal APK.
   final List<BuildAsset> assets;
 
+  /// The release's build number (the CI run number), when its name says.
+  final int? buildNumber;
+
+  /// The oldest build number still supported, when an admin set one.
+  final int? minSupportedBuild;
+
+  /// This release with [minimum] as the oldest supported build.
+  LatestBuild withMinSupportedBuild(int? minimum) => LatestBuild(
+    publishedAt: publishedAt,
+    apkUrl: apkUrl,
+    sha256: sha256,
+    assets: assets,
+    buildNumber: buildNumber,
+    minSupportedBuild: minimum,
+  );
+
   @override
   bool operator ==(Object other) =>
       other is LatestBuild &&
       other.publishedAt == publishedAt &&
       other.apkUrl == apkUrl &&
       other.sha256 == sha256 &&
+      other.buildNumber == buildNumber &&
+      other.minSupportedBuild == minSupportedBuild &&
       _listEq(other.assets, assets);
 
   @override
-  int get hashCode =>
-      Object.hash(publishedAt, apkUrl, sha256, Object.hashAll(assets));
+  int get hashCode => Object.hash(
+    publishedAt,
+    apkUrl,
+    sha256,
+    buildNumber,
+    minSupportedBuild,
+    Object.hashAll(assets),
+  );
 }
 
 /// One per-ABI APK asset of a [LatestBuild].

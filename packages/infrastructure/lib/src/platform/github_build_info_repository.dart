@@ -247,8 +247,18 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
         apkUrl: apkUrl,
         sha256: apkSha,
         assets: assets,
+        buildNumber: buildNumberOf(json['name']),
       ),
     );
+  }
+
+  /// The build number in a release's [name], `Build <sha> #<number>` since
+  /// batch 147 (the CI run number), or null for an older release.
+  static int? buildNumberOf(Object? name) {
+    if (name is! String) return null;
+    final Match? match = RegExp(r'#(\d+)\s*$').firstMatch(name.trim());
+    final int? number = match == null ? null : int.tryParse(match.group(1)!);
+    return number != null && number > 0 ? number : null;
   }
 
   Future<Map<String, String>> _fetchChecksums(String? url) async {

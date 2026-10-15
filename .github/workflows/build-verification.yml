@@ -750,9 +750,15 @@ jobs:
           # so the installed app can recognise its own release URL and tell
           # whether it is the newest build.
           BUILD_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          # The release's number and build time (batch 147): the number is
+          # this workflow's run number, the one the release name carries, so
+          # the app can tell whether it is older than the minimum an admin
+          # set; the time tells it when to remind the player.
+          BUILD_NUMBER="${{ github.run_number }}"
+          BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           CLEAN_SENTRY_DSN=$(printf '%s' "$SENTRY_DSN" | tr -d '\r\n')
           CLEAN_INVITE_BASE_URL=$(printf '%s' "$INVITE_BASE_URL" | tr -d '\r\n')
-          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\",\"NUKHBA_BUILD_SHA\":\"$BUILD_SHA\",\"NUKHBA_SENTRY_DSN\":\"$CLEAN_SENTRY_DSN\",\"NUKHBA_INVITE_BASE_URL\":\"$CLEAN_INVITE_BASE_URL\"}" > /tmp/dart_defines.json
+          echo "{\"NUKHBA_API_BASE_URL\":\"$CLEAN_API_BASE_URL\",\"NUKHBA_BUILD_SHA\":\"$BUILD_SHA\",\"NUKHBA_BUILD_NUMBER\":\"$BUILD_NUMBER\",\"NUKHBA_BUILT_AT\":\"$BUILT_AT\",\"NUKHBA_SENTRY_DSN\":\"$CLEAN_SENTRY_DSN\",\"NUKHBA_INVITE_BASE_URL\":\"$CLEAN_INVITE_BASE_URL\"}" > /tmp/dart_defines.json
           flutter build apk --split-per-abi --dart-define-from-file=/tmp/dart_defines.json --release
 
       - name: Verify release signing (apksigner)
@@ -881,7 +887,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ env.SHORT_SHA }}
-          name: Build ${{ env.SHORT_SHA }}
+          # "#<run number>" is the build number the server reads back for
+          # the minimum supported build (batch 147); keep it last.
+          name: "Build ${{ env.SHORT_SHA }} #${{ github.run_number }}"
           body: |
             بناء تلقائي من commit ${{ github.sha }}
           make_latest: true

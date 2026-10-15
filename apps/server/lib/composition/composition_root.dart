@@ -20,6 +20,7 @@ final class CompositionRoot {
     required JwksClient jwksClient,
     required this.checkHealth,
     required this.getLatestBuild,
+    required this.setMinSupportedBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
     required this.enrolInOpenSeasons,
@@ -224,6 +225,7 @@ final class CompositionRoot {
   CompositionRoot.forTesting({
     CheckHealth? checkHealth,
     GetLatestBuild? getLatestBuild,
+    SetMinSupportedBuild? setMinSupportedBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
     NotifyNewUserRegistered? notifyNewUserRegistered,
@@ -398,6 +400,8 @@ final class CompositionRoot {
     ListMonthlySeasons? listMonthlySeasons,
   }) : checkHealth = checkHealth ?? _absentCheckHealth(),
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
+       setMinSupportedBuild =
+           setMinSupportedBuild ?? _absentSetMinSupportedBuild(),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
        notifyNewUserRegistered =
@@ -682,6 +686,14 @@ final class CompositionRoot {
   /// throws if a test reaches the update-check slice it never wired.
   static GetLatestBuild _absentGetLatestBuild() =>
       GetLatestBuild(_UnwiredBuildInfoRepository());
+
+  /// Backs an "absent" [SetMinSupportedBuild] in [CompositionRoot.forTesting]:
+  /// throws if a test reaches the update-policy slice it never wired.
+  static SetMinSupportedBuild _absentSetMinSupportedBuild() =>
+      SetMinSupportedBuild(
+        policy: _UnwiredAppUpdatePolicyStore(),
+        builds: _UnwiredBuildInfoRepository(),
+      );
 
   /// Builds an [AuthenticateRequest] over a verifier that throws if invoked.
   static AuthenticateRequest _absentAuthenticateRequest() =>
@@ -1830,6 +1842,10 @@ final class CompositionRoot {
   /// routes.
   final GetLatestBuild getLatestBuild;
 
+  /// Sets or clears the oldest supported Android build (backs
+  /// `PUT /admin/app/min-build`, migration 0113).
+  final SetMinSupportedBuild setMinSupportedBuild;
+
   /// Logs in with email/password, exchanging credentials for a session.
   final LoginWithPassword login;
 
@@ -2553,9 +2569,15 @@ final class CompositionRoot {
     final checkHealth = CheckHealth(PostgresHealthRepository(connection));
 
     // Platform update-check slice: reads the newest published Android build
-    // from GitHub Releases. Public/unauthenticated, like health.
-    final getLatestBuild = GetLatestBuild(
-      GithubBuildInfoRepository(http.Client()),
+    // from GitHub Releases, with the oldest build still supported (0113).
+    // Public/unauthenticated, like health. One GitHub reader, so the admin's
+    // "make the newest the minimum" sees the release the players see.
+    final buildInfo = GithubBuildInfoRepository(http.Client());
+    final appUpdatePolicy = PostgresAppUpdatePolicyStore(connection);
+    final getLatestBuild = GetLatestBuild(buildInfo, policy: appUpdatePolicy);
+    final setMinSupportedBuild = SetMinSupportedBuild(
+      policy: appUpdatePolicy,
+      builds: buildInfo,
     );
 
     // Identity slice: JWKS-backed ES256 verifier (+ HS256 legacy fallback) and
@@ -2977,6 +2999,7 @@ final class CompositionRoot {
       jwksClient: jwksClient,
       checkHealth: checkHealth,
       getLatestBuild: getLatestBuild,
+      setMinSupportedBuild: setMinSupportedBuild,
       authenticateRequest: AuthenticateRequest(verifier, directory: directory),
       getCurrentUser: GetCurrentUser(directory),
       enrolInOpenSeasons: EnrolInOpenSeasons(
@@ -3871,6 +3894,23 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
   @override
   Future<Result<LatestBuild>> fetchLatest() =>
       throw StateError('GetLatestBuild was not wired into this test root');
+}
+
+/// Backs an "absent" [SetMinSupportedBuild] in [CompositionRoot.forTesting]:
+/// throws if a test reaches the update-policy slice it never wired.
+final class _UnwiredAppUpdatePolicyStore implements AppUpdatePolicyStore {
+  static Never _unwired() => throw StateError(
+    'SetMinSupportedBuild was not wired into this test root',
+  );
+
+  @override
+  Future<Result<int?>> minSupportedBuild() => _unwired();
+
+  @override
+  Future<Result<int?>> setMinSupportedBuild({
+    required int? buildNumber,
+    required UserId by,
+  }) => _unwired();
 }
 
 /// Backs an "absent" [GetMyInsights]: throws if a test reaches the insights

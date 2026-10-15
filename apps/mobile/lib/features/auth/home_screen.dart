@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
@@ -30,6 +33,7 @@ import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import '../notifications/web_push_card.dart';
+import '../update/update_gate.dart';
 import 'pending_predictions_provider.dart';
 
 /// The real authenticated home surface. It is intentionally a read-only
@@ -98,6 +102,8 @@ class HomeScreen extends ConsumerWidget {
                 style: TextStyle(color: tokens.textSecondary),
               ),
               const SizedBox(height: 16),
+              // A newer build waiting, when the update check says so.
+              const _UpdateNudgeCard(),
               // Reading order: what to do now -- the predictions still open,
               // with the one action -- then the matches they are about, then
               // the day's challenge, then the season overview. Each card
@@ -158,6 +164,74 @@ class HomeScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A newer build is waiting (batch 147): an Android build a week old with
+/// a release out, or a web page left open across a release. One tap
+/// updates; the cross closes the card until the app starts again.
+class _UpdateNudgeCard extends ConsumerWidget {
+  const _UpdateNudgeCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(updateNudgeProvider)) return const SizedBox.shrink();
+    final LatestBuildDto? pending = ref.watch(pendingUpdateProvider);
+    if (!kIsWeb && pending == null) return const SizedBox.shrink();
+    final tokens = context.tokens;
+
+    void update() {
+      if (kIsWeb) {
+        ref.read(pageReloaderProvider)();
+        return;
+      }
+      final LatestBuildDto? release = pending;
+      if (release != null) unawaited(installUpdate(context, ref, release));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Container(
+        key: const Key('home.updateNudge'),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.md,
+          AppSpacing.xs,
+          AppSpacing.xs,
+          AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: tokens.surface,
+          borderRadius: AppRadius.brLg,
+          border: Border.all(color: tokens.primary),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.system_update_rounded, color: tokens.primaryText),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'نسخة أحدث من نُخبة جاهزة',
+                style: TextStyle(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              key: const Key('home.updateNudge.update'),
+              onPressed: update,
+              child: const Text('حدِّث'),
+            ),
+            IconButton(
+              key: const Key('home.updateNudge.close'),
+              tooltip: 'إغلاق',
+              onPressed: () => ref.read(updateNudgeProvider.notifier).close(),
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ],
         ),
       ),
     );

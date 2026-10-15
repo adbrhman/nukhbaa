@@ -7,8 +7,12 @@ import 'package:infrastructure/infrastructure.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-http.Response _release(List<Map<String, String>> assets) => http.Response(
+http.Response _release(
+  List<Map<String, String>> assets, {
+  String name = 'Build abc',
+}) => http.Response(
   jsonEncode({
+    'name': name,
     'published_at': '2026-01-02T00:00:00Z',
     'assets': assets
         .map((a) => {'name': a['name'], 'browser_download_url': a['url']})
@@ -18,6 +22,40 @@ http.Response _release(List<Map<String, String>> assets) => http.Response(
 );
 
 void main() {
+  group('the build number in a release name (batch 147)', () {
+    test('read from "Build <sha> #<number>"', () {
+      expect(
+        GithubBuildInfoRepository.buildNumberOf('Build 4e0c6e9 #812'),
+        812,
+      );
+    });
+
+    test('absent from an older name, or not a name', () {
+      expect(GithubBuildInfoRepository.buildNumberOf('Build 4e0c6e9'), isNull);
+      expect(GithubBuildInfoRepository.buildNumberOf('Build #0'), isNull);
+      expect(GithubBuildInfoRepository.buildNumberOf(null), isNull);
+      expect(GithubBuildInfoRepository.buildNumberOf(7), isNull);
+    });
+
+    test('carried by the release read', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa-arm64-v8a-abc.apk', 'url': 'https://x/arm64.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/checksums.json'},
+          ], name: 'Build abc #812');
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-arm64-v8a-abc.apk': 'AA'}),
+          200,
+        );
+      });
+
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+      expect((result as Ok<LatestBuild>).value.buildNumber, 812);
+    });
+  });
+
   group('GithubBuildInfoRepository (split-per-abi)', () {
     test('maps each ABI apk with its checksum; arm64 is primary', () async {
       final client = MockClient((req) async {

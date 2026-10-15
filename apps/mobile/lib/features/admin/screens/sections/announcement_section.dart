@@ -14,6 +14,7 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/arabic_count.dart';
 import '../../../../core/providers.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/app_release_card.dart';
 
 /// شاشة إرسال تعليمات المشرف إلى كل المستخدمين النشطين.
 ///
@@ -220,6 +221,10 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
             ],
           ),
         ),
+        // Below the message: after raising the minimum, the announcement
+        // reaches the builds that do not know it (batch 147).
+        const SizedBox(height: AppSpacing.lg),
+        const AppReleaseCard(),
       ],
     );
   }
