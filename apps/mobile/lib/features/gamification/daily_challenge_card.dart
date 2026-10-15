@@ -175,8 +175,11 @@ class _DailyChallengeCardState extends ConsumerState<DailyChallengeCard> {
                       child: FractionallySizedBox(
                         alignment: AlignmentDirectional.centerStart,
                         widthFactor: fraction,
+                        // The text blue, not the fill blue: the dark
+                        // theme's primary read 2.97:1 on this track, under
+                        // the 3:1 a progress bar needs (colour audit, CA-18).
                         child: ColoredBox(
-                          color: complete ? tokens.success : tokens.primary,
+                          color: complete ? tokens.success : tokens.primaryText,
                         ),
                       ),
                     ),

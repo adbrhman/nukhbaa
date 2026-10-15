@@ -5385,6 +5385,21 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: non-text contrast (script 84, 2026-10-15)
+
+Every fill token against every surface, at the 3:1 that icons, control
+rims and bars need: all pass in both themes except the dark `primary` on
+`surfaceHigh` (2.97:1) and the decorative hairline `border` (by design).
+
+- CA-18: the only place that pairing is drawn is the day's challenge bar
+  on its track; it fills with `primaryText` (the text blue, 4.5:1 or
+  better on every surface) while on its way, `success` once done.
+- Defence: `daily_challenge_bar_contrast_test.dart` draws the real card
+  over the real transport in both themes, on its way and done, and holds
+  the bar at 3:1 on its track and on its card.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
