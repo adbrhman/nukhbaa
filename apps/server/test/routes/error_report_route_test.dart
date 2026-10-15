@@ -218,6 +218,37 @@ void main() {
     expect(log.kept, hasLength(31));
   });
 
+  test('one address with nobody signed in sends 120 an hour; a signed-in '
+      'report still goes through (M-19)', () async {
+    final log = _MemoryErrorLog();
+    const address = '10.9.9.9';
+
+    for (var i = 0; i < 120; i++) {
+      final ok = await _post(
+        log,
+        _report(installId: 'install-script-$i'),
+        address: address,
+      );
+      expect(ok.statusCode, HttpStatus.ok);
+    }
+    final anonymous = await _post(
+      log,
+      _report(installId: 'install-script-new'),
+      address: address,
+    );
+    final signedIn = await _post(
+      log,
+      _report(installId: 'install-player'),
+      address: address,
+      authorization: 'Bearer good',
+    );
+
+    expect(anonymous.statusCode, HttpStatus.tooManyRequests);
+    expect(signedIn.statusCode, HttpStatus.ok);
+    expect(log.kept, hasLength(121));
+    expect(log.kept.last.userId, _user);
+  });
+
   test('only POST', () async {
     final response = await _post(
       _MemoryErrorLog(),

@@ -19,6 +19,9 @@ import 'package:shared/shared.dart';
 /// A new invitation tells the player in the inbox and, outside their quiet
 /// hours, by push; the inbox is where they accept or decline. Telling is
 /// best effort: the invitation stands whether or not a phone was reachable.
+/// The push never carries the league's name (audit M-20): the owner types
+/// it, so it would let anyone put their own words on another player's
+/// lock screen. The name is shown in the inbox, where the player decides.
 ///
 /// Never throws; returns a typed [Result]: `Ok(true)` when invited now.
 final class InviteToGroup {
@@ -48,8 +51,8 @@ final class InviteToGroup {
   static const String pushBody =
       'صديق يدعوك للمنافسة على ترتيب الشهر. افتح الإشعارات لتقبل أو ترفض.';
 
-  /// The push title for [groupName].
-  static String pushTitle(String groupName) => 'دعوة إلى دوري «$groupName»';
+  /// The push title: the same for every league, whatever its name.
+  static const String pushTitle = 'دعوة إلى دوري أصدقاء';
 
   /// [principal] invites [inviteeUserId] to the league [groupId].
   Future<Result<bool>> call({
@@ -150,7 +153,7 @@ final class InviteToGroup {
     }
     await _sender.send(
       tokens: push.tokens,
-      title: pushTitle(league.name),
+      title: pushTitle,
       body: pushBody,
       link: PushLink.inbox,
     );

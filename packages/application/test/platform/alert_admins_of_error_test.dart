@@ -142,6 +142,60 @@ void main() {
     expect(result.isOk, isTrue);
   });
 
+  group('an app report alerts only from a signed-in player (M-19)', () {
+    ErrorReport appReport({String? userId}) => ErrorReport(
+      source: 'android',
+      errorType: 'StateError',
+      message: 'Bad state: no element',
+      severity: ErrorSeverity.high,
+      build: 'made-up-build-1',
+      userId: userId,
+    );
+
+    test('nobody signed in: kept, and no admin is told', () async {
+      final alerts = _Alerts('new_in_release');
+      final sender = _Sender();
+      final log = _Log();
+      final record = RecordError(
+        errors: log,
+        clock: _Clock(),
+        alerts: AlertAdminsOfError(
+          alerts: alerts,
+          targets: _Admins(),
+          sender: sender,
+          clock: _Clock(),
+        ),
+      );
+
+      final result = await record(appReport());
+
+      expect(result.isOk, isTrue);
+      expect(log.count, 1);
+      expect(alerts.claims, isEmpty);
+      expect(sender.sent, isEmpty);
+    });
+
+    test('a signed-in player: the admins are told', () async {
+      final alerts = _Alerts('new_in_release');
+      final sender = _Sender();
+      final record = RecordError(
+        errors: _Log(),
+        clock: _Clock(),
+        alerts: AlertAdminsOfError(
+          alerts: alerts,
+          targets: _Admins(),
+          sender: sender,
+          clock: _Clock(),
+        ),
+      );
+
+      await record(appReport(userId: '11111111-2222-3333-4444-555555555555'));
+
+      expect(alerts.claims, hasLength(1));
+      expect(sender.sent, hasLength(1));
+    });
+  });
+
   test('every reason has an Arabic title', () {
     for (final reason in [
       'reopened',

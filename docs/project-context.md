@@ -4940,6 +4940,27 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   name says when it found nobody or failed. No migration; the roster
   names and the JSON answers ship with the server, the screens need an
   APK.
+- **Batch 142 (abuse: the error log and player-to-player pushes,
+  2026-10-15, audit M-19, M-20 part)**: M-19 -- `POST /errors/report` is
+  open before sign-in, so a script could invent an error or a build per
+  request and ring every admin's phone. `RecordError` now lets only the
+  server's own errors and reports with a valid token alert (an anonymous
+  report is still kept); migration 0112 replaces `ops.claim_error_alert`
+  with the same rules plus a budget -- once six errors alerted within the
+  hour the next is kept without an alert, except a new critical error,
+  which only the server records -- and a partial index on
+  `last_alert_at`; one network address with nobody signed in sends 120
+  reports an hour (`anonymousErrorReportAddressLimiter`, on top of 600).
+  M-20 -- the invitation push title no longer carries the league's name
+  (`InviteToGroup.pushTitle`, the same for every league; the name stays
+  in the inbox), and what reaches another player's phone is counted per
+  player over 24 hours, only when it succeeded (`PlayerReach`,
+  `RateLimiter.blockedFor`): 5 new leagues, 30 invitations, 3 private
+  challenges to the same player; a refusal is `409 social.daily_limit`
+  with an Arabic sentence the app shows as it is. In-process like every
+  limit here, so a restart forgets the counts. Left for batch 151: the
+  two mute switches (league invitations, challenges) and a block list.
+  NOTE: apply 0112 in the SQL Editor before pushing. No APK.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

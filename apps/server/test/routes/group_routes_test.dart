@@ -173,6 +173,32 @@ void main() {
       expect(response.statusCode, HttpStatus.serviceUnavailable);
     });
 
+    test('a player creates at most 5 leagues in 24 hours (M-20)', () async {
+      // A player of his own: the limit is counted per player, in-process.
+      const creator = AuthenticatedUser(
+        userId: UserId('5e5e5e5e-0000-4000-8000-000000000142'),
+        role: PlatformRole.user,
+      );
+      Future<Response> create() => create_route.onRequest(
+        wireContext(
+          root: rootFor().root,
+          principal: creator,
+          body: {'name': 'The Circle'},
+          method: HttpMethod.post,
+        ),
+      );
+
+      for (var i = 0; i < 5; i++) {
+        expect((await create()).statusCode, HttpStatus.ok);
+      }
+      final refused = await create();
+
+      expect(refused.statusCode, HttpStatus.conflict);
+      final body = await decodeBody(refused);
+      expect(body['code'], 'social.daily_limit');
+      expect(body['message'], contains('24'));
+    });
+
     test('a non-POST method is 405', () async {
       final setup = rootFor();
       final response = await create_route.onRequest(

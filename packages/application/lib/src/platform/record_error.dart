@@ -78,6 +78,12 @@ final class ErrorReport {
 /// ([ErrorFingerprint]), caps every field to what the table accepts, and
 /// hands it to `ops.record_error()`.
 ///
+/// Only a server error or a report from a signed-in player can alert the
+/// admins (audit M-19): `POST /errors/report` is open before sign-in, so a
+/// script with no account could invent a new error, or a new build, for
+/// every request and ring every admin's phone through the night. Such a
+/// report is still kept in the log.
+///
 /// Never throws; returns a typed [Result].
 final class RecordError {
   /// Creates the use-case over its collaborators.
@@ -94,6 +100,7 @@ final class RecordError {
 
   /// Tells the admins about an occurrence worth it (migration 0089); null
   /// in tests that do not provide one. Its failure never fails the record.
+  /// Never consulted for an app report from nobody signed in.
   final AlertAdminsOfError? _alerts;
 
   /// Where an error can come from.
@@ -135,6 +142,10 @@ final class RecordError {
     final identity = identify(report);
     final top = ErrorFingerprint.topFrames(stack);
     final where = top.isEmpty ? null : top.first;
+    final String? userId =
+        report.userId != null && _uuid.hasMatch(report.userId!)
+        ? report.userId
+        : null;
     return _recordAndAlert(
       ErrorOccurrence(
         fingerprint: identity.fingerprint,
@@ -149,9 +160,7 @@ final class RecordError {
         severity: report.severity,
         build: _build.hasMatch(report.build) ? report.build : unknownBuild,
         occurredAt: _clock.nowUtc(),
-        userId: report.userId != null && _uuid.hasMatch(report.userId!)
-            ? report.userId
-            : null,
+        userId: userId,
         requestId:
             report.requestId != null && _requestId.hasMatch(report.requestId!)
             ? report.requestId
@@ -163,15 +172,17 @@ final class RecordError {
         stack: stack,
         requestInputJson: _input(report.requestInput),
       ),
+      alert: report.source == 'server' || userId != null,
     );
   }
 
   Future<Result<RecordedError>> _recordAndAlert(
-    ErrorOccurrence occurrence,
-  ) async {
+    ErrorOccurrence occurrence, {
+    required bool alert,
+  }) async {
     final recorded = await _errors.record(occurrence);
     final alerts = _alerts;
-    if (alerts != null && recorded is Ok<RecordedError>) {
+    if (alert && alerts != null && recorded is Ok<RecordedError>) {
       try {
         await alerts(recorded: recorded.value, occurrence: occurrence);
       } on Object {

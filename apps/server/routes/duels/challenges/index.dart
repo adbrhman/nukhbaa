@@ -18,6 +18,10 @@ import 'package:shared/shared.dart';
 /// (a private challenge has capacity one). The caller must already have a
 /// prediction for the fixture and kickoff must be at least 30 minutes away.
 ///
+/// A private challenge reaches its target's phone, so a player sends the
+/// same player at most 3 in 24 hours, cancelled ones included (`409`
+/// `social.daily_limit`, audit M-20).
+///
 /// Answers `201` with the challenge as the caller sees it, read back by its
 /// code so the body carries the fixture and the share code. Every refusal is
 /// the use-case's or the database's, in the uniform error envelope.
@@ -65,6 +69,16 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
   final target = rawTarget as String?;
+  if (target != null) {
+    final reached = limitPlayerReach(
+      PlayerReach.privateChallenge,
+      principal,
+      target: target,
+    );
+    if (reached != null) {
+      return reached;
+    }
+  }
   final capacity =
       (rawCapacity as int?) ??
       (target == null ? DuelPolicy.defaultCapacity : 1);
@@ -79,6 +93,9 @@ Future<Response> onRequest(RequestContext context) async {
   );
   if (created is Err<DuelChallenge>) {
     return errorResponse(created.error);
+  }
+  if (target != null) {
+    countPlayerReach(PlayerReach.privateChallenge, principal, target: target);
   }
 
   final view = await root.getDuelChallengeByCode(

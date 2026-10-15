@@ -6,6 +6,7 @@ import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/group_dto_mapper.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// POST /groups — create a new private group (API ADR §2: command intent
@@ -26,6 +27,10 @@ import 'package:shared/shared.dart';
 /// domain error kind (a malformed/oversized name → `400`; an astronomically
 /// unlikely invite-code collision → `409` `group.invite_code_conflict`).
 ///
+/// A player creates at most 5 leagues in 24 hours (`409`
+/// `social.daily_limit`, audit M-20): each one can invite anyone found by
+/// name.
+///
 /// The `/groups` subtree is already behind `bearerAuth`
 /// (`routes/groups/_middleware.dart`), which provides the verified
 /// [AuthenticatedUser]; an unauthenticated request never reaches this handler.
@@ -36,6 +41,10 @@ Future<Response> onRequest(RequestContext context) async {
 
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
+  final limited = limitPlayerReach(PlayerReach.groupCreate, principal);
+  if (limited != null) {
+    return limited;
+  }
 
   final bodyResult = await readJsonObject(context.request);
   if (bodyResult is Err<Map<String, Object?>>) {
@@ -52,6 +61,9 @@ Future<Response> onRequest(RequestContext context) async {
     principal: principal,
     name: (name as Ok<String>).value,
   );
+  if (result is Ok<Group>) {
+    countPlayerReach(PlayerReach.groupCreate, principal);
+  }
 
   return switch (result) {
     // A newly-created group has exactly one member — its owner (decision #2).

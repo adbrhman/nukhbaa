@@ -53,6 +53,21 @@ final class RateLimiter {
 
   /// Forgets [key]'s window, so its next request starts a fresh count.
   void reset(String key) => _windows.remove(key);
+
+  /// How long until [key]'s window resets when [key] has used all of its
+  /// [limit], or `null` while it may go on. Counts nothing: a caller that
+  /// counts only what succeeded checks with this first and [hit]s after.
+  Duration? blockedFor(String key) {
+    final current = _windows[key];
+    if (current == null) {
+      return null;
+    }
+    final now = _clock();
+    if (!now.isBefore(current.endsAt) || current.count < limit) {
+      return null;
+    }
+    return current.endsAt.difference(now);
+  }
 }
 
 final class _Window {
@@ -148,6 +163,100 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
   };
   final wait = limiter.hit(principal.userId.value);
   return wait == null ? null : tooManyRequests(wait);
+}
+
+/// What one player does that rings another player's phone, counted per
+/// player over 24 hours (audit M-20).
+///
+/// A league's name is free text and used to be the title of the invitation
+/// push, so one account could send any words to anyone it found by name,
+/// as often as it liked: a new league for each push, the player-write
+/// limit (600 a minute) the only bound, and a private challenge cancelled
+/// and sent again. Only what succeeded is counted ([countPlayerReach]), so
+/// a refused attempt costs nothing; a refusal is an Arabic `409` the app
+/// shows as it is, not a `429` that reads "wait a minute".
+enum PlayerReach {
+  /// `POST /groups`: 5 new leagues in 24 hours.
+  groupCreate,
+
+  /// `POST /groups/{id}/invitations`: 30 invitations in 24 hours, enough
+  /// to bring a whole chat group into a league in one evening.
+  groupInvite,
+
+  /// A private `POST /duels/challenges`: 3 to the same player in 24 hours.
+  privateChallenge,
+}
+
+final RateLimiter _groupCreateLimiter = RateLimiter(
+  limit: 5,
+  window: const Duration(hours: 24),
+);
+
+final RateLimiter _groupInviteLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(hours: 24),
+);
+
+final RateLimiter _privateChallengeLimiter = RateLimiter(
+  limit: 3,
+  window: const Duration(hours: 24),
+);
+
+RateLimiter _reachLimiter(PlayerReach kind) => switch (kind) {
+  PlayerReach.groupCreate => _groupCreateLimiter,
+  PlayerReach.groupInvite => _groupInviteLimiter,
+  PlayerReach.privateChallenge => _privateChallengeLimiter,
+};
+
+// A user id is a UUID, which Postgres compares without case: an upper-case
+// copy of the same id must not open a second allowance.
+String _reachKey(AuthenticatedUser principal, String? target) => target == null
+    ? principal.userId.value
+    : '${principal.userId.value}|${target.trim().toLowerCase()}';
+
+/// The `409` when [principal] has done [kind] (to [target], for a private
+/// challenge) as often as 24 hours allow, or `null`. Counts nothing; admins
+/// and the service principal are never refused.
+Response? limitPlayerReach(
+  PlayerReach kind,
+  AuthenticatedUser principal, {
+  String? target,
+}) {
+  if (principal.role != PlatformRole.user) {
+    return null;
+  }
+  final wait = _reachLimiter(kind).blockedFor(_reachKey(principal, target));
+  if (wait == null) {
+    return null;
+  }
+  final String message = switch (kind) {
+    PlayerReach.groupCreate =>
+      'أنشأت 5 دوريات خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
+    PlayerReach.groupInvite =>
+      'أرسلت 30 دعوة خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
+    PlayerReach.privateChallenge =>
+      'تحدّيت هذا اللاعب 3 مرات خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
+  };
+  return Response.json(
+    statusCode: HttpStatus.conflict,
+    body: ErrorResponseDto(
+      code: 'social.daily_limit',
+      message: message,
+    ).toJson(),
+  );
+}
+
+/// Counts one [kind] that succeeded for [principal] (to [target], for a
+/// private challenge). Admins and the service principal are not counted.
+void countPlayerReach(
+  PlayerReach kind,
+  AuthenticatedUser principal, {
+  String? target,
+}) {
+  if (principal.role != PlatformRole.user) {
+    return;
+  }
+  _reachLimiter(kind).hit(_reachKey(principal, target));
 }
 
 /// The anonymous `/auth/*` attempts that are counted.
@@ -328,10 +437,24 @@ final RateLimiter errorReportAddressLimiter = RateLimiter(
   window: const Duration(hours: 1),
 );
 
+/// Reports from nobody signed in that one network address may send, on top
+/// of [errorReportAddressLimiter] (audit M-19). A script needs no account
+/// to send them, and each made-up error used to be a new row; 120 an hour
+/// is still more than a sign-in screen that crashes in a loop sends.
+final RateLimiter anonymousErrorReportAddressLimiter = RateLimiter(
+  limit: 120,
+  window: const Duration(hours: 1),
+);
+
 /// `429` when [device] or [address] has sent too many error reports; null
 /// otherwise. A report with neither counts against one shared anonymous
-/// key.
-Response? limitErrorReport({String? device, String? address}) {
+/// key. A report from nobody [signedIn] is also held to
+/// [anonymousErrorReportAddressLimiter].
+Response? limitErrorReport({
+  String? device,
+  String? address,
+  bool signedIn = false,
+}) {
   final deviceKey = device?.trim() ?? '';
   if (deviceKey.isNotEmpty) {
     final wait = errorReportDeviceLimiter.hit(deviceKey);
@@ -340,9 +463,14 @@ Response? limitErrorReport({String? device, String? address}) {
     }
   }
   final addressKey = address?.trim() ?? '';
-  final wait = errorReportAddressLimiter.hit(
-    addressKey.isEmpty ? 'anonymous' : addressKey,
-  );
+  final String key = addressKey.isEmpty ? 'anonymous' : addressKey;
+  if (!signedIn) {
+    final wait = anonymousErrorReportAddressLimiter.hit(key);
+    if (wait != null) {
+      return tooManyRequests(wait);
+    }
+  }
+  final wait = errorReportAddressLimiter.hit(key);
   return wait == null ? null : tooManyRequests(wait);
 }
 

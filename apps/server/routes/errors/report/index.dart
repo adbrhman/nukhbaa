@@ -18,8 +18,10 @@ import 'package:shared/shared.dart';
 /// or expired one is no reason to drop the report. Every key outside
 /// [ClientErrorReportDto.fields] is refused, the body is capped like every
 /// JSON body (64 KiB), and each device and address may send only so many
-/// (`limitErrorReport`). Secrets are removed by `RecordError` before
-/// anything is kept; the install id is used for the limit only.
+/// (`limitErrorReport`), a network address with nobody signed in fewer
+/// (audit M-19). Secrets are removed by `RecordError` before anything is
+/// kept; the install id is used for the limit only. Only a report with a
+/// valid token can ring an admin's phone (`RecordError`).
 ///
 /// Answers `200` with the problem code the error was kept under.
 Future<Response> onRequest(RequestContext context) async {
@@ -51,6 +53,7 @@ Future<Response> onRequest(RequestContext context) async {
   final limited = limitErrorReport(
     device: dto.installId ?? principal?.userId.value,
     address: clientAddress(context.request.headers),
+    signedIn: principal != null,
   );
   if (limited != null) {
     return limited;

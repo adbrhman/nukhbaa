@@ -193,7 +193,9 @@ void main() {
       final Notification told = (listed as Ok<List<Notification>>).value.single;
       expect(told.kind, NotificationKind.groupInvited);
       expect(told.subject.groupId, const GroupId(_group));
-      expect(sender.titles.single, contains('The Circle'));
+      // The owner's free text never reaches the lock screen (M-20).
+      expect(sender.titles.single, InviteToGroup.pushTitle);
+      expect(sender.titles.single, isNot(contains('The Circle')));
       expect(sender.links.single, PushLink.inbox);
 
       expect(await ownerInvites(_friend), const Result<bool>.ok(false));
