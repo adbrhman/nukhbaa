@@ -190,7 +190,7 @@ class _StateCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.shield_rounded, color: t.gold, size: 28),
+              Icon(Icons.shield_rounded, color: t.goldAccent, size: 28),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(

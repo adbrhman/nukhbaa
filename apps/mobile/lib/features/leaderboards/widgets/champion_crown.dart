@@ -25,10 +25,11 @@ class ChampionCrown extends StatelessWidget {
   /// Read out by a screen reader; null leaves the crown decorative.
   final String? semanticLabel;
 
-  /// The top of the crown's gradient; null for the theme's gold, lightened.
+  /// The top of the crown's gradient; null for the theme's medal gold
+  /// (`goldAccent`), lightened.
   final Color? light;
 
-  /// The bottom of the crown's gradient; null for the theme's gold.
+  /// The bottom of the crown's gradient; null for the theme's medal gold.
   final Color? dark;
 
   @override
@@ -37,8 +38,8 @@ class ChampionCrown extends StatelessWidget {
     final Widget crown = CustomPaint(
       size: Size(size, size * 0.75),
       painter: _CrownPainter(
-        light: light ?? Color.lerp(t.gold, Colors.white, 0.35)!,
-        dark: dark ?? t.gold,
+        light: light ?? Color.lerp(t.goldAccent, Colors.white, 0.35)!,
+        dark: dark ?? t.goldAccent,
       ),
     );
     final String? label = semanticLabel;

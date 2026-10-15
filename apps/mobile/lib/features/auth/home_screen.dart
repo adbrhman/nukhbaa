@@ -494,7 +494,8 @@ class _PendingPredictionsCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Icon(
                 Icons.emoji_events_rounded,
-                color: tokens.gold,
+                // goldAccent: the text gold reads olive in the light theme.
+                color: tokens.goldAccent,
                 size: AppSizes.iconXl,
               ),
             ],

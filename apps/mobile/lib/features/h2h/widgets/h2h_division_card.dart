@@ -24,8 +24,10 @@ class H2hDivisionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final int level = league.division ?? 4;
+    // Icon, rim and wash only, never text: the medal gold, not the text gold
+    // that reads olive in the light theme.
     final Color accent = switch (level) {
-      1 => t.gold,
+      1 => t.goldAccent,
       2 => t.silver,
       3 => t.bronze,
       _ => t.primary,

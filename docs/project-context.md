@@ -5172,11 +5172,26 @@ Owner's request: no screen or colour defect in either theme. Report:
   themes) and `test/audit/text_color_tokens_test.dart` (reads all of `lib/`
   and fails on a `TextStyle`, `TextSpan` or `copyWith` whose `color:` names
   a fill token; a self-test proves it catches one and passes the right one).
-- Next: script 77 extends the screen survey to the 15 screens it does not
-  reach (CA-09); 78 on fix what it measures, with CA-08.
+- Next: script 78 extends the screen survey to the 15 screens it does not
+  reach (CA-09); 79 on fix what it measures, with CA-08.
 
 No migration, no server change; the web on deploy, Android with the next
 APK.
+
+### Colour audit: the owner's screenshots (script 77, 2026-10-15)
+
+- CA-10: the selected double button's bolt was gold on blue -- 1.06:1 in
+  the light theme, 2.79:1 in the dark, under the 3:1 an icon needs; it is
+  the label's white now (6.7:1 and 4.5:1). Test:
+  `double_button_contrast_test.dart`, through the real matches screen in
+  both themes (bolt, label, rim).
+- CA-11: icons and rims took the text gold, which reads olive in the light
+  theme; the home trophy, the H2H shield and division accent, the champion
+  crown and the double button's rim take `goldAccent` (3:1 or better on
+  every light surface; the same gold in the dark theme). Test: a medal-gold
+  check in `app_theme_components_contrast_test.dart`.
+
+No migration; the web on deploy, Android with the next APK.
 
 ## 3. Version-Verification Log
 

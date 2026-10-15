@@ -1419,7 +1419,9 @@ class _RevealPredictionsButton extends StatelessWidget {
 /// The "make it double" toggle: a quiet outline by default (decided
 /// 2026-10-07: a solid blue drew the eye before the teams), and once
 /// selected a deeper blue gradient with a gold rim, a
-/// filled gold bolt and a soft glow. The gradient runs from the action blue
+/// filled white bolt and a soft glow. The bolt was gold until 2026-10-15:
+/// 1.1:1 on the light theme's blue, 2.8:1 on the dark one, under the 3:1 an
+/// icon needs; it now takes the label's white (6.7:1 and 4.5:1). The gradient runs from the action blue
 /// DOWN, never up to the brighter blue: white on `primaryLight` is 3.6:1,
 /// under WCAG AA for a 12px label. The state is never colour-alone -- the
 /// rim and the icon change with it (accessibility). Reuses the same key the
@@ -1493,7 +1495,9 @@ class _DoubleGlowButton extends StatelessWidget {
                           )
                         : null,
                     border: Border.all(
-                      color: selected ? tokens.gold : tokens.controlBorder,
+                      color: selected
+                          ? tokens.goldAccent
+                          : tokens.controlBorder,
                       width: selected ? 1.5 : AppStroke.hairline,
                     ),
                     boxShadow: selected
@@ -1513,7 +1517,9 @@ class _DoubleGlowButton extends StatelessWidget {
                       Icon(
                         selected ? Icons.bolt_rounded : Icons.bolt_outlined,
                         size: AppSizes.iconSm,
-                        color: selected ? tokens.gold : tokens.textSecondary,
+                        color: selected
+                            ? tokens.onPrimary
+                            : tokens.textSecondary,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Flexible(

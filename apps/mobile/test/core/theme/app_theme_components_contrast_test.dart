@@ -158,6 +158,19 @@ void main() {
         }
       });
 
+      test('the medal gold of icons and rims reaches 3:1 on every surface', () {
+        // The trophy, the H2H shield, the crown, the double button's rim
+        // (script 77): goldAccent, not the text gold that reads olive in
+        // the light theme.
+        for (final MapEntry<String, Color> under in surfaces.entries) {
+          expect(
+            _contrast(t.goldAccent, under.value),
+            greaterThanOrEqualTo(3),
+            reason: '$name: goldAccent on ${under.key}',
+          );
+        }
+      });
+
       test('a selected list tile, the snack bar action, today, links', () {
         expectAA(theme.listTileTheme.selectedColor!, t.surface, 'tile');
         expectAA(
