@@ -75,7 +75,7 @@ void main() {
       find.byKey(const Key('admin.frameStats.slow')),
     );
     expect(lead.data, '${_iso('2.5%')} إطارات بطيئة');
-    expect(lead.style?.color, AppTokens.dark.success);
+    expect(lead.style?.color, AppTokens.dark.successText);
     expect(
       find.byKey(const Key('admin.frameStats.build.new1234')),
       findsOneWidget,
@@ -142,7 +142,7 @@ void main() {
     );
     expect(
       androidShare.style?.color,
-      AppTokens.dark.error,
+      AppTokens.dark.errorText,
       reason: '800 of 5000 frames is 16%: janky, on the phone alone',
     );
     expect(

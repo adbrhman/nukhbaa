@@ -5368,6 +5368,23 @@ calendar's days were 44 x 44 targets (60 of them), under Android's 48.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: colours that reach text through a variable (script 83, 2026-10-15)
+
+- CA-08: a fill colour named in a `Color` variable or arrow function and
+  then drawn as text -- the admin's invitation state (`stateColor`), the
+  frame verdict (`verdict`, three places) and the place inside the medal
+  ring on my seasons and the season record. The state and the verdict take
+  `successText` / `errorText`; the place is `gold` for first,
+  `textPrimary` for second and third and `textMuted` after, while the
+  ring keeps the medal colour.
+- Defence: `test/audit/text_color_variables_test.dart` reads all of `lib/`
+  and fails where a `TextStyle`, `TextSpan` or `copyWith` takes its colour
+  from a `Color` variable or arrow function whose value names a fill
+  token; a self-test proves it follows both and passes an icon.
+- `admin_frame_stats_card_test.dart` expects the text shades.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

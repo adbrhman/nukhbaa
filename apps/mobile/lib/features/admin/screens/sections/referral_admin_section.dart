@@ -310,10 +310,12 @@ class _InvitationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final ReferralInvitationDto i = invitation;
+    // Text shades: the fill green and red missed 4.5:1 on the admin's
+    // cards (colour audit, CA-08).
     final Color stateColor = switch (i.state) {
-      'paid' => tokens.success,
+      'paid' => tokens.successText,
       'held' => tokens.gold,
-      'revoked' || 'rejected' => tokens.error,
+      'revoked' || 'rejected' => tokens.errorText,
       _ => tokens.textSecondary,
     };
     final List<String> lines = <String>[

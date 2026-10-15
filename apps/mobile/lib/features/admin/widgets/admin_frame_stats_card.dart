@@ -91,9 +91,10 @@ class _Body extends StatelessWidget {
         style: muted,
       );
     }
+    // Text shades: the verdict is a number read on the card (CA-08).
     Color verdict(double slow) => slow < _smoothBelow
-        ? t.success
-        : (slow >= _jankyFrom ? t.error : t.textPrimary);
+        ? t.successText
+        : (slow >= _jankyFrom ? t.errorText : t.textPrimary);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

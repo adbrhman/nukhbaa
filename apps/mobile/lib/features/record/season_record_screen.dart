@@ -63,6 +63,13 @@ class SeasonRecordRow extends StatelessWidget {
       3 => t.bronze,
       _ => t.textMuted,
     };
+    // The medal colour rims the ring; the place inside is read as text, in
+    // a text colour (colour audit, CA-08).
+    final Color place = switch (record.rank) {
+      1 => t.gold,
+      2 || 3 => t.textPrimary,
+      _ => t.textMuted,
+    };
 
     // The place grows with the text, so a two-digit place still fits its
     // ring at twice the size.
@@ -92,7 +99,7 @@ class SeasonRecordRow extends StatelessWidget {
             ),
             child: Text(
               '#${record.rank}',
-              style: context.text.labelMedium?.copyWith(color: accent),
+              style: context.text.labelMedium?.copyWith(color: place),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
