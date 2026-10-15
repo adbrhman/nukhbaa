@@ -16,6 +16,10 @@ import 'package:shared/shared.dart';
 /// once per reminder sweep, and minting a token per message would be a
 /// self-inflicted rate limit.
 ///
+/// Messages go out [parallelMessages] at a time (audit M-32): one after the
+/// other, a broadcast or a popular match's winners kept the request that
+/// scored it waiting past the app's 35-second timeout.
+///
 /// Never throws: a transport failure is a typed [Result], and a per-token
 /// rejection is reported through the returned dead-token list.
 final class FcmPushSender implements PushSender {
@@ -97,7 +101,7 @@ final class FcmPushSender implements PushSender {
     var delivered = 0;
     var failed = 0;
 
-    for (final token in tokens) {
+    Future<_Outcome> sendOne(String token) async {
       try {
         final response = await _http
             .post(
@@ -117,20 +121,38 @@ final class FcmPushSender implements PushSender {
             )
             .timeout(_requestTimeout);
         if (response.statusCode == 200) {
-          delivered++;
-          continue;
+          return _Outcome.delivered;
         }
         if (_isPermanentlyInvalid(response.statusCode, response.body)) {
-          dead.add(token);
-          continue;
+          return _Outcome.dead;
         }
         // Anything else (429, 5xx) is transient: the token stays --
         // retiring it here would unsubscribe a real user over a blip.
-        failed++;
+        return _Outcome.failed;
       } on Object {
         // A network failure on one message must not abandon the rest.
-        failed++;
-        continue;
+        return _Outcome.failed;
+      }
+    }
+
+    for (var start = 0; start < tokens.length; start += parallelMessages) {
+      final List<String> batch = tokens.sublist(
+        start,
+        start + parallelMessages > tokens.length
+            ? tokens.length
+            : start + parallelMessages,
+      );
+      final List<_Outcome> outcomes = await Future.wait(batch.map(sendOne));
+      // In token order, so the dead list reads as the tokens were given.
+      for (var i = 0; i < batch.length; i++) {
+        switch (outcomes[i]) {
+          case _Outcome.delivered:
+            delivered++;
+          case _Outcome.dead:
+            dead.add(batch[i]);
+          case _Outcome.failed:
+            failed++;
+        }
       }
     }
 
@@ -149,6 +171,9 @@ final class FcmPushSender implements PushSender {
     }
     return Result.ok(dead);
   }
+
+  /// Messages sent to FCM at the same time.
+  static const int parallelMessages = 10;
 
   // 404 UNREGISTERED = the app was uninstalled or the token rotated.
   // 400 INVALID_ARGUMENT on the token field = a malformed token.
@@ -246,6 +271,9 @@ final class FcmPushSender implements PushSender {
     }
   }
 }
+
+/// What became of one message.
+enum _Outcome { delivered, dead, failed }
 
 /// The [PushSender] used when no service account is configured.
 ///

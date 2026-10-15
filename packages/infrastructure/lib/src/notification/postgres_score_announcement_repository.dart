@@ -33,6 +33,25 @@ WHERE p.id::text = ANY(string_to_array(@participant_ids, ','))
 ORDER BY p.id
 ''';
 
+  // Every "you called it" notification of the fixture whose recipient is
+  // not the user of a participant still calling it exactly (audit L-27).
+  // An empty keep list is an empty array, so every such row goes.
+  static const String _withdrawSql = '''
+WITH gone AS (
+  DELETE FROM notification.notifications n
+  WHERE n.kind = 'fixture_scored'
+    AND n.subject_ref = @subject_ref
+    AND NOT EXISTS (
+      SELECT 1
+      FROM competition.participants p
+      WHERE p.id::text = ANY(string_to_array(@keep_ids, ','))
+        AND p.user_id = n.recipient_id
+    )
+  RETURNING 1
+)
+SELECT count(*)::int AS withdrawn FROM gone
+''';
+
   static const String _labelSql = '''
 SELECT home_team, away_team
 FROM competition.fixture_schedules
@@ -96,6 +115,28 @@ WHERE fixture_id = @fixture_id
       );
     }
     return Result.ok(List<ScoreNoticeTarget>.unmodifiable(targets));
+  }
+
+  @override
+  Future<Result<int>> withdrawExactNotices({
+    required FixtureRef fixture,
+    required List<ParticipantId> keep,
+  }) async {
+    final result = await _connection.query(
+      _withdrawSql,
+      parameters: {
+        'subject_ref': NotificationSubject.fixtureScored(
+          fixture: fixture,
+        ).dedupeRef,
+        'keep_ids': [for (final id in keep) id.value].join(','),
+      },
+    );
+    return switch (result) {
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
+      Ok<List<Map<String, dynamic>>>(:final value) => Result.ok(
+        value.isEmpty ? 0 : (value.first['withdrawn'] as int? ?? 0),
+      ),
+    };
   }
 
   @override

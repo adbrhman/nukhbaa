@@ -84,6 +84,30 @@ void main() {
     });
   });
 
+  group('PostgresScoreAnnouncementRepository.withdrawExactNotices (L-27)', () {
+    test('deletes the exact-hit notices of the fixture and answers how '
+        'many', () async {
+      final connection = _FakeConnection(
+        const Result.ok([
+          {'withdrawn': 2},
+        ]),
+      );
+
+      final result = await PostgresScoreAnnouncementRepository(connection)
+          .withdrawExactNotices(
+            fixture: (FixtureRef.tryParse(_pA) as Ok<FixtureRef>).value,
+            keep: [(ParticipantId.tryParse(_pB) as Ok<ParticipantId>).value],
+          );
+
+      expect((result as Ok<int>).value, 2);
+      expect(
+        connection.sqls.single,
+        contains('DELETE FROM notification.notifications'),
+      );
+      expect(connection.sqls.single, contains("n.kind = 'fixture_scored'"));
+    });
+  });
+
   group('PostgresAnnouncementRepository.audience', () {
     test('answers each recipient with the clock its user reported', () async {
       final connection = _FakeConnection(

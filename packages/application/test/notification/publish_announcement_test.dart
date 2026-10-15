@@ -162,6 +162,54 @@ void main() {
       expect(sender.sent.single, ['t1']);
     });
 
+    test('the same request id sent again reaches no inbox and no phone '
+        'twice (M-14)', () async {
+      const requestId = '66666666-6666-4666-8666-666666666666';
+      final announcements = _FakeAnnouncements([
+        AnnouncementRecipient(userId: UserId(uuidC), tokens: const ['t1']),
+      ]);
+      final notifications = InMemoryNotificationRepository();
+      final sender = _RecordingSender();
+      final publish = build(
+        announcements: announcements,
+        notifications: notifications,
+        sender: sender,
+      );
+
+      Future<Result<int>> send() => publish(
+        principal: principalUser(userId: uuidB, role: PlatformRole.admin),
+        title: 'تنبيه',
+        body: 'مباريات الجمعة تبدأ مبكرًا',
+        requestId: requestId,
+      );
+      final first = await send();
+      final again = await send();
+
+      expect((first as Ok<int>).value, 1);
+      expect((again as Ok<int>).value, 0);
+      expect(announcements.saved.first.id.value, requestId);
+      expect(notifications.countFor(uuidC), 1);
+      expect(sender.sent, hasLength(1));
+    });
+
+    test('a request id that is not a UUID is refused', () async {
+      final announcements = _FakeAnnouncements([]);
+      final result =
+          await build(
+            announcements: announcements,
+            notifications: InMemoryNotificationRepository(),
+            sender: _RecordingSender(),
+          )(
+            principal: principalUser(userId: uuidB, role: PlatformRole.admin),
+            title: 'تنبيه',
+            body: 'نص',
+            requestId: 'not-a-uuid',
+          );
+
+      expect(result, isA<Err<int>>());
+      expect(announcements.saved, isEmpty);
+    });
+
     test('a recipient in their quiet hours gets the push at 08:00', () async {
       // FakeClock is 12:00 UTC: 15:00 in Riyadh, 23:00 at UTC+11.
       final announcements = _FakeAnnouncements([

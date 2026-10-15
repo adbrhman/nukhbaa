@@ -35,4 +35,30 @@ void main() {
       expect(runs, 2);
     });
   });
+
+  // Last in this file: once drained, no sweep starts again in this process.
+  group('drainSweeps (M-28)', () {
+    test('waits for the running sweep, then starts none', () async {
+      var runs = 0;
+      final gate = Completer<void>();
+      final run = singleFlight<int>((_) async {
+        runs++;
+        await gate.future;
+      });
+
+      final first = run(1);
+      var drained = false;
+      final drain = drainSweeps().then((_) => drained = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(drained, isFalse, reason: 'a sweep is still running');
+
+      gate.complete();
+      await first;
+      await drain;
+      expect(drained, isTrue);
+
+      await run(2);
+      expect(runs, 1, reason: 'no sweep starts once the server is stopping');
+    });
+  });
 }

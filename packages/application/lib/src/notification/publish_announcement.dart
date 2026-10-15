@@ -22,7 +22,11 @@ import 'package:shared/shared.dart';
 ///    on the notification rows — Notifications decision #1);
 /// 3. fan out one idempotent [CreateNotification] per recipient, keyed on the
 ///    announcement id, so a retried publish of the SAME announcement never
-///    doubles a user's inbox;
+///    doubles a user's inbox. The id is the admin's own request id when the
+///    app sends one (audit M-14): a "send" pressed again after a timeout,
+///    while the first publish was still running, is the same announcement
+///    and reaches nobody twice. Without one, each call is a new
+///    announcement, as before;
 /// 4. push to every device of the users who actually received a new row --
 ///    except those in their quiet hours ([QuietHours], P3-2c), whose push is
 ///    queued for 08:00 on their own clock instead of ringing in the night.
@@ -55,18 +59,22 @@ final class PublishAnnouncement {
   final Clock _clock;
   final NotificationQueue _queue;
 
-  /// Publishes [title]/[body] on behalf of admin [principal].
+  /// Publishes [title]/[body] on behalf of admin [principal], as the
+  /// announcement [requestId] when the app gave one.
   Future<Result<int>> call({
     required AuthenticatedUser principal,
     required String title,
     required String body,
+    String? requestId,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
 
-    final idResult = AnnouncementId.tryParse(_idGenerator.newUuid());
+    final idResult = AnnouncementId.tryParse(
+      requestId ?? _idGenerator.newUuid(),
+    );
     if (idResult is Err<AnnouncementId>) {
       return Result.err(idResult.error);
     }

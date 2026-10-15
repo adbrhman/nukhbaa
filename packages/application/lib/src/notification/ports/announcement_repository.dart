@@ -37,8 +37,9 @@ final class AnnouncementRecipient {
 /// Tier-3 throughout: a failure here is confined to the announcement
 /// use-case and never reaches a Tier-1 core operation.
 abstract interface class AnnouncementRepository {
-  /// Persists a newly published [announcement]. The id is generated
-  /// server-side, so a conflict is a genuine failure, not an idempotent skip.
+  /// Persists a newly published [announcement]. Saving an id already stored
+  /// changes nothing and is not an error: it is the same publish sent again
+  /// with the admin's request id (audit M-14).
   Future<Result<void>> save(Announcement announcement);
 
   /// Reads the announcements named by [ids], in any order; unknown ids are

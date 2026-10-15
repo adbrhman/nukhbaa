@@ -4961,6 +4961,27 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   limit here, so a restart forgets the counts. Left for batch 151: the
   two mute switches (league invitations, challenges) and a block list.
   NOTE: apply 0112 in the SQL Editor before pushing. No APK.
+- **Batch 143 (notifications, the server side, 2026-10-15, audit M-14
+  server, M-32, L-27, M-28 rest)**: M-14 -- `POST /admin/announcements`
+  takes an optional `request_id` (a UUID the app makes once per message)
+  that becomes the announcement id; the save is `ON CONFLICT (id) DO
+  NOTHING`, so "send" pressed again after a timeout, even while the first
+  publish still runs, reaches no inbox and no phone twice and answers the
+  inboxes it added. M-32 -- `FcmPushSender` sends `parallelMessages` (10)
+  at a time instead of one after the other, the dead list still in token
+  order; `NotifyFixtureWinners` makes one send per message (an exact hit,
+  a doubled one) with all the winners' devices and one queue call for the
+  quiet ones, instead of a send per winner inside the request that scored
+  the fixture. L-27 -- before announcing, `withdrawExactNotices` deletes
+  the fixture's `fixture_scored` notification of every user who is no
+  longer an exact caller (all of them when none is left); the SQL test
+  `score_notice_withdraw_query_test.sql` copies the adapter's statement.
+  M-28 -- on SIGTERM the server stops taking connections, starts no sweep
+  (`singleFlight` now knows the running ones, `drainSweeps`), lets the
+  requests and sweeps in progress finish for 20 seconds at most, closes
+  the pool and exits. The app's half of M-14 (a confirmation with the
+  count, sending `request_id`, the button held until the answer) and L-04,
+  L-05, L-50 are batch 152. No migration, no APK.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

@@ -26,8 +26,19 @@ import 'package:shared/shared.dart';
 /// **Quiet hours (P3-2c):** a winner whose own clock reads 23:00 to 08:00
 /// ([QuietHours]) still gets the in-app notification at once, but the push is
 /// queued for 08:00 there instead of ringing in the night. The queue is
-/// best effort like the send: if it cannot take the push, that push is lost
-/// and the fixture's other winners are unaffected.
+/// best effort like the send: if it cannot take the pushes, they are lost.
+///
+/// **One send per message (audit M-32):** every winner of a fixture reads
+/// one of two messages (an exact hit, or a doubled one), so the pushes go
+/// out as at most two sends to all their devices together, which the sender
+/// delivers ten at a time -- not one send per winner after the other, which
+/// kept the admin who recorded a popular result waiting past the app's
+/// timeout.
+///
+/// **A correction withdraws (audit L-27):** before anything is announced,
+/// the notification of everyone who is no longer an exact caller of this
+/// fixture is removed from their inbox. The push already rang; the inbox no
+/// longer says "+3" while the points are 0.
 ///
 /// Returns the number of users pushed to, or queued to be pushed to.
 final class NotifyFixtureWinners {
@@ -71,6 +82,12 @@ final class NotifyFixtureWinners {
         winners[score.participantId] = score;
       }
     }
+    // Best effort: a failure leaves an outdated notification, never fails the
+    // scoring.
+    await _announcements.withdrawExactNotices(
+      fixture: fixture,
+      keep: winners.keys.toList(),
+    );
     if (winners.isEmpty) {
       return const Result.ok(0);
     }
@@ -92,7 +109,10 @@ final class NotifyFixtureWinners {
     final String? label = labelResult is Ok<String?> ? labelResult.value : null;
 
     final DateTime now = _clock.nowUtc();
-    var pushed = 0;
+    // Devices and winners per (title, body); the queued pushes in one list.
+    final tokensByMessage = <(String, String), List<String>>{};
+    final winnersByMessage = <(String, String), int>{};
+    final deferred = <PushToQueue>[];
     for (final target in targets) {
       final score = winners[target.participantId];
       if (score == null) {
@@ -119,7 +139,7 @@ final class NotifyFixtureWinners {
       final String body = _body(points: score.points, label: label);
 
       if (QuietHours.covers(now, utcOffsetMinutes: target.utcOffsetMinutes)) {
-        final queued = await _queue.enqueue(<PushToQueue>[
+        deferred.add(
           PushToQueue(
             id: _idGenerator.newUuid(),
             userId: target.userId,
@@ -130,21 +150,32 @@ final class NotifyFixtureWinners {
               utcOffsetMinutes: target.utcOffsetMinutes,
             ),
           ),
-        ]);
-        if (queued is Ok<void>) {
-          pushed++;
-        }
+        );
         continue;
       }
 
+      final message = (title, body);
+      (tokensByMessage[message] ??= <String>[]).addAll(target.tokens);
+      winnersByMessage[message] = (winnersByMessage[message] ?? 0) + 1;
+    }
+
+    var pushed = 0;
+    if (deferred.isNotEmpty) {
+      final queued = await _queue.enqueue(deferred);
+      if (queued is Ok<void>) {
+        pushed += deferred.length;
+      }
+    }
+    for (final MapEntry<(String, String), List<String>> entry
+        in tokensByMessage.entries) {
       final sent = await _sender.send(
-        tokens: target.tokens,
-        title: title,
-        body: body,
+        tokens: entry.value,
+        title: entry.key.$1,
+        body: entry.key.$2,
         link: PushLink.inbox,
       );
       if (sent is Ok<List<String>>) {
-        pushed++;
+        pushed += winnersByMessage[entry.key] ?? 0;
       }
     }
 

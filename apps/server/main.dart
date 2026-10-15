@@ -15,6 +15,7 @@ import 'package:server/scheduler/referral_qualification_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
 import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
 
@@ -75,5 +76,35 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     print('schedulers: disabled by $schedulersEnvKey=off');
   }
 
-  return serve(handler, ip, port);
+  final server = await serve(handler, ip, port);
+  _stopOnSigterm(server, root);
+  return server;
+}
+
+/// Stops cleanly when the platform stops the container (audit M-28).
+///
+/// A redeploy sends SIGTERM and kills the process a while later. The server
+/// now stops taking connections, lets the requests and sweeps in progress
+/// finish (20 seconds at most), closes the database pool and exits, instead
+/// of being cut wherever it was.
+void _stopOnSigterm(HttpServer server, CompositionRoot root) {
+  var stopping = false;
+  ProcessSignal.sigterm.watch().listen((_) async {
+    if (stopping) {
+      return;
+    }
+    stopping = true;
+    // ignore: avoid_print
+    print('SIGTERM: finishing requests and sweeps, then stopping');
+    try {
+      await Future.wait<void>(<Future<void>>[
+        server.close(),
+        drainSweeps(),
+      ]).timeout(const Duration(seconds: 20), onTimeout: () => const <void>[]);
+      await root.dispose();
+    } on Object {
+      // Stopping anyway: the platform kills the process soon after.
+    }
+    exit(0);
+  });
 }

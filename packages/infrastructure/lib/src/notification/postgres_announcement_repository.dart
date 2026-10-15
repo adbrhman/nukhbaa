@@ -15,9 +15,12 @@ final class PostgresAnnouncementRepository implements AnnouncementRepository {
 
   final PostgresConnection _connection;
 
+  // The same id again is the same publish sent again (audit M-14): the
+  // first text stays, and the fan-out after it dedupes per inbox.
   static const String _saveSql = '''
 INSERT INTO notification.announcements (id, title, body, author_id, created_at)
 VALUES (@id, @title, @body, @author_id, @created_at)
+ON CONFLICT (id) DO NOTHING
 ''';
 
   // The ids arrive as one comma-separated string rather than an array

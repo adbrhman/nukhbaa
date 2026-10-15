@@ -41,4 +41,13 @@ abstract interface class ScoreAnnouncementRepository {
   /// A human label for [fixture] ("Home x Away"), or `Ok(null)` when the
   /// fixture has no registered schedule.
   Future<Result<String?>> matchLabel(FixtureRef fixture);
+
+  /// Removes [fixture]'s "you called it exactly" notification from the inbox
+  /// of every user who is not one of [keep] (audit L-27): a corrected result
+  /// that took the exact hit away must not leave "+3" in the inbox while the
+  /// points are 0. Answers how many were removed.
+  Future<Result<int>> withdrawExactNotices({
+    required FixtureRef fixture,
+    required List<ParticipantId> keep,
+  });
 }

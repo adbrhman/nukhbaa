@@ -6,18 +6,37 @@ import 'package:test/test.dart';
 import 'fakes.dart';
 
 final class _FakeAnnouncements implements ScoreAnnouncementRepository {
-  _FakeAnnouncements({this.utcOffsetMinutes});
+  _FakeAnnouncements({this.utcOffsetMinutes, this.targets});
 
   /// The clock the fake target reports; null: it never reported one.
   final int? utcOffsetMinutes;
 
+  /// The targets to answer with; null: the one target below.
+  final List<ScoreNoticeTarget>? targets;
+
   List<ParticipantId> asked = const <ParticipantId>[];
+
+  /// The keep list of every withdrawal, in order.
+  final List<List<ParticipantId>> withdrawals = <List<ParticipantId>>[];
+
+  @override
+  Future<Result<int>> withdrawExactNotices({
+    required FixtureRef fixture,
+    required List<ParticipantId> keep,
+  }) async {
+    withdrawals.add(keep);
+    return const Result.ok(0);
+  }
 
   @override
   Future<Result<List<ScoreNoticeTarget>>> targetsForParticipants(
     List<ParticipantId> participantIds,
   ) async {
     asked = participantIds;
+    final given = targets;
+    if (given != null) {
+      return Result.ok(given);
+    }
     return Result.ok(<ScoreNoticeTarget>[
       ScoreNoticeTarget(
         participantId:
@@ -37,6 +56,7 @@ final class _FakeAnnouncements implements ScoreAnnouncementRepository {
 final class _FakeSender implements PushSender {
   final List<String> titles = <String>[];
   final List<String> bodies = <String>[];
+  final List<List<String>> tokens = <List<String>>[];
 
   @override
   Future<Result<List<String>>> send({
@@ -47,6 +67,7 @@ final class _FakeSender implements PushSender {
   }) async {
     titles.add(title);
     bodies.add(body);
+    this.tokens.add(tokens);
     return const Result.ok(<String>[]);
   }
 }
@@ -202,6 +223,95 @@ void main() {
       expect(notifications.countFor(uuidD), 1);
     },
   );
+
+  test('winners reading the same message share one send (M-32)', () async {
+    ScoreNoticeTarget target(String participant, String user, String token) =>
+        ScoreNoticeTarget(
+          participantId:
+              (ParticipantId.tryParse(participant) as Ok<ParticipantId>).value,
+          userId: (UserId.tryParse(user) as Ok<UserId>).value,
+          tokens: <String>[token],
+        );
+    final many = NotifyFixtureWinners(
+      announcements: _FakeAnnouncements(
+        targets: <ScoreNoticeTarget>[
+          target(uuidB, uuidD, 'token-b'),
+          target(uuidC, uuidA, 'token-c'),
+        ],
+      ),
+      sender: sender,
+      create: CreateNotification(
+        notifications: notifications,
+        idGenerator: FakeIdGenerator(<String>[
+          '55555555-5555-4555-8555-000000000004',
+          '55555555-5555-4555-8555-000000000005',
+        ]),
+        clock: FakeClock(DateTime.utc(2026, 9, 12, 18)),
+      ),
+      queue: queue,
+      idGenerator: FakeIdGenerator(<String>[uuidA]),
+      clock: FakeClock(DateTime.utc(2026, 9, 12, 18)),
+    );
+
+    final r = await many(
+      fixture: fixture(),
+      scores: <ParticipantFixtureScore>[
+        _score(
+          participantId: uuidB,
+          grade: FixtureScoreGrade.exactScoreline,
+          points: 3,
+        ),
+        _score(
+          participantId: uuidC,
+          grade: FixtureScoreGrade.exactScoreline,
+          points: 3,
+        ),
+      ],
+    );
+
+    expect((r as Ok<int>).value, 2);
+    expect(sender.titles, hasLength(1), reason: 'one send for one message');
+    expect(
+      sender.tokens.single,
+      unorderedEquals(<String>['token-b', 'token-c']),
+    );
+  });
+
+  test('a correction withdraws the notice of whoever no longer called it '
+      '(L-27)', () async {
+    final r = await useCase(
+      fixture: fixture(),
+      scores: <ParticipantFixtureScore>[
+        _score(
+          participantId: uuidB,
+          grade: FixtureScoreGrade.correctOutcome,
+          points: 0,
+        ),
+      ],
+    );
+
+    expect((r as Ok<int>).value, 0);
+    expect(announcements.withdrawals.single, isEmpty);
+    expect(sender.titles, isEmpty);
+  });
+
+  test('the exact callers are kept when the notices are withdrawn', () async {
+    await useCase(
+      fixture: fixture(),
+      scores: <ParticipantFixtureScore>[
+        _score(
+          participantId: uuidB,
+          grade: FixtureScoreGrade.exactScoreline,
+          points: 3,
+        ),
+      ],
+    );
+
+    expect(
+      announcements.withdrawals.single.map((ParticipantId p) => p.value),
+      <String>[uuidB],
+    );
+  });
 
   test('nothing to announce is not an error', () async {
     final r = await useCase(

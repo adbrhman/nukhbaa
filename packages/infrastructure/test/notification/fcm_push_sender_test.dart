@@ -201,4 +201,38 @@ void main() {
       expect((result as Ok<List<String>>).value, <String>['a', 'b']);
     });
   });
+
+  group('FcmPushSender sends ten at a time (M-32)', () {
+    test('every token is tried, never more than ten at once', () async {
+      var inFlight = 0;
+      var most = 0;
+      var sends = 0;
+      final sender = FcmPushSender(
+        serviceAccount: _account(),
+        httpClient: MockClient((request) async {
+          if (_isTokenEndpoint(request)) {
+            return _tokenResponse();
+          }
+          sends++;
+          inFlight++;
+          if (inFlight > most) {
+            most = inFlight;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          inFlight--;
+          return http.Response('{}', 200);
+        }),
+      );
+
+      final result = await sender.send(
+        tokens: <String>[for (var i = 0; i < 25; i++) 'token-$i'],
+        title: 't',
+        body: 'b',
+      );
+
+      expect(result, isA<Ok<List<String>>>());
+      expect(sends, 25);
+      expect(most, FcmPushSender.parallelMessages);
+    });
+  });
 }

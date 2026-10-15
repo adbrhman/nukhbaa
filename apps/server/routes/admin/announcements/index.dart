@@ -22,9 +22,11 @@ import 'package:shared/shared.dart';
 /// over-long value is a `400` validation failure from the domain
 /// (`notification.announcement_*`), never a silent empty broadcast.
 ///
-/// The fan-out is idempotent per announcement id, but each POST mints a NEW
-/// id — so re-posting the same text deliberately sends it again, exactly as an
-/// admin pressing "send" twice would expect. Returns
+/// The fan-out is idempotent per announcement id. An optional `request_id`
+/// (a UUID the app makes once per message) becomes that id (audit M-14), so
+/// "send" pressed again after a timeout reaches nobody twice and answers
+/// how many inboxes the replay added (0 when the first one finished).
+/// Without one, each POST mints a new id and re-posting sends again. Returns
 /// [AnnouncementPublishedDto] (`200`) with the number of inboxes reached.
 /// `405` on any non-POST method.
 ///
@@ -51,11 +53,21 @@ Future<Response> onRequest(RequestContext context) async {
   // instead of a cast failure here.
   final title = body['title'];
   final text = body['body'];
+  final requestId = body['request_id'];
+  if (requestId != null && requestId is! String) {
+    return errorResponse(
+      const AppError.validation(
+        'request.field_invalid',
+        'Field "request_id" must be a string',
+      ),
+    );
+  }
 
   final result = await root.publishAnnouncement(
     principal: principal,
     title: title is String ? title : '',
     body: text is String ? text : '',
+    requestId: requestId as String?,
   );
 
   return switch (result) {
