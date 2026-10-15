@@ -36,6 +36,7 @@ import 'package:mobile/core/auth/install_id.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/theme/theme_controller.dart';
+import 'package:mobile/core/time/riyadh_day_turnover.dart';
 import 'package:mobile/features/admin/admin_hub_screen.dart';
 import 'package:mobile/features/admin/admin_providers.dart';
 import 'package:mobile/features/auth/account_settings_screen.dart';
@@ -49,9 +50,18 @@ import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/duels/duels_screen.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
+import 'package:mobile/features/fixture_prediction/widgets/fixture_predictions_board_page.dart';
+import 'package:mobile/features/fixture_prediction/widgets/fixtures_calendar_page.dart';
 import 'package:mobile/features/gamification/insights_screen.dart';
 import 'package:mobile/features/gamification/invite_friends_screen.dart';
 import 'package:mobile/features/gamification/my_badges_screen.dart';
+import 'package:mobile/features/groups/create_group_screen.dart';
+import 'package:mobile/features/groups/group_feed_screen.dart';
+import 'package:mobile/features/groups/group_leaderboard_screen.dart';
+import 'package:mobile/features/groups/group_members_screen.dart';
+import 'package:mobile/features/groups/join_group_screen.dart';
+import 'package:mobile/features/groups/league_invite_sheet.dart';
+import 'package:mobile/features/groups/my_groups_screen.dart';
 import 'package:mobile/features/h2h/h2h_round_screen.dart';
 import 'package:mobile/features/h2h/h2h_screen.dart';
 import 'package:mobile/features/history/prediction_history_providers.dart';
@@ -62,10 +72,12 @@ import 'package:mobile/features/leaderboards/champions_record_screen.dart';
 import 'package:mobile/features/leaderboards/leaderboards_providers.dart';
 import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
 import 'package:mobile/features/leaderboards/season_leaderboard_screen.dart';
+import 'package:mobile/features/leaderboards/widgets/friends_league_board.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
 import 'package:mobile/features/notifications/favorite_teams_screen.dart';
 import 'package:mobile/features/notifications/notification_settings_screen.dart';
 import 'package:mobile/features/notifications/notifications_providers.dart';
+import 'package:mobile/features/notifications/notifications_screen.dart';
 import 'package:mobile/features/record/elite_card_screen.dart';
 import 'package:mobile/features/record/my_points_screen.dart';
 import 'package:mobile/features/record/my_seasons_screen.dart';
@@ -239,6 +251,70 @@ final List<_Screen> _screens = <_Screen>[
         '/me/h2h-league/rounds/3': _h2hRound.toJson(),
       },
     ),
+  ),
+  // The friends' leagues, the players' predictions board, the calendar and
+  // the inbox with something in it (colour audit of 2026-10-15, CA-09).
+  _Screen('groups', _served(const MyGroupsScreen(), answers: _groupAnswers)),
+  _Screen('group.create', _served(const CreateGroupScreen())),
+  _Screen(
+    'group.join',
+    _served(const JoinGroupScreen(initialCode: 'ABCD23EFGH')),
+  ),
+  _Screen(
+    'group.feed',
+    _served(
+      const GroupFeedScreen(groupId: 'g-1', groupName: 'دوري المكتب'),
+      answers: _groupAnswers,
+    ),
+  ),
+  _Screen(
+    'group.leaderboard',
+    _served(
+      const GroupLeaderboardScreen(
+        groupId: 'g-1',
+        seasonId: 's-10',
+        groupName: 'دوري المكتب',
+      ),
+      answers: _groupAnswers,
+    ),
+  ),
+  _Screen(
+    'group.members',
+    _served(
+      const GroupMembersScreen(group: _league, isOwner: true),
+      answers: _groupAnswers,
+    ),
+  ),
+  const _Screen('group.invite-sheet', _leagueInviteSheet),
+  _Screen(
+    'friends.league',
+    _served(
+      const Scaffold(
+        body: FriendsLeagueBoard(seasonId: 's-10', keyPrefix: 'friends'),
+      ),
+      answers: _groupAnswers,
+    ),
+  ),
+  _Screen(
+    'friends.none',
+    _served(
+      const Scaffold(
+        body: FriendsLeagueBoard(seasonId: 's-10', keyPrefix: 'friends'),
+      ),
+      answers: <String, Object>{
+        ..._duels,
+        '/me/groups': const MyGroupsDto(groups: <MyGroupEntryDto>[]).toJson(),
+      },
+    ),
+  ),
+  const _Screen('predictions-board', _predictionsBoard),
+  _Screen(
+    'calendar',
+    _served(FixturesCalendarPage(selectedDay: DateTime.now())),
+  ),
+  _Screen(
+    'notifications.data',
+    _served(const NotificationsScreen(), answers: _inbox),
   ),
 ];
 
@@ -1598,3 +1674,280 @@ final MyH2hRoundDto _h2hRound = MyH2hRoundDto(
     ),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// The friends' leagues, the players' predictions board and the inbox
+// (colour audit of 2026-10-15, CA-09, script 81).
+// ---------------------------------------------------------------------------
+
+const GroupDto _league = GroupDto(
+  id: 'g-1',
+  name: 'دوري المكتب',
+  ownerId: 'u-1',
+  inviteCode: 'ABCD23EFGH',
+  createdAt: '2026-10-01T00:00:00.000Z',
+  memberCount: 4,
+);
+
+/// The caller owns one league and plays in another with a long name.
+const MyGroupsDto _myGroups = MyGroupsDto(
+  groups: <MyGroupEntryDto>[
+    MyGroupEntryDto(
+      group: _league,
+      role: 'owner',
+      joinedAt: '2026-10-01T00:00:00.000Z',
+    ),
+    MyGroupEntryDto(
+      group: GroupDto(
+        id: 'g-2',
+        name: 'أصدقاء الجامعة وزملاء العمل القديم',
+        ownerId: 'u-9',
+        inviteCode: 'ZXCV23BNMQ',
+        createdAt: '2026-09-12T00:00:00.000Z',
+        memberCount: 12,
+      ),
+      role: 'member',
+      joinedAt: '2026-09-14T00:00:00.000Z',
+    ),
+  ],
+);
+
+GroupMembershipDto _member(int i, String role, String name) =>
+    GroupMembershipDto(
+      id: 'm-$i',
+      groupId: 'g-1',
+      userId: 'u-$i',
+      role: role,
+      joinedAt: '2026-10-0${i}T00:00:00.000Z',
+      displayName: name,
+    );
+
+/// Every read of league g-1, the caller's leagues and duels.
+final Map<String, Object> _groupAnswers = <String, Object>{
+  ..._duels,
+  '/me/groups': _myGroups.toJson(),
+  '/groups/g-1': _league.toJson(),
+  '/groups/g-1/members': GroupMembersDto(
+    groupId: 'g-1',
+    members: <GroupMembershipDto>[
+      _member(1, 'owner', 'عبدالرحمن المغربي'),
+      _member(2, 'member', 'وليد العريقي (عاشق النخبة)'),
+      _member(3, 'member', 'حذيفه عبدالخالق حميد المجيدي'),
+      _member(4, 'member', 'Ahmed Alyateem'),
+    ],
+  ).toJson(),
+  '/groups/g-1/seasons/s-10/leaderboard': GroupLeaderboardDto(
+    groupId: 'g-1',
+    seasonId: 's-10',
+    entries: <GroupLeaderboardEntryDto>[
+      for (int i = 0; i < 4; i++)
+        GroupLeaderboardEntryDto(
+          rank: i + 1,
+          participantId: 'p-$i',
+          userId: 'u-${i + 1}',
+          displayName: _boardNames[i],
+          totalPoints: 60 - i * 7,
+          entryCount: 110 - i,
+        ),
+    ],
+  ).toJson(),
+  '/groups/g-1/seasons/s-10/month-board': _monthBoard('s-10').toJson(),
+  '/groups/g-1/feed': GroupActivityFeedDto(
+    groupId: 'g-1',
+    events: <ActivityEventDto>[
+      const ActivityEventDto(
+        type: 'rank_shift',
+        groupId: 'g-1',
+        occurredAt: '2026-10-14T20:00:00.000Z',
+        userId: 'u-3',
+        oldRank: 4,
+        newRank: 2,
+      ),
+      const ActivityEventDto(
+        type: 'member_joined',
+        groupId: 'g-1',
+        occurredAt: '2026-10-04T09:00:00.000Z',
+        userId: 'u-4',
+      ),
+    ],
+  ).toJson(),
+};
+
+/// The invitation sheet as the league's page opens it.
+Future<void> _leagueInviteSheet(
+  WidgetTester tester,
+  ThemeData theme,
+  double scale,
+) async {
+  await _served(
+    Builder(
+      builder: (BuildContext context) => Scaffold(
+        body: Center(
+          child: TextButton(
+            key: const Key('audit.openInvite'),
+            onPressed: () => showLeagueInviteSheet(context, _league),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+    answers: _groupAnswers,
+  )(tester, theme, scale);
+  await _settle(tester);
+  await tester.tap(find.byKey(const Key('audit.openInvite')));
+}
+
+/// [minutes] before now, kept inside one Riyadh day (as in
+/// fixture_predictions_reveal_test.dart), so both started matches share
+/// the board's day.
+String _startedAgo(int minutes) {
+  final DateTime now = DateTime.now().toUtc();
+  final DateTime midnight = RiyadhDayTurnover.opensAt(
+    RiyadhDayTurnover.dayKeyOf(now),
+  );
+  final DateTime reference =
+      now.difference(midnight) < const Duration(minutes: 40)
+      ? midnight.subtract(const Duration(minutes: 40))
+      : now;
+  return reference.subtract(Duration(minutes: minutes)).toIso8601String();
+}
+
+Map<String, Object?> _boardCall(
+  String fixtureId,
+  String participantId,
+  String name,
+  int home,
+  int away, {
+  bool isDouble = false,
+}) => FixturePredictionDto(
+  id: 'pr-$fixtureId-$participantId',
+  participantId: participantId,
+  fixtureId: fixtureId,
+  seasonId: 's-10',
+  submittedAt: '2026-10-15T08:00:00.000Z',
+  homeGoals: home,
+  awayGoals: away,
+  isDouble: isDouble,
+  displayName: name,
+).toJson();
+
+/// Everyone's calls on the day's two started matches, as "all predictions"
+/// on a started card opens them.
+Future<void> _predictionsBoard(
+  WidgetTester tester,
+  ThemeData theme,
+  double scale,
+) async {
+  final String kickoff = _startedAgo(30);
+  final List<Object?> items = <Object?>[
+    for (final (String id, String home, String away, String at)
+        in <(String, String, String, String)>[
+          ('f-1', 'Al Hilal', 'Al Nassr', kickoff),
+          ('f-2', 'Al Ittihad', 'Al Ahli', _startedAgo(20)),
+        ])
+      CurrentMonthFixtureItemDto(
+        competitionId: 'c-1',
+        competitionName: 'الدوري السعودي',
+        seasonLabel: '10/2026',
+        fixture: SeasonFixtureCardDto(
+          seasonId: 's-10',
+          fixtureId: id,
+          homeTeam: home,
+          awayTeam: away,
+          kickoffAt: at,
+        ),
+      ).toJson(),
+  ];
+  final feed.CurrentMonthFixturesHarness harness = feed
+      .buildCurrentMonthFixturesHarness((http.Request request) async {
+        final String path = request.url.path;
+        switch (path) {
+          case '/feed/current-month-fixtures':
+            return feed.okJsonList(items);
+          case '/me/fixture-predictions':
+            return feed.okJsonList(<Object?>[
+              _boardCall('f-1', 'p-me', 'عبدالرحمن المغربي', 2, 1),
+              _boardCall('f-2', 'p-me', 'عبدالرحمن المغربي', 0, 0),
+            ]);
+          case '/seasons/s-10/fixtures/f-1/predictions':
+            return feed.okJsonList(<Object?>[
+              _boardCall('f-1', 'p-me', 'عبدالرحمن المغربي', 2, 1),
+              _boardCall(
+                'f-1',
+                'p-2',
+                'وليد العريقي (عاشق النخبة)',
+                3,
+                1,
+                isDouble: true,
+              ),
+              _boardCall('f-1', 'p-3', 'حذيفه عبدالخالق حميد المجيدي', 0, 2),
+            ]);
+          case '/seasons/s-10/fixtures/f-2/predictions':
+            return feed.okJsonList(<Object?>[
+              _boardCall('f-2', 'p-me', 'عبدالرحمن المغربي', 0, 0),
+              _boardCall('f-2', 'p-2', 'وليد العريقي (عاشق النخبة)', 1, 1),
+            ]);
+          case '/teams':
+            return feed.okJsonList(const <Object?>[]);
+        }
+        if (path.endsWith('/scores')) {
+          return feed.okJsonObject(
+            FixtureScoresDto(
+              fixtureId: path.split('/')[4],
+              scores: const <ParticipantFixtureScoreDto>[],
+            ).toJson(),
+          );
+        }
+        if (path.endsWith('/reactions')) {
+          return feed.okJsonObject(const <String, Object?>{
+            'schema_version': 1,
+            'reactions': <Object?>[],
+          });
+        }
+        return http.Response('not found', 404);
+      });
+  addTearDown(harness.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: harness.overrides,
+      retry: (retryCount, error) => null,
+      child: _app(
+        theme,
+        scale,
+        FixturePredictionsBoardPage(kickoffAt: kickoff),
+      ),
+    ),
+  );
+}
+
+Map<String, Object?> _notice(String id, String title, String body, bool read) =>
+    <String, Object?>{
+      'schema_version': 2,
+      'id': id,
+      'recipient_id': 'u-1',
+      'kind': 'admin_announcement',
+      'read': read,
+      'created_at': '2026-10-14T19:51:00Z',
+      'announcement_id': 'a-$id',
+      'title': title,
+      'body': body,
+    };
+
+/// An unread announcement with a link and a read one. Nothing counts as
+/// unseen, so opening the inbox sends nothing.
+final Map<String, Object> _inbox = <String, Object>{
+  '/notifications': <String, Object?>{
+    'schema_version': 2,
+    'recipient_id': 'u-1',
+    'unread_count': 0,
+    'notifications': <Object?>[
+      _notice(
+        'n1',
+        'تحديث مهم',
+        'تابع قناة نخبة للأخبار والجوائز:\nhttps://links.nukhbaa.app/',
+        false,
+      ),
+      _notice('n2', 'بطل الشهر', 'تهانينا لأبطال شهر سبتمبر.', true),
+    ],
+  },
+};

@@ -5294,6 +5294,22 @@ finding anywhere.
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: the survey reaches the rest of CA-09 (script 81, 2026-10-15)
+
+- `test/audit/ui_audit_survey_test.dart` measures 12 more screens in both
+  themes at three text scales: my leagues, create a league, join by code,
+  a league's feed, its board and its members, the invite sheet (opened
+  from a button, as the league page opens it), the friends' board with a
+  league and without one, the players' predictions board on a day of two
+  started matches, the fixtures calendar and the inbox with messages.
+- As in script 79, the script measures them on the device and writes their
+  counts into the baseline only after checking that no screen already
+  measured -- all at zero since script 80 -- gained a finding; the
+  findings go to `docs/reviews/ui-audit-survey-2026-10-15.md`.
+- Next: script 82 on fixes what this run measures, with CA-08.
+
+No migration; tests and docs only.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

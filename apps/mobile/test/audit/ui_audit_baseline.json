@@ -79,6 +79,22 @@
     "layout13": 0,
     "layout20": 0
   },
+  "calendar/dark": {
+    "contrast": 0,
+    "tapTarget": 60,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "calendar/light": {
+    "contrast": 0,
+    "tapTarget": 60,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "champions-record/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -136,6 +152,150 @@
     "layout20": 0
   },
   "favorite-teams/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "friends.league/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "friends.league/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "friends.none/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "friends.none/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.create/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.create/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.feed/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.feed/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.invite-sheet/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.invite-sheet/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.join/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.join/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.leaderboard/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.leaderboard/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.members/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "group.members/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "groups/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "groups/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
@@ -383,6 +543,22 @@
     "layout13": 0,
     "layout20": 0
   },
+  "notifications.data/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "notifications.data/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
   "password-reset.email/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -408,6 +584,22 @@
     "layout20": 0
   },
   "password-reset.new/light": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "predictions-board/dark": {
+    "contrast": 0,
+    "tapTarget": 0,
+    "label": 0,
+    "layout10": 0,
+    "layout13": 0,
+    "layout20": 0
+  },
+  "predictions-board/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,
