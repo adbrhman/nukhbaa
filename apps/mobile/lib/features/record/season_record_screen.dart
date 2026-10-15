@@ -64,6 +64,10 @@ class SeasonRecordRow extends StatelessWidget {
       _ => t.textMuted,
     };
 
+    // The place grows with the text, so a two-digit place still fits its
+    // ring at twice the size.
+    final double ring = MediaQuery.textScalerOf(context).scale(42);
+
     return Container(
       key: Key('seasonRecord.item.${record.seasonId}'),
       margin: const EdgeInsets.symmetric(
@@ -79,8 +83,8 @@ class SeasonRecordRow extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Container(
-            width: 42,
-            height: 42,
+            width: ring,
+            height: ring,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -120,10 +124,19 @@ class SeasonRecordRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
-            l10n.pointsAbbreviated(record.totalPoints),
-            style: context.text.titleMedium?.copyWith(
-              color: record.rank == 1 ? t.gold : t.textSecondary,
+          // At most two fifths of the width, wrapping beyond it: at twice
+          // the text size the total pushed the row 8 px past the card (UI
+          // audit survey, 2026-10-15).
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+            ),
+            child: Text(
+              l10n.pointsAbbreviated(record.totalPoints),
+              textAlign: TextAlign.end,
+              style: context.text.titleMedium?.copyWith(
+                color: record.rank == 1 ? t.gold : t.textSecondary,
+              ),
             ),
           ),
         ],

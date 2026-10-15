@@ -325,7 +325,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "my-points/light": {
     "contrast": 0,
@@ -333,7 +333,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "my-seasons/dark": {
     "contrast": 0,
@@ -341,7 +341,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "my-seasons/light": {
     "contrast": 0,
@@ -349,7 +349,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "name-setup/dark": {
     "contrast": 0,
@@ -370,7 +370,7 @@
   "notification-settings/dark": {
     "contrast": 0,
     "tapTarget": 0,
-    "label": 4,
+    "label": 0,
     "layout10": 0,
     "layout13": 0,
     "layout20": 0
@@ -378,7 +378,7 @@
   "notification-settings/light": {
     "contrast": 0,
     "tapTarget": 0,
-    "label": 4,
+    "label": 0,
     "layout10": 0,
     "layout13": 0,
     "layout20": 0
@@ -469,7 +469,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "season-record/light": {
     "contrast": 0,
@@ -477,7 +477,7 @@
     "label": 0,
     "layout10": 0,
     "layout13": 0,
-    "layout20": 1
+    "layout20": 0
   },
   "settings/dark": {
     "contrast": 0,

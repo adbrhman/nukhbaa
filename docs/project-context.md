@@ -5271,6 +5271,29 @@ No migration; the web on deploy, Android with the next APK.
 
 No migration; tests and docs only.
 
+### Colour audit: what the survey measured (script 80, 2026-10-15)
+
+Script 79's run found four defects, each in both themes
+(`docs/reviews/ui-audit-survey-2026-10-15.md`); all are fixed and the
+baseline is zero on every measured screen, so the survey fails on any new
+finding anywhere.
+
+- CA-14: my points -- "through the latest counted match" ran 158 px past
+  the card at x2.0; it takes at most two fifths of the width and wraps.
+- CA-15: my seasons and the season record -- the trailing total pushed the
+  row 8 px past the card at x2.0; it is held to two fifths of the width
+  and wraps. The place's ring grows with the text
+  (`MediaQuery.textScalerOf(context).scale(42)`) instead of breaking
+  "#23" inside a fixed 42 px.
+- CA-16: notification settings -- the four switches had no name for a
+  screen reader; each row is one `MergeSemantics` node, read with its title
+  and hint.
+- Next: script 81 adds the groups pages, the players' predictions board
+  and the fixtures calendar to the survey; 82 on fix what it measures,
+  with CA-08.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

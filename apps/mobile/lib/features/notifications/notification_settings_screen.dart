@@ -181,40 +181,44 @@ class _SwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: tokens.primary, size: AppSizes.iconLg),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: context.text.bodyLarge?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w700,
+    // One node for the row: the switch is read with its title and hint
+    // instead of as an unnamed toggle (UI audit survey, 2026-10-15).
+    return MergeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, color: tokens.primary, size: AppSizes.iconLg),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: context.text.bodyLarge?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hint,
-                  style: context.text.bodySmall?.copyWith(
-                    color: tokens.textSecondary,
+                  const SizedBox(height: 2),
+                  Text(
+                    hint,
+                    style: context.text.bodySmall?.copyWith(
+                      color: tokens.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Switch(key: switchKey, value: value, onChanged: onChanged),
-        ],
+            const SizedBox(width: AppSpacing.sm),
+            Switch(key: switchKey, value: value, onChanged: onChanged),
+          ],
+        ),
       ),
     );
   }

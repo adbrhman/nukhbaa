@@ -231,11 +231,19 @@ class _SeasonPointsCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  l10n.myPointsLatestScored,
-                  textAlign: TextAlign.end,
-                  style: context.text.labelSmall?.copyWith(
-                    color: tokens.textMuted,
+                // At most two fifths of the width, wrapping beyond it: at
+                // twice the text size the one line ran 158 px past the card
+                // (UI audit survey, 2026-10-15).
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+                  ),
+                  child: Text(
+                    l10n.myPointsLatestScored,
+                    textAlign: TextAlign.end,
+                    style: context.text.labelSmall?.copyWith(
+                      color: tokens.textMuted,
+                    ),
                   ),
                 ),
               ],
