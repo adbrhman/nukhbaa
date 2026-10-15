@@ -86,6 +86,7 @@ final class CompositionRoot {
     required this.listSeasonDuelWins,
     required this.getLiveStanding,
     required this.adminGetFixtureScores,
+    required this.adminCountFixtureScores,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
     required this.createGroup,
@@ -291,6 +292,7 @@ final class CompositionRoot {
     ListSeasonDuelWins? listSeasonDuelWins,
     GetLiveStanding? getLiveStanding,
     AdminGetFixtureScores? adminGetFixtureScores,
+    AdminCountFixtureScores? adminCountFixtureScores,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
@@ -503,6 +505,8 @@ final class CompositionRoot {
        getLiveStanding = getLiveStanding ?? _absentGetLiveStanding(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
+       adminCountFixtureScores =
+           adminCountFixtureScores ?? _absentAdminCountFixtureScores(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        getSportingSeasonLeaderboard =
            getSportingSeasonLeaderboard ??
@@ -1130,6 +1134,11 @@ final class CompositionRoot {
       AdminGetFixtureScores(
         fixtureScoreRepository: _unwiredFixtureScoreRepository,
       );
+
+  /// Backs the "absent" [AdminCountFixtureScores]: throws if a test reaches
+  /// the counted-fixtures read it never wired.
+  static AdminCountFixtureScores _absentAdminCountFixtureScores() =>
+      AdminCountFixtureScores(counter: _UnwiredFixtureScoreCounter());
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
   /// unwired Hall of Fame slice fails loudly instead of touching a real
@@ -2110,6 +2119,10 @@ final class CompositionRoot {
   /// investigate a user's complaint on any fixture regardless of the
   /// admin's own season membership).
   final AdminGetFixtureScores adminGetFixtureScores;
+
+  /// How many players were scored on each of many fixtures, in one query
+  /// (backs `GET /admin/fixture-score-counts`, batch 156).
+  final AdminCountFixtureScores adminCountFixtureScores;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -3578,6 +3591,9 @@ final class CompositionRoot {
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
       ),
+      adminCountFixtureScores: AdminCountFixtureScores(
+        counter: PostgresFixtureScoreCounter(connection),
+      ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
       ),
@@ -3888,6 +3904,16 @@ final class CompositionRoot {
       await root.dispose();
     }
   }
+}
+
+/// Backs an "absent" [AdminCountFixtureScores]: throws if a test reaches
+/// the counted-fixtures read it never wired.
+final class _UnwiredFixtureScoreCounter implements FixtureScoreCounter {
+  @override
+  Future<Result<Map<String, int>>> countByFixtures(List<FixtureRef> fixtures) =>
+      throw StateError(
+        'AdminCountFixtureScores was not wired into this test root',
+      );
 }
 
 /// Backs an "absent" [CheckHealth] in [CompositionRoot.forTesting]: throws if a

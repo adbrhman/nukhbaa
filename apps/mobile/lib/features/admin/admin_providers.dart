@@ -277,31 +277,30 @@ final adminCountedFixturesProvider = FutureProvider<List<AdminCountedFixture>>((
       })
       .toList(growable: false);
 
-  // One request per already-played fixture, in small batches rather than all
-  // at once: late in the month this fanned out sixty-plus simultaneous
-  // requests from a phone, and a single failure among them threw away every
-  // successful answer with it. A fixture that will not report is left out of
-  // the list instead -- an incomplete section beats an empty one.
-  const int batchSize = 6;
+  // How many players were scored on each played fixture, in one request
+  // per hundred fixtures (batch 156). It used to be one request per
+  // fixture, six at a time: late in the month that held most of the
+  // server's database connections for minutes, and every other screen
+  // waited. A failed read fails the section, which then offers a retry.
+  const int chunk = 100;
   final counted = <AdminCountedFixture>[];
-  for (var start = 0; start < candidates.length; start += batchSize) {
-    final batch = await Future.wait(
-      candidates.skip(start).take(batchSize).map((item) async {
-        final result = await adminApi.adminGetFixtureScores(
-          item.fixture.fixtureId,
-        );
-        return switch (result) {
-          Ok<FixtureScoresDto>(:final value) when value.scores.isNotEmpty =>
-            AdminCountedFixture(
-              item: item,
-              predictionsCount: value.scores.length,
-            ),
-          Ok<FixtureScoresDto>() => null,
-          Err<FixtureScoresDto>() => null,
-        };
-      }),
-    );
-    counted.addAll(batch.whereType<AdminCountedFixture>());
+  for (var start = 0; start < candidates.length; start += chunk) {
+    final List<CurrentMonthFixtureItemDto> part = candidates
+        .skip(start)
+        .take(chunk)
+        .toList(growable: false);
+    final Result<FixtureScoreCountsDto> result = await adminApi
+        .fixtureScoreCounts(<String>[
+          for (final CurrentMonthFixtureItemDto item in part)
+            item.fixture.fixtureId,
+        ]);
+    final Map<String, int> counts = _unwrap(result).counts;
+    for (final CurrentMonthFixtureItemDto item in part) {
+      final int scored = counts[item.fixture.fixtureId] ?? 0;
+      if (scored > 0) {
+        counted.add(AdminCountedFixture(item: item, predictionsCount: scored));
+      }
+    }
   }
   counted.sort((a, b) {
     final aDate = DateTime.tryParse(a.item.fixture.kickoffAt ?? '');
@@ -312,7 +311,7 @@ final adminCountedFixturesProvider = FutureProvider<List<AdminCountedFixture>>((
     return bDate.compareTo(aDate);
   });
   return counted;
-});
+}, retry: (_, _) => null);
 
 /// The live data used by the Admin Control Center.
 ///

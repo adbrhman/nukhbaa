@@ -5085,6 +5085,31 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   out on every green push. Apply 0113 before pushing; needs an APK and the
   web deploy. M-04's offline content moved to batch 155.
 
+- **Batch 156 (the server's connections, 2026-10-16, outside the audit
+  plan)**: at 00:46-00:51 the error log held `db.query_timeout` on the
+  scores route (AGMU, now from builds older than script 75 only) and the
+  month board ('still waiting for a connection after 10.4s; connections
+  in use 8/8, waiting 89'), while `pg_stat_statements` showed no query
+  slower than about 0.65 s on average: the server's eight connections,
+  not the database. Two clients held them. The admin's "المباريات
+  المحتسبة" sent one `GET /admin/fixtures/{id}/scores` per match played
+  this month, six at a time, for minutes; it now sends
+  `GET /admin/fixture-score-counts?fixtures=` (`AdminCountFixtureScores`,
+  port `FixtureScoreCounter`, `PostgresFixtureScoreCounter`: one grouped
+  count over `scoring.fixture_scores`, 200 ids at most) once per hundred
+  matches, and a failed read fails the section at once instead of
+  retrying. The players' builds older than script 75 send one
+  `GET /seasons/{id}/fixtures/{id}/scores` per match of their history;
+  that route now runs behind a `Bulkhead` of three places
+  (`server/http/bulkhead.dart`) and answers `503 server.busy` at once
+  beyond them, without an entry in the error log. The predictions board
+  read as "no predictions yet" when every column failed; it now says
+  why, with a retry (`fixturePredictions.failed`). The pool size comes
+  from `NUKHBA_PG_POOL_SIZE` (2..40, default 8, logged at start), so it
+  can be raised on Northflank without a release once Supabase's own
+  connection count says there is room. No migration; the server and the
+  APK and the web.
+
 ### The web app loads faster (web speed 71, 2026-10-14)
 
 Outside the audit plan. Measured 2026-10-14 by the Web Speed workflow

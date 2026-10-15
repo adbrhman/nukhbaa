@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/bulkhead.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/fixture_score_dto_mapper.dart';
 import 'package:shared/shared.dart';
@@ -28,6 +29,12 @@ import 'package:shared/shared.dart';
 /// (`routes/seasons/_middleware.dart`), which provides the verified
 /// [AuthenticatedUser]; an unauthenticated request never reaches this
 /// handler.
+///
+/// Today's app reads the caller's points in one request
+/// (`GET /me/fixture-scores`, script 75); only builds older than that call
+/// this route, one request per match of their history, all at once. They
+/// get [fixtureScoresBulkhead]'s few places, and `503 server.busy` beyond
+/// them, so they cannot hold every database connection (batch 156).
 Future<Response> onRequest(
   RequestContext context,
   String id,
@@ -36,7 +43,17 @@ Future<Response> onRequest(
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
   }
+  return fixtureScoresBulkhead.run(() => _read(context, id, fixtureId));
+}
 
+/// The places of this route (see [onRequest]).
+final Bulkhead fixtureScoresBulkhead = Bulkhead(3);
+
+Future<Response> _read(
+  RequestContext context,
+  String id,
+  String fixtureId,
+) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 

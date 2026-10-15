@@ -12,7 +12,27 @@ final class PostgresConfig {
     required this.username,
     required this.password,
     required this.requireSsl,
+    this.poolSize = defaultPoolSize,
   });
+
+  /// The server's connections to the database when the environment does
+  /// not say (2026-10 incidents: 8 in use, up to 180 waiting).
+  static const int defaultPoolSize = 8;
+
+  /// The bounds a configured pool size is held to.
+  static const int minPoolSize = 2;
+
+  /// See [minPoolSize].
+  static const int maxPoolSize = 40;
+
+  /// `NUKHBA_PG_POOL_SIZE` as a pool size: the default when absent or not
+  /// a number, else held within [minPoolSize]..[maxPoolSize]. Read from the
+  /// environment so it changes on the host without a release (batch 156).
+  static int poolSizeOf(String? raw) {
+    final int? asked = int.tryParse(raw?.trim() ?? '');
+    if (asked == null) return defaultPoolSize;
+    return asked.clamp(minPoolSize, maxPoolSize);
+  }
 
   /// Builds config from an environment map, returning a typed error rather
   /// than throwing if a required value is missing or malformed.
@@ -60,6 +80,7 @@ final class PostgresConfig {
         password: password,
         // Default to requiring SSL unless explicitly disabled for local dev.
         requireSsl: (sslRaw ?? 'require') != 'disable',
+        poolSize: poolSizeOf(env['NUKHBA_PG_POOL_SIZE']),
       ),
     );
   }
@@ -81,4 +102,7 @@ final class PostgresConfig {
 
   /// Whether TLS is required (true in all non-local environments).
   final bool requireSsl;
+
+  /// How many connections the server keeps to the database at most.
+  final int poolSize;
 }

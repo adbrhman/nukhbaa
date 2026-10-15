@@ -392,6 +392,22 @@ class _FixturePredictionsBoardPageState
                     key: const Key('fixturePredictions.noStarted'),
                     text: l10n.fixturePredictionsNoStarted,
                   )
+                // A read that failed is said, with a retry: it used to read
+                // as "no predictions yet" (batch 156).
+                : byId.isEmpty &&
+                      columns.every((c) => !c.loading) &&
+                      columns.any((c) => c.failed)
+                ? _FailedRead(
+                    key: const Key('fixturePredictions.failed'),
+                    text:
+                        columns.firstWhere((c) => c.failed).errorText ??
+                        'تعذّر تحميل التوقعات.',
+                    onRetry: () {
+                      for (final _Column column in columns) {
+                        if (column.failed) column.onRetry();
+                      }
+                    },
+                  )
                 : byId.isEmpty && columns.every((c) => !c.loading)
                 ? _Message(
                     key: const Key('fixturePredictions.empty'),
@@ -808,6 +824,42 @@ String verdictMark({
   if (score == null) return isDouble ? '⚡' : '';
   if (score.points > 0) return isDouble ? '⚡🔥' : '✅';
   return '❌';
+}
+
+/// The whole day could not be read: why, and a retry (batch 156).
+class _FailedRead extends StatelessWidget {
+  const _FailedRead({required this.text, required this.onRetry, super.key});
+
+  final String text;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.error_outline_rounded, color: tokens.error),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: tokens.textPrimary),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.tonal(
+              key: const Key('fixturePredictions.retry'),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Message extends StatelessWidget {

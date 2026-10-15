@@ -204,3 +204,30 @@ final class FixtureScoresDto {
     return true;
   }
 }
+
+/// The answer of `GET /admin/fixture-score-counts?fixtures=` (batch 156):
+/// how many players were scored on each named fixture; a fixture with no
+/// score is absent.
+final class FixtureScoreCountsDto {
+  /// Creates the counts.
+  const FixtureScoreCountsDto({required this.counts});
+
+  /// Deserializes from a JSON map; a count that is not a number is left
+  /// out.
+  factory FixtureScoreCountsDto.fromJson(Map<String, Object?> json) {
+    final Object? raw = json['counts'];
+    return FixtureScoreCountsDto(
+      counts: <String, int>{
+        if (raw is Map<String, Object?>)
+          for (final MapEntry<String, Object?> e in raw.entries)
+            if (e.value case final int n) e.key: n,
+      },
+    );
+  }
+
+  /// Scores per fixture id.
+  final Map<String, int> counts;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {'schema_version': 1, 'counts': counts};
+}

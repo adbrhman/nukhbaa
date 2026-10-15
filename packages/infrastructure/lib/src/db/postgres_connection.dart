@@ -60,8 +60,12 @@ const Duration _statementTimeout = Duration(seconds: 10);
 /// [Result]s from [query] (Coding Standards §6: adapters tested against fakes).
 /// The `postgres` [Pool] is still private, so no fake can reach the real driver.
 class PostgresConnection implements DbExecutor {
-  PostgresConnection._(this._pool, {Duration timeout = _statementTimeout})
-    : _timeout = timeout;
+  PostgresConnection._(
+    this._pool, {
+    Duration timeout = _statementTimeout,
+    int maxConnections = PostgresConfig.defaultPoolSize,
+  }) : _timeout = timeout,
+       _maxConnections = maxConnections;
 
   /// A connection over [pool] that gives up on a query after [timeout], for
   /// tests that drive a timeout without a database.
@@ -73,8 +77,9 @@ class PostgresConnection implements DbExecutor {
   final Pool<void> _pool;
   final Duration _timeout;
 
-  /// The pool's size, which a timeout is reported against.
-  static const int _maxConnections = 8;
+  /// The pool's size ([PostgresConfig.poolSize]), which a timeout is
+  /// reported against.
+  final int _maxConnections;
 
   // Connections this process holds, and calls still waiting for one. Only
   // read to say where a timed-out query spent its time.
@@ -97,7 +102,7 @@ class PostgresConnection implements DbExecutor {
         ],
         settings: PoolSettings(
           sslMode: config.requireSsl ? SslMode.require : SslMode.disable,
-          maxConnectionCount: _maxConnections,
+          maxConnectionCount: config.poolSize,
         ),
       );
       // Eagerly verify connectivity so startup fails fast on misconfig.
@@ -118,7 +123,12 @@ class PostgresConnection implements DbExecutor {
       for (var attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           await pool.execute('SELECT 1').timeout(probeTimeout);
-          return Result.ok(PostgresConnection._(pool));
+          stderr.writeln(
+            '[PostgresConnection] pool of ${config.poolSize} connections',
+          );
+          return Result.ok(
+            PostgresConnection._(pool, maxConnections: config.poolSize),
+          );
         } on Object catch (e) {
           lastError = e;
           if (attempt < maxAttempts) {

@@ -248,6 +248,19 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/fixture-score-counts?fixtures=` -- how many players were
+  /// scored on each of [fixtureIds] (at most 200), in one query (batch
+  /// 156).
+  Future<Result<FixtureScoreCountsDto>> fixtureScoreCounts(
+    List<String> fixtureIds,
+  ) {
+    return _transport.getObject<FixtureScoreCountsDto>(
+      '/admin/fixture-score-counts',
+      query: {'fixtures': fixtureIds.join(',')},
+      parse: FixtureScoreCountsDto.fromJson,
+    );
+  }
+
   /// `GET /admin/fixtures/{fixtureId}/scores` — the admin fixture-scores
   /// read: every participant's computed score for a single fixture,
   /// regardless of the admin's own season membership (the per-fixture
