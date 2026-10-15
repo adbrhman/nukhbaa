@@ -191,10 +191,15 @@ final class AdminApi {
   Future<Result<AnnouncementPublishedDto>> publishAnnouncement({
     required String title,
     required String body,
+    String? requestId,
   }) {
     return _transport.postObject<AnnouncementPublishedDto>(
       '/admin/announcements',
-      body: PublishAnnouncementRequestDto(title: title, body: body).toJson(),
+      body: PublishAnnouncementRequestDto(
+        title: title,
+        body: body,
+        requestId: requestId,
+      ).toJson(),
       parse: AnnouncementPublishedDto.fromJson,
     );
   }

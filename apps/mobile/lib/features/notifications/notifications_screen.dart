@@ -18,6 +18,8 @@ import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import '../groups/group_invitations.dart';
+import '../groups/my_groups_screen.dart';
+import '../history/prediction_history_screen.dart';
 import 'notifications_providers.dart';
 
 /// Opens an address taken from an announcement.
@@ -408,36 +410,33 @@ class _NotificationRow extends ConsumerWidget {
         notification.kind == 'prediction_reaction'
         ? _fixtureOf(ref, notification.fixtureId)
         : null;
+    // Where the row leads: a duel to the Duels page, where the challenge
+    // waits; a reaction to its day's board; a scored match to the history;
+    // a new member to My Groups (audit L-04). An announcement reads in place.
+    final Widget Function()? opens = isDuel
+        ? () => const DuelsScreen()
+        : reacted != null
+        ? () => FixturePredictionsBoardPage(kickoffAt: reacted.kickoffAt)
+        : notification.kind == 'fixture_scored'
+        ? () => const PredictionHistoryScreen()
+        : notification.kind == 'group_member_joined'
+        ? () => const MyGroupsScreen()
+        : null;
     return ListTile(
       key: Key('notifications.item.${notification.id}'),
-      // A duel row opens the Duels page, where the challenge waits.
-      onTap: isDuel
-          ? () {
-              if (!notification.read) {
-                unawaited(_markReadKeptAlive(context, notification.id));
-              }
-              unawaited(
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(builder: (_) => const DuelsScreen()),
-                ),
-              );
-            }
-          : reacted != null
-          ? () {
-              if (!notification.read) {
-                unawaited(_markReadKeptAlive(context, notification.id));
-              }
-              unawaited(
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => FixturePredictionsBoardPage(
-                      kickoffAt: reacted.kickoffAt,
-                    ),
-                  ),
-                ),
-              );
-            }
-          : null,
+      onTap: switch (opens) {
+        null => null,
+        final Widget Function() open => () {
+          if (!notification.read) {
+            unawaited(_markReadKeptAlive(context, notification.id));
+          }
+          unawaited(
+            Navigator.of(
+              context,
+            ).push<void>(MaterialPageRoute<void>(builder: (_) => open())),
+          );
+        },
+      },
       isThreeLine: hasBody || notification.kind == 'group_invited',
       leading: Icon(
         _iconFor(notification.kind),

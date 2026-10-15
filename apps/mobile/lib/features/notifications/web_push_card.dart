@@ -2,11 +2,15 @@
 /// plan): on an iPhone in a browser tab it says how to add the app to the
 /// home screen, where pushes can reach it; in a browser that can show them
 /// it turns them on from the player's tap. Hidden everywhere else, on
-/// Android, and once the player answered.
+/// Android, and once the player answered. "Later" hides it for a week on
+/// this browser (audit L-05): it used to come back on every visit.
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
@@ -25,6 +29,71 @@ final webPushRegistrarProvider = Provider<Future<bool> Function()>(
   (ref) => ref.watch(pushTokenServiceProvider).registerWebDevice,
 );
 
+/// When the player last chose "later" on the card, on this browser.
+abstract interface class WebPushLaterStore {
+  /// The moment, or null when never (or unreadable).
+  Future<DateTime?> read();
+
+  /// Remembers [at].
+  Future<void> write(DateTime at);
+}
+
+/// [WebPushLaterStore] over the platform's secure storage. Never throws: a
+/// storage that fails only means the card may show again.
+final class SecureWebPushLaterStore implements WebPushLaterStore {
+  /// Creates the store over [storage].
+  const SecureWebPushLaterStore({
+    FlutterSecureStorage storage = const FlutterSecureStorage(),
+  }) : _storage = storage;
+
+  static const String _key = 'nukhba.webPushLaterAt';
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<DateTime?> read() async {
+    try {
+      final String? raw = await _storage.read(key: _key);
+      return raw == null ? null : DateTime.tryParse(raw);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> write(DateTime at) async {
+    try {
+      await _storage.write(key: _key, value: at.toUtc().toIso8601String());
+    } on Object {
+      // The card shows again next time; nothing else depends on it.
+    }
+  }
+}
+
+/// [WebPushLaterStore] in memory, for tests.
+final class InMemoryWebPushLaterStore implements WebPushLaterStore {
+  /// Creates the store holding [at].
+  InMemoryWebPushLaterStore([this.at]);
+
+  /// The stored moment.
+  DateTime? at;
+
+  @override
+  Future<DateTime?> read() async => at;
+
+  @override
+  Future<void> write(DateTime at) async {
+    this.at = at;
+  }
+}
+
+/// Where "later" is remembered.
+final webPushLaterStoreProvider = Provider<WebPushLaterStore>(
+  (ref) => const SecureWebPushLaterStore(),
+);
+
+/// How long "later" hides the card.
+const Duration webPushLaterFor = Duration(days: 7);
+
 /// The card.
 class WebPushCard extends ConsumerStatefulWidget {
   /// Creates the card.
@@ -38,6 +107,28 @@ class _WebPushCardState extends ConsumerState<WebPushCard> {
   bool _later = false;
   bool _busy = false;
   String? _outcome;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_recallLater());
+  }
+
+  /// Hides the card when "later" was chosen less than a week ago.
+  Future<void> _recallLater() async {
+    final DateTime? at = await ref.read(webPushLaterStoreProvider).read();
+    if (!mounted || at == null) return;
+    if (DateTime.now().toUtc().difference(at.toUtc()) < webPushLaterFor) {
+      setState(() => _later = true);
+    }
+  }
+
+  void _postpone() {
+    setState(() => _later = true);
+    unawaited(
+      ref.read(webPushLaterStoreProvider).write(DateTime.now().toUtc()),
+    );
+  }
 
   Future<void> _enable() async {
     final WebPushPlatform platform = ref.read(webPushPlatformProvider);
@@ -133,7 +224,7 @@ class _WebPushCardState extends ConsumerState<WebPushCard> {
                   Expanded(
                     child: OutlinedButton(
                       key: const Key('home.webPush.later'),
-                      onPressed: () => setState(() => _later = true),
+                      onPressed: _postpone,
                       child: const Text('لاحقاً'),
                     ),
                   ),

@@ -4982,6 +4982,23 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   the pool and exits. The app's half of M-14 (a confirmation with the
   count, sending `request_id`, the button held until the answer) and L-04,
   L-05, L-50 are batch 152. No migration, no APK.
+- **Batch 152 (notifications, the app side, 2026-10-15, audit M-14 app,
+  L-04, L-05, L-50)**: M-14 -- the announcement screen asks before it
+  sends, showing the message as it will arrive and that it cannot be taken
+  back; each message gets a version-4 UUID (`newAnnouncementRequestId`)
+  sent as `request_id` (`PublishAnnouncementRequestDto.requestId`,
+  `AdminApi.publishAnnouncement`) and kept through every retry of the same
+  text, new for the next message; the result reads "أُرسل الإشعار إلى 3
+  مستخدمين" (`arabicCount`), or that it had arrived before when a replay
+  added nobody. The count before sending is not shown: no route counts
+  the audience. L-04 -- in the inbox a scored match opens the history and
+  a new member My Groups (`fixture_scored`, `group_member_joined`); an
+  announcement still reads in place. L-05 -- "later" on the web push card
+  is kept per browser (`WebPushLaterStore`, secure storage) and hides the
+  card for a week. L-50 -- the prediction reminder's description also
+  names the reminder before a match not yet predicted on a day already
+  started, which the same switch controls. Needs an APK (and the web
+  deploy); no migration.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

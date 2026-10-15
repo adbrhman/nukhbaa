@@ -57,11 +57,15 @@ Future<List<int>> _pump(
   WidgetTester tester,
   _Browser browser, {
   bool registers = true,
+  WebPushLaterStore? later,
 }) async {
   final List<int> registered = <int>[];
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        webPushLaterStoreProvider.overrideWithValue(
+          later ?? InMemoryWebPushLaterStore(),
+        ),
         webPushPlatformProvider.overrideWithValue(browser),
         webPushRegistrarProvider.overrideWithValue(() async {
           registered.add(1);
@@ -166,6 +170,42 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('home.webPush')), findsNothing);
+  });
+
+  testWidgets('later is remembered on this browser (L-05)', (tester) async {
+    final InMemoryWebPushLaterStore store = InMemoryWebPushLaterStore();
+    await _pump(tester, _Browser(), later: store);
+
+    await tester.tap(find.byKey(const Key('home.webPush.later')));
+    await tester.pump();
+
+    expect(store.at, isNotNull);
+  });
+
+  testWidgets('a day after later, the card is still away', (tester) async {
+    await _pump(
+      tester,
+      _Browser(),
+      later: InMemoryWebPushLaterStore(
+        DateTime.now().toUtc().subtract(const Duration(days: 1)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('home.webPush')), findsNothing);
+  });
+
+  testWidgets('a week after later, the card is back', (tester) async {
+    await _pump(
+      tester,
+      _Browser(),
+      later: InMemoryWebPushLaterStore(
+        DateTime.now().toUtc().subtract(const Duration(days: 8)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('home.webPush')), findsOneWidget);
   });
 
   testWidgets('off the web there is no card', (tester) async {

@@ -13,11 +13,17 @@ library;
 ///
 /// Recipients are NOT part of the request: the audience is resolved
 /// server-side (Security ADR §2 — never trust a client-supplied recipient).
+///
+/// [requestId] is a UUID the app makes once per message and sends again with
+/// every retry of it (audit M-14): the server publishes it as that
+/// announcement, so a "send" pressed again after a timeout reaches nobody
+/// twice. Omitted when null, as older apps send.
 final class PublishAnnouncementRequestDto {
   /// Creates the request DTO.
   const PublishAnnouncementRequestDto({
     required this.title,
     required this.body,
+    this.requestId,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -28,6 +34,7 @@ final class PublishAnnouncementRequestDto {
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       title: json['title']! as String,
       body: json['body']! as String,
+      requestId: json['request_id'] as String?,
     );
   }
 
@@ -40,6 +47,10 @@ final class PublishAnnouncementRequestDto {
   /// The instruction text itself.
   final String body;
 
+  /// The id this message is published under, or null to let the server
+  /// make one.
+  final String? requestId;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -48,6 +59,7 @@ final class PublishAnnouncementRequestDto {
     'schema_version': schemaVersion,
     'title': title,
     'body': body,
+    'request_id': ?requestId,
   };
 
   @override
@@ -55,10 +67,11 @@ final class PublishAnnouncementRequestDto {
       other is PublishAnnouncementRequestDto &&
       other.title == title &&
       other.body == body &&
+      other.requestId == requestId &&
       other.schemaVersion == schemaVersion;
 
   @override
-  int get hashCode => Object.hash(title, body, schemaVersion);
+  int get hashCode => Object.hash(title, body, requestId, schemaVersion);
 }
 
 /// The response of `POST /admin/announcements` — how many inboxes gained the

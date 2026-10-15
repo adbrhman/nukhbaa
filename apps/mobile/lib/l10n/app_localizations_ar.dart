@@ -1421,7 +1421,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationSettingsReminderHint =>
-      'قبل أول مباراة في اليوم بثلاث ساعات، إن لم تسجّل توقعاتك';
+      'قبل أول مباراة في اليوم بثلاث ساعات إن لم تسجّل توقعاتك، وقبل مباراة لم تتوقعها بنحو ساعة ونصف إن توقعت بعض مباريات اليوم';
 
   @override
   String get notificationSettingsSaveFailed =>

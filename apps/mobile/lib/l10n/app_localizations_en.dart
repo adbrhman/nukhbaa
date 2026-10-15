@@ -1414,7 +1414,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationSettingsReminderHint =>
-      'Three hours before the first match of the day, if you have not predicted yet';
+      'Three hours before the first match of the day if you have not predicted yet, and about an hour and a half before a match you have not predicted if you predicted some of the day\'s matches';
 
   @override
   String get notificationSettingsSaveFailed =>
