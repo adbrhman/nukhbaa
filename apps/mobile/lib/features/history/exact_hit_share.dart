@@ -14,6 +14,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/ui/emoji_mark.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../competition/team_registry.dart';
@@ -317,15 +319,38 @@ class ExactHitCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            '${doubled ? '⚡🔥' : '✅'} ${l10n.shareHitPoints(hit.points)}',
-            key: const Key('shareHit.points'),
-            style: const TextStyle(
-              color: _gold,
-              fontWeight: FontWeight.w800,
-              fontSize: AppFontSize.s18,
+          // On the web the marks are icons: the emoji font may never arrive
+          // there, and the shared picture would carry empty boxes (L-53).
+          if (kIsWeb)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                EmojiMark(
+                  doubled ? '⚡🔥' : '✅',
+                  style: const TextStyle(fontSize: AppFontSize.s18),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  l10n.shareHitPoints(hit.points),
+                  key: const Key('shareHit.points'),
+                  style: const TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.s18,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              '${doubled ? '⚡🔥' : '✅'} ${l10n.shareHitPoints(hit.points)}',
+              key: const Key('shareHit.points'),
+              style: const TextStyle(
+                color: _gold,
+                fontWeight: FontWeight.w800,
+                fontSize: AppFontSize.s18,
+              ),
             ),
-          ),
           if (rank != null) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),
             Text(

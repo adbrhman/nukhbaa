@@ -38,6 +38,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
 import '../../../core/time/riyadh_day_turnover.dart';
+import '../../../core/ui/emoji_mark.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
@@ -692,12 +693,14 @@ class _PredictionCell extends StatelessWidget {
                       Text(' - ', style: TextStyle(color: tokens.textMuted)),
                       Text('${prediction.awayGoals}', style: digits),
                       const SizedBox(width: AppSpacing.xs),
-                      Text(
+                      // Icons on the web, where the emoji font may never
+                      // arrive (audit L-53).
+                      EmojiMark(
                         verdictMark(
                           isDouble: prediction.isDouble,
                           score: score,
                         ),
-                        key: Key(
+                        textKey: Key(
                           'fixturePredictions.mark.${column.fixture.fixtureId}.${player.participantId}',
                         ),
                         style: const TextStyle(fontSize: AppFontSize.s13),

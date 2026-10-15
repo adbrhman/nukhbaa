@@ -5029,6 +5029,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   on native (`cacheWidth`), as the crests do. L-53 moves to batch 154:
   `RankBadge`, the medal widget, is not used anywhere; the emoji left are
   the marks beside the points. Needs an APK; no migration.
+- **Batch 154 (verdict marks the web can draw, 2026-10-15, audit L-53)**:
+  CanvasKit has no emoji font and fetches one from fonts.gstatic.com,
+  which some networks block, so ✅ ❌ 🔥 ⚡ beside the points could be empty
+  boxes on the web. `EmojiMark` (core/ui) draws each known mark as a
+  Material icon on the web (check, cancel, flame, bolt; success, error
+  and gold) and keeps the text on native, under the key the tests read
+  (`textKey`). Used by the predictions board, the match screen's badge,
+  the history's final line and the shared exact-hit picture (those two
+  split mark and points into a row on the web only). "أنت في الصدارة 🥇"
+  is still a sentence in the ARB files. Needs an APK and the web deploy;
+  no migration.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

@@ -38,6 +38,7 @@ import '../../core/design/app_stroke.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/emoji_mark.dart';
 import '../../core/ui/score_pill.dart' show orientedScoreLabel;
 import '../../core/ui/team_logo.dart';
 import '../../l10n/app_localizations.dart';
@@ -604,7 +605,11 @@ class _CenterStatus extends StatelessWidget {
         children: <Widget>[
           _ScorePill(home: prediction.homeGoals, away: prediction.awayGoals),
           const SizedBox(height: 2),
-          Text(_badge ?? '', style: const TextStyle(fontSize: AppFontSize.s12)),
+          // Icons on the web (audit L-53).
+          EmojiMark(
+            _badge ?? '',
+            style: const TextStyle(fontSize: AppFontSize.s12),
+          ),
         ],
       );
     }

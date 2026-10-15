@@ -1,6 +1,7 @@
 library;
 
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analytics/screen_views.dart';
@@ -11,6 +12,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/score_pill.dart';
 import '../../core/ui/app_badge.dart';
+import '../../core/ui/emoji_mark.dart';
 import '../../core/ui/app_tab_header.dart';
 import '../../core/ui/segmented_pills.dart';
 import '../../l10n/app_localizations.dart';
@@ -469,13 +471,20 @@ class _FinalLine extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     final int? scored = points;
+    final String mark = scored == null
+        ? ''
+        : (scored == 0 ? '❌' : (isDouble ? '🔥' : '✅'));
     final String verdict = scored == null
         ? ''
-        : '${scored == 0 ? '❌' : (isDouble ? '🔥' : '✅')} '
-              '${l10n.boardPoints(scored)}';
+        : '$mark ${l10n.boardPoints(scored)}';
     final TextStyle? style = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: tokens.textSecondary,
       fontWeight: FontWeight.w700,
+    );
+    final TextStyle? verdictStyle = style?.copyWith(
+      color: scored == null
+          ? null
+          : (scored > 0 ? tokens.successText : tokens.errorText),
     );
     return Row(
       children: <Widget>[
@@ -491,16 +500,29 @@ class _FinalLine extends StatelessWidget {
           child: ScorePill(home: home, away: away),
         ),
         Expanded(
-          child: Text(
-            verdict,
-            key: const Key('history.final.verdict'),
-            textAlign: TextAlign.end,
-            style: style?.copyWith(
-              color: scored == null
-                  ? null
-                  : (scored > 0 ? tokens.successText : tokens.errorText),
-            ),
-          ),
+          // On the web the mark is an icon: the emoji font may never arrive
+          // there (audit L-53).
+          child: kIsWeb && scored != null
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    EmojiMark(mark, style: verdictStyle),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        l10n.boardPoints(scored),
+                        key: const Key('history.final.verdict'),
+                        style: verdictStyle,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  verdict,
+                  key: const Key('history.final.verdict'),
+                  textAlign: TextAlign.end,
+                  style: verdictStyle,
+                ),
         ),
       ],
     );
