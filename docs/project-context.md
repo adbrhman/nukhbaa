@@ -4999,6 +4999,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   names the reminder before a match not yet predicted on a day already
   started, which the same switch controls. Needs an APK (and the web
   deploy); no migration.
+- **Batch 144 (the crests, 2026-10-15, audit M-34, L-09)**: the 339
+  bundled crests were 500 to 800 pixels (8.9 MB in every APK, each
+  downloaded whole on the web) for a crest drawn at most 34 logical
+  pixels; each is now at most 128 pixels, a 256-colour PNG with its
+  transparency (1.2 MB in all; the smaller of palette and full colour,
+  and the original when it was already smaller). The patch replaces a
+  crest only while it is still the file this batch was made from, and
+  stops otherwise. `team_logo_weight_test.dart` refuses any crest above
+  160 pixels or 40 KB from now on. L-09 -- Al Ahly of Egypt (the Cairo
+  derby showed Zamalek's crest beside initials) and 16 Asian national
+  flags were bundled but missing from `_monthlyLogoSlugs`; they are
+  shown now. Needs an APK (and the web deploy); no migration. M-35 and
+  L-53 (avatars kept on the phone, medals without the emoji font) are
+  batch 153.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

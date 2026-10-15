@@ -952,4 +952,24 @@ const Set<String> _monthlyLogoSlugs = <String>{
   'orlando-pirates',
   'young-africans',
   'simba',
+  // Bundled but never reachable until audit L-09 (batch 144): Al Ahly of
+  // Egypt (the Cairo derby showed Zamalek's crest beside initials) and the
+  // Asian national teams' flags, matched by their English names.
+  'al-ahly',
+  'australia',
+  'china',
+  'indonesia',
+  'iran',
+  'japan',
+  'jordan',
+  'lebanon',
+  'north-korea',
+  'palestine',
+  'singapore',
+  'south-korea',
+  'syria',
+  'tajikistan',
+  'thailand',
+  'uzbekistan',
+  'vietnam',
 };
