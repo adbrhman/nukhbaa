@@ -5,7 +5,8 @@
 /// as the nearest neutral word, never as an error.
 library;
 
-/// The tab's name.
+/// The tab's name. Only this league is called المواجهات: the friends'
+/// duels are التحديات and the fourth section is المجموعة (audit M-10).
 const String h2hTitle = 'المواجهات';
 
 /// The league's name.
@@ -49,12 +50,13 @@ String h2hRoundStatusLabel(String status) => switch (status) {
   _ => 'قادمة',
 };
 
-/// The three sections of a seated month, in order.
+/// The four sections of a seated month, in order. The last is every match
+/// of a round in the caller's group; short enough for a quarter of a phone.
 const List<String> h2hSectionLabels = <String>[
   'مواجهتي',
   'الترتيب',
   'الجولات',
-  'المواجهات',
+  'المجموعة',
 ];
 
 /// The Arabic month names, January first.

@@ -88,6 +88,30 @@ void main() {
     expect(find.byType(AppErrorState), findsNothing);
   });
 
+  testWidgets('my points: a refusal offers a retry too (audit L-17)', (
+    tester,
+  ) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      _host(<Override>[
+        mySeasonRecordsProvider.overrideWith((ref) async {
+          calls++;
+          if (calls == 1) {
+            throw const AppError.authorization('auth.forbidden', 'refused');
+          }
+          return const <MySeasonRecordDto>[];
+        }),
+      ], const MyPointsScreen()),
+    );
+    await _settleReads(tester);
+    expect(find.byKey(const Key('myPoints.error')), findsOneWidget);
+
+    await _tapRetry(tester, MyPointsScreen);
+
+    expect(calls, 2);
+    expect(find.byType(AppErrorState), findsNothing);
+  });
+
   testWidgets('leaderboards: a failed load offers a retry that reloads', (
     tester,
   ) async {

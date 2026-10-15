@@ -317,7 +317,7 @@ class _CreateDuelSheetState extends ConsumerState<CreateDuelSheet> {
                   child: Column(
                     children: <Widget>[
                       Text(
-                        'رمز المواجهة',
+                        'رمز التحدي',
                         style: text.titleSmall?.copyWith(
                           color: tokens.textSecondary,
                         ),

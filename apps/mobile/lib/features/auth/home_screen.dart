@@ -1,12 +1,14 @@
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/shared.dart';
 
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
+import '../../core/error/error_presenter.dart';
 import '../../core/format/timestamps.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_button.dart';
@@ -148,6 +150,10 @@ class HomeScreen extends ConsumerWidget {
                   fixtures: fixtures,
                   seasons: seasons,
                   onOpenMatches: onOpenMatches,
+                  onRetry: () {
+                    ref.invalidate(currentMonthFixturesProvider);
+                    ref.invalidate(activeSeasonsProvider);
+                  },
                 ),
               ),
             ],
@@ -586,16 +592,35 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
+/// The month at a glance. A read that failed says so, with a retry,
+/// instead of "updating your matches..." for ever (audit M-06).
 class _OverviewCard extends StatelessWidget {
   const _OverviewCard({
     required this.fixtures,
     required this.seasons,
     required this.onOpenMatches,
+    required this.onRetry,
   });
 
   final AsyncValue<List<CurrentMonthFixtureItemDto>> fixtures;
   final AsyncValue<List<ActiveSeasonDto>> seasons;
   final VoidCallback onOpenMatches;
+
+  /// Reads the month's matches and the seasons again.
+  final VoidCallback onRetry;
+
+  /// The failure to show: only while there is nothing older to show
+  /// instead (a failed refresh keeps the last list).
+  static AppError? _failure(AsyncValue<Object?> value) {
+    if (value.hasValue || !value.hasError) return null;
+    final Object? error = value.error;
+    return error is AppError
+        ? error
+        : const AppError.transient(
+            'client.unexpected',
+            'Something went wrong. Please try again.',
+          );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -615,6 +640,7 @@ class _OverviewCard extends StatelessWidget {
         )
         .length;
     final seasonCount = seasons.value?.length;
+    final AppError? failure = _failure(fixtures);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -641,31 +667,55 @@ class _OverviewCard extends StatelessWidget {
                 Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
                 const SizedBox(width: AppSpacing.sm),
                 // At most 60% of the row; at large system text the chip's
-                // label wraps there instead of shrinking (UI-17).
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: constraints.maxWidth * 0.6,
+                // label wraps there instead of shrinking (UI-17). A failed
+                // read shows no count rather than "..." for ever.
+                if (_failure(seasons) == null)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth * 0.6,
+                    ),
+                    child: StreakChip(
+                      label: seasonCount == null
+                          ? '...'
+                          : _activeSeasonsLabel(seasonCount),
+                    ),
                   ),
-                  child: StreakChip(
-                    label: seasonCount == null
-                        ? '...'
-                        : _activeSeasonsLabel(seasonCount),
-                  ),
-                ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Text(
-            fixtureCount == null
-                ? 'جارٍ تحديث مبارياتك...'
-                : _monthFixturesLabel(fixtureCount),
-            // Full white: at 90% it fell to 3.9:1 on the gradient (UI-07).
-            style: TextStyle(
-              color: tokens.onPrimary,
-              fontSize: AppFontSize.s13,
+          if (failure != null) ...<Widget>[
+            Text(
+              ErrorPresenter.message(failure),
+              key: const Key('home.overview.error'),
+              style: TextStyle(
+                color: tokens.onPrimary,
+                fontSize: AppFontSize.s13,
+              ),
             ),
-          ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              key: const Key('home.overview.retry'),
+              onPressed: onRetry,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: tokens.onPrimary,
+                side: BorderSide(color: tokens.onPrimary),
+                minimumSize: const Size.fromHeight(AppSizes.controlMd),
+              ),
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(AppLocalizations.of(context).retry),
+            ),
+          ] else
+            Text(
+              fixtureCount == null
+                  ? 'جارٍ تحديث مبارياتك...'
+                  : _monthFixturesLabel(fixtureCount),
+              // Full white: at 90% it fell to 3.9:1 on the gradient (UI-07).
+              style: TextStyle(
+                color: tokens.onPrimary,
+                fontSize: AppFontSize.s13,
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
           FilledButton(
             key: const Key('home.startPredicting'),

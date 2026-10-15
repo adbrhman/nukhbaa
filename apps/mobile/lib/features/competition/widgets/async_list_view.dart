@@ -10,8 +10,10 @@
 ///
 /// Errors arrive as a thrown [AppError] (see `competition_providers.dart`) and
 /// are rendered through `ErrorPresenter` — the single place error text is
-/// produced — with a retry affordance only when the failure is retryable
-/// (transient). The widget never branches on raw error codes itself.
+/// produced — always with a retry: a refusal can change too (the player
+/// joins the season, a member adds him), and a page with no way out but
+/// back is a dead end (audit L-17). The widget never branches on raw error
+/// codes itself.
 library;
 
 import 'package:flutter/material.dart';
@@ -302,14 +304,13 @@ class _ErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(color: tokens.textPrimary),
             ),
-            if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.tonal(
-                key: const Key('browse.error.retry'),
-                onPressed: onRetry,
-                child: Text(AppLocalizations.of(context).retry),
-              ),
-            ],
+            // Every failure, not only a dropped connection (audit L-17).
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.tonal(
+              key: const Key('browse.error.retry'),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).retry),
+            ),
           ],
         ),
       ),

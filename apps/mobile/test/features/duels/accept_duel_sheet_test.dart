@@ -71,6 +71,34 @@ void main() {
     expect(find.byKey(const Key('acceptDuel.note')), findsNothing);
   });
 
+  testWidgets('each score button is named, with its team (audit L-52)', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      const AsyncData<Map<String, FixturePredictionDto>>(
+        <String, FixturePredictionDto>{},
+      ),
+    );
+
+    for (final String key in <String>[
+      'acceptDuel.home.decrement',
+      'acceptDuel.home.increment',
+      'acceptDuel.away.decrement',
+      'acceptDuel.away.increment',
+    ]) {
+      final String? tooltip = tester
+          .widget<IconButton>(find.byKey(Key(key)))
+          .tooltip;
+      expect(tooltip, isNotNull, reason: key);
+      expect(
+        tooltip,
+        contains(key.contains('home') ? 'Home FC' : 'Away FC'),
+        reason: key,
+      );
+    }
+  });
+
   testWidgets('a failed load says so, offers a retry and still sends '
       'nothing', (tester) async {
     await _open(

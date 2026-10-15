@@ -191,12 +191,12 @@ String liveClock(LiveFixtureStandingDto f) {
 String liveDuelLine(LiveDuelStandingDto d) {
   final String score = '${d.myPoints} - ${d.opponentPoints}';
   if (d.myPoints > d.opponentPoints) {
-    return 'تتقدم على ${d.opponentName} في المواجهة ($score)';
+    return 'تتقدم على ${d.opponentName} في التحدي ($score)';
   }
   if (d.myPoints < d.opponentPoints) {
-    return '${d.opponentName} يتقدم عليك في المواجهة ($score)';
+    return '${d.opponentName} يتقدم عليك في التحدي ($score)';
   }
-  return 'مواجهتك مع ${d.opponentName} متعادلة ($score)';
+  return 'تحديك مع ${d.opponentName} متعادل ($score)';
 }
 
 /// The month place now and if the matches in play ended now.

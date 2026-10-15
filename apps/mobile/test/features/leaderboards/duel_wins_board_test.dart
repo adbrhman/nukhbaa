@@ -122,9 +122,9 @@ void main() {
   });
 
   test('the label speaks Arabic plurals', () {
-    expect(duelWinsLabel(1), 'فاز في مواجهة واحدة');
-    expect(duelWinsLabel(2), 'فاز في مواجهتين');
-    expect(duelWinsLabel(5), 'فاز في 5 مواجهات');
-    expect(duelWinsLabel(11), 'فاز في 11 مواجهة');
+    expect(duelWinsLabel(1), 'فاز في تحدٍّ واحد');
+    expect(duelWinsLabel(2), 'فاز في تحديين');
+    expect(duelWinsLabel(5), 'فاز في 5 تحديات');
+    expect(duelWinsLabel(11), 'فاز في 11 تحديًا');
   });
 }

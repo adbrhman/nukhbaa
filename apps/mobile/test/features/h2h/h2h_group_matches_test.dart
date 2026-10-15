@@ -1,4 +1,4 @@
-/// The fourth section of the head-to-head tab (المواجهات): every match of a
+/// The fourth section of the head-to-head tab (المجموعة): every match of a
 /// round in the caller's group, over the real [AuthApi] with only the
 /// socket faked. It opens on the round that matters now, switches rounds
 /// from its list, puts the caller's match first and opens it, and shows
@@ -209,7 +209,7 @@ void main() {
       'مواجهتي',
       'الترتيب',
       'الجولات',
-      'المواجهات',
+      'المجموعة',
     ]);
   });
 

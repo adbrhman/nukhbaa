@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/design/app_spacing.dart';
 import '../../core/providers.dart';
 import '../competition/team_registry.dart';
 
@@ -76,18 +77,31 @@ Future<void> offerFavoriteTeamAfterSave({
     SnackBar(
       key: const Key('favoriteOffer'),
       duration: const Duration(seconds: 8),
-      content: Row(
+      // The question above, the two teams below and free to wrap: two
+      // long names beside it overflowed a narrow phone (audit L-06).
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Expanded(child: Text('أيّ فريق تشجّع؟')),
-          TextButton(
-            key: const Key('favoriteOffer.home'),
-            onPressed: () => unawaited(choose(homeId, home)),
-            child: Text(home),
-          ),
-          TextButton(
-            key: const Key('favoriteOffer.away'),
-            onPressed: () => unawaited(choose(awayId, away)),
-            child: Text(away),
+          const Text('أيّ فريق تشجّع؟'),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: <Widget>[
+              for (final (Key key, String id, String name)
+                  in <(Key, String, String)>[
+                    (const Key('favoriteOffer.home'), homeId, home),
+                    (const Key('favoriteOffer.away'), awayId, away),
+                  ])
+                TextButton(
+                  key: key,
+                  onPressed: () => unawaited(choose(id, name)),
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

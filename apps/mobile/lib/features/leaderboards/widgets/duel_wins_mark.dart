@@ -10,10 +10,10 @@ import '../../../core/design/app_tokens.dart';
 
 /// "Won N duels", in Arabic with its plural forms.
 String duelWinsLabel(int wins) => switch (wins) {
-  1 => 'فاز في مواجهة واحدة',
-  2 => 'فاز في مواجهتين',
-  >= 3 && <= 10 => 'فاز في $wins مواجهات',
-  _ => 'فاز في $wins مواجهة',
+  1 => 'فاز في تحدٍّ واحد',
+  2 => 'فاز في تحديين',
+  >= 3 && <= 10 => 'فاز في $wins تحديات',
+  _ => 'فاز في $wins تحديًا',
 };
 
 /// The mark itself; the board shows it only for a player with wins.

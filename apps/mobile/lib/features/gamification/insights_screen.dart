@@ -17,6 +17,7 @@ import '../../core/providers.dart';
 import '../../core/ui/app_empty_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/widgets/account_menu.dart';
+import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 
 /// `GET /me/insights`.
@@ -215,9 +216,10 @@ class _RecapCard extends StatelessWidget {
               ),
               if (best != null)
                 Text(
+                  // The Arabic names, as on every other screen (L-07).
                   l10n.insightsBestPrediction(
-                    best.homeTeam,
-                    best.awayTeam,
+                    teamDisplayName(best.homeTeam),
+                    teamDisplayName(best.awayTeam),
                     best.points,
                   ),
                   key: const Key('insights.best'),

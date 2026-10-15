@@ -311,12 +311,80 @@ final Map<String, TeamBrand> _allTeams = <String, TeamBrand>{
   ...kSaudiTeams,
 };
 
+/// Other spellings of a registry team, written as [_normalize] leaves
+/// them, each pointing at its registry key. Only names known to mean that
+/// team: a name not listed is not guessed at (audit L-08).
+const Map<String, String> _aliases = <String, String>{
+  'man united': 'Manchester United',
+  'man utd': 'Manchester United',
+  'manchester utd': 'Manchester United',
+  'man city': 'Manchester City',
+  'tottenham': 'Tottenham Hotspur',
+  'spurs': 'Tottenham Hotspur',
+  'brighton and hove albion': 'Brighton',
+  'brighton hove albion': 'Brighton',
+  'nottm forest': 'Nottingham Forest',
+  'nott m forest': 'Nottingham Forest',
+  'newcastle': 'Newcastle United',
+  'leeds': 'Leeds United',
+  'ipswich': 'Ipswich Town',
+  'coventry': 'Coventry City',
+  'hull': 'Hull City',
+  'al qadisiyah': 'Al Qadsiah',
+  'al qadisiya': 'Al Qadsiah',
+  'al ittifaq': 'Al Ettifaq',
+  'al taawon': 'Al Taawoun',
+  'al feiha': 'Al Fayha',
+  'al hazm': 'Al Hazem',
+  'al ittihad jeddah': 'Al Ittihad',
+};
+
+/// Club-form words a feed puts before or after a name ("Arsenal FC",
+/// "Al Hilal SFC", "Al Ahli Saudi", "AFC Bournemouth").
+const Set<String> _clubWords = <String>{
+  'fc',
+  'afc',
+  'cf',
+  'sc',
+  'sfc',
+  'club',
+  'saudi',
+};
+
+/// [name] lower-cased, with hyphens, dots and apostrophes as spaces, "&" as
+/// "and", and the club-form words at either end dropped.
+String _normalize(String name) {
+  final List<String> words = name
+      .toLowerCase()
+      .replaceAll('&', ' and ')
+      .replaceAll(RegExp(r"[-_.'’]+"), ' ')
+      .split(RegExp(r'\s+'))
+      .where((String w) => w.isNotEmpty)
+      .toList();
+  while (words.length > 1 && _clubWords.contains(words.first)) {
+    words.removeAt(0);
+  }
+  while (words.length > 1 && _clubWords.contains(words.last)) {
+    words.removeLast();
+  }
+  return words.join(' ');
+}
+
+/// The registry by [_normalize]d name, and every alias.
+final Map<String, TeamBrand> _byNormalName = <String, TeamBrand>{
+  for (final MapEntry<String, TeamBrand> entry in _allTeams.entries)
+    _normalize(entry.key): entry.value,
+  for (final MapEntry<String, String> alias in _aliases.entries)
+    alias.key: _allTeams[alias.value]!,
+};
+
 /// Looks up a team's brand identity by its English name as returned by the
-/// server. Tries an exact match first, then a case-insensitive match, then a
-/// tolerant substring match (to absorb minor suffix/spelling drift such as
-/// "Man United" vs "Manchester United"). Returns `null` when [name] is
-/// `null`, empty, or not recognized — callers must handle that as a clean
-/// fallback, never as an error.
+/// server: the name itself, then its [_normalize]d form against the
+/// registry and a short list of known other spellings ("Man United",
+/// "Al-Hilal", "Arsenal FC"). Never a partial match: "Al Hilal Omdurman"
+/// is not Al Hilal and "Shabab Al Ahli" is not Al Ahli (audit L-08).
+/// Returns `null` when [name] is `null`, empty, or not recognized --
+/// callers must handle that as a clean fallback, never as an error.
 TeamBrand? lookupTeam(String? name) {
   if (name == null) return null;
   final String trimmed = name.trim();
@@ -324,16 +392,7 @@ TeamBrand? lookupTeam(String? name) {
 
   final TeamBrand? exact = _allTeams[trimmed];
   if (exact != null) return exact;
-
-  final String needle = trimmed.toLowerCase();
-  for (final MapEntry<String, TeamBrand> entry in _allTeams.entries) {
-    if (entry.key.toLowerCase() == needle) return entry.value;
-  }
-  for (final MapEntry<String, TeamBrand> entry in _allTeams.entries) {
-    final String key = entry.key.toLowerCase();
-    if (needle.contains(key) || key.contains(needle)) return entry.value;
-  }
-  return null;
+  return _byNormalName[_normalize(trimmed)];
 }
 
 /// The best available display name for a team: the Arabic brand name when

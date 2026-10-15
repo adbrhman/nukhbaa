@@ -13,13 +13,10 @@
 library;
 
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
@@ -27,6 +24,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/share_picture.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../../competition/team_identity.dart';
@@ -182,6 +180,7 @@ class DayHeroShareDialog extends ConsumerStatefulWidget {
 class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
   final GlobalKey _cardKey = GlobalKey();
   bool _sharing = false;
+  bool _shareFailed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +215,16 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
                 ),
               ],
             ),
+            // A share that could not open says so (audit L-18).
+            if (_shareFailed) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                sharePictureFailedText,
+                key: const Key('dayHero.failed'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.tokens.errorText),
+              ),
+            ],
           ],
         ),
       ),
@@ -224,14 +233,11 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
 
   Future<void> _share(String? code) async {
     final DayHero hero = widget.hero;
-    setState(() => _sharing = true);
+    setState(() {
+      _sharing = true;
+      _shareFailed = false;
+    });
     try {
-      final RenderObject? object = _cardKey.currentContext?.findRenderObject();
-      if (object is! RenderRepaintBoundary) return;
-      final ui.Image image = await object.toImage(pixelRatio: 3);
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (data == null) return;
       final String message =
           'بطل النخبة اليوم: ${hero.playerName}، وحده توقّع '
           '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
@@ -239,19 +245,12 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
       final String text = code == null || code.isEmpty
           ? message
           : '$message\nشاركنا في نُخبة: ${inviteLinkFor(code)}';
-      await SharePlus.instance.share(
-        ShareParams(
-          text: text,
-          files: <XFile>[
-            XFile.fromData(
-              data.buffer.asUint8List(),
-              mimeType: 'image/png',
-              name: 'nukhba-hero.png',
-            ),
-          ],
-          fileNameOverrides: const <String>['nukhba-hero.png'],
-        ),
+      final bool shared = await sharePicture(
+        boundaryKey: _cardKey,
+        text: text,
+        fileName: 'nukhba-hero.png',
       );
+      if (mounted && !shared) setState(() => _shareFailed = true);
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

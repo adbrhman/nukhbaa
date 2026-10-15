@@ -122,7 +122,7 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
       builder: (BuildContext dialog) => AlertDialog(
         title: const Text('إلغاء التحدي؟'),
         content: const Text(
-          'لن يستطيع أحد قبوله بعد الآن. المواجهات المقبولة منه تبقى.',
+          'لن يستطيع أحد قبوله بعد الآن، ومن قبِله قبل ذلك يبقى في التحدي.',
         ),
         actions: <Widget>[
           TextButton(
@@ -157,7 +157,8 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
     return Scaffold(
       key: const Key('duels.screen'),
       backgroundColor: tokens.background,
-      appBar: AppBar(centerTitle: true, title: const Text('المواجهات')),
+      // Not المواجهات: that is the league tab (audit M-10).
+      appBar: AppBar(centerTitle: true, title: const Text('التحديات')),
       body: AsyncObjectView<MyDuelsDto>(
         value: ref.watch(myDuelsProvider),
         onRetry: () => ref.invalidate(myDuelsProvider),
@@ -182,7 +183,7 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
               children: <Widget>[
                 _Card(
                   children: <Widget>[
-                    const _Heading('لديك رمز مواجهة؟'),
+                    const _Heading('لديك رمز تحدٍّ؟'),
                     TextField(
                       key: const Key('duels.codeField'),
                       controller: _code,
@@ -191,7 +192,7 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
                       textInputAction: TextInputAction.go,
                       onSubmitted: (_) => unawaited(_openCode()),
                       decoration: const InputDecoration(
-                        labelText: 'رمز المواجهة',
+                        labelText: 'رمز التحدي',
                       ),
                     ),
                     FilledButton.tonal(
@@ -236,10 +237,10 @@ class _DuelsScreenState extends ConsumerState<DuelsScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 _Card(
                   children: <Widget>[
-                    const _Heading('مواجهاتي'),
+                    const _Heading('تحدياتي'),
                     if (mine.duels.isEmpty)
                       Text(
-                        'لا مواجهات بعد. توقّع مباراة، ثم اختر «تحدَّ» من '
+                        'لا تحديات بعد. توقّع مباراة، ثم اختر «تحدَّ» من '
                         'الشريط الذي يظهر بعد حفظ توقعك.',
                         key: const Key('duels.empty'),
                         style: context.text.bodyMedium?.copyWith(

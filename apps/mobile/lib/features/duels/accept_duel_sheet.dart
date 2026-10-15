@@ -23,6 +23,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/format/timestamps.dart';
+import '../../l10n/app_localizations.dart';
 import '../competition/team_registry.dart';
 import '../history/prediction_history_providers.dart';
 import '../history/prediction_lookup_providers.dart';
@@ -271,6 +272,7 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -292,6 +294,9 @@ class _Stepper extends StatelessWidget {
             children: <Widget>[
               IconButton(
                 key: Key('$keyPrefix.decrement'),
+                // Named for a screen reader, with the team: four bare
+                // icons read the same (audit L-52).
+                tooltip: '${l10n.scoreStepperDecreaseTooltip} ($label)',
                 onPressed: enabled && value > 0
                     ? () => onChanged(value - 1)
                     : null,
@@ -311,6 +316,7 @@ class _Stepper extends StatelessWidget {
               ),
               IconButton(
                 key: Key('$keyPrefix.increment'),
+                tooltip: '${l10n.scoreStepperIncreaseTooltip} ($label)',
                 onPressed: enabled && value < 20
                     ? () => onChanged(value + 1)
                     : null,

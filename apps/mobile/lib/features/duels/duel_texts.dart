@@ -19,13 +19,13 @@ String duelErrorMessage(AppError error) => switch (error.code) {
     'يُنشأ التحدي قبل انطلاق المباراة بـ30 دقيقة على الأقل.',
   'social.duel_max_pending_challenges' =>
     'لديك 10 تحديات مفتوحة. ألغِ بعضها أو انتظر قبولها.',
-  'social.duel_challenge_not_found' => 'لا توجد مواجهة بهذا الرمز.',
+  'social.duel_challenge_not_found' => 'لا يوجد تحدٍّ بهذا الرمز.',
   'social.duel_code_malformed' ||
-  'social.duel_code_empty' => 'رمز المواجهة 12 خانة. تأكد منه وحاول مجدداً.',
+  'social.duel_code_empty' => 'رمز التحدي 12 خانة. تأكد منه وحاول مجدداً.',
   'social.duel_challenge_not_open' => 'هذا التحدي لم يعد مفتوحاً.',
   'social.duel_expired' => 'انطلقت المباراة، فانتهى وقت قبول التحدي.',
   'social.duel_capacity_full' => 'اكتمل عدد المنافسين في هذا التحدي.',
-  'social.duel_pair_already_exists' => 'بينكما مواجهة على هذه المباراة من قبل.',
+  'social.duel_pair_already_exists' => 'بينكما تحدٍّ على هذه المباراة من قبل.',
   'social.duel_self_accept' ||
   'social.duel_self_target' => 'لا يمكنك قبول تحديك أنت.',
   'social.duel_wrong_target' => 'هذا التحدي مخصص للاعب آخر.',
@@ -78,5 +78,5 @@ String duelLinkFor(String code) => '$inviteWebBase?duel=$code';
 String duelShareText(DuelChallengeDto challenge) =>
     '⚔️ تحدّاك ${challenge.challengerName} في مباراة '
     '${duelFixtureTitle(challenge.homeTeam, challenge.awayTeam)} على نُخبة!\n'
-    'رمز المواجهة: ${challenge.code}\n'
+    'رمز التحدي: ${challenge.code}\n'
     '${duelLinkFor(challenge.code)}';

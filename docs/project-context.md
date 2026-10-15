@@ -5040,6 +5040,25 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   split mark and points into a row on the web only). "أنت في الصدارة 🥇"
   is still a sentence in the ARB files. Needs an APK and the web deploy;
   no migration.
+- **Batch 145 (the screens say what happened, 2026-10-15, audit M-06,
+  M-10, L-06, L-07, L-08, L-17, L-18, L-52)**: the home overview shows the
+  error and a retry when the month's matches cannot be read and there is
+  no older list (it said "updating your matches..." for ever), and drops
+  the season count rather than "..." when that read fails. Only the
+  head-to-head league is "المواجهات": the friends' duels are "التحديات"
+  everywhere (the account row, the page, the code, "فاز في 5 تحديات"; the
+  server already said تحدٍّ), and the league's fourth section is
+  "المجموعة", short enough for a quarter of a phone. The favourite-team
+  bar puts the two teams under the question in a Wrap. The H2H round
+  detail and the insights' best call show Arabic team names. The team
+  registry no longer matches by substring: the name, then a normalized
+  form (case, hyphens, "&", FC/SFC/AFC/Saudi at either end) and a short
+  alias list, so "Al Hilal Omdurman" is not Al Hilal. Every list error
+  offers a retry, not only a dropped connection. The three picture shares
+  go through `sharePicture` (core/ui), which reports a failure, and the
+  dialog says "تعذّرت المشاركة. حاول مرة أخرى.". The duel score buttons
+  carry tooltips with the team. Needs an APK and the web deploy; no
+  migration.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 

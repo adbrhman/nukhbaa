@@ -146,7 +146,7 @@ void main() {
     );
     expect(
       tester.widget<Text>(find.byKey(const Key('home.live.duel.f-1.0'))).data,
-      'تتقدم على Khaled في المواجهة (6 - 0)',
+      'تتقدم على Khaled في التحدي (6 - 0)',
     );
     expect(
       tester.widget<Text>(find.byKey(const Key('home.live.rank.s-1'))).data,
@@ -196,7 +196,7 @@ void main() {
             opponentPoints: 3,
           ),
         ),
-        'Sara يتقدم عليك في المواجهة (0 - 3)',
+        'Sara يتقدم عليك في التحدي (0 - 3)',
       );
       expect(
         liveDuelLine(
@@ -207,7 +207,7 @@ void main() {
             opponentPoints: 0,
           ),
         ),
-        'مواجهتك مع Sara متعادلة (0 - 0)',
+        'تحديك مع Sara متعادل (0 - 0)',
       );
     });
 

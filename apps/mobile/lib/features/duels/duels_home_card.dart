@@ -117,7 +117,7 @@ class DuelsHomeCard extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    'مواجهاتك',
+                    'تحدياتك',
                     style: text.titleMedium?.copyWith(
                       color: tokens.textPrimary,
                       fontWeight: FontWeight.w800,
@@ -158,7 +158,7 @@ class DuelsHomeCard extends ConsumerWidget {
             if (summary.running > 0) ...<Widget>[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'مواجهات جارية: ${summary.running}',
+                'تحديات جارية: ${summary.running}',
                 key: const Key('home.duels.running'),
                 style: line,
               ),

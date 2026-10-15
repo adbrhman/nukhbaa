@@ -161,7 +161,8 @@ class AccountScreen extends ConsumerWidget {
                       AccountMenuRow(
                         key: const Key('account.duels'),
                         icon: Icons.compare_arrows_rounded,
-                        title: 'المواجهات',
+                        // Not المواجهات: that is the league tab (M-10).
+                        title: 'التحديات',
                         subtitle: 'تحدَّ أصدقاءك على مباراة',
                         onTap: () => open(const DuelsScreen()),
                       ),

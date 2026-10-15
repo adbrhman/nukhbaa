@@ -78,8 +78,8 @@ void main() {
         'percent': 100,
         'points': 4,
         'best': {
-          'home_team': 'home',
-          'away_team': 'away',
+          'home_team': 'Al Hilal',
+          'away_team': 'Al Nassr',
           'points': 3,
           'exact': true,
         },
@@ -92,7 +92,8 @@ void main() {
     expect(_textOf(tester, 'insights.lastWeek'), ar.insightsLastWeek(2, 2, 4));
     expect(
       _textOf(tester, 'insights.best'),
-      ar.insightsBestPrediction('home', 'away', 3),
+      // In Arabic, as on every other screen (audit L-07).
+      ar.insightsBestPrediction('الهلال', 'النصر', 3),
     );
     expect(_textOf(tester, 'insights.bestLeague'), ar.insightsBestLeague('L1'));
     expect(find.byKey(const Key('insights.worstLeague')), findsNothing);

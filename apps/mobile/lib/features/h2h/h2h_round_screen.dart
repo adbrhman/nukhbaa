@@ -17,6 +17,7 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_card.dart';
+import '../competition/team_registry.dart';
 import '../competition/widgets/async_list_view.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
@@ -369,8 +370,9 @@ class _FixtureTile extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
+                // The Arabic name, as on every other screen (audit L-07).
                 child: Text(
-                  f.homeTeam,
+                  teamDisplayName(f.homeTeam),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: team,
@@ -389,7 +391,7 @@ class _FixtureTile extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  f.awayTeam,
+                  teamDisplayName(f.awayTeam),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,

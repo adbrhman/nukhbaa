@@ -46,8 +46,9 @@ MyH2hRoundDto _detail({bool average = false}) => MyH2hRoundDto(
   fixtures: <H2hRoundFixtureDto>[
     H2hRoundFixtureDto(
       fixtureId: 'f1',
-      homeTeam: 'الهلال',
-      awayTeam: 'النصر',
+      // As the feed may send them: shown in Arabic (audit L-07).
+      homeTeam: 'Al Hilal',
+      awayTeam: 'Al Nassr',
       kickoffAt: '2026-11-04T12:00:00.000Z',
       state: 'finished',
       homeGoals: 2,
@@ -228,6 +229,8 @@ void main() {
   ) async {
     await _pump(tester, const H2hRoundScreen(round: 2));
 
+    expect(_inside('h2h.fixture.f1', find.text('الهلال')), findsOneWidget);
+    expect(_inside('h2h.fixture.f1', find.text('Al Hilal')), findsNothing);
     expect(
       tester.widget<Text>(find.byKey(const Key('h2h.fixture.f1.middle'))).data,
       '2 - 1',

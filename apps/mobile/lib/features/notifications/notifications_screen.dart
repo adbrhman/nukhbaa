@@ -343,7 +343,7 @@ class _NotificationRow extends ConsumerWidget {
       'reaction_received' => l10n.notificationReactionReceived,
       'admin_announcement' => l10n.notificationAdminAnnouncement,
       'duel_challenged' => 'لاعب يتحداك على مباراة. اضغط لتتوقّع.',
-      'duel_accepted' => 'قُبل تحديك. تابع المواجهة.',
+      'duel_accepted' => 'قُبل تحديك. اضغط لتتابعه.',
       'prediction_reaction' => 'لاعب تفاعل مع توقعك. اضغط لترى جدول التوقعات.',
       'group_invited' => 'دعوة إلى دوري أصدقاء.',
       _ => l10n.notificationsTitle,

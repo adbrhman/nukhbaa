@@ -11,20 +11,19 @@
 library;
 
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
+import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/ui/emoji_mark.dart';
+import '../../core/ui/share_picture.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../competition/team_registry.dart';
@@ -108,6 +107,7 @@ class ExactHitShareDialog extends ConsumerStatefulWidget {
 class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
   final GlobalKey _cardKey = GlobalKey();
   bool _sharing = false;
+  bool _shareFailed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -161,6 +161,16 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
                 ),
               ],
             ),
+            // A share that could not open says so (audit L-18).
+            if (_shareFailed) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                sharePictureFailedText,
+                key: const Key('shareHit.failed'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.tokens.errorText),
+              ),
+            ],
           ],
         ),
       ),
@@ -170,14 +180,11 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
   Future<void> _share(String? code) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ExactHit hit = widget.hit;
-    setState(() => _sharing = true);
+    setState(() {
+      _sharing = true;
+      _shareFailed = false;
+    });
     try {
-      final RenderObject? object = _cardKey.currentContext?.findRenderObject();
-      if (object is! RenderRepaintBoundary) return;
-      final ui.Image image = await object.toImage(pixelRatio: 3);
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (data == null) return;
       final String message = l10n.shareHitMessage(
         teamDisplayName(hit.fixture?.homeTeam),
         '${hit.prediction.homeGoals}-${hit.prediction.awayGoals}',
@@ -186,19 +193,12 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
       final String text = code == null || code.isEmpty
           ? message
           : '$message\n${l10n.shareHitJoin(inviteLinkFor(code))}';
-      await SharePlus.instance.share(
-        ShareParams(
-          text: text,
-          files: <XFile>[
-            XFile.fromData(
-              data.buffer.asUint8List(),
-              mimeType: 'image/png',
-              name: 'nukhba-hit.png',
-            ),
-          ],
-          fileNameOverrides: const <String>['nukhba-hit.png'],
-        ),
+      final bool shared = await sharePicture(
+        boundaryKey: _cardKey,
+        text: text,
+        fileName: 'nukhba-hit.png',
       );
+      if (mounted && !shared) setState(() => _shareFailed = true);
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

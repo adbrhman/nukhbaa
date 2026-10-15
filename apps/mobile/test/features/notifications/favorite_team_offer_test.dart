@@ -51,7 +51,11 @@ final class _Server {
   }
 }
 
-Future<_Server> _pump(WidgetTester tester, List<String> teams) async {
+Future<_Server> _pump(
+  WidgetTester tester,
+  List<String> teams, {
+  SeasonFixtureCardDto fixture = _fixture,
+}) async {
   final _Server server = _Server(teams);
   final harness = buildCurrentMonthFixturesHarness(server.handle);
   addTearDown(harness.dispose);
@@ -66,7 +70,7 @@ Future<_Server> _pump(WidgetTester tester, List<String> teams) async {
               onPressed: () => offerFavoriteTeamAfterSave(
                 context: context,
                 ref: ref,
-                fixture: _fixture,
+                fixture: fixture,
               ),
               child: const Text('save'),
             ),
@@ -101,6 +105,36 @@ void main() {
       <String>['t-chelsea'],
     ]);
     expect(find.byKey(const Key('favoriteOffer.done')), findsOneWidget);
+  });
+
+  testWidgets('two long names on a narrow phone at large text fit (audit '
+      'L-06)', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(
+      tester,
+      const <String>[],
+      fixture: const SeasonFixtureCardDto(
+        seasonId: 's-1',
+        fixtureId: 'f-2',
+        homeTeam: 'Borussia Monchengladbach',
+        awayTeam: 'Wolverhampton Wanderers',
+        kickoffAt: '2026-10-10T14:30:00.000Z',
+        homeTeamId: 't-gladbach',
+        awayTeamId: 't-wolves',
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('save')));
+    await _settle(tester);
+
+    expect(find.byKey(const Key('favoriteOffer')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('favoriteOffer.home')), findsOneWidget);
+    expect(find.byKey(const Key('favoriteOffer.away')), findsOneWidget);
   });
 
   testWidgets('a player with a favourite is offered nothing', (tester) async {

@@ -464,14 +464,13 @@ class _CurrentMonthFixturesError extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(color: tokens.textPrimary),
             ),
-            if (ErrorPresenter.isRetryable(appError)) ...<Widget>[
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                key: const Key('currentMonthFixtures.error.retry'),
-                onPressed: onRetry,
-                child: Text(l10n.tryAgainButton),
-              ),
-            ],
+            // Every failure, not only a dropped connection (audit L-17).
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              key: const Key('currentMonthFixtures.error.retry'),
+              onPressed: onRetry,
+              child: Text(l10n.tryAgainButton),
+            ),
           ],
         ),
       ),

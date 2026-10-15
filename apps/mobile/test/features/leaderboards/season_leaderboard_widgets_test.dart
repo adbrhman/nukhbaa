@@ -134,7 +134,7 @@ void main() {
 
     testWidgets(
       'non-member (401 leaderboard.not_a_participant) -> tailored message, '
-      'no retry',
+      'and still a retry',
       (tester) async {
         final harness = buildLeaderboardsHarness((request) async {
           if (request.url.path == '/seasons/s-1/fixture-leaderboard') {
@@ -166,8 +166,9 @@ void main() {
           find.textContaining('لست مشاركًا في هذا الموسم'),
           findsOneWidget,
         );
-        // An authorization failure is NOT retryable — no retry affordance.
-        expect(find.byKey(const Key('browse.error.retry')), findsNothing);
+        // A refusal still offers a retry: joining the season changes the
+        // answer, and the page is no dead end (audit L-17).
+        expect(find.byKey(const Key('browse.error.retry')), findsOneWidget);
       },
     );
 

@@ -66,9 +66,8 @@ class MyPointsScreen extends ConsumerWidget implements NamedScreen {
               key: const Key('myPoints.error'),
               message: ErrorPresenter.message(appError),
               retryLabel: l10n.retry,
-              onRetry: ErrorPresenter.isRetryable(appError)
-                  ? () => ref.invalidate(mySeasonRecordsProvider)
-                  : null,
+              // Every failure, not only a dropped connection (audit L-17).
+              onRetry: () => ref.invalidate(mySeasonRecordsProvider),
             );
           },
           data: (rows) {
