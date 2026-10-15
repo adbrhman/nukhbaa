@@ -45,6 +45,11 @@ final class RequestScope {
   /// Where [serverError] was answered.
   StackTrace? serverErrorStack;
 
+  /// True when a bulkhead turned the request away (batch 157): its 503 is
+  /// the server protecting its connections, not a fault, and is not kept
+  /// in the error log.
+  bool shed = false;
+
   /// Runs [body] inside this scope.
   R run<R>(R Function() body) =>
       runZoned(body, zoneValues: <Object?, Object?>{_zoneKey: this});

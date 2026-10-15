@@ -2585,7 +2585,11 @@ final class CompositionRoot {
     // from GitHub Releases, with the oldest build still supported (0113).
     // Public/unauthenticated, like health. One GitHub reader, so the admin's
     // "make the newest the minimum" sees the release the players see.
-    final buildInfo = GithubBuildInfoRepository(http.Client());
+    // NUKHBA_GITHUB_TOKEN, optional, lifts GitHub's 60 calls an hour.
+    final buildInfo = GithubBuildInfoRepository(
+      http.Client(),
+      token: env['NUKHBA_GITHUB_TOKEN'],
+    );
     final appUpdatePolicy = PostgresAppUpdatePolicyStore(connection);
     final getLatestBuild = GetLatestBuild(buildInfo, policy: appUpdatePolicy);
     final setMinSupportedBuild = SetMinSupportedBuild(

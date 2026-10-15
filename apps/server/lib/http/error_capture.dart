@@ -43,7 +43,9 @@ String serverBuild(Map<String, String> environment) {
 /// of 500 or above -- an `AppError` a route answered with, a bare 5xx, or
 /// an exception that escaped the handler (answered here with the uniform
 /// `server.unexpected` envelope) -- is kept in the error log (migration
-/// 0087) with the request id, the route, the player and the build.
+/// 0087) with the request id, the route, the player and the build. A
+/// request a bulkhead turned away ([RequestScope.shed]) is not: its 503 is
+/// the server protecting itself (batch 157).
 ///
 /// A 5xx error envelope also carries the `problem_code` the error was kept
 /// under, for the app to show the player; recording itself never changes
@@ -82,7 +84,7 @@ Handler captureServerErrors(
         ).toJson(),
       );
     }
-    if (response.statusCode >= HttpStatus.internalServerError) {
+    if (response.statusCode >= HttpStatus.internalServerError && !scope.shed) {
       final report = _reportFor(
         context.request,
         response.statusCode,

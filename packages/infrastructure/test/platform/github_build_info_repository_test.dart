@@ -277,6 +277,154 @@ void main() {
       },
     );
 
+    test(
+      'an APK with its own digest needs no checksums.json (batch 157)',
+      () async {
+        final List<Uri> asked = <Uri>[];
+        final client = MockClient((req) async {
+          asked.add(req.url);
+          return http.Response(
+            jsonEncode({
+              'name': 'Build abc #723',
+              'published_at': '2026-10-15T23:12:00Z',
+              'assets': [
+                {
+                  'name': 'nukhbaa-arm64-v8a-abc.apk',
+                  'browser_download_url': 'https://x/arm64.apk',
+                  'digest': 'sha256:${'AB' * 32}',
+                },
+                {
+                  'name': 'nukhbaa.apk',
+                  'browser_download_url': 'https://x/stable.apk',
+                  'digest': 'sha256:${'cd' * 32}',
+                },
+                {
+                  'name': 'checksums.json',
+                  'browser_download_url': 'https://x/checksums.json',
+                  'digest': 'sha256:${'ef' * 32}',
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final result = await GithubBuildInfoRepository(client).fetchLatest();
+
+        final build = (result as Ok<LatestBuild>).value;
+        expect(build.apkUrl, 'https://x/arm64.apk');
+        expect(build.sha256, 'ab' * 32);
+        expect(build.assets.map((a) => a.url), ['https://x/arm64.apk']);
+        expect(build.buildNumber, 723);
+        expect(asked, hasLength(1), reason: 'one GitHub call, no download');
+      },
+    );
+
+    test('a digest that is not sha256 is not trusted', () async {
+      final client = MockClient((req) async {
+        if (req.url.host == 'api.github.com') {
+          return http.Response(
+            jsonEncode({
+              'published_at': '2026-10-15T23:12:00Z',
+              'assets': [
+                {
+                  'name': 'nukhbaa-arm64-v8a-abc.apk',
+                  'browser_download_url': 'https://x/arm64.apk',
+                  'digest': 'md5:0123',
+                },
+                {
+                  'name': 'checksums.json',
+                  'browser_download_url': 'https://x/checksums.json',
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-arm64-v8a-abc.apk': 'AA'}),
+          200,
+        );
+      });
+
+      final result = await GithubBuildInfoRepository(client).fetchLatest();
+
+      expect((result as Ok<LatestBuild>).value.sha256, 'aa');
+    });
+
+    test('a failed answer is reused, not asked again at every open '
+        '(batch 157)', () async {
+      var calls = 0;
+      final client = MockClient((_) async {
+        calls++;
+        return http.Response('rate limited', 403);
+      });
+      final repository = GithubBuildInfoRepository(client);
+
+      final first = await repository.fetchLatest();
+      final callsForOne = calls;
+      final second = await repository.fetchLatest();
+      final third = await repository.fetchLatest();
+
+      expect(first, isA<Err<LatestBuild>>());
+      expect(second, isA<Err<LatestBuild>>());
+      expect(third, isA<Err<LatestBuild>>());
+      expect(calls, callsForOne, reason: 'the failure is remembered');
+      expect(
+        (first as Err<LatestBuild>).error.cause.toString(),
+        contains('403'),
+      );
+    });
+
+    test('once the failure is old, GitHub is asked again', () async {
+      var failing = true;
+      final client = MockClient((req) async {
+        if (failing) return http.Response('down', 502);
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa-arm64-v8a-a.apk', 'url': 'https://x/a.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/a.json'},
+          ]);
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-arm64-v8a-a.apk': 'AA'}),
+          200,
+        );
+      });
+      final repository = GithubBuildInfoRepository(
+        client,
+        failureTtl: Duration.zero,
+      );
+
+      expect(await repository.fetchLatest(), isA<Err<LatestBuild>>());
+      failing = false;
+      final again = await repository.fetchLatest();
+
+      expect((again as Ok<LatestBuild>).value.apkUrl, 'https://x/a.apk');
+    });
+
+    test('a token goes to the API only, never to the download', () async {
+      final Map<String, String?> auth = <String, String?>{};
+      final client = MockClient((req) async {
+        auth[req.url.host] = req.headers['Authorization'];
+        if (req.url.host == 'api.github.com') {
+          return _release([
+            {'name': 'nukhbaa-arm64-v8a-a.apk', 'url': 'https://x/a.apk'},
+            {'name': 'checksums.json', 'url': 'https://x/a.json'},
+          ]);
+        }
+        return http.Response(
+          jsonEncode({'nukhbaa-arm64-v8a-a.apk': 'AA'}),
+          200,
+        );
+      });
+
+      await GithubBuildInfoRepository(client, token: ' t0k ').fetchLatest();
+
+      expect(auth['api.github.com'], 'Bearer t0k');
+      expect(auth['x'], isNull);
+    });
+
     test('release with no apk at all => transient error', () async {
       final client = MockClient((req) async {
         if (req.url.host == 'api.github.com') {

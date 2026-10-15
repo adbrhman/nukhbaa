@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
@@ -31,6 +32,15 @@ import 'package:shared/shared.dart';
 /// Results are cached in-process for [cacheTtl] so a burst of app-open checks
 /// does not exhaust the unauthenticated GitHub rate limit. This SERVER calls
 /// GitHub, never the client (ADR-002 §2.8 — no HTTP in apps/mobile).
+///
+/// Since batch 157 an APK's SHA-256 is read from the asset's own `digest`
+/// in the release itself (GitHub computes it on upload), so a good answer
+/// costs one GitHub call; `checksums.json` is downloaded only for an APK
+/// without one. A failed answer is reused for [failureTtl]: Y7GU came back
+/// on 2026-10-16 when every app open after a redeploy asked GitHub again
+/// and failed, 69 times in minutes. A `token` (`NUKHBA_GITHUB_TOKEN`, any
+/// GitHub token: the repository is public) raises the API limit from 60
+/// calls an hour, shared by everything behind the host's address.
 final class GithubBuildInfoRepository implements BuildInfoRepository {
   /// Creates the repository over an injected [http.Client] and the
   /// `owner/repo` slug to query.
@@ -38,7 +48,13 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
     this._httpClient, {
     this.repoSlug = 'adbrhman/nukhbaa',
     this.cacheTtl = const Duration(minutes: 5),
-  });
+    this.failureTtl = const Duration(minutes: 2),
+    String? token,
+  }) : _apiHeaders = <String, String>{
+         ..._githubHeaders,
+         if (token != null && token.trim().isNotEmpty)
+           'Authorization': 'Bearer ${token.trim()}',
+       };
 
   final http.Client _httpClient;
 
@@ -57,6 +73,15 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
   /// How long a good answer is reused before GitHub is asked again.
   final Duration cacheTtl;
 
+  /// How long a failed answer is reused before GitHub is asked again.
+  final Duration failureTtl;
+
+  /// The headers of the API calls: [_githubHeaders], with the token if any.
+  final Map<String, String> _apiHeaders;
+
+  /// An asset's `digest` as GitHub gives it: `sha256:` and 64 hex digits.
+  static final RegExp _sha256Digest = RegExp(r'^sha256:([0-9a-fA-F]{64})$');
+
   /// How many recent releases are searched for a verifiable APK when the
   /// newest one has none yet.
   static const int _recentReleases = 5;
@@ -67,6 +92,8 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
   };
   LatestBuild? _cached;
   DateTime? _cachedAt;
+  Result<LatestBuild>? _failure;
+  DateTime? _failedAt;
 
   static const _unavailable = AppError.transient(
     'app.latest_build_unavailable',
@@ -81,6 +108,13 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
         cachedAt != null &&
         DateTime.now().difference(cachedAt) < cacheTtl) {
       return Result.ok(cached);
+    }
+    final failure = _failure;
+    final failedAt = _failedAt;
+    if (failure != null &&
+        failedAt != null &&
+        DateTime.now().difference(failedAt) < failureTtl) {
+      return failure;
     }
 
     final Result<LatestBuild> latest = await _readRelease(
@@ -104,12 +138,19 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
     if (previous != null) {
       return _remember(previous);
     }
+    if (latest case Err<LatestBuild>(:final error)) {
+      stderr.writeln('[latest-build] ${error.message} ${error.cause ?? ''}');
+    }
+    _failure = latest;
+    _failedAt = DateTime.now();
     return latest;
   }
 
   Result<LatestBuild> _remember(LatestBuild build) {
     _cached = build;
     _cachedAt = DateTime.now();
+    _failure = null;
+    _failedAt = null;
     return Result.ok(build);
   }
 
@@ -122,7 +163,7 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
             Uri.https('api.github.com', '/repos/$repoSlug/releases', {
               'per_page': '$_recentReleases',
             }),
-            headers: _githubHeaders,
+            headers: _apiHeaders,
           )
           .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) return null;
@@ -144,11 +185,17 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
   Future<Result<LatestBuild>> _readRelease(Uri uri) async {
     try {
       final response = await _httpClient
-          .get(uri, headers: _githubHeaders)
+          .get(uri, headers: _apiHeaders)
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode != 200) {
-        return const Result.err(_unavailable);
+        return Result.err(
+          AppError.transient(
+            _unavailable.code,
+            _unavailable.message,
+            'GitHub HTTP ${response.statusCode}',
+          ),
+        );
       }
 
       final Object? json = jsonDecode(response.body);
@@ -180,8 +227,10 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
       return const Result.err(_unavailable);
     }
 
-    // Index assets by name -> download URL, and locate the checksum manifest.
+    // Index assets by name -> download URL, keep each one's own digest,
+    // and locate the checksum manifest.
     final byName = <String, String>{};
+    final digests = <String, String>{};
     String? checksumsUrl;
     for (final raw in rawAssets) {
       if (raw is! Map<String, Object?>) continue;
@@ -190,9 +239,21 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
       if (url == null) continue;
       byName[name] = url;
       if (name.toLowerCase() == 'checksums.json') checksumsUrl = url;
+      final Object? digest = raw['digest'];
+      final Match? sha = digest is String
+          ? _sha256Digest.firstMatch(digest.trim())
+          : null;
+      if (sha != null) digests[name] = sha.group(1)!.toLowerCase();
     }
 
-    final checksums = await _fetchChecksums(checksumsUrl);
+    // The manifest is downloaded only when an APK has no digest of its own.
+    final bool everyApkHasDigest = byName.keys
+        .where((name) => name.toLowerCase().endsWith('.apk'))
+        .every(digests.containsKey);
+    final checksums = <String, String>{
+      if (!everyApkHasDigest) ...await _fetchChecksums(checksumsUrl),
+      ...digests,
+    };
 
     // One BuildAsset per ABI-tagged, checksummed apk.
     final assets = <BuildAsset>[];
@@ -233,10 +294,11 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
     }
 
     if (apkUrl == null) {
-      return const Result.err(
+      return Result.err(
         AppError.transient(
           'app.latest_build_unavailable',
           'لا يتوفر ملف APK قابل للتحقق في آخر إصدار منشور.',
+          '${byName.length} assets, ${checksums.length} checksums',
         ),
       );
     }
@@ -267,7 +329,10 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
       final res = await _httpClient
           .get(Uri.parse(url), headers: const {'User-Agent': 'nukhbaa-server'})
           .timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return const <String, String>{};
+      if (res.statusCode != 200) {
+        stderr.writeln('[latest-build] checksums.json: HTTP ${res.statusCode}');
+        return const <String, String>{};
+      }
       final decoded = jsonDecode(res.body);
       if (decoded is! Map<String, Object?>) return const <String, String>{};
       final out = <String, String>{};
@@ -275,7 +340,8 @@ final class GithubBuildInfoRepository implements BuildInfoRepository {
         if (v is String) out[k] = v.toLowerCase();
       });
       return out;
-    } catch (_) {
+    } catch (error) {
+      stderr.writeln('[latest-build] checksums.json: $error');
       return const <String, String>{};
     }
   }

@@ -205,6 +205,20 @@ void main() {
     expect(log.kept.single.message, 'HTTP 502');
   });
 
+  test('a 503 from a bulkhead is the server protecting itself, not kept '
+      '(batch 157)', () async {
+    final log = _MemoryErrorLog();
+
+    final response = await _call((_) {
+      RequestScope.current!.shed = true;
+      return Response(statusCode: HttpStatus.serviceUnavailable);
+    }, log);
+
+    expect(response.statusCode, HttpStatus.serviceUnavailable);
+    expect(response.headers[requestIdHeader], isNotNull);
+    expect(log.kept, isEmpty);
+  });
+
   test('a failure to record never changes the response', () async {
     final log = _MemoryErrorLog(fail: true);
 

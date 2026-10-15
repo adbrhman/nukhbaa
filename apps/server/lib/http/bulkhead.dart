@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:server/http/request_scope.dart';
 
 /// At most [limit] requests of one route at once in this process (batch
 /// 156). The rest are answered at once with `503 server.busy` instead of
@@ -26,10 +27,11 @@ final class Bulkhead {
 
   /// Runs [handle] in a free place, or answers `503` [busyCode] with no
   /// wait when every place is taken. The place is freed however [handle]
-  /// ends. A refusal is the bulkhead working, not a fault: it is not put in
-  /// the error log.
+  /// ends. A refusal is the bulkhead working, not a fault: it marks the
+  /// request [RequestScope.shed], so it is not put in the error log.
   Future<Response> run(Future<Response> Function() handle) async {
     if (_running >= limit) {
+      RequestScope.current?.shed = true;
       return Response.json(
         statusCode: HttpStatus.serviceUnavailable,
         body: const ErrorResponseDto(

@@ -5109,6 +5109,28 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   can be raised on Northflank without a release once Supabase's own
   connection count says there is room. No migration; the server and the
   APK and the web.
+- **Batch 157 (the update check after a release, 2026-10-16, outside the
+  audit plan):** right after batch 156 went live, Y7GU came back: "no
+  verifiable APK in the latest published release", 69 times in minutes,
+  so no account screen offered the new build, while release
+  `build-9ef32b3` (#723) did carry its four APKs and `checksums.json`.
+  The server read the checksums by downloading `checksums.json` from
+  github.com, and a failed answer was never kept: every app open after
+  the redeploy asked GitHub again (the release, the list of five, a
+  download each), against an hourly limit shared by the host's address.
+  `GithubBuildInfoRepository` now takes an APK's SHA-256 from the
+  asset's own `digest` (`sha256:` and 64 hex digits, computed by GitHub
+  on upload) in the release itself, and downloads `checksums.json` only
+  for an APK without one: a good answer is one GitHub call. A failed
+  answer is reused for `failureTtl` (two minutes), carries its cause
+  ("GitHub HTTP 403", "5 assets, 0 checksums") into the error log, and
+  is written to the container log as `[latest-build] ...`. An optional
+  `NUKHBA_GITHUB_TOKEN` (any token; the repository is public) is sent to
+  the API only, never to a download. And the 503 `server.busy` of batch
+  156's bulkhead was being kept in the error log as "HTTP 503" (2S2G):
+  the bulkhead now marks the request `RequestScope.shed`, and
+  `captureServerErrors` keeps no report for it. No migration; the
+  server only.
 
 ### The web app loads faster (web speed 71, 2026-10-14)
 
