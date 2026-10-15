@@ -187,9 +187,15 @@ class _BadgeTile extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.14),
+              // A held badge sits on amber with the medal gold: a gold
+              // wash read grey on the navy, the text gold olive (CA-19).
+              color: isHeld ? t.goldContainer : accent.withValues(alpha: 0.14),
             ),
-            child: Icon(look.icon, color: accent, size: 26),
+            child: Icon(
+              look.icon,
+              color: isHeld ? t.goldAccent : accent,
+              size: 26,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

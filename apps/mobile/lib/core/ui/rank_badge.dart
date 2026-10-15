@@ -20,7 +20,7 @@ class RankBadge extends StatelessWidget {
     return CircleAvatar(
       backgroundColor: medal == null
           ? tokens.surfaceHigh
-          : tokens.gold.withValues(alpha: 0.16),
+          : tokens.goldContainer,
       child: Text(
         medal ?? '$rank',
         style: TextStyle(

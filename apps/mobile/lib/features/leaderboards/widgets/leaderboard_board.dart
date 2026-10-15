@@ -343,7 +343,10 @@ class _StandingPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final Color fg = isLead ? t.gold : t.primaryText;
-    final Color wash = (isLead ? t.gold : t.primary).withValues(alpha: 0.14);
+    // The lead sits on amber: a gold wash read grey on the navy (CA-19).
+    final Color wash = isLead
+        ? t.goldContainer
+        : t.primary.withValues(alpha: 0.14);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,

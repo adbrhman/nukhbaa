@@ -26,6 +26,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.errorContainer,
     required this.success,
     required this.successContainer,
+    required this.goldContainer,
     required this.successText,
     required this.errorText,
     required this.errorFill,
@@ -72,6 +73,12 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color errorContainer;
   final Color success;
   final Color successContainer;
+
+  /// The ground under gold text and the gold medal: an opaque warm amber.
+  /// A 14-16% wash of gold over the navy came out a neutral grey in the
+  /// dark theme (#353C3B, hue 171) -- the owner's screenshots, colour audit
+  /// of 2026-10-15 (CA-19). [gold] reads 9.7:1 on it dark, 5.7:1 light.
+  final Color goldContainer;
 
   /// Green for text: AA (4.5:1) on every surface, its container and the blue
   /// viewer row -- [success] is a fill and an icon colour.
@@ -132,6 +139,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColors.errorContainer,
     success: AppColors.success,
     successContainer: AppColors.successContainer,
+    goldContainer: AppColors.warningContainer,
     successText: AppColors.successText,
     errorText: AppColors.errorText,
     errorFill: AppColors.errorFill,
@@ -187,6 +195,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     errorContainer: AppColorsLight.errorContainer,
     success: AppColorsLight.success,
     successContainer: AppColorsLight.successContainer,
+    goldContainer: AppColorsLight.warningContainer,
     successText: AppColorsLight.successText,
     errorText: AppColorsLight.errorText,
     errorFill: AppColorsLight.error,
@@ -243,6 +252,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? errorContainer,
     Color? success,
     Color? successContainer,
+    Color? goldContainer,
     Color? successText,
     Color? errorText,
     Color? errorFill,
@@ -283,6 +293,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       errorContainer: errorContainer ?? this.errorContainer,
       success: success ?? this.success,
       successContainer: successContainer ?? this.successContainer,
+      goldContainer: goldContainer ?? this.goldContainer,
       successText: successText ?? this.successText,
       errorText: errorText ?? this.errorText,
       errorFill: errorFill ?? this.errorFill,
@@ -336,6 +347,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
         other.successContainer,
         t,
       )!,
+      goldContainer: Color.lerp(goldContainer, other.goldContainer, t)!,
       successText: Color.lerp(successText, other.successText, t)!,
       errorText: Color.lerp(errorText, other.errorText, t)!,
       errorFill: Color.lerp(errorFill, other.errorFill, t)!,

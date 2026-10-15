@@ -5400,6 +5400,23 @@ rims and bars need: all pass in both themes except the dark `primary` on
 
 No migration; the web on deploy, Android with the next APK.
 
+### Colour audit: gold on amber, not on a grey wash (script 85, 2026-10-15)
+
+- CA-19: a 14-16% gold wash over the navy came out a neutral grey in the
+  dark theme (#353C3B, hue 171) -- the H2H first-division circle, the
+  first-place rank badge, every gold `AppBadge` ("pilot month"), the
+  board's lead chip and a held badge's circle.
+- `AppTokens.goldContainer` (new): an opaque amber taken from the palette's
+  own `warningContainer` (#2E2008 dark, #FDF3DE light), the way success and
+  error already have their containers; `gold` reads 9.7:1 on it dark,
+  5.7:1 light, the medal gold 3.5:1 or better. The five places use it; a
+  held badge's icon takes the medal gold instead of the olive text gold.
+- Defence: `gold_container_test.dart` -- the token is opaque, in gold's
+  hue and tinted, with gold text at 4.5:1 and the medal gold at 3:1 on
+  it, and the real gold badge is drawn on it, in both themes.
+
+No migration; the web on deploy, Android with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

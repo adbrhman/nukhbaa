@@ -29,7 +29,9 @@ class AppBadge extends StatelessWidget {
         tokens.primary.withValues(alpha: 0.14),
         tokens.primaryText,
       ),
-      AppBadgeTone.gold => (tokens.gold.withValues(alpha: 0.16), tokens.gold),
+      // An opaque amber, not a gold wash: the wash read grey on the navy
+      // (CA-19).
+      AppBadgeTone.gold => (tokens.goldContainer, tokens.gold),
       // Green means success and red means danger (2026-09-24), each in
       // the text shade made for its own container (UI-06).
       AppBadgeTone.success => (tokens.successContainer, tokens.successText),

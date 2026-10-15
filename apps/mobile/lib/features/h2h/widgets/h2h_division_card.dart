@@ -58,7 +58,11 @@ class H2hDivisionCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
+                  // The first division sits on amber: a gold wash read
+                  // grey on the navy (CA-19).
+                  color: level == 1
+                      ? t.goldContainer
+                      : accent.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.shield_rounded, color: accent, size: 28),
