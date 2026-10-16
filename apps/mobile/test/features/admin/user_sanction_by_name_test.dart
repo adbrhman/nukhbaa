@@ -160,7 +160,20 @@ void main() {
     await _tap(tester, const Key('admin.users.rename'));
     await _tap(tester, const Key('admin.users.suspend'));
 
-    expect(find.text('اكتب السبب أولاً'), findsOneWidget);
+    // Each says it by its own button (audit L-11).
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('admin.users.renameMessage')))
+          .data,
+      'اكتب السبب أولاً',
+    );
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('admin.users.sanctionMessage')))
+          .data,
+      'اكتب السبب أولاً',
+    );
+    expect(find.byKey(const Key('admin.users.suspendConfirm')), findsNothing);
     expect(server.to('/admin/users/$_id/display-name'), isEmpty);
     expect(server.to('/admin/users/$_id/suspend'), isEmpty);
   });
@@ -174,6 +187,19 @@ void main() {
       'حساب مكرر',
     );
     await _tap(tester, const Key('admin.users.suspend'));
+
+    // It asks first, by the name and the reason (audit L-11).
+    expect(find.text('تعليق «Semo»؟'), findsOneWidget);
+    expect(find.textContaining('السبب: حساب مكرر'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const Key('admin.users.suspendConfirm.cancel')),
+    );
+    await tester.pumpAndSettle();
+    expect(server.to('/admin/users/$_id/suspend'), isEmpty);
+
+    await _tap(tester, const Key('admin.users.suspend'));
+    await tester.tap(find.byKey(const Key('admin.users.suspendConfirm.ok')));
+    await tester.pumpAndSettle();
 
     final sent = server.to('/admin/users/$_id/suspend').single;
     expect(jsonDecode(sent.body), containsPair('reason', 'حساب مكرر'));

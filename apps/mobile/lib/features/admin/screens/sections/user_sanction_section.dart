@@ -32,6 +32,10 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
   bool _renaming = false;
   bool _renameFailed = false;
   String? _renameMessage;
+
+  /// Why a suspend or reinstate did not leave, shown by its own buttons
+  /// (audit L-11: it used to appear under the rename button).
+  String? _sanctionMessage;
   final TextEditingController _reasonController = TextEditingController();
   UserSummaryDto? _selectedUser;
   AdminUserPredictionFilter _filter = AdminUserPredictionFilter.today;
@@ -49,6 +53,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
       _selectedUser = user;
       _nameController.text = user.displayName;
       _renameMessage = null;
+      _sanctionMessage = null;
     });
   }
 
@@ -239,11 +244,20 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
+          if (_sanctionMessage case final String message)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Text(
+                message,
+                key: const Key('admin.users.sanctionMessage'),
+                style: TextStyle(color: tokens.errorText),
+              ),
+            ),
           if (sanctionState is AsyncError<UserSanctionResultDto>)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Text(
-                ErrorPresenter.message(sanctionState.error as AppError),
+                ErrorPresenter.messageOf(sanctionState.error),
                 key: const Key('admin.users.error'),
                 style: TextStyle(color: tokens.errorText),
               ),
@@ -266,7 +280,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
                   key: const Key('admin.users.suspend'),
                   label: l10n.adminSuspendButton,
                   variant: AppButtonVariant.secondary,
-                  onPressed: busy ? null : () => _act(suspend: true),
+                  onPressed: busy ? null : () => unawaited(_act(suspend: true)),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -274,7 +288,9 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
                 child: AppButton(
                   key: const Key('admin.users.reinstate'),
                   label: l10n.adminReinstateButton,
-                  onPressed: busy ? null : () => _act(suspend: false),
+                  onPressed: busy
+                      ? null
+                      : () => unawaited(_act(suspend: false)),
                   loading: sanctionInFlight,
                 ),
               ),
@@ -328,22 +344,48 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
     ref.invalidate(auditLogProvider);
   }
 
-  void _act({required bool suspend}) {
+  Future<void> _act({required bool suspend}) async {
     final UserSummaryDto? user = _selectedUser;
     final reason = _reasonController.text.trim();
     if (user == null) return;
     if (reason.isEmpty) {
-      setState(() {
-        _renameFailed = true;
-        _renameMessage = 'اكتب السبب أولاً';
-      });
+      setState(() => _sanctionMessage = 'اكتب السبب أولاً');
       return;
+    }
+    setState(() => _sanctionMessage = null);
+    // A suspension hides a player and his points from every board: it
+    // asks first, by his name (audit L-11). A reinstatement only undoes it.
+    if (suspend) {
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext dialogContext) => AlertDialog(
+          key: const Key('admin.users.suspendConfirm'),
+          title: Text('تعليق «${_nameOf(user)}»؟'),
+          content: Text(
+            'يختفي هو ونقاطه من كل اللوحات حتى إعادة تفعيله.\n\n'
+            'السبب: $reason',
+          ),
+          actions: <Widget>[
+            TextButton(
+              key: const Key('admin.users.suspendConfirm.cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              key: const Key('admin.users.suspendConfirm.ok'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('علّقه'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
     }
     final notifier = ref.read(userSanctionControllerProvider.notifier);
     if (suspend) {
-      notifier.suspend(user.id, reason);
+      await notifier.suspend(user.id, reason);
     } else {
-      notifier.reinstate(user.id, reason);
+      await notifier.reinstate(user.id, reason);
     }
   }
 }
@@ -424,7 +466,7 @@ class _UserPredictionSearchCardState
                 ),
               ),
               error: (error, _) => Text(
-                ErrorPresenter.message(error as AppError),
+                ErrorPresenter.messageOf(error),
                 style: TextStyle(color: tokens.errorText),
               ),
               data: (dto) => dto.users.isEmpty
@@ -636,7 +678,7 @@ class _PredictionHistoryTable extends ConsumerWidget {
       error: (error, _) => AdminCard(
         child: AdminErrorBanner(
           key: const Key('admin.users.predictionSearch.error'),
-          message: ErrorPresenter.message(error as AppError),
+          message: ErrorPresenter.messageOf(error),
         ),
       ),
       data: (history) => _HistoryData(history: history),

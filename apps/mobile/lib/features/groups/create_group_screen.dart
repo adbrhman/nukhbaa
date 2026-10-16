@@ -6,7 +6,6 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -152,7 +151,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Text(
-                  ErrorPresenter.message(state.error as AppError),
+                  ErrorPresenter.messageOf(state.error),
                   key: const Key('createGroup.error'),
                   style: TextStyle(color: tokens.errorText),
                 ),

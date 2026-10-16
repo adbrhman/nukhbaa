@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_typography.dart';
 import '../../../../core/design/app_spacing.dart';
@@ -369,7 +368,7 @@ class _FixtureScheduleSectionState
               if (state is AsyncError<AddMatchResult>)
                 AdminErrorBanner(
                   key: const Key('admin.fixtures.error'),
-                  message: ErrorPresenter.message(state.error as AppError),
+                  message: ErrorPresenter.messageOf(state.error),
                 ),
               if (state is AsyncData<AddMatchResult>)
                 AdminSuccessBanner(

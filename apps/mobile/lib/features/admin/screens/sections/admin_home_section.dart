@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_breakpoints.dart';
 import '../../../../core/design/app_radius.dart';
@@ -16,6 +15,7 @@ import '../../../../core/ui/forward_chevron.dart';
 import '../../../fixture_prediction/widgets/live_matches_chip.dart';
 import '../../admin_providers.dart';
 import '../../admin_sections.dart';
+import '../../audit_action_labels.dart';
 import '../../widgets/admin_month_card.dart';
 import '../../widgets/admin_ui_kit.dart';
 
@@ -63,7 +63,7 @@ class AdminHomeSection extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             AdminErrorBanner(
-              message: ErrorPresenter.message(error as AppError),
+              message: ErrorPresenter.messageOf(error),
               detail: 'تعذر تحميل أحد مصادر لوحة التحكم',
             ),
           ],
@@ -140,31 +140,6 @@ String fixturePhaseLabel(CurrentMonthFixtureItemDto item, DateTime now) {
   if (_isOver(item, now)) return 'بانتظار النتيجة';
   return 'مباشرة';
 }
-
-/// An audit action's wire token (`AuditAction.wireValue`, domain) in words.
-/// A token this build does not know reads as a plain admin action.
-String auditActionLabel(String action) => switch (action) {
-  'user_suspended' => 'إيقاف لاعب',
-  'user_reinstated' => 'إعادة تفعيل لاعب',
-  'user_renamed' => 'تغيير اسم لاعب',
-  'participant_ledger_viewed' => 'اطّلاع على سجل نقاط لاعب',
-  'user_predictions_viewed' => 'اطّلاع على توقعات لاعب',
-  'fixture_result_recorded' => 'تسجيل نتيجة مباراة',
-  'fixture_schedule_corrected' => 'تعديل موعد مباراة',
-  'fixture_hidden' => 'إخفاء مباراة',
-  'fixture_shown' => 'إظهار مباراة',
-  'fixture_predictions_viewed' => 'اطّلاع على توقعات مباراة',
-  'fixture_linked_to_round' => 'ربط مباراة بجولة',
-  'competition_created' => 'إنشاء مسابقة',
-  'season_started' => 'بدء موسم',
-  'round_opened' => 'فتح جولة',
-  'round_locked' => 'إغلاق جولة',
-  'round_scored' => 'احتساب جولة',
-  'round_posted_to_ledger' => 'ترحيل جولة إلى سجل النقاط',
-  'round_predictions_viewed' => 'اطّلاع على توقعات جولة',
-  'error_updated' => 'تحديث حالة خطأ',
-  _ => 'إجراء إداري',
-};
 
 /// One audit entry as a sentence: the action in words, the match's name
 /// when the entry points at one of [fixtureNames], and the reason when one

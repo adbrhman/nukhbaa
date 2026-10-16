@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
@@ -85,7 +84,7 @@ class _LedgerLookupSectionState extends ConsumerState<LedgerLookupSection> {
           Expanded(
             child: AppErrorState(
               key: const Key('admin.ledger.error'),
-              message: ErrorPresenter.message(state.error as AppError),
+              message: ErrorPresenter.messageOf(state.error),
               onRetry: () {
                 final id = _participantIdController.text.trim();
                 if (id.isEmpty) return;

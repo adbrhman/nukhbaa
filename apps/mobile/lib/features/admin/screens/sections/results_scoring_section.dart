@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
@@ -38,6 +37,11 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   String? _resultSeasonId;
   String? _fixtureId;
 
+  /// The picked matches by name ("Arsenal × Chelsea"), for the
+  /// confirmations and the results (audit L-11: the success line used to
+  /// show the match's id).
+  final Map<String, String> _names = <String, String>{};
+
   @override
   void initState() {
     super.initState();
@@ -61,16 +65,6 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     super.dispose();
   }
 
-  /// A controller can only ever surface an [AppError], but an unconditional
-  /// cast turns any other failure into a red screen on an admin's phone
-  /// instead of a message they can read and report.
-  AppError _asAppError(Object? error) => error is AppError
-      ? error
-      : const AppError.transient(
-          'client.unexpected',
-          'Something went wrong. Please try again.',
-        );
-
   /// Whether the two score fields currently hold a recordable result.
   bool get _goalsAreValid {
     final int? home = int.tryParse(_homeGoals.text.trim());
@@ -78,29 +72,90 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
     return home != null && away != null && home >= 0 && away >= 0;
   }
 
-  void _recordResult() {
+  static String _teamsOf(SeasonFixtureCardDto fixture) =>
+      '${fixture.homeTeam ?? 'غير محدد'} × ${fixture.awayTeam ?? 'غير محدد'}';
+
+  void _remember(SeasonFixtureCardDto fixture) =>
+      _names[fixture.fixtureId] = _teamsOf(fixture);
+
+  String _nameOf(String fixtureId) => _names[fixtureId] ?? 'المباراة';
+
+  /// Asks before a command that changes players' points (audit L-11).
+  Future<bool> _confirm({
+    required String title,
+    required String body,
+    required String action,
+  }) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        key: const Key('admin.results.confirm'),
+        title: Text(title),
+        content: Text(body),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('admin.results.confirm.cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            key: const Key('admin.results.confirm.ok'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true && mounted;
+  }
+
+  Future<void> _recordResult() async {
     final f = _fixtureId;
     final s = _resultSeasonId;
     final h = int.tryParse(_homeGoals.text.trim());
     final a = int.tryParse(_awayGoals.text.trim());
     if (f == null || s == null || h == null || a == null) return;
-    ref
+    final bool confirmed = await _confirm(
+      title: 'تسجيل النتيجة؟',
+      body:
+          '${_nameOf(f)}: $h-$a\n\nتأكد منها قبل الحفظ: عليها تُحسب نقاط '
+          'اللاعبين.',
+      action: 'سجّل',
+    );
+    if (!confirmed) return;
+    await ref
         .read(recordFixtureResultControllerProvider.notifier)
         .record(fixtureId: f, seasonId: s, homeGoals: h, awayGoals: a);
   }
 
-  void _scoreFixture() {
+  Future<void> _scoreFixture() async {
     final f = _fixtureId;
     final s = _resultSeasonId;
     if (f == null || s == null) return;
-    ref.read(scoreFixtureControllerProvider.notifier).score(f, s);
+    final bool confirmed = await _confirm(
+      title: 'احتساب المباراة؟',
+      body:
+          '${_nameOf(f)}\n\nتُحسب نقاط توقعات المباراة من نتيجتها '
+          'المسجّلة.',
+      action: 'احسب',
+    );
+    if (!confirmed) return;
+    await ref.read(scoreFixtureControllerProvider.notifier).score(f, s);
   }
 
-  void _postFixtureToLedger() {
+  Future<void> _postFixtureToLedger() async {
     final f = _fixtureId;
     final s = _resultSeasonId;
     if (f == null || s == null) return;
-    ref.read(postFixtureToLedgerControllerProvider.notifier).post(f, s);
+    final bool confirmed = await _confirm(
+      title: 'الترحيل إلى السجل؟',
+      body:
+          '${_nameOf(f)}\n\nتُرحَّل نقاط المباراة إلى سجل النقاط، وما رُحّل '
+          'من قبل لا يتكرر.',
+      action: 'رحّل',
+    );
+    if (!confirmed) return;
+    await ref.read(postFixtureToLedgerControllerProvider.notifier).post(f, s);
   }
 
   void _loadFixtureReport() {
@@ -143,6 +198,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
             _resultCompetitionId = item.competitionId;
             _resultSeasonId = item.fixture.seasonId;
             _fixtureId = item.fixture.fixtureId;
+            _remember(item.fixture);
             _homeGoals.clear();
             _awayGoals.clear();
           }),
@@ -184,6 +240,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   selectedId: _fixtureId,
                   onSelected: (SeasonFixtureCardDto fixture) => setState(() {
                     _fixtureId = fixture.fixtureId;
+                    _remember(fixture);
                   }),
                 ),
               ],
@@ -192,6 +249,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 children: [
                   Expanded(
                     child: AdminTextField(
+                      key: const Key('admin.results.homeGoals'),
                       controller: _homeGoals,
                       hint: l10n.adminHomeGoalsLabel,
                       keyboardType: TextInputType.number,
@@ -201,6 +259,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: AdminTextField(
+                      key: const Key('admin.results.awayGoals'),
                       controller: _awayGoals,
                       hint: l10n.adminAwayGoalsLabel,
                       keyboardType: TextInputType.number,
@@ -220,17 +279,20 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               const SizedBox(height: AppSpacing.md),
               if (resultState is AsyncError)
                 AdminErrorBanner(
-                  message: ErrorPresenter.message(
-                    _asAppError(resultState!.error),
-                  ),
+                  message: ErrorPresenter.messageOf(resultState!.error),
                 ),
               if (resultState is AsyncData)
                 AdminSuccessBanner(
+                  key: const Key('admin.results.recorded'),
                   message:
-                      '${resultState!.value!.fixtureId}: ${resultState.value!.homeGoals}-${resultState.value!.awayGoals}',
+                      'سُجّلت النتيجة: '
+                      '${_nameOf(resultState!.value!.fixtureId)} '
+                      '${resultState.value!.homeGoals}-'
+                      '${resultState.value!.awayGoals}',
                 ),
               const SizedBox(height: AppSpacing.md),
               AdminPrimaryButton(
+                key: const Key('admin.results.record'),
                 label: l10n.adminRecordResultButton,
                 icon: Icons.scoreboard_rounded,
                 loading: resultInFlight,
@@ -239,9 +301,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               const SizedBox(height: AppSpacing.md),
               if (scoreFixtureState is AsyncError)
                 AdminErrorBanner(
-                  message: ErrorPresenter.message(
-                    _asAppError(scoreFixtureState!.error),
-                  ),
+                  message: ErrorPresenter.messageOf(scoreFixtureState!.error),
                 ),
               if (scoreFixtureState is AsyncData<FixtureScoresDto>)
                 AdminSuccessBanner(
@@ -251,8 +311,8 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 ),
               if (postFixtureLedgerState is AsyncError)
                 AdminErrorBanner(
-                  message: ErrorPresenter.message(
-                    _asAppError(postFixtureLedgerState!.error),
+                  message: ErrorPresenter.messageOf(
+                    postFixtureLedgerState!.error,
                   ),
                 ),
               if (postFixtureLedgerState
@@ -268,6 +328,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                 children: [
                   Expanded(
                     child: AdminPrimaryButton(
+                      key: const Key('admin.results.score'),
                       label: l10n.adminScoreFixtureButton,
                       icon: Icons.calculate_rounded,
                       loading: scoreFixtureState is AsyncLoading,
@@ -277,6 +338,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: AdminSecondaryButton(
+                      key: const Key('admin.results.post'),
                       label: l10n.adminPostFixtureLedgerButton,
                       icon: Icons.receipt_long_rounded,
                       loading: postFixtureLedgerState is AsyncLoading,
@@ -290,9 +352,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
               const SizedBox(height: AppSpacing.md),
               if (fixtureReportState is AsyncError)
                 AdminErrorBanner(
-                  message: ErrorPresenter.message(
-                    _asAppError(fixtureReportState!.error),
-                  ),
+                  message: ErrorPresenter.messageOf(fixtureReportState!.error),
                 ),
               if (fixtureReportState is AsyncError)
                 const SizedBox(height: AppSpacing.sm),

@@ -4,7 +4,6 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:shared/shared.dart';
 
 import '../../../core/error/error_presenter.dart';
 import '../../../l10n/app_localizations.dart';
@@ -55,7 +54,7 @@ class CompetitionPickerField extends ConsumerWidget {
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        child: Text(ErrorPresenter.message(error as AppError)),
+        child: Text(ErrorPresenter.messageOf(error)),
       ),
       data: (List<CompetitionDto> list) {
         final String? value = list.any((c) => c.id == selectedId)
@@ -119,7 +118,7 @@ class SeasonPickerField extends ConsumerWidget {
           labelText: l10n.adminSelectSeasonLabel,
           border: const OutlineInputBorder(),
         ),
-        child: Text(ErrorPresenter.message(error as AppError)),
+        child: Text(ErrorPresenter.messageOf(error)),
       ),
       data: (List<SeasonDto> list) {
         if (list.isEmpty) {
@@ -194,7 +193,7 @@ class MonthPickerField extends ConsumerWidget {
           labelText: l10n.adminSelectMonthLabel,
           border: const OutlineInputBorder(),
         ),
-        child: Text(ErrorPresenter.message(error as AppError)),
+        child: Text(ErrorPresenter.messageOf(error)),
       ),
       data: (List<SeasonDto> list) {
         if (list.isEmpty) {
@@ -264,7 +263,7 @@ class LeaguePickerField extends ConsumerWidget {
           labelText: l10n.adminSelectLeagueLabel,
           border: const OutlineInputBorder(),
         ),
-        child: Text(ErrorPresenter.message(error as AppError)),
+        child: Text(ErrorPresenter.messageOf(error)),
       ),
       data: (List<LeagueDto> list) {
         if (list.isEmpty) {
@@ -347,7 +346,7 @@ class SeasonFixturePickerField extends ConsumerWidget {
           labelText: l10n.adminSelectFixtureLabel,
           border: const OutlineInputBorder(),
         ),
-        child: Text(ErrorPresenter.message(error as AppError)),
+        child: Text(ErrorPresenter.messageOf(error)),
       ),
       data: (List<SeasonFixtureCardDto> list) {
         if (list.isEmpty) {

@@ -31,6 +31,19 @@ abstract final class ErrorPresenter {
     return code == null ? text : '$text\n$problemCodeLabel $code';
   }
 
+  /// [error] as an [AppError]: a provider throws one, but anything else (a
+  /// parsing slip, a bug) becomes a plain transient failure instead of a
+  /// cast that turns the screen red (audit L-13).
+  static AppError asAppError(Object? error) => error is AppError
+      ? error
+      : const AppError.transient(
+          'client.unexpected',
+          'Something went wrong. Please try again.',
+        );
+
+  /// [message] for any thrown [error] (see [asAppError]).
+  static String messageOf(Object? error) => message(asAppError(error));
+
   /// The words before a problem code in [message].
   static const String problemCodeLabel = 'رمز المشكلة:';
 

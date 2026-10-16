@@ -144,6 +144,25 @@ void main() {
       expect(setup.schedules.count, 0);
     });
 
+    test('an optional id of the wrong type is a 400, not a 500 (audit '
+        'L-47)', () async {
+      final setup = rootFor();
+      final response = await post(
+        setup.root,
+        adminPrincipal(),
+        body: {
+          'home_team': 'Al Hilal',
+          'away_team': 'Al Nassr',
+          'kickoff_at': kickoff.toIso8601String(),
+          'home_team_id': 7,
+        },
+      );
+
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect((await decodeBody(response))['code'], 'request.field_type');
+      expect(setup.schedules.count, 0);
+    });
+
     test('a missing away_team is rejected 400 request.field_missing', () async {
       final setup = rootFor();
       final response = await post(
@@ -423,6 +442,26 @@ void main() {
         (await decodeBody(response))['code'],
         'competition.fixture_schedule_same_team',
       );
+      expect(setup.schedules.count, 0);
+    });
+
+    test('an optional id of the wrong type is a 400, not a 500 (audit '
+        'L-47)', () async {
+      final setup = rootFor();
+      final response = await put(
+        setup.root,
+        adminPrincipal(),
+        kFixtureId,
+        body: {
+          'home_team': 'Al Hilal',
+          'away_team': 'Al Nassr',
+          'kickoff_at': kickoff.toIso8601String(),
+          'league_id': <String, Object?>{'id': 'x'},
+        },
+      );
+
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect((await decodeBody(response))['code'], 'request.field_type');
       expect(setup.schedules.count, 0);
     });
 

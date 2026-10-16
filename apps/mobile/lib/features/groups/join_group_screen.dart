@@ -93,7 +93,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Text(
-                  ErrorPresenter.message(state.error as AppError),
+                  ErrorPresenter.messageOf(state.error),
                   key: const Key('joinGroup.error'),
                   style: TextStyle(color: tokens.errorText),
                 ),

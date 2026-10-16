@@ -83,6 +83,22 @@ Result<String> requireString(Map<String, Object?> body, String field) {
   );
 }
 
+/// Extracts an optional string field from a parsed JSON [body]: null when it
+/// is absent or null, a `400 request.field_type` when it is anything but a
+/// string (audit L-47: `body[field] as String?` threw, a 500, for a number).
+Result<String?> optionalString(Map<String, Object?> body, String field) {
+  final value = body[field];
+  if (value == null || value is String) {
+    return Result.ok(value as String?);
+  }
+  return Result.err(
+    AppError.validation(
+      'request.field_type',
+      'Field "$field" must be a string when present',
+    ),
+  );
+}
+
 /// Extracts a required integer field from a parsed JSON [body]. Accepts a JSON
 /// number that is integral; rejects non-numbers and non-integral values.
 Result<int> requireInt(Map<String, Object?> body, String field) {

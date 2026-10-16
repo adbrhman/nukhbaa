@@ -11,6 +11,7 @@ import '../../../../core/ui/ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/widgets/async_list_view.dart';
 import '../../admin_providers.dart';
+import '../../audit_action_labels.dart';
 
 class AuditLogSection extends ConsumerWidget {
   const AuditLogSection({super.key});
@@ -40,7 +41,7 @@ class AuditLogSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        _actionLabel(entry.action),
+                        auditLogActionLabel(entry.action),
                         key: Key('admin.audit.action.${entry.id}'),
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
@@ -67,35 +68,6 @@ class AuditLogSection extends ConsumerWidget {
     );
   }
 }
-
-/// The Arabic reading of an `admin.audit_action` enum value.
-///
-/// The log used to render the raw enum name (`fixture_predictions_viewed`)
-/// straight from the DTO. The map below covers every value the enum has had
-/// since migration 0010, including the two added later by 0015 and 0023. An
-/// unknown value -- a future migration this build predates -- falls through
-/// to the raw name rather than disappearing from the log, which for an audit
-/// trail matters more than looking tidy.
-String _actionLabel(String action) => switch (action) {
-  'user_suspended' => 'تعليق مستخدم',
-  'user_reinstated' => 'إعادة تفعيل مستخدم',
-  'participant_ledger_viewed' => 'عرض سجل نقاط مشارك',
-  'fixture_result_recorded' => 'تسجيل نتيجة مباراة',
-  'round_scored' => 'احتساب نقاط جولة',
-  'round_posted_to_ledger' => 'ترحيل نقاط جولة إلى السجل',
-  'competition_created' => 'إنشاء مسابقة',
-  'season_started' => 'بدء موسم',
-  'round_opened' => 'فتح جولة',
-  'round_locked' => 'إغلاق جولة',
-  'fixture_linked_to_round' => 'ربط مباراة بجولة',
-  'round_predictions_viewed' => 'عرض توقعات جولة',
-  'fixture_predictions_viewed' => 'عرض توقعات مباراة',
-  'user_renamed' => 'تعديل اسم مستخدم',
-  'error_updated' => 'تعديل خطأ في سجل الأخطاء',
-  'fixture_hidden' => 'إخفاء مباراة',
-  'fixture_shown' => 'إظهار مباراة',
-  _ => action,
-};
 
 /// The admin's reason first, then a short handle for the target.
 ///

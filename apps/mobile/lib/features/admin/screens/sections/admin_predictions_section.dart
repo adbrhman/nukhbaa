@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
@@ -99,7 +98,7 @@ class _AdminPredictionsSectionState
               if (state is AsyncError<List<FixturePredictionDto>>)
                 AdminErrorBanner(
                   key: const Key('admin.predictions.error'),
-                  message: ErrorPresenter.message(state.error as AppError),
+                  message: ErrorPresenter.messageOf(state.error),
                 ),
               const SizedBox(height: AppSpacing.md),
               AdminPrimaryButton(

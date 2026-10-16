@@ -14,7 +14,6 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
@@ -157,7 +156,7 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
         if (visibility is AsyncError<FixtureVisibilityResultDto>) ...<Widget>[
           AdminErrorBanner(
             key: const Key('admin.matches.error'),
-            message: ErrorPresenter.message(visibility.error as AppError),
+            message: ErrorPresenter.messageOf(visibility.error),
           ),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -171,7 +170,7 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
         if (removal is AsyncError<bool>) ...<Widget>[
           AdminErrorBanner(
             key: const Key('admin.matches.deleteError'),
-            message: ErrorPresenter.message(removal.error as AppError),
+            message: ErrorPresenter.messageOf(removal.error),
           ),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -188,7 +187,7 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
       loading: () => const LinearProgressIndicator(),
       error: (Object error, StackTrace _) => AdminErrorBanner(
         key: const Key('admin.matches.loadError'),
-        message: ErrorPresenter.message(error as AppError),
+        message: ErrorPresenter.messageOf(error),
       ),
       data: (List<SeasonFixtureCardDto> all) {
         final List<SeasonFixtureCardDto> shown = <SeasonFixtureCardDto>[
@@ -282,9 +281,11 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
                     }
                   }),
                   onEdit: () => _openEdit(seasonId, fixture),
-                  onToggleHidden: () => _setHidden(seasonId, [
-                    fixture.fixtureId,
-                  ], hidden: !fixture.hidden),
+                  // Hiding asks first, as a selection does (audit L-11);
+                  // showing back is harmless and immediate.
+                  onToggleHidden: () => fixture.hidden
+                      ? _setHidden(seasonId, [fixture.fixtureId], hidden: false)
+                      : _confirmBulk(seasonId, [fixture], hidden: true),
                   onDelete: () => _confirmDelete(seasonId, fixture),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -337,12 +338,18 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         key: const Key('admin.matches.bulkConfirm'),
-        title: Text('$verb ${fixtures.length} من المباريات؟'),
+        title: Text(
+          fixtures.length == 1
+              ? '$verb ${names.single}؟'
+              : '$verb ${fixtures.length} من المباريات؟',
+        ),
         content: Text(
           <String>[
-            ...names,
-            if (rest > 0) 'و$rest أخرى',
-            '',
+            if (fixtures.length > 1) ...<String>[
+              ...names,
+              if (rest > 0) 'و$rest أخرى',
+              '',
+            ],
             hidden
                 ? 'تختفي عن اللاعبين فورًا ولا تقبل توقّعات، ولا يُحذف شيء '
                       'من بياناتها.'

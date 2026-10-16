@@ -274,12 +274,7 @@ class _ErrorView extends StatelessWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  AppError get _appError => error is AppError
-      ? error as AppError
-      : const AppError.transient(
-          'client.unexpected',
-          'Something went wrong. Please try again.',
-        );
+  AppError get _appError => ErrorPresenter.asAppError(error);
 
   @override
   Widget build(BuildContext context) {

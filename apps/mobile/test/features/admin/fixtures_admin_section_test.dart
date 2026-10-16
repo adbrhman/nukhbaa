@@ -150,12 +150,18 @@ void main() {
     expect(_row(_test), findsNothing);
   });
 
-  testWidgets('hiding from the row goes to the server at once, and the row '
-      'comes back flagged', (tester) async {
+  testWidgets('hiding from the row asks first, by the match\'s name; the row '
+      'comes back flagged; showing back is immediate (audit L-11)', (
+    tester,
+  ) async {
     final _Server server = _Server();
     await _open(tester, server);
 
     await _tap(tester, 'admin.matches.toggle.$_real');
+    expect(find.byKey(const Key('admin.matches.bulkConfirm')), findsOneWidget);
+    expect(find.textContaining('Real'), findsWidgets);
+    expect(server.to('/admin/fixture-visibility'), isEmpty);
+    await _tap(tester, 'admin.matches.bulkConfirm.ok');
 
     final List<http.Request> sent = server.to('/admin/fixture-visibility');
     expect(sent, hasLength(1));

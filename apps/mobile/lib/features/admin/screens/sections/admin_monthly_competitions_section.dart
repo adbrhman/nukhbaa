@@ -3,7 +3,6 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
@@ -54,7 +53,7 @@ class AdminMonthlyCompetitionsSection extends ConsumerWidget {
               ),
             ),
             AsyncError(:final error) => AdminErrorBanner(
-              message: ErrorPresenter.message(error as AppError),
+              message: ErrorPresenter.messageOf(error),
             ),
             _ => const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -151,7 +150,7 @@ class _CreateCompetitionFormState
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: AdminErrorBanner(
-                message: ErrorPresenter.message(state.error as AppError),
+                message: ErrorPresenter.messageOf(state.error),
               ),
             ),
           if (state is AsyncData<CompetitionDto>)
@@ -307,7 +306,7 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
               AppSpacing.sm,
             ),
             child: AdminErrorBanner(
-              message: ErrorPresenter.message(startState.error as AppError),
+              message: ErrorPresenter.messageOf(startState.error),
             ),
           ),
       ],

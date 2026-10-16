@@ -53,6 +53,15 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (kickoffResult is Err<DateTime>) {
     return errorResponse(kickoffResult.error);
   }
+  // The optional ids: a wrong type is a 400, never a thrown cast (L-47).
+  final ids = <String, String?>{};
+  for (final field in const ['home_team_id', 'away_team_id', 'league_id']) {
+    final idResult = optionalString(body, field);
+    if (idResult is Err<String?>) {
+      return errorResponse(idResult.error);
+    }
+    ids[field] = (idResult as Ok<String?>).value;
+  }
 
   final result = await root.correctFixtureSchedule(
     principal: principal,
@@ -60,9 +69,9 @@ Future<Response> onRequest(RequestContext context, String id) async {
     homeTeam: (homeResult as Ok<String>).value,
     awayTeam: (awayResult as Ok<String>).value,
     kickoffAt: (kickoffResult as Ok<DateTime>).value,
-    homeTeamId: body['home_team_id'] as String?,
-    awayTeamId: body['away_team_id'] as String?,
-    leagueId: body['league_id'] as String?,
+    homeTeamId: ids['home_team_id'],
+    awayTeamId: ids['away_team_id'],
+    leagueId: ids['league_id'],
   );
 
   return switch (result) {

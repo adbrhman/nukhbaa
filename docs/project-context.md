@@ -5109,6 +5109,26 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   can be raised on Northflank without a release once Supabase's own
   connection count says there is room. No migration; the server and the
   APK and the web.
+- **Batch 146 (the admin panel, first part, 2026-10-16, audit L-11,
+  L-13, L-47, part of L-14)**: the commands that change players' points
+  now ask first, by the match's name: النتائج والاحتساب confirms
+  recording a result ("Arsenal × Chelsea: 2-1"), scoring and posting
+  (`admin.results.confirm`), and says "سُجّلت النتيجة: Arsenal × Chelsea
+  2-1" where it showed the match's id. Hiding one match from its row
+  asks as a selection does (showing back stays immediate); suspending a
+  player asks by his name and the reason (`admin.users.suspendConfirm`),
+  and "اكتب السبب أولاً" shows by the suspend buttons
+  (`admin.users.sanctionMessage`), not under the rename button.
+  `ErrorPresenter.asAppError` and `messageOf` replace the 21 casts
+  `error as AppError` in the admin sections and the group screens: any
+  other failure reads as a message instead of a red screen. The audit
+  actions read from one map (`features/admin/audit_action_labels.dart`)
+  on the home and in the log ("تعليق لاعب" both), the log keeping an
+  unknown token in brackets. `POST /fixtures` and `PUT /fixtures/{id}`
+  read the optional team and league ids with `optionalString`: a number
+  there is a 400 `request.field_type`, not a 500. Left for 146b: L-12,
+  L-34, the rest of L-14 with C-01 (the points lookup by player, on the
+  fixture ledger) and M-25. No migration.
 - **Batch 157 (the update check after a release, 2026-10-16, outside the
   audit plan):** right after batch 156 went live, Y7GU came back: "no
   verifiable APK in the latest published release", 69 times in minutes,
