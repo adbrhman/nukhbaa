@@ -101,7 +101,13 @@ enum AuditAction {
   /// An admin added a club to the team catalog (`AdminAddTeam`, migration
   /// 0173, script 91); the target is the new team's id, the reason its
   /// name.
-  teamAdded;
+  teamAdded,
+
+  /// An admin merged a copy of a match into the copy kept
+  /// (`AdminMergeFixtureCopies`, migration 0176, script 95); the target is
+  /// the copy, the reason the kept copy and what moved. Written by
+  /// `competition.merge_fixture_copies` in the merge's own transaction.
+  fixturesMerged;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -126,6 +132,7 @@ enum AuditAction {
     AuditAction.fixtureHidden => 'fixture_hidden',
     AuditAction.fixtureShown => 'fixture_shown',
     AuditAction.teamAdded => 'team_added',
+    AuditAction.fixturesMerged => 'fixtures_merged',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

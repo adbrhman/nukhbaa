@@ -183,6 +183,8 @@ final class CompositionRoot {
     required this.adminGetUserStats,
     required this.adminRenameUser,
     required this.adminSetFixturesHidden,
+    required this.adminListFixtureCopies,
+    required this.adminMergeFixtureCopies,
     required this.adminListDuplicateNames,
     required this.listAuditLog,
     required this.viewParticipantLedger,
@@ -391,6 +393,8 @@ final class CompositionRoot {
     AdminGetUserStats? adminGetUserStats,
     AdminRenameUser? adminRenameUser,
     AdminSetFixturesHidden? adminSetFixturesHidden,
+    AdminListFixtureCopies? adminListFixtureCopies,
+    AdminMergeFixtureCopies? adminMergeFixtureCopies,
     AdminListDuplicateNames? adminListDuplicateNames,
     ListAuditLog? listAuditLog,
     ViewParticipantLedger? viewParticipantLedger,
@@ -634,6 +638,12 @@ final class CompositionRoot {
        adminRenameUser = adminRenameUser ?? _absentAdminRenameUser(),
        adminSetFixturesHidden =
            adminSetFixturesHidden ?? _absentAdminSetFixturesHidden(),
+       adminListFixtureCopies =
+           adminListFixtureCopies ??
+           AdminListFixtureCopies(merger: _UnwiredFixtureMerger()),
+       adminMergeFixtureCopies =
+           adminMergeFixtureCopies ??
+           AdminMergeFixtureCopies(merger: _UnwiredFixtureMerger()),
        adminListDuplicateNames =
            adminListDuplicateNames ?? _absentAdminListDuplicateNames(),
        listAuditLog = listAuditLog ?? _absentListAuditLog(),
@@ -2541,6 +2551,14 @@ final class CompositionRoot {
   /// audited per fixture; nothing is deleted.
   final AdminSetFixturesHidden adminSetFixturesHidden;
 
+  /// A fixture and the other copies of its match
+  /// (`GET /admin/fixtures/{id}/copies`, migration 0176, script 95).
+  final AdminListFixtureCopies adminListFixtureCopies;
+
+  /// Merges a copy of a match into the copy kept, or previews it
+  /// (`POST /admin/fixtures/{id}/merge`, migration 0176, script 95).
+  final AdminMergeFixtureCopies adminMergeFixtureCopies;
+
   /// The display names more than one account carries
   /// (`GET /admin/duplicate-names`), admin-only.
   final AdminListDuplicateNames adminListDuplicateNames;
@@ -3868,6 +3886,18 @@ final class CompositionRoot {
       adminListDuplicateNames: AdminListDuplicateNames(
         names: PostgresDuplicateNameReader(connection),
       ),
+      adminListFixtureCopies: AdminListFixtureCopies(
+        merger: PostgresFixtureMerger(connection),
+      ),
+      // A merge hides the copy: the schedule cache drops it, and the kept
+      // copy is scored again through the sweep's own path (script 95).
+      adminMergeFixtureCopies: AdminMergeFixtureCopies(
+        merger: PostgresFixtureMerger(
+          connection,
+          onChanged: fixtureScheduleRepository.forget,
+        ),
+        rescore: rescoreFixture,
+      ),
       listAuditLog: ListAuditLog(auditLog: auditLogRepository),
       viewParticipantLedger: ViewParticipantLedger(
         participantReader: participantReader, // already built (Ledger slice)
@@ -4716,6 +4746,23 @@ final class _UnwiredFixtureVisibilityStore implements FixtureVisibilityStore {
     List<FixtureRef> fixtures, {
     required bool hidden,
   }) => throw StateError('An admin use-case was not wired into this root');
+}
+
+/// Backs the "absent" [AdminListFixtureCopies] and
+/// [AdminMergeFixtureCopies]: throws if a test reaches them without wiring
+/// one.
+final class _UnwiredFixtureMerger implements FixtureMerger {
+  @override
+  Future<Result<FixtureMergeReport>> merge({
+    required FixtureRef duplicate,
+    required FixtureRef kept,
+    required UserId actor,
+    required bool apply,
+  }) => throw StateError('An admin use-case was not wired into this root');
+
+  @override
+  Future<Result<List<FixtureCopy>>> copiesOf(FixtureRef fixture) =>
+      throw StateError('An admin use-case was not wired into this root');
 }
 
 /// Backs the "absent" [AdminListDuplicateNames]: throws if a test reaches

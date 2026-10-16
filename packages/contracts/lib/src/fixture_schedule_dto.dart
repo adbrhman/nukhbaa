@@ -320,3 +320,236 @@ final class FixtureVisibilityResultDto {
     'hidden': hidden,
   };
 }
+
+/// One row of `GET /admin/fixtures/{id}/copies` (migration 0176, script
+/// 95): the fixture asked about ([isSelf]) or another copy of its match.
+final class FixtureCopyDto {
+  /// Creates one row.
+  const FixtureCopyDto({
+    required this.fixtureId,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.kickoffAt,
+    required this.hidden,
+    required this.predictions,
+    required this.doubles,
+    required this.hasResult,
+    required this.linked,
+    required this.isSelf,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory FixtureCopyDto.fromJson(Map<String, Object?> json) => FixtureCopyDto(
+    fixtureId: json['fixture_id'] as String? ?? '',
+    homeTeam: json['home_team'] as String? ?? '',
+    awayTeam: json['away_team'] as String? ?? '',
+    kickoffAt: json['kickoff_at'] as String? ?? '',
+    hidden: json['hidden'] == true,
+    predictions: (json['predictions'] as num?)?.toInt() ?? 0,
+    doubles: (json['doubles'] as num?)?.toInt() ?? 0,
+    hasResult: json['has_result'] == true,
+    linked: json['linked'] == true,
+    isSelf: json['is_self'] == true,
+  );
+
+  /// The fixture id (UUID string).
+  final String fixtureId;
+
+  /// The home side as stored.
+  final String homeTeam;
+
+  /// The away side as stored.
+  final String awayTeam;
+
+  /// The kickoff, ISO 8601 UTC.
+  final String kickoffAt;
+
+  /// Whether it is hidden from the players.
+  final bool hidden;
+
+  /// How many predictions it holds.
+  final int predictions;
+
+  /// How many of them are doubled.
+  final int doubles;
+
+  /// Whether its result is recorded.
+  final bool hasResult;
+
+  /// Whether a provider match is linked to it.
+  final bool linked;
+
+  /// Whether this row is the fixture asked about.
+  final bool isSelf;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'fixture_id': fixtureId,
+    'home_team': homeTeam,
+    'away_team': awayTeam,
+    'kickoff_at': kickoffAt,
+    'hidden': hidden,
+    'predictions': predictions,
+    'doubles': doubles,
+    'has_result': hasResult,
+    'linked': linked,
+    'is_self': isSelf,
+  };
+}
+
+/// The answer of `GET /admin/fixtures/{id}/copies`: the fixture first,
+/// then the other copies of its match not merged yet.
+final class FixtureCopiesDto {
+  /// Creates the answer.
+  const FixtureCopiesDto({
+    required this.copies,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory FixtureCopiesDto.fromJson(Map<String, Object?> json) {
+    final Object? raw = json['copies'];
+    return FixtureCopiesDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      copies: <FixtureCopyDto>[
+        if (raw is List<Object?>)
+          for (final Object? row in raw)
+            if (row is Map<String, Object?>) FixtureCopyDto.fromJson(row),
+      ],
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The rows.
+  final List<FixtureCopyDto> copies;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'copies': [for (final c in copies) c.toJson()],
+  };
+}
+
+/// The body of `POST /admin/fixtures/{id}/merge` (migration 0176): merge
+/// fixture `{id}` into [into], or only preview it ([apply] false).
+final class FixtureMergeRequestDto {
+  /// Creates the body.
+  const FixtureMergeRequestDto({
+    required this.into,
+    required this.apply,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// The copy that stays (UUID string).
+  final String into;
+
+  /// `true` merges, `false` answers what a merge would do.
+  final bool apply;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'into': into,
+    'apply': apply,
+  };
+}
+
+/// The answer of `POST /admin/fixtures/{id}/merge`: what the merge did, or
+/// would do.
+final class FixtureMergeReportDto {
+  /// Creates the answer.
+  const FixtureMergeReportDto({
+    required this.moved,
+    required this.doublesMoved,
+    required this.doublesDropped,
+    required this.bothPredicted,
+    required this.late,
+    required this.notParticipant,
+    required this.linkMoved,
+    required this.keptHasResult,
+    required this.applied,
+    required this.rescored,
+    this.schemaVersion = currentSchemaVersion,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory FixtureMergeReportDto.fromJson(Map<String, Object?> json) {
+    int n(String key) => (json[key] as num?)?.toInt() ?? 0;
+    return FixtureMergeReportDto(
+      schemaVersion: (json['schema_version'] as int?) ?? 1,
+      moved: n('moved'),
+      doublesMoved: n('doubles_moved'),
+      doublesDropped: n('doubles_dropped'),
+      bothPredicted: n('both_predicted'),
+      late: n('late'),
+      notParticipant: n('not_participant'),
+      linkMoved: json['link_moved'] == true,
+      keptHasResult: json['kept_has_result'] == true,
+      applied: json['applied'] == true,
+      rescored: json['rescored'] == true,
+    );
+  }
+
+  /// The current schema version for this DTO.
+  static const int currentSchemaVersion = 1;
+
+  /// Predictions moved to the kept copy.
+  final int moved;
+
+  /// Of [moved], those that kept their double.
+  final int doublesMoved;
+
+  /// Of [moved], those that lost their double (the day's one double was
+  /// already on another match).
+  final int doublesDropped;
+
+  /// Players who predicted both copies.
+  final int bothPredicted;
+
+  /// Predictions sent after the kept copy's kickoff, left where they were.
+  final int late;
+
+  /// Players not in a season of the kept copy, left where they were.
+  final int notParticipant;
+
+  /// Whether the provider link went to the kept copy.
+  final bool linkMoved;
+
+  /// Whether the kept copy has its result.
+  final bool keptHasResult;
+
+  /// Whether the merge was done (`false`: a preview).
+  final bool applied;
+
+  /// Whether the kept copy was scored again after the merge.
+  final bool rescored;
+
+  /// The schema version of this payload.
+  final int schemaVersion;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': schemaVersion,
+    'moved': moved,
+    'doubles_moved': doublesMoved,
+    'doubles_dropped': doublesDropped,
+    'both_predicted': bothPredicted,
+    'late': late,
+    'not_participant': notParticipant,
+    'link_moved': linkMoved,
+    'kept_has_result': keptHasResult,
+    'applied': applied,
+    'rescored': rescored,
+  };
+}

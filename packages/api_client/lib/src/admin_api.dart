@@ -123,6 +123,32 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/fixtures/{id}/copies` -- fixture [fixtureId] first, then
+  /// the other copies of its match not merged yet (script 95, migration
+  /// 0176), each with its predictions, doubles, result and provider link.
+  Future<Result<FixtureCopiesDto>> fixtureCopies(String fixtureId) {
+    return _transport.getObject<FixtureCopiesDto>(
+      '/admin/fixtures/${Uri.encodeComponent(fixtureId)}/copies',
+      parse: FixtureCopiesDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/fixtures/{id}/merge` -- merges [duplicateId], a copy of a
+  /// match, into [keptId] ([apply] true), or answers what that would do
+  /// ([apply] false). A refusal comes back as
+  /// `competition.fixture_merge_refused` with an Arabic message.
+  Future<Result<FixtureMergeReportDto>> mergeFixture({
+    required String duplicateId,
+    required String keptId,
+    required bool apply,
+  }) {
+    return _transport.postObject<FixtureMergeReportDto>(
+      '/admin/fixtures/${Uri.encodeComponent(duplicateId)}/merge',
+      body: FixtureMergeRequestDto(into: keptId, apply: apply).toJson(),
+      parse: FixtureMergeReportDto.fromJson,
+    );
+  }
+
   /// `POST /admin/teams` -- adds a club to the team catalog (script 91,
   /// migration 0173): [name] as the admin wrote it, under [leagueId] (none
   /// when `null`). Answers the club added. A club whose name has the same

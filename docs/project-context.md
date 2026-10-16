@@ -5878,6 +5878,51 @@ released after that. Approved by the owner on 2026-10-16.
 
 No migration; nothing in the app or the server changes.
 
+### Merging two copies of one match (script 95, 2026-10-16)
+
+The third script on the duplicates of 2026-10-15/16. Some players
+predicted one copy, some the other; hiding a copy took its predictions
+out of sight, and the fixes by hand switched the triggers off to move
+them. Decided by the owner: an admin merges a copy into the copy kept,
+from the matches page, in one transaction, every trigger on.
+
+- Migration 0176: `competition.merge_fixture_copies(duplicate, kept,
+  actor, apply)`, security definer, closed to the clients. It refuses two
+  fixtures that are not one match (no club in common, or 12 hours apart),
+  a test fixture, a hidden kept copy, a copy already merged
+  (`fixture_merge_*`). It hides the copy first, then moves to the kept
+  copy, as they are (id, scoreline, `submitted_at`, double), the
+  predictions of players who did not predict the kept copy, sent before
+  its kickoff, from a season it belongs to; a double that would be the
+  player's second of the kept copy's Riyadh day moves without it. The
+  rest stay on the copy, counted. It hands the copy's provider link to a
+  kept copy that has none, and writes the audit row (`fixtures_merged`)
+  and `competition.fixture_merges`. With `apply` false: the counts only.
+- `prediction.reject_fixture_write_after_kickoff` lets one write through
+  after kickoff: a prediction moved by a merge, in the transaction that
+  recorded it, from that copy to that kept copy, nothing else changed,
+  sent before the kept copy's kickoff. `fixture_schedules_merged`: a
+  merged copy is never shown again (its old scores and ledger entries
+  stay on it, off every board, 0107).
+- `AdminMergeFixtureCopies` (`POST /admin/fixtures/{id}/merge`,
+  `{"into", "apply"}`) scores the kept copy again through `FixtureRescorer`
+  (`ScoreFixture`, `PostFixtureToLedger`) when something moved and its
+  result is in; `AdminListFixtureCopies` (`GET /admin/fixtures/{id}/copies`)
+  lists the copies with their predictions, doubles, result and link
+  (`PostgresFixtureMerger`).
+- The app: a «دمج» button on every non-test row of «المباريات»; the
+  dialog lists the copies, the admin picks the visible one that stays,
+  reads the preview, and merges.
+- Tests: `0176_merge_fixture_copies_test.sql`,
+  `fixture_copies_query_test.sql`, `admin_merge_fixture_copies_test.dart`,
+  `admin_fixture_merge_route_test.dart`, `admin_fixture_merge_api_test.dart`,
+  `fixtures_admin_merge_test.dart`.
+
+**0176 must be on the live DB before this server is deployed.** After the
+deploy the owner merges, from the app, Salzburg - Milan (`fde6264d` into
+`a2e41db8`) and Lech - Leverkusen (`147b5dda` into `c6d2b914`), preview
+first.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

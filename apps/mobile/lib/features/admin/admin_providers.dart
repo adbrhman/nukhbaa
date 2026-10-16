@@ -243,6 +243,14 @@ class FixtureVisibilityController
   }
 }
 
+/// Drops every read that lists month [seasonId]'s fixtures, the admin's
+/// and the players', after a copy of a match was merged away (script 95).
+void invalidateMonthFixtures(WidgetRef ref, String seasonId) {
+  ref.invalidate(adminSeasonFixturesProvider(seasonId));
+  ref.invalidate(seasonFixturesProvider(seasonId));
+  ref.invalidate(currentMonthFixturesProvider);
+}
+
 /// The admin's hide/show command; see [FixtureVisibilityController].
 final fixtureVisibilityControllerProvider =
     NotifierProvider.autoDispose<

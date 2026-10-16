@@ -25,6 +25,7 @@ import '../../../competition/competition_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/fixture_merge_dialog.dart';
 import 'fixture_edit_section.dart';
 import 'fixture_schedule_section.dart';
 
@@ -93,6 +94,9 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
   String? _pickedSeasonId;
   AdminFixtureFilter _filter = AdminFixtureFilter.all;
   final Set<String> _selected = <String>{};
+
+  /// What the last merge did (script 95), shown above the list.
+  String? _mergeMessage;
 
   /// The month covering now, else the newest: the list opens on the month
   /// the admin is working in without a tap.
@@ -164,6 +168,13 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
           AdminSuccessBanner(
             key: const Key('admin.matches.result'),
             message: _visibilityMessage(visibility.value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        if (_mergeMessage case final String merged) ...<Widget>[
+          AdminSuccessBanner(
+            key: const Key('admin.matches.mergeResult'),
+            message: merged,
           ),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -287,6 +298,11 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
                       ? _setHidden(seasonId, [fixture.fixtureId], hidden: false)
                       : _confirmBulk(seasonId, [fixture], hidden: true),
                   onDelete: () => _confirmDelete(seasonId, fixture),
+                  // A copy of a match is merged into the copy kept
+                  // (script 95); a test fixture never is.
+                  onMerge: fixture.isTest
+                      ? null
+                      : () => _openMerge(seasonId, fixture),
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
@@ -412,6 +428,21 @@ class _FixturesAdminSectionState extends ConsumerState<FixturesAdminSection> {
         .remove(seasonId: seasonId, fixtureId: fixture.fixtureId);
     if (!mounted) return;
     setState(() => _selected.remove(fixture.fixtureId));
+  }
+
+  /// Merges [fixture], a copy of a match, into the copy the admin keeps,
+  /// then reloads every read that lists them.
+  Future<void> _openMerge(String seasonId, SeasonFixtureCardDto fixture) async {
+    final FixtureMergeReportDto? report = await showFixtureMergeDialog(
+      context,
+      fixture: fixture,
+    );
+    if (report == null || !mounted) return;
+    invalidateMonthFixtures(ref, seasonId);
+    setState(() {
+      _mergeMessage = fixtureMergeResultMessage(report);
+      _selected.remove(fixture.fixtureId);
+    });
   }
 
   Future<void> _openAdd(String? seasonId) => Navigator.of(context).push(
@@ -596,7 +627,7 @@ class _DayHeader extends StatelessWidget {
 }
 
 /// One fixture of the list: its teams, kickoff and flags, a selection box
-/// and its three actions.
+/// and its actions (merging since script 95).
 class _FixtureRow extends StatelessWidget {
   const _FixtureRow({
     required this.fixture,
@@ -606,6 +637,7 @@ class _FixtureRow extends StatelessWidget {
     required this.onEdit,
     required this.onToggleHidden,
     required this.onDelete,
+    required this.onMerge,
   });
 
   final SeasonFixtureCardDto fixture;
@@ -615,6 +647,9 @@ class _FixtureRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onToggleHidden;
   final VoidCallback onDelete;
+
+  /// Merges this copy into another; null for a test fixture.
+  final VoidCallback? onMerge;
 
   String _kickoffLine(BuildContext context) {
     final DateTime? kickoff = DateTime.tryParse(
@@ -717,6 +752,13 @@ class _FixtureRow extends StatelessWidget {
                 ),
                 label: Text(fixture.hidden ? 'إظهار' : 'إخفاء'),
               ),
+              if (onMerge case final VoidCallback merge)
+                TextButton.icon(
+                  key: Key('admin.matches.merge.$id'),
+                  onPressed: enabled ? merge : null,
+                  icon: const Icon(Icons.merge_type_rounded),
+                  label: const Text('دمج'),
+                ),
               TextButton.icon(
                 key: Key('admin.matches.delete.$id'),
                 onPressed: enabled ? onDelete : null,
