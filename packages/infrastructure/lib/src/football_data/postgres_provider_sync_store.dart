@@ -27,6 +27,10 @@ VALUES (@source, @external_id, @table, @canonical_id::uuid)
 ON CONFLICT (external_source, external_id, canonical_table) DO NOTHING
 ''';
 
+  // A hidden fixture (0098) is never scored and was usually postponed or
+  // called off: it is not asked about, so it spends none of a provider's
+  // daily requests (script 90). Tested in
+  // supabase/tests/provider_sync_pending_query_test.sql.
   static const String _pendingSql = '''
 SELECT m.canonical_id::text AS fixture_id,
        m.external_id,
@@ -41,6 +45,7 @@ LEFT JOIN scoring.fixture_results r
 WHERE m.external_source = @source
   AND m.canonical_table = 'fixture'
   AND r.fixture_id IS NULL
+  AND s.hidden_at IS NULL
   AND s.kickoff_at >= @from::timestamptz
   AND s.kickoff_at < @before::timestamptz
 ORDER BY s.kickoff_at

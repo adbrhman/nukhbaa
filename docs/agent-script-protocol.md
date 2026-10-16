@@ -82,9 +82,13 @@ One bash script per batch, named `NN_short_name.sh`, downloaded to
   2. `dart format` on the touched files only;
   3. `dart analyze --fatal-warnings .`;
   4. `dart run tooling/import_lint/bin/import_lint.dart`;
-  5. `flutter test --reporter=failures-only` on the affected tests, then the
-     full suite of each affected package (`dart test` fails here under
-     `resolution: workspace`).
+  5. `flutter test --reporter=failures-only` on the affected tests only:
+     the tests of the files the batch changed and the new ones (`dart test`
+     fails here under `resolution: workspace`). The full suites run in
+     Build Verification on every push, and nothing is released before they
+     pass (server-release, deploy-pages); running them on the phone too
+     only made each script slow (decided by the owner on 2026-10-16). A
+     failure there is fixed by the next script.
   A batch that changes only `docs/*.md` skips 2-5 (nothing compiled
   changed) and checks with `git diff --name-only` that it touched nothing
   else.
@@ -234,7 +238,6 @@ step lint;    dart run tooling/import_lint/bin/import_lint.dart
 step tests
 cd apps/mobile
 flutter test --reporter=failures-only test/path/to/new_test.dart
-flutter test --reporter=failures-only
 cd "$REPO"
 git checkout -- $L10N_GEN   # a text batch regenerates instead (section 2)
 

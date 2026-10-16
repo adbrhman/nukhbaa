@@ -5698,6 +5698,23 @@ was not told.
 
 **0172 must be on the live DB before this server is deployed.**
 
+### Provider results skip hidden matches; affected tests only on the phone (script 90, 2026-10-16)
+
+- `PostgresProviderSyncStore._pendingSql` leaves out hidden fixtures
+  (`s.hidden_at IS NULL`). A hidden match was usually postponed or called
+  off and is never scored, yet the results sync (and the live poll, which
+  reads the same list) went on asking the provider about it until 24
+  hours after kickoff, from Highlightly's 100 daily requests (Al Ahli -
+  Al Nassr, reported postponed on 2026-10-15 and hidden the next day).
+  Shown again, it is asked about again. Tested in
+  `supabase/tests/provider_sync_pending_query_test.sql` (copy of the
+  constant; run on a local Postgres 16).
+- `docs/agent-script-protocol.md`: a script runs the affected tests only;
+  the full suites run in Build Verification on every push, and nothing is
+  released before they pass (decided by the owner on 2026-10-16).
+
+No migration; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
