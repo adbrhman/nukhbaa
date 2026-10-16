@@ -1,6 +1,7 @@
 -- End-to-end test for migration 0075: an invitee idle for 7 days loses the
--- inviter's point (a compensating event) and is suspended, never deleted;
--- the admin view reports every invitation's state. Rolled back at the end.
+-- inviter's point (a compensating event); since 0114 the account is left
+-- active (0075 suspended it, audit M-21), never deleted; the admin view
+-- reports every invitation's state. Rolled back at the end.
 \set ON_ERROR_STOP on
 begin;
 
@@ -103,7 +104,7 @@ begin
     (select payload ->> 'reason' from gamification.events
       where ref_id = b and event_type = 'referral_revoked') = 'inactive_7_days',
     'the revocation records why');
-  perform pg_temp.check((select status::text from identity.users where id = b) = 'suspended', 'the idle account is suspended');
+  perform pg_temp.check((select status::text from identity.users where id = b) = 'active', 'the idle account stays active (0114)');
   perform pg_temp.check(exists (select 1 from identity.users where id = b), 'the idle account is not deleted');
   perform pg_temp.check(
     (select count(*) from prediction.fixture_predictions fp
@@ -116,16 +117,15 @@ begin
       where user_id = a and label = '10/2026') = 1,
     'the inviter keeps only the active friend''s point');
 
-  -- A repeat writes nothing, and a reinstated account is not suspended again.
+  -- A repeat writes nothing, and the account is never suspended later.
   perform pg_temp.check(gamification.qualify_referrals('2026-10-12 12:00+03') = 0, 'a repeat sweep writes nothing');
-  update identity.users set status = 'active' where id = b;
   perform gamification.qualify_referrals('2026-10-20 12:00+03');
-  perform pg_temp.check((select status::text from identity.users where id = b) = 'active', 'an account an admin reinstated stays active');
+  perform pg_temp.check((select status::text from identity.users where id = b) = 'active', 'a later sweep leaves the account active');
 
   -- c quiet after Oct 8: revoked on Oct 16.
   perform pg_temp.check(pg_temp.state(c) = 'revoked', 'the active friend is revoked too once quiet for a week');
 
-  -- An admin account is revoked but never suspended by the sweep.
+  -- An admin account is revoked and, like every account, not suspended.
   adm := pg_temp.mk_user(4, '2026-10-01 13:00+03', 'admin');
   perform gamification.claim_referral(adm, code, '1.0.0.4', 'inst-adm-1', '2026-10-01 13:05+03');
   perform pg_temp.predict(adm, 2, '2026-10-03 12:00+03');

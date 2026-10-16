@@ -3436,11 +3436,9 @@ it, in the Supabase SQL editor:
   called at the end of `qualify_referrals`, same 30-minute sweep and same
   switch): a paid invitation whose invitee sent no prediction for 7 days
   since the later of the payment and the last prediction is revoked
-  (`referral_revoked`, reason `inactive_7_days`) and the invitee's account is
-  SUSPENDED -- never deleted (the 2026-09-09 no-delete rule stands). An
-  admin account is never suspended by the sweep. An admin can reinstate the
-  account from the user-sanction screen; the invitation stays revoked, so
-  the account is not suspended again for it.
+  (`referral_revoked`, reason `inactive_7_days`). Until migration 0114 the
+  invitee's account was also SUSPENDED; since 0114 (batch 150, audit M-21)
+  it is left active and only the point is taken back.
 - **`gamification.referral_invitations`** (view): one row per invitation
   with its state (`pending`, `held`, `paid`, `revoked`, `rejected`), the
   hold reasons, the revoke reason, the invitee's status and last prediction.
@@ -5109,6 +5107,22 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   can be raised on Northflank without a release once Supabase's own
   connection count says there is room. No migration; the server and the
   APK and the web.
+- **Batch 150 (the owner's decisions, first part, 2026-10-16, audit M-21,
+  L-24, L-59, the M-05 decision; migration 0114)**: an invitee idle for 7
+  days was suspended along with the inviter's point being taken back, so a
+  real friend who travelled, or found no matches in an international break,
+  opened the app to "this account is suspended". `expire_idle_referrals`
+  now only takes the point back (`referral_revoked`, `inactive_7_days`),
+  which is all that stops a fake invitation paying; 0114 also reinstates,
+  once, every plain account the sweep had suspended and no admin had
+  (no `user_suspended` row in `admin.audit_log` names it). The owner's
+  decisions: the admin keeps seeing predictions before kickoff, every read
+  audited as before (L-24); the Android `applicationId` stays, since a new
+  one cannot update the installed app (L-59); deleting an account will
+  anonymise it and keep its points and predictions in the record, the
+  ledger being append-only behind `on delete restrict` keys (M-05, to be
+  built in 150b with L-23). SQL tests: `0114_idle_invitee_not_suspended_test`
+  and `0075_referral_idle_test` (now expecting the account active).
 - **Batch 146 (the admin panel, first part, 2026-10-16, audit L-11,
   L-13, L-47, part of L-14)**: the commands that change players' points
   now ask first, by the match's name: النتائج والاحتساب confirms
