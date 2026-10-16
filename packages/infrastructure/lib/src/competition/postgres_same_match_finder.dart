@@ -10,10 +10,13 @@ import 'package:shared/shared.dart';
 /// when one of the two has no team on file -- one name inside the other,
 /// three letters at least; two different teams on file never agree by a
 /// name inside another (audit C-04). Home and away entered the other way
-/// round are the same match. Test and hidden fixtures are skipped. The
-/// nearest kickoff to the middle of the window wins. Tested in
-/// supabase/tests/same_match_query_test.sql; the schedule's own trigger
-/// (0110) refuses whatever slips past.
+/// round are the same match. One club in both -- the same team or the same
+/// name key, on either side -- is found too (script 93, migration 0175): a
+/// club plays one match in 12 hours, so "هوفنهايم - بيشتكاش" is caught
+/// beside "هوفنهايم - بشكتاش". Test and hidden fixtures are skipped. The
+/// same match wins over one club alike, then the nearest kickoff to the
+/// middle of the window. Tested in supabase/tests/same_match_query_test.sql;
+/// the schedule's own trigger (0110, 0175) refuses whatever slips past.
 ///
 /// Total: never throws, binds every value through a `@named` parameter.
 final class PostgresSameMatchFinder implements SameMatchFinder {
@@ -56,29 +59,49 @@ sides AS (
   UNION ALL
   SELECT c.*, t.a, t.h, t.away_id, t.home_id, t.kickoff
   FROM candidates c, target t
-)
-SELECT s.fixture_id::text AS fixture_id,
-       s.home_team,
-       s.away_team,
-       s.kickoff_at
-FROM sides s
+),
 -- A side agrees when it is the same catalog team, or the same name key
 -- (competition.team_name_key, 0110: one club, two catalog rows), or --
 -- only when a side has no team on file -- one name inside the other,
 -- three letters at least. Two different teams on file never agree by a
--- name that sits inside another (audit C-04).
-WHERE ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
-       OR s.h = s.new_h
-       OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
-           AND length(s.new_h) >= 3 AND length(s.h) >= 3
-           AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
-  AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
-       OR s.a = s.new_a
-       OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
-           AND length(s.new_a) >= 3 AND length(s.a) >= 3
-           AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0)))
-ORDER BY abs(extract(epoch from (s.kickoff_at - s.kickoff))),
-         s.fixture_id
+-- name that sits inside another (audit C-04). One club in both matches --
+-- the same team or the same name key, on either side -- is enough to
+-- refuse (0175): a club plays one match in 12 hours.
+judged AS (
+  SELECT s.*,
+         COALESCE(
+           ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
+            OR s.h = s.new_h
+            OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
+                AND length(s.new_h) >= 3 AND length(s.h) >= 3
+                AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
+           AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
+            OR s.a = s.new_a
+            OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
+                AND length(s.new_a) >= 3 AND length(s.a) >= 3
+                AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0))),
+           false) AS both_sides,
+         COALESCE(
+           (s.home_team_id IS NOT NULL
+              AND s.home_team_id IN (s.new_home_id, s.new_away_id))
+           OR (s.away_team_id IS NOT NULL
+              AND s.away_team_id IN (s.new_home_id, s.new_away_id))
+           OR s.h IN (s.new_h, s.new_a)
+           OR s.a IN (s.new_h, s.new_a),
+           false) AS one_club
+  FROM sides s
+)
+SELECT j.fixture_id::text AS fixture_id,
+       j.home_team,
+       j.away_team,
+       j.kickoff_at,
+       j.both_sides
+FROM judged j
+WHERE j.both_sides OR j.one_club
+-- The same match first, then the nearest kickoff to the middle.
+ORDER BY j.both_sides DESC,
+         abs(extract(epoch from (j.kickoff_at - j.kickoff))),
+         j.fixture_id
 LIMIT 1
 ''';
 
@@ -131,6 +154,7 @@ LIMIT 1
         homeTeam: home,
         awayTeam: away,
         kickoffAt: kickoffAt.toUtc(),
+        bothSides: row['both_sides'] != false,
       ),
     );
   }

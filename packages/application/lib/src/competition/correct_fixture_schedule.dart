@@ -1,6 +1,7 @@
 import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/competition/register_fixture_schedule.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/scoring/rescore_earlier_kickoff.dart';
 import 'package:domain/domain.dart';
@@ -35,6 +36,11 @@ import 'package:shared/shared.dart';
 /// and — when the kickoff moved — its old and new values. The entry is written
 /// AFTER a successful persist (mirroring `SuspendUser`), and a failure to
 /// record it propagates: a crown-jewel admin action must not succeed silently.
+///
+/// **Both teams from the catalog (script 93).** With [requireTeamIds] (the
+/// server's root) a fixture that is not a test is refused with
+/// `RegisterFixtureSchedule.teamsRequired` unless both its teams carry a
+/// catalog id, as on registration.
 final class CorrectFixtureSchedule {
   /// Creates the use-case over its collaborators.
   const CorrectFixtureSchedule(
@@ -42,6 +48,7 @@ final class CorrectFixtureSchedule {
     required AuditRecorder auditRecorder,
     required Clock clock,
     RescoreEarlierKickoff? rescoreEarlierKickoff,
+    this.requireTeamIds = false,
   }) : _audit = auditRecorder,
        _clock = clock,
        _rescore = rescoreEarlierKickoff;
@@ -53,6 +60,10 @@ final class CorrectFixtureSchedule {
   /// Scores the fixture again when its kickoff is brought forward; null in
   /// the test roots, where nothing is scored again.
   final RescoreEarlierKickoff? _rescore;
+
+  /// Whether a fixture that is not a test needs both its teams from the
+  /// catalog (script 93); off in the test roots that predate it.
+  final bool requireTeamIds;
 
   /// Corrects fixture [fixtureId] on behalf of admin [principal].
   Future<Result<FixtureSchedule>> call({
@@ -97,6 +108,12 @@ final class CorrectFixtureSchedule {
       return Result.err(existingResult.error);
     }
     final existing = (existingResult as Ok<FixtureSchedule?>).value;
+
+    if (requireTeamIds &&
+        !(existing?.isTest ?? false) &&
+        (homeTeamId == null || awayTeamId == null)) {
+      return const Result.err(RegisterFixtureSchedule.teamsRequired);
+    }
 
     final DateTime? previousKickoff = existing?.kickoffAt.toUtc();
     final DateTime nextKickoff = kickoffAt.toUtc();

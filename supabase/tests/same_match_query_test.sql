@@ -2,7 +2,9 @@
 -- inlined as function arguments; keep the body identical to the adapter's
 -- constant): an admin cannot add a match already on the schedule -- added
 -- by the fixtures sync or by hand -- under the same two sides within the
--- window, whichever catalog row of a club either one picked. Batch 138:
+-- window, whichever catalog row of a club either one picked; and a match
+-- of a club already playing then is found too, told apart by both_sides
+-- (script 93, migration 0175). Batch 138:
 -- the Europa League evening of 2026-10-15 was added twice. No migration:
 -- the query reads 0012, 0024 and 0098 columns and 0110's name key. Batch
 -- 139: home and away the other way round, and case, are the same match.
@@ -19,7 +21,8 @@ alter table competition.fixture_schedules
 create function pg_temp.same_match(
   p_home_id uuid, p_away_id uuid, p_home_name text, p_away_name text,
   p_from timestamptz, p_to timestamptz)
-returns table (fixture_id text, home_team text, away_team text, kickoff_at timestamptz)
+returns table (fixture_id text, home_team text, away_team text, kickoff_at timestamptz,
+               both_sides boolean)
 language sql as $q$
 WITH target AS (
   SELECT competition.team_name_key(p_home_name) AS h,
@@ -54,29 +57,49 @@ sides AS (
   UNION ALL
   SELECT c.*, t.a, t.h, t.away_id, t.home_id, t.kickoff
   FROM candidates c, target t
-)
-SELECT s.fixture_id::text AS fixture_id,
-       s.home_team,
-       s.away_team,
-       s.kickoff_at
-FROM sides s
+),
 -- A side agrees when it is the same catalog team, or the same name key
 -- (competition.team_name_key, 0110: one club, two catalog rows), or --
 -- only when a side has no team on file -- one name inside the other,
 -- three letters at least. Two different teams on file never agree by a
--- name that sits inside another (audit C-04).
-WHERE ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
-       OR s.h = s.new_h
-       OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
-           AND length(s.new_h) >= 3 AND length(s.h) >= 3
-           AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
-  AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
-       OR s.a = s.new_a
-       OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
-           AND length(s.new_a) >= 3 AND length(s.a) >= 3
-           AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0)))
-ORDER BY abs(extract(epoch from (s.kickoff_at - s.kickoff))),
-         s.fixture_id
+-- name that sits inside another (audit C-04). One club in both matches --
+-- the same team or the same name key, on either side -- is enough to
+-- refuse (0175): a club plays one match in 12 hours.
+judged AS (
+  SELECT s.*,
+         COALESCE(
+           ((s.home_team_id IS NOT NULL AND s.home_team_id = s.new_home_id)
+            OR s.h = s.new_h
+            OR ((s.home_team_id IS NULL OR s.new_home_id IS NULL)
+                AND length(s.new_h) >= 3 AND length(s.h) >= 3
+                AND (strpos(s.new_h, s.h) > 0 OR strpos(s.h, s.new_h) > 0)))
+           AND ((s.away_team_id IS NOT NULL AND s.away_team_id = s.new_away_id)
+            OR s.a = s.new_a
+            OR ((s.away_team_id IS NULL OR s.new_away_id IS NULL)
+                AND length(s.new_a) >= 3 AND length(s.a) >= 3
+                AND (strpos(s.new_a, s.a) > 0 OR strpos(s.a, s.new_a) > 0))),
+           false) AS both_sides,
+         COALESCE(
+           (s.home_team_id IS NOT NULL
+              AND s.home_team_id IN (s.new_home_id, s.new_away_id))
+           OR (s.away_team_id IS NOT NULL
+              AND s.away_team_id IN (s.new_home_id, s.new_away_id))
+           OR s.h IN (s.new_h, s.new_a)
+           OR s.a IN (s.new_h, s.new_a),
+           false) AS one_club
+  FROM sides s
+)
+SELECT j.fixture_id::text AS fixture_id,
+       j.home_team,
+       j.away_team,
+       j.kickoff_at,
+       j.both_sides
+FROM judged j
+WHERE j.both_sides OR j.one_club
+-- The same match first, then the nearest kickoff to the middle.
+ORDER BY j.both_sides DESC,
+         abs(extract(epoch from (j.kickoff_at - j.kickoff))),
+         j.fixture_id
 LIMIT 1
 $q$;
 
@@ -112,6 +135,7 @@ declare
   k timestamptz := '2026-10-15 16:45:00+00';
   w interval := interval '12 hours';
   hit text;
+  v_both boolean;
 begin
   -- The sync added Lyon - Crystal Palace under its own Lyon row and
   -- linked it to the provider match.
@@ -138,9 +162,12 @@ begin
   hit := (select m.fixture_id from pg_temp.same_match(palace, lyon_a, 'كريستال بالاس', 'ليون', k - w, k + w) m);
   perform pg_temp.check(hit = synced::text, 'the sides swapped are the same match');
 
-  -- 4. A different opponent is a different match.
-  hit := (select m.fixture_id from pg_temp.same_match(lyon_a, leverkusen, 'ليون', 'باير ليفركوزن', k - w, k + w) m);
-  perform pg_temp.check(hit is null, 'one side alike, the other a different club');
+  -- 4. A different opponent is a different match -- but Lyon already plays
+  --    then, which is refused all the same (0175).
+  select m.fixture_id, m.both_sides into hit, v_both
+    from pg_temp.same_match(lyon_a, leverkusen, 'ليون', 'باير ليفركوزن', k - w, k + w) m;
+  perform pg_temp.check(hit = synced::text and not v_both,
+    'one side alike, the other a different club: one club in two matches');
 
   -- 5. Beyond the window is another match.
   hit := (select m.fixture_id from pg_temp.same_match(lyon_a, palace, 'ليون', 'كريستال بالاس',
@@ -166,12 +193,15 @@ begin
   insert into competition.fixture_schedules
     (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id)
   values (card, 'الأهلي المصري', 'الترجي', k, ahly, taraji);
-  hit := (select m.fixture_id from pg_temp.same_match(ahli, taraji, 'الأهلي', 'الترجي', k - w, k + w) m);
-  perform pg_temp.check(hit is null, 'Al Ahli is not Al Ahly (Egypt)');
+  select m.fixture_id, m.both_sides into hit, v_both
+    from pg_temp.same_match(ahli, taraji, 'الأهلي', 'الترجي', k - w, k + w) m;
+  perform pg_temp.check(hit = card::text and not v_both,
+    'Al Ahli is not Al Ahly (Egypt): not the same match, but Taraji plays then');
 
   -- 9. ...but a side typed by hand with no team may be the shorter name.
-  hit := (select m.fixture_id from pg_temp.same_match(null, taraji, 'الأهلي', 'الترجي', k - w, k + w) m);
-  perform pg_temp.check(hit = card::text, 'a hand-typed shorter name agrees');
+  select m.fixture_id, m.both_sides into hit, v_both
+    from pg_temp.same_match(null, taraji, 'الأهلي', 'الترجي', k - w, k + w) m;
+  perform pg_temp.check(hit = card::text and v_both, 'a hand-typed shorter name agrees');
   delete from competition.fixture_schedules where fixture_id = card;
 
   -- 10. Of two copies, the nearer kickoff is named.

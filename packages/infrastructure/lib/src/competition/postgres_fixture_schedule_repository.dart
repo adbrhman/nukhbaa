@@ -282,6 +282,16 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
         'لم تُضَف مرة ثانية.',
       );
     }
+    // 23505 from the same trigger since 0175 (script 93): one of the clubs
+    // already has a match within 12 hours.
+    if (cause.code == '23505' &&
+        cause.constraintName == 'fixture_schedules_one_club') {
+      return const AppError.invariant(
+        RegisterFixtureSchedule.duplicateCode,
+        'لأحد الفريقين مباراة مضافة بفارق أقل من 12 ساعة، ولا يلعب النادي '
+        'مباراتين خلال 12 ساعة. لم تُحفظ.',
+      );
+    }
     // 23503 foreign_key_violation — an admin-supplied home_team_id/
     // away_team_id does not name a row in football_data.teams.
     if (cause.code == '23503') {

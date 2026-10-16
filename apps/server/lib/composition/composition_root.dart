@@ -3508,6 +3508,9 @@ final class CompositionRoot {
         repository: fixtureScheduleRepository,
         idGenerator: idGenerator,
         sameMatchFinder: PostgresSameMatchFinder(connection),
+        // Both teams from the catalog for a match that is not a test
+        // (script 93): a name the list does not know hides a second copy.
+        requireTeamIds: true,
       ),
       correctFixtureSchedule: CorrectFixtureSchedule(
         fixtureScheduleRepository,
@@ -3515,6 +3518,7 @@ final class CompositionRoot {
         clock: clock,
         // A kickoff brought forward after the result scores it again (C-03).
         rescoreEarlierKickoff: rescoreEarlierKickoff,
+        requireTeamIds: true,
       ),
       scoreFixture: ScoreFixture(
         fixturePredictionRepository: fixturePredictionRepository,

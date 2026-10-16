@@ -90,15 +90,17 @@ begin
     'thirteen hours away is allowed');
   delete from competition.fixture_schedules where fixture_id = '00000000-0110-4000-8000-000000000205';
 
-  -- 6. A different opponent is a different match.
+  -- 6. A different opponent is a different match (not refused as one; since
+  --    0175 it is refused as one club in two matches, see its test).
   perform pg_temp.check(not pg_temp.refused(format(
     'insert into competition.fixture_schedules (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id)
      values (%L, %L, %L, %L, %L, %L)',
     '00000000-0110-4000-8000-000000000206', 'ليون', 'باير ليفركوزن', k, lyon_a, leverkusen)),
-    'one side alike, the other different, is allowed');
+    'one side alike, the other different, is not the same match');
   delete from competition.fixture_schedules where fixture_id = '00000000-0110-4000-8000-000000000206';
 
-  -- 7. Audit C-04: a name inside another is not the same club.
+  -- 7. Audit C-04: a name inside another is not the same club (since 0175
+  --    the shared Taraji refuses it as one club in two matches).
   insert into competition.fixture_schedules
     (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id)
   values ('00000000-0110-4000-8000-000000000207', 'الأهلي المصري', 'الترجي', k, ahly, taraji);

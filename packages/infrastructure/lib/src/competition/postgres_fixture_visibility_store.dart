@@ -63,6 +63,19 @@ RETURNING fixture_id::text AS fixture_id
           cause.constraintName == 'fixture_schedules_blocked_club') {
         return const Result.err(RegisterFixtureSchedule.blockedClub);
       }
+      // Showing a copy beside the visible one (0110), or a match of a club
+      // that already has one within 12 hours (0175, script 93).
+      if (cause is ServerException &&
+          (cause.constraintName == 'fixture_schedules_one_match' ||
+              cause.constraintName == 'fixture_schedules_one_club')) {
+        return const Result.err(
+          AppError.invariant(
+            RegisterFixtureSchedule.duplicateCode,
+            'لم تُظهَر: للمباراة، أو لأحد فريقيها، مباراة ظاهرة بفارق أقل '
+            'من 12 ساعة.',
+          ),
+        );
+      }
       return Result.err(result.error);
     }
     final changed = <FixtureRef>[];

@@ -12,14 +12,22 @@ import 'package:shared/shared.dart';
 /// A match already on the schedule -- the same two sides within
 /// [duplicateWindow] of the kickoff, added by the fixtures sync or by an
 /// admin -- is refused with `competition.fixture_duplicate`, so one match
-/// never appears twice (the Europa League evening of 2026-10-15 did). A
-/// test fixture is never checked.
+/// never appears twice (the Europa League evening of 2026-10-15 did). So is
+/// a match of a club that already has one in that window (script 93,
+/// migration 0175): a club plays one match in 12 hours, so a copy with one
+/// side misspelt is caught too. A test fixture is never checked.
+///
+/// With [requireTeamIds] (the server's root, script 93) a match that is not
+/// a test is refused with [teamsRequiredCode] unless both its teams are
+/// catalog teams: a name the list does not know carries no team id, and
+/// the checks above could miss the same match under another spelling.
 final class RegisterFixtureSchedule {
   const RegisterFixtureSchedule({
     required FixtureScheduleRepository repository,
     required IdGenerator idGenerator,
     SameMatchFinder? sameMatchFinder,
     this.duplicateWindow = const Duration(hours: 12),
+    this.requireTeamIds = false,
   }) : _repository = repository,
        _idGenerator = idGenerator,
        _sameMatch = sameMatchFinder;
@@ -31,6 +39,21 @@ final class RegisterFixtureSchedule {
   /// A fixture of the same two sides kicking off this close is the same
   /// match -- the window the fixtures sync uses to adopt one.
   final Duration duplicateWindow;
+
+  /// Whether a match that is not a test needs both its teams from the
+  /// catalog (script 93); off in the test roots that predate it.
+  final bool requireTeamIds;
+
+  /// The stable code of the refusal for a side the catalog does not know.
+  static const String teamsRequiredCode = 'competition.fixture_teams_required';
+
+  /// The refusal for a side the catalog does not know: Arabic, shown as it
+  /// is by the admin's form.
+  static const AppError teamsRequired = AppError.validation(
+    teamsRequiredCode,
+    'اختر الفريقين من قائمة الأندية، أو أضف النادي إليها أولاً. '
+    'لا تُحفظ مباراة بفريق ليس في القائمة.',
+  );
 
   /// The stable code of the refusal for a match already on the schedule.
   static const String duplicateCode = 'competition.fixture_duplicate';
@@ -80,6 +103,12 @@ final class RegisterFixtureSchedule {
       return Result.err(leagueRefResult.error);
     }
 
+    if (requireTeamIds &&
+        !isTest &&
+        (homeTeamId == null || awayTeamId == null)) {
+      return const Result.err(teamsRequired);
+    }
+
     final scheduleResult = FixtureSchedule.create(
       fixture: (fixtureResult as Ok<FixtureRef>).value,
       homeTeam: homeTeam,
@@ -111,7 +140,9 @@ final class RegisterFixtureSchedule {
       }
       final same = (found as Ok<SameMatch?>).value;
       if (same != null) {
-        return Result.err(duplicateOf(same));
+        return Result.err(
+          same.bothSides ? duplicateOf(same) : clubBusyOf(same),
+        );
       }
     }
 
@@ -136,6 +167,23 @@ final class RegisterFixtureSchedule {
       'الساعة ${two(riyadh.hour)}:${two(riyadh.minute)} '
       'بتوقيت الرياض. '
       'لم تُضَف مرة ثانية.',
+    );
+  }
+
+  /// The refusal for a match of a club that already has one within the
+  /// window, as [same] (script 93): Arabic, naming the match on file and
+  /// its kickoff in Riyadh time (UTC+3).
+  static AppError clubBusyOf(SameMatch same) {
+    final riyadh = same.kickoffAt.toUtc().add(const Duration(hours: 3));
+    String two(int n) => n.toString().padLeft(2, '0');
+    return AppError.invariant(
+      duplicateCode,
+      'لأحد الفريقين مباراة مضافة من قبل: '
+      '${same.homeTeam} - ${same.awayTeam}، '
+      '${two(riyadh.day)}/${two(riyadh.month)} '
+      'الساعة ${two(riyadh.hour)}:${two(riyadh.minute)} '
+      'بتوقيت الرياض. لا يلعب النادي مباراتين خلال 12 ساعة، فلم تُضَف. '
+      'إن كانت هي المباراة نفسها بإملاء آخر فلا حاجة لإضافتها.',
     );
   }
 

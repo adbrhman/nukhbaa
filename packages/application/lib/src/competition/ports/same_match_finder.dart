@@ -9,6 +9,7 @@ final class SameMatch {
     required this.homeTeam,
     required this.awayTeam,
     required this.kickoffAt,
+    this.bothSides = true,
   });
 
   /// The fixture already on the schedule.
@@ -22,10 +23,16 @@ final class SameMatch {
 
   /// Its kickoff, in UTC.
   final DateTime kickoffAt;
+
+  /// `true` when both sides agree -- the same match; `false` when only one
+  /// club is in both, which is refused all the same: a club plays one match
+  /// in 12 hours (script 93, migration 0175).
+  final bool bothSides;
 }
 
 /// Finds the fixture already on the schedule that is the same match as a
-/// new one: the same two sides, kicking off between `from` and `to`.
+/// new one: the same two sides, kicking off between `from` and `to` -- or,
+/// failing that, one with one of its clubs ([SameMatch.bothSides] false).
 ///
 /// Read by [RegisterFixtureSchedule] so an admin cannot add a match the
 /// fixtures sync (or another admin) already added. Two sides agree when

@@ -5808,6 +5808,43 @@ good, and no board changes.
 
 **0174 must be on the live DB before this server is deployed.**
 
+### One club, one match within 12 hours; both teams from the list on the server (script 93, 2026-10-16)
+
+The second script on the duplicates. 0110 and `SameMatchFinder` refused a
+second copy only when both sides agreed; "هوفنهايم - بيشتكاش" beside
+"هوفنهايم - بشكتاش" agreed on one. A club plays one match in 12 hours, so
+one is enough.
+
+- Migration 0175 replaces `competition.reject_second_copy_of_match()`
+  (same trigger): a visible, non-test fixture is refused when another
+  visible, non-test one kicks off less than 12 hours from it with one of
+  its clubs -- the same catalog team or the same name key -- on either
+  side. Both sides alike stays `fixture_schedules_one_match`; one club in
+  both is `fixture_schedules_one_club`, the same `unique_violation`. A
+  lock per club joins the lock per pair, the lesser key first. Rows
+  already there are not checked.
+- `PostgresSameMatchFinder` finds the same, both sides first
+  (`both_sides`, `SameMatch.bothSides`); `RegisterFixtureSchedule` says
+  "لأحد الفريقين مباراة مضافة من قبل: ..." with the match on file and its
+  kickoff (`clubBusyOf`), and the schedule and visibility adapters turn
+  `fixture_schedules_one_club` into Arabic too (a hidden copy shown again
+  beside the visible one says so instead of a 503).
+- `RegisterFixtureSchedule` and `CorrectFixtureSchedule` take
+  `requireTeamIds` (on in the server's root): a fixture that is not a test
+  needs both team ids, else 400 `competition.fixture_teams_required` in
+  Arabic. Script 91's forms already send them; an older admin app sending
+  a typed name is told to pick the club or add it.
+- Tests: `fixture_teams_required_test.dart` (application),
+  `fixture_teams_required_route_test.dart` (server),
+  `0175_one_club_one_match_test.sql`, and `same_match_query_test.sql` now
+  expecting one club alike to be found; every SQL test on a local
+  Postgres 16 with every migration. The tap warning of scripts 91 and 92
+  (a dropdown item tapped by `.last`, under the open menu) stays: the tap
+  reaches the menu's own item and selects it, and `hitTestable()` found no
+  item at all (eight tests failed on the phone), so the tests keep `.last`.
+
+**0175 must be on the live DB before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
