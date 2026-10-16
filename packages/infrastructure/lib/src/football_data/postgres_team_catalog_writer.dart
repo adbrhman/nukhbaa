@@ -1,14 +1,16 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+import 'package:postgres/postgres.dart' hide Result;
 import 'package:shared/shared.dart';
 
 /// Postgres [TeamCatalogWriter] over `football_data.teams` (script 91).
 ///
 /// One transaction: an advisory lock on the name's spelling key
-/// (`competition.team_name_key`, migration 0110), then the club already
-/// filed under that key, and only when there is none a new row -- so two
-/// admins adding one club at the same moment add it once. The new row has
+/// (`competition.team_name_key`, migration 0110), then a blocked name
+/// refused (`football_data.is_blocked_club`, migration 0174), then the club
+/// already filed under that key, and only when there is none a new row --
+/// so two admins adding one club at the same moment add it once. The new row has
 /// no crest and no short name. Tested in
 /// supabase/tests/team_catalog_add_query_test.sql.
 ///
@@ -24,6 +26,10 @@ final class PostgresTeamCatalogWriter implements TeamCatalogWriter {
 SELECT pg_advisory_xact_lock(
   hashtext('football_data.team:' || competition.team_name_key(@name::text))
 )
+''';
+
+  static const String _blockedSql = '''
+SELECT football_data.is_blocked_club(@name::text) AS blocked
 ''';
 
   static const String _existingSql = '''
@@ -55,6 +61,15 @@ RETURNING id::text AS id, name, short_name, crest_url, league_id::text AS league
         return Result.err(locked.error);
       }
 
+      final blocked = await tx.query(_blockedSql, parameters: {'name': name});
+      if (blocked is Err<List<Map<String, dynamic>>>) {
+        return Result.err(blocked.error);
+      }
+      final blockedRows = (blocked as Ok<List<Map<String, dynamic>>>).value;
+      if (blockedRows.isNotEmpty && blockedRows.first['blocked'] == true) {
+        return const Result.err(AdminAddTeam.blocked);
+      }
+
       final existing = await tx.query(_existingSql, parameters: {'name': name});
       if (existing is Err<List<Map<String, dynamic>>>) {
         return Result.err(existing.error);
@@ -69,6 +84,12 @@ RETURNING id::text AS id, name, short_name, crest_url, league_id::text AS league
         parameters: {'name': name, 'league_id': leagueId?.value},
       );
       if (inserted is Err<List<Map<String, dynamic>>>) {
+        final cause = inserted.error.cause;
+        // The catalog's own guard (0174), should a name slip past the check.
+        if (cause is ServerException &&
+            cause.constraintName == 'teams_blocked_club') {
+          return const Result.err(AdminAddTeam.blocked);
+        }
         return Result.err(inserted.error);
       }
       final rows = (inserted as Ok<List<Map<String, dynamic>>>).value;

@@ -256,6 +256,12 @@ WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
     if (cause is! ServerException) {
       return error;
     }
+    // 23514 from the blocked-club trigger (migration 0174, script 92): a
+    // club whose matches never appear, whoever writes the fixture.
+    if (cause.code == '23514' &&
+        cause.constraintName == 'fixture_schedules_blocked_club') {
+      return RegisterFixtureSchedule.blockedClub;
+    }
     // 23514 check_violation — team-name length or "teams must differ" backstop
     // (Axiom 6), mirroring FixtureSchedule.create's own validation.
     if (cause.code == '23514') {

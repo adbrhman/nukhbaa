@@ -3,7 +3,9 @@
 -- arguments; keep each body identical to the adapter's constant): an admin
 -- adds a club to the catalog once, and a name whose spelling key
 -- (competition.team_name_key, 0110) is already there answers the club on
--- file and writes nothing (script 91). Rolled back at the end.
+-- file and writes nothing (script 91); a club whose matches never appear
+-- is refused before anything else (migration 0174, script 92). Rolled
+-- back at the end.
 \set ON_ERROR_STOP on
 begin;
 
@@ -22,6 +24,12 @@ language sql as $q$
 SELECT pg_advisory_xact_lock(
   hashtext('football_data.team:' || competition.team_name_key(p_name))
 )
+$q$;
+
+-- _blockedSql
+create function pg_temp.blocked(p_name text) returns boolean
+language sql as $q$
+SELECT football_data.is_blocked_club(p_name) AS blocked
 $q$;
 
 -- _existingSql
@@ -48,7 +56,8 @@ VALUES (p_name, p_league_id)
 RETURNING id::text AS id, name, short_name, crest_url, league_id::text AS league_id
 $q$;
 
--- The adapter's transaction: lock, the club on file, else a new row.
+-- The adapter's transaction: lock, a blocked name refused (null id), the
+-- club on file, else a new row.
 create function pg_temp.add(p_name text, p_league_id uuid)
 returns table (id text, name text, league_id text, existed boolean)
 language plpgsql as $$
@@ -56,6 +65,10 @@ declare
   r record;
 begin
   perform pg_temp.lock_name(p_name);
+  if pg_temp.blocked(p_name) then
+    return query select null::text, p_name, null::text, false;
+    return;
+  end if;
   select * into r from pg_temp.existing(p_name);
   if found then
     return query select r.id, r.name, r.league_id, true;
@@ -73,6 +86,7 @@ declare
   v_again record;
   v_seeded record;
   v_other record;
+  v_blocked record;
   v_count bigint;
 begin
   select l.id into v_league from football_data.leagues l order by l.name limit 1;
@@ -107,6 +121,13 @@ begin
   select * into v_other from pg_temp.add('نادي التجربة 92', null);
   perform pg_temp.check(not v_other.existed and v_other.league_id is null,
     'a different name is added, with no league when none is given');
+
+  select count(*) into v_count from football_data.teams;
+  select * into v_blocked from pg_temp.add('هبوعيل تل أبيب', null);
+  perform pg_temp.check(v_blocked.id is null, 'a blocked club is refused (0174)');
+  perform pg_temp.check(
+    (select count(*) from football_data.teams) = v_count,
+    'and nothing is written');
 end $$;
 
 rollback;

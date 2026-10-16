@@ -5725,8 +5725,10 @@ both `SameMatchFinder` (batch 138) and the trigger of 0110 needed both
 sides to agree by team or by name key. Decided by the owner on
 2026-10-16: a match is added (and corrected) with both clubs picked from
 the list, and a club the list lacks is added to it from the admin panel.
-The first of three scripts on the duplicates; 92 (one club in two matches
-within 12 hours) and 93 (merging a copy instead of hiding it) follow.
+The first of the scripts on the duplicates; 93 (one club in two matches
+within 12 hours), 94 (merging a copy instead of hiding it) and 95 (the
+warning before a hide) follow, after 92 (four clubs never on the
+schedule).
 
 - Migration 0173: `admin.audit_action` gains `team_added`.
 - `POST /admin/teams` (`AdminAddTeam`, port `TeamCatalogWriter`,
@@ -5754,7 +5756,7 @@ within 12 hours) and 93 (merging a copy instead of hiding it) follow.
   card's background Flutter asserted that its ink was hidden, which the
   first widget test of this form showed on the phone.
 - The server does not yet refuse a match without team ids: an older
-  admin app still sends one. Script 92 requires them for a non-test
+  admin app still sends one. Script 93 requires them for a non-test
   fixture.
 - Tests: `admin_add_team_test.dart` (application), the cache in
   `read_caches_test.dart`, `admin_teams_route_test.dart`,
@@ -5765,6 +5767,46 @@ within 12 hours) and 93 (merging a copy instead of hiding it) follow.
   migration.
 
 **0173 must be on the live DB before this server is deployed.**
+
+### Four clubs never on the schedule (script 92, 2026-10-16)
+
+Decided by the owner on 2026-10-16: no match of Hapoel Beer Sheva
+(هبوعيل بئر السبع), Maccabi Tel Aviv (مكابي تل أبيب), Beitar Jerusalem
+(بيتار القدس) or Hapoel Tel Aviv (هبوعيل تل أبيب) appears in Nukhbaa, in
+any league, cup, qualifier or friendly, in any season. That day the
+schedule held one such match, "ألكمار - هابوعيل بئر السبع" of
+2026-10-15, already hidden (2 predictions, no double); it stays hidden for
+good, and no board changes.
+
+- Migration 0174: `football_data.club_block_key` folds a name (case,
+  spaces, dashes, dots, brackets, apostrophes; hamza forms, alif maqsura,
+  taa marbuta, tatweel); `football_data.blocked_clubs` holds 23 fragments
+  of such keys, Arabic and English spellings of the four clubs;
+  `football_data.is_blocked_club(name)` says whether a name holds one.
+  `competition.fixture_schedules` refuses a fixture with such a side, by
+  its name or by its catalog team, hidden or test or not, and refuses to
+  show one again (`fixture_schedules_blocked_club`); a hidden one may be
+  corrected while it stays hidden. `football_data.teams` refuses a new
+  club or a rename with such a name (`teams_blocked_club`). The catalog
+  row the Europa League seed added stays, unused.
+- `Team.blocked` (domain), read by `PostgresTeamRepository`
+  (`is_blocked_club(name) AS blocked`): `ListTeams` leaves blocked clubs
+  out of `GET /teams`, so no picker offers them; `SyncProviderFixtures`
+  skips a match with one before writing (note `blocked club: ...`).
+- The refusals in Arabic: `RegisterFixtureSchedule.blockedClub`
+  (`competition.fixture_blocked_club`) from the schedule adapter on an add
+  or a correction and from the visibility store on a show;
+  `AdminAddTeam.blocked` (`football_data.team_blocked`) from the catalog
+  writer, which checks the name before it looks for a club on file.
+- The app drops Hapoel Beer Sheva's crest (`hapoel-beer-sheva.png` and its
+  three entries in `team_logo_assets.dart`).
+- Tests: `0174_blocked_clubs_test.sql` (the names, the schedule, the hidden
+  match, the catalog, the catalog read) and the blocked step in
+  `team_catalog_add_query_test.sql`, every SQL test on a local Postgres 16
+  with every migration; `blocked_clubs_test.dart` through `ListTeams` and
+  `SyncProviderFixtures`.
+
+**0174 must be on the live DB before this server is deployed.**
 
 ## 3. Version-Verification Log
 

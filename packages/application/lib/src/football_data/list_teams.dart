@@ -8,8 +8,9 @@ import 'package:shared/shared.dart';
 /// into a display name + crest without hardcoding either client-side.
 ///
 /// Read-only, no side effect. Any authenticated user may browse it (mirrors
-/// every other client-facing catalog read, e.g. [ListCompetitions]) — a team
-/// carries no visibility/ownership concept of its own.
+/// every other client-facing catalog read, e.g. [ListCompetitions]). A
+/// blocked club ([Team.blocked], migration 0174) is left out, so no admin
+/// picker offers it and no client draws it.
 final class ListTeams {
   /// Creates the use-case over its [repository].
   const ListTeams({required TeamRepository repository})
@@ -26,6 +27,15 @@ final class ListTeams {
       return Result.err(auth.error);
     }
 
-    return _repository.listAll();
+    final all = await _repository.listAll();
+    return switch (all) {
+      Ok<List<Team>>(:final value) => Result.ok(
+        List<Team>.unmodifiable(<Team>[
+          for (final team in value)
+            if (!team.blocked) team,
+        ]),
+      ),
+      Err<List<Team>>(:final error) => Result.err(error),
+    };
   }
 }

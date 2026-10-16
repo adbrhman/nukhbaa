@@ -1,6 +1,7 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+import 'package:postgres/postgres.dart' hide Result;
 import 'package:shared/shared.dart';
 
 /// Postgres [FixtureVisibilityStore] over
@@ -55,6 +56,13 @@ RETURNING fixture_id::text AS fixture_id
       },
     );
     if (result is Err<List<Map<String, dynamic>>>) {
+      final cause = result.error.cause;
+      // Showing a match of a club whose matches never appear (migration
+      // 0174, script 92): the whole call is refused, in Arabic.
+      if (cause is ServerException &&
+          cause.constraintName == 'fixture_schedules_blocked_club') {
+        return const Result.err(RegisterFixtureSchedule.blockedClub);
+      }
       return Result.err(result.error);
     }
     final changed = <FixtureRef>[];

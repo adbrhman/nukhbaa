@@ -35,6 +35,17 @@ final class RegisterFixtureSchedule {
   /// The stable code of the refusal for a match already on the schedule.
   static const String duplicateCode = 'competition.fixture_duplicate';
 
+  /// The stable code of the refusal for a match of a club whose matches
+  /// never appear (migration 0174, script 92); the schedule's trigger
+  /// refuses it, whoever writes the fixture or shows it again.
+  static const String blockedClubCode = 'competition.fixture_blocked_club';
+
+  /// The refusal for such a match: Arabic, so the admin sees it as it is.
+  static const AppError blockedClub = AppError.invariant(
+    blockedClubCode,
+    'مباريات هذا النادي ممنوعة في نُخبة، فلم تُحفظ ولا تُظهَر.',
+  );
+
   Future<Result<FixtureSchedule>> call({
     required AuthenticatedUser principal,
     required String homeTeam,

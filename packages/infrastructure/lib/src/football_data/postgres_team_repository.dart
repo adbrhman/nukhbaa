@@ -7,8 +7,10 @@ import 'package:shared/shared.dart';
 /// (migration `0013_football_data.sql`).
 ///
 /// Total (Application ADR §2): never throws — every outcome is a typed
-/// [Result]. Read-only: nothing writes `football_data.teams` from the
-/// application layer yet (populated by seed data, Football Data phase).
+/// [Result]. Read-only: clubs are added by seed migrations and by
+/// `PostgresTeamCatalogWriter` (script 91). Each club carries whether it is
+/// blocked (`football_data.is_blocked_club`, migration 0174); tested in
+/// supabase/tests/0174_blocked_clubs_test.sql.
 final class PostgresTeamRepository implements TeamRepository {
   /// Creates the repository over an open [PostgresConnection].
   const PostgresTeamRepository(this._connection);
@@ -16,7 +18,8 @@ final class PostgresTeamRepository implements TeamRepository {
   final PostgresConnection _connection;
 
   static const String _listAllSql = '''
-SELECT id, name, short_name, crest_url, league_id
+SELECT id, name, short_name, crest_url, league_id,
+       football_data.is_blocked_club(name) AS blocked
 FROM football_data.teams
 ORDER BY name ASC, id ASC
 ''';
@@ -68,6 +71,7 @@ ORDER BY name ASC, id ASC
         shortName: row['short_name'] as String?,
         crestUrl: row['crest_url'] as String?,
         leagueId: leagueId,
+        blocked: row['blocked'] == true,
       ),
     );
   }

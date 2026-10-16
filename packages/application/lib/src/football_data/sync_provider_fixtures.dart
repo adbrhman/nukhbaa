@@ -300,6 +300,14 @@ final class SyncProviderFixtures {
             );
             continue;
           }
+          if (home.blocked || away.blocked) {
+            // A club whose matches never appear (migration 0174, decided by
+            // the owner 2026-10-16), whatever the competition: skipped
+            // before anything is written, which the schedule would refuse.
+            skipped++;
+            notes.add('blocked club: ${home.name} - ${away.name}');
+            continue;
+          }
           if (pairLeague != null &&
               (home.leagueId != pairLeague.id ||
                   away.leagueId != pairLeague.id)) {

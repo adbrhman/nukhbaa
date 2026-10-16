@@ -15,6 +15,7 @@ final class Team {
     required this.shortName,
     required this.crestUrl,
     this.leagueId,
+    this.blocked = false,
   });
 
   /// The team's canonical id.
@@ -35,6 +36,11 @@ final class Team {
   /// the catalog to one league's clubs instead of showing all of them.
   final LeagueRef? leagueId;
 
+  /// Whether this is one of the clubs whose matches never appear in Nukhbaa
+  /// (`football_data.blocked_clubs`, migration 0174, script 92): left out of
+  /// the catalog the clients read, and its matches skipped by the sync.
+  final bool blocked;
+
   @override
   bool operator ==(Object other) =>
       other is Team &&
@@ -42,10 +48,12 @@ final class Team {
       other.name == name &&
       other.shortName == shortName &&
       other.crestUrl == crestUrl &&
-      other.leagueId == leagueId;
+      other.leagueId == leagueId &&
+      other.blocked == blocked;
 
   @override
-  int get hashCode => Object.hash(id, name, shortName, crestUrl, leagueId);
+  int get hashCode =>
+      Object.hash(id, name, shortName, crestUrl, leagueId, blocked);
 
   @override
   String toString() => 'Team(${id.value}, $name)';

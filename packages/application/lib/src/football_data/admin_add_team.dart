@@ -15,7 +15,8 @@ import 'package:shared/shared.dart';
 /// the owner on 2026-10-16: a club the list lacks is added to the list.
 ///
 /// A name whose spelling key is already in the catalog is refused with
-/// [existsCode], naming the club on file, and nothing is written. The club
+/// [existsCode], naming the club on file, and nothing is written; a club
+/// whose matches never appear (migration 0174) with [blockedCode]. The club
 /// added has no crest and no short name: the app draws its initials. Every
 /// club added is audited ([AuditAction.teamAdded], the reason its name).
 ///
@@ -33,6 +34,16 @@ final class AdminAddTeam {
 
   /// The stable code of the refusal for a club already in the catalog.
   static const String existsCode = 'football_data.team_exists';
+
+  /// The stable code of the refusal for a club whose matches never appear
+  /// (migration 0174, script 92).
+  static const String blockedCode = 'football_data.team_blocked';
+
+  /// The refusal for a blocked club: Arabic, shown as it is.
+  static const AppError blocked = AppError.invariant(
+    blockedCode,
+    'هذا النادي ممنوع في نُخبة: لا يُضاف إلى القائمة ولا تُضاف مبارياته.',
+  );
 
   /// The stable code of the refusal for an empty or overlong name.
   static const String nameInvalidCode = 'football_data.team_name_invalid';

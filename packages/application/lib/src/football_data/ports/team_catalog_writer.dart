@@ -23,7 +23,8 @@ final class TeamAddition {
 abstract interface class TeamCatalogWriter {
   /// Adds [name] under [leagueId] (none when `null`), unless a club whose
   /// name has the same spelling key is on file: then that club is answered
-  /// with [TeamAddition.existed] and nothing is written.
+  /// with [TeamAddition.existed] and nothing is written. A blocked club
+  /// (migration 0174) is refused with `AdminAddTeam.blocked`.
   Future<Result<TeamAddition>> add({
     required String name,
     required LeagueRef? leagueId,
