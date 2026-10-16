@@ -5107,6 +5107,32 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   can be raised on Northflank without a release once Supabase's own
   connection count says there is room. No migration; the server and the
   APK and the web.
+- **Batch 146b (the admin panel, second part, 2026-10-16, audit L-12,
+  the admin part of C-01, part of L-14)**: "سجل النقاط" asked for a
+  participant id typed by hand and read `ledger.point_entries`, the
+  round ledger, empty since fixtures replaced rounds: every current
+  player showed nothing. It now picks a month and a player by name and
+  reads `GET /admin/users/{id}/points?season=` (`AdminViewPlayerPoints`,
+  port `PlayerPointsReader`, `PostgresPlayerPointsReader`: one read of
+  the player's participation, `ledger.fixture_point_entries` and each
+  match's sides; `PlayerMonthPointsDto`): every movement with its match
+  and its kind in words, the month's points as the board counts them
+  (match scores and corrections) and the streak bonuses apart (the
+  weekly league only, migration 0072). The read is audited as
+  `participant_ledger_viewed` before it is served, as before. The old
+  `GET /admin/participants/{id}/ledger` stays, unused by the app, for
+  the cleanup batch. Adding a match (L-12): the kickoff is entered and
+  shown on Riyadh's clock in both the add and the edit forms
+  (`core/time/riyadh_clock.dart`, `RiyadhKickoffField`), with the
+  phone's own time under it when its zone differs; the form empties
+  after a match is added (month and league kept), so a second tap
+  cannot add it twice; and when the link to the month fails after the
+  registration, `AddMatchController.unlinked` keeps the match and the
+  same submit links it rather than registering a second copy, which
+  migration 0110 would refuse, leaving an orphan no month shows. A
+  single server transaction was weighed and left: one admin, and the
+  gap is the network between two requests. SQL test:
+  `player_points_query_test`. No migration.
 - **Batch 150 (the owner's decisions, first part, 2026-10-16, audit M-21,
   L-24, L-59, the M-05 decision; migration 0114)**: an invitee idle for 7
   days was suspended along with the inviter's point being taken back, so a

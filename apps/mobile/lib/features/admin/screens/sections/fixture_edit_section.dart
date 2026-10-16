@@ -14,6 +14,7 @@ import '../../../competition/teams_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/riyadh_kickoff_field.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
 import '../../widgets/team_picker_league_scope.dart';
@@ -51,7 +52,9 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
   String? _fixtureId;
   String? _homeTeamId;
   String? _awayTeamId;
-  DateTime? _kickoffLocal;
+
+  /// The kickoff instant (UTC), shown and picked on Riyadh's clock (L-12).
+  DateTime? _kickoffAt;
 
   /// The league the admin picked, or `null` for "leave it as it is".
   ///
@@ -82,7 +85,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     _awayTeamController.text = fixture.awayTeam ?? '';
     _homeTeamId = fixture.homeTeamId;
     _awayTeamId = fixture.awayTeamId;
-    _kickoffLocal = DateTime.tryParse(fixture.kickoffAt ?? '')?.toLocal();
+    _kickoffAt = DateTime.tryParse(fixture.kickoffAt ?? '')?.toUtc();
     _currentLeagueName = fixture.leagueName;
     _leagueId = null;
     _isContinentalLeague = false;
@@ -179,7 +182,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
         _fixtureId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
-        _kickoffLocal != null;
+        _kickoffAt != null;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -203,7 +206,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   _awayTeamController.clear();
                   _homeTeamId = null;
                   _awayTeamId = null;
-                  _kickoffLocal = null;
+                  _kickoffAt = null;
                   _leagueId = null;
                   _isContinentalLeague = false;
                   _currentLeagueName = null;
@@ -290,13 +293,13 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                   }),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                AdminSecondaryButton(
-                  key: const Key('admin.fixtureEdit.kickoffPicker'),
-                  label: _kickoffLocal == null
-                      ? l10n.adminPickKickoffButton
-                      : _formatKickoff(_kickoffLocal!),
-                  icon: Icons.event_outlined,
-                  onPressed: inFlight ? null : _pickKickoff,
+                RiyadhKickoffField(
+                  buttonKey: const Key('admin.fixtureEdit.kickoffPicker'),
+                  value: _kickoffAt,
+                  emptyLabel: l10n.adminPickKickoffButton,
+                  enabled: !inFlight,
+                  onPicked: (DateTime kickoff) =>
+                      setState(() => _kickoffAt = kickoff),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
@@ -328,39 +331,12 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     );
   }
 
-  Future<void> _pickKickoff() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _kickoffLocal ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _kickoffLocal == null
-          ? TimeOfDay.fromDateTime(now)
-          : TimeOfDay.fromDateTime(_kickoffLocal!),
-    );
-    if (time == null || !mounted) return;
-    setState(() {
-      _kickoffLocal = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
   void _submit() {
     final fixtureId = _fixtureId;
     final seasonId = _seasonId;
     final homeTeam = _homeTeamController.text.trim();
     final awayTeam = _awayTeamController.text.trim();
-    final kickoff = _kickoffLocal;
+    final kickoff = _kickoffAt;
     if (fixtureId == null ||
         seasonId == null ||
         homeTeam.isEmpty ||
@@ -380,11 +356,5 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
           awayTeamId: _awayTeamId,
           leagueId: _leagueId,
         );
-  }
-
-  String _formatKickoff(DateTime local) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
   }
 }

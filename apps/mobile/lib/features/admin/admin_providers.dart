@@ -843,12 +843,39 @@ class AddMatchResult {
 /// وفشل الربط، تظهر رسالة خطأ الربط ولا تُعتبر العملية ناجحة.
 ///
 /// يبقى تسلسل الأمرين لأن العقود تفصل `POST /fixtures` عن
-/// `POST /rounds/{id}/fixtures` (Axiom 3) — لا يوجد endpoint واحد يفعل الاثنين،
-/// فنؤمّن الذرّية على الواجهة دون أي تعديل على الخادم.
+/// `POST /seasons/{id}/fixtures` (Axiom 3) — لا يوجد endpoint واحد يفعل
+/// الاثنين.
+///
+/// إن سُجّلت المباراة وفشل ربطها (L-12) بقيت في [unlinked]: إعادة الإرسال
+/// بالفريقين والموعد أنفسهم تربطها ولا تسجّل نسخة ثانية — وكانت تُرفض
+/// أصلاً، فحارس الهجرة 0110 يمنع نسخة ثانية من المباراة نفسها، فيعلق
+/// المشرف أمام مباراة يتيمة لا تظهر في أي شهر.
 @riverpod
 class AddMatchController extends _$AddMatchController {
   FixtureScheduleApi get _fixtureApi => ref.read(fixtureScheduleApiProvider);
   CompetitionApi get _competitionApi => ref.read(competitionApiProvider);
+
+  FixtureScheduleDto? _unlinked;
+
+  /// The match registered by the last submit whose link to the month
+  /// failed, or null.
+  FixtureScheduleDto? get unlinked => _unlinked;
+
+  /// Whether [fixture] is the match these fields describe.
+  static bool _same(
+    FixtureScheduleDto fixture, {
+    required String homeTeam,
+    required String awayTeam,
+    required String kickoffAt,
+  }) {
+    final DateTime? a = DateTime.tryParse(fixture.kickoffAt);
+    final DateTime? b = DateTime.tryParse(kickoffAt);
+    return fixture.homeTeam.trim() == homeTeam.trim() &&
+        fixture.awayTeam.trim() == awayTeam.trim() &&
+        a != null &&
+        b != null &&
+        a.isAtSameMomentAs(b);
+  }
 
   @override
   AsyncValue<AddMatchResult>? build() => null;
@@ -869,22 +896,35 @@ class AddMatchController extends _$AddMatchController {
   }) async {
     state = const AsyncValue.loading();
 
-    // (1) تسجيل هوية المباراة — الخادم يولّد fixtureId.
-    final registerResult = await _fixtureApi.registerFixtureSchedule(
-      homeTeam: homeTeam,
-      awayTeam: awayTeam,
-      kickoffAt: kickoffAt,
-      homeTeamId: homeTeamId,
-      awayTeamId: awayTeamId,
-      leagueId: leagueId,
-      isTest: isTest,
-    );
-    if (!ref.mounted) return;
-    if (registerResult is Err<FixtureScheduleDto>) {
-      state = AsyncValue.error(registerResult.error, StackTrace.current);
-      return;
+    // (1) تسجيل هوية المباراة — الخادم يولّد fixtureId. مباراة سُجّلت ولم
+    // تُربط بعد تُربط كما هي.
+    final FixtureScheduleDto? pending = _unlinked;
+    final FixtureScheduleDto fixture;
+    if (pending != null &&
+        _same(
+          pending,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          kickoffAt: kickoffAt,
+        )) {
+      fixture = pending;
+    } else {
+      final registerResult = await _fixtureApi.registerFixtureSchedule(
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        kickoffAt: kickoffAt,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
+        leagueId: leagueId,
+        isTest: isTest,
+      );
+      if (!ref.mounted) return;
+      if (registerResult is Err<FixtureScheduleDto>) {
+        state = AsyncValue.error(registerResult.error, StackTrace.current);
+        return;
+      }
+      fixture = (registerResult as Ok<FixtureScheduleDto>).value;
     }
-    final fixture = (registerResult as Ok<FixtureScheduleDto>).value;
 
     // (2) ربط المباراة بالموسم — لا نعلن النجاح إلا بعد نجاح هذه الخطوة.
     final linkResult = await _competitionApi.linkFixtureToSeason(
@@ -894,10 +934,12 @@ class AddMatchController extends _$AddMatchController {
     );
     if (!ref.mounted) return;
     if (linkResult is Err<SeasonFixtureDto>) {
+      _unlinked = fixture;
       state = AsyncValue.error(linkResult.error, StackTrace.current);
       return;
     }
     final link = (linkResult as Ok<SeasonFixtureDto>).value;
+    _unlinked = null;
 
     state = AsyncValue.data(AddMatchResult(fixture: fixture, link: link));
 

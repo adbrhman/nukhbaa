@@ -87,6 +87,7 @@ final class CompositionRoot {
     required this.getLiveStanding,
     required this.adminGetFixtureScores,
     required this.adminCountFixtureScores,
+    required this.adminViewPlayerPoints,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
     required this.createGroup,
@@ -293,6 +294,7 @@ final class CompositionRoot {
     GetLiveStanding? getLiveStanding,
     AdminGetFixtureScores? adminGetFixtureScores,
     AdminCountFixtureScores? adminCountFixtureScores,
+    AdminViewPlayerPoints? adminViewPlayerPoints,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
@@ -507,6 +509,8 @@ final class CompositionRoot {
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
        adminCountFixtureScores =
            adminCountFixtureScores ?? _absentAdminCountFixtureScores(),
+       adminViewPlayerPoints =
+           adminViewPlayerPoints ?? _absentAdminViewPlayerPoints(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        getSportingSeasonLeaderboard =
            getSportingSeasonLeaderboard ??
@@ -1139,6 +1143,14 @@ final class CompositionRoot {
   /// the counted-fixtures read it never wired.
   static AdminCountFixtureScores _absentAdminCountFixtureScores() =>
       AdminCountFixtureScores(counter: _UnwiredFixtureScoreCounter());
+
+  /// Backs the "absent" [AdminViewPlayerPoints]: throws if a test reaches
+  /// the player's points it never wired.
+  static AdminViewPlayerPoints _absentAdminViewPlayerPoints() =>
+      AdminViewPlayerPoints(
+        reader: _UnwiredPlayerPointsReader(),
+        auditRecorder: _absentAuditRecorder(),
+      );
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
   /// unwired Hall of Fame slice fails loudly instead of touching a real
@@ -2123,6 +2135,10 @@ final class CompositionRoot {
   /// How many players were scored on each of many fixtures, in one query
   /// (backs `GET /admin/fixture-score-counts`, batch 156).
   final AdminCountFixtureScores adminCountFixtureScores;
+
+  /// One player's points in one month, from the fixture ledger, audited
+  /// (backs `GET /admin/users/{id}/points`, batch 146b, audit C-01).
+  final AdminViewPlayerPoints adminViewPlayerPoints;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -3598,6 +3614,10 @@ final class CompositionRoot {
       adminCountFixtureScores: AdminCountFixtureScores(
         counter: PostgresFixtureScoreCounter(connection),
       ),
+      adminViewPlayerPoints: AdminViewPlayerPoints(
+        reader: PostgresPlayerPointsReader(connection),
+        auditRecorder: auditRecorder,
+      ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
       ),
@@ -3908,6 +3928,18 @@ final class CompositionRoot {
       await root.dispose();
     }
   }
+}
+
+/// Backs an "absent" [AdminViewPlayerPoints]: throws if a test reaches the
+/// player's points it never wired.
+final class _UnwiredPlayerPointsReader implements PlayerPointsReader {
+  @override
+  Future<Result<PlayerMonthPoints>> pointsOf({
+    required UserId user,
+    required SeasonId season,
+  }) => throw StateError(
+    'AdminViewPlayerPoints was not wired into this test root',
+  );
 }
 
 /// Backs an "absent" [AdminCountFixtureScores]: throws if a test reaches

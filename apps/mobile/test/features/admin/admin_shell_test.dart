@@ -6,10 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:contracts/contracts.dart';
 import 'package:mobile/features/admin/admin_hub_screen.dart';
 import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 Widget _host() => ProviderScope(
   overrides: [
+    // "سجل النقاط" opens on a month picker (batch 146b); the host answers
+    // at once, as the other reads here do, so the screen settles.
+    monthlySeasonsProvider.overrideWith((ref) async => const <SeasonDto>[]),
     adminDashboardProvider.overrideWith(
       (ref) async => const AdminDashboardSnapshot(
         stats: UserStatsDto(total: 0, active: 0, suspended: 0),

@@ -248,6 +248,20 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/users/{userId}/points?season=` -- one player's points in
+  /// one month, every movement with its match named (batch 146b). The read
+  /// is audited on the server.
+  Future<Result<PlayerMonthPointsDto>> playerPoints(
+    String userId, {
+    required String seasonId,
+  }) {
+    return _transport.getObject<PlayerMonthPointsDto>(
+      '/admin/users/$userId/points',
+      query: {'season': seasonId},
+      parse: PlayerMonthPointsDto.fromJson,
+    );
+  }
+
   /// `GET /admin/fixture-score-counts?fixtures=` -- how many players were
   /// scored on each of [fixtureIds] (at most 200), in one query (batch
   /// 156).

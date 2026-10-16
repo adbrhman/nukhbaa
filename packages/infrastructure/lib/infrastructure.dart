@@ -6,6 +6,7 @@ library;
 /// Depends inward on application/domain/shared and outward on drivers
 export 'src/admin/postgres_audit_log_repository.dart';
 export 'src/admin/postgres_duplicate_name_reader.dart';
+export 'src/admin/postgres_player_points_reader.dart';
 export 'src/admin/postgres_user_admin_repository.dart';
 export 'src/admin/user_cache_evicting_admin_repository.dart';
 export 'src/common/system_clock.dart';

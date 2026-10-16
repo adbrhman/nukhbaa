@@ -14,6 +14,7 @@ import '../../../competition/teams_providers.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/riyadh_kickoff_field.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
 import '../../widgets/team_picker_league_scope.dart';
@@ -70,7 +71,9 @@ class _FixtureScheduleSectionState
   final TextEditingController _awayTeamController = TextEditingController();
   final FocusNode _homeTeamFocusNode = FocusNode();
   final FocusNode _awayTeamFocusNode = FocusNode();
-  DateTime? _kickoffLocal;
+
+  /// The kickoff instant (UTC), picked on Riyadh's clock (audit L-12).
+  DateTime? _kickoffAt;
 
   /// The month this fixture is filed into — a `MM/YYYY` contest season
   /// from `GET /months`, not a competition's edition.
@@ -219,6 +222,27 @@ class _FixtureScheduleSectionState
       addMatchControllerProvider,
     );
     final bool inFlight = state is AsyncLoading<AddMatchResult>;
+    // A match added empties the form, so a second tap cannot add it twice;
+    // the month and the league stay for the next one (audit L-12).
+    ref.listen<AsyncValue<AddMatchResult>?>(addMatchControllerProvider, (
+      AsyncValue<AddMatchResult>? previous,
+      AsyncValue<AddMatchResult>? next,
+    ) {
+      if (next is AsyncData<AddMatchResult> &&
+          previous is! AsyncData<AddMatchResult>) {
+        setState(() {
+          _homeTeamController.clear();
+          _awayTeamController.clear();
+          _homeTeamId = null;
+          _awayTeamId = null;
+          _kickoffAt = null;
+          _isTest = false;
+        });
+      }
+    });
+    final FixtureScheduleDto? unlinked = ref
+        .read(addMatchControllerProvider.notifier)
+        .unlinked;
 
     int nextDisplayOrder = 0;
     List<SeasonFixtureCardDto> monthFixtures = const <SeasonFixtureCardDto>[];
@@ -239,7 +263,7 @@ class _FixtureScheduleSectionState
         _leagueId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
-        _kickoffLocal != null;
+        _kickoffAt != null;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -342,13 +366,13 @@ class _FixtureScheduleSectionState
                   message: l10n.adminTeamNotInCatalogHint,
                 ),
               const SizedBox(height: AppSpacing.md),
-              AdminSecondaryButton(
-                key: const Key('admin.fixtures.kickoffPicker'),
-                label: _kickoffLocal == null
-                    ? l10n.adminPickKickoffButton
-                    : _formatKickoff(_kickoffLocal!),
-                icon: Icons.event_outlined,
-                onPressed: inFlight ? null : _pickKickoff,
+              RiyadhKickoffField(
+                buttonKey: const Key('admin.fixtures.kickoffPicker'),
+                value: _kickoffAt,
+                emptyLabel: l10n.adminPickKickoffButton,
+                enabled: !inFlight,
+                onPicked: (DateTime kickoff) =>
+                    setState(() => _kickoffAt = kickoff),
               ),
               const SizedBox(height: AppSpacing.sm),
               SwitchListTile(
@@ -369,6 +393,16 @@ class _FixtureScheduleSectionState
                 AdminErrorBanner(
                   key: const Key('admin.fixtures.error'),
                   message: ErrorPresenter.messageOf(state.error),
+                ),
+              if (state is AsyncError<AddMatchResult> && unlinked != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(
+                    'سُجّلت ${unlinked.homeTeam} × ${unlinked.awayTeam} ولم '
+                    'تُضف إلى الشهر بعد. اضغط «${l10n.adminAddMatchButton}» '
+                    'مرة أخرى لإكمال إضافتها، بلا نسخة ثانية.',
+                    key: const Key('admin.fixtures.unlinked'),
+                  ),
                 ),
               if (state is AsyncData<AddMatchResult>)
                 AdminSuccessBanner(
@@ -393,39 +427,12 @@ class _FixtureScheduleSectionState
     );
   }
 
-  Future<void> _pickKickoff() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _kickoffLocal ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _kickoffLocal == null
-          ? TimeOfDay.fromDateTime(now)
-          : TimeOfDay.fromDateTime(_kickoffLocal!),
-    );
-    if (time == null || !mounted) return;
-    setState(() {
-      _kickoffLocal = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
   void _addMatch(int displayOrder) {
     final seasonId = _seasonId;
     final leagueId = _leagueId;
     final homeTeam = _homeTeamController.text.trim();
     final awayTeam = _awayTeamController.text.trim();
-    final kickoff = _kickoffLocal;
+    final kickoff = _kickoffAt;
     if (seasonId == null ||
         leagueId == null ||
         homeTeam.isEmpty ||
@@ -446,11 +453,5 @@ class _FixtureScheduleSectionState
           leagueId: leagueId,
           isTest: _isTest,
         );
-  }
-
-  String _formatKickoff(DateTime local) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
   }
 }
