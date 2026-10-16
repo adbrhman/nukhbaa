@@ -26,13 +26,6 @@ import 'package:http/testing.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/providers.dart';
 
-/// A point far enough in the future that it stays "not yet started"
-/// for the lifetime of any single test run — computed at runtime instead
-/// of hardcoded, so it never silently becomes "in the past" as real
-/// calendar time passes.
-String _futureIso() =>
-    DateTime.now().toUtc().add(const Duration(days: 365)).toIso8601String();
-
 /// One captured outbound request (for asserting method + path).
 final class CapturedRequest {
   /// Wraps a captured [http.Request].
@@ -152,24 +145,4 @@ final SeasonDto sampleSeason = SeasonDto(
   label: '08/2026',
   startAt: DateTime.utc(2026, 8, 1),
   endAt: DateTime.utc(2026, 9, 1),
-);
-
-/// A sample round of [sampleSeason].
-final RoundDto sampleRound = RoundDto(
-  id: 'r-1',
-  seasonId: 's-1',
-  sequence: 1,
-  predictionDeadline: _futureIso(),
-  status: 'open',
-  rulesetVersion: 3,
-);
-
-/// A sample fixture link of [sampleRound].
-final RoundFixtureCardDto sampleFixture = RoundFixtureCardDto(
-  roundId: 'r-1',
-  fixtureId: 'f-1',
-  displayOrder: 0,
-  homeTeam: 'Al Hilal',
-  awayTeam: 'Al Nassr',
-  kickoffAt: _futureIso(),
 );

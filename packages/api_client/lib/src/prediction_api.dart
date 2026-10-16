@@ -5,18 +5,6 @@ import 'package:shared/shared.dart';
 /// Typed client for the Prediction surface of `apps/server`.
 ///
 /// Wraps exactly the prediction routes that exist today, verbatim:
-///   * `GET /rounds/{id}/predictions`       (mine)  -> [PredictionDto]
-///     (same file, GET branch). A joined-but-not-yet-predicted caller (or a
-///     non-participant) yields `404 prediction.not_found`.
-///   * `GET /rounds/{id}/predictions/all`   (locked round list)
-///     -> `List<PredictionDto>` (`routes/rounds/[id]/predictions/all.dart`).
-///     An open round is refused `401 prediction.round_not_locked`; a
-///     non-participant `401 prediction.not_a_participant`; a locked round with
-///     no predictions is a legitimate empty array.
-///   * `GET /me/predictions`   (own aggregated history, every round + season)
-///     -> `List<PredictionDto>` (`routes/me/predictions.dart`). Always the
-///     caller's own predictions regardless of round status; a caller who has
-///     never predicted gets a legitimate empty array.
 ///   * `POST /seasons/{id}/fixtures/{fixtureId}/prediction` (submit/amend a
 ///     single fixture) -> [FixturePredictionDto] (Axiom 4 Amendment; the
 ///     per-fixture sibling of the retired round-based submission — the body is
@@ -25,12 +13,12 @@ import 'package:shared/shared.dart';
 ///     the client).
 ///   * `GET /me/fixture-predictions` (own aggregated fixture-prediction
 ///     history, every fixture + season) -> `List<FixturePredictionDto>`
-///     (`routes/me/fixture-predictions.dart`; the per-fixture sibling of the
-///     `/me/predictions` read above). Always the caller's own predictions; a
+///     (`routes/me/fixture-predictions.dart`). Always the caller's own
+///     predictions; a
 ///     caller who has never predicted a fixture gets a legitimate empty
 ///     array.
 ///
-/// The whole `/rounds` subtree is behind `bearerAuth`. Every method returns a
+/// Every route is behind `bearerAuth`. Every method returns a
 /// typed [Result] and never throws. This is the ONLY prediction write path a
 /// client has — there is no direct Supabase write (ADR-002 §2.2/§2.8): every
 /// submission goes through the server use-case API here.
@@ -156,32 +144,6 @@ final class PredictionApi {
       '/seasons/$seasonId/fixtures/$fixtureId/predictions/$participantId/'
       'reaction',
       parse: (json) => json['removed'] == true,
-    );
-  }
-
-  /// `GET /rounds/{id}/predictions` — the caller's own prediction for
-  /// [roundId], any round status (self-read is safe).
-  ///
-  /// When the caller has not yet predicted (or is not a participant) the server
-  /// returns `404 prediction.not_found`; this surfaces as
-  /// `Err(invariant, code: prediction.not_found)`, letting the UI distinguish
-  /// "nothing submitted yet" from a transport error via the stable code.
-  Future<Result<PredictionDto>> getMyPrediction(String roundId) {
-    return _transport.getObject<PredictionDto>(
-      '/rounds/$roundId/predictions',
-      parse: PredictionDto.fromJson,
-    );
-  }
-
-  /// `GET /rounds/{id}/predictions/all` — every participant's prediction for a
-  /// **locked** [roundId] (the competing pool, revealed only after lock).
-  ///
-  /// An empty list means the round is locked but nobody predicted (distinct
-  /// from the `401 prediction.round_not_locked` "too early" refusal).
-  Future<Result<List<PredictionDto>>> listRoundPredictions(String roundId) {
-    return _transport.getList<PredictionDto>(
-      '/rounds/$roundId/predictions/all',
-      parseElement: PredictionDto.fromJson,
     );
   }
 

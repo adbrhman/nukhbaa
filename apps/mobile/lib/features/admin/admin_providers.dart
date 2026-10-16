@@ -846,7 +846,7 @@ class AddMatchResult {
   final SeasonFixtureDto link;
 }
 
-/// يدمج `registerFixtureSchedule` ثم `linkFixtureToRound` في أمر واحد ذرّي من
+/// يدمج `registerFixtureSchedule` ثم `linkFixtureToSeason` في أمر واحد ذرّي من
 /// منظور المستخدم: لا يُعلن النجاح إلا بعد نجاح العمليتين معاً. إذا نجح التسجيل
 /// وفشل الربط، تظهر رسالة خطأ الربط ولا تُعتبر العملية ناجحة.
 ///

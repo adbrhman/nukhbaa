@@ -1,10 +1,10 @@
 /// The Competition **browse** state — annotation-based Riverpod providers that
-/// expose the four read hops of the browse navigation as async values the UI
+/// expose the read hops of the browse navigation as async values the UI
 /// watches.
 ///
 /// ## Scope (Flutter App phase, Core decision #1 — browse-only)
 /// This is a strictly read-only surface: it renders the public competition
-/// catalogue and lets the user drill competition → season → round → fixtures.
+/// catalogue and lets the user drill competition → season → fixtures.
 /// It builds **no** prediction/submission logic (Prediction is the next,
 /// separate screen). Every hop is a pure read.
 ///
@@ -23,8 +23,8 @@
 /// Throwing the `AppError` (rather than surfacing a sealed union) keeps these
 /// providers idiomatic `FutureProvider`s while preserving the *typed* error: the
 /// UI catches `AppError` off `AsyncValue.error` and never branches on a raw
-/// exception. The two single-item reads (`getCompetition`/`getRound`) surface a
-/// missing resource as an `Err(invariant, code: competition[.round]_not_found)`
+/// exception. The single-item read (`getCompetition`) surfaces a
+/// missing resource as an `Err(invariant, code: competition.not_found)`
 /// exactly as [CompetitionApi] documents — the UI presents that as a "not found"
 /// message via `ErrorPresenter`, distinct from an empty list.
 library;
@@ -93,40 +93,6 @@ Future<List<SeasonDto>> competitionSeasons(
 Future<List<SeasonDto>> monthlySeasons(Ref ref) async {
   final api = ref.watch(competitionApiProvider);
   return _unwrap(await api.listMonthlySeasons());
-}
-
-/// `GET /seasons/{id}/rounds` — the season's rounds (1-based sequence order).
-///
-/// The second middle hop. A season with no rounds — or one that does not exist —
-/// resolves to a legitimate empty list (no existence oracle).
-@riverpod
-Future<List<RoundDto>> seasonRounds(Ref ref, String seasonId) async {
-  final api = ref.watch(competitionApiProvider);
-  return _unwrap(await api.listSeasonRounds(seasonId));
-}
-
-/// `GET /rounds/{id}` — a single round by [roundId].
-///
-/// A missing round arrives as `Err(invariant,
-/// code: competition.round_not_found)` and is rethrown so the fixtures screen
-/// renders a "not found" message. Only the ruleset *version* is ever exposed —
-/// never the opaque frozen snapshot.
-@riverpod
-Future<RoundDto> roundDetail(Ref ref, String roundId) async {
-  final api = ref.watch(competitionApiProvider);
-  return _unwrap(await api.getRound(roundId));
-}
-
-/// `GET /rounds/{id}/fixtures` — the round's fixtures (display order), each
-/// enriched with its schedule identity (team names + kickoff; `null` when the
-/// linked fixture has no schedule yet, Axiom 3).
-///
-/// The final hop. A round with no linked fixtures — or one that does not exist —
-/// resolves to a legitimate empty list (no existence oracle).
-@riverpod
-Future<List<RoundFixtureCardDto>> roundFixtures(Ref ref, String roundId) async {
-  final api = ref.watch(competitionApiProvider);
-  return _unwrap(await api.browseRoundFixtures(roundId));
 }
 
 /// `GET /me/active-seasons` -- every season the caller is an **active**

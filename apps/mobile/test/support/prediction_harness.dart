@@ -4,8 +4,8 @@
 /// networking is served entirely by a `package:http/testing.dart` [MockClient]
 /// (no live socket), wiring the shared `apiTransportProvider` over that client so
 /// the real `predictionApiProvider` (the submit controller + `myPredictionProvider`)
-/// AND the real `competitionApiProvider` (the reused `roundDetailProvider` /
-/// `roundFixturesProvider` the screen composes) exercise the genuine `api_client`
+/// AND the real `competitionApiProvider` (the season browse reads) exercise
+/// the genuine `api_client`
 /// end-to-end — only the socket is faked. The token store is a seedable in-memory
 /// fake so the transport still attaches a bearer token exactly as production does.
 ///

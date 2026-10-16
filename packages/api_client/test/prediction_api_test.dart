@@ -8,16 +8,6 @@ import 'package:test/test.dart';
 import 'support/mock_transport.dart';
 
 void main() {
-  const storedPrediction = PredictionDto(
-    id: 'p-1',
-    participantId: 'part-1',
-    roundId: 'r-1',
-    submittedAt: '2026-08-01T10:00:00Z',
-    fixtureScores: [
-      FixtureScoreDto(fixtureId: 'f-a', homeGoals: 2, awayGoals: 1),
-    ],
-  );
-
   group('PredictionApi.submitFixturePrediction '
       '(POST /seasons/{id}/fixtures/{fixtureId}/prediction)', () {
     const storedFixturePrediction = FixturePredictionDto(
@@ -137,72 +127,6 @@ void main() {
         (result as Err<FixturePredictionDto>).error.code,
         apiErrorNetworkUnreachable,
       );
-    });
-  });
-
-  group('PredictionApi.getMyPrediction (GET /rounds/{id}/predictions)', () {
-    test('200 -> Ok(PredictionDto)', () async {
-      final ctx = buildTransport(
-        (_) async => okJson(storedPrediction.toJson()),
-      );
-
-      final result = await PredictionApi(ctx.transport).getMyPrediction('r-1');
-
-      expect(result, const Result<PredictionDto>.ok(storedPrediction));
-      expect(ctx.captured.single.method, 'GET');
-      expect(ctx.captured.single.url.path, '/rounds/r-1/predictions');
-    });
-
-    test('404 prediction.not_found -> Err(invariant) with that code', () async {
-      final ctx = buildTransport(
-        (_) async => errorEnvelope(404, 'prediction.not_found', 'Nothing yet.'),
-      );
-
-      final result = await PredictionApi(ctx.transport).getMyPrediction('r-1');
-
-      final err = (result as Err<PredictionDto>).error;
-      expect(err.kind, ErrorKind.invariant);
-      expect(err.code, 'prediction.not_found');
-    });
-  });
-
-  group('PredictionApi.listRoundPredictions (GET .../predictions/all)', () {
-    test('200 -> Ok(List<PredictionDto>) at the /all path', () async {
-      final ctx = buildTransport(
-        (_) async => okJson([storedPrediction.toJson()]),
-      );
-
-      final result = await PredictionApi(
-        ctx.transport,
-      ).listRoundPredictions('r-1');
-
-      expect(result, const Result<List<PredictionDto>>.ok([storedPrediction]));
-      expect(ctx.captured.single.url.path, '/rounds/r-1/predictions/all');
-    });
-
-    test('locked round, nobody predicted -> Ok(<empty>)', () async {
-      final ctx = buildTransport((_) async => okJson(<Object>[]));
-
-      final result = await PredictionApi(
-        ctx.transport,
-      ).listRoundPredictions('r-1');
-
-      expect((result as Ok<List<PredictionDto>>).value, isEmpty);
-    });
-
-    test('401 round_not_locked -> Err(authorization)', () async {
-      final ctx = buildTransport(
-        (_) async =>
-            errorEnvelope(401, 'prediction.round_not_locked', 'Too early.'),
-      );
-
-      final result = await PredictionApi(
-        ctx.transport,
-      ).listRoundPredictions('r-1');
-
-      final err = (result as Err<List<PredictionDto>>).error;
-      expect(err.kind, ErrorKind.authorization);
-      expect(err.code, 'prediction.round_not_locked');
     });
   });
 

@@ -38,7 +38,7 @@ import '../../core/providers.dart';
 ///
 /// A season with no linked fixtures — or one that does not exist — is a
 /// *legitimate* `Ok(<empty list>)` (the server reveals no existence oracle on
-/// this browse read; mirrors `seasonRoundsProvider`/`roundFixturesProvider`).
+/// this browse read).
 /// Any other failure (authorization, transient) is rethrown as the typed
 /// [AppError] so the watching widget receives it as `AsyncError` and renders
 /// it through `ErrorPresenter`.

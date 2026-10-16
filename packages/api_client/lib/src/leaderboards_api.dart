@@ -9,8 +9,6 @@ import 'package:shared/shared.dart';
 /// Wraps the ratified leaderboard read routes, verbatim — no invented path:
 ///   * `GET /seasons/{id}/leaderboard` -> [SeasonLeaderboardDto]
 ///     (`routes/seasons/[id]/leaderboard/index.dart`).
-///   * `GET /rounds/{id}/leaderboard` -> [RoundLeaderboardDto]
-///     (`routes/rounds/[id]/leaderboard/index.dart`).
 ///   * `GET /seasons/{id}/fixture-leaderboard` -> [FixtureLeaderboardDto]
 ///     (`routes/seasons/[id]/fixture-leaderboard/index.dart`).
 ///   * `GET /leaderboard/hall-of-fame` -> [HallOfFameDto]
@@ -61,28 +59,8 @@ final class LeaderboardsApi {
     );
   }
 
-  /// `GET /rounds/{id}/leaderboard` — a round's ranked standings.
-  ///
-  /// Returns:
-  ///   * `Ok(RoundLeaderboardDto)` on `200` — an **empty** `entries` list is a
-  ///     legitimate result (a scored round nobody predicted), never an error;
-  ///   * `Err(invariant, code: scoring.round_not_scored)` on `409` when the
-  ///     round has not been scored yet;
-  ///   * `Err(authorization, code: scoring.not_a_participant)` on `401` when
-  ///     the caller is not a member of the round's season;
-  ///   * `Err(validation)` if [roundId] is malformed (server `400`);
-  ///   * `Err(transient)` on `503` or a network failure (retryable);
-  ///   * `Err(validation, code: api_client.malformed_response)` if the `200`
-  ///     body is not a valid [RoundLeaderboardDto].
-  Future<Result<RoundLeaderboardDto>> roundLeaderboard(String roundId) {
-    return _transport.getObject<RoundLeaderboardDto>(
-      '/rounds/$roundId/leaderboard',
-      parse: RoundLeaderboardDto.fromJson,
-    );
-  }
-
   /// `GET /seasons/{id}/fixture-leaderboard` — a season's live, per-fixture
-  /// standings (Axiom 4 Amendment sibling of [roundLeaderboard]; aggregated
+  /// standings (Axiom 4 Amendment sibling of the retired round board; aggregated
   /// over every fixture scored so far instead of a single round).
   ///
   /// Returns:
