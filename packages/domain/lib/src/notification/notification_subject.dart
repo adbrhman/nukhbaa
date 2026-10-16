@@ -148,6 +148,15 @@ final class NotificationSubject {
     actorUserId: actorUserId,
   );
 
+  /// The subject of a `doubleReleased` notification -- the hidden
+  /// [fixture] whose double is free again (migration 0172). One per
+  /// player and fixture.
+  static NotificationSubject doubleReleased({required FixtureRef fixture}) =>
+      NotificationSubject._(
+        kind: NotificationKind.doubleReleased,
+        fixture: fixture,
+      );
+
   /// The kind this subject belongs to (matches the owning notification's kind).
   final NotificationKind kind;
 
@@ -193,6 +202,7 @@ final class NotificationSubject {
       'prediction_reaction:${fixture!.value}:${actorUserId!.value}',
     NotificationKind.groupInvited =>
       'group_invited:${groupId!.value}:${actorUserId!.value}',
+    NotificationKind.doubleReleased => 'double_released:${fixture!.value}',
   };
 
   @override

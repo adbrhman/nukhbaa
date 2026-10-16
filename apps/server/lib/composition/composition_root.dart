@@ -3823,6 +3823,20 @@ final class CompositionRoot {
           onChanged: fixtureScheduleRepository.forget,
         ),
         auditRecorder: auditRecorder,
+        // A hidden match's double is free again (migration 0172): whoever
+        // doubled it is told, over the exact-hit announcement's transport.
+        notifyDoubleReleased: NotifyDoubleReleased(
+          schedules: fixtureScheduleRepository,
+          predictions: fixturePredictionRepository,
+          targets: PostgresScoreAnnouncementRepository(connection),
+          sender: pushSender,
+          create: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          clock: clock,
+        ),
       ),
       adminListDuplicateNames: AdminListDuplicateNames(
         names: PostgresDuplicateNameReader(connection),

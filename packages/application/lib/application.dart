@@ -135,6 +135,7 @@ export 'src/notification/list_my_notification_feed.dart';
 export 'src/notification/list_my_notifications.dart';
 export 'src/notification/mark_all_notifications_read.dart';
 export 'src/notification/mark_notification_read.dart';
+export 'src/notification/notify_double_released.dart';
 export 'src/notification/notify_fixture_scored.dart';
 export 'src/notification/notify_fixture_winners.dart';
 export 'src/notification/notify_new_user_registered.dart';

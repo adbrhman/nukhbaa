@@ -73,7 +73,8 @@ abstract interface class FixturePredictionRepository {
   /// itself runs from 21:00 UTC the evening before, UTC+3 with no daylight
   /// saving), optionally excluding [excludingFixture] (an amendment
   /// of an already-double fixture must not count itself) — the query
-  /// [DailyDoublePolicy] is checked against.
+  /// [DailyDoublePolicy] is checked against. A double on a hidden fixture
+  /// is not counted: it is never scored (migration 0172).
   Future<Result<int>> countDoublesOnDay(
     ParticipantId participantId,
     DateTime dayUtc, {

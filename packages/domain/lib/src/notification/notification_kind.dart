@@ -55,7 +55,12 @@ enum NotificationKind {
   /// A member of a friends' league invited the recipient to it by name
   /// (migration 0097). Subject references the league and who invited; the
   /// recipient accepts or declines in the inbox.
-  groupInvited;
+  groupInvited,
+
+  /// An admin hid a fixture the recipient had made their day's double
+  /// (migration 0172): the double is free again for another match of that
+  /// day that has not kicked off. Subject references the hidden fixture.
+  doubleReleased;
 
   /// The stable wire/storage token for this notification kind.
   String get wireValue => switch (this) {
@@ -68,6 +73,7 @@ enum NotificationKind {
     NotificationKind.duelAccepted => 'duel_accepted',
     NotificationKind.predictionReaction => 'prediction_reaction',
     NotificationKind.groupInvited => 'group_invited',
+    NotificationKind.doubleReleased => 'double_released',
   };
 
   /// Parses a [NotificationKind] from an untrusted [raw] token, returning a

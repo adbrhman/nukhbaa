@@ -331,7 +331,9 @@ RETURNING fixture_id
   // stored doubles by the Riyadh calendar day of their fixture's kickoff — a
   // fixture_prediction whose fixture has NO schedule row is excluded (it
   // cannot be attributed to any day), matching the "no schedule = not
-  // locked" default the use-case applies on the write side.
+  // locked" default the use-case applies on the write side. A hidden
+  // fixture's double is left out, as the trigger leaves it out (migration
+  // 0172; tested in supabase/tests/0172_hidden_double_released_test.sql).
   // --------------------------------------------------------------------------
 
   static const String _countDoublesSql = '''
@@ -340,6 +342,7 @@ FROM prediction.fixture_predictions fp
 JOIN competition.fixture_schedules fs ON fs.fixture_id = fp.fixture_id
 WHERE fp.participant_id = @participant_id
   AND fp.is_double = true
+  AND fs.hidden_at IS NULL
   AND fs.kickoff_at >= @day_start AND fs.kickoff_at < @day_end
   AND (@excluding_fixture_id::uuid IS NULL
        OR fp.fixture_id <> @excluding_fixture_id)

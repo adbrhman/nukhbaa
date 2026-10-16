@@ -322,6 +322,7 @@ class _NotificationRow extends ConsumerWidget {
     'duel_challenged' || 'duel_accepted' => Icons.compare_arrows_rounded,
     'prediction_reaction' => Icons.add_reaction_outlined,
     'group_invited' => Icons.group_add_rounded,
+    'double_released' => Icons.bolt_rounded,
     _ => Icons.notifications_outlined,
   };
 
@@ -346,6 +347,10 @@ class _NotificationRow extends ConsumerWidget {
       'duel_accepted' => 'قُبل تحديك. اضغط لتتابعه.',
       'prediction_reaction' => 'لاعب تفاعل مع توقعك. اضغط لترى جدول التوقعات.',
       'group_invited' => 'دعوة إلى دوري أصدقاء.',
+      // Migration 0172: a hidden match's double is free again.
+      'double_released' =>
+        'أُوقفت مباراتك المضاعفة فتحرّرت مضاعفة يومها. ضعها على مباراة '
+            'أخرى من مباريات ذلك اليوم لم تنطلق بعد.',
       _ => l10n.notificationsTitle,
     };
   }

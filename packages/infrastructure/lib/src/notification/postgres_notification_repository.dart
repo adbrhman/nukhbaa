@@ -432,10 +432,11 @@ SELECT count(*) AS marked FROM marked
             actorUserId: (actorResult as Ok<UserId>).value,
           ),
         );
-      case NotificationKind.fixtureScored:
+      case NotificationKind.fixtureScored || NotificationKind.doubleReleased:
         // Wired since migration 0041: notification_kind gained the
         // 'fixture_scored' value and notifications.fixture_id was added
-        // (NotifyFixtureWinners, the exact-hit push announcer).
+        // (NotifyFixtureWinners, the exact-hit push announcer). A released
+        // double (migration 0172) references its hidden fixture the same way.
         final fixtureResult = FixtureRef.tryParse(
           row['fixture_id']?.toString(),
         );
@@ -444,10 +445,11 @@ SELECT count(*) AS marked FROM marked
             _corrupt('fixture_id', fixtureResult.error.message),
           );
         }
+        final FixtureRef fixture = (fixtureResult as Ok<FixtureRef>).value;
         return Result.ok(
-          NotificationSubject.fixtureScored(
-            fixture: (fixtureResult as Ok<FixtureRef>).value,
-          ),
+          kind == NotificationKind.doubleReleased
+              ? NotificationSubject.doubleReleased(fixture: fixture)
+              : NotificationSubject.fixtureScored(fixture: fixture),
         );
       case NotificationKind.adminAnnouncement:
         // Migration 0043: the free text lives in notification.announcements

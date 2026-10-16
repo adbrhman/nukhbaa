@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('NotificationKind', () {
     test('has exactly the ratified kinds (closed set)', () {
-      expect(NotificationKind.values, hasLength(9));
+      expect(NotificationKind.values, hasLength(10));
       expect(NotificationKind.values.toSet(), {
         NotificationKind.roundScored,
         NotificationKind.groupMemberJoined,
@@ -16,6 +16,7 @@ void main() {
         NotificationKind.duelAccepted,
         NotificationKind.predictionReaction,
         NotificationKind.groupInvited,
+        NotificationKind.doubleReleased,
       });
     });
 
@@ -30,6 +31,18 @@ void main() {
       expect(
         NotificationKind.adminAnnouncement.wireValue,
         'admin_announcement',
+      );
+      expect(NotificationKind.doubleReleased.wireValue, 'double_released');
+    });
+
+    test('a released double is one per player and hidden fixture', () {
+      const fixture = FixtureRef('66666666-6666-4666-8666-666666666666');
+      final subject = NotificationSubject.doubleReleased(fixture: fixture);
+      expect(subject.kind, NotificationKind.doubleReleased);
+      expect(subject.fixture, fixture);
+      expect(
+        subject.dedupeRef,
+        'double_released:66666666-6666-4666-8666-666666666666',
       );
     });
 

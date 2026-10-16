@@ -5657,6 +5657,47 @@ its result from an admin.
 
 No migration; the server on push.
 
+### A hidden match frees its double (script 89, 2026-10-16)
+
+Decided by the owner on 2026-10-16. A match is hidden when it is
+postponed or called off (0098). A hidden match is never scored, yet its
+double still counted towards the day's one double, and a hidden match
+takes no prediction write, so the double could not be taken off it
+either: whoever had doubled it lost the day's double for nothing, and
+was not told.
+
+- Migration 0172: `prediction.reject_second_daily_double()` leaves out a
+  double on a hidden fixture (`fs.hidden_at is null`), and
+  `notification.notification_kind` gains `double_released`.
+  `PostgresFixturePredictionRepository._countDoublesSql` leaves hidden
+  fixtures out the same way, so `SubmitFixturePrediction` and the
+  trigger agree. The player may double another match of that day that
+  has not kicked off.
+- `NotifyDoubleReleased` (application/notification), called by
+  `AdminSetFixturesHidden` after a hide, best effort: each player who
+  doubled a just-hidden fixture whose Riyadh day has not ended (never a
+  test fixture) gets one inbox row (`double_released`, subject the
+  fixture, deduped per player and fixture) and a push ("تحرّرت مضاعفتك",
+  the match named, link `fixtures`), over the exact-hit announcement's
+  transport (`ScoreAnnouncementRepository.targetsForParticipants`): a
+  player with no device is not told. Inside the quiet hours the push is
+  left out, the inbox row is not. Hiding again after showing says
+  nothing new.
+- The app's inbox labels `double_released` in words with a bolt icon;
+  an older app shows its generic inbox title.
+- Showing a hidden match brings its double back as it was; a player who
+  doubled another match that day in between then has two that day, as
+  a kickoff moved to another day can already leave. Not refused: the
+  admin decides.
+- Tests: `0172_hidden_double_released_test.sql` (the trigger and the
+  adapter's count, hidden and shown again; every SQL test on a local
+  Postgres 16), `hide_releases_double_test.dart` through
+  `AdminSetFixturesHidden.call`, the kind and subject in the domain
+  test, the stored row in the notification repository test, and the
+  inbox row in `double_released_inbox_test.dart`.
+
+**0172 must be on the live DB before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

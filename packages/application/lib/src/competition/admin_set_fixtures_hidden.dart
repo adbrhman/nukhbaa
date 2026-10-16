@@ -1,6 +1,7 @@
 import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/competition/ports/fixture_visibility_store.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/notification/notify_double_released.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -15,20 +16,31 @@ import 'package:shared/shared.dart';
 /// Every fixture whose state changed is audited (`fixture_hidden` /
 /// `fixture_shown`), so the log names each one.
 ///
+/// A hidden fixture's double no longer counts towards the day's one double
+/// (migration 0172), so the players who doubled a fixture just hidden are
+/// told they may double another match ([NotifyDoubleReleased], best
+/// effort: it never fails the hiding).
+///
 /// Never throws; returns the fixtures that changed.
 final class AdminSetFixturesHidden {
   /// Creates the command over its collaborators.
   const AdminSetFixturesHidden({
     required FixtureVisibilityStore store,
     required AuditRecorder auditRecorder,
+    NotifyDoubleReleased? notifyDoubleReleased,
   }) : _store = store,
-       _audit = auditRecorder;
+       _audit = auditRecorder,
+       _notifyDoubleReleased = notifyDoubleReleased;
 
   /// The most fixtures one call may change: a month's worth, with room.
   static const int maxFixtures = 200;
 
   final FixtureVisibilityStore _store;
   final AuditRecorder _audit;
+
+  /// Tells the players who doubled a fixture just hidden; null in tests that
+  /// do not look at it.
+  final NotifyDoubleReleased? _notifyDoubleReleased;
 
   /// Hides ([hidden] true) or shows [fixtureIds] on behalf of admin
   /// [principal].
@@ -89,6 +101,12 @@ final class AdminSetFixturesHidden {
       if (recorded is Err<AuditEntry>) {
         return Result.err(recorded.error);
       }
+    }
+
+    final notify = _notifyDoubleReleased;
+    if (hidden && changed.isNotEmpty && notify != null) {
+      // Best effort: the fixtures are hidden whatever this answers.
+      await notify(fixtures: changed);
     }
 
     return Result.ok(List<FixtureRef>.unmodifiable(changed));

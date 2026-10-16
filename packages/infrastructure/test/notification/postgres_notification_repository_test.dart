@@ -356,6 +356,33 @@ void main() {
       expect(notification.readAt!.isUtc, isTrue);
     });
 
+    // Migration 0172: a released double references its hidden fixture.
+    test('maps a double_released row to its hidden fixture', () async {
+      const fixtureId = '66666666-6666-4666-8666-666666666666';
+      final repo = PostgresNotificationRepository(
+        _rows([
+          {
+            'id': _notificationId,
+            'recipient_id': _recipientId,
+            'kind': 'double_released',
+            'round_id': null,
+            'group_id': null,
+            'actor_user_id': null,
+            'fixture_id': fixtureId,
+            'read_at': null,
+            'created_at': '2026-07-13T09:30:00.000Z',
+          },
+        ]),
+      );
+
+      final result = await repo.listForRecipient(_recipient, limit: 20);
+
+      final notification = (result as Ok<List<Notification>>).value.single;
+      expect(notification.kind, NotificationKind.doubleReleased);
+      expect(notification.subject.fixture?.value, fixtureId);
+      expect(notification.subject.dedupeRef, 'double_released:$fixtureId');
+    });
+
     test('a corrupt row fails the whole list with row_corrupt', () async {
       final repo = PostgresNotificationRepository(
         _rows([_roundScoredRow(kind: 'not-a-kind')]),
