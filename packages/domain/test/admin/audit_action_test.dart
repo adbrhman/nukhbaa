@@ -34,6 +34,7 @@ void main() {
         'error_updated',
         'fixture_hidden',
         'fixture_shown',
+        'team_added',
       });
     });
   });

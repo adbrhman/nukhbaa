@@ -1070,7 +1070,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminTeamNotInCatalogHint =>
-      'This name matches no team in the catalog — the fixture will be saved without that team\'s crest or colours. Pick a name from the list if the team exists.';
+      'This name is not in the clubs list, so the match cannot be saved with it. Pick the club from the list, or add it to the list if it is missing.';
 
   @override
   String get myPoints => 'My points';

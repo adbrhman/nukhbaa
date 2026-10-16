@@ -699,7 +699,7 @@
     }
   },
   "adminRemoveFixtureFromSeasonSuccess": "Fixture removed from the month's competition.",
-  "adminTeamNotInCatalogHint": "This name matches no team in the catalog — the fixture will be saved without that team's crest or colours. Pick a name from the list if the team exists.",
+  "adminTeamNotInCatalogHint": "This name is not in the clubs list, so the match cannot be saved with it. Pick the club from the list, or add it to the list if it is missing.",
   "myPoints": "My points",
   "myPointsEmpty": "You have no counted points yet.",
   "myPointsLatestScored": "Through the latest counted match",

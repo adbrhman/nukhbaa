@@ -12,6 +12,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../competition/leagues_providers.dart';
 import '../../../competition/teams_providers.dart';
 import '../../admin_providers.dart';
+import '../../widgets/add_club_dialog.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/riyadh_kickoff_field.dart';
@@ -70,6 +71,10 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
   /// The league name shown on the selected fixture, for context only.
   String? _currentLeagueName;
 
+  /// Whether the fixture is a test fixture (0098): its sides may stay names
+  /// the list does not know (script 91).
+  bool _isTest = false;
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +94,7 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     _currentLeagueName = fixture.leagueName;
     _leagueId = null;
     _isContinentalLeague = false;
+    _isTest = fixture.isTest;
   }
 
   @override
@@ -165,6 +171,8 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
     final l10n = AppLocalizations.of(context);
     final List<TeamDto> catalog =
         ref.watch(teamCatalogProvider).value ?? const <TeamDto>[];
+    // A club is added only against the list as it stands (script 91).
+    final bool catalogReady = ref.watch(teamCatalogProvider).hasValue;
     final List<LeagueDto> leagues =
         ref.watch(leagueCatalogProvider).value ?? const <LeagueDto>[];
     final String? seasonId = _seasonId;
@@ -176,13 +184,25 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
       fixtureScheduleControllerProvider,
     );
     final bool inFlight = state is AsyncLoading<FixtureScheduleDto>;
+    // A side the list does not know blocks the correction (script 91): its
+    // name carries no team id, so a second copy of the match goes unseen.
+    final bool homeUnknown =
+        !_isTest &&
+        _homeTeamController.text.trim().isNotEmpty &&
+        _homeTeamId == null;
+    final bool awayUnknown =
+        !_isTest &&
+        _awayTeamController.text.trim().isNotEmpty &&
+        _awayTeamId == null;
     final bool canSubmit =
         !inFlight &&
         _seasonId != null &&
         _fixtureId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
-        _kickoffAt != null;
+        _kickoffAt != null &&
+        !homeUnknown &&
+        !awayUnknown;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -271,6 +291,15 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                     );
                   }),
                 ),
+                if (homeUnknown)
+                  UnresolvedTeamHint(
+                    key: const Key('admin.fixtureEdit.homeTeamUnresolved'),
+                    message: l10n.adminTeamNotInCatalogHint,
+                    buttonKey: const Key('admin.fixtureEdit.homeTeamAddClub'),
+                    onAddClub: inFlight || !catalogReady
+                        ? null
+                        : () => _addClub(catalog, leagues, home: true),
+                  ),
                 const SizedBox(height: AppSpacing.md),
                 TeamPickerField(
                   fieldKey: const Key('admin.fixtureEdit.awayTeamField'),
@@ -292,6 +321,15 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
                     );
                   }),
                 ),
+                if (awayUnknown)
+                  UnresolvedTeamHint(
+                    key: const Key('admin.fixtureEdit.awayTeamUnresolved'),
+                    message: l10n.adminTeamNotInCatalogHint,
+                    buttonKey: const Key('admin.fixtureEdit.awayTeamAddClub'),
+                    onAddClub: inFlight || !catalogReady
+                        ? null
+                        : () => _addClub(catalog, leagues, home: false),
+                  ),
                 const SizedBox(height: AppSpacing.md),
                 RiyadhKickoffField(
                   buttonKey: const Key('admin.fixtureEdit.kickoffPicker'),
@@ -329,6 +367,33 @@ class _FixtureEditSectionState extends ConsumerState<FixtureEditSection> {
         ),
       ],
     );
+  }
+
+  /// Opens the add-club dialog for one side (script 91): the club added,
+  /// or a near name picked from the list, fills the side's field.
+  Future<void> _addClub(
+    List<TeamDto> catalog,
+    List<LeagueDto> leagues, {
+    required bool home,
+  }) async {
+    final TextEditingController field = home
+        ? _homeTeamController
+        : _awayTeamController;
+    final TeamDto? club = await showAddClubDialog(
+      context,
+      name: field.text.trim(),
+      catalog: catalog,
+      league: _effectiveLeague(leagues),
+    );
+    if (club == null || !mounted) return;
+    setState(() {
+      field.text = club.name;
+      if (home) {
+        _homeTeamId = club.id;
+      } else {
+        _awayTeamId = club.id;
+      }
+    });
   }
 
   void _submit() {

@@ -132,6 +132,29 @@ final class _CountingTeams implements TeamRepository {
   }
 }
 
+/// Answers each add with [existed], as the Postgres writer does.
+final class _ScriptedTeamWriter implements TeamCatalogWriter {
+  _ScriptedTeamWriter({required this.existed});
+
+  final bool existed;
+
+  @override
+  Future<Result<TeamAddition>> add({
+    required String name,
+    required LeagueRef? leagueId,
+  }) async => Result.ok(
+    TeamAddition(
+      team: Team(
+        id: const TeamRef('dddddddd-0000-0000-0000-000000000001'),
+        name: name,
+        shortName: null,
+        crestUrl: null,
+      ),
+      existed: existed,
+    ),
+  );
+}
+
 final class _CountingSchedules implements FixtureScheduleRepository {
   int batchReads = 0;
 
@@ -275,6 +298,28 @@ void main() {
     await teams.listAll();
     expect(inner.reads, 1);
     clock = clock.add(const Duration(minutes: 10));
+    await teams.listAll();
+    expect(inner.reads, 2);
+  });
+
+  test('a club an admin adds is in the next catalog read; a club already '
+      'on file keeps the cache', () async {
+    final inner = _CountingTeams();
+    final teams = CachedTeamRepository(inner, now: () => clock);
+    await teams.listAll();
+    expect(inner.reads, 1);
+
+    await CacheClearingTeamCatalogWriter(
+      _ScriptedTeamWriter(existed: true),
+      teams,
+    ).add(name: 'A', leagueId: null);
+    await teams.listAll();
+    expect(inner.reads, 1);
+
+    await CacheClearingTeamCatalogWriter(
+      _ScriptedTeamWriter(existed: false),
+      teams,
+    ).add(name: 'B', leagueId: null);
     await teams.listAll();
     expect(inner.reads, 2);
   });

@@ -123,6 +123,19 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/teams` -- adds a club to the team catalog (script 91,
+  /// migration 0173): [name] as the admin wrote it, under [leagueId] (none
+  /// when `null`). Answers the club added. A club whose name has the same
+  /// spelling key is already on file: `football_data.team_exists`, its
+  /// Arabic message naming that club.
+  Future<Result<TeamDto>> addTeam({required String name, String? leagueId}) {
+    return _transport.postObject<TeamDto>(
+      '/admin/teams',
+      body: <String, Object?>{'name': name, 'league_id': leagueId},
+      parse: TeamDto.fromJson,
+    );
+  }
+
   /// `GET /admin/duplicate-names` -- every display name more than one
   /// account carries, each with those accounts.
   Future<Result<DuplicateNamesDto>> duplicateNames() {

@@ -1082,7 +1082,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminTeamNotInCatalogHint =>
-      'هذا الاسم لا يطابق أي فريق في الكتالوج — ستُحفظ المباراة بلا شعار الفريق ولا ألوانه. اختر اسمًا من القائمة إن كان الفريق موجودًا.';
+      'هذا الاسم ليس في قائمة الأندية، فلا تُحفظ المباراة به. اختر النادي من القائمة، أو أضفه إليها إن لم يكن فيها.';
 
   @override
   String get myPoints => 'نقاطي';

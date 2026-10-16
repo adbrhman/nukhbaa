@@ -5715,6 +5715,57 @@ was not told.
 
 No migration; the server on push.
 
+### A match with both clubs from the list (script 91, 2026-10-16)
+
+On 2026-10-15 the fixtures sync added the Europa League evening and an
+admin added it again by hand; "هوفنهايم - بيشتكاش" beside the sync's
+"هوفنهايم - بشكتاش" was not caught. The add form took any name with a
+warning only, a name the catalog does not know carries no team id, and
+both `SameMatchFinder` (batch 138) and the trigger of 0110 needed both
+sides to agree by team or by name key. Decided by the owner on
+2026-10-16: a match is added (and corrected) with both clubs picked from
+the list, and a club the list lacks is added to it from the admin panel.
+The first of three scripts on the duplicates; 92 (one club in two matches
+within 12 hours) and 93 (merging a copy instead of hiding it) follow.
+
+- Migration 0173: `admin.audit_action` gains `team_added`.
+- `POST /admin/teams` (`AdminAddTeam`, port `TeamCatalogWriter`,
+  `PostgresTeamCatalogWriter`): the name with its spaces folded (80
+  characters at most) under the league picked, none for a continental
+  one (as 0103 and 0104 file theirs); no crest, no short name (initials).
+  One transaction with an advisory lock on the name's spelling key
+  (`competition.team_name_key`, 0110): a club already under that key is
+  refused, 409 `football_data.team_exists`, its Arabic message naming it,
+  and nothing is written. Every club added is audited (`team_added`, the
+  team's id, its name as the reason). `CacheClearingTeamCatalogWriter`
+  empties the server's ten-minute catalog cache after an add.
+- The add and edit forms (`fixture_schedule_section.dart`,
+  `fixture_edit_section.dart`): a side whose name is not a club of the
+  list blocks the button (a test fixture excepted), with the hint now
+  saying so (`adminTeamNotInCatalogHint`) and a button "أضف النادي إلى
+  القائمة" (`UnresolvedTeamHint`, `widgets/add_club_dialog.dart`). The
+  dialog lists the clubs of the list whose names are close
+  (`similarClubs`: one spelling key, one name inside the other, or one
+  or two edits, a swap of neighbours counted once) to be picked instead;
+  else it adds the club, refreshes the catalog and fills the field. The
+  add form reads each side's id in build (`_sideId`) instead of keeping
+  it in state, so a catalog that loads after typing still resolves it.
+  The test-fixture switch sits in its own transparent `Material`: on the
+  card's background Flutter asserted that its ink was hidden, which the
+  first widget test of this form showed on the phone.
+- The server does not yet refuse a match without team ids: an older
+  admin app still sends one. Script 92 requires them for a non-test
+  fixture.
+- Tests: `admin_add_team_test.dart` (application), the cache in
+  `read_caches_test.dart`, `admin_teams_route_test.dart`,
+  `admin_teams_api_test.dart`, `add_club_test.dart` (the edit form, the
+  add form and the dialog through the admin harness), the audit tokens in
+  the domain and app tests; `0173_team_added_audit_test.sql` and
+  `team_catalog_add_query_test.sql` on a local Postgres 16 with every
+  migration.
+
+**0173 must be on the live DB before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

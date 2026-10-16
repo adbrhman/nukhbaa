@@ -4,49 +4,19 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/design/app_typography.dart';
 import '../../../../core/design/app_spacing.dart';
-import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/leagues_providers.dart';
 import '../../../competition/teams_providers.dart';
 import '../../admin_providers.dart';
+import '../../widgets/add_club_dialog.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/riyadh_kickoff_field.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
 import '../../widgets/team_picker_league_scope.dart';
-
-/// سطر تحذير تحت حقل فريق لم يُطابق الكتالوج: نبرة تحذير لا خطأ، فالإرسال
-/// يبقى ممكنًا عمدًا.
-class _UnresolvedTeamHint extends StatelessWidget {
-  const _UnresolvedTeamHint({required this.message, super.key});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(Icons.info_outline, size: 16, color: tokens.gold),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(fontSize: AppFontSize.s12, color: tokens.gold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// إضافة مباراة — اختيار الشهر والدوري ثم الفريقين وموعد الانطلاق، مع
 /// خيار «مباراة تجريبية» (الترحيل 0098): يراها المشرفون وحدهم ولا تُحتسب
@@ -83,8 +53,12 @@ class _FixtureScheduleSectionState
   /// fixture on the matches card, and what narrows both team dropdowns to
   /// one league's clubs.
   String? _leagueId;
-  String? _homeTeamId;
-  String? _awayTeamId;
+
+  /// The club picked in the add-club dialog for each side (script 91): the
+  /// side's id while its field still names that club, whatever league the
+  /// club is filed under.
+  TeamDto? _homePicked;
+  TeamDto? _awayPicked;
 
   /// Whether to file it as a test fixture (migration 0098).
   bool _isTest = false;
@@ -169,37 +143,31 @@ class _FixtureScheduleSectionState
     return false;
   }
 
-  /// Whether [text] names something that is not a club of [leagueId] — the
-  /// state that must be *visible*.
+  /// The team id of a side: the club of the league that [text] names, or
+  /// the club [picked] in the add-club dialog while [text] still names it.
   ///
-  /// A fixture stored with a null `home_team_id`/`away_team_id` still
-  /// works: the free-text name is the identity of record (Axiom 3), so
-  /// nothing fails, nothing is logged, and the admin gets no signal at
-  /// all. What silently disappears is everything keyed off the resolved
-  /// id — the crest and the team's brand colour — so the fixture card
-  /// falls back to two grey letters. That is exactly how "اسبانيول"
-  /// (catalog: "إسبانيول") and "مرسيليا" (catalog: "مارسيليا") shipped:
-  /// one character off, no error, found only by eye on a screenshot days
-  /// later.
-  ///
-  /// Deliberately a *warning*, not validation: the button stays enabled,
-  /// because a real fixture whose club is genuinely absent from the
-  /// catalog must remain submittable. It only refuses to let the mismatch
-  /// pass unseen.
-  bool _isUnresolvedTeamInLeague(
+  /// Null blocks the add (script 91). A name the list does not know carries
+  /// no team id, so neither the server's check (batch 138) nor the
+  /// schedule's trigger (0110) could see the same match already added under
+  /// another spelling: «هوفنهايم - بيشتكاش» beside the sync's «هوفنهايم -
+  /// بشكتاش» on 2026-10-15. Before that a missing id only cost the crest and
+  /// colours («اسبانيول» and «مرسيليا» shipped one letter off, found days
+  /// later on a screenshot). A test fixture is never checked.
+  String? _sideId(
     List<TeamDto> catalog,
     String text,
-    String? leagueId, {
+    TeamDto? picked, {
     bool continental = false,
   }) =>
-      text.trim().isNotEmpty &&
       _resolveTeamIdInLeague(
-            catalog,
-            text,
-            leagueId,
-            continental: continental,
-          ) ==
-          null;
+        catalog,
+        text,
+        _leagueId,
+        continental: continental,
+      ) ??
+      (picked != null && teamPickerExactMatch(text, picked.name)
+          ? picked.id
+          : null);
 
   @override
   void dispose() {
@@ -215,9 +183,33 @@ class _FixtureScheduleSectionState
     final l10n = AppLocalizations.of(context);
     final List<TeamDto> catalog =
         ref.watch(teamCatalogProvider).value ?? const <TeamDto>[];
+    // A club is added only against the list as it stands: its near names
+    // are what keeps one club from going in twice.
+    final bool catalogReady = ref.watch(teamCatalogProvider).hasValue;
     final List<LeagueDto> leagues =
         ref.watch(leagueCatalogProvider).value ?? const <LeagueDto>[];
     final bool continental = _isContinental(leagues);
+    final String? homeTeamId = _sideId(
+      catalog,
+      _homeTeamController.text,
+      _homePicked,
+      continental: continental,
+    );
+    final String? awayTeamId = _sideId(
+      catalog,
+      _awayTeamController.text,
+      _awayPicked,
+      continental: continental,
+    );
+    // A side the list does not know blocks the add (script 91).
+    final bool homeUnknown =
+        !_isTest &&
+        _homeTeamController.text.trim().isNotEmpty &&
+        homeTeamId == null;
+    final bool awayUnknown =
+        !_isTest &&
+        _awayTeamController.text.trim().isNotEmpty &&
+        awayTeamId == null;
     final AsyncValue<AddMatchResult>? state = ref.watch(
       addMatchControllerProvider,
     );
@@ -233,8 +225,8 @@ class _FixtureScheduleSectionState
         setState(() {
           _homeTeamController.clear();
           _awayTeamController.clear();
-          _homeTeamId = null;
-          _awayTeamId = null;
+          _homePicked = null;
+          _awayPicked = null;
           _kickoffAt = null;
           _isTest = false;
         });
@@ -263,7 +255,9 @@ class _FixtureScheduleSectionState
         _leagueId != null &&
         _homeTeamController.text.trim().isNotEmpty &&
         _awayTeamController.text.trim().isNotEmpty &&
-        _kickoffAt != null;
+        _kickoffAt != null &&
+        !homeUnknown &&
+        !awayUnknown;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -295,8 +289,8 @@ class _FixtureScheduleSectionState
                   // is already typed belongs to the previous one.
                   _homeTeamController.clear();
                   _awayTeamController.clear();
-                  _homeTeamId = null;
-                  _awayTeamId = null;
+                  _homePicked = null;
+                  _awayPicked = null;
                 }),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -313,24 +307,18 @@ class _FixtureScheduleSectionState
                   leagues: leagues,
                   monthFixtures: monthFixtures,
                 ),
-                onChanged: () => setState(() {
-                  _homeTeamId = _resolveTeamIdInLeague(
-                    catalog,
-                    _homeTeamController.text,
-                    _leagueId,
-                    continental: continental,
-                  );
-                }),
+                // The side's id is read in build (_sideId): a change only
+                // redraws.
+                onChanged: () => setState(() {}),
               ),
-              if (_isUnresolvedTeamInLeague(
-                catalog,
-                _homeTeamController.text,
-                _leagueId,
-                continental: continental,
-              ))
-                _UnresolvedTeamHint(
+              if (homeUnknown)
+                UnresolvedTeamHint(
                   key: const Key('admin.fixtures.homeTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
+                  buttonKey: const Key('admin.fixtures.homeTeamAddClub'),
+                  onAddClub: inFlight || !catalogReady
+                      ? null
+                      : () => _addClub(catalog, leagues, home: true),
                 ),
               const SizedBox(height: AppSpacing.md),
               TeamPickerField(
@@ -346,24 +334,16 @@ class _FixtureScheduleSectionState
                   leagues: leagues,
                   monthFixtures: monthFixtures,
                 ),
-                onChanged: () => setState(() {
-                  _awayTeamId = _resolveTeamIdInLeague(
-                    catalog,
-                    _awayTeamController.text,
-                    _leagueId,
-                    continental: continental,
-                  );
-                }),
+                onChanged: () => setState(() {}),
               ),
-              if (_isUnresolvedTeamInLeague(
-                catalog,
-                _awayTeamController.text,
-                _leagueId,
-                continental: continental,
-              ))
-                _UnresolvedTeamHint(
+              if (awayUnknown)
+                UnresolvedTeamHint(
                   key: const Key('admin.fixtures.awayTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
+                  buttonKey: const Key('admin.fixtures.awayTeamAddClub'),
+                  onAddClub: inFlight || !catalogReady
+                      ? null
+                      : () => _addClub(catalog, leagues, home: false),
                 ),
               const SizedBox(height: AppSpacing.md),
               RiyadhKickoffField(
@@ -375,17 +355,22 @@ class _FixtureScheduleSectionState
                     setState(() => _kickoffAt = kickoff),
               ),
               const SizedBox(height: AppSpacing.sm),
-              SwitchListTile(
-                key: const Key('admin.fixtures.testSwitch'),
-                contentPadding: EdgeInsets.zero,
-                value: _isTest,
-                onChanged: inFlight
-                    ? null
-                    : (bool value) => setState(() => _isTest = value),
-                title: const Text('مباراة تجريبية'),
-                subtitle: const Text(
-                  'للاختبار فقط: يراها المشرفون وحدهم، ولا تُحتسب لها نقاط '
-                  'ولا تدخل الترتيب. لا يمكن تغيير هذا بعد الإضافة.',
+              // The card's background would hide the tile's ink (Flutter
+              // asserts): the tile gets a Material of its own (script 91).
+              Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile(
+                  key: const Key('admin.fixtures.testSwitch'),
+                  contentPadding: EdgeInsets.zero,
+                  value: _isTest,
+                  onChanged: inFlight
+                      ? null
+                      : (bool value) => setState(() => _isTest = value),
+                  title: const Text('مباراة تجريبية'),
+                  subtitle: const Text(
+                    'للاختبار فقط: يراها المشرفون وحدهم، ولا تُحتسب لها نقاط '
+                    'ولا تدخل الترتيب. لا يمكن تغيير هذا بعد الإضافة.',
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -418,7 +403,13 @@ class _FixtureScheduleSectionState
                 label: l10n.adminAddMatchButton,
                 icon: Icons.sports_soccer_rounded,
                 loading: inFlight,
-                onPressed: canSubmit ? () => _addMatch(nextDisplayOrder) : null,
+                onPressed: canSubmit
+                    ? () => _addMatch(
+                        nextDisplayOrder,
+                        homeTeamId: homeTeamId,
+                        awayTeamId: awayTeamId,
+                      )
+                    : null,
               ),
             ],
           ),
@@ -427,7 +418,38 @@ class _FixtureScheduleSectionState
     );
   }
 
-  void _addMatch(int displayOrder) {
+  /// Opens the add-club dialog for one side (script 91): the club added,
+  /// or a near name picked from the list, fills the side's field.
+  Future<void> _addClub(
+    List<TeamDto> catalog,
+    List<LeagueDto> leagues, {
+    required bool home,
+  }) async {
+    final TextEditingController field = home
+        ? _homeTeamController
+        : _awayTeamController;
+    final TeamDto? club = await showAddClubDialog(
+      context,
+      name: field.text.trim(),
+      catalog: catalog,
+      league: _selectedLeague(leagues),
+    );
+    if (club == null || !mounted) return;
+    setState(() {
+      field.text = club.name;
+      if (home) {
+        _homePicked = club;
+      } else {
+        _awayPicked = club;
+      }
+    });
+  }
+
+  void _addMatch(
+    int displayOrder, {
+    required String? homeTeamId,
+    required String? awayTeamId,
+  }) {
     final seasonId = _seasonId;
     final leagueId = _leagueId;
     final homeTeam = _homeTeamController.text.trim();
@@ -448,8 +470,8 @@ class _FixtureScheduleSectionState
           awayTeam: awayTeam,
           kickoffAt: kickoff.toUtc().toIso8601String(),
           displayOrder: displayOrder,
-          homeTeamId: _homeTeamId,
-          awayTeamId: _awayTeamId,
+          homeTeamId: homeTeamId,
+          awayTeamId: awayTeamId,
           leagueId: leagueId,
           isTest: _isTest,
         );

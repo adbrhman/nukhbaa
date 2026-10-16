@@ -27,6 +27,7 @@ const List<String> _domainTokens = <String>[
   'error_updated',
   'fixture_hidden',
   'fixture_shown',
+  'team_added',
 ];
 
 void main() {

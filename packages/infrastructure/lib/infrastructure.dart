@@ -26,6 +26,7 @@ export 'src/football_data/in_memory_live_score_board.dart';
 export 'src/football_data/postgres_league_repository.dart';
 export 'src/football_data/postgres_provider_sync_store.dart';
 export 'src/football_data/postgres_team_repository.dart';
+export 'src/football_data/postgres_team_catalog_writer.dart';
 export 'src/football_data/cached_team_repository.dart';
 export 'src/group/postgres_group_invitation_repository.dart';
 export 'src/group/postgres_group_repository.dart';

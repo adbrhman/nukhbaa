@@ -8,8 +8,9 @@ import 'package:shared/shared.dart';
 ///
 /// The catalog is seed data that changes with a migration, not with use, yet
 /// the whole table was read on every `GET /teams` and every admin form that
-/// lists clubs. Nothing in the application writes it, so [ttl] is the only
-/// bound on how long a newly seeded club takes to appear.
+/// lists clubs. A club an admin adds (script 91) goes through
+/// [CacheClearingTeamCatalogWriter], which calls [invalidate]; [ttl] bounds
+/// how long a newly seeded club takes to appear.
 final class CachedTeamRepository implements TeamRepository {
   /// Wraps [inner]; [now] is injectable for tests.
   CachedTeamRepository(
@@ -25,6 +26,10 @@ final class CachedTeamRepository implements TeamRepository {
   final ReadCoalescer<int, Result<List<Team>>> _loads =
       ReadCoalescer<int, Result<List<Team>>>();
 
+  /// Forgets the cached catalog, and any read still in flight, so the next
+  /// [listAll] reads the table again.
+  void invalidate() => _all.clear();
+
   @override
   Future<Result<List<Team>>> listAll() async {
     final List<Team>? cached = _all.read(_key);
@@ -39,5 +44,31 @@ final class CachedTeamRepository implements TeamRepository {
       }
       return result;
     });
+  }
+}
+
+/// Adds clubs through [_inner], then empties [_cache], so the next
+/// `GET /teams` carries the club just added instead of waiting out the
+/// cache's ttl (script 91). The cache lives in this server process only.
+final class CacheClearingTeamCatalogWriter implements TeamCatalogWriter {
+  /// Wraps [_inner] in front of [_cache].
+  const CacheClearingTeamCatalogWriter(this._inner, this._cache);
+
+  final TeamCatalogWriter _inner;
+  final CachedTeamRepository _cache;
+
+  @override
+  Future<Result<TeamAddition>> add({
+    required String name,
+    required LeagueRef? leagueId,
+  }) async {
+    final Result<TeamAddition> result = await _inner.add(
+      name: name,
+      leagueId: leagueId,
+    );
+    if (result case Ok<TeamAddition>(:final value) when !value.existed) {
+      _cache.invalidate();
+    }
+    return result;
   }
 }

@@ -96,7 +96,12 @@ enum AuditAction {
   fixtureHidden,
 
   /// An admin showed a hidden fixture to the players again.
-  fixtureShown;
+  fixtureShown,
+
+  /// An admin added a club to the team catalog (`AdminAddTeam`, migration
+  /// 0173, script 91); the target is the new team's id, the reason its
+  /// name.
+  teamAdded;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -120,6 +125,7 @@ enum AuditAction {
     AuditAction.errorUpdated => 'error_updated',
     AuditAction.fixtureHidden => 'fixture_hidden',
     AuditAction.fixtureShown => 'fixture_shown',
+    AuditAction.teamAdded => 'team_added',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a
