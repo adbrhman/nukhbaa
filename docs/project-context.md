@@ -5845,6 +5845,39 @@ one is enough.
 
 **0175 must be on the live DB before this server is deployed.**
 
+### Faster checks, the same gates (script 94, 2026-10-16)
+
+Measured on run #732 (235c852): Analyze + Test 8m24s, then Build Android
+APK 8m37s after it, then Publish 27s -- 17m42s, the server and the web
+released after that. Approved by the owner on 2026-10-16.
+
+- `build-verification.yml`: Build Web, Build Android APK and Build server
+  Docker image no longer wait for Analyze + Test; they start with it.
+  Nothing they make is published there: `publish_latest_apk` now needs
+  `workspace` as well as the build and the migrations, and Deploy Web and
+  Release Server still start only when the whole run succeeded. A failed
+  test still releases nothing; the builds just run to their end for
+  nothing.
+- The Android job keeps Gradle's downloads (`~/.gradle/caches`,
+  `~/.gradle/wrapper`, `actions/cache@v6`, keyed by the Flutter version and
+  `pubspec.lock`); the build itself runs from scratch every time. A bad
+  cache is cleared from the repository's Actions -> Caches page.
+- The actions run on Node 24 (the runner warned that Node 20 is
+  deprecated): checkout v7, upload-artifact v7, download-artifact v8,
+  setup-java v6, cache v6, configure-pages v6, deploy-pages v5,
+  upload-pages-artifact v5, build-push-action v7, setup-buildx-action v4,
+  action-gh-release v3 -- each version's inputs checked against the ones
+  the workflows pass. `supabase/setup-cli@v1` in `db-backup.yml` stays: v3
+  changes the image registry the dump runs from.
+- `docs/agent-script-protocol.md`: a script resolves the workspace once
+  (`flutter pub get`) and runs its tests with `--no-pub`, and prints each
+  step's duration and the whole run's. Analysing only the affected
+  packages on the phone was weighed and left until the timings show the
+  analysis is what makes a script slow: it would find a break one push
+  later.
+
+No migration; nothing in the app or the server changes.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

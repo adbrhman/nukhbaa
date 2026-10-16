@@ -36,7 +36,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
 
@@ -163,13 +163,13 @@ jobs:
           trap 'docker stop nukhbaa-web-check > /dev/null 2>&1 || true' EXIT
           node deploy/web-mirror/check_mirror.mjs http://127.0.0.1:8080 "$DIST/site"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: apps/mobile/build/web
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       # github.io is blocked in Yemen; Northflank's code.run is not. A second
       # free Northflank service builds the web-dist branch with

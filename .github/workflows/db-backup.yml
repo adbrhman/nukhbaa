@@ -88,7 +88,7 @@ jobs:
           rm -rf backup "nukhbaa-db-$STAMP.tar.gz"
           ls -la "nukhbaa-db-$STAMP.tar.gz.gpg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nukhbaa-db-${{ env.STAMP }}
           path: nukhbaa-db-${{ env.STAMP }}.tar.gz.gpg

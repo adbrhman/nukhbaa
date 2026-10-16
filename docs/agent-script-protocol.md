@@ -33,7 +33,10 @@ One bash script per batch, named `NN_short_name.sh`, downloaded to
   with its name (`== [dart analyze --fatal-warnings]`), the whole run is
   copied to a log in `/sdcard/Download/NN_short_name_<time>.log`, and a
   failure prints the name of the stage that failed and the log's path. A
-  silent rollback hides the cause.
+  silent rollback hides the cause. Each stage's duration is printed when
+  the next one starts (`(dart analyze --fatal-warnings: 212s)`), and the
+  whole run's at the end, so a slow step is measured, not guessed (script
+  94, 2026-10-16).
 - **Guards first:** `whoami` is `dev`; `pubspec.yaml` and
   `docs/project-context.md` exist; no uncommitted changes in tracked files
   (`git status --porcelain --untracked-files=no`); the batches this one
@@ -78,11 +81,14 @@ One bash script per batch, named `NN_short_name.sh`, downloaded to
   as it was, nothing committed. No `( cd dir && cmd )` subshells: an `ERR`
   inside one fires the rollback twice. Use `cd dir`, run, `cd "$REPO"`.
 - **Verification, in order:**
-  1. `flutter pub get` only when a pubspec changed;
+  1. `flutter pub get` once, at the root, before the tests (always when a
+     pubspec changed);
   2. `dart format` on the touched files only;
   3. `dart analyze --fatal-warnings .`;
   4. `dart run tooling/import_lint/bin/import_lint.dart`;
-  5. `flutter test --reporter=failures-only` on the affected tests only:
+  5. `flutter test --no-pub --reporter=failures-only` on the affected tests
+     only (`--no-pub`: the workspace was resolved once in step 1, instead of
+     again by every package's run; script 94):
      the tests of the files the batch changed and the new ones (`dart test`
      fails here under `resolution: workspace`). The full suites run in
      Build Verification on every push, and nothing is released before they
@@ -200,7 +206,8 @@ set -Eeuo pipefail
 NAME=NN_short_name
 REPO="${NK_REPO:-/home/dev/nukhbaa-backup-1787537565}"
 LOGDIR="${NK_LOGDIR:-/sdcard/Download}"
-STEP=start; step() { STEP="$1"; echo; echo "== [$STEP]"; }
+T0=$(date +%s); AT=$T0
+STEP=start; step() { local now; now=$(date +%s); [ "$STEP" = start ] || echo "   ($STEP: $((now-AT))s)"; STEP="$1"; AT=$now; echo; echo "== [$STEP]"; }
 LOG="$LOGDIR/${NAME}_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
 trap 'echo "FAILED at step: $STEP (nothing was changed). log: $LOG"' ERR
@@ -232,12 +239,13 @@ PATCH_B64='...one line of base64...'
 printf '%s' "$PATCH_B64" | base64 -d > "$PATCH"
 python3 "$PATCH"; rm -f "$PATCH"
 
+step deps;    flutter pub get   # once; every test below runs --no-pub
 step format;  dart format $MOD $NEW
 step analyze; dart analyze --fatal-warnings .
 step lint;    dart run tooling/import_lint/bin/import_lint.dart
 step tests
 cd apps/mobile
-flutter test --reporter=failures-only test/path/to/new_test.dart
+flutter test --no-pub --reporter=failures-only test/path/to/new_test.dart
 cd "$REPO"
 git checkout -- $L10N_GEN   # a text batch regenerates instead (section 2)
 
@@ -245,5 +253,6 @@ step commit
 git add -- $MOD $NEW
 git diff --cached --quiet || git commit -m "type(scope): what changed and why"
 trap - ERR
+echo "   ($STEP: $(( $(date +%s) - AT ))s; whole run $(( $(date +%s) - T0 ))s)"
 echo "DONE. nothing pushed. log: $LOG"
 ```
