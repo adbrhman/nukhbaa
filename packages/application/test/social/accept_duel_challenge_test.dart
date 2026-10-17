@@ -63,9 +63,9 @@ void main() {
         ),
       );
       predictions.seedSeasonFixture(
-        SeasonFixture.fromStored(
-          seasonId: const SeasonId(_season),
-          fixture: const FixtureRef(_fixture),
+        const SeasonFixture.fromStored(
+          seasonId: SeasonId(_season),
+          fixture: FixtureRef(_fixture),
           displayOrder: 1,
         ),
       );
@@ -116,9 +116,9 @@ void main() {
       ),
     );
     predictions.seedSeasonFixture(
-      SeasonFixture.fromStored(
-        seasonId: const SeasonId(_season),
-        fixture: const FixtureRef(_fixture),
+      const SeasonFixture.fromStored(
+        seasonId: SeasonId(_season),
+        fixture: FixtureRef(_fixture),
         displayOrder: 1,
       ),
     );
@@ -170,9 +170,9 @@ void main() {
     );
     predictions
       ..seedSeasonFixture(
-        SeasonFixture.fromStored(
-          seasonId: const SeasonId(_season),
-          fixture: const FixtureRef(_fixture),
+        const SeasonFixture.fromStored(
+          seasonId: SeasonId(_season),
+          fixture: FixtureRef(_fixture),
           displayOrder: 1,
         ),
       )

@@ -338,13 +338,13 @@ Response? limitAuthAttempt(
   String email, {
   String? address,
 }) {
-  final RateLimiter? perAddress = switch (attempt) {
+  final RateLimiter perAddress = switch (attempt) {
     AuthAttempt.login => _loginAddressLimiter,
     AuthAttempt.register => _registerAddressLimiter,
     AuthAttempt.passwordReset => _passwordResetAddressLimiter,
     AuthAttempt.passwordResetCode => _passwordResetCodeAddressLimiter,
   };
-  if (perAddress != null && address != null) {
+  if (address != null) {
     final wait = perAddress.hit(address);
     if (wait != null) return tooManyRequests(wait);
   }

@@ -109,7 +109,7 @@ void main() {
   test('a malformed row is transient, never a guess', () async {
     final result = await _find(
       _FakeConnection(
-        Result.ok([
+        const Result.ok([
           {
             'fixture_id': _fixtureId,
             'home_team': 'ليون',

@@ -30,17 +30,17 @@ void main() {
     );
     competition.seedParticipant(participant);
     predictions.seedSeasonFixture(
-      SeasonFixture.fromStored(
-        seasonId: const SeasonId(_season),
-        fixture: const FixtureRef(_fixture),
+      const SeasonFixture.fromStored(
+        seasonId: SeasonId(_season),
+        fixture: FixtureRef(_fixture),
         displayOrder: 1,
       ),
     );
     predictions.seedPrediction(
-      FixturePrediction.fromStored(
-        id: const PredictionId('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
-        fixture: const FixtureRef(_fixture),
-        participantId: const ParticipantId(_participant),
+      const FixturePrediction.fromStored(
+        id: PredictionId('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'),
+        fixture: FixtureRef(_fixture),
+        participantId: ParticipantId(_participant),
         homeGoals: 1,
         awayGoals: 0,
         isDouble: false,
@@ -87,9 +87,9 @@ void main() {
       ),
     );
     predictions.seedSeasonFixture(
-      SeasonFixture.fromStored(
-        seasonId: const SeasonId(_season),
-        fixture: const FixtureRef(_fixture),
+      const SeasonFixture.fromStored(
+        seasonId: SeasonId(_season),
+        fixture: FixtureRef(_fixture),
         displayOrder: 1,
       ),
     );

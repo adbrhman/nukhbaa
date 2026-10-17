@@ -134,9 +134,9 @@ void main() {
     test('stores the text once, notifies every recipient and pushes to their '
         'devices', () async {
       final announcements = _FakeAnnouncements([
-        AnnouncementRecipient(userId: UserId(uuidC), tokens: const ['t1']),
+        const AnnouncementRecipient(userId: UserId(uuidC), tokens: ['t1']),
         // No device on file: still gets the in-app notification.
-        AnnouncementRecipient(userId: UserId(uuidD), tokens: const []),
+        const AnnouncementRecipient(userId: UserId(uuidD), tokens: []),
       ]);
       final notifications = InMemoryNotificationRepository();
       final sender = _RecordingSender();
@@ -166,7 +166,7 @@ void main() {
         'twice (M-14)', () async {
       const requestId = '66666666-6666-4666-8666-666666666666';
       final announcements = _FakeAnnouncements([
-        AnnouncementRecipient(userId: UserId(uuidC), tokens: const ['t1']),
+        const AnnouncementRecipient(userId: UserId(uuidC), tokens: ['t1']),
       ]);
       final notifications = InMemoryNotificationRepository();
       final sender = _RecordingSender();

@@ -35,14 +35,14 @@ void main() {
       users.seed(target);
       users.seed(other);
 
-      final participant = ParticipantId(_participant);
-      final fixture1 = FixtureRef(_fixture1);
-      final fixture2 = FixtureRef(_fixture2);
+      final participant = const ParticipantId(_participant);
+      final fixture1 = const FixtureRef(_fixture1);
+      final fixture2 = const FixtureRef(_fixture2);
 
       predictions.seedParticipantOwner(participant, target.id);
       predictions.seedPrediction(
         FixturePrediction.fromStored(
-          id: PredictionId(_prediction1),
+          id: const PredictionId(_prediction1),
           fixture: fixture1,
           participantId: participant,
           homeGoals: 2,
@@ -53,7 +53,7 @@ void main() {
       );
       predictions.seedPrediction(
         FixturePrediction.fromStored(
-          id: PredictionId(_prediction2),
+          id: const PredictionId(_prediction2),
           fixture: fixture2,
           participantId: participant,
           homeGoals: 0,

@@ -46,7 +46,7 @@ FixturePrediction _prediction({
 );
 
 AuthenticatedUser _userPrincipal() =>
-    AuthenticatedUser(userId: UserId(_user), role: PlatformRole.user);
+    const AuthenticatedUser(userId: UserId(_user), role: PlatformRole.user);
 
 void main() {
   test('calculates home/away shares and ignores draw predictions', () async {

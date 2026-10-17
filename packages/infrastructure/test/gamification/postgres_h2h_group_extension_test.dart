@@ -91,7 +91,7 @@ void main() {
       final result =
           await PostgresH2hGroupExtension(
             _FakeConnection([
-              Result.ok([
+              const Result.ok([
                 {'user_id': 'x'},
               ]),
             ]),

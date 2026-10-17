@@ -53,8 +53,9 @@ final class CreateDuelChallenge {
     final season = (seasonResult as Ok<SeasonId>).value;
 
     final fixtureResult = FixtureRef.tryParse(fixtureId);
-    if (fixtureResult is Err<FixtureRef>)
+    if (fixtureResult is Err<FixtureRef>) {
       return Result.err(fixtureResult.error);
+    }
     final fixture = (fixtureResult as Ok<FixtureRef>).value;
 
     UserId? target;

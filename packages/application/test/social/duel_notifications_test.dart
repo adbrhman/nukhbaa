@@ -278,17 +278,17 @@ void main() {
       ),
     );
     predictions.seedSeasonFixture(
-      SeasonFixture.fromStored(
-        seasonId: const SeasonId(_season),
-        fixture: const FixtureRef(_fixture),
+      const SeasonFixture.fromStored(
+        seasonId: SeasonId(_season),
+        fixture: FixtureRef(_fixture),
         displayOrder: 1,
       ),
     );
     predictions.seedPrediction(
-      FixturePrediction.fromStored(
-        id: const PredictionId('77777777-7777-4777-8777-777777777777'),
-        fixture: const FixtureRef(_fixture),
-        participantId: const ParticipantId(_participant),
+      const FixturePrediction.fromStored(
+        id: PredictionId('77777777-7777-4777-8777-777777777777'),
+        fixture: FixtureRef(_fixture),
+        participantId: ParticipantId(_participant),
         homeGoals: 1,
         awayGoals: 0,
         isDouble: false,

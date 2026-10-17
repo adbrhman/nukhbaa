@@ -93,8 +93,8 @@ LIMIT 1
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(error),
       Ok<List<Map<String, dynamic>>>(:final value) =>
         value.isEmpty
-            ? Result<String>.err(
-                const AppError(
+            ? const Result<String>.err(
+                AppError(
                   kind: ErrorKind.transient,
                   code: 'experiment.assignment_not_stored',
                   message: 'The assignment was neither inserted nor found.',

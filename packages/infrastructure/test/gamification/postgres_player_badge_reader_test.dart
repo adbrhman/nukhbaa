@@ -156,7 +156,7 @@ void main() {
       final result = await PostgresPlayerBadgeReader(
         _FakeConnection([
           Result.ok([_counts(predictions: 'many', perfectDays: null)]),
-          Result.ok([
+          const Result.ok([
             {'code': 'first_prediction', 'unlocked_at': 'yesterday'},
           ]),
         ]),

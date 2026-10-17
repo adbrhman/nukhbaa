@@ -15,14 +15,14 @@ void main() {
         displayName: 'علي علامي',
         status: 'active',
       );
-      final dto = AdminUserPredictionHistoryDto(
+      final dto = const AdminUserPredictionHistoryDto(
         user: user,
         predictionCount: 1,
         exactCount: 1,
         correctDoubleCount: 1,
         totalPoints: 6,
         predictions: [
-          const AdminUserPredictionRowDto(
+          AdminUserPredictionRowDto(
             predictionId: '99999999-9999-4999-8999-999999999999',
             fixtureId: '77777777-7777-4777-8777-777777777777',
             kickoffAt: '2026-09-13T18:00:00Z',
@@ -66,7 +66,7 @@ void main() {
 
     final result = await AdminApi(ctx.transport).userStats();
 
-    expect(result, Result<UserStatsDto>.ok(dto));
+    expect(result, const Result<UserStatsDto>.ok(dto));
     expect(ctx.captured.single.url.path, '/admin/user-stats');
     expect(ctx.captured.single.method, 'GET');
   });

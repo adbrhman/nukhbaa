@@ -421,11 +421,9 @@ final class ClientErrorReporter {
 /// grey area. Sends whatever an earlier run left waiting.
 void installErrorReporting(ClientErrorReporter reporter) {
   ClientErrorReporter.instance = reporter;
-  if (reporter._lifecycle == null) {
-    reporter._lifecycle = AppLifecycleListener(
-      onStateChange: reporter.noteLifecycle,
-    );
-  }
+  reporter._lifecycle ??= AppLifecycleListener(
+    onStateChange: reporter.noteLifecycle,
+  );
 
   final FlutterExceptionHandler? previousFlutter = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {

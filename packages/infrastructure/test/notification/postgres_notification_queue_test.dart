@@ -149,7 +149,7 @@ void main() {
     test('a row of the wrong shape is transient, not a guess', () async {
       final result = await PostgresNotificationQueue(
         _FakeConnection(
-          Result.ok([
+          const Result.ok([
             {'id': _p1, 'user_id': _userA, 'title': 1, 'body': 'b'},
           ]),
         ),

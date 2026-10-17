@@ -58,7 +58,7 @@ void main() {
       'every fixture is tallied in ONE query, bound as an id array',
       () async {
         final connection = _FakeConnection([
-          Result.ok([
+          const Result.ok([
             {'fixture_id': _fixtureA, 'home_wins': 3, 'away_wins': 1},
             {'fixture_id': _fixtureB, 'home_wins': 0, 'away_wins': 2},
           ]),
@@ -92,7 +92,7 @@ void main() {
 
     test('a count that arrives as text is still a count', () async {
       final connection = _FakeConnection([
-        Result.ok([
+        const Result.ok([
           {'fixture_id': _fixtureA, 'home_wins': '1', 'away_wins': '3'},
         ]),
       ]);
@@ -108,7 +108,7 @@ void main() {
 
     test('a fixture nobody predicted is absent, not a zero row', () async {
       final connection = _FakeConnection([
-        Result.ok([
+        const Result.ok([
           {'fixture_id': _fixtureA, 'home_wins': 1, 'away_wins': 0},
         ]),
       ]);
@@ -127,7 +127,7 @@ void main() {
 
     test('draws are read and feed the three-way split only', () async {
       final connection = _FakeConnection([
-        Result.ok([
+        const Result.ok([
           {'fixture_id': _fixtureA, 'home_wins': 6, 'away_wins': 2, 'draws': 2},
         ]),
       ]);
