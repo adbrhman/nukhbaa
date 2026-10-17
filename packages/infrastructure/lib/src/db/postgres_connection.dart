@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:infrastructure/src/db/postgres_config.dart';
+import 'package:infrastructure/src/db/supabase_root_ca.dart';
 // `postgres` exports its own `Result` (the query result-row list), which
 // collides with our domain-wide `Result<T>` from `shared`. We never reference
 // the postgres `Result` type by name here, so hide it to keep `Result`
@@ -101,7 +102,12 @@ class PostgresConnection implements DbExecutor {
           ),
         ],
         settings: PoolSettings(
-          sslMode: config.requireSsl ? SslMode.require : SslMode.disable,
+          sslMode: config.verifyServer
+              ? SslMode.verifyFull
+              : (config.requireSsl ? SslMode.require : SslMode.disable),
+          securityContext: config.verifyServer
+              ? supabaseSecurityContext()
+              : null,
           maxConnectionCount: config.poolSize,
         ),
       );

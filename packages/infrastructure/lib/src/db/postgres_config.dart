@@ -12,6 +12,7 @@ final class PostgresConfig {
     required this.username,
     required this.password,
     required this.requireSsl,
+    this.verifyServer = false,
     this.poolSize = defaultPoolSize,
   });
 
@@ -80,6 +81,9 @@ final class PostgresConfig {
         password: password,
         // Default to requiring SSL unless explicitly disabled for local dev.
         requireSsl: (sslRaw ?? 'require') != 'disable',
+        // verify-full also checks the server's certificate against the
+        // Supabase root and its name against the host (NUKHBA-002).
+        verifyServer: sslRaw == 'verify-full',
         poolSize: poolSizeOf(env['NUKHBA_PG_POOL_SIZE']),
       ),
     );
@@ -102,6 +106,11 @@ final class PostgresConfig {
 
   /// Whether TLS is required (true in all non-local environments).
   final bool requireSsl;
+
+  /// Whether the server's certificate must chain to the Supabase root CA
+  /// and carry [host]'s name (`NUKHBA_PG_SSL=verify-full`). Off by default:
+  /// `require` encrypts but accepts any certificate.
+  final bool verifyServer;
 
   /// How many connections the server keeps to the database at most.
   final int poolSize;
