@@ -50,6 +50,20 @@ function expect(ok, message) {
   if (!ok) problems.push(message);
 }
 
+// Every answer carries the security headers (audit NUKHBA-005).
+const SECURITY = {
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'SAMEORIGIN',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'content-security-policy': "frame-ancestors 'self'",
+};
+
+function expectSecure(res, label) {
+  for (const [name, value] of Object.entries(SECURITY)) {
+    expect(res.headers[name] === value, `${label}: ${name} ${res.headers[name]}, expected ${value}`);
+  }
+}
+
 function decode(res) {
   const enc = res.headers['content-encoding'];
   if (enc === 'br') return zlib.brotliDecompressSync(res.body);
@@ -94,6 +108,7 @@ async function checkCompressed(rel, cache) {
     expect(res.headers['content-encoding'] === want, `${label}: content-encoding ${res.headers['content-encoding']}, expected ${want}`);
     expect(type.test(res.headers['content-type'] || ''), `${label}: content-type ${res.headers['content-type']}`);
     expect(res.headers['cache-control'] === cache, `${label}: cache-control ${res.headers['cache-control']}, expected ${cache}`);
+    expectSecure(res, label);
     if (want) expect(/accept-encoding/i.test(res.headers.vary || ''), `${label}: no Vary: Accept-Encoding`);
     let same = false;
     try {
@@ -142,12 +157,14 @@ async function main() {
     expect(res.status === 200, `${kit}/${plain}: status ${res.status}`);
     expect(res.headers['content-encoding'] !== 'br', `${kit}/${plain}: sent as br without a .br copy`);
     expect(res.headers['cache-control'] === YEAR, `${kit}/${plain}: cache-control ${res.headers['cache-control']}`);
+    expectSecure(res, `${kit}/${plain}`);
   }
 
   for (const urlPath of ['/nukhbaa/', '/nukhbaa/index.html', '/nukhbaa/flutter_bootstrap.js']) {
     const res = await get(urlPath, 'gzip, deflate, br');
     expect(res.status === 200, `${urlPath}: status ${res.status}`);
     expect(res.headers['cache-control'] === 'no-cache', `${urlPath}: cache-control ${res.headers['cache-control']}, expected no-cache`);
+    expectSecure(res, urlPath);
   }
   const served = decode(await get('/nukhbaa/flutter_bootstrap.js', 'gzip')).toString('utf8');
   expect(served === boot, 'the served flutter_bootstrap.js is not the one on disk');
@@ -159,16 +176,21 @@ async function main() {
     const res = await get(`/nukhbaa/assets/assets/team_logos/${crest}`, 'gzip, deflate, br');
     expect(res.status === 200, `team_logos/${crest}: status ${res.status}`);
     expect(res.headers['cache-control'] === WEEK, `team_logos/${crest}: cache-control ${res.headers['cache-control']}, expected ${WEEK}`);
+    expectSecure(res, `team_logos/${crest}`);
   }
 
   const old = await get('/nukhbaa/main.dart.000000000000.js', 'gzip, deflate, br');
   expect(old.status === 404, `an old content name answered ${old.status}, expected 404`);
+  expectSecure(old, 'an old content name (404)');
   const oldKit = await get(`/nukhbaa/${kit}/missing.wasm`, 'gzip, deflate, br');
   expect(oldKit.status === 404, `a missing CanvasKit file answered ${oldKit.status}, expected 404`);
   const direct = await get(`/nukhbaa/${mainJs}.br`, 'gzip, deflate, br');
   expect(direct.status === 404, `a .br name asked for directly answered ${direct.status}, expected 404`);
   const deep = await get('/nukhbaa/leaderboard/month', 'gzip, deflate, br');
   expect(deep.status === 200 && /text\/html/.test(deep.headers['content-type'] || ''), `a deep link answered ${deep.status} ${deep.headers['content-type']}`);
+  expectSecure(deep, 'a deep link');
+  const landing = await get('/', 'gzip, deflate, br');
+  expectSecure(landing, `the landing page (${landing.status})`);
 }
 
 await main();
