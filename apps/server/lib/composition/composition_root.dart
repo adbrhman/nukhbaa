@@ -2663,7 +2663,9 @@ final class CompositionRoot {
         '$jwksWarmupAttempts attempts: ${jwksWarmResult.error}',
       );
     }
-    final verifier = SupabaseJwtVerifier(authConfig, jwksClient);
+    final verifier = CachedTokenVerifier(
+      SupabaseJwtVerifier(authConfig, jwksClient),
+    );
     final directory = CachedUserDirectory(PostgresUserDirectory(connection));
 
     // Identity slice (continued): email/password auth proxy, backed by

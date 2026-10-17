@@ -36,6 +36,7 @@ export 'src/identity/jwks_client.dart';
 export 'src/identity/postgres_favorite_team_repository.dart';
 export 'src/identity/postgres_user_directory.dart';
 export 'src/identity/cached_user_directory.dart';
+export 'src/identity/cached_token_verifier.dart';
 export 'src/identity/supabase_auth_client.dart';
 
 /// (postgres). Nothing depends on this package except the composition root
