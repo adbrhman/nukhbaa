@@ -466,6 +466,34 @@ jobs:
           print("launcher label set")
           PYEOF
 
+      # The Android application id. `flutter create` derives
+      # com.example.mobile from its default org, and Google Play and other
+      # stores refuse com.example; the owner chose app.nukhbaa (the reverse of
+      # nukhbaa.app) on 2026-10-18, reversing L-59 (script 110). A new id
+      # installs beside the old app, so each player moves once and signs in
+      # again. Only the id changes: the namespace, and with it
+      # MainActivity's package, stays com.example.mobile.
+      - name: Set the Android application id
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import os, re, sys
+
+          for path in ("android/app/build.gradle.kts", "android/app/build.gradle"):
+              if os.path.exists(path):
+                  break
+          else:
+              sys.exit("ERROR: no android/app/build.gradle(.kts) after flutter create")
+          s = open(path, encoding="utf-8").read()
+          s, n = re.subn(r'applicationId(\s*=?\s*)"com\.example\.mobile"',
+                         r'applicationId\1"app.nukhbaa"', s)
+          if n != 1:
+              sys.exit("ERROR: applicationId com.example.mobile found %d times in %s" % (n, path))
+          open(path, "w", encoding="utf-8").write(s)
+          print("applicationId set to app.nukhbaa in " + path)
+          PYEOF
+
       - name: Inject ota_update Android requirements (idempotent)
         working-directory: apps/mobile
         run: |
@@ -654,12 +682,12 @@ jobs:
               client["client_info"]["android_client_info"]["package_name"]
               for client in data.get("client", [])
           ]
-          if "com.example.mobile" not in names:
+          if "app.nukhbaa" not in names:
               sys.exit(
                   "::error::google-services.json has no client for "
-                  "com.example.mobile (found: %s)" % names
+                  "app.nukhbaa (found: %s)" % names
               )
-          print("google-services.json: client found for com.example.mobile")
+          print("google-services.json: client found for app.nukhbaa")
           PYEOF
 
           python3 - <<'PYEOF'
@@ -793,6 +821,10 @@ jobs:
             "$AS" verify --print-certs "$apk"
             ACT=$("$AS" verify --print-certs "$apk" | grep 'certificate SHA-256 digest' | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
             [ "$ACT" = "$EXP" ] || { echo "::error::signature mismatch for $apk: got $ACT expected $EXP"; exit 1; }
+            # The package the phone sees (script 110).
+            test -x "$BT/aapt2" || { echo "::error::aapt2 not found under $BT"; exit 1; }
+            PKG=$("$BT/aapt2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+            [ "$PKG" = "app.nukhbaa" ] || { echo "::error::$apk is package '$PKG', expected app.nukhbaa"; exit 1; }
           done
 
       - uses: actions/upload-artifact@v7
