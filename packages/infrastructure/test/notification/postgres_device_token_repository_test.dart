@@ -76,6 +76,24 @@ void main() {
       expect(sql, contains('ON CONFLICT (token) DO UPDATE'));
     });
 
+    test('every account the token is registered for is kept', () async {
+      final connection = _FakeConnection(const Result.ok([]));
+
+      await PostgresDeviceTokenRepository(connection).upsert(
+        userId: (UserId.tryParse(_user) as Ok<UserId>).value,
+        token: 'tok-4',
+        platform: 'android',
+      );
+
+      final sql = connection.sqls.single;
+      expect(sql, contains('INSERT INTO notification.device_token_owners'));
+      expect(
+        sql,
+        contains('VALUES (md5(@token::text), @user_id::uuid, @platform::text)'),
+      );
+      expect(sql, contains('ON CONFLICT (token_key, user_id) DO NOTHING'));
+    });
+
     test('a driver failure comes back as the same error', () async {
       const failure = AppError.transient('db.down', 'down');
       final connection = _FakeConnection(const Result.err(failure));

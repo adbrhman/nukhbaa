@@ -23,6 +23,11 @@ import 'package:shared/shared.dart';
 /// removed if the token was on file, so it never stays with someone else).
 /// A player with only the web build (the iPhone players) is unaffected.
 ///
+/// Every account a token is registered for is also kept, the token as md5
+/// only, in `notification.device_token_owners` (migration 0177, script
+/// 102): a sign-in as someone else on the same phone rebinds the token
+/// here, and that table still shows both accounts afterwards.
+///
 /// The adapter is *total* (Application ADR §2): it never throws. A driver
 /// failure is [ErrorKind.transient]; the one integrity case that can fire —
 /// the user vanishing between authentication and this write — maps off the
@@ -56,6 +61,11 @@ skipped_web AS (
   WHERE @platform::text = 'web'
     AND token = @token::text
     AND (SELECT present FROM native)
+),
+owners AS (
+  INSERT INTO notification.device_token_owners (token_key, user_id, platform)
+  VALUES (md5(@token::text), @user_id::uuid, @platform::text)
+  ON CONFLICT (token_key, user_id) DO NOTHING
 )
 INSERT INTO notification.device_tokens (token, user_id, platform, updated_at)
 SELECT @token::text, @user_id::uuid, @platform::text, now()
@@ -119,7 +129,8 @@ WHERE token = @token::text
     if (cause.code != '23503') {
       return error;
     }
-    if (cause.constraintName == 'device_tokens_user_id_fkey') {
+    if (cause.constraintName == 'device_tokens_user_id_fkey' ||
+        cause.constraintName == 'device_token_owners_user_id_fkey') {
       return const AppError.invariant(
         'notification.device_token_user_not_found',
         'User not found',
