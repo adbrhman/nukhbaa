@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:dart_frog/dart_frog.dart';
 import 'package:application/application.dart';
+import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/admin_user_prediction_dto_mapper.dart';

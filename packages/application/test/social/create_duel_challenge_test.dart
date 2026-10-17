@@ -5,8 +5,8 @@ import 'package:test/test.dart';
 
 import '../competition/fake_competition_repository.dart';
 import '../competition/fakes.dart';
-import '../prediction/fake_fixture_schedule_repository.dart';
 import '../prediction/fake_fixture_prediction_repository.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
 import 'duel_application_fakes.dart';
 
 const _user = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
