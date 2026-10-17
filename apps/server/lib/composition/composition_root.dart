@@ -2838,7 +2838,9 @@ final class CompositionRoot {
     final pushSender =
         FcmPushSender.tryParse(env['FIREBASE_SERVICE_ACCOUNT_JSON']) ??
         const NoopPushSender();
-    final deviceTokenRepository = PostgresDeviceTokenRepository(connection);
+    final deviceTokenRepository = CachedDeviceTokenRepository(
+      PostgresDeviceTokenRepository(connection),
+    );
     final announcementRepository = PostgresAnnouncementRepository(connection);
     final notifyNewUserRegistered = NotifyNewUserRegistered(
       targets: PostgresAdminPushTargetReader(connection),

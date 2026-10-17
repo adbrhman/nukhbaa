@@ -27,6 +27,8 @@ final class CachedUserDirectory implements UserDirectory {
     Duration avatarTtl = const Duration(hours: 1),
     int maxUsers = 1024,
     int maxAvatars = 48,
+    Duration offsetTtl = const Duration(hours: 12),
+    int maxOffsets = 4096,
     DateTime Function() now = DateTime.now,
   }) : _users = TtlCache<String, User>(
          ttl: userTtl,
@@ -37,11 +39,17 @@ final class CachedUserDirectory implements UserDirectory {
          ttl: avatarTtl,
          maxEntries: maxAvatars,
          now: now,
+       ),
+       _offsets = TtlCache<String, int>(
+         ttl: offsetTtl,
+         maxEntries: maxOffsets,
+         now: now,
        );
 
   final UserDirectory _inner;
   final TtlCache<String, User> _users;
   final TtlCache<String, StoredAvatar> _avatars;
+  final TtlCache<String, int> _offsets;
 
   /// Drops [id]'s cached user so the next read comes from the database.
   void forget(UserId id) => _users.remove(id.value);
@@ -70,9 +78,28 @@ final class CachedUserDirectory implements UserDirectory {
     String displayName,
   ) async => _remember(await _inner.updateDisplayName(userId, displayName));
 
+  /// The app reports its offset on every start (script 101): an offset this
+  /// directory wrote for the same player within `offsetTtl` is not written
+  /// again. Only this method writes `utc_offset_minutes`, and a failed write
+  /// is not remembered.
   @override
-  Future<Result<void>> updateUtcOffsetMinutes(UserId userId, int minutes) =>
-      _inner.updateUtcOffsetMinutes(userId, minutes);
+  Future<Result<void>> updateUtcOffsetMinutes(
+    UserId userId,
+    int minutes,
+  ) async {
+    if (_offsets.read(userId.value) == minutes) {
+      return const Result.ok(null);
+    }
+    final int startedAt = _offsets.generation;
+    final Result<void> result = await _inner.updateUtcOffsetMinutes(
+      userId,
+      minutes,
+    );
+    if (result is Ok<void>) {
+      _offsets.write(userId.value, minutes, startedAt: startedAt);
+    }
+    return result;
+  }
 
   @override
   Future<Result<User>> setAvatar(

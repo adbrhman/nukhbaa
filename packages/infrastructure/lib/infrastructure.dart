@@ -55,6 +55,7 @@ export 'src/ledger/postgres_participant_reader.dart';
 export 'src/notification/postgres_admin_push_target_reader.dart';
 export 'src/notification/postgres_announcement_repository.dart';
 export 'src/notification/postgres_device_token_repository.dart';
+export 'src/notification/cached_device_token_repository.dart';
 export 'src/notification/fcm_push_sender.dart';
 export 'src/notification/postgres_notification_preference_repository.dart';
 export 'src/notification/postgres_notification_queue.dart';
