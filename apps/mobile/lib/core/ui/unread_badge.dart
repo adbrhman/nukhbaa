@@ -64,7 +64,7 @@ class _UnreadBadgeState extends State<UnreadBadge> {
   void _sync() {
     final bool blink =
         widget.count > 0 &&
-        TickerMode.of(context) &&
+        TickerMode.valuesOf(context).enabled &&
         !(MediaQuery.maybeDisableAnimationsOf(context) ?? false);
     if (blink && _blink == null) {
       _blink = Timer.periodic(UnreadBadge.blinkPeriod, (_) {

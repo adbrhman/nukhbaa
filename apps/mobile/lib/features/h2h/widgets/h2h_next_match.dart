@@ -197,7 +197,7 @@ class _H2hCountdownState extends State<H2hCountdown>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _visible = TickerMode.of(context);
+    _visible = TickerMode.valuesOf(context).enabled;
     _schedule();
   }
 

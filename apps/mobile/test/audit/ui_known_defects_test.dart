@@ -494,7 +494,7 @@ void main() {
       );
       expect(
         tester.getSemantics(find.byKey(const Key('nav.item.home'))),
-        containsSemantics(isSelected: true, isButton: true),
+        isSemantics(isSelected: true, isButton: true),
       );
     },
   );
