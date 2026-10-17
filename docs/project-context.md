@@ -194,6 +194,14 @@ PHYSICALLY DONE. Launch-readiness gate (Build Verification, real toolchain
 output recorded) is the one remaining item before "12/12, physically
 verified" — see §4 for its exact scope. Do not reopen any of the 12 phases.**
 ```
+
+> **Note (2026-10-17, audit NUKHBA-011):** the status block above is as of
+> 2026-07-15. Today `apps/mobile/android/` is not tracked (`.gitignore`):
+> Build Verification generates it with `flutter create --platforms=android`
+> on every push (`.github/workflows/build-verification.yml`), and the same
+> workflow runs the real `flutter analyze`, `flutter test` and
+> `flutter build`. There is no `ios/` and no iOS build; `web/` is tracked.
+
 Rules: each phase 100% complete before the next; full six-way review
 (architecture, security, correctness, performance, maintainability,
 production-readiness) after every phase, all issues fixed before moving on; no
@@ -5956,6 +5964,12 @@ the sandbox has no Flutter toolchain (§2 Environment note), `flutter pub get` /
 on a machine with Flutter `3.44.0`; verification here is by-construction against
 these confirmed versions and the exact `api_client`/`contracts`/`shared` public
 surfaces.
+
+> **Note (2026-10-17, audit NUKHBA-011):** still true in effect: `apps/mobile`
+> sends no request itself. It names `package:http` in two files, both only
+> to hand an `http.Client` to `api_client`'s transport:
+> `lib/core/network/http_client.dart` creates it and
+> `lib/core/auth/session_refresher.dart` takes it as a parameter.
 
 **Milestone 0 (verified 2026-07-08):**
 | Component | Version/Fact |
