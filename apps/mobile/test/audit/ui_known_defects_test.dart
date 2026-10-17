@@ -1367,6 +1367,10 @@ void main() {
       final String index = File('web/index.html').readAsStringSync();
       expect(index, isNot(contains('user-scalable=no')));
       expect(index, isNot(contains('maximum-scale=1.0')));
+      // Android installs the APK; Chrome's own install banner put a second,
+      // web copy of the app beside it (script 109).
+      expect(index, contains("addEventListener('beforeinstallprompt'"));
+      expect(index, contains('/Android/i.test(navigator.userAgent)'));
       final Object? manifest = jsonDecode(
         File('web/manifest.json').readAsStringSync(),
       );

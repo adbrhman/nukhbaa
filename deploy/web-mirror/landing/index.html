@@ -14,6 +14,14 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
+  <!-- Android installs the APK; Chrome's own install banner put a second,
+       web copy of the app beside it (script 109). iPhone and desktop keep
+       it: the web build is the iPhone's only way in. -->
+  <script>
+    window.addEventListener('beforeinstallprompt', function (e) {
+      if (/Android/i.test(navigator.userAgent)) e.preventDefault();
+    });
+  </script>
   <link rel="canonical" href="https://nukhbaa.app/">
 
   <!-- بطاقة الرابط عند المشاركة -->
