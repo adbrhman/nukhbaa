@@ -162,10 +162,7 @@ void main() {
       final group = (result as Ok<H2hAdminGroupRound>).value;
       expect(group.phase, H2hRoundPhase.settled);
       final seen = <UserId>[
-        for (final pair in group.pairs) ...[
-          pair.home,
-          if (pair.away case final away?) away,
-        ],
+        for (final pair in group.pairs) ...[pair.home, ?pair.away],
       ];
       expect(seen.toSet(), {for (var n = 5; n <= 8; n++) userNo(n)});
       expect(seen, hasLength(4));

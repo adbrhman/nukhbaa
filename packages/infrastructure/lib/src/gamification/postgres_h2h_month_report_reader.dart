@@ -79,7 +79,7 @@ LEFT JOIN gamification.h2h_month_closures c ON c.month_start = @month::date
         seats: seats,
         groupsByDivision: {
           for (final entry in groups.entries)
-            if (int.tryParse(entry.key) case final level?) level: entry.value,
+            ?int.tryParse(entry.key): entry.value,
         },
         closedAt: _timestamp(row['closed_at']),
         closedMembers: closedMembers,

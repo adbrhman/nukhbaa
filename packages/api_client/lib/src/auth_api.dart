@@ -336,11 +336,10 @@ final class AuthApi {
       '/me/notification-preferences',
       body: <String, Object?>{
         'schema_version': NotificationPreferencesDto.currentSchemaVersion,
-        if (predictionReminder != null)
-          'prediction_reminder': predictionReminder,
-        if (preMatch != null) 'pre_match': preMatch,
-        if (streakSaver != null) 'streak_saver': streakSaver,
-        if (overtaken != null) 'overtaken': overtaken,
+        'prediction_reminder': ?predictionReminder,
+        'pre_match': ?preMatch,
+        'streak_saver': ?streakSaver,
+        'overtaken': ?overtaken,
       },
       parse: NotificationPreferencesDto.fromJson,
     );

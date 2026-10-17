@@ -274,7 +274,7 @@ class _SummaryCard extends StatelessWidget {
             l10n.boardYourRankIs(item.rank),
             l10n.boardPoints(item.points),
             if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
-            if (line != null) line,
+            ?line,
           ].join(l10n.boardListSeparator);
 
     return Semantics(

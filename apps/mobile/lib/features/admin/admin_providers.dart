@@ -169,10 +169,7 @@ final adminMonthPulseProvider = FutureProvider<AdminMonthPulse>((ref) async {
   );
   final picked = adminMonthsAt(months, DateTime.now());
   final SeasonDto? current = picked.current;
-  final List<SeasonDto> wanted = <SeasonDto>[
-    if (current != null) current,
-    ...picked.recentEnded,
-  ];
+  final List<SeasonDto> wanted = <SeasonDto>[?current, ...picked.recentEnded];
   Future<ChampionCandidatesDto> boardOf(String seasonId) async =>
       _unwrap(await api.championCandidates(seasonId));
   final List<ChampionCandidatesDto> read = await Future.wait(

@@ -121,8 +121,7 @@ final class GetMyH2hMonth {
         phases: h2hRoundPhasesOf(league.rounds),
         results: {
           for (final view in league.rounds)
-            if (h2hShownResultOf(view) case final shown?)
-              view.round.number: shown,
+            view.round.number: ?h2hShownResultOf(view),
         },
         firstKickoffs: firstKickoffs,
         daysLeft: daysLeftIn(

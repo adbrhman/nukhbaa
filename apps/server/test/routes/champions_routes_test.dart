@@ -368,7 +368,7 @@ void main() {
       // would re-stub context.request itself.
       final Request request = context.request;
       when(() => request.headers).thenReturn(<String, String>{
-        if (contentType != null) HttpHeaders.contentTypeHeader: contentType,
+        HttpHeaders.contentTypeHeader: ?contentType,
       });
       when(request.bytes).thenAnswer((_) => Stream.value(bytes));
       return set_photo_route.onRequest(context, _season, userId);
