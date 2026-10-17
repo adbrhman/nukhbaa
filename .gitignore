@@ -1,5 +1,4 @@
 
-!.env.example
 # Dart/Flutter
 # Env & secrets (Security ADR s7: never commit the service role)
 # IDE / OS
@@ -21,6 +20,7 @@
 .dart_tool/
 .env
 .env.*
+!.env.example
 .format-fix-backup-*/
 .fvm/flutter_sdk
 .idea/
