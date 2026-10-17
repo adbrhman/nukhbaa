@@ -7,10 +7,13 @@ import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the badge evaluation runs. A run is one grouped read of the
-/// event stream plus one insert per badge newly earned, so a quarter of an
-/// hour keeps a badge close behind the act that earned it (see
-/// `EvaluateBadges`).
-const Duration badgeEvaluationTick = Duration(minutes: 15);
+/// whole event stream plus one insert per badge newly earned (see
+/// `EvaluateBadges`). Every quarter of an hour it was the largest share of
+/// the database's time (10.6% on 2026-10-17), while the badges screen was
+/// opened 14 times in two weeks by 10 of 88 players and no push announces a
+/// badge. Every three hours, a badge appears within three hours of the act
+/// that earned it (script 103).
+const Duration badgeEvaluationTick = Duration(hours: 3);
 
 /// How long after boot the first evaluation runs, so it never competes with
 /// the startup probe or the first requests.
