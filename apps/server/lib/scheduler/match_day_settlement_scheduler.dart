@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -25,7 +26,7 @@ Timer startMatchDaySettlementScheduler(CompositionRoot root) {
   Timer(matchDaySettlementFirstRunDelay, () {
     unawaited(_check(root));
   });
-  return Timer.periodic(matchDaySettlementTick, (_) {
+  return phasedPeriodic(matchDaySettlementPhase, matchDaySettlementTick, (_) {
     unawaited(_check(root));
   });
 }

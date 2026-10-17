@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -16,7 +17,7 @@ const Duration streakSaverTick = Duration(minutes: 10);
 /// Never throws and never awaits: a sweep that fails is logged and the next
 /// tick retries.
 Timer startStreakSaverScheduler(CompositionRoot root) {
-  return Timer.periodic(streakSaverTick, (_) {
+  return phasedPeriodic(streakSaverPhase, streakSaverTick, (_) {
     unawaited(_sweep(root));
   });
 }

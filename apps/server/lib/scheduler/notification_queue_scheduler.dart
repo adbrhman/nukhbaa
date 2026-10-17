@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -18,7 +19,7 @@ const Duration notificationQueueTick = Duration(minutes: 5);
 /// Never throws and never awaits: a sweep that fails is logged and the
 /// waiting pushes are picked up on the next tick.
 Timer startNotificationQueueScheduler(CompositionRoot root) {
-  return Timer.periodic(notificationQueueTick, (_) {
+  return phasedPeriodic(notificationQueuePhase, notificationQueueTick, (_) {
     unawaited(_sweep(root));
   });
 }

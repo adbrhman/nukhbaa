@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -20,7 +21,9 @@ Timer startReferralQualificationScheduler(CompositionRoot root) {
   Timer(referralQualificationFirstRunDelay, () {
     unawaited(_sweep(root));
   });
-  return Timer.periodic(referralQualificationTick, (_) {
+  return phasedPeriodic(referralQualificationPhase, referralQualificationTick, (
+    _,
+  ) {
     unawaited(_sweep(root));
   });
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:application/application.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:shared/shared.dart';
 
 /// First fixtures sync after boot: also covers today.
@@ -141,17 +142,17 @@ void startProviderSyncScheduler(CompositionRoot root) {
 
   _log(tag, 'provider sync started');
   if (live != null) {
-    Timer.periodic(providerLiveTick, (_) {
+    phasedPeriodic(providerLivePhase, providerLiveTick, (_) {
       unawaited(runLive());
     });
   }
   Timer(providerFixturesFirstRunDelay, () {
     unawaited(runFixtures(includeToday: true));
   });
-  Timer.periodic(providerFixturesTick, (_) {
+  phasedPeriodic(providerFixturesPhase, providerFixturesTick, (_) {
     unawaited(runFixtures(includeToday: true));
   });
-  Timer.periodic(providerResultsTick, (_) {
+  phasedPeriodic(providerResultsPhase, providerResultsTick, (_) {
     unawaited(runResults());
   });
 }

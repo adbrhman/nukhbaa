@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -23,7 +24,7 @@ Timer startMonthlySeasonScheduler(CompositionRoot root) {
   Timer(monthlySeasonFirstRunDelay, () {
     unawaited(_check(root));
   });
-  return Timer.periodic(monthlySeasonTick, (_) {
+  return phasedPeriodic(monthlySeasonPhase, monthlySeasonTick, (_) {
     unawaited(_check(root));
   });
 }

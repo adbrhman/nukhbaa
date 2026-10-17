@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -21,7 +22,7 @@ const Duration reminderTick = Duration(minutes: 10);
 /// Never throws and never awaits: the timer must not be able to take the
 /// server down, and a sweep that fails is logged and retried next tick.
 Timer startReminderScheduler(CompositionRoot root) {
-  return Timer.periodic(reminderTick, (_) {
+  return phasedPeriodic(reminderPhase, reminderTick, (_) {
     unawaited(_sweep(root));
   });
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -16,7 +17,7 @@ const Duration preMatchTick = Duration(minutes: 10);
 /// Never throws and never awaits: a sweep that fails is logged and the next
 /// tick retries.
 Timer startPreMatchScheduler(CompositionRoot root) {
-  return Timer.periodic(preMatchTick, (_) {
+  return phasedPeriodic(preMatchPhase, preMatchTick, (_) {
     unawaited(_sweep(root));
   });
 }

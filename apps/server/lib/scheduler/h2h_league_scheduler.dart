@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:application/application.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -36,7 +37,7 @@ Timer startH2hLeagueScheduler(CompositionRoot root) {
   Timer(h2hLeagueFirstRunDelay, () {
     unawaited(_tick(root));
   });
-  return Timer.periodic(h2hLeagueTick, (_) {
+  return phasedPeriodic(h2hLeaguePhase, h2hLeagueTick, (_) {
     unawaited(_tick(root));
   });
 }

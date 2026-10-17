@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
+import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
@@ -26,7 +27,7 @@ Timer startBadgeEvaluationScheduler(CompositionRoot root) {
   Timer(badgeEvaluationFirstRunDelay, () {
     unawaited(_check(root));
   });
-  return Timer.periodic(badgeEvaluationTick, (_) {
+  return phasedPeriodic(badgeEvaluationPhase, badgeEvaluationTick, (_) {
     unawaited(_check(root));
   });
 }
