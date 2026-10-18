@@ -1,6 +1,7 @@
 import 'package:application/src/football_data/follow_provider_kickoff.dart';
 import 'package:application/src/football_data/ports/football_data_provider.dart';
 import 'package:application/src/football_data/ports/league_repository.dart';
+import 'package:application/src/football_data/ports/live_score_corrections.dart';
 import 'package:application/src/football_data/ports/provider_sync_store.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart';
 import 'package:domain/domain.dart';
@@ -51,6 +52,15 @@ typedef ProviderResultRecorder =
 /// cancelled is asked about again only after [parkFor], so it does not
 /// spend a request every run.
 ///
+/// An admin's correction of the running score ([LiveScoreCorrections]; a
+/// goal ruled out that the provider still counts, as on 2026-10-18) decides
+/// the score recorded: the provider's final figure goes through
+/// [LiveScoreCorrection.applyTo], and the corrected score waits
+/// [confirmAfter] like any other. A correction the provider's figures moved
+/// away from after it was made (a goal reported later) is not settled: it is
+/// put to the admins once per provider figure and recorded only when they
+/// correct it again or the match is late.
+///
 /// With `apply: false` (shadow mode) nothing is written. Never throws.
 final class SyncProviderResults {
   /// Creates the use-case.
@@ -61,6 +71,7 @@ final class SyncProviderResults {
     required List<ProviderLeagueRule> rules,
     required ProviderResultRecorder recorder,
     FollowProviderKickoff? kickoffFollower,
+    LiveScoreCorrections? corrections,
     this.settleTime = const Duration(minutes: 90),
     this.confirmAfter = const Duration(minutes: 15),
     this.lookback = const Duration(hours: 6),
@@ -73,7 +84,8 @@ final class SyncProviderResults {
        _leagues = leagueRepository,
        _rules = rules,
        _recorder = recorder,
-       _kickoffs = kickoffFollower;
+       _kickoffs = kickoffFollower,
+       _corrections = corrections;
 
   final Map<String, FootballDataProvider> _providers;
   final ProviderSyncStore _store;
@@ -84,6 +96,14 @@ final class SyncProviderResults {
   /// Moves a kickoff brought forward before the result is recorded; null in
   /// tests that do not look at it, where kickoffs are not compared.
   final FollowProviderKickoff? _kickoffs;
+
+  /// The admins' corrections of running scores; null where none are made
+  /// (tests that do not look at them).
+  final LiveScoreCorrections? _corrections;
+
+  /// The unsettled corrections already put to the admins, by
+  /// `source|fixtureId|providerHome-providerAway`.
+  final Set<String> _unsettled = <String>{};
 
   /// How long after kickoff a match is first looked up.
   final Duration settleTime;
@@ -162,6 +182,9 @@ final class SyncProviderResults {
     _sightings.removeWhere((key, _) => !waitingKeys.contains(key));
     _parked.removeWhere((key, _) => !waitingKeys.contains(key));
     _overdue.removeWhere((key) => !waitingKeys.contains(key));
+    _unsettled.removeWhere(
+      (key) => !waitingKeys.any((waiting) => key.startsWith('$waiting|')),
+    );
 
     if (pendingBySource.isEmpty) {
       _lateCalls.clear();
@@ -382,15 +405,24 @@ final class SyncProviderResults {
           case ProviderMatchStatus.finished:
             break;
         }
-        final homeGoals = match.homeGoals;
-        final awayGoals = match.awayGoals;
-        if (homeGoals == null || awayGoals == null) {
+        final providerHome = match.homeGoals;
+        final providerAway = match.awayGoals;
+        if (providerHome == null || providerAway == null) {
           waiting++;
           continue;
         }
+        // An admin's correction of the running score (a goal ruled out that
+        // the provider still counts) decides the score recorded.
+        final correction = _corrections?.of(fixture.fixtureId);
+        final counted = correction?.applyTo(providerHome, providerAway);
+        final homeGoals = counted?.homeGoals ?? providerHome;
+        final awayGoals = counted?.awayGoals ?? providerAway;
+        final corrected = correction == null
+            ? ''
+            : ', admin correction of the provider $providerHome-$providerAway';
         final label =
             '${match.homeTeamName} $homeGoals-$awayGoals '
-            '${match.awayTeamName} (fixture ${fixture.fixtureId})';
+            '${match.awayTeamName} (fixture ${fixture.fixtureId}$corrected)';
 
         // The same finished score must stand for [confirmAfter] before it is
         // recorded; a different score starts the wait again. A late match's
@@ -417,6 +449,35 @@ final class SyncProviderResults {
                   : 'score changed from '
                         '${previous.homeGoals}-${previous.awayGoals} before it '
                         'was confirmed: $label',
+            );
+          }
+          continue;
+        }
+        // A correction the provider moved away from after it was made waits
+        // for the admins, who are told once per provider figure, until the
+        // match is late.
+        if (correction != null &&
+            counted != null &&
+            !counted.settled &&
+            !isLate(fixture)) {
+          waiting++;
+          if (_unsettled.add('$sightingKey|$providerHome-$providerAway')) {
+            final game = fixture.game.isEmpty
+                ? '${match.homeTeamName} - ${match.awayTeamName}'
+                : fixture.game;
+            notes.add('correction not settled, waiting for an admin: $label');
+            attention.add(
+              ProviderSyncAttention(
+                code: 'provider_sync.correction_unsettled',
+                match: game,
+                message:
+                    '«$game»: صُحّحت نتيجتها إلى '
+                    '${correction.homeGoals}-${correction.awayGoals} والمزوّد '
+                    'يقول الآن $providerHome-$providerAway، فلن تُسجَّل '
+                    'آلياً. صحّح النتيجة المباشرة أو سجّل النتيجة بنفسك؛ '
+                    'وإلا سُجّلت $homeGoals-$awayGoals بعد '
+                    '${lookback.inHours} ساعات من انطلاقها.',
+              ),
             );
           }
           continue;

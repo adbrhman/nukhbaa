@@ -169,6 +169,7 @@ final class CompositionRoot {
     this.syncProviderResults,
     this.liveScoreBoard,
     this.refreshLiveScores,
+    this.correctLiveScore,
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
@@ -376,6 +377,7 @@ final class CompositionRoot {
     this.syncProviderResults,
     this.liveScoreBoard,
     this.refreshLiveScores,
+    this.correctLiveScore,
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
@@ -2448,6 +2450,11 @@ final class CompositionRoot {
   /// Refreshes [liveScoreBoard]; null while the sync is off.
   final RefreshLiveScores? refreshLiveScores;
 
+  /// Lets an admin correct a running score the provider has wrong (a goal
+  /// ruled out by VAR the feed still counts); null in tests that do not
+  /// provide one.
+  final AdminCorrectLiveScore? correctLiveScore;
+
   /// Finishes the scoring of recorded results whose scoring failed after
   /// the result was written (migration 0080); null in tests that do not
   /// provide one.
@@ -2841,7 +2848,15 @@ final class CompositionRoot {
         : ProviderSyncMode.parse(env['NUKHBA_PROVIDER_SYNC']);
     // Running scores for the fixtures feed (display only), refreshed by the
     // provider scheduler; empty until a poll fills it.
-    final liveScoreBoard = InMemoryLiveScoreBoard();
+    // The admins' corrections lie over the provider's figures: players and
+    // the result sync see the corrected score, the poll keeps writing the
+    // provider's (2026-10-18, a goal ruled out the feed kept counting).
+    final providerLiveScores = InMemoryLiveScoreBoard();
+    final liveScoreCorrections = InMemoryLiveScoreCorrections();
+    final liveScoreBoard = CorrectedLiveScoreBoard(
+      raw: providerLiveScores,
+      corrections: liveScoreCorrections,
+    );
     RefreshLiveScores? refreshLiveScores;
     late final CompositionRoot root;
     // Scores one fixture again and posts it to the ledger as the service
@@ -2923,6 +2938,7 @@ final class CompositionRoot {
         store: syncStore,
         leagueRepository: syncLeagues,
         rules: phaseOneRules,
+        corrections: liveScoreCorrections,
         // The last look at a match before its result is recorded: a kickoff
         // brought forward that the fixtures sync never saw moves here, so
         // ScoreFixture grades from the real one (C-03).
@@ -3356,6 +3372,11 @@ final class CompositionRoot {
       syncProviderResults: syncProviderResults,
       liveScoreBoard: liveScoreBoard,
       refreshLiveScores: refreshLiveScores,
+      correctLiveScore: AdminCorrectLiveScore(
+        providerScores: providerLiveScores,
+        corrections: liveScoreCorrections,
+        clock: clock,
+      ),
       // The same two steps every result recorder runs after the write,
       // as the service principal the provider sync already uses. Both are
       // idempotent, so a fixture scored twice converges on the same rows.

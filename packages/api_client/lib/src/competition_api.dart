@@ -169,6 +169,33 @@ final class CompetitionApi {
     );
   }
 
+  /// `PUT /fixtures/{id}/live-score` — corrects the running score of a
+  /// match in play that the provider has wrong (a goal ruled out by VAR the
+  /// feed still counts). The match card and the live points change at once,
+  /// and the result sync records the corrected score at full time.
+  /// Admin-only, enforced inside the server use-case; `409
+  /// football_data.not_live` while the provider reports no running score.
+  Future<Result<bool>> correctLiveScore({
+    required String fixtureId,
+    required int homeGoals,
+    required int awayGoals,
+  }) {
+    return _transport.putObject<bool>(
+      '/fixtures/$fixtureId/live-score',
+      body: {'home_goals': homeGoals, 'away_goals': awayGoals},
+      parse: (json) => json['fixture_id'] == fixtureId,
+    );
+  }
+
+  /// `DELETE /fixtures/{id}/live-score` — takes an admin's correction back,
+  /// so the provider's running score shows and counts again. Admin-only.
+  Future<Result<bool>> clearLiveScoreCorrection(String fixtureId) {
+    return _transport.deleteObject<bool>(
+      '/fixtures/$fixtureId/live-score',
+      parse: (json) => json['cleared'] == true,
+    );
+  }
+
   /// `POST /fixtures/{id}/score` — scores every prediction recorded for the
   /// fixture (command intent `ScoreFixture`; Axiom 4 Amendment — the
   /// per-fixture sibling of the retired round-level `scoreRound`). No request body — points are

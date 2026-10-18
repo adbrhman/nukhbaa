@@ -125,6 +125,9 @@ abstract final class ErrorPresenter {
         return 'سُجّلت نتيجتها، فلا يمكن حذفها. أخفِها بدلاً من ذلك.';
       case 'scoring.fixture_not_started':
         return 'لا يمكن تسجيل نتيجة مباراة قبل موعد انطلاقها.';
+      case 'football_data.not_live':
+        return 'لم يعد المزوّد يرسل نتيجة مباشرة لهذه المباراة. سجّل '
+            'نتيجتها من نموذج تسجيل النتيجة.';
       case 'api_client.timeout':
         return 'تأخر الخادم في الرد. حاول مرة أخرى.';
       case 'auth.confirmation_required':

@@ -2772,6 +2772,40 @@ was already recorded is corrected by hand (record the result, then post to
 the ledger: compensating `correction` entries). Not covered: a provider that
 never corrects its figure.
 
+### Live score correction (2026-10-18)
+
+Paris FC - Rennes (Ligue 1, 2026-10-18): Rennes' second goal was ruled out
+by VAR at 51', yet the feed (football-data.org) still reported 2-2 at 62',
+so the match card showed 2-2 and the live points graded it. Nothing in the
+app counts goals: `RefreshLiveScores` copies the provider's figure every 2
+minutes. This is the case the result confirmation above leaves uncovered
+(a provider that never corrects its figure). Chosen by the owner (option 3):
+an admin corrects the running score himself, and that correction decides
+the final result too.
+
+- **Where**: النتائج والاحتساب -> «النتائج المباشرة» lists the real matches
+  with a running score and no result; a tap opens the score to correct, or
+  to give back to the provider («إرجاع نتيجة المزوّد»).
+- **Route**: `PUT /fixtures/{id}/live-score` `{home_goals, away_goals}` and
+  `DELETE` (admin-only, `AdminCorrectLiveScore`); `409
+  football_data.not_live` while the provider reports no running score.
+- **How it lies over the feed**: the poll writes the provider's figure to
+  `InMemoryLiveScoreBoard`; players read `CorrectedLiveScoreBoard`, which
+  applies `LiveScoreCorrection.applyTo`. A correction remembers the
+  provider's figure it was made against: while the feed still says that (or
+  already says the corrected score) the corrected score stands, settled; if
+  the feed goes back on a goal by itself its own figure stands; a goal the
+  feed reports later is added on top of the correction, not settled.
+- **Final result**: `SyncProviderResults` records the corrected score after
+  the usual 15 minutes. A correction that is not settled is put to the
+  admins once per provider figure (`provider_sync.correction_unsettled`) and
+  recorded only when an admin corrects again, records the result by hand,
+  or the match is late (6 hours), when the shown score is recorded.
+- **Kept in memory** like the running scores (30 hours): a server restart
+  during a match forgets the correction, which is then made again. No
+  audit entry: `admin.audit_log` actions are a fixed set, and the recorded
+  result an admin enters by hand stays audited as before.
+
 ### Streak bonus (P1-4, 2026-09-19)
 
 Gamification adds no second points store. A streak bonus is a `streak_bonus`
