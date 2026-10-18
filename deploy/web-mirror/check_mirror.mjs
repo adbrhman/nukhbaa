@@ -191,6 +191,13 @@ async function main() {
   expectSecure(deep, 'a deep link');
   const landing = await get('/', 'gzip, deflate, br');
   expectSecure(landing, `the landing page (${landing.status})`);
+  // The pages Google Play links to (script 115): each one answers 200 in
+  // HTML, under the same security headers.
+  for (const page of ['/privacy/', '/rules/', '/delete-account/']) {
+    const res = await get(page, 'gzip, deflate, br');
+    expect(res.status === 200 && /text\/html/.test(res.headers['content-type'] || ''), `${page} answered ${res.status} ${res.headers['content-type']}`);
+    expectSecure(res, page);
+  }
 }
 
 await main();
