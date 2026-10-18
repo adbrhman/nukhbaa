@@ -7,9 +7,13 @@ import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// How often the invitation sweep runs (migration 0073). An invitee
-/// qualifies once a prediction is graded, and results land through the
-/// day, so half an hour keeps the wait short at one cheap statement a tick.
-const Duration referralQualificationTick = Duration(minutes: 30);
+/// qualifies once a prediction is graded. Every half hour the sweep was
+/// 8.5% of the database's time (2026-10-17, about half a second a call);
+/// every three hours an invitation is paid within three hours of its grade
+/// (script 111). The payment is dated by the sweep, so one graded in the
+/// last three hours of a month may count in the next month's tie-break.
+/// With the `referrals` flag off the sweep returns at its first line.
+const Duration referralQualificationTick = Duration(hours: 3);
 
 /// The first sweep after boot, clear of the startup work.
 const Duration referralQualificationFirstRunDelay = Duration(minutes: 4);
