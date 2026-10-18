@@ -380,6 +380,34 @@ class SessionController extends _$SessionController {
     return const Result.ok(null);
   }
 
+  /// Deletes the caller's own account (`DELETE /me/account`, audit M-05,
+  /// script 114), then ends the session on this device. The server has
+  /// already erased the push tokens and the sign-in, so none of [signOut]'s
+  /// calls are made, and the fingerprint slot is emptied: its refresh token
+  /// is dead. On a refusal nothing changes here.
+  Future<Result<void>> deleteAccount() async {
+    final Result<bool> result = await _authApi.deleteAccount();
+    if (result case Err<bool>(:final error)) {
+      return Result.err(error);
+    }
+    try {
+      final BiometricPreferenceStore prefs = ref.read(
+        biometricPreferenceStoreProvider,
+      );
+      await prefs.clearSavedRefreshToken();
+      await prefs.setEnabled(enabled: false);
+    } on Object {
+      // A stale fingerprint slot only fails once, with its own message.
+    }
+    try {
+      await _store.clear();
+    } on Object {
+      // A failed erase must not strand the user in a signed-in UI.
+    }
+    state = const AsyncData(SessionUnauthenticated());
+    return const Result.ok(null);
+  }
+
   /// Signs the current user out: clear the persisted token and drop to
   /// [SessionUnauthenticated]. Idempotent.
   Future<void> signOut() async {

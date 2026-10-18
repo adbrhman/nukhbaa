@@ -16,6 +16,7 @@ import '../notifications/favorite_teams_screen.dart';
 import '../notifications/notification_settings_screen.dart';
 import '../record/my_seasons_screen.dart';
 import '../record/season_record_screen.dart';
+import 'delete_account_screen.dart';
 import 'rules_screen.dart';
 import 'widgets/account_menu.dart';
 
@@ -123,6 +124,20 @@ class AccountSettingsScreen extends StatelessWidget implements NamedScreen {
                       icon: Icons.group_outlined,
                       title: l10n.joinGroup,
                       onTap: () => open(const JoinGroupScreen()),
+                    ),
+                  ],
+                ),
+                // Google Play asks that an account can be deleted from the
+                // app (audit M-05, script 114).
+                const SizedBox(height: AppSpacing.xl),
+                const AccountSectionTitle('الحساب'),
+                AccountMenuCard(
+                  children: <Widget>[
+                    AccountMenuRow(
+                      key: const Key('account.deleteAccount'),
+                      icon: Icons.delete_forever_outlined,
+                      title: 'حذف الحساب',
+                      onTap: () => open(const DeleteAccountScreen()),
                     ),
                   ],
                 ),

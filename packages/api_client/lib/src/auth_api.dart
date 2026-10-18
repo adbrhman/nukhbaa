@@ -141,6 +141,16 @@ final class AuthApi {
     return _transport.deleteObject('/me/avatar', parse: MeResponseDto.fromJson);
   }
 
+  /// `DELETE /me/account` -- the caller deletes his own account (audit
+  /// M-05, scripts 113 and 114): anonymised for good, its sign-in erased,
+  /// its points and predictions kept. True once the server confirms.
+  Future<Result<bool>> deleteAccount() {
+    return _transport.deleteObject<bool>(
+      '/me/account',
+      parse: (json) => json['deleted'] == true,
+    );
+  }
+
   /// `POST /me/device-token` — registers this device's FCM token for push
   /// delivery. Safe to call on every app start and on every token refresh:
   /// the server upserts by token, so a repeat is a re-confirmation rather
