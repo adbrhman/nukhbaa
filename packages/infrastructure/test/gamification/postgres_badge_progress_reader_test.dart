@@ -93,8 +93,9 @@ void main() {
       expect(standings[0].userId.value, _userA);
       expect(standings[0].progress.predictionsPlaced, 30);
       expect(standings[0].progress.perfectDays, 2);
-      expect(standings[0].progress.weeksFinished, 1);
-      expect(standings[0].progress.promotions, 1);
+      // The row still carries weekly counts; they are no longer read.
+      expect(standings[0].progress.weeksFinished, 0);
+      expect(standings[0].progress.promotions, 0);
       expect(standings[0].progress.weeksWon, 0);
       expect(standings[0].progress.eliteWeeks, 0);
       expect(standings[0].progress.monthsFinished, 2);
@@ -206,14 +207,29 @@ void main() {
       for (final type in <GamificationEventType>[
         GamificationEventType.predictionPlaced,
         GamificationEventType.dailyChallengeCompleted,
-        GamificationEventType.weeklyLeagueFinished,
+        GamificationEventType.h2hLeagueFinished,
         GamificationEventType.badgeUnlocked,
       ]) {
         expect(sql, contains("'${type.wireName}'"));
       }
-      expect(sql, contains("'${WeeklyLeagueOutcome.promoted.wireName}'"));
-      expect(sql, contains("= '${WeeklyLeagueTier.elite.level}'"));
     });
+
+    test(
+      'the read neither counts nor scans the retired weekly league',
+      () async {
+        final connection = _rows(const <Map<String, dynamic>>[]);
+
+        await PostgresBadgeProgressReader(connection).readAll();
+
+        final sql = connection.sqls.single;
+        expect(
+          sql,
+          isNot(contains(GamificationEventType.weeklyLeagueFinished.wireName)),
+        );
+        expect(sql, contains('WHERE e.event_type IN ('));
+        expect(sql, isNot(contains('weeks_finished')));
+      },
+    );
 
     test('the head-to-head literals are the domain wire values', () async {
       final connection = _rows(const <Map<String, dynamic>>[]);

@@ -8,7 +8,6 @@ import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
-import 'package:server/scheduler/overtaken_scheduler.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
 import 'package:server/scheduler/referral_qualification_scheduler.dart';
@@ -17,7 +16,6 @@ import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
-import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
 /// intent): build the process-wide composition root — opening the Postgres
@@ -43,9 +41,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Tells a player who predicted part of the day how many matches are
     // still open (see incomplete_day_scheduler.dart).
     startIncompleteDayScheduler(root);
-    // Tells a weekly-league member who was just overtaken (see
-    // overtaken_scheduler.dart).
-    startOvertakenScheduler(root);
+    // The weekly league was retired on 2026-10-18 (script 113): its weekly
+    // closure and its "overtaken" pushes no longer run. The head-to-head
+    // league below replaced it.
     // Delivers the pushes deferred out of quiet hours (see
     // notification_queue_scheduler.dart).
     startNotificationQueueScheduler(root);
@@ -56,9 +54,6 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Finishes the scoring of results whose scoring failed after they
     // were recorded (see rescore_scheduler.dart).
     startRescoreScheduler(root);
-    // Judges each weekly-league week once it has ended (see
-    // weekly_league_closure_scheduler.dart).
-    startWeeklyLeagueClosureScheduler(root);
     // Approves and locks the head-to-head rounds, judges each month and
     // draws the next (see h2h_league_scheduler.dart).
     startH2hLeagueScheduler(root);

@@ -103,7 +103,8 @@ void main() {
       final record = (result as Ok<PlayerBadgeRecord>).value;
       expect(record.progress.predictionsPlaced, 30);
       expect(record.progress.perfectDays, 2);
-      expect(record.progress.weeksFinished, 1);
+      // weekly counts are no longer read (script 113)
+      expect(record.progress.weeksFinished, 0);
       expect(record.progress.monthsFinished, 3);
       expect(record.progress.monthPromotions, 1);
       expect(record.progress.monthsWon, 1);
@@ -137,7 +138,7 @@ void main() {
       );
       expect(
         sql,
-        contains("'${GamificationEventType.weeklyLeagueFinished.wireName}'"),
+        isNot(contains(GamificationEventType.weeklyLeagueFinished.wireName)),
       );
       expect(
         sql,

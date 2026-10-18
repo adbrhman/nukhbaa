@@ -29,26 +29,6 @@ SELECT (count(*) FILTER (
          WHERE e.event_type = 'daily_challenge_completed'
        ))::int AS perfect_days,
        (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-       ))::int AS weeks_finished,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'outcome' = 'promoted'
-       ))::int AS promotions,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'rank' = '1'
-           AND CASE
-                 WHEN jsonb_typeof(e.payload->'points') = 'number'
-                   THEN (e.payload->>'points')::numeric > 0
-                 ELSE false
-               END
-       ))::int AS weeks_won,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'tier' = '5'
-       ))::int AS elite_weeks,
-       (count(*) FILTER (
          WHERE e.event_type = 'h2h_league_finished'
        ))::int AS months_finished,
        (count(*) FILTER (
@@ -70,6 +50,8 @@ SELECT (count(*) FILTER (
        ))::int AS first_division_months
 FROM gamification.events e
 WHERE e.user_id = @user_id
+  AND e.event_type IN ('prediction_placed', 'daily_challenge_completed',
+                       'h2h_league_finished')
 ''';
 
   static const String _unlockedSql = '''
@@ -127,10 +109,6 @@ GROUP BY e.payload->>'code'
   static BadgeProgress _progressOf(Map<String, dynamic> row) => BadgeProgress(
     predictionsPlaced: _count(row['predictions_placed']),
     perfectDays: _count(row['perfect_days']),
-    weeksFinished: _count(row['weeks_finished']),
-    promotions: _count(row['promotions']),
-    weeksWon: _count(row['weeks_won']),
-    eliteWeeks: _count(row['elite_weeks']),
     monthsFinished: _count(row['months_finished']),
     monthPromotions: _count(row['month_promotions']),
     monthsWon: _count(row['months_won']),

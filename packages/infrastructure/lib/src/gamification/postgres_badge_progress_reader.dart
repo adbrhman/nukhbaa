@@ -10,6 +10,10 @@ import 'package:shared/shared.dart';
 /// `FILTER` over the event type. The index `events_user_type_occurred_idx`
 /// exists for exactly this read. Nothing here writes, updates or deletes.
 ///
+/// The weekly league was retired on 2026-10-18 (script 113): its events are
+/// neither counted nor scanned, and the `WHERE` keeps the read to the four
+/// event types the active catalog needs.
+///
 /// The head-to-head counts read `h2h_league_finished` the same way: the
 /// outcome, the first division and a first place on more than zero league
 /// points (the four badges that replaced the weekly ones on 2026-10-18).
@@ -37,26 +41,6 @@ SELECT e.user_id::text AS user_id,
          WHERE e.event_type = 'daily_challenge_completed'
        ))::int AS perfect_days,
        (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-       ))::int AS weeks_finished,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'outcome' = 'promoted'
-       ))::int AS promotions,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'rank' = '1'
-           AND CASE
-                 WHEN jsonb_typeof(e.payload->'points') = 'number'
-                   THEN (e.payload->>'points')::numeric > 0
-                 ELSE false
-               END
-       ))::int AS weeks_won,
-       (count(*) FILTER (
-         WHERE e.event_type = 'weekly_league_finished'
-           AND e.payload->>'tier' = '5'
-       ))::int AS elite_weeks,
-       (count(*) FILTER (
          WHERE e.event_type = 'h2h_league_finished'
        ))::int AS months_finished,
        (count(*) FILTER (
@@ -80,6 +64,12 @@ SELECT e.user_id::text AS user_id,
          WHERE e.event_type = 'badge_unlocked'
        ) AS unlocked_codes
 FROM gamification.events e
+WHERE e.event_type IN (
+  'prediction_placed',
+  'daily_challenge_completed',
+  'h2h_league_finished',
+  'badge_unlocked'
+)
 GROUP BY e.user_id
 ORDER BY e.user_id
 ''';
@@ -104,10 +94,6 @@ ORDER BY e.user_id
           progress: BadgeProgress(
             predictionsPlaced: _count(row['predictions_placed']),
             perfectDays: _count(row['perfect_days']),
-            weeksFinished: _count(row['weeks_finished']),
-            promotions: _count(row['promotions']),
-            weeksWon: _count(row['weeks_won']),
-            eliteWeeks: _count(row['elite_weeks']),
             monthsFinished: _count(row['months_finished']),
             monthPromotions: _count(row['month_promotions']),
             monthsWon: _count(row['months_won']),
