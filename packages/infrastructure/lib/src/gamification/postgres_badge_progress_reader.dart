@@ -10,6 +10,10 @@ import 'package:shared/shared.dart';
 /// `FILTER` over the event type. The index `events_user_type_occurred_idx`
 /// exists for exactly this read. Nothing here writes, updates or deletes.
 ///
+/// The head-to-head counts read `h2h_league_finished` the same way: the
+/// outcome, the first division and a first place on more than zero league
+/// points (the four badges that replaced the weekly ones on 2026-10-18).
+///
 /// The event types, the outcome and the top tier are written as literals, and
 /// the adapter's test pins each one to the domain constant it mirrors, so a
 /// renamed wire value cannot silently make a badge unearnable.
@@ -52,6 +56,26 @@ SELECT e.user_id::text AS user_id,
          WHERE e.event_type = 'weekly_league_finished'
            AND e.payload->>'tier' = '5'
        ))::int AS elite_weeks,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+       ))::int AS months_finished,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'outcome' = 'promoted'
+       ))::int AS month_promotions,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'rank' = '1'
+           AND CASE
+                 WHEN jsonb_typeof(e.payload->'league_points') = 'number'
+                   THEN (e.payload->>'league_points')::numeric > 0
+                 ELSE false
+               END
+       ))::int AS months_won,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'division' = '1'
+       ))::int AS first_division_months,
        string_agg(e.payload->>'code', ',') FILTER (
          WHERE e.event_type = 'badge_unlocked'
        ) AS unlocked_codes
@@ -84,6 +108,10 @@ ORDER BY e.user_id
             promotions: _count(row['promotions']),
             weeksWon: _count(row['weeks_won']),
             eliteWeeks: _count(row['elite_weeks']),
+            monthsFinished: _count(row['months_finished']),
+            monthPromotions: _count(row['month_promotions']),
+            monthsWon: _count(row['months_won']),
+            firstDivisionMonths: _count(row['first_division_months']),
           ),
           unlocked: _codes(row['unlocked_codes']),
         ),

@@ -47,7 +47,27 @@ SELECT (count(*) FILTER (
        (count(*) FILTER (
          WHERE e.event_type = 'weekly_league_finished'
            AND e.payload->>'tier' = '5'
-       ))::int AS elite_weeks
+       ))::int AS elite_weeks,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+       ))::int AS months_finished,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'outcome' = 'promoted'
+       ))::int AS month_promotions,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'rank' = '1'
+           AND CASE
+                 WHEN jsonb_typeof(e.payload->'league_points') = 'number'
+                   THEN (e.payload->>'league_points')::numeric > 0
+                 ELSE false
+               END
+       ))::int AS months_won,
+       (count(*) FILTER (
+         WHERE e.event_type = 'h2h_league_finished'
+           AND e.payload->>'division' = '1'
+       ))::int AS first_division_months
 FROM gamification.events e
 WHERE e.user_id = @user_id
 ''';
@@ -111,6 +131,10 @@ GROUP BY e.payload->>'code'
     promotions: _count(row['promotions']),
     weeksWon: _count(row['weeks_won']),
     eliteWeeks: _count(row['elite_weeks']),
+    monthsFinished: _count(row['months_finished']),
+    monthPromotions: _count(row['month_promotions']),
+    monthsWon: _count(row['months_won']),
+    firstDivisionMonths: _count(row['first_division_months']),
   );
 
   /// A count may arrive as an int or, under a text-codec projection, as a

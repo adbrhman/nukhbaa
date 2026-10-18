@@ -16,6 +16,10 @@ void main() {
             promotions: n,
             weeksWon: n,
             eliteWeeks: n,
+            monthsFinished: n,
+            monthPromotions: n,
+            monthsWon: n,
+            firstDivisionMonths: n,
           );
           expect(
             code.isEarnedBy(progress),
@@ -34,6 +38,10 @@ void main() {
         promotions: 14,
         weeksWon: 15,
         eliteWeeks: 16,
+        monthsFinished: 17,
+        monthPromotions: 18,
+        monthsWon: 19,
+        firstDivisionMonths: 20,
       );
 
       expect(BadgeCode.predictions25.countIn(progress), 11);
@@ -42,6 +50,10 @@ void main() {
       expect(BadgeCode.leaguePromoted.countIn(progress), 14);
       expect(BadgeCode.leagueChampion.countIn(progress), 15);
       expect(BadgeCode.leagueElite.countIn(progress), 16);
+      expect(BadgeCode.h2hFirstMonth.countIn(progress), 17);
+      expect(BadgeCode.h2hPromoted.countIn(progress), 18);
+      expect(BadgeCode.h2hChampion.countIn(progress), 19);
+      expect(BadgeCode.h2hFirstDivision.countIn(progress), 20);
     });
 
     test('every target is at least one', () {

@@ -60,7 +60,7 @@ void main() {
       final badges = (body['badges']! as List).cast<Map<Object?, Object?>>();
       expect(
         [for (final b in badges) b['code']],
-        [for (final code in BadgeCode.values) code.wireName],
+        [for (final code in BadgeCode.active) code.wireName],
       );
       expect(badges[0], {
         'code': 'first_prediction',
@@ -74,6 +74,32 @@ void main() {
         'target': 25,
         'unlocked_at': null,
       });
+    });
+
+    test('a retired badge is not sent, even when held', () async {
+      final reader = _FakeReader(
+        record: PlayerBadgeRecord(
+          progress: const BadgeProgress(weeksFinished: 2),
+          unlockedAt: {BadgeCode.leagueFirstWeek: DateTime.utc(2026, 10, 5)},
+        ),
+      );
+
+      final response = await route.onRequest(
+        wireContext(
+          root: _rootFor(reader),
+          principal: nonMemberPrincipal(),
+          method: HttpMethod.get,
+        ),
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      final codes = [
+        for (final b in (body['badges']! as List).cast<Map<Object?, Object?>>())
+          b['code'],
+      ];
+      expect(codes, isNot(contains('league_first_week')));
+      expect(codes, contains('h2h_first_month'));
     });
 
     test('a failure is mapped through the error envelope', () async {

@@ -85,6 +85,26 @@ BadgeLook? badgeLookOf(AppLocalizations l10n, String code) => switch (code) {
     description: l10n.badgeWallLeagueEliteHint,
     icon: Icons.workspace_premium_rounded,
   ),
+  'h2h_first_month' => (
+    name: l10n.badgeWallH2hFirstMonthName,
+    description: l10n.badgeWallH2hFirstMonthHint,
+    icon: Icons.shield_rounded,
+  ),
+  'h2h_promoted' => (
+    name: l10n.badgeWallH2hPromotedName,
+    description: l10n.badgeWallH2hPromotedHint,
+    icon: Icons.trending_up_rounded,
+  ),
+  'h2h_champion' => (
+    name: l10n.badgeWallH2hChampionName,
+    description: l10n.badgeWallH2hChampionHint,
+    icon: Icons.emoji_events_rounded,
+  ),
+  'h2h_first_division' => (
+    name: l10n.badgeWallH2hFirstDivisionName,
+    description: l10n.badgeWallH2hFirstDivisionHint,
+    icon: Icons.workspace_premium_rounded,
+  ),
   _ => null,
 };
 

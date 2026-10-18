@@ -17,6 +17,10 @@ final class BadgeProgress {
     this.promotions = 0,
     this.weeksWon = 0,
     this.eliteWeeks = 0,
+    this.monthsFinished = 0,
+    this.monthPromotions = 0,
+    this.monthsWon = 0,
+    this.firstDivisionMonths = 0,
   });
 
   /// First-time prediction submissions (`prediction_placed`).
@@ -38,4 +42,19 @@ final class BadgeProgress {
 
   /// Judged weeks played in the top tier of the ladder.
   final int eliteWeeks;
+
+  /// Head-to-head months judged for the player (`h2h_league_finished`). A
+  /// pilot month writes no such event, so it never counts.
+  final int monthsFinished;
+
+  /// Judged head-to-head months that ended in a promotion.
+  final int monthPromotions;
+
+  /// Judged head-to-head months the player finished first in the group with
+  /// more than zero league points. A first place on zero is a group in which
+  /// nobody played.
+  final int monthsWon;
+
+  /// Judged head-to-head months played in the first division.
+  final int firstDivisionMonths;
 }

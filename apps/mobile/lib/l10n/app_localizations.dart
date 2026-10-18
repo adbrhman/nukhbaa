@@ -2544,6 +2544,54 @@ abstract class AppLocalizations {
   /// **'Finish a week in the Elite tier'**
   String get badgeWallLeagueEliteHint;
 
+  /// Badge h2h_first_month.
+  ///
+  /// In en, this message translates to:
+  /// **'First month'**
+  String get badgeWallH2hFirstMonthName;
+
+  /// How to earn h2h_first_month.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish a month of the head-to-head league'**
+  String get badgeWallH2hFirstMonthHint;
+
+  /// Badge h2h_promoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving up'**
+  String get badgeWallH2hPromotedName;
+
+  /// How to earn h2h_promoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Go up a division in the head-to-head league'**
+  String get badgeWallH2hPromotedHint;
+
+  /// Badge h2h_champion.
+  ///
+  /// In en, this message translates to:
+  /// **'Month champion'**
+  String get badgeWallH2hChampionName;
+
+  /// How to earn h2h_champion.
+  ///
+  /// In en, this message translates to:
+  /// **'Top your group in the head-to-head league'**
+  String get badgeWallH2hChampionHint;
+
+  /// Badge h2h_first_division.
+  ///
+  /// In en, this message translates to:
+  /// **'First division'**
+  String get badgeWallH2hFirstDivisionName;
+
+  /// How to earn h2h_first_division.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish a month in the first division'**
+  String get badgeWallH2hFirstDivisionHint;
+
   /// Title of the notification settings page and its section in settings.
   ///
   /// In en, this message translates to:

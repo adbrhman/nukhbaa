@@ -35,14 +35,14 @@ List<MyBadge> _ok(Result<List<MyBadge>> result) =>
 
 void main() {
   group('GetMyBadges', () {
-    test('lists the whole catalog, in order, for the caller only', () async {
+    test('lists the active catalog, in order, for the caller only', () async {
       final reader = _FakeReader();
 
       final badges = _ok(
         await GetMyBadges(badges: reader)(principal: _principal),
       );
 
-      expect([for (final b in badges) b.code], BadgeCode.values);
+      expect([for (final b in badges) b.code], BadgeCode.active);
       expect(reader.asked, [const UserId(_me)]);
       expect(badges.every((b) => b.unlockedAt == null), isTrue);
       expect(badges.every((b) => b.current == 0), isTrue);
@@ -91,6 +91,25 @@ void main() {
       expect(first.code, BadgeCode.firstPrediction);
       expect(first.current, first.target);
       expect(first.unlockedAt, isNull);
+    });
+
+    test('a retired badge is left out, even when held', () async {
+      final reader = _FakeReader(
+        record: PlayerBadgeRecord(
+          progress: const BadgeProgress(eliteWeeks: 3, monthsFinished: 1),
+          unlockedAt: {BadgeCode.leagueElite: DateTime.utc(2026, 10, 5, 3)},
+        ),
+      );
+
+      final badges = _ok(
+        await GetMyBadges(badges: reader)(principal: _principal),
+      );
+
+      expect(badges.where((b) => b.code.isRetired), isEmpty);
+      expect(badges, hasLength(BadgeCode.active.length));
+      final month = badges.firstWhere((b) => b.code == BadgeCode.h2hFirstMonth);
+      expect(month.current, 1);
+      expect(month.unlockedAt, isNull);
     });
 
     test('a reader failure is returned, not swallowed', () async {

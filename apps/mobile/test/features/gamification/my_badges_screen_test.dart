@@ -23,10 +23,10 @@ const List<String> _catalog = <String>[
   'first_perfect_day',
   'perfect_days_7',
   'perfect_days_30',
-  'league_first_week',
-  'league_promoted',
-  'league_champion',
-  'league_elite',
+  'h2h_first_month',
+  'h2h_promoted',
+  'h2h_champion',
+  'h2h_first_division',
 ];
 
 http.Response _okJson(Map<String, Object?> body) => http.Response(

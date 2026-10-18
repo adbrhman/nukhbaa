@@ -990,6 +990,38 @@
   "@badgeWallLeagueEliteHint": {
     "description": "How to earn league_elite."
   },
+  "badgeWallH2hFirstMonthName": "First month",
+  "@badgeWallH2hFirstMonthName": {
+    "description": "Badge h2h_first_month."
+  },
+  "badgeWallH2hFirstMonthHint": "Finish a month of the head-to-head league",
+  "@badgeWallH2hFirstMonthHint": {
+    "description": "How to earn h2h_first_month."
+  },
+  "badgeWallH2hPromotedName": "Moving up",
+  "@badgeWallH2hPromotedName": {
+    "description": "Badge h2h_promoted."
+  },
+  "badgeWallH2hPromotedHint": "Go up a division in the head-to-head league",
+  "@badgeWallH2hPromotedHint": {
+    "description": "How to earn h2h_promoted."
+  },
+  "badgeWallH2hChampionName": "Month champion",
+  "@badgeWallH2hChampionName": {
+    "description": "Badge h2h_champion."
+  },
+  "badgeWallH2hChampionHint": "Top your group in the head-to-head league",
+  "@badgeWallH2hChampionHint": {
+    "description": "How to earn h2h_champion."
+  },
+  "badgeWallH2hFirstDivisionName": "First division",
+  "@badgeWallH2hFirstDivisionName": {
+    "description": "Badge h2h_first_division."
+  },
+  "badgeWallH2hFirstDivisionHint": "Finish a month in the first division",
+  "@badgeWallH2hFirstDivisionHint": {
+    "description": "How to earn h2h_first_division."
+  },
   "notificationSettingsTitle": "Notifications",
   "@notificationSettingsTitle": {
     "description": "Title of the notification settings page and its section in settings."

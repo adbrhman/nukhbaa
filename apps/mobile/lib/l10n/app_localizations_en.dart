@@ -1407,6 +1407,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get badgeWallLeagueEliteHint => 'Finish a week in the Elite tier';
 
   @override
+  String get badgeWallH2hFirstMonthName => 'First month';
+
+  @override
+  String get badgeWallH2hFirstMonthHint =>
+      'Finish a month of the head-to-head league';
+
+  @override
+  String get badgeWallH2hPromotedName => 'Moving up';
+
+  @override
+  String get badgeWallH2hPromotedHint =>
+      'Go up a division in the head-to-head league';
+
+  @override
+  String get badgeWallH2hChampionName => 'Month champion';
+
+  @override
+  String get badgeWallH2hChampionHint =>
+      'Top your group in the head-to-head league';
+
+  @override
+  String get badgeWallH2hFirstDivisionName => 'First division';
+
+  @override
+  String get badgeWallH2hFirstDivisionHint =>
+      'Finish a month in the first division';
+
+  @override
   String get notificationSettingsTitle => 'Notifications';
 
   @override

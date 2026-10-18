@@ -48,6 +48,10 @@ Map<String, dynamic> _counts({
   Object? promotions = 0,
   Object? won = 0,
   Object? elite = 0,
+  Object? months = 0,
+  Object? monthPromotions = 0,
+  Object? monthsWon = 0,
+  Object? firstDivision = 0,
 }) => {
   'predictions_placed': predictions,
   'perfect_days': perfectDays,
@@ -55,6 +59,10 @@ Map<String, dynamic> _counts({
   'promotions': promotions,
   'weeks_won': won,
   'elite_weeks': elite,
+  'months_finished': months,
+  'month_promotions': monthPromotions,
+  'months_won': monthsWon,
+  'first_division_months': firstDivision,
 };
 
 const _failure = Result<List<Map<String, dynamic>>>.err(
@@ -71,7 +79,17 @@ void main() {
     test('maps the counts and the held badges with their moments', () async {
       final granted = DateTime.utc(2026, 9, 20, 8);
       final connection = _FakeConnection([
-        Result.ok([_counts(predictions: 30, perfectDays: '2', weeks: 1)]),
+        Result.ok([
+          _counts(
+            predictions: 30,
+            perfectDays: '2',
+            weeks: 1,
+            months: 3,
+            monthPromotions: 1,
+            monthsWon: '1',
+            firstDivision: 2,
+          ),
+        ]),
         Result.ok([
           {'code': 'first_prediction', 'unlocked_at': granted},
           {'code': 'predictions_25', 'unlocked_at': '2026-09-21T09:00:00Z'},
@@ -86,6 +104,10 @@ void main() {
       expect(record.progress.predictionsPlaced, 30);
       expect(record.progress.perfectDays, 2);
       expect(record.progress.weeksFinished, 1);
+      expect(record.progress.monthsFinished, 3);
+      expect(record.progress.monthPromotions, 1);
+      expect(record.progress.monthsWon, 1);
+      expect(record.progress.firstDivisionMonths, 2);
       expect(record.unlockedAt, <BadgeCode, DateTime>{
         BadgeCode.firstPrediction: granted,
         BadgeCode.predictions25: DateTime.utc(2026, 9, 21, 9),
@@ -116,6 +138,18 @@ void main() {
       expect(
         sql,
         contains("'${GamificationEventType.weeklyLeagueFinished.wireName}'"),
+      );
+      expect(
+        sql,
+        contains("'${GamificationEventType.h2hLeagueFinished.wireName}'"),
+      );
+      expect(
+        sql,
+        contains("'outcome' = '${H2hLeagueOutcome.promoted.wireName}'"),
+      );
+      expect(
+        sql,
+        contains("e.payload->>'division' = '${H2hDivision.first.level}'"),
       );
       expect(
         connection.sqls.last,

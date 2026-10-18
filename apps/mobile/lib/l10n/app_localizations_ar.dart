@@ -1414,6 +1414,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgeWallLeagueEliteHint => 'أنهِ أسبوعاً في طبقة النخبة';
 
   @override
+  String get badgeWallH2hFirstMonthName => 'شهرك الأول';
+
+  @override
+  String get badgeWallH2hFirstMonthHint => 'أنهِ شهراً في دوري المواجهات';
+
+  @override
+  String get badgeWallH2hPromotedName => 'صعود الدرجة';
+
+  @override
+  String get badgeWallH2hPromotedHint => 'اصعد درجة في دوري المواجهات';
+
+  @override
+  String get badgeWallH2hChampionName => 'بطل الشهر';
+
+  @override
+  String get badgeWallH2hChampionHint => 'تصدّر مجموعتك في دوري المواجهات';
+
+  @override
+  String get badgeWallH2hFirstDivisionName => 'الدرجة الأولى';
+
+  @override
+  String get badgeWallH2hFirstDivisionHint => 'أنهِ شهراً في الدرجة الأولى';
+
+  @override
   String get notificationSettingsTitle => 'الإشعارات';
 
   @override

@@ -138,7 +138,7 @@ void main() {
       final progress = _FakeProgress([
         _standing(1, progress: const BadgeProgress(predictionsPlaced: 1)),
         _standing(2),
-        _standing(3, progress: const BadgeProgress(eliteWeeks: 1)),
+        _standing(3, progress: const BadgeProgress(firstDivisionMonths: 1)),
       ]);
 
       final result = await _useCase(
@@ -149,8 +149,31 @@ void main() {
       expect((result as Ok<int>).value, 2);
       expect(_keys(events), <String>[
         'badge_unlocked:${_id(1)}:first_prediction',
-        'badge_unlocked:${_id(3)}:league_elite',
+        'badge_unlocked:${_id(3)}:h2h_first_division',
       ]);
+    });
+
+    test('a retired badge is never awarded, whatever its count', () async {
+      final events = _FakeEvents();
+      final progress = _FakeProgress([
+        _standing(
+          1,
+          progress: const BadgeProgress(
+            weeksFinished: 4,
+            promotions: 1,
+            weeksWon: 1,
+            eliteWeeks: 1,
+          ),
+        ),
+      ]);
+
+      final result = await _useCase(
+        progress: progress,
+        events: events,
+      ).call(now: _now);
+
+      expect((result as Ok<int>).value, 0);
+      expect(events.recorded, isEmpty);
     });
 
     test('a failed read is passed through and writes nothing', () async {

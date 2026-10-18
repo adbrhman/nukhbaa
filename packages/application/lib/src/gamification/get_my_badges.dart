@@ -29,8 +29,9 @@ final class MyBadge {
   int get target => code.target;
 }
 
-/// Lists every catalog badge, in catalog order, with the caller's progress
-/// and the moment each held badge was granted (P2-8).
+/// Lists every active catalog badge, in catalog order, with the caller's
+/// progress and the moment each held badge was granted (P2-8). A retired
+/// badge is left out, even for a player who holds it.
 ///
 /// Held means a `badge_unlocked` event exists; the grant itself is the
 /// evaluator's job, on its own schedule. A badge whose count is already
@@ -64,7 +65,7 @@ final class GetMyBadges {
 
     return Result.ok(
       List<MyBadge>.unmodifiable(<MyBadge>[
-        for (final code in BadgeCode.values)
+        for (final code in BadgeCode.active)
           MyBadge(
             code: code,
             current: _capped(code.countIn(record.progress), code.target),

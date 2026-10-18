@@ -21,6 +21,10 @@ void main() {
         'league_promoted',
         'league_champion',
         'league_elite',
+        'h2h_first_month',
+        'h2h_promoted',
+        'h2h_champion',
+        'h2h_first_division',
       ]);
     });
 
@@ -92,25 +96,63 @@ void main() {
       );
     });
 
-    test('each league badge reads only its own count', () {
+    test('the weekly-league badges are retired and never earned again', () {
       expect(
-        BadgeCode.earnedBy(const BadgeProgress(weeksFinished: 1)),
-        <BadgeCode>[BadgeCode.leagueFirstWeek],
+        BadgeCode.earnedBy(
+          const BadgeProgress(
+            weeksFinished: 1000,
+            promotions: 1000,
+            weeksWon: 1000,
+            eliteWeeks: 1000,
+          ),
+        ),
+        isEmpty,
       );
       expect(
-        BadgeCode.earnedBy(const BadgeProgress(promotions: 1)),
-        <BadgeCode>[BadgeCode.leaguePromoted],
+        <BadgeCode>[
+          for (final code in BadgeCode.values)
+            if (code.isRetired) code,
+        ],
+        <BadgeCode>[
+          BadgeCode.leagueFirstWeek,
+          BadgeCode.leaguePromoted,
+          BadgeCode.leagueChampion,
+          BadgeCode.leagueElite,
+        ],
       );
-      expect(BadgeCode.earnedBy(const BadgeProgress(weeksWon: 1)), <BadgeCode>[
-        BadgeCode.leagueChampion,
+      expect(BadgeCode.active, <BadgeCode>[
+        BadgeCode.firstPrediction,
+        BadgeCode.predictions25,
+        BadgeCode.predictions100,
+        BadgeCode.firstPerfectDay,
+        BadgeCode.perfectDays7,
+        BadgeCode.perfectDays30,
+        BadgeCode.h2hFirstMonth,
+        BadgeCode.h2hPromoted,
+        BadgeCode.h2hChampion,
+        BadgeCode.h2hFirstDivision,
+      ]);
+    });
+
+    test('each head-to-head badge reads only its own count', () {
+      expect(
+        BadgeCode.earnedBy(const BadgeProgress(monthsFinished: 1)),
+        <BadgeCode>[BadgeCode.h2hFirstMonth],
+      );
+      expect(
+        BadgeCode.earnedBy(const BadgeProgress(monthPromotions: 1)),
+        <BadgeCode>[BadgeCode.h2hPromoted],
+      );
+      expect(BadgeCode.earnedBy(const BadgeProgress(monthsWon: 1)), <BadgeCode>[
+        BadgeCode.h2hChampion,
       ]);
       expect(
-        BadgeCode.earnedBy(const BadgeProgress(eliteWeeks: 1)),
-        <BadgeCode>[BadgeCode.leagueElite],
+        BadgeCode.earnedBy(const BadgeProgress(firstDivisionMonths: 1)),
+        <BadgeCode>[BadgeCode.h2hFirstDivision],
       );
     });
 
-    test('a full history earns the whole catalog, in catalog order', () {
+    test('a full history earns the active catalog, in catalog order', () {
       const full = BadgeProgress(
         predictionsPlaced: 1000,
         perfectDays: 1000,
@@ -118,9 +160,13 @@ void main() {
         promotions: 1000,
         weeksWon: 1000,
         eliteWeeks: 1000,
+        monthsFinished: 1000,
+        monthPromotions: 1000,
+        monthsWon: 1000,
+        firstDivisionMonths: 1000,
       );
 
-      expect(BadgeCode.earnedBy(full), BadgeCode.values);
+      expect(BadgeCode.earnedBy(full), BadgeCode.active);
     });
   });
 }

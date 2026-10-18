@@ -68,6 +68,10 @@ void main() {
           'promotions': 1,
           'weeks_won': 0,
           'elite_weeks': 0,
+          'months_finished': 2,
+          'month_promotions': '1',
+          'months_won': 1,
+          'first_division_months': 0,
           'unlocked_codes': 'first_prediction,predictions_25',
         },
         {
@@ -93,6 +97,11 @@ void main() {
       expect(standings[0].progress.promotions, 1);
       expect(standings[0].progress.weeksWon, 0);
       expect(standings[0].progress.eliteWeeks, 0);
+      expect(standings[0].progress.monthsFinished, 2);
+      expect(standings[0].progress.monthPromotions, 1);
+      expect(standings[0].progress.monthsWon, 1);
+      expect(standings[0].progress.firstDivisionMonths, 0);
+      expect(standings[1].progress.monthsFinished, 0);
       expect(standings[0].unlocked, <BadgeCode>{
         BadgeCode.firstPrediction,
         BadgeCode.predictions25,
@@ -204,6 +213,29 @@ void main() {
       }
       expect(sql, contains("'${WeeklyLeagueOutcome.promoted.wireName}'"));
       expect(sql, contains("= '${WeeklyLeagueTier.elite.level}'"));
+    });
+
+    test('the head-to-head literals are the domain wire values', () async {
+      final connection = _rows(const <Map<String, dynamic>>[]);
+
+      await PostgresBadgeProgressReader(connection).readAll();
+
+      final sql = connection.sqls.single;
+      final h2h = GamificationEventType.h2hLeagueFinished.wireName;
+      expect(sql, contains("e.event_type = '$h2h'\n       ))::int AS months"));
+      expect(
+        sql,
+        contains(
+          "e.event_type = '$h2h'\n"
+          "           AND e.payload->>'outcome' = "
+          "'${H2hLeagueOutcome.promoted.wireName}'",
+        ),
+      );
+      expect(
+        sql,
+        contains("e.payload->>'division' = '${H2hDivision.first.level}'"),
+      );
+      expect(sql, contains("e.payload->'league_points'"));
     });
   });
 }
