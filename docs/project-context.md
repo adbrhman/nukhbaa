@@ -2806,6 +2806,22 @@ the final result too.
   audit entry: `admin.audit_log` actions are a fixed set, and the recorded
   result an admin enters by hand stays audited as before.
 
+### Club list that failed to load (2026-10-19)
+
+The add-fixture form read every club («النصر», «الهلال», «ميلان»...) as
+«ليس في قائمة الأندية» and kept «أضف النادي إلى القائمة» off. The data was
+sound (373 clubs, 18 on the Roshan League, 9 KB) and closing the app fixed
+it: `GET /teams` had failed once while the server was slow after a restart,
+Riverpod's retries ran out, and `teamCatalogProvider` stayed in error while
+the matches screen held it. The form showed nothing about it.
+
+`TeamCatalogStatus` (admin/widgets) now sits above the team fields of the
+add and edit forms: «جارٍ تحميل قائمة الأندية…» while it loads, «تعذّر تحميل
+قائمة الأندية» with the error and «إعادة المحاولة» when it failed, and
+nothing once it is in. A form opened on a failed list asks for it again by
+itself. «ليس في قائمة الأندية» shows only once the list is in, since before
+that it is not known; saving stays blocked either way.
+
 ### Streak bonus (P1-4, 2026-09-19)
 
 Gamification adds no second points store. A streak bonus is a `streak_bonus`

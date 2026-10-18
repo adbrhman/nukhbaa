@@ -14,6 +14,7 @@ import '../../widgets/add_club_dialog.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/riyadh_kickoff_field.dart';
+import '../../widgets/team_catalog_status.dart';
 import '../../widgets/team_picker_field.dart';
 import '../../widgets/team_picker_aliases.dart';
 import '../../widgets/team_picker_league_scope.dart';
@@ -294,6 +295,9 @@ class _FixtureScheduleSectionState
                 }),
               ),
               const SizedBox(height: AppSpacing.md),
+              // A list that failed to load says so, with a retry: before
+              // 2026-10-19 every club read as unknown instead.
+              const TeamCatalogStatus(),
               TeamPickerField(
                 fieldKey: const Key('admin.fixtures.homeTeamField'),
                 controller: _homeTeamController,
@@ -311,7 +315,7 @@ class _FixtureScheduleSectionState
                 // redraws.
                 onChanged: () => setState(() {}),
               ),
-              if (homeUnknown)
+              if (homeUnknown && catalogReady)
                 UnresolvedTeamHint(
                   key: const Key('admin.fixtures.homeTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
@@ -336,7 +340,7 @@ class _FixtureScheduleSectionState
                 ),
                 onChanged: () => setState(() {}),
               ),
-              if (awayUnknown)
+              if (awayUnknown && catalogReady)
                 UnresolvedTeamHint(
                   key: const Key('admin.fixtures.awayTeamUnresolved'),
                   message: l10n.adminTeamNotInCatalogHint,
