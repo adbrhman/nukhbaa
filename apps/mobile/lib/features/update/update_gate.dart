@@ -41,8 +41,11 @@
 /// different APK signing key. Release APKs MUST be signed with a stable key.
 ///
 /// GOOGLE PLAY: this native-install path is for EXTERNAL (GitHub/APK)
-/// distribution only. A future Play build must switch to the Play In-App
-/// Updates API instead.
+/// distribution only. The Play bundle (script 112) carries
+/// `NUKHBA_CHANNEL=play`: Google Play updates it, so it never offers the
+/// install row or the home reminder, and its update screen opens the store
+/// listing ([playStoreListing]) instead of [installUpdate]. CI also removes
+/// REQUEST_INSTALL_PACKAGES from that bundle, so it cannot install a package.
 ///
 /// Silent on any check failure (offline, transient server error, malformed
 /// response): [child] always renders immediately.
@@ -73,6 +76,21 @@ const String updateLastSeenKey = 'nukhba.update_last_seen_published_at';
 final Provider<InAppUpdater> inAppUpdaterProvider = Provider<InAppUpdater>(
   (ref) => OtaInAppUpdater(),
 );
+
+/// The value of `NUKHBA_CHANNEL` in the Google Play bundle (script 112).
+const String playChannel = 'play';
+
+/// The app's page in Google Play, where the Play build is updated.
+const String playStoreListing =
+    'https://play.google.com/store/apps/details?id=app.nukhbaa';
+
+/// Opens [playStoreListing] in the Play Store app; overridden in tests.
+final Provider<Future<void> Function(Uri)> storeOpenerProvider =
+    Provider<Future<void> Function(Uri)>(
+      (ref) => (Uri uri) async {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      },
+    );
 
 /// Reloads the web page (a no-op off the web); overridden in tests.
 final Provider<void Function()> pageReloaderProvider =
@@ -179,6 +197,7 @@ class UpdateGate extends ConsumerStatefulWidget {
     this.buildSha = const String.fromEnvironment('NUKHBA_BUILD_SHA'),
     this.buildNumber = const int.fromEnvironment('NUKHBA_BUILD_NUMBER'),
     this.builtAt = const String.fromEnvironment('NUKHBA_BUILT_AT'),
+    this.channel = const String.fromEnvironment('NUKHBA_CHANNEL'),
     this.webRecheck = const Duration(minutes: 30),
     super.key,
   });
@@ -204,6 +223,10 @@ class UpdateGate extends ConsumerStatefulWidget {
 
   /// When CI built this app (ISO-8601); empty on a local run.
   final String builtAt;
+
+  /// Where this build is distributed, injected by CI: [playChannel] for
+  /// the Google Play bundle, empty for the APK the site and GitHub serve.
+  final String channel;
 
   /// How long a page left open waits before asking again on a return.
   final Duration webRecheck;
@@ -301,10 +324,17 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
         minimum != null &&
         widget.buildNumber < minimum) {
       holdBack.require(dto);
-      ref.read(pendingUpdateProvider.notifier).offer(dto);
+      // Play installs its own updates: nothing is offered to install here.
+      if (widget.channel != playChannel) {
+        ref.read(pendingUpdateProvider.notifier).offer(dto);
+      }
       return;
     }
     holdBack.release();
+
+    // The Play build: Google Play updates it; only the minimum above
+    // concerns it (script 112).
+    if (widget.channel == playChannel) return;
 
     // The short commit sha of THIS build, injected by CI at
     // `flutter build apk` time. The published release lives under the tag
@@ -421,7 +451,12 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     final LatestBuildDto? mustInstall = widget.isWeb
         ? null
         : ref.watch(requiredUpdateProvider);
-    if (mustInstall != null) return RequiredUpdateScreen(update: mustInstall);
+    if (mustInstall != null) {
+      return RequiredUpdateScreen(
+        update: mustInstall,
+        fromPlay: widget.channel == playChannel,
+      );
+    }
     return widget.child;
   }
 }
@@ -431,10 +466,18 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 /// until the new build is installed.
 class RequiredUpdateScreen extends ConsumerWidget {
   /// Creates the screen for [update].
-  const RequiredUpdateScreen({required this.update, super.key});
+  const RequiredUpdateScreen({
+    required this.update,
+    this.fromPlay = false,
+    super.key,
+  });
 
   /// The release to install.
   final LatestBuildDto update;
+
+  /// The Google Play build: the button opens the store listing, never the
+  /// in-app installer (script 112).
+  final bool fromPlay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -474,8 +517,13 @@ class RequiredUpdateScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('update.required.install'),
-                  onPressed: () =>
-                      unawaited(installUpdate(context, ref, update)),
+                  onPressed: () => unawaited(
+                    fromPlay
+                        ? ref.read(storeOpenerProvider)(
+                            Uri.parse(playStoreListing),
+                          )
+                        : installUpdate(context, ref, update),
+                  ),
                   icon: const Icon(Icons.download_rounded),
                   label: const Text('حدِّث الآن'),
                 ),

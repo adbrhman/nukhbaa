@@ -5,7 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      play_bundle:
+        description: "Also build the Google Play bundle (AAB)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -831,6 +836,60 @@ jobs:
         with:
           name: nukhba-android-apk
           path: apps/mobile/build/app/outputs/flutter-apk/*.apk
+          retention-days: 14
+
+      # The Google Play bundle (script 112), only on a manual run that asks
+      # for it. Play forbids an app that installs its own updates: after the
+      # APK above is built and uploaded, the manifest loses
+      # REQUEST_INSTALL_PACKAGES (also from any library, tools:node="remove")
+      # and ota_update's provider and receiver; the bundle carries
+      # NUKHBA_CHANNEL=play (the app opens the store listing instead) and a
+      # versionCode equal to the run number, which must grow on every upload.
+      - name: Build the Google Play bundle (manual run only)
+        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle
+        working-directory: apps/mobile
+        env:
+          EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import re
+          m = "android/app/src/main/AndroidManifest.xml"
+          s = open(m, encoding="utf-8").read()
+          s = re.sub(r'\s*<uses-permission android:name="android\.permission\.REQUEST_INSTALL_PACKAGES"\s*/>', '', s)
+          s = re.sub(r'\s*<provider\s+android:name="sk\.fourq\.otaupdate\.OtaUpdateFileProvider".*?</provider>', '', s, flags=re.S)
+          s = re.sub(r'\s*<receiver\s+android:name="sk\.fourq\.otaupdate\.InstallResultReceiver".*?</receiver>', '', s, flags=re.S)
+          if 'xmlns:tools=' not in s:
+              s = re.sub(r'<manifest\b', '<manifest xmlns:tools="http://schemas.android.com/tools"', s, count=1)
+          s = re.sub(r'(<manifest[^>]*>)', r'\1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />', s, count=1)
+          if 'sk.fourq.otaupdate' in s:
+              raise SystemExit("ERROR: ota_update is still in the manifest")
+          open(m, "w", encoding="utf-8").write(s)
+          PYEOF
+          python3 -c 'import json; d = json.load(open("/tmp/dart_defines.json")); d["NUKHBA_CHANNEL"] = "play"; json.dump(d, open("/tmp/dart_defines_play.json", "w"))'
+          flutter build appbundle --dart-define-from-file=/tmp/dart_defines_play.json --build-number="${{ github.run_number }}" --release
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          test -s "$AAB" || { echo "::error::no $AAB"; exit 1; }
+          FOUND=0
+          for f in $(find build/app/intermediates -type f -name AndroidManifest.xml -path '*merged_manifest*' -path '*/release/*'); do
+            FOUND=1
+            if grep -q 'REQUEST_INSTALL_PACKAGES' "$f"; then
+              echo "::error::REQUEST_INSTALL_PACKAGES is still in $f"; exit 1
+            fi
+          done
+          [ "$FOUND" = 1 ] || { echo "::error::no merged release manifest found"; exit 1; }
+          test -n "${EXPECTED_SHA256:-}" || { echo "::error::ANDROID_CERT_SHA256 secret not set"; exit 1; }
+          EXP=$(echo "$EXPECTED_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
+          ACT=$(keytool -printcert -jarfile "$AAB" | grep 'SHA256:' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+          [ "$ACT" = "$EXP" ] || { echo "::error::bundle signature mismatch: got $ACT expected $EXP"; exit 1; }
+          echo "Play bundle: versionCode ${{ github.run_number }}, no REQUEST_INSTALL_PACKAGES, upload key matches"
+
+      - name: Upload the Google Play bundle
+        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: nukhba-play-bundle
+          path: apps/mobile/build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
 
   publish_latest_apk:
