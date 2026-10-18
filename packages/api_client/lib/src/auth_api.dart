@@ -254,18 +254,6 @@ final class AuthApi {
     );
   }
 
-  /// `GET /me/weekly-league` -- the caller's group in the Riyadh weekly
-  /// league that is open now, ranked.
-  ///
-  /// Computed on every call from the same points the monthly board reads;
-  /// nothing weekly is cached here, so there is nothing to invalidate.
-  Future<Result<MyWeeklyLeagueDto>> myWeeklyLeague() {
-    return _transport.getObject<MyWeeklyLeagueDto>(
-      '/me/weekly-league',
-      parse: MyWeeklyLeagueDto.fromJson,
-    );
-  }
-
   /// `GET /me/h2h-league` -- the caller's month in the head-to-head league
   /// (migration 0100): the state of the month, the group's table, every
   /// round with the caller's match, and the zones. Computed by the server

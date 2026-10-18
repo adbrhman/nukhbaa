@@ -37,7 +37,6 @@ final class CompositionRoot {
     required this.getMyStreak,
     required this.getMyInsights,
     required this.getMyDailyChallenge,
-    required this.getMyWeeklyLeague,
     required this.getMyBadges,
     required this.getMyNotificationPreferences,
     required this.updateMyNotificationPreferences,
@@ -131,7 +130,6 @@ final class CompositionRoot {
     required this.sendPreMatchReminders,
     required this.sendStreakSavers,
     required this.sendIncompleteDayReminders,
-    required this.sendOvertakenPushes,
     required this.recordPushOpen,
     required this.recordScreenViews,
     required this.recordFrameReport,
@@ -152,7 +150,6 @@ final class CompositionRoot {
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
-    required this.closeWeeklyLeague,
     required this.getMyH2hLeague,
     required this.getMyH2hMonth,
     required this.getMyH2hRound,
@@ -247,7 +244,6 @@ final class CompositionRoot {
     GetMyStreak? getMyStreak,
     GetMyInsights? getMyInsights,
     GetMyDailyChallenge? getMyDailyChallenge,
-    GetMyWeeklyLeague? getMyWeeklyLeague,
     GetMyBadges? getMyBadges,
     GetMyNotificationPreferences? getMyNotificationPreferences,
     UpdateMyNotificationPreferences? updateMyNotificationPreferences,
@@ -341,7 +337,6 @@ final class CompositionRoot {
     SendPreMatchReminders? sendPreMatchReminders,
     SendStreakSavers? sendStreakSavers,
     SendIncompleteDayReminders? sendIncompleteDayReminders,
-    SendOvertakenPushes? sendOvertakenPushes,
     RecordPushOpen? recordPushOpen,
     RecordScreenViews? recordScreenViews,
     RecordFrameReport? recordFrameReport,
@@ -362,7 +357,6 @@ final class CompositionRoot {
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
-    CloseWeeklyLeague? closeWeeklyLeague,
     GetMyH2hLeague? getMyH2hLeague,
     GetMyH2hMonth? getMyH2hMonth,
     GetMyH2hRound? getMyH2hRound,
@@ -433,7 +427,6 @@ final class CompositionRoot {
        getMyInsights = getMyInsights ?? _absentGetMyInsights(),
        getMyDailyChallenge =
            getMyDailyChallenge ?? _absentGetMyDailyChallenge(),
-       getMyWeeklyLeague = getMyWeeklyLeague ?? _absentGetMyWeeklyLeague(),
        getMyBadges = getMyBadges ?? _absentGetMyBadges(),
        getMyNotificationPreferences =
            getMyNotificationPreferences ??
@@ -582,8 +575,6 @@ final class CompositionRoot {
        sendStreakSavers = sendStreakSavers ?? _absentSendStreakSavers(),
        sendIncompleteDayReminders =
            sendIncompleteDayReminders ?? _absentSendIncompleteDayReminders(),
-       sendOvertakenPushes =
-           sendOvertakenPushes ?? _absentSendOvertakenPushes(),
        recordPushOpen = recordPushOpen ?? _absentRecordPushOpen(),
        recordScreenViews = recordScreenViews ?? _absentRecordScreenViews(),
        recordFrameReport = recordFrameReport ?? _absentRecordFrameReport(),
@@ -614,7 +605,6 @@ final class CompositionRoot {
            ensureUpcomingMonthlySeasons ??
            _absentEnsureUpcomingMonthlySeasons(),
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
-       closeWeeklyLeague = closeWeeklyLeague ?? _absentCloseWeeklyLeague(),
        getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
        getMyH2hMonth = getMyH2hMonth ?? _absentGetMyH2hMonth(),
        getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
@@ -772,18 +762,6 @@ final class CompositionRoot {
         dailyChallenges: _UnwiredDailyChallengeRepository(),
         clock: _unwiredClock,
       );
-
-  /// Builds an "absent" [GetMyWeeklyLeague] over ports that throw if a test
-  /// reaches the weekly-league slice it never wired.
-  static GetMyWeeklyLeague _absentGetMyWeeklyLeague() => GetMyWeeklyLeague(
-    join: JoinWeeklyLeague(
-      leagues: _UnwiredWeeklyLeagueRepository(),
-      idGenerator: _unwiredIdGenerator,
-      clock: _unwiredClock,
-    ),
-    standings: _UnwiredWeeklyLeagueStandingsReader(),
-    profiles: _UnwiredWeeklyLeagueProfileReader(),
-  );
 
   /// Builds an "absent" [GetMyBadges] over a reader that throws if a test
   /// reaches the badge wall it never wired.
@@ -1414,15 +1392,6 @@ final class CompositionRoot {
   static SettleMatchDays _absentSettleMatchDays() =>
       SettleMatchDays(store: _UnwiredMatchDaySettlementStore());
 
-  /// Backs the "absent" [CloseWeeklyLeague]: its store throws, so a test that
-  /// reaches it fails loudly.
-  static CloseWeeklyLeague _absentCloseWeeklyLeague() => CloseWeeklyLeague(
-    closures: _UnwiredWeeklyLeagueClosureStore(),
-    standings: _UnwiredWeeklyLeagueStandingsReader(),
-    events: _UnwiredGamificationEventSink(),
-    idGenerator: _unwiredIdGenerator,
-  );
-
   /// Backs every "absent" head-to-head use-case: one stand-in for all four
   /// ports, which throws, so a test that reaches a slice it never wired
   /// fails loudly.
@@ -1575,16 +1544,6 @@ final class CompositionRoot {
   static SendIncompleteDayReminders _absentSendIncompleteDayReminders() =>
       SendIncompleteDayReminders(
         reminders: _UnwiredIncompleteDayReminderRepository(),
-        sender: const NoopPushSender(),
-      );
-
-  /// Backs an "absent" [SendOvertakenPushes]: never reached by a route test.
-  static SendOvertakenPushes _absentSendOvertakenPushes() =>
-      SendOvertakenPushes(
-        overtaken: _UnwiredOvertakenRepository(),
-        standings: _UnwiredWeeklyLeagueStandingsReader(),
-        profiles: _UnwiredWeeklyLeagueProfileReader(),
-        budget: _UnwiredPredictionReminderRepository(),
         sender: const NoopPushSender(),
       );
 
@@ -1928,11 +1887,6 @@ final class CompositionRoot {
   /// `GET /me/daily-challenge`). Computed per request over the caller's
   /// active seasons; nothing is stored.
   final GetMyDailyChallenge getMyDailyChallenge;
-
-  /// Reads the caller's own weekly-league group, ranked (backs
-  /// `GET /me/weekly-league`). Seats the caller on first sight; computed per
-  /// request from the one source of points, nothing weekly is stored.
-  final GetMyWeeklyLeague getMyWeeklyLeague;
 
   /// Reads the caller's badge wall: every catalog badge, progress and grant
   /// moment (backs `GET /me/badges`). Read-only; the evaluator grants.
@@ -2340,10 +2294,6 @@ final class CompositionRoot {
   /// still open (batch 117). Driven by the scheduler.
   final SendIncompleteDayReminders sendIncompleteDayReminders;
 
-  /// Tells a weekly-league member who was just overtaken (plan P3-4c).
-  /// Driven by the scheduler.
-  final SendOvertakenPushes sendOvertakenPushes;
-
   /// Records a tap on a push (backs `POST /me/push-opened`, plan P3-8).
   final RecordPushOpen recordPushOpen;
 
@@ -2417,10 +2367,6 @@ final class CompositionRoot {
   /// Freezes each finished Riyadh match day for the streak calendar. Driven
   /// by the scheduler, never by a request.
   final SettleMatchDays settleMatchDays;
-
-  /// Judges each finished weekly-league week and writes its standings into
-  /// the event stream. Driven by the scheduler, never by a request.
-  final CloseWeeklyLeague closeWeeklyLeague;
 
   /// Reads the caller's head-to-head month: table, rounds, zones (backs
   /// `GET /me/h2h-league`, migration 0100).
@@ -3108,16 +3054,6 @@ final class CompositionRoot {
         dailyChallenges: PostgresDailyChallengeRepository(connection),
         clock: clock,
       ),
-      getMyWeeklyLeague: GetMyWeeklyLeague(
-        join: JoinWeeklyLeague(
-          leagues: PostgresWeeklyLeagueRepository(connection),
-          idGenerator: idGenerator,
-          clock: clock,
-        ),
-        standings: PostgresWeeklyLeagueStandingsReader(connection),
-        profiles: PostgresWeeklyLeagueProfileReader(connection),
-        notices: PostgresOvertakenRepository(connection),
-      ),
       getMyBadges: GetMyBadges(badges: PostgresPlayerBadgeReader(connection)),
       getMyNotificationPreferences: GetMyNotificationPreferences(
         preferences: PostgresNotificationPreferenceRepository(connection),
@@ -3252,13 +3188,6 @@ final class CompositionRoot {
       adminSetReferralsEnabled: AdminSetReferralsEnabled(
         referrals: PostgresReferralAdminRepository(connection),
       ),
-      sendOvertakenPushes: SendOvertakenPushes(
-        overtaken: PostgresOvertakenRepository(connection),
-        standings: PostgresWeeklyLeagueStandingsReader(connection),
-        profiles: PostgresWeeklyLeagueProfileReader(connection),
-        budget: PostgresPredictionReminderRepository(connection),
-        sender: pushSender,
-      ),
       flushNotificationQueue: FlushNotificationQueue(
         queue: notificationQueue,
         sender: pushSender,
@@ -3269,12 +3198,6 @@ final class CompositionRoot {
       ),
       settleMatchDays: SettleMatchDays(
         store: PostgresMatchDaySettlementStore(connection),
-      ),
-      closeWeeklyLeague: CloseWeeklyLeague(
-        closures: PostgresWeeklyLeagueClosureStore(connection),
-        standings: PostgresWeeklyLeagueStandingsReader(connection),
-        events: PostgresGamificationEventSink(connection),
-        idGenerator: idGenerator,
       ),
       getMyH2hMonth: GetMyH2hMonth(
         league: GetMyH2hLeague(
@@ -4114,48 +4037,14 @@ final class _UnwiredDailyChallengeRepository
       throw StateError('GetMyDailyChallenge was not wired into this test root');
 }
 
-/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
-/// weekly-league slice it never wired.
-final class _UnwiredWeeklyLeagueRepository implements WeeklyLeagueRepository {
-  @override
-  Future<Result<WeeklyLeagueSeat?>> seatFor({
-    required UserId userId,
-    required DateTime weekStart,
-  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
-
-  @override
-  Future<Result<WeeklyLeagueSeat>> place({
-    required UserId userId,
-    required DateTime weekStart,
-    required WeeklyLeagueTier tier,
-    required WeeklyLeagueId newLeagueId,
-    required int capacity,
-  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
-
-  @override
-  Future<Result<WeeklyLeagueFinish?>> lastFinishOf({required UserId userId}) =>
-      throw StateError('GetMyWeeklyLeague was not wired into this test root');
-}
-
-/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
-/// weekly-league standings it never wired.
-final class _UnwiredWeeklyLeagueStandingsReader
-    implements WeeklyLeagueStandingsReader {
-  @override
-  Future<Result<List<WeeklyLeagueEntry>>> entriesOf({
-    required WeeklyLeagueId leagueId,
-    required DateTime weekStart,
-  }) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
-}
-
-/// Backs an "absent" [GetMyWeeklyLeague]: throws if a test reaches the
-/// weekly-league profiles it never wired.
+/// Backs the "absent" head-to-head use-cases: throws if a test reaches the
+/// league profiles it never wired.
 final class _UnwiredWeeklyLeagueProfileReader
     implements WeeklyLeagueProfileReader {
   @override
   Future<Result<Map<UserId, WeeklyLeagueMemberProfile>>> profilesOf(
     List<UserId> userIds,
-  ) => throw StateError('GetMyWeeklyLeague was not wired into this test root');
+  ) => throw StateError('League profiles were not wired into this test root');
 }
 
 /// Backs an "absent" [GetMyBadges]: throws if a test reaches the badge wall
@@ -4208,31 +4097,12 @@ final class _UnwiredMatchDaySettlementStore implements MatchDaySettlementStore {
   }) => throw StateError('SettleMatchDays was not wired into this test root');
 }
 
-/// Backs an "absent" [CloseWeeklyLeague]: throws if a test reaches the
-/// weekly-league closing slice it never wired.
-final class _UnwiredWeeklyLeagueClosureStore
-    implements WeeklyLeagueClosureStore {
-  @override
-  Future<Result<DateTime?>> nextUnclosedWeek() =>
-      throw StateError('CloseWeeklyLeague was not wired into this test root');
-
-  @override
-  Future<Result<List<WeeklyLeagueGroupRef>>> groupsOf(DateTime weekStart) =>
-      throw StateError('CloseWeeklyLeague was not wired into this test root');
-
-  @override
-  Future<Result<void>> markClosed({
-    required DateTime weekStart,
-    required int memberCount,
-  }) => throw StateError('CloseWeeklyLeague was not wired into this test root');
-}
-
-/// Backs an "absent" [CloseWeeklyLeague]: throws if a test reaches the event
-/// stream it never wired.
+/// Backs an "absent" use-case that writes to the event stream: throws if a
+/// test reaches the stream it never wired.
 final class _UnwiredGamificationEventSink implements GamificationEventSink {
   @override
   Future<Result<void>> record(GamificationEvent event) =>
-      throw StateError('CloseWeeklyLeague was not wired into this test root');
+      throw StateError('The event stream was not wired into this test root');
 }
 
 /// Backs every "absent" head-to-head use-case (migration 0100): each port
@@ -5388,46 +5258,6 @@ final class _UnwiredIncompleteDayReminderRepository
   @override
   Future<Result<void>> markSent({
     required UserId userId,
-    required String sendDate,
-    required DateTime now,
-  }) => _unwired();
-
-  @override
-  Future<Result<void>> forgetTokens(List<String> tokens) => _unwired();
-}
-
-/// Refuses every call: see [_absentSendOvertakenPushes].
-final class _UnwiredOvertakenRepository implements OvertakenRepository {
-  static Never _unwired() =>
-      throw StateError('The overtaken sweep was not wired into this root');
-
-  @override
-  Future<Result<List<WeeklyLeagueId>>> openLeagues({
-    required DateTime weekStart,
-  }) => _unwired();
-
-  @override
-  Future<Result<Map<UserId, int>>> rankMarks(WeeklyLeagueId leagueId) =>
-      _unwired();
-
-  @override
-  Future<Result<void>> saveRankMarks({
-    required WeeklyLeagueId leagueId,
-    required Map<UserId, int> ranks,
-    required Map<UserId, UserId> passedBy,
-    required DateTime now,
-  }) => _unwired();
-
-  @override
-  Future<Result<Map<UserId, OvertakenRecipient>>> recipients({
-    required WeeklyLeagueId leagueId,
-    required List<UserId> userIds,
-  }) => _unwired();
-
-  @override
-  Future<Result<void>> markSent({
-    required UserId userId,
-    required WeeklyLeagueId leagueId,
     required String sendDate,
     required DateTime now,
   }) => _unwired();

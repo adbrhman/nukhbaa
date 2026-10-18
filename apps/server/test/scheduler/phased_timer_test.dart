@@ -6,7 +6,6 @@ import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
-import 'package:server/scheduler/overtaken_scheduler.dart';
 import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
@@ -14,7 +13,6 @@ import 'package:server/scheduler/referral_qualification_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
-import 'package:server/scheduler/weekly_league_closure_scheduler.dart';
 import 'package:test/test.dart';
 
 /// A timer that only records whether it was cancelled.
@@ -131,16 +129,11 @@ void main() {
       'incomplete day': (incompleteDayPhase, incompleteDayTick),
       'badge evaluation': (badgeEvaluationPhase, badgeEvaluationTick),
       'rescore': (rescorePhase, rescoreTick),
-      'overtaken': (overtakenPhase, overtakenTick),
       'referral qualification': (
         referralQualificationPhase,
         referralQualificationTick,
       ),
       'match-day settlement': (matchDaySettlementPhase, matchDaySettlementTick),
-      'weekly league closure': (
-        weeklyLeagueClosurePhase,
-        weeklyLeagueClosureTick,
-      ),
       'monthly season': (monthlySeasonPhase, monthlySeasonTick),
     };
     int gcd(int a, int b) => b == 0 ? a : gcd(b, a % b);

@@ -60,4 +60,3 @@ export 'src/season_duel_wins_dto.dart';
 export 'src/social_dto.dart';
 export 'src/streak_dto.dart';
 export 'src/time_zone_dto.dart';
-export 'src/weekly_league_dto.dart';

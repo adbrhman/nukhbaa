@@ -10,7 +10,8 @@ import 'dart:async';
 /// the players' requests, on a server with 0.2 vCPU. Each job now starts its
 /// period after a phase of its own, below a minute. Every tick is a whole
 /// number of minutes, so two phases that differ by less than a minute never
-/// meet again (audit NUKHBA-007b, script 99).
+/// meet again (audit NUKHBA-007b, script 99). The weekly league was deleted
+/// on 2026-10-18 (script 114), with its closure and overtaken jobs.
 const Duration providerLivePhase = Duration.zero;
 
 /// See [providerLivePhase].
@@ -44,16 +45,10 @@ const Duration badgeEvaluationPhase = Duration(seconds: 32);
 const Duration rescorePhase = Duration(seconds: 36);
 
 /// See [providerLivePhase].
-const Duration overtakenPhase = Duration(seconds: 40);
-
-/// See [providerLivePhase].
 const Duration referralQualificationPhase = Duration(seconds: 44);
 
 /// See [providerLivePhase].
 const Duration matchDaySettlementPhase = Duration(seconds: 48);
-
-/// See [providerLivePhase].
-const Duration weeklyLeagueClosurePhase = Duration(seconds: 52);
 
 /// See [providerLivePhase].
 const Duration monthlySeasonPhase = Duration(seconds: 56);

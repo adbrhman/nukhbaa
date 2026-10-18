@@ -61,7 +61,6 @@ class _NotificationSettingsScreenState
     bool? reminder,
     bool? preMatch,
     bool? streakSaver,
-    bool? overtaken,
   }) async {
     setState(() => _saving = true);
     final Result<NotificationPreferencesDto> result = await ref
@@ -70,7 +69,6 @@ class _NotificationSettingsScreenState
           predictionReminder: reminder,
           preMatch: preMatch,
           streakSaver: streakSaver,
-          overtaken: overtaken,
         );
     if (!mounted) {
       return;
@@ -141,14 +139,6 @@ class _NotificationSettingsScreenState
                     hint: l10n.notificationSettingsStreakSaverHint,
                     value: shown.streakSaver,
                     onChanged: _saving ? null : (on) => _save(streakSaver: on),
-                  ),
-                  _SwitchRow(
-                    switchKey: const Key('notifications.settings.overtaken'),
-                    icon: Icons.trending_down_rounded,
-                    title: l10n.notificationSettingsOvertakenTitle,
-                    hint: l10n.notificationSettingsOvertakenHint,
-                    value: shown.overtaken,
-                    onChanged: _saving ? null : (on) => _save(overtaken: on),
                   ),
                 ],
               ),
