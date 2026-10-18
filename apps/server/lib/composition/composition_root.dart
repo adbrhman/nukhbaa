@@ -175,6 +175,7 @@ final class CompositionRoot {
     this.adminErrorLog,
     this.adminErrorReleases,
     required this.registerDeviceToken,
+    this.deleteMyAccount,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -382,6 +383,7 @@ final class CompositionRoot {
     this.recordError,
     this.adminErrorLog,
     this.adminErrorReleases,
+    this.deleteMyAccount,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2477,6 +2479,10 @@ final class CompositionRoot {
   /// the owner is bound from the verified principal, never a body field.
   final RegisterDeviceToken registerDeviceToken;
 
+  /// Deletes the caller's own account (backs `DELETE /me/account`,
+  /// migration 0178, audit M-05); null in tests that do not provide one.
+  final DeleteMyAccount? deleteMyAccount;
+
   /// Suspends a user — the reversible admin sanction (admin-only, gated inside
   /// the use-case; a mandatory reason feeds the immutable audit record — Admin
   /// Panel decisions OPEN-A #1 / OPEN-B). The genuinely-new domain capability of
@@ -3386,6 +3392,12 @@ final class CompositionRoot {
       ),
       registerDeviceToken: RegisterDeviceToken(
         deviceTokens: deviceTokenRepository,
+      ),
+      deleteMyAccount: DeleteMyAccount(
+        accounts: PostgresAccountDeletion(
+          connection,
+          onDeleted: directory.forget,
+        ),
       ),
       createCompetition: CreateCompetition(
         repository: competitionRepository,
