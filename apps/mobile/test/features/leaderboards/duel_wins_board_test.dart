@@ -121,6 +121,25 @@ void main() {
     expect(find.byType(DuelWinsMark), findsNothing);
   });
 
+  testWidgets('the weekly league pill is gone: four pills, friends last', (
+    tester,
+  ) async {
+    final List<String> paths = await _open(tester);
+    final AppLocalizations ar = lookupAppLocalizations(const Locale('ar'));
+
+    expect(find.byKey(const Key('leaderboards.scope.3')), findsOneWidget);
+    expect(find.byKey(const Key('leaderboards.scope.4')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('leaderboards.scope.3')),
+        matching: find.text('أصدقائي'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(ar.leaderboardScopeLeague), findsNothing);
+    expect(paths, isNot(contains('/me/weekly-league')));
+  });
+
   test('the label speaks Arabic plurals', () {
     expect(duelWinsLabel(1), 'فاز في تحدٍّ واحد');
     expect(duelWinsLabel(2), 'فاز في تحديين');

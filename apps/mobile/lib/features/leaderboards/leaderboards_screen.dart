@@ -25,9 +25,12 @@ import 'widgets/champion_spotlight.dart';
 import 'widgets/fixture_standings_board.dart';
 import 'widgets/friends_league_board.dart';
 import 'widgets/sporting_season_standings_board.dart';
-import 'widgets/weekly_league_board.dart';
 
 /// What the leaderboard tab ranks.
+///
+/// The weekly league left this tab on 2026-10-18 (script 112): the monthly
+/// head-to-head league has its own bottom tab, and the pill order is the
+/// enum order, so friends moved from index 4 to 3.
 enum LeaderboardScope {
   /// The current monthly contest.
   month,
@@ -37,9 +40,6 @@ enum LeaderboardScope {
 
   /// The sporting season, September to August, summed per user.
   season,
-
-  /// The caller's weekly-league group for the Riyadh week open now.
-  league,
 
   /// The caller's own friends' league: the month's board of its members
   /// (phase 2 of the plan).
@@ -348,7 +348,6 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       LeaderboardScope.month => l10n.leaderboardSubtitleMonth,
       LeaderboardScope.day => l10n.leaderboardSubtitleDay,
       LeaderboardScope.season => l10n.leaderboardSubtitleSeason,
-      LeaderboardScope.league => l10n.leaderboardSubtitleLeague,
       LeaderboardScope.friends => 'ترتيبك بين أصدقائك بنقاط الشهر',
     };
     final String period = switch (_scope) {
@@ -357,16 +356,6 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         'EEEE d MMMM yyyy',
         locale,
       ).format(_day),
-      LeaderboardScope.league => switch (ref
-          .watch(myWeeklyLeagueProvider)
-          .value) {
-        final MyWeeklyLeagueDto league => weeklyLeaguePeriodLabel(
-          l10n,
-          league,
-          locale,
-        ),
-        null => l10n.leaderboardScopeLeague,
-      },
       LeaderboardScope.season =>
         ref.watch(sportingSeasonLeaderboardProvider).value?.label ?? '—',
       LeaderboardScope.friends => widget.season.seasonLabel,
@@ -402,12 +391,6 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
         showHeader: true,
         day: _day,
         emptyMessage: l10n.leaderboardDayEmpty,
-      ),
-      LeaderboardScope.league => WeeklyLeagueBoard(
-        key: const ValueKey<String>('leaderboards.board.league'),
-        keyPrefix: 'leaderboards.league',
-        myUserId: widget.userId,
-        showHeader: true,
       ),
       LeaderboardScope.friends => FriendsLeagueBoard(
         key: const ValueKey<String>('leaderboards.board.friends'),
@@ -481,7 +464,6 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
                 l10n.leaderboardScopeMonth,
                 l10n.leaderboardScopeDay,
                 l10n.leaderboardScopeSeason,
-                l10n.leaderboardScopeLeague,
                 'أصدقائي',
               ],
               selectedIndex: _scope.index,
