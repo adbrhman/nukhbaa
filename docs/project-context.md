@@ -4482,6 +4482,20 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `0180_conference_league_test.sql` and `conference_league_logo_test`
   (the real matches screen). Numbered 0180, after the 0170-0179
   series. Applied by hand in the SQL Editor.
+- **Script 130 (catalog, Conference League clubs, 2026-10-20)**:
+  migration 0181 records the 36 clubs of the owner's crest pack under
+  the identity source `uecl`, reusing a club by its identity, then by
+  `competition.team_name_key` of its name or another spelling (Ajax and
+  Panathinaikos of 0104, and Brighton, Atalanta, Monaco, Freiburg,
+  Getafe of the seeds, are the same rows); 29 are created with no
+  league and no crest row. 29 crests (128 px palette PNGs from the pack)
+  under `assets/team_logos/`; the seven clubs already bundled keep
+  their crest. `team_logo_assets.dart`: the Arabic names and other
+  spellings, eleven English provider spellings, the 29 slugs, and a
+  `MonthlyCompetitionLogoGroup` for the admin crest gallery. New tests
+  `0181_conference_league_clubs_test.sql` and
+  `conference_league_crests_test` (the real matches screen). Applied by
+  hand in the SQL Editor.
 - **Batch 109 (landing page at nukhbaa.app, 2026-10-12)**: the site root
   of the web mirror served only `302 /nukhbaa/`, so a shared link had no
   favicon and no preview card. `deploy/web-mirror/landing/` (index.html,
