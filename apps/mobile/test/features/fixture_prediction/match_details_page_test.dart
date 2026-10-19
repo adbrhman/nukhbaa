@@ -164,22 +164,72 @@ void main() {
       _leftOf(tester, 'matchDetails.halfTimeScore', '2'),
       greaterThan(_leftOf(tester, 'matchDetails.halfTimeScore', '1')),
     );
-    expect(find.text('الدوري الفرنسي · الجولة 8'), findsOneWidget);
+    expect(find.text('الدوري الفرنسي'), findsOneWidget);
+    expect(find.text('الجولة 8'), findsOneWidget);
     expect(find.text('Stade Jean Bouin'), findsOneWidget);
 
-    // 7 goals, 7 yellow cards and the VAR's cancelled goal: 15 rows.
+    // 7 goals, 7 yellow cards and the VAR's cancelled goal: 15 lines, each
+    // side's in its own column, the home side's on the right in Arabic.
     expect(find.byKey(const Key('matchDetails.event.14')), findsOneWidget);
     expect(find.byKey(const Key('matchDetails.event.15')), findsNothing);
+    final Finder homeList = find.byKey(const Key('matchDetails.homeEvents'));
+    final Finder awayList = find.byKey(const Key('matchDetails.awayEvents'));
+    Finder linesIn(Finder list) => find.descendant(
+      of: list,
+      matching: find.byWidgetPredicate(
+        (Widget w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith(
+              'matchDetails.event.',
+            ),
+      ),
+    );
+    expect(linesIn(homeList), findsNWidgets(7));
+    expect(linesIn(awayList), findsNWidgets(8));
+    expect(
+      tester.getCenter(homeList).dx,
+      greaterThan(tester.getCenter(awayList).dx),
+    );
+
+    // As on Sports Mole, each line's mark is towards the middle: left of the
+    // name on the home side, right of it on the away side.
+    final Finder firstHome = find.byKey(const Key('matchDetails.event.0'));
+    expect(
+      tester
+          .getCenter(
+            find.descendant(
+              of: firstHome,
+              matching: find.byIcon(Icons.sports_soccer_rounded),
+            ),
+          )
+          .dx,
+      lessThan(tester.getCenter(find.text('Maxime López').first).dx),
+    );
+    final Finder firstAwayGoal = find.byKey(const Key('matchDetails.event.2'));
+    expect(
+      tester
+          .getCenter(
+            find.descendant(
+              of: firstAwayGoal,
+              matching: find.byIcon(Icons.sports_soccer_rounded),
+            ),
+          )
+          .dx,
+      greaterThan(tester.getCenter(find.text('Esteban Lepaul (ج)').first).dx),
+    );
+
     expect(find.text("90+7'"), findsOneWidget);
     expect(find.text("45+4'"), findsOneWidget);
     expect(find.text('Pablo Pagis'), findsNothing);
-    expect(find.text('صناعة: Lassine Sinayoko'), findsNWidgets(2));
-    expect(find.text('ركلة جزاء'), findsNWidgets(4));
-    expect(find.text('هدف ألغاه حكم الفيديو (VAR)'), findsOneWidget);
+    expect(find.text('Maxime López'), findsNWidgets(2));
+    expect(find.text('Esteban Lepaul (ج)'), findsNWidgets(3));
+    expect(find.text('Lassine Sinayoko (ج)'), findsOneWidget);
     final Text cancelled = tester.widget<Text>(
-      find.text('Sebastian Szymański'),
+      find.text('Sebastian Szymański (ألغاه الفيديو)'),
     );
-    expect(cancelled.style?.decoration, TextDecoration.lineThrough);
+    final TextSpan player =
+        (cancelled.textSpan! as TextSpan).children!.first as TextSpan;
+    expect(player.style?.decoration, TextDecoration.lineThrough);
   });
 
   testWidgets('a story not read yet says so', (tester) async {
@@ -211,5 +261,6 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('matchDetails.event.0')), findsOneWidget);
+    expect(find.byKey(const Key('matchDetails.eventsStacked')), findsOneWidget);
   });
 }

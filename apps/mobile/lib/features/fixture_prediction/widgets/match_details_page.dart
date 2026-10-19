@@ -37,11 +37,22 @@ String? roundLabel(String? round) {
   return number == null ? null : 'الجولة ${number.group(1)}';
 }
 
-/// The story of a finished match (2026-10-19, on the model of Sports
-/// Mole's match page): the sides around the final score, the half-time
-/// score, the ground and the referee, then each goal and card with its
-/// minute, the home side's on the home side. A goal the VAR ruled out shows
-/// too, struck through. Opened from a finished match's card.
+/// What follows a player's name when the mark alone does not say it.
+String? eventNote(String kind) => switch (kind) {
+  'penalty_goal' => '(ج)',
+  'own_goal' => '(في مرماه)',
+  'missed_penalty' => '(ج ضائعة)',
+  'second_yellow' => '(إنذار ثانٍ)',
+  'var_goal_cancelled' => '(ألغاه الفيديو)',
+  _ => null,
+};
+
+/// The story of a finished match, laid out like Sports Mole's match page
+/// (2026-10-19): one card with the league and round, the date, the sides
+/// around the final score, the half-time score, «انتهت» and the ground, and
+/// under them each side's goals and cards in its own column, under its own
+/// crest. A goal the VAR ruled out shows too, struck through. Opened from a
+/// finished match's card.
 class MatchDetailsPage extends ConsumerWidget {
   const MatchDetailsPage({
     super.key,
@@ -66,6 +77,11 @@ class MatchDetailsPage extends ConsumerWidget {
       matchDetailsProvider(fixtureId),
     );
     final MatchDetailsDto? loaded = details.value;
+    final List<MatchEventDto> shown = <MatchEventDto>[
+      if (loaded != null && loaded.available)
+        for (final MatchEventDto event in loaded.events)
+          if (shownEventKinds.contains(event.kind)) event,
+    ];
     return Scaffold(
       appBar: AppBar(title: const Text('تفاصيل المباراة')),
       body: RefreshIndicator(
@@ -74,18 +90,28 @@ class MatchDetailsPage extends ConsumerWidget {
           key: const Key('matchDetails.list'),
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: <Widget>[
-            _Header(item: item, home: home, away: away, details: loaded),
-            const SizedBox(height: AppSpacing.lg),
+            _Header(
+              item: item,
+              home: home,
+              away: away,
+              details: loaded,
+              events: shown,
+            ),
             switch (details) {
               AsyncData<MatchDetailsDto>(:final value) =>
-                value.available
-                    ? _Timeline(events: value.events)
-                    : const _Notice(
+                !value.available
+                    ? const _Notice(
                         key: Key('matchDetails.notYet'),
                         message:
                             'لم تصل أحداث هذه المباراة بعد. تُجلب بعد '
                             'نهايتها بقليل، فاسحب الصفحة للأسفل لاحقاً.',
-                      ),
+                      )
+                    : shown.isEmpty
+                    ? const _Notice(
+                        key: Key('matchDetails.quiet'),
+                        message: 'لا أهداف ولا بطاقات في هذه المباراة.',
+                      )
+                    : const SizedBox.shrink(),
               AsyncError<MatchDetailsDto>(:final error) => _Notice(
                 key: const Key('matchDetails.error'),
                 message: ErrorPresenter.messageOf(error),
@@ -103,20 +129,22 @@ class MatchDetailsPage extends ConsumerWidget {
   }
 }
 
-/// The two sides around the final score, then the half-time score, the
-/// round, the ground and the referee once the details are in.
+/// The one card of the page: the sides around the final score, the
+/// half-time score, the ground, then the two columns of [events].
 class _Header extends StatelessWidget {
   const _Header({
     required this.item,
     required this.home,
     required this.away,
     required this.details,
+    required this.events,
   });
 
   final CurrentMonthFixtureItemDto item;
   final ResolvedTeamIdentity home;
   final ResolvedTeamIdentity away;
   final MatchDetailsDto? details;
+  final List<MatchEventDto> events;
 
   @override
   Widget build(BuildContext context) {
@@ -143,9 +171,10 @@ class _Header extends StatelessWidget {
         border: Border.all(color: tokens.border, width: AppStroke.hairline),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            round == null ? league : '$league · $round',
+            league,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: AppFontSize.s14,
@@ -153,6 +182,17 @@ class _Header extends StatelessWidget {
               color: tokens.textPrimary,
             ),
           ),
+          if (round != null)
+            Text(
+              round,
+              key: const Key('matchDetails.round'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppFontSize.s12,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
+            ),
           if (kickoff != null) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -172,9 +212,9 @@ class _Header extends StatelessWidget {
                       ? orientedScoreLabel(context, homeGoals, awayGoals)
                       : '-',
                   key: const Key('matchDetails.score'),
-                  // Two digit runs around a neutral dash: left to the Arabic paragraph
-                  // they swap places: Brighton 5-0 Crystal Palace drew Brighton's 5
-                  // under Palace's crest (2026-10-19).
+                  // Two digit runs around a neutral dash: left to the Arabic
+                  // paragraph they swap places: Brighton 5-0 Crystal Palace
+                  // drew Brighton's 5 under Palace's crest (2026-10-19).
                   textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontSize: AppFontSize.s26,
@@ -198,23 +238,21 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                 Text('انتهت', style: muted),
+                if (story != null && story.venue != null)
+                  Text(
+                    story.venue!,
+                    key: const Key('matchDetails.venue'),
+                    textAlign: TextAlign.center,
+                    style: muted,
+                  ),
               ],
             ),
           ),
-          if (story != null && story.venue != null) ...<Widget>[
+          if (events.isNotEmpty) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
-            _InfoLine(
-              key: const Key('matchDetails.venue'),
-              icon: Icons.stadium_outlined,
-              text: story.venue!,
-            ),
-          ],
-          if (story != null && story.referee != null) ...<Widget>[
-            const SizedBox(height: AppSpacing.xs),
-            _InfoLine(
-              icon: Icons.sports_outlined,
-              text: 'الحكم: ${story.referee!}',
-            ),
+            Divider(height: 1, color: tokens.border),
+            const SizedBox(height: AppSpacing.md),
+            _EventColumns(events: events, home: home, away: away),
           ],
         ],
       ),
@@ -309,170 +347,163 @@ class _Side extends StatelessWidget {
   }
 }
 
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({super.key, required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Icon(icon, size: 16, color: tokens.textSecondary),
-        const SizedBox(width: AppSpacing.xs),
-        Flexible(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppFontSize.s12,
-              color: tokens.textSecondary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Each goal and card in the provider's order, the home side's on the
-/// home side, the minute between.
-class _Timeline extends StatelessWidget {
-  const _Timeline({required this.events});
+/// Each side's goals and cards in its own column, in the provider's order:
+/// the home side's under the home crest, each line's mark towards the
+/// middle, as on Sports Mole. When two columns do not fit (a narrow screen,
+/// a large text size) the away side's list goes under the home side's, each
+/// under the side's name.
+class _EventColumns extends StatelessWidget {
+  const _EventColumns({
+    required this.events,
+    required this.home,
+    required this.away,
+  });
 
   final List<MatchEventDto> events;
+  final ResolvedTeamIdentity home;
+  final ResolvedTeamIdentity away;
+
+  /// Width, at text x1, below which the two lists go one under the other.
+  static const double _sideBySideWidth = 220;
 
   @override
   Widget build(BuildContext context) {
-    final List<MatchEventDto> shown = <MatchEventDto>[
-      for (final MatchEventDto event in events)
-        if (shownEventKinds.contains(event.kind)) event,
+    final double scale = MediaQuery.textScalerOf(context).scale(16) / 16;
+    List<Widget> linesOf({required bool homeSide}) => <Widget>[
+      for (int i = 0; i < events.length; i++)
+        if (events[i].home == homeSide)
+          _EventLine(
+            key: Key('matchDetails.event.$i'),
+            event: events[i],
+            towardsMiddle: homeSide,
+          ),
     ];
-    if (shown.isEmpty) {
-      return const _Notice(
-        key: Key('matchDetails.quiet'),
-        message: 'لا أهداف ولا بطاقات في هذه المباراة.',
-      );
-    }
-    return Column(
-      key: const Key('matchDetails.timeline'),
-      children: <Widget>[
-        for (int i = 0; i < shown.length; i++)
-          _EventRow(key: Key('matchDetails.event.$i'), event: shown[i]),
-      ],
+    final Widget homeList = Column(
+      key: const Key('matchDetails.homeEvents'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: linesOf(homeSide: true),
+    );
+    final Widget awayList = Column(
+      key: const Key('matchDetails.awayEvents'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: linesOf(homeSide: false),
+    );
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth / scale >= _sideBySideWidth) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: homeList),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: awayList),
+            ],
+          );
+        }
+        return Column(
+          key: const Key('matchDetails.eventsStacked'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _ListTitle(name: home.displayName),
+            homeList,
+            const SizedBox(height: AppSpacing.md),
+            _ListTitle(name: away.displayName),
+            awayList,
+          ],
+        );
+      },
     );
   }
 }
 
-class _EventRow extends StatelessWidget {
-  const _EventRow({super.key, required this.event});
+class _ListTitle extends StatelessWidget {
+  const _ListTitle({required this.name});
 
-  final MatchEventDto event;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final Widget cell = _EventCell(event: event);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Expanded(
-            child: event.home
-                ? Align(alignment: AlignmentDirectional.centerEnd, child: cell)
-                : const SizedBox.shrink(),
-          ),
-          Container(
-            constraints: const BoxConstraints(minWidth: 52),
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: tokens.surfaceElevated,
-              borderRadius: AppRadius.brButton,
-            ),
-            child: Text(
-              "${event.minute}'",
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.ltr,
-              style: TextStyle(
-                fontSize: AppFontSize.s12,
-                fontWeight: FontWeight.w700,
-                color: tokens.textPrimary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: event.home
-                ? const SizedBox.shrink()
-                : Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: cell,
-                  ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        name,
+        style: TextStyle(
+          fontSize: AppFontSize.s12,
+          fontWeight: FontWeight.w700,
+          color: context.tokens.textSecondary,
+        ),
       ),
     );
   }
 }
 
-/// One event: its mark, the player, and a second line saying what kind of
-/// goal or card it was when that is not plain.
-class _EventCell extends StatelessWidget {
-  const _EventCell({required this.event});
+/// One goal or card: the player, the minute and the mark. The home side's
+/// lines (on the right in Arabic) end with the mark towards the middle; the
+/// away side's start with it.
+class _EventLine extends StatelessWidget {
+  const _EventLine({
+    super.key,
+    required this.event,
+    required this.towardsMiddle,
+  });
 
   final MatchEventDto event;
+
+  /// Whether the line is packed towards the middle, mark last: the home
+  /// side's.
+  final bool towardsMiddle;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final bool cancelled = event.kind == 'var_goal_cancelled';
-    final String? note = switch (event.kind) {
-      'penalty_goal' => 'ركلة جزاء',
-      'own_goal' => 'في مرماه',
-      'missed_penalty' => 'ركلة جزاء ضائعة',
-      'second_yellow' => 'إنذار ثانٍ',
-      'var_goal_cancelled' => 'هدف ألغاه حكم الفيديو (VAR)',
-      'goal' => event.assist == null ? null : 'صناعة: ${event.assist}',
-      _ => null,
-    };
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _Mark(kind: event.kind),
-        const SizedBox(width: AppSpacing.sm),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                event.player ?? '—',
-                style: TextStyle(
-                  fontSize: AppFontSize.s13,
-                  fontWeight: FontWeight.w600,
-                  color: cancelled ? tokens.textMuted : tokens.textPrimary,
-                  decoration: cancelled ? TextDecoration.lineThrough : null,
-                ),
+    final String? note = eventNote(event.kind);
+    final Widget name = Flexible(
+      child: Text.rich(
+        TextSpan(
+          children: <InlineSpan>[
+            TextSpan(
+              text: event.player ?? '—',
+              style: TextStyle(
+                color: cancelled ? tokens.textMuted : tokens.textPrimary,
+                decoration: cancelled ? TextDecoration.lineThrough : null,
               ),
-              if (note != null)
-                Text(
-                  note,
-                  style: TextStyle(
-                    fontSize: AppFontSize.s11,
-                    color: tokens.textSecondary,
-                  ),
-                ),
-            ],
-          ),
+            ),
+            if (note != null)
+              TextSpan(
+                text: ' $note',
+                style: TextStyle(color: tokens.textSecondary),
+              ),
+          ],
         ),
-      ],
+        textAlign: towardsMiddle ? TextAlign.end : TextAlign.start,
+        style: const TextStyle(
+          fontSize: AppFontSize.s13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+    final Widget minute = Text(
+      "${event.minute}'",
+      textDirection: TextDirection.ltr,
+      style: TextStyle(
+        fontSize: AppFontSize.s12,
+        fontWeight: FontWeight.w700,
+        color: tokens.textSecondary,
+      ),
+    );
+    const Widget gap = SizedBox(width: AppSpacing.xs);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: towardsMiddle
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: towardsMiddle
+            ? <Widget>[name, gap, minute, gap, _Mark(kind: event.kind)]
+            : <Widget>[_Mark(kind: event.kind), gap, name, gap, minute],
+      ),
     );
   }
 }

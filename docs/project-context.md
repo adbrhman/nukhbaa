@@ -2810,6 +2810,16 @@ ruled out at 51' among them, 14 requests of the 100 a day.
   everywhere `orientedScoreLabel` is used: left to the Arabic paragraph
   the two digits swapped places: the first build drew Brighton's 5 (5-0
   against Crystal Palace) under Palace's crest (2026-10-19).
+- **Laid out like Sports Mole** (script 120, 2026-10-19): one card with the
+  league, the round on its own line, the date, the sides around the score,
+  half time, «انتهت» and the ground; under a rule each side's goals and
+  cards in its own column under its crest, in the provider's order, each
+  line the player, the minute and the mark, the mark towards the middle.
+  A penalty reads «(ج)», an own goal «(في مرماه)», a goal ruled out by the
+  VAR is struck through with «(ألغاه الفيديو)». No assists and no referee,
+  as on Sports Mole. When the card is under 220px wide divided by the
+  reader's text scale, the away list goes under the home list, each under
+  its side's name.
 - Display only: nothing reads it to score, rank or record a result.
 
 ### Live score correction (2026-10-18)
