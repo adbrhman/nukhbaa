@@ -26,6 +26,11 @@ const Duration providerLiveTick = Duration(minutes: 2);
 /// finished matches still without details, a few a run.
 const Duration matchDetailsTick = Duration(minutes: 30);
 
+/// First match details read after boot. Without it every restart put the
+/// first read off by a whole [matchDetailsTick]: nothing was read in the
+/// hour after script 118 went out (2026-10-19).
+const Duration matchDetailsFirstRunDelay = Duration(minutes: 5);
+
 /// Drives the automatic fixtures/results sync in the server process, like the
 /// reminder sweep: in-process timers, never awaited, failures logged and
 /// retried on the next tick. Does nothing when the mode is `off` or no
@@ -162,10 +167,11 @@ void startProviderSyncScheduler(CompositionRoot root) {
             error: error,
           );
         case Ok<MatchDetailsReport>(:final value):
-          if (value.requests > 0 || value.notes.isNotEmpty) {
+          if (value.pending > 0 || value.notes.isNotEmpty) {
             _log(
               tag,
-              'match details: requests=${value.requests} '
+              'match details: pending=${value.pending} '
+              'requests=${value.requests} '
               'saved=${value.saved} not_found=${value.notFound}',
             );
             for (final note in value.notes) {
@@ -188,6 +194,9 @@ void startProviderSyncScheduler(CompositionRoot root) {
 
   _log(tag, 'provider sync started');
   if (details != null) {
+    Timer(matchDetailsFirstRunDelay, () {
+      unawaited(runDetails());
+    });
     phasedPeriodic(matchDetailsPhase, matchDetailsTick, (_) {
       unawaited(runDetails());
     });

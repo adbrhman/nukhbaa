@@ -266,6 +266,27 @@ void main() {
     expect(report.notes.single, contains(providerQuotaErrorCode));
   });
 
+  test(
+    'a run says how many fixtures wait, and why one was passed over',
+    () async {
+      store.fixtures = <PendingMatchDetails>[
+        _pending(_elsewhere, league: 'كأس أمم إفريقيا'),
+        _pending(_paris),
+      ];
+      ligue1(<ProviderMatch>[
+        match('1321424223', status: ProviderMatchStatus.live),
+      ]);
+
+      final report =
+          ((await sync().call(now: _now)) as Ok<MatchDetailsReport>).value;
+
+      expect(report.pending, 2);
+      expect(report.notes, hasLength(2));
+      expect(report.notes.first, contains('كأس أمم إفريقيا'));
+      expect(report.notes.last, contains('1321424223'));
+    },
+  );
+
   test('the half-time score comes from the goals up to 45+', () {
     const events = <MatchEvent>[
       MatchEvent(minute: '14', kind: MatchEventKind.goal, home: true),

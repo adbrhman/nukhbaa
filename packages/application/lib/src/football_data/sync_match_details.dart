@@ -11,6 +11,7 @@ final class MatchDetailsReport {
     required this.saved,
     required this.notFound,
     required this.notes,
+    this.pending = 0,
   });
 
   /// Nothing to do.
@@ -32,6 +33,9 @@ final class MatchDetailsReport {
 
   /// What happened, for the log.
   final List<String> notes;
+
+  /// Finished fixtures still without details that the run looked at.
+  final int pending;
 }
 
 /// System use-case: read the story of each finished match -- its goals with
@@ -116,6 +120,10 @@ final class SyncMatchDetails {
       if (matchId == null) {
         final leagueId = _leagueIds[fixture.leagueName.trim()];
         if (leagueId == null) {
+          final note = 'no provider league for "${fixture.leagueName}"';
+          if (!notes.contains(note)) {
+            notes.add(note);
+          }
           continue;
         }
         final day = riyadhDayOf(fixture.kickoffAt);
@@ -139,6 +147,7 @@ final class SyncMatchDetails {
         }
         final picked = _pick(list, fixture);
         if (picked.wait) {
+          notes.add('${fixture.fixtureId}: a match at its kickoff is not over');
           continue;
         }
         final candidate = picked.match;
@@ -157,6 +166,7 @@ final class SyncMatchDetails {
           continue;
         }
         if (candidate.status != ProviderMatchStatus.finished) {
+          notes.add('${candidate.externalId} is not over in the list');
           continue;
         }
         matchId = candidate.externalId;
@@ -180,6 +190,7 @@ final class SyncMatchDetails {
       }
       final details = (read as Ok<MatchDetails?>).value;
       if (details == null) {
+        notes.add('details of $matchId: the match is not over');
         continue;
       }
       final stored = await _store.save(details);
@@ -196,6 +207,7 @@ final class SyncMatchDetails {
         saved: saved,
         notFound: notFound,
         notes: notes,
+        pending: pending.length,
       ),
     );
   }

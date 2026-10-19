@@ -2820,6 +2820,15 @@ ruled out at 51' among them, 14 requests of the 100 a day.
   as on Sports Mole. When the card is under 220px wide divided by the
   reader's text scale, the away list goes under the home list, each under
   its side's name.
+- **Read sooner, and never silently** (script 121, 2026-10-19): an hour
+  after 118 went out not one row was written. The first read now comes 5
+  minutes after boot (`matchDetailsFirstRunDelay`) instead of a whole
+  30-minute tick, which every restart put off again; the newest matches
+  are read first, the ones players open; and every run with work logs
+  `provider-sync [on] match details: pending=N requests=R saved=S
+  not_found=F` with why each passed-over fixture was passed over (no
+  provider league, a match not over).
+
 - Display only: nothing reads it to score, rank or record a result.
 
 ### Live score correction (2026-10-18)

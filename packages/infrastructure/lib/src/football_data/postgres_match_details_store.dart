@@ -40,7 +40,7 @@ WHERE d.fixture_id IS NULL
   AND s.hidden_at IS NULL
   AND s.kickoff_at >= @from::timestamptz
   AND s.kickoff_at < @before::timestamptz
-ORDER BY s.kickoff_at, s.fixture_id
+ORDER BY s.kickoff_at DESC, s.fixture_id
 LIMIT 100
 ''';
 
