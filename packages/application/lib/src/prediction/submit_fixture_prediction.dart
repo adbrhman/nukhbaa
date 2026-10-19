@@ -36,7 +36,7 @@ import 'package:shared/shared.dart';
 ///    fixture's own [FixtureSchedule.kickoffAt] against the clock
 ///    (`prediction.fixture_locked`). A fixture with no registered schedule is
 ///    treated as not locked, matching `SubmitPrediction`.
-/// 4. **At most one double per participant per UTC calendar day** — checked
+/// 4. **At most one double per participant per Riyadh calendar day** — checked
 ///    against [FixturePredictionRepository.countDoublesOnDay] for the
 ///    fixture's kickoff day, excluding this fixture itself so re-marking an
 ///    already-double fixture on amend never double-counts

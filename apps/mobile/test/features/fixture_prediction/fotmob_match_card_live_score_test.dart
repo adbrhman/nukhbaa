@@ -149,6 +149,11 @@ void main() {
     await _pump(tester, _item(home: null, away: null));
 
     expect(find.byKey(_scoreKey), findsNothing);
+    // It says so, instead of a lone dash (2026-10-19).
+    expect(
+      find.byKey(const Key('currentMonthFixtures.liveNoScore.f-1')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a finished match shows its score awaiting the result', (
@@ -158,6 +163,11 @@ void main() {
 
     expect(find.byKey(_scoreKey), findsOneWidget);
     expect(find.text('0 - 3'), findsOneWidget);
+    // With a score there is nothing to explain.
+    expect(
+      find.byKey(const Key('currentMonthFixtures.liveNoScore.f-1')),
+      findsNothing,
+    );
     // The status sits in the header now, beside the league.
     expect(
       find.descendant(

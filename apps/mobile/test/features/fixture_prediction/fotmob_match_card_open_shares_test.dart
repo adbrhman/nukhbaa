@@ -1,6 +1,7 @@
 /// An open match through the real matches screen, the real card and a fake
 /// server (script 123): everyone's calls in three shares, draws included,
-/// under their caption, zeros until five calls; the double on its own row;
+/// under their caption, none until five calls, only a line that says when
+/// they will; the double on its own row;
 /// a ranking icon to the league's table -- also at double text on a 360px
 /// phone.
 library;
@@ -11,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
+import 'package:mobile/features/fixture_prediction/widgets/fotmob_match_card.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/current_month_fixtures_harness.dart';
@@ -106,11 +108,18 @@ void main() {
     );
   });
 
-  testWidgets('zeros until five calls', (tester) async {
+  testWidgets('no figure until five calls, a line that says so', (
+    tester,
+  ) async {
     await _pump(tester, total: 3);
 
-    expect(_in(_shares, find.text('0%')), findsNWidgets(3));
-    expect(_in(_shares, find.text('60%')), findsNothing);
+    expect(find.byKey(const Key(_shares)), findsNothing);
+    expect(find.text('0%'), findsNothing);
+    expect(find.text('60%'), findsNothing);
+    expect(
+      find.text('تظهر نسب الجمهور بعد $minShareSample توقعات'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the header icon is a ranking, not a link out', (tester) async {

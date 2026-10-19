@@ -48,10 +48,13 @@ Do not read any other doc file unless explicitly requested._
 - **Double pick rule:** the old "at most one double per round" invariant
   cannot survive inside a single `Prediction` aggregate once each fixture
   is its own independent prediction. Decided: **at most one double per
-  calendar day (UTC)**. This is NOT a domain-entity invariant anymore --
-  it must be enforced in the `application` layer at submit/amend time via
-  a repository query (count existing `isDouble = true` predictions for
-  that participant on that UTC calendar day), because predictions for a
+  calendar day (UTC)** -- superseded 2026-10-02 by the **Riyadh
+  calendar day** of the fixture's kickoff (migration 0083), the day the
+  app shows and the daily challenge uses. This is NOT a domain-entity
+  invariant anymore -- it must be enforced in the `application` layer at
+  submit/amend time via a repository query (count existing
+  `isDouble = true` predictions for that participant on that Riyadh
+  calendar day), because predictions for a
   single day arrive as separate, independent submissions over time, not
   as one atomic batch the way a round's predictions used to.
 - **`Prediction` aggregate reshaped:** was "one prediction per round,

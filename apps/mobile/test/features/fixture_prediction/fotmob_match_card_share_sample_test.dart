@@ -1,6 +1,7 @@
 /// The win shares and the league logo through the real matches screen, the
-/// real card and a fake server: under five decisive calls both sides read
-/// 0% (one call read as "100%"), five or more show the shares; a feed
+/// real card and a fake server: under five decisive calls no figure shows,
+/// only a line that says when they will (one call read as "100%", and
+/// zeros as real figures), five or more show the shares; a feed
 /// from an older server, with no count, shows the shares as before; and a
 /// league logo sits whole on a light disc, readable on the dark card.
 library;
@@ -64,20 +65,36 @@ Future<void> _pump(WidgetTester tester, Map<String, Object?> item) async {
 }
 
 void main() {
-  testWidgets('one decisive call reads 0% on both sides', (tester) async {
+  testWidgets('one decisive call shows no figure', (tester) async {
     await _pump(tester, _item(decisive: 1));
 
     expect(find.text('100%'), findsNothing);
-    expect(find.text('0%'), findsNWidgets(2));
+    expect(find.text('0%'), findsNothing);
+    // The line that says when they will (2026-10-19).
+    expect(
+      find.byKey(const Key('currentMonthFixtures.sharesPending.f-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('تظهر نسب الجمهور بعد $minShareSample توقعات'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('four decisive calls still read 0% on both sides', (
-    tester,
-  ) async {
+  testWidgets('four decisive calls still show no figure', (tester) async {
     await _pump(tester, _item(decisive: minShareSample - 1));
 
     expect(find.text('100%'), findsNothing);
-    expect(find.text('0%'), findsNWidgets(2));
+    expect(find.text('0%'), findsNothing);
+    // The line that says when they will (2026-10-19).
+    expect(
+      find.byKey(const Key('currentMonthFixtures.sharesPending.f-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('تظهر نسب الجمهور بعد $minShareSample توقعات'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('five decisive calls show the shares', (tester) async {

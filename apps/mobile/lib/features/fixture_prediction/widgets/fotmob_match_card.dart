@@ -677,14 +677,25 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                     ),
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.md),
-                    child: _OutcomeShares(
-                      key: Key('currentMonthFixtures.outcomeShares.$fixtureId'),
-                      home: homeShare,
-                      draw: drawShare,
-                      away: awayShare,
-                      homeName: home.displayName,
-                      awayName: away.displayName,
-                    ),
+                    // Under minShareSample calls the card says when the
+                    // split will show: zeros read as real figures
+                    // (2026-10-19).
+                    child: !showShares
+                        ? _SharesPending(
+                            key: Key(
+                              'currentMonthFixtures.sharesPending.$fixtureId',
+                            ),
+                          )
+                        : _OutcomeShares(
+                            key: Key(
+                              'currentMonthFixtures.outcomeShares.$fixtureId',
+                            ),
+                            home: homeShare,
+                            draw: drawShare,
+                            away: awayShare,
+                            homeName: home.displayName,
+                            awayName: away.displayName,
+                          ),
                   ),
                 ],
                 if (!locked && myPrediction != null)
@@ -1659,6 +1670,23 @@ class _StartedBody extends StatelessWidget {
           // script 119: the loser steps back.
           outcome: outcome,
         ),
+        // A live match whose feed carries no running score: a lone dash
+        // did not say whether it was goalless or the score was not
+        // coming (2026-10-19).
+        if (phase == _MatchPhase.live && !hasScore)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Text(
+              'لا تتوفر نتيجة مباشرة حتى الآن',
+              key: Key('currentMonthFixtures.liveNoScore.$fixtureId'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppFontSize.s12,
+                fontWeight: FontWeight.w600,
+                color: context.tokens.textSecondary,
+              ),
+            ),
+          ),
         const SizedBox(height: AppSpacing.md),
         _CallStrip(
           fixtureId: fixtureId,
@@ -2174,11 +2202,11 @@ class _CallStrip extends StatelessWidget {
 }
 
 /// The split of everyone's calls under a caption that says so (script
-/// 119: shares): the home win share (green) with its bar, the draw share in
-/// the middle, the away win share (red) with its bar. Once the result is in
-/// ([actual]) the share that called it keeps its colour and the other two
-/// step back. A [draw] of null (an older server) leaves the middle empty
-/// and the two shares are the decisive ones.
+/// 119: shares): the home win share with its bar, the draw share in the
+/// middle, the away win share with its bar, all in one neutral colour.
+/// Once the result is in ([actual]) the share that called it turns green
+/// and the other two step back. A [draw] of null (an older server)
+/// leaves the middle empty and the two shares are the decisive ones.
 class _OutcomeShares extends StatelessWidget {
   const _OutcomeShares({
     super.key,
@@ -2206,11 +2234,19 @@ class _OutcomeShares extends StatelessWidget {
     final tokens = context.tokens;
     final int? drawShare = draw;
     final _Outcome? result = actual;
-    bool lit(_Outcome side) => result == null || result == side;
-    Color figure(_Outcome side, Color color) =>
-        lit(side) ? color : tokens.textSecondary;
-    Color bar(_Outcome side, Color color) =>
-        lit(side) ? color : color.withValues(alpha: AppOpacity.statusBorder);
+    // Green and red for the two sides read as right and wrong before
+    // anything was decided (2026-10-19): one neutral colour until the
+    // result is in, then green for the share that called it.
+    Color figure(_Outcome side) => result == null
+        ? tokens.textPrimary
+        : result == side
+        ? tokens.successText
+        : tokens.textSecondary;
+    Color bar(_Outcome side) => result == null
+        ? tokens.primary
+        : result == side
+        ? tokens.success
+        : tokens.textPrimary.withValues(alpha: AppOpacity.statusBorder);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2235,7 +2271,7 @@ class _OutcomeShares extends StatelessWidget {
               child: _ShareFigure(
                 percentage: home,
                 label: _winLabel,
-                color: figure(_Outcome.home, tokens.successText),
+                color: figure(_Outcome.home),
                 spoken: '$_winLabel $homeName $home%',
               ),
             ),
@@ -2243,7 +2279,7 @@ class _OutcomeShares extends StatelessWidget {
               flex: 4,
               child: _ShareBar(
                 fraction: home / 100,
-                color: bar(_Outcome.home, tokens.success),
+                color: bar(_Outcome.home),
                 fromStart: true,
               ),
             ),
@@ -2254,7 +2290,7 @@ class _OutcomeShares extends StatelessWidget {
                   : _ShareFigure(
                       percentage: drawShare,
                       label: _drawLabel,
-                      color: figure(_Outcome.draw, tokens.textPrimary),
+                      color: figure(_Outcome.draw),
                       spoken: '$_drawLabel $drawShare%',
                     ),
             ),
@@ -2262,7 +2298,7 @@ class _OutcomeShares extends StatelessWidget {
               flex: 4,
               child: _ShareBar(
                 fraction: away / 100,
-                color: bar(_Outcome.away, tokens.error),
+                color: bar(_Outcome.away),
                 fromStart: false,
               ),
             ),
@@ -2271,11 +2307,48 @@ class _OutcomeShares extends StatelessWidget {
               child: _ShareFigure(
                 percentage: away,
                 label: _winLabel,
-                color: figure(_Outcome.away, tokens.errorText),
+                color: figure(_Outcome.away),
                 spoken: '$_winLabel $awayName $away%',
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// What the open card shows instead of the split until [minShareSample]
+/// calls are in: the caption, and a line that says when the shares will
+/// show (2026-10-19).
+class _SharesPending extends StatelessWidget {
+  const _SharesPending({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          _OutcomeShares._caption,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: AppFontSize.s12,
+            fontWeight: FontWeight.w600,
+            color: tokens.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'تظهر نسب الجمهور بعد $minShareSample توقعات',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: AppFontSize.s13,
+            fontWeight: FontWeight.w600,
+            color: tokens.textPrimary,
+          ),
         ),
       ],
     );

@@ -26,7 +26,7 @@ import 'package:shared/shared.dart';
 ///   [FixtureLock] is **not** locked (i.e. before kickoff).
 /// * Goal tallies are non-negative and within [maxGoals].
 /// * [isDouble] is a plain flag here — the cross-fixture "at most one double
-///   per UTC day" cap is **not** self-checkable by a single-fixture
+///   per Riyadh day" cap is **not** self-checkable by a single-fixture
 ///   aggregate anymore; it is enforced in the application layer
 ///   (`DailyDoublePolicy`) against a same-day repository count.
 ///
@@ -169,8 +169,8 @@ final class FixturePrediction {
   final int awayGoals;
 
   /// Whether the participant marked this fixture as their double for the day
-  /// — the cross-fixture "at most one per UTC day" cap is enforced by the
-  /// application layer (`DailyDoublePolicy`), not by this aggregate.
+  /// — the cross-fixture "at most one per Riyadh day" cap is enforced by
+  /// the application layer (`DailyDoublePolicy`), not by this aggregate.
   final bool isDouble;
 
   @override
