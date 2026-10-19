@@ -10,6 +10,7 @@ library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -231,7 +232,20 @@ Future<void> _pump(WidgetTester tester, _State state, _Screen screen) async {
   }
 }
 
+/// The app's own font, so the heights are the ones a phone draws: the
+/// test font draws every glyph a full em square, wider and shorter than
+/// the app's, so the heights it gave were not a phone's (script 128).
+Future<void> _loadAppFont() async {
+  final FontLoader loader = FontLoader('IBMPlexSansArabic')
+    ..addFont(rootBundle.load('assets/fonts/IBMPlexSansArabic-Regular.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/IBMPlexSansArabic-SemiBold.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/IBMPlexSansArabic-Bold.ttf'));
+  await loader.load();
+}
+
 void main() {
+  setUpAll(_loadAppFont);
+
   for (final _State state in _states()) {
     for (final _Screen screen in _screens) {
       testWidgets('${state.name} on ${screen.label}', (tester) async {

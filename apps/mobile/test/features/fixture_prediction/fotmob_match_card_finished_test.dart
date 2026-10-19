@@ -134,11 +134,24 @@ void main() {
       _in('currentMonthFixtures.myCall.f-1', find.text('توقعك')),
       findsOneWidget,
     );
+    // The points first, then the verdict in the history's words, then
+    // the call (script 128).
+    const String verdict = 'currentMonthFixtures.verdict.f-1';
+    final Finder points = _in(verdict, find.text('0 نقطة'));
+    final Finder words = _in(verdict, find.text('أصبت الاتجاه لا النتيجة'));
+    expect(points, findsOneWidget);
+    expect(words, findsOneWidget);
     expect(
-      _in(
-        'currentMonthFixtures.verdict.f-1',
-        find.text('أصبت الاتجاه لا النتيجة · 0 نقطة'),
-      ),
+      find.byKey(const Key('currentMonthFixtures.points.f-1')),
+      findsOneWidget,
+    );
+    // Right to left: first is rightmost.
+    expect(
+      tester.getCenter(points).dx,
+      greaterThan(tester.getCenter(words).dx),
+    );
+    expect(
+      _in(verdict, find.byKey(const Key('currentMonthFixtures.myCall.f-1'))),
       findsOneWidget,
     );
   });

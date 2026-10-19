@@ -15,6 +15,7 @@ library;
 import 'package:contracts/contracts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/time/riyadh_day_turnover.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/fixture_prediction_providers.dart';
 import 'prediction_history_providers.dart';
@@ -49,6 +50,30 @@ final currentMonthFixturesByIdProvider =
                 ),
           );
     });
+
+/// The match that holds the caller's double on each Riyadh day of the
+/// feed, keyed by that day (`RiyadhDayTurnover.riyadhDayOf`) -- the day
+/// the server allows one double on (migration 0083). No HTTP of its own:
+/// an index over the two reads above, so a card can say the day's
+/// double is already used before a tap is refused (script 128).
+final myDoubleFixtureByDayProvider = Provider<Map<DateTime, String>>((ref) {
+  final Map<String, FixturePredictionDto>? mine = ref
+      .watch(myFixturePredictionsByFixtureProvider)
+      .value;
+  final Map<String, SeasonFixtureCardDto>? feed = ref
+      .watch(currentMonthFixturesByIdProvider)
+      .value;
+  if (mine == null || feed == null) return const <DateTime, String>{};
+  final Map<DateTime, String> byDay = <DateTime, String>{};
+  for (final FixturePredictionDto p in mine.values) {
+    if (!p.isDouble) continue;
+    final String? kickoff = feed[p.fixtureId]?.kickoffAt;
+    final DateTime? at = kickoff == null ? null : DateTime.tryParse(kickoff);
+    if (at == null) continue;
+    byDay[RiyadhDayTurnover.riyadhDayOf(at)] = p.fixtureId;
+  }
+  return Map<DateTime, String>.unmodifiable(byDay);
+});
 
 /// The fixture card behind every prediction in the caller's history, keyed
 /// by `fixtureId`: the current-month feed first, then -- for a prediction

@@ -1,7 +1,7 @@
 /// An open match through the real matches screen, the real card and a fake
 /// server (script 123): everyone's calls in three shares, draws included,
 /// under their caption, none until five calls, only a line that says when
-/// they will; the double on its own row;
+/// they will; the double under them, beside the share (script 128);
 /// a ranking icon to the league's table -- also at double text on a 360px
 /// phone.
 library;
@@ -97,14 +97,16 @@ void main() {
     expect(_in(_shares, find.text('التعادل')), findsOneWidget);
     // The decisive-only split (100% / 0%) is gone.
     expect(find.text('100%'), findsNothing);
-    // The double sits on its own row, above the shares.
+    // The double sits in the last row, under the shares (script 128).
     final Finder doubleButton = find.byKey(
       const Key('currentMonthFixtures.double.f-1'),
     );
     expect(doubleButton, findsOneWidget);
     expect(
-      tester.getBottomLeft(doubleButton).dy,
-      lessThanOrEqualTo(tester.getTopLeft(find.byKey(const Key(_shares))).dy),
+      tester.getTopLeft(doubleButton).dy,
+      greaterThanOrEqualTo(
+        tester.getBottomLeft(find.byKey(const Key(_shares))).dy,
+      ),
     );
   });
 

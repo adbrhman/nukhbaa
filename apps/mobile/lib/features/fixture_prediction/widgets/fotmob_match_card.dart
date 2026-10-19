@@ -72,6 +72,7 @@ import '../../../core/design/app_stroke.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/error/error_presenter.dart';
 import '../../../core/format/timestamps.dart';
+import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../core/ui/app_badge.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/ui/score_pill.dart';
@@ -459,6 +460,22 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // lands, and _saveLatestPrediction reschedules itself until the server
     // holds the current value, so the last tap still wins.
     final bool enabled = !locked;
+    // Another match on this one's Riyadh day already holds the caller's
+    // double (script 128): the toggle says so, instead of a tap the
+    // server refuses. This card's own double, stored or just toggled,
+    // is never "elsewhere".
+    final Map<DateTime, String> doublesByDay = ref.watch(
+      myDoubleFixtureByDayProvider,
+    );
+    final String? kickoffRaw = _fixture.kickoffAt;
+    final DateTime? kickoffInstant = kickoffRaw == null
+        ? null
+        : DateTime.tryParse(kickoffRaw);
+    final String? dayDouble = kickoffInstant == null
+        ? null
+        : doublesByDay[RiyadhDayTurnover.riyadhDayOf(kickoffInstant)];
+    final bool doubleTakenElsewhere =
+        !_isDouble && dayDouble != null && dayDouble != _fixture.fixtureId;
     // The win shares arrive with the feed item itself. They used to be a
     // separate GET per card, so a twenty-match day opened twenty extra
     // requests over a phone network to learn twenty numbers the feed's own
@@ -658,23 +675,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       ),
                     ],
                   ),
-                  // script 123: the double on its own row, then everyone's
-                  // calls under their caption, as on the started card.
-                  if (showEditableControls)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child: Center(
-                        child: SizedBox(
-                          width: 200,
-                          child: _DoubleGlowButton(
-                            selected: _isDouble,
-                            enabled: enabled,
-                            onTap: _toggleDouble,
-                            fixtureId: fixtureId,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // The double sits in the last row, beside the share
+                  // (script 128); everyone's calls come first.
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.md),
                     // Under minShareSample calls the card says when the
@@ -698,40 +700,68 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           ),
                   ),
                 ],
-                if (!locked && myPrediction != null)
-                  ListenableBuilder(
-                    listenable: Listenable.merge(<Listenable>[
-                      _homeGoals,
-                      _awayGoals,
-                    ]),
-                    builder: (context, _) {
-                      final int? shareHome = _homeGoals.value;
-                      final int? shareAway = _awayGoals.value;
-                      final bool canShare =
-                          shareHome != null &&
-                          shareAway != null &&
-                          isConfirmedFor(shareHome, shareAway);
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
-                        child: TextButton.icon(
-                          key: Key(
-                            'currentMonthFixtures.sharePrediction.$fixtureId',
-                          ),
-                          onPressed: canShare
-                              ? () => unawaited(
-                                  _sharePrediction(
-                                    homeGoals: shareHome,
-                                    awayGoals: shareAway,
-                                  ),
-                                )
-                              : null,
-                          icon: const Icon(Icons.ios_share_rounded),
-                          label: Text(
-                            AppLocalizations.of(context).shareHitShareButton,
+                // The double and the share in one row under everyone's
+                // calls (script 128): the share's own row cost every saved
+                // card 60px (CARD_HEIGHT, script 127). Both are Flexible:
+                // a button's icon row cannot sit unbounded in a Row.
+                if (showEditableControls)
+                  Padding(
+                    key: Key('currentMonthFixtures.footer.$fixtureId'),
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Flexible(
+                          flex: 3,
+                          child: _DoubleGlowButton(
+                            selected: _isDouble,
+                            enabled: enabled && !doubleTakenElsewhere,
+                            takenElsewhere: doubleTakenElsewhere,
+                            onTap: _toggleDouble,
+                            fixtureId: fixtureId,
                           ),
                         ),
-                      );
-                    },
+                        if (myPrediction != null) ...<Widget>[
+                          const SizedBox(width: AppSpacing.sm),
+                          Flexible(
+                            flex: 2,
+                            child: ListenableBuilder(
+                              listenable: Listenable.merge(<Listenable>[
+                                _homeGoals,
+                                _awayGoals,
+                              ]),
+                              builder: (context, _) {
+                                final int? shareHome = _homeGoals.value;
+                                final int? shareAway = _awayGoals.value;
+                                final bool canShare =
+                                    shareHome != null &&
+                                    shareAway != null &&
+                                    isConfirmedFor(shareHome, shareAway);
+                                return TextButton.icon(
+                                  key: Key(
+                                    'currentMonthFixtures.sharePrediction.$fixtureId',
+                                  ),
+                                  onPressed: canShare
+                                      ? () => unawaited(
+                                          _sharePrediction(
+                                            homeGoals: shareHome,
+                                            awayGoals: shareAway,
+                                          ),
+                                        )
+                                      : null,
+                                  icon: const Icon(Icons.ios_share_rounded),
+                                  label: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    ).shareHitShareButton,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 if (submission is FixtureSubmissionFailed)
                   Padding(
@@ -1398,7 +1428,10 @@ class _OutlinedAction extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   borderRadius: AppRadius.brButton,
-                  border: Border.all(color: tokens.primary),
+                  // A quiet tint, not a frame (script 128): two framed
+                  // buttons under a finished card read heavier than its
+                  // score. The label keeps the action blue.
+                  color: tokens.primary.withValues(alpha: 0.10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1442,12 +1475,15 @@ class _OutlinedAction extends StatelessWidget {
 /// under WCAG AA for a 12px label. The state is never colour-alone -- the
 /// rim and the icon change with it (accessibility). Reuses the same key the
 /// prior chip design used (`currentMonthFixtures.double.$fixtureId`).
+/// Since script 128 it takes its own width at the start of the card's
+/// last row, and says when the day's double is on another match.
 class _DoubleGlowButton extends StatelessWidget {
   const _DoubleGlowButton({
     required this.selected,
     required this.enabled,
     required this.onTap,
     required this.fixtureId,
+    this.takenElsewhere = false,
   });
 
   final bool selected;
@@ -1455,16 +1491,25 @@ class _DoubleGlowButton extends StatelessWidget {
   final VoidCallback onTap;
   final String fixtureId;
 
+  /// Another match of the same Riyadh day holds the player's double: the
+  /// toggle reads [_takenLabel] at full strength, so it can be read, and
+  /// takes no tap.
+  final bool takenElsewhere;
+
+  static const String _takenLabel = 'مضاعفة اليوم مستخدمة';
+
   static const double _height = 36;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final String label = l10n.predictionMakeItDoubleLabel;
+    final String label = takenElsewhere
+        ? _takenLabel
+        : l10n.predictionMakeItDoubleLabel;
 
     return Opacity(
-      opacity: enabled ? 1 : AppOpacity.disabled,
+      opacity: enabled || takenElsewhere ? 1 : AppOpacity.disabled,
       child: Semantics(
         button: true,
         selected: selected,
@@ -1488,7 +1533,9 @@ class _DoubleGlowButton extends StatelessWidget {
               constraints: const BoxConstraints(
                 minHeight: AppSizes.minTouchTarget,
               ),
-              child: Center(
+              // Its own width, not the row's (script 128).
+              child: Align(
+                widthFactor: 1,
                 child: AnimatedContainer(
                   duration: AppMotion.fast,
                   constraints: const BoxConstraints(minHeight: _height),
@@ -1496,8 +1543,9 @@ class _DoubleGlowButton extends StatelessWidget {
                     horizontal: AppSpacing.sm,
                     vertical: AppSpacing.xs,
                   ),
-                  alignment: Alignment.center,
                   decoration: BoxDecoration(
+                    // No alignment above: it stretched the toggle to the
+                    // width it was given (script 128).
                     borderRadius: AppRadius.brButton,
                     color: selected ? null : Colors.transparent,
                     gradient: selected
@@ -2083,10 +2131,14 @@ class _ScoreBox extends StatelessWidget {
   }
 }
 
-/// The player's own call in a framed strip under the score: "your call
-/// 2 - 1" (a bolt on the day's double), then the verdict with its points
-/// once graded, in the words and tones of the predictions history (script
-/// 119: verdict). Without a call the strip says so.
+/// The player's own call under the score. Before the grade, "your call
+/// 2 - 1" (a bolt on the day's double) in a framed strip; without a call,
+/// the strip says so. Once graded, the strip leads with the points -- the
+/// one number a player comes back for, the largest on the strip (script
+/// 128) -- then the verdict in the history's words and the call, on a fill
+/// that follows the verdict: green for the exact score, gold for an exact
+/// double, red for a miss, neutral otherwise. The words say it too, so the
+/// colour is never alone. The points are the server's, never recomputed.
 class _CallStrip extends StatelessWidget {
   const _CallStrip({
     required this.fixtureId,
@@ -2100,42 +2152,6 @@ class _CallStrip extends StatelessWidget {
   final String? grade;
   final int? points;
 
-  /// The verdict badge, null before grading: the grade in the history's
-  /// words with the points, or the points alone for any other grade.
-  AppBadge? _verdict(AppLocalizations l10n) {
-    final int? earned = points;
-    if (earned == null) return null;
-    final String pts = l10n.pointsAbbreviated(earned);
-    final Key key = Key('currentMonthFixtures.verdict.$fixtureId');
-    switch (grade) {
-      case 'exact_scoreline':
-        return AppBadge(
-          key: key,
-          label: '${l10n.historyGradeExact} · $pts',
-          tone: AppBadgeTone.success,
-          icon: Icons.check_circle_rounded,
-        );
-      case 'correct_outcome':
-        return AppBadge(
-          key: key,
-          label: '${l10n.historyGradeOutcome} · $pts',
-          tone: earned > 0 ? AppBadgeTone.success : AppBadgeTone.muted,
-        );
-      case 'incorrect':
-        return AppBadge(
-          key: key,
-          label: '${l10n.historyGradeWrong} · $pts',
-          tone: AppBadgeTone.danger,
-          icon: Icons.cancel_rounded,
-        );
-    }
-    return AppBadge(
-      key: key,
-      label: pts,
-      tone: earned > 0 ? AppBadgeTone.success : AppBadgeTone.muted,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -2145,58 +2161,134 @@ class _CallStrip extends StatelessWidget {
       fontWeight: FontWeight.w600,
       color: tokens.textSecondary,
     );
+    final BoxDecoration frame = BoxDecoration(
+      borderRadius: AppRadius.brButton,
+      border: Border.all(color: tokens.border),
+    );
+    const EdgeInsets padding = EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.sm,
+    );
     final FixturePredictionDto? call = prediction;
-    final AppBadge? verdict = _verdict(l10n);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+    if (call == null) {
+      return Container(
+        padding: padding,
+        decoration: frame,
+        child: Text(
+          'لم تتوقّع',
+          textAlign: TextAlign.center,
+          style: labelStyle,
+        ),
+      );
+    }
+    final int? earned = points;
+    // A Wrap: at large text the score drops under "your call" instead of
+    // squeezing it.
+    final Widget callLine = Wrap(
+      key: Key('currentMonthFixtures.myCall.$fixtureId'),
+      alignment: earned == null ? WrapAlignment.center : WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: <Widget>[
+        Text(l10n.matchCardYourCall, style: labelStyle),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              orientedScoreLabel(context, call.homeGoals, call.awayGoals),
+              textDirection: TextDirection.ltr,
+              style: TextStyle(
+                fontSize: AppFontSize.s16,
+                fontWeight: FontWeight.w800,
+                color: tokens.textPrimary,
+              ),
+            ),
+            if (call.isDouble) ...<Widget>[
+              const SizedBox(width: 2),
+              Icon(
+                Icons.bolt_rounded,
+                size: AppSizes.iconInline,
+                color: tokens.gold,
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+    if (earned == null) {
+      return Container(padding: padding, decoration: frame, child: callLine);
+    }
+    final bool scored = earned > 0;
+    final ({String words, Color figure, Color fill}) tone = switch (grade) {
+      'exact_scoreline' when call.isDouble => (
+        words: l10n.historyGradeExact,
+        figure: tokens.gold,
+        fill: tokens.goldContainer,
       ),
+      'exact_scoreline' => (
+        words: l10n.historyGradeExact,
+        figure: tokens.successText,
+        fill: tokens.successContainer,
+      ),
+      'incorrect' => (
+        words: l10n.historyGradeWrong,
+        figure: tokens.errorText,
+        fill: tokens.errorContainer,
+      ),
+      'correct_outcome' => (
+        words: l10n.historyGradeOutcome,
+        figure: scored ? tokens.successText : tokens.textPrimary,
+        fill: scored ? tokens.successContainer : tokens.surfaceHigh,
+      ),
+      _ => (
+        words: '',
+        figure: scored ? tokens.successText : tokens.textPrimary,
+        fill: scored ? tokens.successContainer : tokens.surfaceHigh,
+      ),
+    };
+    return Container(
+      key: Key('currentMonthFixtures.verdict.$fixtureId'),
+      padding: padding,
       decoration: BoxDecoration(
         borderRadius: AppRadius.brButton,
-        border: Border.all(color: tokens.border),
+        color: tone.fill,
       ),
-      child: call == null
-          ? Text('لم تتوقّع', textAlign: TextAlign.center, style: labelStyle)
-          // A Wrap: at large text the verdict drops under the call
-          // instead of squeezing it.
-          : Wrap(
-              key: Key('currentMonthFixtures.myCall.$fixtureId'),
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: <Widget>[
-                Text(l10n.matchCardYourCall, style: labelStyle),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      orientedScoreLabel(
-                        context,
-                        call.homeGoals,
-                        call.awayGoals,
-                      ),
-                      textDirection: TextDirection.ltr,
-                      style: TextStyle(
-                        fontSize: AppFontSize.s16,
-                        fontWeight: FontWeight.w800,
-                        color: tokens.textPrimary,
-                      ),
-                    ),
-                    if (call.isDouble) ...<Widget>[
-                      const SizedBox(width: 2),
-                      Icon(
-                        Icons.bolt_rounded,
-                        size: AppSizes.iconInline,
-                        color: tokens.gold,
-                      ),
-                    ],
-                  ],
-                ),
-                ?verdict,
-              ],
+      // A Wrap, not a Row: at large text the words and the call drop under
+      // the points. Beside them they were left too little width, and the
+      // call's score overflowed it by 135px at text x2.
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppSpacing.md,
+        runSpacing: AppSpacing.xs,
+        children: <Widget>[
+          Text(
+            l10n.pointsAbbreviated(earned),
+            key: Key('currentMonthFixtures.points.$fixtureId'),
+            style: TextStyle(
+              fontSize: AppFontSize.s20,
+              fontWeight: FontWeight.w800,
+              color: tone.figure,
             ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (tone.words.isNotEmpty)
+                Text(
+                  tone.words,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s13,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              callLine,
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
