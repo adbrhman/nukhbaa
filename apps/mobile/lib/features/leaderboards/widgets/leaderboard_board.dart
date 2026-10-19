@@ -133,6 +133,26 @@ class LeaderboardBoard extends StatelessWidget {
         : gapToLeader != null && gapToLeader > 0
         ? l10n.boardGapToRank(l10n.boardPoints(gapToLeader), entries.first.rank)
         : null;
+    // The next rung above the viewer (script 125: next step): the nearest
+    // higher total and the rank it holds, shown before the gap to the
+    // leader when that rung is not the top, so a viewer far down the
+    // board has a step within reach.
+    BoardEntry? above;
+    if (viewer != null && !viewerLeads) {
+      for (final BoardEntry entry in entries) {
+        if (entry.points > viewer.points &&
+            (above == null || entry.points < above.points)) {
+          above = entry;
+        }
+      }
+    }
+    final BoardEntry? step = above;
+    final String? nextStep = viewer != null && step != null && step.rank > 1
+        ? l10n.boardGapToRank(
+            l10n.boardPoints(step.points - viewer.points),
+            step.rank,
+          )
+        : null;
 
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -152,6 +172,7 @@ class LeaderboardBoard extends StatelessWidget {
       if (showHeader)
         _SummaryCard(
           viewer: viewer,
+          nextStep: nextStep,
           standing: standing,
           standingIsLead: viewerLeads,
         ),
@@ -224,9 +245,13 @@ class _SummaryCard extends StatelessWidget {
     required this.viewer,
     required this.standing,
     required this.standingIsLead,
+    this.nextStep,
   });
 
   final BoardEntry? viewer;
+
+  /// The gap to the next rank above, when it is not the top (script 125).
+  final String? nextStep;
 
   /// The gap-to-leader line, or the "you lead" line; null when neither
   /// applies (no viewer on the board, or a viewer level with no one ahead).
@@ -242,6 +267,7 @@ class _SummaryCard extends StatelessWidget {
     final int? accuracyPercent = item?.accuracyPercent;
     final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
     final String? line = standing;
+    final String? next = nextStep;
 
     final TextStyle? labelStyle = context.text.labelSmall?.copyWith(
       color: t.textMuted,
@@ -274,6 +300,7 @@ class _SummaryCard extends StatelessWidget {
             l10n.boardYourRankIs(item.rank),
             l10n.boardPoints(item.points),
             if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
+            ?next,
             ?line,
           ].join(l10n.boardListSeparator);
 
@@ -319,9 +346,14 @@ class _SummaryCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               Container(height: 1, color: t.border),
               const SizedBox(height: AppSpacing.md),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: _StandingPill(text: line, isLead: standingIsLead),
+              // script 125: the next rung first, then the top.
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                children: <Widget>[
+                  if (next != null) _StandingPill(text: next, isLead: false),
+                  _StandingPill(text: line, isLead: standingIsLead),
+                ],
               ),
             ],
           ],

@@ -350,15 +350,20 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
       LeaderboardScope.season => l10n.leaderboardSubtitleSeason,
       LeaderboardScope.friends => 'ترتيبك بين أصدقائك بنقاط الشهر',
     };
+    // script 125: the month by its name, «أكتوبر 2026», not «10/2026».
+    final String monthName = championMonthName(
+      widget.season.seasonLabel,
+      Localizations.localeOf(context),
+    );
     final String period = switch (_scope) {
-      LeaderboardScope.month => widget.season.seasonLabel,
+      LeaderboardScope.month => monthName,
       LeaderboardScope.day => intl.DateFormat(
         'EEEE d MMMM yyyy',
         locale,
       ).format(_day),
       LeaderboardScope.season =>
         ref.watch(sportingSeasonLeaderboardProvider).value?.label ?? '—',
-      LeaderboardScope.friends => widget.season.seasonLabel,
+      LeaderboardScope.friends => monthName,
     };
     final List<MonthChampionDto> celebrating = widget.celebrating;
     final Widget board = switch (_scope) {

@@ -254,6 +254,14 @@ void main() {
       findsWidgets,
     );
     expect(find.text(ar.leaderboardMonthStarting), findsNothing);
+    // The month by its name, not 10/2026 (script 125).
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('leaderboards.period')),
+        matching: find.text('أكتوبر 2026'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('October without a fixture yet: still the celebration, and no '

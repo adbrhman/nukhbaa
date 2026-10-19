@@ -90,7 +90,10 @@ void main() {
 
       expect(
         find.bySemanticsLabel(
-          'مركزك 4، 10 نقاط، الدقة 25%، 10 نقاط للوصول للمرتبة 1',
+          // The next rung (rank 3, two points up) before the top (125).
+          'مركزك 4، 10 نقاط، الدقة 25%، '
+          'نقطتان للوصول للمرتبة 3، '
+          '10 نقاط للوصول للمرتبة 1',
         ),
         findsOneWidget,
       );
