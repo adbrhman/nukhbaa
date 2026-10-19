@@ -92,6 +92,7 @@ import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
 import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
+import 'match_details_page.dart';
 
 /// Fewest decisive predictions a win share is shown for: over one call a
 /// share read "100%", a verdict it is not (decided 2026-10-07). Below it
@@ -557,6 +558,18 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                         MaterialPageRoute<void>(
                           builder: (_) => FixturePredictionsBoardPage(
                             kickoffAt: _fixture.kickoffAt,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // The match's story once it is over (script 118).
+                    onOpenDetails: () => unawaited(
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => MatchDetailsPage(
+                            item: widget.item,
+                            home: home,
+                            away: away,
                           ),
                         ),
                       ),
@@ -1576,6 +1589,7 @@ class _StartedBody extends StatelessWidget {
     required this.grade,
     required this.points,
     required this.onOpenPredictions,
+    this.onOpenDetails,
   });
 
   final CurrentMonthFixtureItemDto item;
@@ -1586,6 +1600,9 @@ class _StartedBody extends StatelessWidget {
   final String? grade;
   final int? points;
   final VoidCallback onOpenPredictions;
+
+  /// Opens the match details page; shown once the result is recorded.
+  final VoidCallback? onOpenDetails;
 
   SeasonFixtureCardDto get _fixture => item.fixture;
 
@@ -1668,6 +1685,15 @@ class _StartedBody extends StatelessWidget {
             onTap: onOpenPredictions,
           ),
         ),
+        if (recorded && onOpenDetails != null)
+          Center(
+            child: TextButton.icon(
+              key: Key('currentMonthFixtures.details.$fixtureId'),
+              onPressed: onOpenDetails,
+              icon: const Icon(Icons.timeline_rounded, size: 18),
+              label: const Text('تفاصيل المباراة'),
+            ),
+          ),
       ],
     );
   }

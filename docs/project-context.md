@@ -2772,6 +2772,42 @@ was already recorded is corrected by hand (record the result, then post to
 the ledger: compensating `correction` entries). Not covered: a provider that
 never corrects its figure.
 
+### Match details page (2026-10-19)
+
+Asked for on the model of Sports Mole's match page: each finished match's
+goals with their minutes, cards, the half-time score and the ground.
+football-data.org's free tier has none of it (goal scorers and bookings
+start at its €29 plan); Highlightly's free plan has it per match. The probe
+of 2026-10-19 (script 117, read-only) found the five football-data.org
+leagues on Highlightly (Premier League 33973, La Liga 119924, Serie A
+115669, Bundesliga 67162, Ligue 1 52695; Champions League 2486, not playing
+that day) and read Paris FC 4-3 Rennes FC with its 26 events, the VAR goal
+ruled out at 51' among them, 14 requests of the 100 a day.
+
+- **Read once** (`SyncMatchDetails`, every 30 minutes beside the provider
+  sync, only in mode `on`): a fixture with a recorded result, 2h15 to 3
+  days after kickoff, in a league of `matchDetailsLeagueIds`. A fixture from
+  Highlightly carries its match id; any other is found in Highlightly's list
+  of its league's matches that day: the one kicking off within 10 minutes
+  of it, or, among several, the one that ended on the recorded score. The
+  score is not asked of a single candidate, so a match a feed scored wrong
+  is still found. No candidate: stored `found = false`, never asked again.
+- **Quota**: one list call per league and day, one call per match, at most
+  8 a run; both Highlightly adapters of this job stop with 40 requests left,
+  for the schedules and the results.
+- **Stored** in `football_data.match_details` (migration 0179), events
+  already in the app's kinds (`HighlightlyMatchDetailsSource.kindOf`):
+  Highlightly's «Penalty» is a penalty goal, «VAR Goal Cancelled» a goal
+  ruled out, «VAR Penalty» kept but not shown. The half-time score is worked
+  out from the goals up to 45+; left out when an own goal falls in the
+  first half, since providers differ on whose side they file it.
+- **Shown**: `GET /fixtures/{id}/details`; «تفاصيل المباراة» on a finished
+  match's card opens `MatchDetailsPage`: league and round, the score home
+  side first in the reader's direction (`orientedScoreLabel`), half time,
+  ground, referee, then each goal and card with its minute on its side, the
+  ruled-out goal struck through. Substitutions are left out.
+- Display only: nothing reads it to score, rank or record a result.
+
 ### Live score correction (2026-10-18)
 
 Paris FC - Rennes (Ligue 1, 2026-10-18): Rennes' second goal was ruled out

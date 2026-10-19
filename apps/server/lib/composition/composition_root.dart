@@ -170,6 +170,8 @@ final class CompositionRoot {
     this.liveScoreBoard,
     this.refreshLiveScores,
     this.correctLiveScore,
+    this.syncMatchDetails,
+    this.getMatchDetails,
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
@@ -379,6 +381,8 @@ final class CompositionRoot {
     this.liveScoreBoard,
     this.refreshLiveScores,
     this.correctLiveScore,
+    this.syncMatchDetails,
+    this.getMatchDetails,
     this.rescoreUnscoredResults,
     this.recordError,
     this.adminErrorLog,
@@ -2457,6 +2461,14 @@ final class CompositionRoot {
   /// provide one.
   final AdminCorrectLiveScore? correctLiveScore;
 
+  /// Reads the story of each finished match from Highlightly (script 118);
+  /// null while the provider sync is off or Highlightly has no key.
+  final SyncMatchDetails? syncMatchDetails;
+
+  /// The match details page's read (`GET /fixtures/{id}/details`); null in
+  /// tests that do not provide one.
+  final GetMatchDetails? getMatchDetails;
+
   /// Finishes the scoring of recorded results whose scoring failed after
   /// the result was written (migration 0080); null in tests that do not
   /// provide one.
@@ -2898,6 +2910,10 @@ final class CompositionRoot {
     );
     SyncProviderFixtures? syncProviderFixtures;
     SyncProviderResults? syncProviderResults;
+    // The story of each finished match (script 118): read from Highlightly
+    // once its result is recorded, shown on the match details page.
+    final matchDetailsStore = PostgresMatchDetailsStore(connection);
+    SyncMatchDetails? syncMatchDetails;
     if (providerSyncMode != ProviderSyncMode.off) {
       final syncStore = PostgresProviderSyncStore(connection);
       final syncLeagues = PostgresLeagueRepository(connection);
@@ -2990,6 +3006,19 @@ final class CompositionRoot {
               return const Result.ok(null);
             },
       );
+      if (highlightlyKey.isNotEmpty) {
+        // Details come last on the shared daily quota: both adapters stop
+        // with 40 requests left, for the schedules and the results.
+        syncMatchDetails = SyncMatchDetails(
+          store: matchDetailsStore,
+          source: HighlightlyMatchDetailsSource(apiKey: highlightlyKey),
+          lister: HighlightlyFootballDataProvider(
+            apiKey: highlightlyKey,
+            quotaReserve: 40,
+          ),
+          leagueIds: matchDetailsLeagueIds,
+        );
+      }
     }
 
     // Reactions on a prediction (migration 0094) stand behind the
@@ -3383,6 +3412,8 @@ final class CompositionRoot {
         corrections: liveScoreCorrections,
         clock: clock,
       ),
+      syncMatchDetails: syncMatchDetails,
+      getMatchDetails: GetMatchDetails(store: matchDetailsStore),
       // The same two steps every result recorder runs after the write,
       // as the service principal the provider sync already uses. Both are
       // idempotent, so a fixture scored twice converges on the same rows.

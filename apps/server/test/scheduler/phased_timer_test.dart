@@ -135,6 +135,7 @@ void main() {
       ),
       'match-day settlement': (matchDaySettlementPhase, matchDaySettlementTick),
       'monthly season': (monthlySeasonPhase, monthlySeasonTick),
+      'match details': (matchDetailsPhase, matchDetailsTick),
     };
     int gcd(int a, int b) => b == 0 ? a : gcd(b, a % b);
     final names = jobs.keys.toList();

@@ -51,6 +51,9 @@ const Duration referralQualificationPhase = Duration(seconds: 44);
 const Duration matchDaySettlementPhase = Duration(seconds: 48);
 
 /// See [providerLivePhase].
+const Duration matchDetailsPhase = Duration(seconds: 52);
+
+/// See [providerLivePhase].
 const Duration monthlySeasonPhase = Duration(seconds: 56);
 
 /// Makes a one-shot timer; [Timer.new] in production.

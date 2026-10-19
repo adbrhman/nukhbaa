@@ -22,6 +22,10 @@ const Duration providerResultsTick = Duration(minutes: 10);
 /// of one of its competitions is in play.
 const Duration providerLiveTick = Duration(minutes: 2);
 
+/// Match details reads (script 118). Each run only calls the provider for
+/// finished matches still without details, a few a run.
+const Duration matchDetailsTick = Duration(minutes: 30);
+
 /// Drives the automatic fixtures/results sync in the server process, like the
 /// reminder sweep: in-process timers, never awaited, failures logged and
 /// retried on the next tick. Does nothing when the mode is `off` or no
@@ -140,7 +144,54 @@ void startProviderSyncScheduler(CompositionRoot root) {
     }
   }
 
+  // The story of each finished match (script 118). Shadow mode writes
+  // nothing, so it reads nothing either.
+  final details = apply ? root.syncMatchDetails : null;
+  var detailsRunning = false;
+  Future<void> runDetails() async {
+    if (details == null || detailsRunning) return;
+    detailsRunning = true;
+    try {
+      final result = await details(now: DateTime.now().toUtc());
+      switch (result) {
+        case Err<MatchDetailsReport>(:final error):
+          _log(tag, 'match details failed: ${error.code} ${error.message}');
+          await reportJobFailure(
+            root,
+            job: 'provider-sync match details',
+            error: error,
+          );
+        case Ok<MatchDetailsReport>(:final value):
+          if (value.requests > 0 || value.notes.isNotEmpty) {
+            _log(
+              tag,
+              'match details: requests=${value.requests} '
+              'saved=${value.saved} not_found=${value.notFound}',
+            );
+            for (final note in value.notes) {
+              _log(tag, '  $note');
+            }
+          }
+      }
+    } on Object catch (error, stackTrace) {
+      _log(tag, 'match details threw: $error');
+      await reportJobFailure(
+        root,
+        job: 'provider-sync match details',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      detailsRunning = false;
+    }
+  }
+
   _log(tag, 'provider sync started');
+  if (details != null) {
+    phasedPeriodic(matchDetailsPhase, matchDetailsTick, (_) {
+      unawaited(runDetails());
+    });
+  }
   if (live != null) {
     phasedPeriodic(providerLivePhase, providerLiveTick, (_) {
       unawaited(runLive());

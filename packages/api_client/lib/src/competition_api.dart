@@ -169,6 +169,17 @@ final class CompetitionApi {
     );
   }
 
+  /// `GET /fixtures/{id}/details` — the story of a finished match for
+  /// its details page: the events with their minutes, the half-time score
+  /// and the ground (script 118). `available` is false while they have not
+  /// been read yet.
+  Future<Result<MatchDetailsDto>> getMatchDetails(String fixtureId) {
+    return _transport.getObject<MatchDetailsDto>(
+      '/fixtures/$fixtureId/details',
+      parse: MatchDetailsDto.fromJson,
+    );
+  }
+
   /// `PUT /fixtures/{id}/live-score` — corrects the running score of a
   /// match in play that the provider has wrong (a goal ruled out by VAR the
   /// feed still counts). The match card and the live points change at once,

@@ -90,3 +90,20 @@ const List<ProviderLeagueRule> phaseOneRules = [
     bothFromLeagueName: 'الدوري الإنجليزي الممتاز',
   ),
 ];
+
+/// Highlightly's league ids for the match details page (script 118), by the
+/// league's name in `football_data.leagues`: the five football-data.org
+/// leagues and the Champions League read by the probe of 2026-10-19
+/// (script 117), and the three Highlightly already serves. A fixture of any
+/// other league gets no details.
+const Map<String, String> matchDetailsLeagueIds = <String, String>{
+  'الدوري الإنجليزي الممتاز': '33973',
+  'الدوري الإسباني': '119924',
+  'الدوري الإيطالي': '115669',
+  'الدوري الألماني': '67162',
+  'الدوري الفرنسي': '52695',
+  'دوري أبطال أوروبا': '2486',
+  'دوري روشن السعودي': '262041',
+  'الدوري الأوروبي': '3337',
+  'كأس الرابطة الإنجليزية': '41632',
+};
