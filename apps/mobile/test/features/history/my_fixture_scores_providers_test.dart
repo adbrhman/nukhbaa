@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile/core/ui/app_badge.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/history/my_fixture_scores_providers.dart';
@@ -122,14 +121,11 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
+/// The points a graded card leads with (script 128: the points apart from
+/// the verdict's words, which were one badge before).
 String _pointsOn(WidgetTester tester, String fixtureId) => tester
-    .widget<AppBadge>(
-      find.descendant(
-        of: find.byKey(Key('currentMonthFixtures.myCall.$fixtureId')),
-        matching: find.byType(AppBadge),
-      ),
-    )
-    .label;
+    .widget<Text>(find.byKey(Key('currentMonthFixtures.points.$fixtureId')))
+    .data!;
 
 void main() {
   testWidgets('two finished cards share one read of my points', (tester) async {
@@ -151,10 +147,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
     }
 
-    // The badge reads the verdict in the history's words, then the points
-    // (script 119); what matters here is one read for both cards.
-    expect(_pointsOn(tester, 'f-1'), 'أصبت النتيجة · 3 نقاط');
-    expect(_pointsOn(tester, 'f-2'), 'توقع غير صحيح · 0 نقطة');
+    // Each card leads with its own points (script 128); what matters here
+    // is one read for both cards.
+    expect(_pointsOn(tester, 'f-1'), '3 نقاط');
+    expect(_pointsOn(tester, 'f-2'), '0 نقطة');
     expect(server.count('/me/fixture-scores'), 1);
     expect(
       server.paths.where((String p) => p.endsWith('/scores')),
