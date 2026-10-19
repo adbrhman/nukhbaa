@@ -30,7 +30,7 @@ env:
 jobs:
   database_migrations:
     name: Migrations (clean database)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       SUPABASE_TELEMETRY_DISABLED: '1'
@@ -99,7 +99,7 @@ jobs:
 
   workspace:
     name: Analyze + Test (workspace)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -155,7 +155,7 @@ jobs:
   # whole run) still wait for the tests to pass.
   build_web:
     name: Build Web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -209,7 +209,7 @@ jobs:
 
   build_android:
     name: Build Android APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -894,7 +894,7 @@ jobs:
 
   publish_latest_apk:
     name: Publish latest APK to Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The tests too: the build no longer waits for them (script 94).
     needs: [build_android, database_migrations, workspace]
     # Every green push to main is published (decided 2026-10-03), and so is
@@ -1010,7 +1010,7 @@ jobs:
 
   build_server_image:
     name: Build server Docker image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
