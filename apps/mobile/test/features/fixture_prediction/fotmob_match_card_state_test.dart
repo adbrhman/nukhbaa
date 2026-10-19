@@ -197,7 +197,11 @@ void main() {
     );
     expect(find.text('68%'), findsOneWidget);
     expect(find.text('32%'), findsOneWidget);
-    expect(find.text('\u0641\u0648\u0632'), findsNWidgets(2));
+    // Each share over its team's name since script 131, not "win" twice:
+    // the name shows at the crest and under its share.
+    expect(find.text('\u0641\u0648\u0632'), findsNothing);
+    expect(find.text(teamDisplayName('Al Hilal')), findsNWidgets(2));
+    expect(find.text(teamDisplayName('Al Nassr')), findsNWidgets(2));
 
     await tester.tap(
       find.byKey(const Key('currentMonthFixtures.home.increment.f-1')),
