@@ -16,6 +16,7 @@ import '../../core/format/timestamps.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/forward_chevron.dart';
+import '../../core/ui/score_pill.dart';
 import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/unread_badge.dart';
@@ -27,6 +28,7 @@ import '../duels/duels_home_card.dart';
 import '../duels/duels_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/live_home_card.dart';
+import '../fixture_prediction/widgets/live_matches_chip.dart';
 import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
 import '../history/prediction_history_screen.dart';
@@ -331,8 +333,24 @@ class _Highlights {
             if (sameDay(kickoff, today)) item,
         ];
     if (todays.isNotEmpty) {
+      // script 126: the matches in play first, then those still to come,
+      // then those over; kickoff order within each.
+      int rank(CurrentMonthFixtureItemDto item) {
+        final DateTime? kickoff = DateTime.tryParse(
+          item.fixture.kickoffAt ?? '',
+        );
+        if (kickoff != null && kickoff.isAfter(now)) return 1;
+        return _isOver(item) ? 2 : 0;
+      }
+
+      final List<CurrentMonthFixtureItemDto> ranked =
+          <CurrentMonthFixtureItemDto>[
+            for (int r = 0; r < 3; r++)
+              for (final CurrentMonthFixtureItemDto item in todays)
+                if (rank(item) == r) item,
+          ];
       return _Highlights(
-        todays.take(HomeScreen.highlightCount).toList(growable: false),
+        ranked.take(HomeScreen.highlightCount).toList(growable: false),
         isToday: true,
       );
     }
@@ -359,6 +377,19 @@ class _Highlights {
 
   final List<CurrentMonthFixtureItemDto> items;
   final bool isToday;
+}
+
+/// Whether [item] is over (script 126): its result recorded, the live feed
+/// says finished, or past the live window since kickoff.
+bool _isOver(CurrentMonthFixtureItemDto item) {
+  if (item.resultHomeGoals != null && item.resultAwayGoals != null) {
+    return true;
+  }
+  if (item.liveFinished ?? false) return true;
+  final DateTime? kickoff = DateTime.tryParse(item.fixture.kickoffAt ?? '');
+  return kickoff != null &&
+      !kickoff.isAfter(DateTime.now()) &&
+      !isFixtureLive(item.fixture.kickoffAt);
 }
 
 /// One highlighted match: league and kickoff on top, then home crest and
@@ -392,7 +423,22 @@ class _HighlightRow extends ConsumerWidget {
       fixture.kickoffAt ?? '',
     )?.toLocal();
     final String league = fixture.leagueName ?? item.competitionName;
-    final String meta = kickoff == null
+    // script 126: where the match stands, and its score once it has one.
+    final bool over = _isOver(item);
+    final bool started = kickoff != null && !kickoff.isAfter(DateTime.now());
+    final bool hasResult =
+        item.resultHomeGoals != null && item.resultAwayGoals != null;
+    final int? shownHome = hasResult
+        ? item.resultHomeGoals
+        : item.liveHomeGoals;
+    final int? shownAway = hasResult
+        ? item.resultAwayGoals
+        : item.liveAwayGoals;
+    final String meta = over
+        ? '$league · انتهت'
+        : started
+        ? '$league · مباشر'
+        : kickoff == null
         ? league
         : '$league · ${formatKickoffTime(context, fixture.kickoffAt!)}';
 
@@ -455,14 +501,28 @@ class _HighlightRow extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
-                    // Arabic in an Arabic row, not a Latin "Vs" (UI-29).
-                    child: Text(
-                      AppLocalizations.of(context).versusShort,
-                      style: TextStyle(
-                        color: tokens.textMuted,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    // Arabic in an Arabic row, not a Latin "Vs" (UI-29);
+                    // the score instead once there is one (script 126).
+                    child: shownHome != null && shownAway != null
+                        ? Text(
+                            orientedScoreLabel(context, shownHome, shownAway),
+                            key: Key(
+                              'home.highlight.score.${fixture.fixtureId}',
+                            ),
+                            textDirection: TextDirection.ltr,
+                            style: TextStyle(
+                              color: tokens.textPrimary,
+                              fontSize: AppFontSize.s16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          )
+                        : Text(
+                            AppLocalizations.of(context).versusShort,
+                            style: TextStyle(
+                              color: tokens.textMuted,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                   ),
                   Expanded(
                     child: Row(
@@ -508,6 +568,8 @@ class _PendingPredictionsCard extends StatelessWidget {
     if (summary == null) return const SizedBox.shrink();
 
     final tokens = context.tokens;
+    // script 126: which match is nearest, so the card says what waits.
+    final String? nextLine = _nextLine(context, summary.next);
     if (summary.isEmpty) {
       return Container(
         key: const Key('home.pendingPredictions.done'),
@@ -553,7 +615,7 @@ class _PendingPredictionsCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'لا تفوّت مبارياتك القادمة',
+                      'مباريات بانتظار توقعك',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: tokens.textPrimary,
                         fontWeight: FontWeight.w800,
@@ -568,6 +630,19 @@ class _PendingPredictionsCard extends StatelessWidget {
                         fontSize: AppFontSize.s13,
                       ),
                     ),
+                    if (nextLine != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        nextLine,
+                        key: const Key('home.pendingPredictions.next'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.textSecondary,
+                          fontSize: AppFontSize.s12,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -583,7 +658,7 @@ class _PendingPredictionsCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           AppButton(
             key: const Key('home.pendingPredictions.cta'),
-            label: 'تفاصيل المباريات',
+            label: 'توقّع الآن',
             icon: Icons.arrow_forward_rounded,
             onPressed: onPredict,
           ),
@@ -595,11 +670,28 @@ class _PendingPredictionsCard extends StatelessWidget {
   /// Arabic counts are not a plural suffix: one, two, few (3-10) and many
   /// (11+) are four different sentences, so the line is chosen rather than
   /// interpolated into a single template.
+  /// What the count is (script 126): the matches still to come that the
+  /// player has not called, not every match to come.
   static String _countLine(int count) {
-    if (count == 1) return 'لديك مباراة قادمة واحدة';
-    if (count == 2) return 'لديك مباراتان قادمتان';
-    if (count <= 10) return 'لديك $count مباريات قادمة';
-    return 'لديك $count مباراة قادمة';
+    if (count == 1) return 'مباراة واحدة لم تتوقعها بعد';
+    if (count == 2) return 'مباراتان لم تتوقعهما بعد';
+    if (count <= 10) return '$count مباريات لم تتوقعها بعد';
+    return '$count مباراة لم تتوقعها بعد';
+  }
+
+  /// The nearest of them: its teams and when.
+  static String? _nextLine(
+    BuildContext context,
+    CurrentMonthFixtureItemDto? next,
+  ) {
+    if (next == null) return null;
+    final SeasonFixtureCardDto fixture = next.fixture;
+    final String teams =
+        '${fixture.homeTeam ?? '؟'} × ${fixture.awayTeam ?? '؟'}';
+    final String? kickoff = fixture.kickoffAt;
+    return kickoff == null
+        ? 'أقربها: $teams'
+        : 'أقربها: $teams · ${formatDayAndTime(context, kickoff)}';
   }
 }
 

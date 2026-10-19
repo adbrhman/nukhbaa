@@ -116,6 +116,12 @@ void main() {
       );
       final double overview = top(find.text('لوحة النخبة'));
       expect(pending, lessThan(match), reason: 'the action leads');
+      // The count says what it counts, and names the nearest (126).
+      expect(find.text('مباراة واحدة لم تتوقعها بعد'), findsOneWidget);
+      expect(
+        find.byKey(const Key('home.pendingPredictions.next')),
+        findsOneWidget,
+      );
       expect(match, lessThan(challenge));
       expect(challenge, lessThan(overview), reason: 'the overview is detail');
 
