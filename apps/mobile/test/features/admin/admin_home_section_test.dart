@@ -271,9 +271,18 @@ void main() {
       ),
       findsOneWidget,
     );
+    // Three at most, the ones that need the admin first (script 124): the
+    // match over with its result is the one left for «كل المباريات».
+    expect(find.byKey(const Key('admin.dashboard.today.f-done')), findsNothing);
     expect(
-      _in('admin.dashboard.today.f-done', find.textContaining('انتهت 2-1')),
-      findsOneWidget,
+      tester
+          .getTopLeft(find.byKey(const Key('admin.dashboard.today.f-await')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const Key('admin.dashboard.today.f-live')))
+            .dy,
+      ),
     );
     expect(
       _in('admin.dashboard.today.f-live', find.textContaining('مباشرة')),

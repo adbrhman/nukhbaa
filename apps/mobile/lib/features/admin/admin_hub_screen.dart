@@ -34,33 +34,41 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
     final AppTokens t = context.tokens;
     final bool isMobile = AppBreakpoints.isMobile(context);
 
-    return Scaffold(
-      key: const Key('admin.hub.scaffold'),
-      backgroundColor: t.background,
-      appBar: AppBar(title: Text(adminSectionLabel(_selected, l10n))),
-      drawer: isMobile
-          ? Drawer(
-              key: const Key('admin.hub.drawer'),
-              child: SafeArea(
-                // Builder يوفّر سياقاً أسفل الـDrawer/Scaffold كي يعمل
-                // Navigator.pop هنا على إغلاق الـDrawer نفسه فقط، لا الشاشة.
-                child: Builder(
-                  builder: (BuildContext drawerContext) => Consumer(
-                    builder: (context, ref, _) => AdminNavList(
-                      counts: ref.watch(adminNavCountsProvider),
-                      selected: _selected,
-                      onSelect: (AdminSection section) {
-                        _select(section);
-                        Navigator.of(drawerContext).pop();
-                      },
+    // script 124: back from a section opens the home page; only from the
+    // home page does it leave the panel.
+    return PopScope<Object?>(
+      canPop: _selected == AdminSection.dashboard,
+      onPopInvokedWithResult: (bool didPop, Object? _) {
+        if (!didPop) _select(AdminSection.dashboard);
+      },
+      child: Scaffold(
+        key: const Key('admin.hub.scaffold'),
+        backgroundColor: t.background,
+        appBar: AppBar(title: Text(adminSectionLabel(_selected, l10n))),
+        drawer: isMobile
+            ? Drawer(
+                key: const Key('admin.hub.drawer'),
+                child: SafeArea(
+                  // Builder يوفّر سياقاً أسفل الـDrawer/Scaffold كي يعمل
+                  // Navigator.pop هنا على إغلاق الـDrawer نفسه فقط، لا الشاشة.
+                  child: Builder(
+                    builder: (BuildContext drawerContext) => Consumer(
+                      builder: (context, ref, _) => AdminNavList(
+                        counts: ref.watch(adminNavCountsProvider),
+                        selected: _selected,
+                        onSelect: (AdminSection section) {
+                          _select(section);
+                          Navigator.of(drawerContext).pop();
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            )
-          : null,
-      body: SafeArea(
-        child: AdminShell(selected: _selected, onSelect: _select),
+              )
+            : null,
+        body: SafeArea(
+          child: AdminShell(selected: _selected, onSelect: _select),
+        ),
       ),
     );
   }

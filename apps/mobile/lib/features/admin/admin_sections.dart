@@ -16,10 +16,10 @@ enum AdminSection {
   monthlyCompetitions(icon: Icons.calendar_month_rounded),
   fixtures(icon: Icons.sports_soccer_rounded),
   predictions(icon: Icons.rule_folder_rounded),
+  // countedFixtures is a tab of resultsScoring (script 124).
   resultsScoring(icon: Icons.scoreboard_rounded),
-  countedFixtures(icon: Icons.fact_check_rounded),
+  // userNames is a tab of users (script 124: merged).
   users(icon: Icons.people_alt_rounded),
-  userNames(icon: Icons.badge_rounded),
   announcements(icon: Icons.campaign_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
   analytics(icon: Icons.insights_rounded),

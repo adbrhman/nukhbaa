@@ -33,9 +33,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.fixtures => 'المباريات',
     AdminSection.predictions => l10n.adminPredictionsTab,
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
-    AdminSection.countedFixtures => l10n.adminCountedFixturesTab,
     AdminSection.users => l10n.adminUsersTab,
-    AdminSection.userNames => 'أسماء المستخدمين',
     AdminSection.announcements => 'إرسال إشعار',
     AdminSection.ledger => 'سجل النقاط',
     AdminSection.analytics => 'التحليلات',
@@ -56,12 +54,14 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
 /// No group holds a single entry.
 const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
   (title: null, sections: [AdminSection.dashboard]),
+  // script 124: fourteen entries. The calls sit with the matches they are
+  // for; user names and counted matches are tabs of their partners.
   (
     title: 'المباريات والنتائج',
     sections: [
       AdminSection.fixtures,
       AdminSection.resultsScoring,
-      AdminSection.countedFixtures,
+      AdminSection.predictions,
     ],
   ),
   (
@@ -70,14 +70,12 @@ const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
       AdminSection.monthlyCompetitions,
       AdminSection.champions,
       AdminSection.h2hLeague,
-      AdminSection.predictions,
     ],
   ),
   (
     title: 'اللاعبون والتواصل',
     sections: [
       AdminSection.users,
-      AdminSection.userNames,
       AdminSection.referrals,
       AdminSection.ledger,
       AdminSection.announcements,
@@ -174,6 +172,50 @@ class AdminNavList extends StatelessWidget {
   }
 }
 
+/// Two related sections under one menu entry (script 124: tabbed): the
+/// tabs on top, each section below as it was on its own page.
+class AdminTabbedSection extends StatelessWidget {
+  const AdminTabbedSection({super.key, required this.name, required this.tabs});
+
+  /// Keys the tab bar (`admin.<name>.tabs`) and each tab.
+  final String name;
+
+  /// Each tab's label and its section.
+  final List<(String, Widget)> tabs;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TabBar(
+            key: Key('admin.$name.tabs'),
+            labelColor: t.primaryText,
+            unselectedLabelColor: t.textSecondary,
+            indicatorColor: t.primary,
+            dividerColor: t.border,
+            tabs: <Widget>[
+              for (int i = 0; i < tabs.length; i++)
+                Tab(key: Key('admin.$name.tab.$i'), text: tabs[i].$1),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: TabBarView(
+              children: <Widget>[
+                for (final (String, Widget) tab in tabs) tab.$2,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// جسم لوحة الأدمن حسب القسم المختار. على سطح المكتب/اللوحي يعرض شريطاً
 /// جانبياً دائماً بجانب المحتوى؛ على الجوال يعرض المحتوى فقط — التنقّل
 /// عبر Drawer يديره [AdminHubScreen] (المالك الوحيد لحالة `selected`).
@@ -191,14 +233,26 @@ class AdminShell extends StatelessWidget {
       AdminSection.audit => const AuditLogSection(),
       AdminSection.errorLog => const ErrorLogSection(),
       AdminSection.analytics => const AdminAnalyticsSection(),
-      AdminSection.users => const UserSanctionSection(),
-      AdminSection.userNames => const UserNamesSection(),
+      // script 124: tabs -- the accounts, then their names.
+      AdminSection.users => const AdminTabbedSection(
+        name: 'users',
+        tabs: <(String, Widget)>[
+          ('الحسابات', UserSanctionSection()),
+          ('الأسماء', UserNamesSection()),
+        ],
+      ),
       AdminSection.announcements => const AnnouncementSection(),
       AdminSection.ledger => const LedgerLookupSection(),
       AdminSection.fixtures => const FixturesAdminSection(),
-      AdminSection.resultsScoring => const ResultsScoringSection(),
+      // script 124: tabs -- recording results, then the counted matches.
+      AdminSection.resultsScoring => const AdminTabbedSection(
+        name: 'results',
+        tabs: <(String, Widget)>[
+          ('تسجيل النتائج', ResultsScoringSection()),
+          ('المحتسبة', AdminCountedFixturesSection()),
+        ],
+      ),
       AdminSection.predictions => const AdminPredictionsSection(),
-      AdminSection.countedFixtures => const AdminCountedFixturesSection(),
       AdminSection.referrals => const ReferralAdminSection(),
       AdminSection.champions => const ChampionAdminSection(),
       AdminSection.h2hLeague => const H2hAdminSection(),

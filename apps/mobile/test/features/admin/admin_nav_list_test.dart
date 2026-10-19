@@ -48,15 +48,20 @@ void main() {
     }
   });
 
-  testWidgets('the user names tile opens the user names section', (
+  testWidgets('user names and counted matches are tabs, not tiles (124)', (
     tester,
   ) async {
     final List<AdminSection> tapped = await _open(tester);
 
-    expect(find.text('أسماء المستخدمين'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('admin.shell.nav.userNames')));
+    expect(find.byKey(const Key('admin.shell.nav.userNames')), findsNothing);
+    expect(
+      find.byKey(const Key('admin.shell.nav.countedFixtures')),
+      findsNothing,
+    );
+    expect(find.byType(ListTile), findsNWidgets(14));
+    await tester.tap(find.byKey(const Key('admin.shell.nav.users')));
     await tester.pumpAndSettle();
 
-    expect(tapped, <AdminSection>[AdminSection.userNames]);
+    expect(tapped, <AdminSection>[AdminSection.users]);
   });
 }

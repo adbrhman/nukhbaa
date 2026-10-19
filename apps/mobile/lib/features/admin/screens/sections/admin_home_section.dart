@@ -129,6 +129,31 @@ List<CurrentMonthFixtureItemDto> riyadhTodayFixtures(
   return <CurrentMonthFixtureItemDto>[for (final k in keyed) k.$2];
 }
 
+/// The [limit] of [today] an admin should see first (script 124: today):
+/// awaiting a result, then in play, then still to come, then over with
+/// its result; kickoff order within each.
+List<CurrentMonthFixtureItemDto> firstForAdmin(
+  List<CurrentMonthFixtureItemDto> today,
+  DateTime now, {
+  int limit = 3,
+}) {
+  int rank(CurrentMonthFixtureItemDto item) {
+    if (_hasResult(item)) return 3;
+    final DateTime? kickoff = _kickoff(item);
+    if (kickoff == null || now.toUtc().isBefore(kickoff)) return 2;
+    return _isOver(item, now) ? 0 : 1;
+  }
+
+  final List<(int, int, CurrentMonthFixtureItemDto)> keyed =
+      <(int, int, CurrentMonthFixtureItemDto)>[
+        for (int i = 0; i < today.length; i++) (rank(today[i]), i, today[i]),
+      ];
+  keyed.sort(
+    (a, b) => a.$1 != b.$1 ? a.$1.compareTo(b.$1) : a.$2.compareTo(b.$2),
+  );
+  return <CurrentMonthFixtureItemDto>[for (final k in keyed.take(limit)) k.$3];
+}
+
 /// Where [item] stands at [now], in words.
 String fixturePhaseLabel(CurrentMonthFixtureItemDto item, DateTime now) {
   if (_hasResult(item)) {
@@ -183,24 +208,28 @@ class _HomeContent extends ConsumerWidget {
           month: ref.watch(adminMonthPulseProvider),
           onNavigate: onNavigate,
         ),
+        // script 124: one tap to the daily jobs.
+        const SizedBox(height: AppSpacing.md),
+        _QuickActions(onNavigate: onNavigate),
         const SizedBox(height: AppSpacing.lg),
         _TodayFixtures(
-          fixtures: riyadhTodayFixtures(fixtures, now),
+          fixtures: firstForAdmin(riyadhTodayFixtures(fixtures, now), now),
           now: now,
           onOpenAll: () => onNavigate(AdminSection.fixtures),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        AdminMonthCard(
-          pulse: ref.watch(adminMonthPulseProvider),
-          now: now,
-          onOpen: () => onNavigate(AdminSection.champions),
-        ),
+        // script 124: the pulse before the month's board.
         const SizedBox(height: AppSpacing.lg),
         _Pulse(
           snapshot: snapshot,
           retention: ref.watch(adminRetentionProvider),
           now: now,
           onNavigate: onNavigate,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AdminMonthCard(
+          pulse: ref.watch(adminMonthPulseProvider),
+          now: now,
+          onOpen: () => onNavigate(AdminSection.champions),
         ),
         const SizedBox(height: AppSpacing.lg),
         _RecentActivity(
@@ -441,6 +470,68 @@ class _OpenButton extends StatelessWidget {
   }
 }
 
+/// One tap to the daily jobs (script 124: quick): recording a result, the
+/// matches, a notification to the players, the players. No title: the
+/// four tiles say what they open.
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({required this.onNavigate});
+
+  final ValueChanged<AdminSection> onNavigate;
+
+  static const List<(AdminSection, String)> _actions = <(AdminSection, String)>[
+    (AdminSection.resultsScoring, 'إدخال نتيجة'),
+    (AdminSection.fixtures, 'المباريات'),
+    (AdminSection.announcements, 'إرسال إشعار'),
+    (AdminSection.users, 'المستخدمون'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Row(
+      key: const Key('admin.dashboard.quick'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        for (int i = 0; i < _actions.length; i++) ...<Widget>[
+          if (i > 0) const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                key: Key('admin.dashboard.quick.${_actions[i].$1.name}'),
+                borderRadius: AppRadius.brCard,
+                onTap: () => onNavigate(_actions[i].$1),
+                child: AdminCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Column(
+                    children: <Widget>[
+                      Icon(_actions[i].$1.icon, color: t.primary),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _actions[i].$2,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.labelMedium?.copyWith(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// «مباريات اليوم»: the Riyadh day's matches, each with its kickoff in the
 /// reader's time and where it stands.
 class _TodayFixtures extends StatelessWidget {
@@ -604,7 +695,9 @@ class _Pulse extends StatelessWidget {
             // Rows of cards as tall as their tallest content: the cards keep
             // the grid's shape at normal text size and grow with larger text
             // instead of overflowing a fixed aspect ratio (UI-34).
-            final double minHeight = width / (isMobile ? 1.25 : 1.8);
+            // script 124: compact -- the number beside its icon, half the
+            // height the cards took.
+            final double minHeight = width / (isMobile ? 2.4 : 3.2);
             return Column(
               key: const Key('admin.dashboard.metrics'),
               children: [
@@ -658,24 +751,33 @@ class _MetricCard extends StatelessWidget {
       onTap: onTap,
       child: AdminCard(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             Icon(data.icon, color: data.color, size: 22),
-            const Spacer(),
-            Text(
-              data.value,
-              style: context.text.headlineSmall?.copyWith(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w900,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    data.value,
+                    style: context.text.headlineSmall?.copyWith(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    data.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium?.copyWith(
+                      color: t.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              data.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.labelMedium?.copyWith(color: t.textSecondary),
             ),
           ],
         ),
