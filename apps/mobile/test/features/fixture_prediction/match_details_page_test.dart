@@ -38,6 +38,7 @@ final MatchDetailsDto _story = MatchDetailsDto(
   halfTimeHome: 2,
   halfTimeAway: 1,
   venue: 'Stade Jean Bouin',
+  referee: 'Willy Delajod',
   round: 'Regular Season - 8',
   events: <MatchEventDto>[
     _e('14', 'goal', true, 'Maxime López', assist: 'Lassine Sinayoko'),
@@ -168,28 +169,40 @@ void main() {
     expect(find.text('الجولة 8'), findsOneWidget);
     expect(find.text('Stade Jean Bouin'), findsOneWidget);
 
-    // 7 goals, 7 yellow cards and the VAR's cancelled goal: 15 lines, each
-    // side's in its own column, the home side's on the right in Arabic.
+    // 7 goals, 7 yellow cards and the VAR's cancelled goal: 15 lines in
+    // match time, one a row (script 120), the 45+4 goal before the break
+    // and the 51st minute after it, the home side's on the right in Arabic.
     expect(find.byKey(const Key('matchDetails.event.14')), findsOneWidget);
     expect(find.byKey(const Key('matchDetails.event.15')), findsNothing);
-    final Finder homeList = find.byKey(const Key('matchDetails.homeEvents'));
-    final Finder awayList = find.byKey(const Key('matchDetails.awayEvents'));
-    Finder linesIn(Finder list) => find.descendant(
-      of: list,
-      matching: find.byWidgetPredicate(
-        (Widget w) =>
-            w.key is ValueKey<String> &&
-            (w.key! as ValueKey<String>).value.startsWith(
-              'matchDetails.event.',
-            ),
-      ),
-    );
-    expect(linesIn(homeList), findsNWidgets(7));
-    expect(linesIn(awayList), findsNWidgets(8));
+    expect(find.byKey(const Key('matchDetails.timeline')), findsOneWidget);
+    Finder line(int i) => find.byKey(Key('matchDetails.event.$i'));
+    for (int i = 1; i < 15; i++) {
+      expect(
+        tester.getTopLeft(line(i)).dy,
+        greaterThan(tester.getTopLeft(line(i - 1)).dy),
+        reason: 'event $i is under event ${i - 1}',
+      );
+    }
+    expect(find.text("45+4'"), findsOneWidget);
+    final double breakY = tester
+        .getCenter(find.byKey(const Key('matchDetails.halfTimeBreak')))
+        .dy;
+    expect(breakY, greaterThan(tester.getBottomLeft(line(7)).dy));
+    expect(breakY, lessThan(tester.getTopLeft(line(8)).dy));
     expect(
-      tester.getCenter(homeList).dx,
-      greaterThan(tester.getCenter(awayList).dx),
+      find.descendant(
+        of: find.byKey(const Key('matchDetails.halfTimeBreak')),
+        matching: find.text('1 - 2'),
+      ),
+      findsOneWidget,
     );
+    expect(
+      tester.getCenter(line(0)).dx,
+      greaterThan(tester.getCenter(line(1)).dx),
+    );
+    // The goal's maker under its scorer; the referee under the ground.
+    expect(find.text('صناعة: Lassine Sinayoko'), findsNWidgets(2));
+    expect(find.text('الحكم: Willy Delajod'), findsOneWidget);
 
     // As on Sports Mole, each line's mark is towards the middle: left of the
     // name on the home side, right of it on the away side.

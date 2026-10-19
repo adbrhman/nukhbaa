@@ -47,12 +47,37 @@ String? eventNote(String kind) => switch (kind) {
   _ => null,
 };
 
+/// The clock as a sort key (script 120: match time): the minute, then the
+/// added time, so "45+4" comes before "46". A clock it cannot read sorts
+/// last.
+(int, int) minuteKey(String minute) {
+  final RegExpMatch? match = RegExp(
+    r'^\s*(\d+)\s*(?:\+\s*(\d+))?',
+  ).firstMatch(minute);
+  if (match == null) return (1000, 0);
+  return (int.parse(match.group(1)!), int.tryParse(match.group(2) ?? '') ?? 0);
+}
+
+/// [events] in match time, ties kept in the provider's order: the provider
+/// lists a half's added time after the substitutions at its 45th minute.
+List<MatchEventDto> inMatchTime(List<MatchEventDto> events) {
+  final List<int> order = List<int>.generate(events.length, (int i) => i);
+  order.sort((int a, int b) {
+    final (int, int) ka = minuteKey(events[a].minute);
+    final (int, int) kb = minuteKey(events[b].minute);
+    if (ka.$1 != kb.$1) return ka.$1.compareTo(kb.$1);
+    if (ka.$2 != kb.$2) return ka.$2.compareTo(kb.$2);
+    return a.compareTo(b);
+  });
+  return <MatchEventDto>[for (final int i in order) events[i]];
+}
+
 /// The story of a finished match, laid out like Sports Mole's match page
 /// (2026-10-19): one card with the league and round, the date, the sides
-/// around the final score, the half-time score, «انتهت» and the ground, and
-/// under them each side's goals and cards in its own column, under its own
-/// crest. A goal the VAR ruled out shows too, struck through. Opened from a
-/// finished match's card.
+/// around the final score, the half-time score, «انتهت», the ground and the
+/// referee, and under them the goals and cards in match time, each on its
+/// own side's half (script 120: doc). A goal the VAR ruled out shows too,
+/// struck through. Opened from a finished match's card.
 class MatchDetailsPage extends ConsumerWidget {
   const MatchDetailsPage({
     super.key,
@@ -77,11 +102,13 @@ class MatchDetailsPage extends ConsumerWidget {
       matchDetailsProvider(fixtureId),
     );
     final MatchDetailsDto? loaded = details.value;
-    final List<MatchEventDto> shown = <MatchEventDto>[
+    // In match time, whatever order the provider listed them in (script
+    // 120: sorted).
+    final List<MatchEventDto> shown = inMatchTime(<MatchEventDto>[
       if (loaded != null && loaded.available)
         for (final MatchEventDto event in loaded.events)
           if (shownEventKinds.contains(event.kind)) event,
-    ];
+    ]);
     return Scaffold(
       appBar: AppBar(title: const Text('تفاصيل المباراة')),
       body: RefreshIndicator(
@@ -245,6 +272,14 @@ class _Header extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: muted,
                   ),
+                // script 120: the referee, when the provider names one.
+                if (story != null && story.referee != null)
+                  Text(
+                    'الحكم: ${story.referee!}',
+                    key: const Key('matchDetails.referee'),
+                    textAlign: TextAlign.center,
+                    style: muted,
+                  ),
               ],
             ),
           ),
@@ -252,7 +287,14 @@ class _Header extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Divider(height: 1, color: tokens.border),
             const SizedBox(height: AppSpacing.md),
-            _EventColumns(events: events, home: home, away: away),
+            _EventColumns(
+              events: events,
+              home: home,
+              away: away,
+              // script 120: the break between the halves carries it.
+              halfTimeHome: htHome,
+              halfTimeAway: htAway,
+            ),
           ],
         ],
       ),
@@ -347,21 +389,26 @@ class _Side extends StatelessWidget {
   }
 }
 
-/// Each side's goals and cards in its own column, in the provider's order:
-/// the home side's under the home crest, each line's mark towards the
-/// middle, as on Sports Mole. When two columns do not fit (a narrow screen,
-/// a large text size) the away side's list goes under the home side's, each
-/// under the side's name.
+/// The goals and cards in match time (script 120: timeline): one row per
+/// event, the home side's on the right half in Arabic and the away side's on
+/// the left, each line's mark towards the middle as on Sports Mole, with a
+/// break at half time. When two halves do not fit (a narrow screen, a large
+/// text size) the away side's list goes under the home side's, each under
+/// the side's name.
 class _EventColumns extends StatelessWidget {
   const _EventColumns({
     required this.events,
     required this.home,
     required this.away,
+    this.halfTimeHome,
+    this.halfTimeAway,
   });
 
   final List<MatchEventDto> events;
   final ResolvedTeamIdentity home;
   final ResolvedTeamIdentity away;
+  final int? halfTimeHome;
+  final int? halfTimeAway;
 
   /// Width, at text x1, below which the two lists go one under the other.
   static const double _sideBySideWidth = 220;
@@ -369,34 +416,47 @@ class _EventColumns extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double scale = MediaQuery.textScalerOf(context).scale(16) / 16;
+    Widget lineAt(int i) => _EventLine(
+      key: Key('matchDetails.event.$i'),
+      event: events[i],
+      towardsMiddle: events[i].home,
+    );
     List<Widget> linesOf({required bool homeSide}) => <Widget>[
       for (int i = 0; i < events.length; i++)
-        if (events[i].home == homeSide)
-          _EventLine(
-            key: Key('matchDetails.event.$i'),
-            event: events[i],
-            towardsMiddle: homeSide,
-          ),
+        if (events[i].home == homeSide) lineAt(i),
     ];
-    final Widget homeList = Column(
-      key: const Key('matchDetails.homeEvents'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: linesOf(homeSide: true),
+    // The first event after the 45th minute, when the first half had any.
+    final int firstSecondHalf = events.indexWhere(
+      (MatchEventDto e) => minuteKey(e.minute).$1 > 45,
     );
-    final Widget awayList = Column(
-      key: const Key('matchDetails.awayEvents'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: linesOf(homeSide: false),
-    );
+    final int breakAt = firstSecondHalf > 0 ? firstSecondHalf : -1;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (constraints.maxWidth / scale >= _sideBySideWidth) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            key: const Key('matchDetails.timeline'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Expanded(child: homeList),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: awayList),
+              for (int i = 0; i < events.length; i++) ...<Widget>[
+                if (i == breakAt)
+                  _HalfTimeBreak(home: halfTimeHome, away: halfTimeAway),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: events[i].home
+                          ? lineAt(i)
+                          : const SizedBox.shrink(),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: events[i].home
+                          ? const SizedBox.shrink()
+                          : lineAt(i),
+                    ),
+                  ],
+                ),
+              ],
             ],
           );
         }
@@ -405,13 +465,62 @@ class _EventColumns extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             _ListTitle(name: home.displayName),
-            homeList,
+            ...linesOf(homeSide: true),
             const SizedBox(height: AppSpacing.md),
             _ListTitle(name: away.displayName),
-            awayList,
+            ...linesOf(homeSide: false),
           ],
         );
       },
+    );
+  }
+}
+
+/// The line between the halves: «نهاية الشوط الأول» and, when known, the
+/// half-time score, home side first in the reader's direction.
+class _HalfTimeBreak extends StatelessWidget {
+  const _HalfTimeBreak({required this.home, required this.away});
+
+  final int? home;
+  final int? away;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final int? h = home;
+    final int? a = away;
+    final TextStyle style = TextStyle(
+      fontSize: AppFontSize.s12,
+      fontWeight: FontWeight.w700,
+      color: tokens.textSecondary,
+    );
+    return Padding(
+      key: const Key('matchDetails.halfTimeBreak'),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        children: <Widget>[
+          Expanded(child: Divider(height: 1, color: tokens.border)),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            flex: 3,
+            child: Text(
+              'نهاية الشوط الأول',
+              textAlign: TextAlign.center,
+              style: style,
+            ),
+          ),
+          if (h != null && a != null) ...<Widget>[
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              orientedScoreLabel(context, h, a),
+              textDirection: TextDirection.ltr,
+              style: style,
+            ),
+          ],
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Divider(height: 1, color: tokens.border)),
+        ],
+      ),
     );
   }
 }
@@ -437,9 +546,10 @@ class _ListTitle extends StatelessWidget {
   }
 }
 
-/// One goal or card: the player, the minute and the mark. The home side's
-/// lines (on the right in Arabic) end with the mark towards the middle; the
-/// away side's start with it.
+/// One goal or card: the player, the minute and the mark, and under a
+/// goal's scorer the player who made it (script 120: assist). The home
+/// side's lines (on the right in Arabic) end with the mark towards the
+/// middle; the away side's start with it.
 class _EventLine extends StatelessWidget {
   const _EventLine({
     super.key,
@@ -458,34 +568,55 @@ class _EventLine extends StatelessWidget {
     final tokens = context.tokens;
     final bool cancelled = event.kind == 'var_goal_cancelled';
     final String? note = eventNote(event.kind);
-    final Widget name = Flexible(
-      child: Text.rich(
-        TextSpan(
-          children: <InlineSpan>[
-            TextSpan(
-              text: event.player ?? '—',
-              style: TextStyle(
-                color: cancelled ? tokens.textMuted : tokens.textPrimary,
-                decoration: cancelled ? TextDecoration.lineThrough : null,
-              ),
+    // Only a goal's: for a substitution the provider puts the player who
+    // went off in the same field.
+    final String? assist = event.kind == 'goal' ? event.assist : null;
+    final Widget scorer = Text.rich(
+      TextSpan(
+        children: <InlineSpan>[
+          TextSpan(
+            text: event.player ?? '—',
+            style: TextStyle(
+              color: cancelled ? tokens.textMuted : tokens.textPrimary,
+              decoration: cancelled ? TextDecoration.lineThrough : null,
             ),
-            if (note != null)
-              TextSpan(
-                text: ' $note',
-                style: TextStyle(color: tokens.textSecondary),
-              ),
-          ],
-        ),
-        textAlign: towardsMiddle ? TextAlign.end : TextAlign.start,
-        // As wide as its longest line, not the whole column: a name on two
-        // lines pushed its minute to the column's far edge (Juan Antonio
-        // Iglesias Sanchez 69', 2026-10-19).
-        textWidthBasis: TextWidthBasis.longestLine,
-        style: const TextStyle(
-          fontSize: AppFontSize.s13,
-          fontWeight: FontWeight.w600,
-        ),
+          ),
+          if (note != null)
+            TextSpan(
+              text: ' $note',
+              style: TextStyle(color: tokens.textSecondary),
+            ),
+        ],
       ),
+      textAlign: towardsMiddle ? TextAlign.end : TextAlign.start,
+      // As wide as its longest line, not the whole column: a name on two
+      // lines pushed its minute to the column's far edge (Juan Antonio
+      // Iglesias Sanchez 69', 2026-10-19).
+      textWidthBasis: TextWidthBasis.longestLine,
+      style: const TextStyle(
+        fontSize: AppFontSize.s13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final Widget name = Flexible(
+      child: assist == null
+          ? scorer
+          : Column(
+              crossAxisAlignment: towardsMiddle
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: <Widget>[
+                scorer,
+                Text(
+                  'صناعة: $assist',
+                  textAlign: towardsMiddle ? TextAlign.end : TextAlign.start,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s12,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+              ],
+            ),
     );
     final Widget minute = Text(
       "${event.minute}'",
