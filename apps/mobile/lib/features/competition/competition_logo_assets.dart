@@ -91,6 +91,9 @@ const CompetitionLogoAsset _cafChampionsLeagueLogo = CompetitionLogoAsset(
 const CompetitionLogoAsset _faCupLogo = CompetitionLogoAsset(
   assetPath: 'assets/league_logos/fa-cup.png',
 );
+const CompetitionLogoAsset _conferenceLeagueLogo = CompetitionLogoAsset(
+  assetPath: 'assets/league_logos/conference-league.png',
+);
 
 /// Local league-logo catalog keyed by the football league name shown on the
 /// fixture. The aliases mirror the current football-data/provider seed names.
@@ -143,6 +146,9 @@ const Map<String, CompetitionLogoAsset> kLeagueLogoAssetsByName =
       'CAF Champions League': _cafChampionsLeagueLogo,
       'كأس الاتحاد الإنجليزي': _faCupLogo,
       'FA Cup': _faCupLogo,
+      'دوري المؤتمر الأوروبي': _conferenceLeagueLogo,
+      'UEFA Conference League': _conferenceLeagueLogo,
+      'Conference League': _conferenceLeagueLogo,
     };
 
 String _normaliseLeagueName(String value) =>

@@ -4471,6 +4471,17 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   `bayer-leverkusen.png`, the last unreadable file, replaced, so
   `logo_files_valid_test` waits for no crest any more. New test
   `cup_marks_and_caf_crests_test`.
+- **Script 127 (catalog, Conference League, 2026-10-20)**: migration
+  0180 adds دوري المؤتمر الأوروبي (short `UECL`, `is_continental`, so the
+  admin picker offers the whole catalog), entered by an admin, not by
+  the provider sync (decided with the owner); no club is created. Its
+  mark, `assets/league_logos/conference-league.png`, is cut from the
+  owner's screenshot (trophy and green arcs, 153x162, transparent) and
+  sits in `kLeagueLogoAssetsByName` under the catalog name and two
+  English ones; `logo_url` stays NULL. New tests
+  `0180_conference_league_test.sql` and `conference_league_logo_test`
+  (the real matches screen). Numbered 0180, after the 0170-0179
+  series. Applied by hand in the SQL Editor.
 - **Batch 109 (landing page at nukhbaa.app, 2026-10-12)**: the site root
   of the web mirror served only `302 /nukhbaa/`, so a shared link had no
   favicon and no preview card. `deploy/web-mirror/landing/` (index.html,
