@@ -172,6 +172,10 @@ class _Header extends StatelessWidget {
                       ? orientedScoreLabel(context, homeGoals, awayGoals)
                       : '-',
                   key: const Key('matchDetails.score'),
+                  // Two digit runs around a neutral dash: left to the Arabic paragraph
+                  // they swap places: Brighton 5-0 Crystal Palace drew Brighton's 5
+                  // under Palace's crest (2026-10-19).
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontSize: AppFontSize.s26,
                     fontWeight: FontWeight.w800,
@@ -179,11 +183,19 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 if (htHome != null && htAway != null)
-                  Text(
-                    'الشوط الأول: '
-                    '${orientedScoreLabel(context, htHome, htAway)}',
+                  Row(
                     key: const Key('matchDetails.halfTime'),
-                    style: muted,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Flexible(child: Text('الشوط الأول:', style: muted)),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        orientedScoreLabel(context, htHome, htAway),
+                        key: const Key('matchDetails.halfTimeScore'),
+                        textDirection: TextDirection.ltr,
+                        style: muted,
+                      ),
+                    ],
                   ),
                 Text('انتهت', style: muted),
               ],

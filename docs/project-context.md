@@ -2806,6 +2806,10 @@ ruled out at 51' among them, 14 requests of the 100 a day.
   side first in the reader's direction (`orientedScoreLabel`), half time,
   ground, referee, then each goal and card with its minute on its side, the
   ruled-out goal struck through. Substitutions are left out.
+  Each score (full and half time) is a `TextDirection.ltr` text, as
+  everywhere `orientedScoreLabel` is used: left to the Arabic paragraph
+  the two digits swapped places: the first build drew Brighton's 5 (5-0
+  against Crystal Palace) under Palace's crest (2026-10-19).
 - Display only: nothing reads it to score, rank or record a result.
 
 ### Live score correction (2026-10-18)

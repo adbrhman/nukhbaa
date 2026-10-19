@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -132,6 +133,19 @@ http.Response _json(Object body) => http.Response(
   headers: const {'content-type': 'application/json; charset=utf-8'},
 );
 
+/// Where [digit] is drawn, from the left, in the text keyed [key].
+double _leftOf(WidgetTester tester, String key, String digit) {
+  final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+    find.byKey(Key(key)),
+  );
+  final int at = paragraph.text.toPlainText().indexOf(digit);
+  expect(at, isNonNegative);
+  return paragraph
+      .getBoxesForSelection(TextSelection(baseOffset: at, extentOffset: at + 1))
+      .single
+      .left;
+}
+
 void main() {
   testWidgets('the goals and cards show with their minutes, the ruled-out '
       'goal struck through, substitutions left out', (tester) async {
@@ -139,7 +153,17 @@ void main() {
 
     // The score sits home side first in the reader's direction.
     expect(find.text('3 - 4'), findsOneWidget);
-    expect(find.text('الشوط الأول: 1 - 2'), findsOneWidget);
+    expect(find.text('الشوط الأول:'), findsOneWidget);
+    // Each score is drawn under its own crest: the home side's (4, and 2
+    // at half time) on the right in Arabic, the away side's on the left.
+    expect(
+      _leftOf(tester, 'matchDetails.score', '4'),
+      greaterThan(_leftOf(tester, 'matchDetails.score', '3')),
+    );
+    expect(
+      _leftOf(tester, 'matchDetails.halfTimeScore', '2'),
+      greaterThan(_leftOf(tester, 'matchDetails.halfTimeScore', '1')),
+    );
     expect(find.text('الدوري الفرنسي · الجولة 8'), findsOneWidget);
     expect(find.text('Stade Jean Bouin'), findsOneWidget);
 
