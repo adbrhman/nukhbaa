@@ -477,6 +477,10 @@ class _EventLine extends StatelessWidget {
           ],
         ),
         textAlign: towardsMiddle ? TextAlign.end : TextAlign.start,
+        // As wide as its longest line, not the whole column: a name on two
+        // lines pushed its minute to the column's far edge (Juan Antonio
+        // Iglesias Sanchez 69', 2026-10-19).
+        textWidthBasis: TextWidthBasis.longestLine,
         style: const TextStyle(
           fontSize: AppFontSize.s13,
           fontWeight: FontWeight.w600,

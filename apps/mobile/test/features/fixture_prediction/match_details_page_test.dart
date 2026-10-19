@@ -251,6 +251,45 @@ void main() {
     expect(find.byKey(const Key('matchDetails.retry')), findsOneWidget);
   });
 
+  testWidgets('a name on two lines keeps its minute next to it', (
+    tester,
+  ) async {
+    await _pump(tester, _json(_story.toJson()), size: const Size(360, 3000));
+
+    final RenderParagraph name = tester.renderObject<RenderParagraph>(
+      find.text('Przemys\u0142aw Frankowski'),
+    );
+    final String text = name.text.toPlainText();
+    double left = double.infinity;
+    double right = double.negativeInfinity;
+    // Each glyph but the spaces: a space where a line breaks sits at the
+    // paragraph's far end in Arabic, outside the drawn name.
+    for (var i = 0; i < text.length; i++) {
+      if (text[i] == ' ') {
+        continue;
+      }
+      for (final box in name.getBoxesForSelection(
+        TextSelection(baseOffset: i, extentOffset: i + 1),
+      )) {
+        if (box.left < left) {
+          left = box.left;
+        }
+        if (box.right > right) {
+          right = box.right;
+        }
+      }
+    }
+    final first = name
+        .getBoxesForSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 1),
+        )
+        .single;
+    // It wraps, and its box is no wider than the name drawn in it, so the
+    // minute beside the box sits beside the name.
+    expect(name.size.height, greaterThan(first.bottom - first.top + 1));
+    expect(name.size.width, closeTo(right - left, 0.5));
+  });
+
   testWidgets('it fits a 360px phone at text x2', (tester) async {
     await _pump(
       tester,

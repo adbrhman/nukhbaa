@@ -2828,6 +2828,12 @@ ruled out at 51' among them, 14 requests of the 100 a day.
   `provider-sync [on] match details: pending=N requests=R saved=S
   not_found=F` with why each passed-over fixture was passed over (no
   provider league, a match not over).
+- **A wrapped name keeps its minute** (script 122, 2026-10-19): the first
+  page showed «Juan Antonio Iglesias Sanchez» on two lines with its 69'
+  at the column's far edge, since a wrapped text took the whole column.
+  The name is now as wide as its longest line
+  (`TextWidthBasis.longestLine`).
+
 
 - Display only: nothing reads it to score, rank or record a result.
 
