@@ -151,8 +151,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
     }
 
-    expect(_pointsOn(tester, 'f-1'), '3 نقاط');
-    expect(_pointsOn(tester, 'f-2'), '0 نقطة');
+    // The badge reads the verdict in the history's words, then the points
+    // (script 119); what matters here is one read for both cards.
+    expect(_pointsOn(tester, 'f-1'), 'أصبت النتيجة · 3 نقاط');
+    expect(_pointsOn(tester, 'f-2'), 'توقع غير صحيح · 0 نقطة');
     expect(server.count('/me/fixture-scores'), 1);
     expect(
       server.paths.where((String p) => p.endsWith('/scores')),
