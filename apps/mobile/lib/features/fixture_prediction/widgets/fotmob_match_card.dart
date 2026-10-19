@@ -464,11 +464,31 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // requests over a phone network to learn twenty numbers the feed's own
     // query already had in hand. `null` means the server did not send them
     // (an older build); nobody having predicted is a real 0.
-    final int homeWinShare = widget.item.homeWinPercentage ?? 0;
-    final int awayWinShare = widget.item.awayWinPercentage ?? 0;
-    // An older server sends no count, and the shares show as before.
+    // Shown as the started card shows them (script 123: open shares):
+    // three-way, draws included, from a server that sends it; the two
+    // decisive shares from an older one. All zeros until minShareSample
+    // calls, for everyone, whether or not they have called it yet.
+    final int? total = widget.item.totalPredictions;
     final int? decisive = widget.item.decisivePredictions;
-    final bool showShares = decisive == null || decisive >= minShareSample;
+    final bool threeWay = total != null;
+    final bool showShares = threeWay
+        ? total >= minShareSample
+        : decisive == null || decisive >= minShareSample;
+    final int homeShare = !showShares
+        ? 0
+        : threeWay
+        ? (widget.item.homeOutcomeShare ?? 0)
+        : (widget.item.homeWinPercentage ?? 0);
+    final int? drawShare = !threeWay
+        ? null
+        : showShares
+        ? (widget.item.drawOutcomeShare ?? 0)
+        : 0;
+    final int awayShare = !showShares
+        ? 0
+        : threeWay
+        ? (widget.item.awayOutcomeShare ?? 0)
+        : (widget.item.awayWinPercentage ?? 0);
     // The check between the steppers means "this exact pick is saved".
     // Include the double flag so changing it also requires server
     // confirmation. Takes home/away explicitly so it can be re-evaluated
@@ -638,41 +658,32 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       ),
                     ],
                   ),
+                  // script 123: the double on its own row, then everyone's
+                  // calls under their caption, as on the started card.
+                  if (showEditableControls)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Center(
+                        child: SizedBox(
+                          width: 200,
+                          child: _DoubleGlowButton(
+                            selected: _isDouble,
+                            enabled: enabled,
+                            onTap: _toggleDouble,
+                            fixtureId: fixtureId,
+                          ),
+                        ),
+                      ),
+                    ),
                   Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Expanded(
-                          child: _WinPercentage(
-                            percentage: showShares ? homeWinShare : 0,
-                            teamName: home.displayName,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        if (showEditableControls)
-                          SizedBox(
-                            width: 130,
-                            child: _DoubleGlowButton(
-                              selected: _isDouble,
-                              enabled: enabled,
-                              onTap: _toggleDouble,
-                              fixtureId: fixtureId,
-                            ),
-                          )
-                        else
-                          const SizedBox(
-                            width: 130,
-                            height: AppSizes.minTouchTarget,
-                          ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: _WinPercentage(
-                            percentage: showShares ? awayWinShare : 0,
-                            teamName: away.displayName,
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(top: AppSpacing.md),
+                    child: _OutcomeShares(
+                      key: Key('currentMonthFixtures.outcomeShares.$fixtureId'),
+                      home: homeShare,
+                      draw: drawShare,
+                      away: awayShare,
+                      homeName: home.displayName,
+                      awayName: away.displayName,
                     ),
                   ),
                 ],
@@ -847,7 +858,8 @@ class _CardHeader extends StatelessWidget {
         ),
         IconButton(
           tooltip: l10n.viewLeaderboardTooltip,
-          icon: Icon(Icons.open_in_new_rounded, color: tokens.textSecondary),
+          // script 123: a ranking, not a link out of the app.
+          icon: Icon(Icons.leaderboard_rounded, color: tokens.textSecondary),
           iconSize: AppSizes.iconSm,
           constraints: const BoxConstraints(
             minWidth: AppSizes.minTouchTarget,
@@ -1284,59 +1296,6 @@ class _StepperZone extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WinPercentage extends StatelessWidget {
-  const _WinPercentage({required this.percentage, required this.teamName});
-
-  final int percentage;
-
-  /// Spoken with the share: "86%" alone did not say whose win (UI-28).
-  final String teamName;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    // A figure, not a control: plain text with no frame, so it no longer
-    // reads as two buttons that do nothing (UI-28). It wraps at large text
-    // instead of shrinking inside a FittedBox (UI-17).
-    return Semantics(
-      label: '\u0641\u0648\u0632 $teamName $percentage%',
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: _DoubleGlowButton._height,
-          ),
-          child: Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.xs,
-              children: <Widget>[
-                Text(
-                  '$percentage%',
-                  style: TextStyle(
-                    color: tokens.textPrimary,
-                    fontSize: AppFontSize.s16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  '\u0641\u0648\u0632',
-                  style: TextStyle(
-                    color: tokens.textSecondary,
-                    fontSize: AppFontSize.s13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
             ),
           ),
         ),
