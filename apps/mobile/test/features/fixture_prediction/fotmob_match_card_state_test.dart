@@ -362,7 +362,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('2 - 1'), findsOneWidget);
-      expect(find.text('5 pts'), findsOneWidget);
+      // The verdict in the history's words, with the points (script 119).
+      expect(find.text('Exact score · 5 pts'), findsOneWidget);
       expect(
         find.text('Result pending'),
         findsNothing,

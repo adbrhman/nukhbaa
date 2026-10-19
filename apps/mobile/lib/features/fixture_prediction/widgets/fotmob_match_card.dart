@@ -1351,16 +1351,49 @@ class _RevealPredictionsButton extends StatelessWidget {
   const _RevealPredictionsButton({
     required this.fixtureId,
     required this.onTap,
+    this.fill = false,
   });
 
   final String fixtureId;
   final VoidCallback onTap;
 
+  /// Fills its slot, half of a finished card's row (script 119), instead
+  /// of standing at its own 200px.
+  final bool fill;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    return _OutlinedAction(
+      actionKey: Key('currentMonthFixtures.reveal.$fixtureId'),
+      icon: Icons.groups_rounded,
+      label: l10n.fixturePredictionsButton,
+      fill: fill,
+      onTap: onTap,
+    );
+  }
+}
+
+/// An outlined action under a started card (script 119: actions): the way
+/// to everyone's calls and, once the match is over, to its details.
+class _OutlinedAction extends StatelessWidget {
+  const _OutlinedAction({
+    required this.actionKey,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.fill = false,
+  });
+
+  final Key actionKey;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool fill;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final String label = l10n.fixturePredictionsButton;
     return Semantics(
       button: true,
       label: label,
@@ -1369,7 +1402,7 @@ class _RevealPredictionsButton extends StatelessWidget {
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
-          key: Key('currentMonthFixtures.reveal.$fixtureId'),
+          key: actionKey,
           borderRadius: AppRadius.brButton,
           onTap: () {
             unawaited(HapticFeedback.selectionClick());
@@ -1383,10 +1416,10 @@ class _RevealPredictionsButton extends StatelessWidget {
             child: Center(
               child: Container(
                 // Wide enough to read as the card's one action under the
-                // split (design of 2026-10-07).
-                constraints: const BoxConstraints(
+                // split (design of 2026-10-07), or the whole of its slot.
+                constraints: BoxConstraints(
                   minHeight: _DoubleGlowButton._height,
-                  minWidth: 200,
+                  minWidth: fill ? double.infinity : 200.0,
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
@@ -1402,7 +1435,7 @@ class _RevealPredictionsButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Icon(
-                      Icons.groups_rounded,
+                      icon,
                       size: AppSizes.iconSm,
                       color: tokens.primaryText,
                     ),
@@ -1614,6 +1647,17 @@ class _StartedBody extends StatelessWidget {
     final int? homeGoals = recorded ? item.resultHomeGoals : item.liveHomeGoals;
     final int? awayGoals = recorded ? item.resultAwayGoals : item.liveAwayGoals;
     final bool hasScore = homeGoals != null && awayGoals != null;
+    // The result once it is recorded: the loser's name steps back and the
+    // share of calls that got it right stays lit (script 119: outcome).
+    final int? homeResult = item.resultHomeGoals;
+    final int? awayResult = item.resultAwayGoals;
+    final _Outcome? outcome = homeResult == null || awayResult == null
+        ? null
+        : homeResult > awayResult
+        ? _Outcome.home
+        : homeResult < awayResult
+        ? _Outcome.away
+        : _Outcome.draw;
     final _MatchPhase phase = recorded || isGraded
         ? _MatchPhase.over
         : hasScore
@@ -1653,12 +1697,12 @@ class _StartedBody extends StatelessWidget {
           away: away,
           homeGoals: homeGoals,
           awayGoals: awayGoals,
+          // script 119: the loser steps back.
+          outcome: outcome,
         ),
         const SizedBox(height: AppSpacing.md),
         _CallStrip(
           fixtureId: fixtureId,
-          homeName: home.displayName,
-          awayName: away.displayName,
           prediction: myPrediction,
           grade: isGraded ? grade : null,
           points: isGraded ? points : null,
@@ -1676,22 +1720,40 @@ class _StartedBody extends StatelessWidget {
                 : (item.awayWinPercentage ?? 0),
             homeName: home.displayName,
             awayName: away.displayName,
+            // script 119: the share that called the result stays lit.
+            actual: outcome,
           ),
         ],
         const SizedBox(height: AppSpacing.sm),
-        Center(
-          child: _RevealPredictionsButton(
-            fixtureId: fixtureId,
-            onTap: onOpenPredictions,
-          ),
-        ),
+        // script 119: once the match is over the two ways out share one
+        // row; each half wraps its own label at large text.
         if (recorded && onOpenDetails != null)
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _RevealPredictionsButton(
+                  fixtureId: fixtureId,
+                  onTap: onOpenPredictions,
+                  fill: true,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _OutlinedAction(
+                  actionKey: Key('currentMonthFixtures.details.$fixtureId'),
+                  icon: Icons.timeline_rounded,
+                  label: 'تفاصيل المباراة',
+                  fill: true,
+                  onTap: onOpenDetails!,
+                ),
+              ),
+            ],
+          )
+        else
           Center(
-            child: TextButton.icon(
-              key: Key('currentMonthFixtures.details.$fixtureId'),
-              onPressed: onOpenDetails,
-              icon: const Icon(Icons.timeline_rounded, size: 18),
-              label: const Text('تفاصيل المباراة'),
+            child: _RevealPredictionsButton(
+              fixtureId: fixtureId,
+              onTap: onOpenPredictions,
             ),
           ),
       ],
@@ -1835,10 +1897,20 @@ class _StartedHeader extends StatelessWidget {
 /// toward the score. [crestFirst] puts the crest first in reading order
 /// (the second side, whose crest sits next to the score box).
 class _StartedSide extends StatelessWidget {
-  const _StartedSide({required this.team, required this.crestFirst});
+  const _StartedSide({
+    required this.fixtureId,
+    required this.team,
+    required this.crestFirst,
+    this.dimmed = false,
+  });
 
+  final String fixtureId;
   final ResolvedTeamIdentity team;
   final bool crestFirst;
+
+  /// The losing side once the result is in: its name steps back (script
+  /// 119: dimmed).
+  final bool dimmed;
 
   static const double _crestSize = 34;
 
@@ -1859,13 +1931,16 @@ class _StartedSide extends StatelessWidget {
     final Widget name = Flexible(
       child: Text(
         team.displayName,
+        key: Key(
+          'currentMonthFixtures.side.$fixtureId.${crestFirst ? 'away' : 'home'}',
+        ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         textAlign: crestFirst ? TextAlign.start : TextAlign.end,
         style: TextStyle(
           fontSize: AppFontSize.s15,
           fontWeight: FontWeight.w700,
-          color: tokens.textPrimary,
+          color: dimmed ? tokens.textSecondary : tokens.textPrimary,
         ),
       ),
     );
@@ -1890,6 +1965,7 @@ class _ScoreRow extends StatelessWidget {
     required this.away,
     required this.homeGoals,
     required this.awayGoals,
+    this.outcome,
   });
 
   final String fixtureId;
@@ -1898,6 +1974,9 @@ class _ScoreRow extends StatelessWidget {
   final int? homeGoals;
   final int? awayGoals;
 
+  /// The recorded result's side, null until then (script 119: row).
+  final _Outcome? outcome;
+
   @override
   Widget build(BuildContext context) {
     final Widget score = _ScoreBox(
@@ -1905,8 +1984,19 @@ class _ScoreRow extends StatelessWidget {
       home: homeGoals,
       away: awayGoals,
     );
-    final Widget homeSide = _StartedSide(team: home, crestFirst: false);
-    final Widget awaySide = _StartedSide(team: away, crestFirst: true);
+    // script 119: sides; the loser's name steps back once the result is in.
+    final Widget homeSide = _StartedSide(
+      fixtureId: fixtureId,
+      team: home,
+      crestFirst: false,
+      dimmed: outcome == _Outcome.away,
+    );
+    final Widget awaySide = _StartedSide(
+      fixtureId: fixtureId,
+      team: away,
+      crestFirst: true,
+      dimmed: outcome == _Outcome.home,
+    );
     final double inline =
         _ScoreBox.widthOf(context, homeGoals, awayGoals) +
         2 * AppSpacing.sm +
@@ -2006,152 +2096,130 @@ class _ScoreBox extends StatelessWidget {
   }
 }
 
-/// The player's own call between the two names, in a framed strip: "your
-/// call 2 - 1" (a bolt on the day's double), then the points once graded.
-/// Without a call the middle says so.
+/// The player's own call in a framed strip under the score: "your call
+/// 2 - 1" (a bolt on the day's double), then the verdict with its points
+/// once graded, in the words and tones of the predictions history (script
+/// 119: verdict). Without a call the strip says so.
 class _CallStrip extends StatelessWidget {
   const _CallStrip({
     required this.fixtureId,
-    required this.homeName,
-    required this.awayName,
     required this.prediction,
     required this.grade,
     required this.points,
   });
 
   final String fixtureId;
-  final String homeName;
-  final String awayName;
   final FixturePredictionDto? prediction;
   final String? grade;
   final int? points;
+
+  /// The verdict badge, null before grading: the grade in the history's
+  /// words with the points, or the points alone for any other grade.
+  AppBadge? _verdict(AppLocalizations l10n) {
+    final int? earned = points;
+    if (earned == null) return null;
+    final String pts = l10n.pointsAbbreviated(earned);
+    final Key key = Key('currentMonthFixtures.verdict.$fixtureId');
+    switch (grade) {
+      case 'exact_scoreline':
+        return AppBadge(
+          key: key,
+          label: '${l10n.historyGradeExact} · $pts',
+          tone: AppBadgeTone.success,
+          icon: Icons.check_circle_rounded,
+        );
+      case 'correct_outcome':
+        return AppBadge(
+          key: key,
+          label: '${l10n.historyGradeOutcome} · $pts',
+          tone: earned > 0 ? AppBadgeTone.success : AppBadgeTone.muted,
+        );
+      case 'incorrect':
+        return AppBadge(
+          key: key,
+          label: '${l10n.historyGradeWrong} · $pts',
+          tone: AppBadgeTone.danger,
+          icon: Icons.cancel_rounded,
+        );
+    }
+    return AppBadge(
+      key: key,
+      label: pts,
+      tone: earned > 0 ? AppBadgeTone.success : AppBadgeTone.muted,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final TextStyle nameStyle = TextStyle(
-      fontSize: AppFontSize.s13,
+    final TextStyle labelStyle = TextStyle(
+      fontSize: AppFontSize.s12,
       fontWeight: FontWeight.w600,
       color: tokens.textSecondary,
     );
     final FixturePredictionDto? call = prediction;
-    final int? earned = points;
+    final AppBadge? verdict = _verdict(l10n);
     return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         borderRadius: AppRadius.brButton,
         border: Border.all(color: tokens.border),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Text(
-                  homeName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: nameStyle,
-                ),
-              ),
-            ),
-          ),
-          Container(
-            color: tokens.surfaceElevated,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            alignment: Alignment.center,
-            child: call == null
-                ? Text(
-                    'لم تتوقّع',
-                    style: TextStyle(
-                      fontSize: AppFontSize.s12,
-                      fontWeight: FontWeight.w600,
-                      color: tokens.textSecondary,
+      child: call == null
+          ? Text('لم تتوقّع', textAlign: TextAlign.center, style: labelStyle)
+          // A Wrap: at large text the verdict drops under the call
+          // instead of squeezing it.
+          : Wrap(
+              key: Key('currentMonthFixtures.myCall.$fixtureId'),
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: <Widget>[
+                Text(l10n.matchCardYourCall, style: labelStyle),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      orientedScoreLabel(
+                        context,
+                        call.homeGoals,
+                        call.awayGoals,
+                      ),
+                      textDirection: TextDirection.ltr,
+                      style: TextStyle(
+                        fontSize: AppFontSize.s16,
+                        fontWeight: FontWeight.w800,
+                        color: tokens.textPrimary,
+                      ),
                     ),
-                  )
-                : Column(
-                    key: Key('currentMonthFixtures.myCall.$fixtureId'),
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        l10n.matchCardYourCall,
-                        style: TextStyle(
-                          fontSize: AppFontSize.s12,
-                          fontWeight: FontWeight.w600,
-                          color: tokens.textSecondary,
-                        ),
+                    if (call.isDouble) ...<Widget>[
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.bolt_rounded,
+                        size: AppSizes.iconInline,
+                        color: tokens.gold,
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            orientedScoreLabel(
-                              context,
-                              call.homeGoals,
-                              call.awayGoals,
-                            ),
-                            textDirection: TextDirection.ltr,
-                            style: TextStyle(
-                              fontSize: AppFontSize.s16,
-                              fontWeight: FontWeight.w800,
-                              color: tokens.textPrimary,
-                            ),
-                          ),
-                          if (call.isDouble) ...<Widget>[
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: AppSizes.iconInline,
-                              color: tokens.gold,
-                            ),
-                          ],
-                        ],
-                      ),
-                      if (earned != null) ...<Widget>[
-                        const SizedBox(height: 2),
-                        AppBadge(
-                          label: l10n.pointsAbbreviated(earned),
-                          // Tone follows the points, not the grade name.
-                          tone: earned > 0
-                              ? AppBadgeTone.success
-                              : AppBadgeTone.muted,
-                          icon: grade == 'exact_scoreline' ? Icons.star : null,
-                        ),
-                      ],
                     ],
-                  ),
-          ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Text(
-                  awayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: nameStyle,
+                  ],
                 ),
-              ),
+                ?verdict,
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
 
-/// The split of everyone's calls: the home win share (green) with its bar,
-/// the draw share in the middle, the away win share (red) with its bar. A
-/// [draw] of null (an older server) leaves the middle empty and the two
-/// shares are the decisive ones.
+/// The split of everyone's calls under a caption that says so (script
+/// 119: shares): the home win share (green) with its bar, the draw share in
+/// the middle, the away win share (red) with its bar. Once the result is in
+/// ([actual]) the share that called it keeps its colour and the other two
+/// step back. A [draw] of null (an older server) leaves the middle empty
+/// and the two shares are the decisive ones.
 class _OutcomeShares extends StatelessWidget {
   const _OutcomeShares({
     super.key,
@@ -2160,6 +2228,7 @@ class _OutcomeShares extends StatelessWidget {
     required this.away,
     required this.homeName,
     required this.awayName,
+    this.actual,
   });
 
   final int home;
@@ -2167,66 +2236,95 @@ class _OutcomeShares extends StatelessWidget {
   final int away;
   final String homeName;
   final String awayName;
+  final _Outcome? actual;
 
-  static const String _winLabel = 'فرص الفوز';
+  static const String _caption = 'كيف توقّع اللاعبون';
+  static const String _winLabel = 'فوز';
   static const String _drawLabel = 'التعادل';
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final int? drawShare = draw;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final _Outcome? result = actual;
+    bool lit(_Outcome side) => result == null || result == side;
+    Color figure(_Outcome side, Color color) =>
+        lit(side) ? color : tokens.textSecondary;
+    Color bar(_Outcome side, Color color) =>
+        lit(side) ? color : color.withValues(alpha: AppOpacity.statusBorder);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Expanded(
-          flex: 5,
-          child: _ShareFigure(
-            percentage: home,
-            label: _winLabel,
-            color: tokens.successText,
-            spoken: '$_winLabel $homeName $home%',
+        Text(
+          _caption,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: AppFontSize.s12,
+            fontWeight: FontWeight.w600,
+            color: tokens.textSecondary,
           ),
         ),
-        Expanded(
-          flex: 4,
-          child: _ShareBar(
-            fraction: home / 100,
-            color: tokens.success,
-            fromStart: true,
-          ),
-        ),
-        Expanded(
-          flex: 5,
-          child: drawShare == null
-              ? const SizedBox.shrink()
-              : _ShareFigure(
-                  percentage: drawShare,
-                  label: _drawLabel,
-                  color: tokens.textPrimary,
-                  spoken: '$_drawLabel $drawShare%',
-                ),
-        ),
-        Expanded(
-          flex: 4,
-          child: _ShareBar(
-            fraction: away / 100,
-            color: tokens.error,
-            fromStart: false,
-          ),
-        ),
-        Expanded(
-          flex: 5,
-          child: _ShareFigure(
-            percentage: away,
-            label: _winLabel,
-            color: tokens.errorText,
-            spoken: '$_winLabel $awayName $away%',
-          ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              flex: 5,
+              child: _ShareFigure(
+                percentage: home,
+                label: _winLabel,
+                color: figure(_Outcome.home, tokens.successText),
+                spoken: '$_winLabel $homeName $home%',
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: _ShareBar(
+                fraction: home / 100,
+                color: bar(_Outcome.home, tokens.success),
+                fromStart: true,
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: drawShare == null
+                  ? const SizedBox.shrink()
+                  : _ShareFigure(
+                      percentage: drawShare,
+                      label: _drawLabel,
+                      color: figure(_Outcome.draw, tokens.textPrimary),
+                      spoken: '$_drawLabel $drawShare%',
+                    ),
+            ),
+            Expanded(
+              flex: 4,
+              child: _ShareBar(
+                fraction: away / 100,
+                color: bar(_Outcome.away, tokens.error),
+                fromStart: false,
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: _ShareFigure(
+                percentage: away,
+                label: _winLabel,
+                color: figure(_Outcome.away, tokens.errorText),
+                spoken: '$_winLabel $awayName $away%',
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
+
+/// Which side a recorded result went to (script 119: outcome enum).
+enum _Outcome { home, draw, away }
 
 /// One share: the figure over its label.
 class _ShareFigure extends StatelessWidget {
