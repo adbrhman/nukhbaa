@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/features/competition/team_registry.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fotmob_match_card.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -95,6 +96,10 @@ void main() {
     expect(_in(_shares, find.text('22%')), findsOneWidget);
     expect(_in(_shares, find.text('18%')), findsOneWidget);
     expect(_in(_shares, find.text('التعادل')), findsOneWidget);
+    // Each win under its team's name, not "win" twice (script 131).
+    expect(_in(_shares, find.text(teamDisplayName('Arsenal'))), findsOneWidget);
+    expect(_in(_shares, find.text(teamDisplayName('Chelsea'))), findsOneWidget);
+    expect(_in(_shares, find.text('فوز')), findsNothing);
     // The decisive-only split (100% / 0%) is gone.
     expect(find.text('100%'), findsNothing);
     // The double sits in the last row, under the shares (script 128).

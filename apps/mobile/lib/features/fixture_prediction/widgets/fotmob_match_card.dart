@@ -2355,20 +2355,23 @@ class _OutcomeShares extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
+        // Each side's share over its team's name, not "win" twice
+        // (script 131): the two wins read the same. The names take the
+        // room the bars gave up; the voice still says "win".
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Expanded(
-              flex: 5,
+              flex: 6,
               child: _ShareFigure(
                 percentage: home,
-                label: _winLabel,
+                label: homeName,
                 color: figure(_Outcome.home),
                 spoken: '$_winLabel $homeName $home%',
               ),
             ),
             Expanded(
-              flex: 4,
+              flex: 3,
               child: _ShareBar(
                 fraction: home / 100,
                 color: bar(_Outcome.home),
@@ -2376,7 +2379,7 @@ class _OutcomeShares extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 5,
+              flex: 6,
               child: drawShare == null
                   ? const SizedBox.shrink()
                   : _ShareFigure(
@@ -2387,7 +2390,7 @@ class _OutcomeShares extends StatelessWidget {
                     ),
             ),
             Expanded(
-              flex: 4,
+              flex: 3,
               child: _ShareBar(
                 fraction: away / 100,
                 color: bar(_Outcome.away),
@@ -2395,10 +2398,10 @@ class _OutcomeShares extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 5,
+              flex: 6,
               child: _ShareFigure(
                 percentage: away,
-                label: _winLabel,
+                label: awayName,
                 color: figure(_Outcome.away),
                 spoken: '$_winLabel $awayName $away%',
               ),
