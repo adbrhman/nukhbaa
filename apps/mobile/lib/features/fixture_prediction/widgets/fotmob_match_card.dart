@@ -55,6 +55,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
@@ -2476,8 +2477,8 @@ enum _Outcome { home, draw, away }
 /// One share: the figure beside its label, on one line
 /// (script 132: one-line share -- two lines made the card taller than the
 /// FotMob one).
-/// At large text the figure scales down inside its cell rather than
-/// overflowing it, and the label ends in an ellipsis.
+/// At large text the figure grows with the system text and is never
+/// shrunk (UI-17); the label, then the figure, end in an ellipsis.
 class _ShareFigure extends StatelessWidget {
   const _ShareFigure({
     required this.percentage,
@@ -2502,16 +2503,18 @@ class _ShareFigure extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             ConstrainedBox(
-              // figureCap: 0.6 of the cell, the rest for the label.
+              // figureFirst: never shrunk (UI-17); the label takes the rest.
               constraints: BoxConstraints(
                 maxWidth: constraints.maxWidth.isFinite
-                    ? constraints.maxWidth * 0.6
+                    ? math.max(0.0, constraints.maxWidth - AppSpacing.xs)
                     : double.infinity,
               ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+              child: Align(
+                widthFactor: 1,
+                heightFactor: 1,
                 child: Text(
                   '$percentage%',
+                  overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   textDirection: TextDirection.ltr,
                   style: TextStyle(
