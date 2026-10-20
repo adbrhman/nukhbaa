@@ -363,13 +363,13 @@ class _CurrentMonthFixturesScreenState
               child: ListView.builder(
                 key: const Key('currentMonthFixtures.list'),
                 physics: const AlwaysScrollableScrollPhysics(),
-                // The reference leaves ~6 logical px either side of the
-                // card (15px at 1080/2.75x); `lg` (16) was nearly triple
-                // that and visibly narrowed every card.
+                // script 132: list margin -- the FotMob card stands 16
+                // logical px from either edge (45px at 1080/2.75x, measured
+                // 2026-10-20), so the card takes its width too.
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
+                  AppSpacing.lg,
                   AppSpacing.xs,
-                  AppSpacing.sm,
+                  AppSpacing.lg,
                   AppSpacing.sm,
                 ),
                 itemCount: dayItems.length,

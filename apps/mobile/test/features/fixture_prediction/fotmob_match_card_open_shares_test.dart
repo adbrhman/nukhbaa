@@ -142,4 +142,22 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_in(_shares, find.text('22%')), findsOneWidget);
   });
+
+  testWidgets('script 132: compact card -- each share beside its name, '
+      'the card 16px from either edge of the list', (tester) async {
+    await _pump(tester);
+
+    final Finder figure = _in(_shares, find.text('60%'));
+    final Finder name = _in(_shares, find.text(teamDisplayName('Arsenal')));
+    expect(figure, findsOneWidget);
+    expect(name, findsOneWidget);
+    expect(
+      (tester.getCenter(figure).dy - tester.getCenter(name).dy).abs(),
+      lessThan(1),
+    );
+    final Finder list = find.byKey(const Key('currentMonthFixtures.list'));
+    final Finder card = find.byType(FotmobMatchCard);
+    expect(tester.getTopLeft(card).dx - tester.getTopLeft(list).dx, 16);
+    expect(tester.getTopRight(list).dx - tester.getTopRight(card).dx, 16);
+  });
 }

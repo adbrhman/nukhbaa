@@ -558,7 +558,17 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       child: Stack(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            // script 132: card padding -- before kickoff the header's 48px
+            // ranking button already carries its own air above and the
+            // footer's 48px touch below, so the card adds less of its own.
+            padding: locked
+                ? const EdgeInsets.all(AppSpacing.md)
+                : const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.xs,
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                  ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -632,7 +642,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  // script 132: header gap -- the ranking button's own air.
+                  const SizedBox(height: AppSpacing.xs),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
@@ -678,7 +689,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                   // The double sits in the last row, beside the share
                   // (script 128); everyone's calls come first.
                   Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.md),
+                    // script 132: shares gap.
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
                     // Under minShareSample calls the card says when the
                     // split will show: zeros read as real figures
                     // (2026-10-19).
@@ -2370,8 +2382,10 @@ class _OutcomeShares extends StatelessWidget {
                 spoken: '$_winLabel $homeName $home%',
               ),
             ),
+            // script 132: bar flex home -- the names beside the figures
+            // take the room.
             Expanded(
-              flex: 3,
+              flex: 2,
               child: _ShareBar(
                 fraction: home / 100,
                 color: bar(_Outcome.home),
@@ -2389,8 +2403,9 @@ class _OutcomeShares extends StatelessWidget {
                       spoken: '$_drawLabel $drawShare%',
                     ),
             ),
+            // script 132: bar flex away.
             Expanded(
-              flex: 3,
+              flex: 2,
               child: _ShareBar(
                 fraction: away / 100,
                 color: bar(_Outcome.away),
@@ -2453,7 +2468,11 @@ class _SharesPending extends StatelessWidget {
 /// Which side a recorded result went to (script 119: outcome enum).
 enum _Outcome { home, draw, away }
 
-/// One share: the figure over its label.
+/// One share: the figure beside its label, on one line
+/// (script 132: one-line share -- two lines made the card taller than the
+/// FotMob one).
+/// At large text the figure scales down inside its cell rather than
+/// overflowing it, and the label ends in an ellipsis.
 class _ShareFigure extends StatelessWidget {
   const _ShareFigure({
     required this.percentage,
@@ -2473,31 +2492,46 @@ class _ShareFigure extends StatelessWidget {
     return Semantics(
       label: spoken,
       excludeSemantics: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            '$percentage%',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textDirection: TextDirection.ltr,
-            style: TextStyle(
-              fontSize: AppFontSize.s20,
-              fontWeight: FontWeight.w800,
-              color: color,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) => Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            ConstrainedBox(
+              // figureCap: 0.6 of the cell, the rest for the label.
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth.isFinite
+                    ? constraints.maxWidth * 0.6
+                    : double.infinity,
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '$percentage%',
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s16,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ),
             ),
-          ),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: AppFontSize.s12,
-              fontWeight: FontWeight.w600,
-              color: tokens.textSecondary,
+            const SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppFontSize.s12,
+                  fontWeight: FontWeight.w600,
+                  color: tokens.textSecondary,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
