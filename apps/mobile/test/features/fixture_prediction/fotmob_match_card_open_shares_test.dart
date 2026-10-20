@@ -97,9 +97,10 @@ void main() {
     expect(_in(_shares, find.text('22%')), findsOneWidget);
     expect(_in(_shares, find.text('18%')), findsOneWidget);
     expect(_in(_shares, find.text('التعادل')), findsOneWidget);
-    // Each win under its team's name, not "win" twice (script 131).
-    expect(_in(_shares, find.text(teamDisplayName('Arsenal'))), findsOneWidget);
-    expect(_in(_shares, find.text(teamDisplayName('Chelsea'))), findsOneWidget);
+    // A win share is its figure only (script 135): the name is at the
+    // crest above it, never cut short beside the figure; never "win".
+    expect(_in(_shares, find.text(teamDisplayName('Arsenal'))), findsNothing);
+    expect(_in(_shares, find.text(teamDisplayName('Chelsea'))), findsNothing);
     expect(_in(_shares, find.text('فوز')), findsNothing);
     // The decisive-only split (100% / 0%) is gone.
     expect(find.text('100%'), findsNothing);
@@ -163,12 +164,15 @@ void main() {
     }
   });
 
-  testWidgets('script 132: compact card -- each share beside its name, '
+  testWidgets('script 132: compact card -- the draw beside its label, '
       'the card 16px from either edge of the list', (tester) async {
     await _pump(tester);
 
-    final Finder figure = _in(_shares, find.text('60%'));
-    final Finder name = _in(_shares, find.text(teamDisplayName('Arsenal')));
+    final Finder figure = _in(_shares, find.text('22%'));
+    final Finder name = _in(
+      _shares,
+      find.text('\u0627\u0644\u062a\u0639\u0627\u062f\u0644'),
+    );
     expect(figure, findsOneWidget);
     expect(name, findsOneWidget);
     expect(

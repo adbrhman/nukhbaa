@@ -2383,12 +2383,13 @@ class _OutcomeShares extends StatelessWidget {
               flex: 6,
               child: _ShareFigure(
                 percentage: home,
-                label: homeName,
+                // script 135: figure only -- the name is at the crest above it.
+                label: '',
                 color: figure(_Outcome.home),
                 spoken: '$_winLabel $homeName $home%',
               ),
             ),
-            // script 132: bar flex home -- the names beside the figures
+            // script 132: bar flex home -- the draw label beside its figure
             // take the room.
             Expanded(
               flex: 2,
@@ -2422,7 +2423,7 @@ class _OutcomeShares extends StatelessWidget {
               flex: 6,
               child: _ShareFigure(
                 percentage: away,
-                label: awayName,
+                label: '',
                 color: figure(_Outcome.away),
                 spoken: '$_winLabel $awayName $away%',
               ),
@@ -2474,7 +2475,8 @@ class _SharesPending extends StatelessWidget {
 /// Which side a recorded result went to (script 119: outcome enum).
 enum _Outcome { home, draw, away }
 
-/// One share: the figure beside its label, on one line
+/// One share: the figure, beside its label when it has one (a win
+/// share since script 135 is the figure only), on one line
 /// (script 132: one-line share -- two lines made the card taller than the
 /// FotMob one).
 /// At large text the figure grows with the system text and is never
@@ -2525,19 +2527,21 @@ class _ShareFigure extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: AppFontSize.s12,
-                  fontWeight: FontWeight.w600,
-                  color: tokens.textSecondary,
+            if (label.isNotEmpty) ...<Widget>[
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppFontSize.s12,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
