@@ -124,4 +124,71 @@ void main() {
       );
     });
   }
+
+  for (final (String name, ThemeData theme) in <(String, ThemeData)>[
+    ('dark', AppTheme.dark),
+    ('light', AppTheme.light),
+  ]) {
+    testWidgets('$name: script 133: the unselected double reads gold, '
+        'and so does the ranking icon', (tester) async {
+      final CurrentMonthFixturesHarness harness = _harness();
+      addTearDown(harness.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: harness.overrides,
+          retry: (retryCount, error) => null,
+          child: MaterialApp(
+            theme: theme,
+            locale: const Locale('ar'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const CurrentMonthFixturesScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final AppTokens t = theme.extension<AppTokens>()!;
+      final Finder button = find.byKey(
+        const Key('currentMonthFixtures.double.f-1'),
+      );
+      expect(button, findsOneWidget);
+      final Icon bolt = tester.widget<Icon>(
+        find.descendant(of: button, matching: find.byIcon(Icons.bolt_outlined)),
+      );
+      final Color label = tester
+          .widget<Text>(
+            find.descendant(of: button, matching: find.byType(Text)),
+          )
+          .style!
+          .color!;
+      final BoxDecoration frame = tester
+          .widgetList<AnimatedContainer>(
+            find.descendant(
+              of: button,
+              matching: find.byType(AnimatedContainer),
+            ),
+          )
+          .map((AnimatedContainer box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .first;
+      expect(label, t.gold);
+      expect(bolt.color, t.gold);
+      expect(frame.border!.top.color, t.goldAccent);
+      expect(
+        _contrast(label, t.surface),
+        greaterThanOrEqualTo(4.5),
+        reason: '$name: the gold label on the card',
+      );
+      expect(
+        _contrast(frame.border!.top.color, t.surface),
+        greaterThanOrEqualTo(3),
+        reason: '$name: the gold outline on the card',
+      );
+      final Icon ranking = tester.widget<Icon>(
+        find.byIcon(Icons.leaderboard_rounded),
+      );
+      expect(ranking.color, t.gold);
+    });
+  }
 }

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/design/app_tokens.dart';
 import 'package:mobile/features/competition/team_registry.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fotmob_match_card.dart';
@@ -141,6 +142,25 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(_in(_shares, find.text('22%')), findsOneWidget);
+  });
+
+  testWidgets('script 133: neutral bars until the result', (tester) async {
+    await _pump(tester);
+
+    final AppTokens t = tester.element(find.byKey(const Key(_shares))).tokens;
+    final Finder fills = find.descendant(
+      of: find.byKey(const Key(_shares)),
+      matching: find.descendant(
+        of: find.byType(FractionallySizedBox),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    expect(fills, findsNWidgets(2));
+    for (final DecoratedBox fill in tester.widgetList<DecoratedBox>(fills)) {
+      final BoxDecoration paint = fill.decoration as BoxDecoration;
+      expect(paint.color, t.textMuted);
+      expect(paint.color, isNot(t.primary));
+    }
   });
 
   testWidgets('script 132: compact card -- each share beside its name, '

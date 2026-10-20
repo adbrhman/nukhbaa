@@ -912,7 +912,8 @@ class _CardHeader extends StatelessWidget {
         IconButton(
           tooltip: l10n.viewLeaderboardTooltip,
           // script 123: a ranking, not a link out of the app.
-          icon: Icon(Icons.leaderboard_rounded, color: tokens.textSecondary),
+          // script 133: gold ranking -- the gold of standings and medals.
+          icon: Icon(Icons.leaderboard_rounded, color: tokens.gold),
           iconSize: AppSizes.iconSm,
           constraints: const BoxConstraints(
             minWidth: AppSizes.minTouchTarget,
@@ -1519,6 +1520,14 @@ class _DoubleGlowButton extends StatelessWidget {
     final String label = takenElsewhere
         ? _takenLabel
         : l10n.predictionMakeItDoubleLabel;
+    // script 133: gold double -- unselected, the toggle reads gold (9.8:1
+    // dark, 6.3:1 light on the card); a double taken elsewhere stays grey.
+    final Color unselectedInk = takenElsewhere
+        ? tokens.textSecondary
+        : tokens.gold;
+    final Color unselectedRim = takenElsewhere
+        ? tokens.controlBorder
+        : tokens.goldAccent;
 
     return Opacity(
       opacity: enabled || takenElsewhere ? 1 : AppOpacity.disabled,
@@ -1571,9 +1580,7 @@ class _DoubleGlowButton extends StatelessWidget {
                           )
                         : null,
                     border: Border.all(
-                      color: selected
-                          ? tokens.goldAccent
-                          : tokens.controlBorder,
+                      color: selected ? tokens.goldAccent : unselectedRim,
                       width: selected ? 1.5 : AppStroke.hairline,
                     ),
                     boxShadow: selected
@@ -1593,9 +1600,7 @@ class _DoubleGlowButton extends StatelessWidget {
                       Icon(
                         selected ? Icons.bolt_rounded : Icons.bolt_outlined,
                         size: AppSizes.iconSm,
-                        color: selected
-                            ? tokens.onPrimary
-                            : tokens.textSecondary,
+                        color: selected ? tokens.onPrimary : unselectedInk,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Flexible(
@@ -1605,9 +1610,7 @@ class _DoubleGlowButton extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: AppFontSize.s12,
-                            color: selected
-                                ? tokens.onPrimary
-                                : tokens.textSecondary,
+                            color: selected ? tokens.onPrimary : unselectedInk,
                           ),
                         ),
                       ),
@@ -2347,7 +2350,9 @@ class _OutcomeShares extends StatelessWidget {
         ? tokens.successText
         : tokens.textSecondary;
     Color bar(_Outcome side) => result == null
-        ? tokens.primary
+        // script 133: neutral bars -- blue is for actions; a bar is lit
+        // only once the result is in.
+        ? tokens.textMuted
         : result == side
         ? tokens.success
         : tokens.textPrimary.withValues(alpha: AppOpacity.statusBorder);
