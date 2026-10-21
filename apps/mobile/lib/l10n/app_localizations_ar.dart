@@ -1666,6 +1666,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String matchCardShareMessage(String home, String score, String away) {
+    return 'توقعت $home $score $away في نُخبة 🎯';
+  }
+
+  @override
   String get historyFinished => 'انتهت';
 
   @override

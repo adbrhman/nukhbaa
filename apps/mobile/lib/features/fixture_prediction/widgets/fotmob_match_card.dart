@@ -348,7 +348,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     required int awayGoals,
   }) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String message = l10n.shareHitMessage(
+    // script 136: a call, not a hit -- the match may not have started.
+    final String message = l10n.matchCardShareMessage(
       teamDisplayName(_fixture.homeTeam),
       '$homeGoals-$awayGoals',
       teamDisplayName(_fixture.awayTeam),

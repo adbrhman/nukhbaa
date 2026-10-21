@@ -1275,6 +1275,21 @@
       }
     }
   },
+  "matchCardShareMessage": "My call: {home} {score} {away} on Nukhba 🎯",
+  "@matchCardShareMessage": {
+    "description": "Text the match card's share button sends. A call, not a hit: the match may not have started yet.",
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "score": {
+        "type": "String"
+      },
+      "away": {
+        "type": "String"
+      }
+    }
+  },
   "historyFinished": "Full time",
   "matchCardYourCall": "Your call",
   "signOutConfirmMessage": "Sign out of your account on this device?",

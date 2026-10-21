@@ -1657,6 +1657,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String matchCardShareMessage(String home, String score, String away) {
+    return 'My call: $home $score $away on Nukhba 🎯';
+  }
+
+  @override
   String get historyFinished => 'Full time';
 
   @override

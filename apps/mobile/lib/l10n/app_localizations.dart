@@ -2922,6 +2922,12 @@ abstract class AppLocalizations {
   /// **'Play with me: {link}'**
   String shareHitJoin(String link);
 
+  /// Text the match card's share button sends. A call, not a hit: the match may not have started yet.
+  ///
+  /// In en, this message translates to:
+  /// **'My call: {home} {score} {away} on Nukhba 🎯'**
+  String matchCardShareMessage(String home, String score, String away);
+
   /// No description provided for @historyFinished.
   ///
   /// In en, this message translates to:
