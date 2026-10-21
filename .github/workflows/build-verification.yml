@@ -902,9 +902,13 @@ jobs:
     # the update only as a row on the account screen, installed when they
     # tap it. Deploy Web follows the same rule, so the web build and the
     # newest release stay the same commit.
+    # Except a run by hand for the Google Play bundle (play_bundle): it
+    # builds the AAB only, so players get no update row from it; Deploy Web
+    # and Release Server skip it too (their play_gate finds its artifact).
     if: >-
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && !inputs.play_bundle))
     permissions:
       contents: write
     steps:

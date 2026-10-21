@@ -21,14 +21,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A Build Verification run started by hand for the Google Play bundle
+  # (play_bundle) builds the AAB only and must reach no player. Its inputs
+  # are not in the workflow_run payload, so this looks for the artifact
+  # only such a run uploads (nukhba-play-bundle). If the lookup fails it
+  # answers false, and the job below behaves exactly as before.
+  play_gate:
+    name: Play bundle run?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      play: ${{ steps.check.outputs.play }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          play=false
+          if [ "$EVENT" = "workflow_run" ] && [ "$RUN_EVENT" = "workflow_dispatch" ]; then
+            if names=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].name'); then
+              if printf '%s\n' "$names" | grep -qx 'nukhba-play-bundle'; then
+                play=true
+              fi
+            else
+              echo "::warning::could not list the artifacts of run $RUN_ID; continuing as before"
+            fi
+          fi
+          echo "play=$play" >> "$GITHUB_OUTPUT"
+          echo "Play bundle run: $play"
+
   build_and_deploy:
     # A green Build Verification on main -- a push or a run by hand, the very
     # runs that publish the APK release (decided 2026-10-03) -- reaches the
     # site, so the web build and the newest release stay the same commit. A
     # pull request never does.
+    needs: play_gate
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
+       needs.play_gate.outputs.play != 'true' &&
        (github.event.workflow_run.event == 'push' ||
         github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-24.04
