@@ -33,7 +33,8 @@ FROM competition.merge_fixture_copies(
 
   // The fixture, then every non-test fixture less than 12 hours from it
   // with one of its clubs (0110 name key or the same catalog team, 0175),
-  // not merged yet (0176).
+  // or the same match put back up to 7 days later with the same two
+  // catalog teams in one of its seasons (0182), not merged yet (0176).
   static const String _copiesSql = '''
 WITH me AS (
   SELECT s.*,
@@ -74,6 +75,20 @@ JOIN competition.fixture_schedules s
             OR competition.team_name_key(s.home_team) IN (me.h, me.a)
             OR competition.team_name_key(s.away_team) IN (me.h, me.a),
             false))
+  OR (NOT me.is_test
+      AND NOT s.is_test
+      AND NOT EXISTS (SELECT 1 FROM competition.fixture_merges fm
+                       WHERE fm.duplicate_fixture_id = s.fixture_id)
+      AND s.home_team_id = me.home_team_id
+      AND s.away_team_id = me.away_team_id
+      AND s.kickoff_at > me.kickoff_at
+      AND s.kickoff_at <= me.kickoff_at + interval '7 days'
+      AND EXISTS (SELECT 1
+                    FROM competition.season_fixtures a
+                    JOIN competition.season_fixtures b
+                      ON b.season_id = a.season_id
+                   WHERE a.fixture_id = me.fixture_id
+                     AND b.fixture_id = s.fixture_id))
 ORDER BY s.fixture_id = me.fixture_id DESC, s.kickoff_at, s.fixture_id
 LIMIT 20
 ''';
@@ -87,7 +102,8 @@ LIMIT 20
         'النسخة التي تبقى مخفية: أظهرها أولًا، أو ادمج هذه فيها من صفها.',
     'fixture_merge_already_merged': 'دُمجت هذه النسخة من قبل.',
     'fixture_merge_not_copies':
-        'ليستا نسختين من مباراة واحدة: لا فريق مشترك بينهما خلال 12 ساعة.',
+        'ليستا نسختين من مباراة واحدة: لا فريق مشترك بينهما خلال 12 ساعة، '
+        'ولا هي المباراة نفسها مؤجّلة خلال 7 أيام في المسابقة نفسها.',
   };
 
   /// The stable code of every refusal of a merge.

@@ -1,6 +1,8 @@
 -- PostgresFixtureMerger._copiesSql (script 95, migration 0176): a fixture
 -- first, then the other non-test copies of its match less than 12 hours
--- from it with one of its clubs, not merged yet, each with its counts. The
+-- from it with one of its clubs, or the same match put back up to 7 days
+-- later in one of its seasons (script 137, migration 0182), not merged yet,
+-- each with its counts. The
 -- parameter is inlined as the function's argument; keep the body identical
 -- to the adapter's constant. Rolled back at the end.
 \set ON_ERROR_STOP on
@@ -59,6 +61,20 @@ JOIN competition.fixture_schedules s
             OR competition.team_name_key(s.home_team) IN (me.h, me.a)
             OR competition.team_name_key(s.away_team) IN (me.h, me.a),
             false))
+  OR (NOT me.is_test
+      AND NOT s.is_test
+      AND NOT EXISTS (SELECT 1 FROM competition.fixture_merges fm
+                       WHERE fm.duplicate_fixture_id = s.fixture_id)
+      AND s.home_team_id = me.home_team_id
+      AND s.away_team_id = me.away_team_id
+      AND s.kickoff_at > me.kickoff_at
+      AND s.kickoff_at <= me.kickoff_at + interval '7 days'
+      AND EXISTS (SELECT 1
+                    FROM competition.season_fixtures a
+                    JOIN competition.season_fixtures b
+                      ON b.season_id = a.season_id
+                   WHERE a.fixture_id = me.fixture_id
+                     AND b.fixture_id = s.fixture_id))
 ORDER BY s.fixture_id = me.fixture_id DESC, s.kickoff_at, s.fixture_id
 LIMIT 20
 $q$;
@@ -156,6 +172,46 @@ begin
   perform pg_temp.check(
     (select count(*) from pg_temp.copies('c1950000-0000-4000-8000-0000000000ff')) = 0,
     'a fixture with no schedule has nothing');
+end $$;
+
+-- 0182: P1 on 10 June; P2 the same match a day later; P3 nine days later;
+-- P4 the clubs swapped; P5 a day later in no season of P1's.
+insert into football_data.teams (id, name) values
+  ('00000000-0195-4000-8000-000000000003', 'الأهلي'),
+  ('00000000-0195-4000-8000-000000000004', 'الخليج');
+insert into competition.fixture_schedules
+  (fixture_id, home_team, away_team, kickoff_at, home_team_id, away_team_id, is_test, hidden_at)
+values
+  ('c1950000-0000-4000-8000-000000000201', 'الأهلي', 'الخليج', '2099-06-10 18:00Z',
+   '00000000-0195-4000-8000-000000000003', '00000000-0195-4000-8000-000000000004', false, null),
+  ('c1950000-0000-4000-8000-000000000202', 'الأهلي', 'الخليج', '2099-06-11 18:00Z',
+   '00000000-0195-4000-8000-000000000003', '00000000-0195-4000-8000-000000000004', false, null),
+  ('c1950000-0000-4000-8000-000000000203', 'الأهلي', 'الخليج', '2099-06-19 18:00Z',
+   '00000000-0195-4000-8000-000000000003', '00000000-0195-4000-8000-000000000004', false, null),
+  ('c1950000-0000-4000-8000-000000000204', 'الخليج', 'الأهلي', '2099-06-12 18:00Z',
+   '00000000-0195-4000-8000-000000000004', '00000000-0195-4000-8000-000000000003', false, null),
+  ('c1950000-0000-4000-8000-000000000205', 'الأهلي', 'الخليج', '2099-06-13 18:00Z',
+   '00000000-0195-4000-8000-000000000003', '00000000-0195-4000-8000-000000000004', false, null);
+insert into competition.season_fixtures (season_id, fixture_id, display_order) values
+  ('c1950000-0000-4000-8000-000000000010', 'c1950000-0000-4000-8000-000000000201', 0),
+  ('c1950000-0000-4000-8000-000000000010', 'c1950000-0000-4000-8000-000000000202', 1),
+  ('c1950000-0000-4000-8000-000000000010', 'c1950000-0000-4000-8000-000000000203', 2),
+  ('c1950000-0000-4000-8000-000000000010', 'c1950000-0000-4000-8000-000000000204', 3);
+
+do $$
+declare
+  ids text[];
+begin
+  select array_agg(c.fixture_id order by ord) into ids
+    from (select f.*, row_number() over () as ord
+            from pg_temp.copies('c1950000-0000-4000-8000-000000000201') f) c;
+  perform pg_temp.check(
+    ids = array['c1950000-0000-4000-8000-000000000201',
+                'c1950000-0000-4000-8000-000000000202'],
+    'a match put back a day is a copy; not nine days later, the clubs swapped, or out of its seasons');
+  perform pg_temp.check(
+    (select count(*) from pg_temp.copies('c1950000-0000-4000-8000-000000000202')) = 1,
+    'the later copy does not list the earlier one past 12 hours');
 end $$;
 
 rollback;

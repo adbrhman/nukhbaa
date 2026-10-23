@@ -68,7 +68,9 @@ final class FixtureMergeReport {
 
 /// A fixture and the other copies of its match: the visible or hidden,
 /// non-test fixtures less than 12 hours from it with one of its clubs (the
-/// same catalog team or the same name key, migrations 0110 and 0175).
+/// same catalog team or the same name key, migrations 0110 and 0175), and
+/// the same match put back up to 7 days later: the same two catalog teams,
+/// in one of its seasons (migration 0182).
 final class FixtureCopy {
   /// Creates one row.
   const FixtureCopy({

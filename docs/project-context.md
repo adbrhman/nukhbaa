@@ -6074,6 +6074,35 @@ deploy the owner merges, from the app, Salzburg - Milan (`fde6264d` into
 `a2e41db8`) and Lech - Leverkusen (`147b5dda` into `c6d2b914`), preview
 first.
 
+### Merging a match put back to another day (script 137, 2026-10-23)
+
+The provider put Al-Ahli - Al-Khaleej back from 22 October 21:00 to 23
+October 21:00 (Riyadh) after the first kickoff had passed
+(`provider_sync.kickoff_put_back_late`, error KXBA). The admin hid the
+first copy and added the match again on the 23rd; 27 players who had
+predicted only the first copy would get nothing, and 0176 refused to merge
+copies 12 hours apart. Decided by the owner: such a copy may be merged.
+
+- Migration 0182 replaces `competition.merge_fixture_copies` (same
+  signature, still security definer, closed to the clients): two fixtures
+  are also one match when the kept copy has the same two catalog teams,
+  home and away, kicks off later by 7 days at most, and both belong to one
+  season. Everything else is 0176: the moved predictions were all sent
+  before the first kickoff, the kickoff lock lets them through only inside
+  the merge, the copy is hidden for good, the audit row is written.
+- `PostgresFixtureMerger._copiesSql` lists such a later copy from the
+  earlier one, so the «دمج» dialog offers it; the refusal of
+  `fixture_merge_not_copies` names the new rule.
+- The provider link of the live case was moved by hand on 2026-10-23
+  (`highlightly/1364206546` to `7e4b5b9d`), so the results sync records
+  the kept copy's result.
+- Tests: `0182_merge_postponed_copy_test.sql`,
+  `fixture_copies_query_test.sql`.
+
+**0182 must be on the live DB before this server is deployed.** Then the
+owner merges `d0ee283f` (22 October, hidden) into `7e4b5b9d` (23 October)
+from its row, preview first: 27 move, 46 predicted both.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
