@@ -2713,6 +2713,25 @@ final class CompositionRoot {
       fixtureResultRepository,
     );
 
+    // A player's own history (GET /me/fixture-predictions): every
+    // prediction ever sent, then the schedule of each of those fixtures --
+    // the two reads that returned the most rows when the Supabase egress
+    // quota was exceeded (2026-10-23, script 138). The player's own writes
+    // go through predictionHistory and drop that history at once; hiding a
+    // fixture or merging copies drops both caches (forgetSchedules).
+    final predictionHistory = CachedPredictionHistory(
+      fixturePredictionRepository,
+    );
+    final historySchedules = CachedFixtureScheduleRepository(
+      PostgresFixtureScheduleRepository(connection),
+      ttl: const Duration(minutes: 10),
+      maxEntries: 512,
+    );
+    void forgetSchedules() {
+      fixtureScheduleRepository.forget();
+      historySchedules.forget();
+    }
+
     // Football Data slice: read-only team catalog backing `GET /teams`
     // (previously unwired schema — `football_data.teams`, migration
     // `0013_football_data.sql`), so a client can resolve a fixture's team ids
@@ -3053,7 +3072,8 @@ final class CompositionRoot {
     // One instance backs both the prediction route and duel acceptance,
     // so accepting a duel saves the prediction the way the match card does.
     final submitFixturePrediction = SubmitFixturePrediction(
-      fixturePredictionRepository: fixturePredictionRepository,
+      // Its writes drop the player's cached history (script 138).
+      fixturePredictionRepository: predictionHistory,
       competitionRepository: competitionRepository,
       fixtureScheduleRepository: fixtureScheduleRepository,
       idGenerator: idGenerator,
@@ -3481,13 +3501,15 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureResultRepository: fixtureResultRepository,
       ),
+      // Read again every 2 minutes per open feed while a match is on: the
+      // season's fixtures and results come from the read caches (138).
       listCurrentMonthFixtures: ListCurrentMonthFixtures(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
         fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
         predictionTallyReader: fixturePredictionTallyReader,
-        resultRepository: fixtureResultRepository,
+        resultRepository: fixtureResultReads,
       ),
       submitPrediction: SubmitPrediction(
         predictionRepository: predictionRepository,
@@ -3569,7 +3591,7 @@ final class CompositionRoot {
       ),
       getSeasonFixtureLeaderboard: GetSeasonFixtureLeaderboard(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
         fixtureTotalsReader: CachedFixtureTotalsReader(
           PostgresFixtureTotalsReader(connection),
         ),
@@ -3623,9 +3645,13 @@ final class CompositionRoot {
         competition: competitionRepository,
         records: PostgresDuelRecordReader(connection),
       ),
+      // Read every minute by each player watching it (script 138): the
+      // season's fixtures and the in-play predictions, frozen at kickoff,
+      // come from the read cache. Results stay direct: a recorded one must
+      // leave the live line the moment it is on the board.
       getLiveStanding: GetLiveStanding(
         competition: competitionRepository,
-        fixturePredictions: fixturePredictionRepository,
+        fixturePredictions: fixturePredictionReads,
         totals: CachedFixtureTotalsReader(
           PostgresFixtureTotalsReader(connection),
         ),
@@ -3727,7 +3753,7 @@ final class CompositionRoot {
       getGroupMonthBoard: GetGroupMonthBoard(
         groups: groupRepository,
         competition: competitionRepository,
-        fixturePredictions: fixturePredictionRepository,
+        fixturePredictions: fixturePredictionReads,
         totals: CachedFixtureTotalsReader(
           PostgresFixtureTotalsReader(connection),
         ),
@@ -3856,7 +3882,7 @@ final class CompositionRoot {
       adminSetFixturesHidden: AdminSetFixturesHidden(
         store: PostgresFixtureVisibilityStore(
           connection,
-          onChanged: fixtureScheduleRepository.forget,
+          onChanged: forgetSchedules,
         ),
         auditRecorder: auditRecorder,
         // A hidden match's double is free again (migration 0172): whoever
@@ -3885,7 +3911,10 @@ final class CompositionRoot {
       adminMergeFixtureCopies: AdminMergeFixtureCopies(
         merger: PostgresFixtureMerger(
           connection,
-          onChanged: fixtureScheduleRepository.forget,
+          onChanged: () {
+            forgetSchedules();
+            predictionHistory.forget();
+          },
         ),
         rescore: rescoreFixture,
       ),
@@ -3919,10 +3948,9 @@ final class CompositionRoot {
         reader: PostgresMyFixtureScoreReader(connection),
       ),
       listMyFixturePredictions: ListMyFixturePredictions(
-        fixturePredictionRepository:
-            fixturePredictionRepository, // already built
+        fixturePredictionRepository: predictionHistory,
         // A hidden fixture's prediction waits out of sight (migration 0098).
-        fixtureScheduleRepository: fixtureScheduleRepository,
+        fixtureScheduleRepository: historySchedules,
       ),
       listMyActiveSeasons: ListMyActiveSeasons(
         competitionRepository: competitionRepository,

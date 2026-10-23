@@ -6103,6 +6103,42 @@ copies 12 hours apart. Decided by the owner: such a copy may be merged.
 owner merges `d0ee283f` (22 October, hidden) into `7e4b5b9d` (23 October)
 from its row, preview first: 27 move, 46 predicted both.
 
+### The egress caches (script 138, 2026-10-23)
+
+Supabase: the organization (Free Plan) went over its 5 GB egress quota in
+the previous billing cycle; the grace period ends on 22 November 2026, and
+the cycle of 28 September - 28 October stood at 6.42 GB on 23 October
+(about 100 MB a day until 9 October, 300-460 MB a day since 10 October).
+`pg_stat_statements` (since 27 July) put first the reads that returned the
+most rows: a player's whole history (`listByUser`, 17.4 million rows), a
+season's fixture list (`listSeasonFixtures`, 10.6 million) and the batched
+schedules (8.5 million). Decided by the owner on 2026-10-23: cut them now,
+in the server only (no APK). Statistics were reset on 2026-10-23 20:21 UTC
+to measure what remains.
+
+- `CachedPredictionHistory` (new) in front of `listByUser`: one answer per
+  player for 10 minutes. `SubmitFixturePrediction` is handed it, so a
+  player's own save or amendment drops that player's history at once (a
+  participant not seen yet -- a first prediction in a new month -- drops
+  every history). `ListMyFixturePredictions` reads it, with its own
+  `CachedFixtureScheduleRepository` (10 minutes, 512 batches) for the
+  visibility filter. Hiding a fixture or merging copies drops both
+  (`forgetSchedules`, `predictionHistory.forget`).
+- `CachedFixturePredictionReads.listSeasonFixtures`: cached per season for
+  `linkTtl` (60 s), dropped on a link or unlink through it. The read
+  use-cases now get the read caches: `ListCurrentMonthFixtures` (season
+  fixtures and display-only results), `GetSeasonFixtureLeaderboard`,
+  `GetLiveStanding` (season fixtures and the in-play predictions, frozen at
+  kickoff; its results stay direct, so a recorded result leaves the live
+  line at once) and `GetGroupMonthBoard`. `BrowseSeasonFixtures` stays
+  direct: the admin's matches page reads it right after a change.
+- The caches live in the server process. Should the server ever run more
+  than one instance, a player's own save would show on the other instances
+  only when their copy expires (10 minutes).
+- Tests: `cached_prediction_history_test.dart` (through
+  `ListMyFixturePredictions`, wired as the composition root wires it),
+  `read_coalescing_test.dart` (a season's fixtures).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

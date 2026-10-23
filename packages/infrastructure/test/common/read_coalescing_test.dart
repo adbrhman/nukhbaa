@@ -90,6 +90,7 @@ final class _GatedResults implements FixtureResultRepository {
 final class _GatedPredictions implements FixturePredictionRepository {
   final _Gate linkGate = _Gate();
   final _Gate listGate = _Gate();
+  final _Gate seasonGate = _Gate();
   Result<SeasonFixture?> nextLink = const Result.ok(null);
   int unlinks = 0;
   int userReads = 0;
@@ -156,9 +157,10 @@ final class _GatedPredictions implements FixturePredictionRepository {
   }) async => const Result.ok(0);
 
   @override
-  Future<Result<List<FixtureRef>>> listSeasonFixtures(
-    SeasonId seasonId,
-  ) async => const Result.ok(<FixtureRef>[]);
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) async {
+    await seasonGate.pass();
+    return const Result.ok(<FixtureRef>[FixtureRef(_f1), FixtureRef(_f2)]);
+  }
 }
 
 /// Starts [count] reads at once, lets them reach the gate, then opens it.
@@ -342,6 +344,53 @@ void main() {
         expect(inner.listGate.reads, 1);
       },
     );
+
+    test('a season\'s fixtures: one query for a burst, kept for a minute '
+        '(script 138)', () async {
+      final _GatedPredictions inner = _GatedPredictions();
+      final CachedFixturePredictionReads reads = CachedFixturePredictionReads(
+        inner,
+        now: () => clock,
+      );
+      final List<Result<List<FixtureRef>>> burst = await _burst(
+        170,
+        () => reads.listSeasonFixtures(const SeasonId(_s1)),
+        inner.seasonGate,
+      );
+      expect(
+        (burst.last as Ok<List<FixtureRef>>).value.map((f) => f.value),
+        <String>[_f1, _f2],
+      );
+      clock = clock.add(const Duration(seconds: 59));
+      await reads.listSeasonFixtures(const SeasonId(_s1));
+      expect(inner.seasonGate.reads, 1);
+      clock = clock.add(const Duration(seconds: 2));
+      await reads.listSeasonFixtures(const SeasonId(_s1));
+      expect(inner.seasonGate.reads, 2);
+    });
+
+    test('a link or an unlink drops the season\'s fixtures', () async {
+      final _GatedPredictions inner = _GatedPredictions();
+      final CachedFixturePredictionReads reads = CachedFixturePredictionReads(
+        inner,
+        now: () => clock,
+      );
+      inner.seasonGate.open();
+      await reads.listSeasonFixtures(const SeasonId(_s1));
+      await reads.unlinkFixtureFromSeason(
+        seasonId: const SeasonId(_s1),
+        fixture: const FixtureRef(_f1),
+      );
+      await reads.listSeasonFixtures(const SeasonId(_s1));
+      final Result<SeasonFixture> link = SeasonFixture.create(
+        seasonId: const SeasonId(_s1),
+        fixture: const FixtureRef(_f2),
+        displayOrder: 0,
+      );
+      await reads.linkFixtureToSeason((link as Ok<SeasonFixture>).value);
+      await reads.listSeasonFixtures(const SeasonId(_s1));
+      expect(inner.seasonGate.reads, 3);
+    });
 
     test('the other reads pass straight through', () async {
       final _GatedPredictions inner = _GatedPredictions();

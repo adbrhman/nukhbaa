@@ -4,12 +4,14 @@ import 'package:infrastructure/src/common/read_coalescer.dart';
 import 'package:infrastructure/src/common/ttl_cache.dart';
 import 'package:shared/shared.dart';
 
-/// Short-lived, in-process caches in front of the two prediction reads every
-/// player's screen repeats for the same fixture: whether the fixture belongs
-/// to the season (the gate of the scores, predictions and board routes) and,
-/// once it has kicked off, everyone's predictions for it.
+/// Short-lived, in-process caches in front of the prediction reads every
+/// player's screen repeats: whether a fixture belongs to the season (the
+/// gate of the scores, predictions and board routes), a season's fixture
+/// list (the matches feed, the boards and the live standing, read again
+/// every minute while a match is on; script 138) and, once a fixture has
+/// kicked off, everyone's predictions for it.
 ///
-/// Both answers are the same for every player: a season's fixture list
+/// Every answer is the same for every player: a season's fixture list
 /// changes only when an admin links or unlinks a match, and the predictions
 /// of a fixture are frozen at its kickoff -- `ListFixturePredictions` reads
 /// them only after that. Concurrent reads of the same answer share one query
@@ -19,7 +21,7 @@ import 'package:shared/shared.dart';
 /// Wired into the read use-cases only (the scores, predictions and board
 /// routes); submitting a prediction and the admin's season links keep the
 /// plain repository. A link changed elsewhere therefore takes up to
-/// [linkTtl] to show here. The writes are still passed through, and drop
+/// [linkTtl] to show here, in the season's fixture list as well. The writes are still passed through, and drop
 /// what they touch, should a writer ever be handed this decorator.
 final class CachedFixturePredictionReads
     implements FixturePredictionRepository {
@@ -39,11 +41,19 @@ final class CachedFixturePredictionReads
          ttl: predictionsTtl,
          maxEntries: maxEntries,
          now: now,
+       ),
+       _seasonFixtures = TtlCache<String, List<FixtureRef>>(
+         ttl: linkTtl,
+         maxEntries: 64,
+         now: now,
        );
 
   final FixturePredictionRepository _inner;
   final TtlCache<String, _Link> _links;
   final TtlCache<String, List<FixturePredictionView>> _predictions;
+  final TtlCache<String, List<FixtureRef>> _seasonFixtures;
+  final ReadCoalescer<String, Result<List<FixtureRef>>> _seasonFixtureLoads =
+      ReadCoalescer<String, Result<List<FixtureRef>>>();
   final ReadCoalescer<String, Result<SeasonFixture?>> _linkLoads =
       ReadCoalescer<String, Result<SeasonFixture?>>();
   final ReadCoalescer<String, Result<List<FixturePredictionView>>>
@@ -103,6 +113,7 @@ final class CachedFixturePredictionReads
     final Result<void> result = await _inner.linkFixtureToSeason(link);
     // Cleared on failure too: a write that errored may still have landed.
     _links.clear();
+    _seasonFixtures.clear();
     return result;
   }
 
@@ -116,6 +127,7 @@ final class CachedFixturePredictionReads
       fixture: fixture,
     );
     _links.clear();
+    _seasonFixtures.clear();
     return result;
   }
 
@@ -157,8 +169,26 @@ final class CachedFixturePredictionReads
   );
 
   @override
-  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) =>
-      _inner.listSeasonFixtures(seasonId);
+  Future<Result<List<FixtureRef>>> listSeasonFixtures(SeasonId seasonId) {
+    final List<FixtureRef>? cached = _seasonFixtures.read(seasonId.value);
+    if (cached != null) {
+      return Future<Result<List<FixtureRef>>>.value(
+        Result<List<FixtureRef>>.ok(cached),
+      );
+    }
+    final int startedAt = _seasonFixtures.generation;
+    return _seasonFixtureLoads.run('$startedAt|${seasonId.value}', () async {
+      final Result<List<FixtureRef>> found = await _inner.listSeasonFixtures(
+        seasonId,
+      );
+      if (found case Ok<List<FixtureRef>>(:final value)) {
+        final List<FixtureRef> held = List<FixtureRef>.unmodifiable(value);
+        _seasonFixtures.write(seasonId.value, held, startedAt: startedAt);
+        return Result<List<FixtureRef>>.ok(held);
+      }
+      return found;
+    });
+  }
 
   @override
   Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) =>
