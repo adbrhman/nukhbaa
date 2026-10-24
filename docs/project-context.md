@@ -6171,6 +6171,40 @@ own.
 
 **0183 must be on the live DB before this server is deployed.**
 
+### The hero's own card, the special hero, the doubles card (script 140, 2026-10-24)
+
+Asked by the owner: the hero of the day (decided 2026-10-07) was an
+admin's card only, and the board said nothing of the doubles that paid.
+His decisions: the hero card is shared by the admins and by the hero
+himself only; a hero whose exact call was also his double of the day is
+the special hero of the day (البطل المميز لليوم), the same card under
+that name; the doubles card, with names or only their count, is the
+admins' alone.
+
+- The predictions board (`fixture_predictions_board_page.dart`) works out
+  each match's hero for every viewer (`soloExactParticipant`, the
+  server's `exact_scoreline`) and keeps it for an admin, or for the hero
+  himself (his participant id among `/me/fixture-predictions`). The hero
+  reads «حصلت على بطل اليوم» above the table; his cell and his
+  reaction sheet offer the card. `DayHero` carries `isDouble` and the
+  server's `points`; on a double the line, the sheet's button, the card's
+  title («بطاقة البطل المميز لليوم», key `dayHero.double` for
+  «مضاعفة · 6 نقاط») and the share text say so.
+- Admins only: each started match whose doubles earned points (a double
+  with the server's points above zero, the board's ⚡🔥) gets a line
+  «مضاعفة ناجحة: 3 لاعبين · …» (`fixturePredictions.doubles.<id>`)
+  that opens `DoubleHitsShareDialog` (`double_hits_card.dart`): the
+  match, each player numbered with his points (most first, at most 15
+  names, the rest counted), or with «إظهار أسماء اللاعبين» off only
+  the count and «كل لاعب 6 نقاط»; captured and shared as the hero
+  card is, the text «اختار 3 لاعبين مباراة … مضاعفة، فحصلوا
+  على نقاط المضاعفة، كل لاعب 6 نقاط» with the names under it
+  when shown, and the admin's invitation link.
+- Nothing is graded in the app: the grade and points are the board's
+  read. No server change, no migration, no new dependency, no l10n key.
+  Tests: `day_hero_test.dart` (the hero's own, the special hero),
+  `double_hits_test.dart` (new), both through the real board page.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

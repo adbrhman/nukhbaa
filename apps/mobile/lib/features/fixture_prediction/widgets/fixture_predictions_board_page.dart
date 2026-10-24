@@ -22,7 +22,10 @@
 ///
 /// Admins also see each match's hero of the day (decided 2026-10-07): the
 /// one player who alone called its exact score, named above the table and
-/// marked in the cell, with a card to share from that prediction.
+/// marked in the cell, with a card to share from that prediction. The hero
+/// himself sees his own, and on a double it is the special hero of the day
+/// (2026-10-24). Admins also see each match's doubles that paid, with a card
+/// to share (`double_hits_card.dart`).
 library;
 
 import 'dart:async';
@@ -49,6 +52,7 @@ import '../predictions_board_providers.dart';
 import '../../auth/session_controller.dart';
 import '../../auth/session_state.dart';
 import 'day_hero_card.dart';
+import 'double_hits_card.dart';
 import 'fixtures_date_bar.dart';
 import 'prediction_reaction_sheet.dart';
 
@@ -274,19 +278,21 @@ class _FixturePredictionsBoardPageState
             return a.name.compareTo(b.name);
           });
 
-    // Admins only: the one player who alone called a match's exact score,
-    // by the server's grade, is that match's hero of the day.
+    // The one player who alone called a match's exact score, by the
+    // server's grade, is that match's hero of the day: admins see every
+    // hero, a player only his own (2026-10-24).
     final SessionState? session = ref.watch(sessionControllerProvider).value;
     final bool isAdmin =
         session is SessionAuthenticated && session.user.role == 'admin';
     final Map<String, DayHero> heroes = <String, DayHero>{};
-    if (isAdmin) {
-      for (final _Column column in columns) {
-        final String? heroId = soloExactParticipant(column.scores.values);
-        final FixturePredictionDto? call = heroId == null
-            ? null
-            : column.predictions[heroId];
-        if (call == null) continue;
+    final Map<String, DoubleHits> doubles = <String, DoubleHits>{};
+    for (final _Column column in columns) {
+      final String? heroId = soloExactParticipant(column.scores.values);
+      final FixturePredictionDto? call = heroId == null
+          ? null
+          : column.predictions[heroId];
+      if (call != null &&
+          (isAdmin || myParticipantIds.contains(call.participantId))) {
         heroes[column.fixture.fixtureId] = DayHero(
           fixtureId: column.fixture.fixtureId,
           participantId: call.participantId,
@@ -308,8 +314,35 @@ class _FixturePredictionsBoardPageState
           homeGoals: call.homeGoals,
           awayGoals: call.awayGoals,
           leagueName: column.fixture.leagueName,
+          isDouble: call.isDouble,
+          points: column.scores[call.participantId]?.points,
         );
       }
+      // Admins only: the match's doubles that paid.
+      if (!isAdmin) continue;
+      final List<DoubleHit> hits = doubleHitsOf(
+        predictions: column.predictions.values,
+        scores: column.scores,
+        unnamed: l10n.fixturePredictionsUnnamed,
+      );
+      if (hits.isEmpty) continue;
+      doubles[column.fixture.fixtureId] = DoubleHits(
+        fixtureId: column.fixture.fixtureId,
+        home: resolveTeamIdentity(
+          catalog: null,
+          catalogById: catalogById,
+          teamId: column.fixture.homeTeamId,
+          teamName: column.fixture.homeTeam,
+        ),
+        away: resolveTeamIdentity(
+          catalog: null,
+          catalogById: catalogById,
+          teamId: column.fixture.awayTeamId,
+          teamName: column.fixture.awayTeam,
+        ),
+        hits: hits,
+        leagueName: column.fixture.leagueName,
+      );
     }
 
     // Until the viewer gives a first reaction on this day's matches, a line
@@ -385,7 +418,13 @@ class _FixturePredictionsBoardPageState
                 ],
               ),
             ),
-          for (final DayHero hero in heroes.values) DayHeroBanner(hero: hero),
+          for (final DayHero hero in heroes.values)
+            DayHeroBanner(
+              hero: hero,
+              isMine: myParticipantIds.contains(hero.participantId),
+            ),
+          for (final DoubleHits match in doubles.values)
+            DoubleHitsBanner(doubles: match),
           Expanded(
             child: columns.isEmpty
                 ? _Message(
@@ -449,7 +488,8 @@ class _Board extends StatelessWidget {
   final List<_Column> columns;
   final List<_Player> players;
 
-  /// Each match's hero of the day, by fixture id; empty but for admins.
+  /// Each match's hero of the day, by fixture id: every one for an admin,
+  /// the viewer's own for a player.
   final Map<String, DayHero> heroes;
 
   @override
@@ -659,7 +699,7 @@ class _PredictionCell extends StatelessWidget {
   final _Column column;
   final _Player player;
 
-  /// Set for an admin on the hero of the day's cell.
+  /// Set on the hero of the day's cell, for an admin or the hero himself.
   final DayHero? hero;
 
   @override

@@ -2,8 +2,9 @@
 /// sheet, the real `GET /me` and a fake server: the one player who alone
 /// called a finished match exactly is named above the table for an admin
 /// and marked in the cell, and tapping that prediction opens the card to
-/// share. A player is not shown any of it, and a match two players called
-/// exactly has no hero.
+/// share. Another player is not shown any of it, the hero himself sees his
+/// own (2026-10-24), an exact double makes the special hero of the day, and
+/// a match two players called exactly has no hero.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -19,34 +20,49 @@ import '../../support/current_month_fixtures_harness.dart';
 String _hoursAgo(int hours) =>
     DateTime.now().toUtc().subtract(Duration(hours: hours)).toIso8601String();
 
-Map<String, Object?> _prediction(String participantId, String name, int h) =>
-    FixturePredictionDto(
-      id: 'pr-$participantId',
-      participantId: participantId,
-      fixtureId: 'f-1',
-      submittedAt: '2026-10-07T12:00:00.000Z',
-      homeGoals: h,
-      awayGoals: 0,
-      isDouble: false,
-      displayName: name,
-    ).toJson();
+Map<String, Object?> _prediction(
+  String participantId,
+  String name,
+  int h, {
+  bool isDouble = false,
+}) => FixturePredictionDto(
+  id: 'pr-$participantId',
+  participantId: participantId,
+  fixtureId: 'f-1',
+  submittedAt: '2026-10-07T12:00:00.000Z',
+  homeGoals: h,
+  awayGoals: 0,
+  isDouble: isDouble,
+  displayName: name,
+).toJson();
 
-ParticipantFixtureScoreDto _score(String participantId, String grade) =>
-    ParticipantFixtureScoreDto(
-      fixtureId: 'f-1',
-      participantId: participantId,
-      rulesetVersion: 3,
-      grade: grade,
-      points: grade == 'exact_scoreline' ? 3 : 0,
-    );
+ParticipantFixtureScoreDto _score(
+  String participantId,
+  String grade, {
+  bool doubled = false,
+}) => ParticipantFixtureScoreDto(
+  fixtureId: 'f-1',
+  participantId: participantId,
+  rulesetVersion: 3,
+  grade: grade,
+  points: grade == 'exact_scoreline' ? (doubled ? 6 : 3) : 0,
+);
 
 /// A finished match, Slovakia 4-0 Moldova. Sara called 4-0; Ahmad (the
-/// viewer) called 1-0, unless [twoExact], when he called 4-0 too.
+/// viewer) called 1-0, unless [twoExact], when he called 4-0 too. With
+/// [saraViews] Sara is the viewer; with [saraDouble] her 4-0 was her double.
 final class _Server {
-  _Server({required this.role, this.twoExact = false});
+  _Server({
+    required this.role,
+    this.twoExact = false,
+    this.saraViews = false,
+    this.saraDouble = false,
+  });
 
   final String role;
   final bool twoExact;
+  final bool saraViews;
+  final bool saraDouble;
   final String kickoffAt = _hoursAgo(3);
 
   Future<http.Response> handle(http.Request request) async {
@@ -58,7 +74,7 @@ final class _Server {
               userId: 'u-1',
               role: role,
               status: 'active',
-              displayName: 'Ahmad',
+              displayName: saraViews ? 'Sara' : 'Ahmad',
             ),
           ).toJson(),
         );
@@ -78,11 +94,15 @@ final class _Server {
           ).toJson(),
         ]);
       case '/me/fixture-predictions':
-        return okJsonList([_prediction('p-me', 'Ahmad', twoExact ? 4 : 1)]);
+        return okJsonList([
+          saraViews
+              ? _prediction('p-sara', 'Sara', 4, isDouble: saraDouble)
+              : _prediction('p-me', 'Ahmad', twoExact ? 4 : 1),
+        ]);
       case '/seasons/s-1/fixtures/f-1/predictions':
         return okJsonList([
           _prediction('p-me', 'Ahmad', twoExact ? 4 : 1),
-          _prediction('p-sara', 'Sara', 4),
+          _prediction('p-sara', 'Sara', 4, isDouble: saraDouble),
         ]);
       case '/seasons/s-1/fixtures/f-1/scores':
         return okJsonObject(
@@ -90,7 +110,7 @@ final class _Server {
             fixtureId: 'f-1',
             scores: <ParticipantFixtureScoreDto>[
               _score('p-me', twoExact ? 'exact_scoreline' : 'incorrect'),
-              _score('p-sara', 'exact_scoreline'),
+              _score('p-sara', 'exact_scoreline', doubled: saraDouble),
             ],
           ).toJson(),
         );
@@ -208,6 +228,79 @@ void main() {
     await _frames(tester);
     expect(find.byKey(const Key('reactionSheet')), findsOneWidget);
     expect(find.byKey(_share), findsNothing);
+  });
+
+  testWidgets('the hero sees his own and shares it', (tester) async {
+    await _pump(tester, _Server(role: 'user', saraViews: true));
+
+    expect(find.byKey(_banner), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(_banner),
+        matching: find.textContaining('حصلت على بطل اليوم'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(_mark), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const Key('fixturePredictions.cell.f-1.p-sara')),
+    );
+    await _frames(tester);
+    expect(find.byKey(_share), findsOneWidget);
+    await tester.tap(find.byKey(_share));
+    await _frames(tester);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('dayHero.title'))).data,
+      'بطاقة بطل النخبة لليوم',
+    );
+    expect(find.byKey(const Key('dayHero.double')), findsNothing);
+    expect(find.byKey(const Key('dayHero.share')), findsOneWidget);
+  });
+
+  testWidgets('an exact double is the special hero of the day', (tester) async {
+    await _pump(tester, _Server(role: 'admin', saraDouble: true));
+
+    expect(
+      find.descendant(
+        of: find.byKey(_banner),
+        matching: find.textContaining('البطل المميز لليوم: Sara'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(_banner));
+    await _frames(tester);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('dayHero.title'))).data,
+      'بطاقة البطل المميز لليوم',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dayHero.double')),
+        matching: find.text('مضاعفة · 6 نقاط'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the special hero sees his own under that name', (tester) async {
+    await _pump(
+      tester,
+      _Server(role: 'user', saraViews: true, saraDouble: true),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byKey(_banner),
+        matching: find.textContaining('حصلت على البطل المميز لليوم'),
+      ),
+      findsOneWidget,
+    );
+    // A player never sees the admins' doubles line, even his own.
+    expect(
+      find.byKey(const Key('fixturePredictions.doubles.f-1')),
+      findsNothing,
+    );
   });
 
   testWidgets('two exact calls make no hero', (tester) async {

@@ -174,8 +174,9 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
   /// The viewer's own prediction: its reactions are shown, none is given.
   final bool isMine;
 
-  /// Set for an admin when this prediction alone called the match exactly:
-  /// the sheet then offers the hero of the day card.
+  /// Set for an admin, or for the hero himself, when this prediction alone
+  /// called the match exactly: the sheet then offers the hero of the day
+  /// card (the special hero's on a double).
   final DayHero? hero;
 
   @override
@@ -279,7 +280,7 @@ class _PredictionReactionSheetState
                 key: const Key('reactionSheet.shareHero'),
                 onPressed: () => unawaited(showDayHeroCard(context, hero)),
                 icon: const Icon(Icons.emoji_events_rounded),
-                label: const Text('مشاركة بطاقة بطل اليوم'),
+                label: Text('مشاركة بطاقة ${hero.title}'),
               ),
             ],
             const SizedBox(height: AppSpacing.lg),

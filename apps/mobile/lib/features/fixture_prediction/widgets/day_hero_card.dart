@@ -2,8 +2,11 @@
 /// among everyone, called a finished match's exact score. Each match of the
 /// day can have one; none when two or more called it, or nobody did.
 ///
-/// Only admins see it: the predictions board names each hero above the
+/// Admins see every hero, and the hero alone sees his own (owner's
+/// decision 2026-10-24): the predictions board names each hero above the
 /// table and marks the cell, and tapping that prediction offers the card.
+/// A hero whose exact call was also his double of the day is the special
+/// hero of the day (البطل المميز لليوم): the same card under that name.
 /// The card is drawn on screen, captured exactly as seen and handed to the
 /// system share sheet (`share_plus`), with the admin's invitation link in
 /// the text, like the hit card (`exact_hit_share.dart`).
@@ -65,6 +68,8 @@ final class DayHero {
     required this.homeGoals,
     required this.awayGoals,
     this.leagueName,
+    this.isDouble = false,
+    this.points,
   });
 
   /// The match.
@@ -90,6 +95,16 @@ final class DayHero {
 
   /// The match's league, when known.
   final String? leagueName;
+
+  /// The exact call was also the hero's double of the day: the special
+  /// hero of the day.
+  final bool isDouble;
+
+  /// The points the server gave the call, when graded.
+  final int? points;
+
+  /// The hero's title: بطل اليوم, or البطل المميز لليوم on a double.
+  String get title => isDouble ? 'البطل المميز لليوم' : 'بطل اليوم';
 }
 
 /// Opens the card for [hero] with its share and close actions.
@@ -99,14 +114,17 @@ Future<void> showDayHeroCard(BuildContext context, DayHero hero) =>
       builder: (_) => DayHeroShareDialog(hero: hero),
     );
 
-/// An admin's line above the board: who is the hero of a match, and a way
-/// to the card.
+/// The line above the board: who is the hero of a match, and a way to the
+/// card. The hero himself reads that he won it.
 class DayHeroBanner extends StatelessWidget {
-  /// Creates the line for [hero].
-  const DayHeroBanner({required this.hero, super.key});
+  /// Creates the line for [hero]; [isMine] when the viewer is the hero.
+  const DayHeroBanner({required this.hero, this.isMine = false, super.key});
 
   /// The hero named.
   final DayHero hero;
+
+  /// The viewer is the hero.
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -140,8 +158,11 @@ class DayHeroBanner extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    'بطل اليوم: ${hero.playerName} · '
-                    '${hero.home.displayName} × ${hero.away.displayName}',
+                    isMine
+                        ? 'حصلت على ${hero.title} · '
+                              '${hero.home.displayName} × ${hero.away.displayName}'
+                        : '${hero.title}: ${hero.playerName} · '
+                              '${hero.home.displayName} × ${hero.away.displayName}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -238,10 +259,13 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
       _shareFailed = false;
     });
     try {
-      final String message =
-          'بطل النخبة اليوم: ${hero.playerName}، وحده توقّع '
-          '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
-          '${hero.away.displayName} تماماً.';
+      final String message = hero.isDouble
+          ? 'البطل المميز لليوم في النخبة: ${hero.playerName}، وحده توقّع '
+                '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
+                '${hero.away.displayName} تماماً وضاعفها.'
+          : 'بطل النخبة اليوم: ${hero.playerName}، وحده توقّع '
+                '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
+                '${hero.away.displayName} تماماً.';
       final String text = code == null || code.isEmpty
           ? message
           : '$message\nشاركنا في نُخبة: ${inviteLinkFor(code)}';
@@ -291,11 +315,13 @@ class DayHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text(
-            'بطاقة بطل النخبة لليوم',
-            key: Key('dayHero.title'),
+          Text(
+            hero.isDouble
+                ? 'بطاقة البطل المميز لليوم'
+                : 'بطاقة بطل النخبة لليوم',
+            key: const Key('dayHero.title'),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: _gold,
               fontWeight: FontWeight.w800,
               fontSize: AppFontSize.s22,
@@ -428,6 +454,31 @@ class DayHeroCard extends StatelessWidget {
                     fontSize: AppFontSize.s13,
                   ),
                 ),
+                if (hero.isDouble) ...<Widget>[
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    key: const Key('dayHero.double'),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      const Icon(Icons.bolt_rounded, color: _gold, size: 20),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          switch (hero.points) {
+                            final int p when p > 0 =>
+                              'مضاعفة · ${pointsText(p)}',
+                            _ => 'مضاعفة',
+                          },
+                          style: const TextStyle(
+                            color: _gold,
+                            fontWeight: FontWeight.w800,
+                            fontSize: AppFontSize.s14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -446,6 +497,14 @@ class DayHeroCard extends StatelessWidget {
     );
   }
 }
+
+/// [points] in Arabic: نقطة واحدة، نقطتان، 6 نقاط، 12 نقطة.
+String pointsText(int points) => switch (points) {
+  1 => 'نقطة واحدة',
+  2 => 'نقطتان',
+  >= 3 && <= 10 => '$points نقاط',
+  _ => '$points نقطة',
+};
 
 const TextStyle _scoreStyle = TextStyle(
   color: _gold,
