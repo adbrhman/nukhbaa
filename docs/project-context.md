@@ -6205,6 +6205,38 @@ admins' alone.
   Tests: `day_hero_test.dart` (the hero's own, the special hero),
   `double_hits_test.dart` (new), both through the real board page.
 
+### The history's own writes; schedules held per fixture (script 141, 2026-10-25)
+
+Measured after script 138 (`pg_stat_statements`, reset 2026-10-23 21:23
+UTC, read 2026-10-25): egress fell from about 450 MB a day (22-23
+October) to about 270 MB (24 October), still above the 167 MB a day a
+5 GB cycle allows. Of 3.27 million rows, a player's history
+(`listByUser`) returned 30% (3256 reads, about 301 rows each) and the
+batched schedules 23% (5320 reads, 748 thousand of the widest rows);
+1504 predictions were sent in the same time, each followed by the app's
+read of the history. Script 141 cuts both in the server only (no APK,
+no contract change); pagination waits for the next measurement.
+
+- `CachedPredictionHistory`: a save or an amendment that succeeded is
+  written into the history held for that player (goals, double, the
+  submission time, the season of the player's other predictions under
+  that participant; newest first, then by id, as the query orders it), so
+  the read after a save costs no query. It still drops the history on a
+  failed write, when nothing is held for that player, for a participant
+  not seen yet (every history) and for an id not in lower case.
+- `CachedFixtureScheduleRepository` holds each fixture's schedule on its
+  own (a fixture without one too), keyed in lower case, instead of each
+  batch under the sorted list of its fixtures: a batch reads only the
+  fixtures not held, so a history that grew by one prediction reads one
+  schedule, and every player and screen shares the same entries.
+  `maxEntries` now counts fixtures (4096 by default and for the history's
+  copy). Writes and `forget` still drop the whole cache.
+- Tests: `cached_prediction_history_test.dart` (through
+  `ListMyFixturePredictions`, wired as the composition root wires it: the
+  read after a save, the amended row, a failed write, the one new
+  schedule); `read_caches_test.dart` and `read_coalescing_test.dart`
+  unchanged.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

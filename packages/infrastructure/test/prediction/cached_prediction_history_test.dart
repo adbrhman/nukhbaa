@@ -20,6 +20,7 @@ const _novA = 'bbbbbbbb-0000-4000-8000-0000000000a2';
 const _f1 = 'ffffffff-0000-4000-8000-000000000001';
 const _f2 = 'ffffffff-0000-4000-8000-000000000002';
 const _f3 = 'ffffffff-0000-4000-8000-000000000003';
+const _season = 'dddddddd-0000-4000-8000-000000000001';
 
 AuthenticatedUser _player(String id) =>
     AuthenticatedUser(userId: UserId(id), role: PlatformRole.user);
@@ -44,6 +45,7 @@ final class _Store implements FixturePredictionRepository {
   int historyReads = 0;
   int linkReads = 0;
   bool down = false;
+  bool writesDown = false;
 
   @override
   Future<Result<List<FixturePredictionView>>> listByUser(UserId userId) async {
@@ -57,6 +59,7 @@ final class _Store implements FixturePredictionRepository {
           FixturePredictionView(
             prediction: row,
             submittedAt: DateTime.utc(2026, 10, 23),
+            seasonId: const SeasonId(_season),
           ),
     ]);
   }
@@ -66,6 +69,9 @@ final class _Store implements FixturePredictionRepository {
     FixturePrediction prediction,
     DateTime submittedAt,
   ) async {
+    if (writesDown) {
+      return const Result.err(AppError.transient('db.down', 'down'));
+    }
     rows.add(prediction);
     return const Result.ok(null);
   }
@@ -124,15 +130,20 @@ final class _Store implements FixturePredictionRepository {
   ) async => const Result.ok(<FixtureRef>[]);
 }
 
-/// The schedules table, counting the batched reads that reach it.
+/// The schedules table, counting the batched reads that reach it and the
+/// fixtures each one asked for.
 final class _Schedules implements FixtureScheduleRepository {
   int batchReads = 0;
+  final List<List<String>> asked = <List<String>>[];
 
   @override
   Future<Result<List<FixtureSchedule>>> findByFixtures(
     List<FixtureRef> fixtures,
   ) async {
     batchReads++;
+    asked.add(<String>[
+      for (final FixtureRef fixture in fixtures) fixture.value,
+    ]);
     return const Result.ok(<FixtureSchedule>[]);
   }
 
@@ -196,27 +207,82 @@ void main() {
     expect(schedules.batchReads, 2);
   });
 
-  test('a player\'s own new prediction shows on the very next read, and only '
-      'that player\'s history is read again', () async {
+  test('a player\'s own new prediction shows on the very next read, newest '
+      'first, without reading any history again (script 141)', () async {
     await mine(_userA);
     await mine(_userB);
+    clock = clock.add(const Duration(minutes: 1));
     await history.save(
       _prediction('cccccccc-0000-4000-8000-000000000003', _f2, _octA),
       clock,
     );
-    expect(await mine(_userA), unorderedEquals(<String>[_f1, _f2]));
+    expect(await mine(_userA), <String>[_f2, _f1]);
     expect(await mine(_userB), <String>[_f1]);
-    expect(store.historyReads, 3);
+    expect(store.historyReads, 2);
   });
 
-  test('an amendment drops the history the same way', () async {
+  test('the history read after a save is the one the database would give: '
+      'goals, double, time and season (script 141)', () async {
+    store.rows.add(
+      _prediction('cccccccc-0000-4000-8000-000000000005', _f3, _octA),
+    );
     await mine(_userA);
-    await history.update(
-      _prediction('cccccccc-0000-4000-8000-000000000001', _f3, _octA),
+    clock = clock.add(const Duration(minutes: 1));
+    const FixturePrediction amended = FixturePrediction.fromStored(
+      id: PredictionId('cccccccc-0000-4000-8000-000000000001'),
+      fixture: FixtureRef(_f1),
+      participantId: ParticipantId(_octA),
+      homeGoals: 3,
+      awayGoals: 2,
+      isDouble: true,
+    );
+    await history.update(amended, clock);
+    final Result<List<FixturePredictionView>> read = await listMine(
+      principal: _player(_userA),
+    );
+    final List<FixturePredictionView> views =
+        (read as Ok<List<FixturePredictionView>>).value;
+    expect(
+      <String>[
+        for (final FixturePredictionView view in views)
+          view.prediction.fixture.value,
+      ],
+      <String>[_f1, _f3],
+    );
+    expect(views.first.prediction, amended);
+    expect(views.first.submittedAt, clock);
+    expect(views.first.seasonId, const SeasonId(_season));
+    expect(store.historyReads, 1);
+  });
+
+  test('a failed write drops the history, which is read again', () async {
+    await mine(_userA);
+    store.writesDown = true;
+    await history.save(
+      _prediction('cccccccc-0000-4000-8000-000000000006', _f2, _octA),
       clock,
     );
-    expect(await mine(_userA), <String>[_f3]);
+    expect(await mine(_userA), <String>[_f1]);
     expect(store.historyReads, 2);
+  });
+
+  test('a history that grew by one prediction reads only that fixture\'s '
+      'schedule, and a second player shares the schedules read (script '
+      '141)', () async {
+    await mine(_userA);
+    expect(schedules.asked, <List<String>>[
+      <String>[_f1],
+    ]);
+    await history.save(
+      _prediction('cccccccc-0000-4000-8000-000000000003', _f2, _octA),
+      clock,
+    );
+    await mine(_userA);
+    await mine(_userB);
+    expect(schedules.asked, <List<String>>[
+      <String>[_f1],
+      <String>[_f2],
+    ]);
   });
 
   test('a first prediction in a new month (a participant not seen yet) drops '

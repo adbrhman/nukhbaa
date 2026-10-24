@@ -2739,7 +2739,8 @@ final class CompositionRoot {
     final historySchedules = CachedFixtureScheduleRepository(
       PostgresFixtureScheduleRepository(connection),
       ttl: const Duration(minutes: 10),
-      maxEntries: 512,
+      // One entry per fixture since script 141.
+      maxEntries: 4096,
     );
     void forgetSchedules() {
       fixtureScheduleRepository.forget();

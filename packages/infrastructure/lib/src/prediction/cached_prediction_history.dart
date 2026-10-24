@@ -15,12 +15,20 @@ import 'package:shared/shared.dart';
 /// [ttl].
 ///
 /// A player's own writes reach the database through here
-/// (`SubmitFixturePrediction` is handed this decorator): [save] and [update]
-/// drop the history of the player the prediction belongs to, so the next
-/// read carries it at once. The player is known from the participant ids of
-/// the history already held; a participant not seen yet (a first prediction
-/// in a new month) drops every history. A change made elsewhere (a merge by
-/// an admin, [forget]) shows within [ttl] at most.
+/// (`SubmitFixturePrediction` is handed this decorator). A [save] or an
+/// [update] that succeeded is written into the history held for that player
+/// (the row the database now holds: the same goals, double and submission
+/// time, the season of the player's other predictions under that
+/// participant), so the read the app makes right after a save costs no
+/// query (script 141: 1504 saves stood behind 3256 history reads, about 301
+/// rows each, in the day and a half after script 138). The player is known
+/// from the participant ids of the history already held. The history is
+/// dropped instead, and read again on the next request, when the write
+/// failed (it may still have landed), when no history is held for that
+/// player, when the participant is not known yet (a first prediction in a
+/// new month drops every history) and when an id is not in the lower-case
+/// form the database returns. A change made elsewhere (a merge by an admin,
+/// [forget]) shows within [ttl] at most.
 ///
 /// Every other read and write passes straight through. Failures are never
 /// cached. The cache lives in this server process only.
@@ -91,14 +99,85 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     _histories.remove(user);
   }
 
+  /// Writes [prediction], just stored at [submittedAt], into the history held
+  /// for its player, or drops that history when it cannot (see the class
+  /// comment).
+  void _afterWrite(
+    FixturePrediction prediction,
+    DateTime submittedAt,
+    Result<void> result,
+  ) {
+    final List<FixturePredictionView>? updated = result is Ok<void>
+        ? _withWrite(prediction, submittedAt.toUtc())
+        : null;
+    final String? user = _userOf[prediction.participantId.value];
+    if (updated == null || user == null) {
+      // Dropped on failure too: a write that errored may still have landed.
+      _drop(prediction.participantId);
+      return;
+    }
+    _histories.replace(user, List<FixturePredictionView>.unmodifiable(updated));
+  }
+
+  /// The history held for the player of [prediction] with [prediction] in
+  /// it, in the database's order (newest submission first, then by id); or
+  /// `null` when it cannot be built from what is held.
+  List<FixturePredictionView>? _withWrite(
+    FixturePrediction prediction,
+    DateTime submittedAt,
+  ) {
+    final String participant = prediction.participantId.value;
+    final String? user = _userOf[participant];
+    final List<FixturePredictionView>? held = user == null
+        ? null
+        : _histories.read(user);
+    if (held == null) {
+      return null;
+    }
+    for (final String id in <String>[
+      prediction.id.value,
+      prediction.fixture.value,
+      participant,
+    ]) {
+      if (id != id.toLowerCase()) {
+        return null;
+      }
+    }
+    FixturePredictionView? sibling;
+    for (final FixturePredictionView view in held) {
+      if (view.prediction.participantId.value == participant) {
+        sibling = view;
+        break;
+      }
+    }
+    if (sibling == null) {
+      return null;
+    }
+    final List<FixturePredictionView> next = <FixturePredictionView>[
+      for (final FixturePredictionView view in held)
+        if (view.prediction.id.value != prediction.id.value) view,
+      FixturePredictionView(
+        prediction: prediction,
+        submittedAt: submittedAt,
+        seasonId: sibling.seasonId,
+      ),
+    ];
+    next.sort((FixturePredictionView a, FixturePredictionView b) {
+      final int byTime = b.submittedAt.compareTo(a.submittedAt);
+      return byTime != 0
+          ? byTime
+          : a.prediction.id.value.compareTo(b.prediction.id.value);
+    });
+    return next;
+  }
+
   @override
   Future<Result<void>> save(
     FixturePrediction prediction,
     DateTime submittedAt,
   ) async {
     final Result<void> result = await _inner.save(prediction, submittedAt);
-    // Dropped on failure too: a write that errored may still have landed.
-    _drop(prediction.participantId);
+    _afterWrite(prediction, submittedAt, result);
     return result;
   }
 
@@ -108,7 +187,7 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     DateTime submittedAt,
   ) async {
     final Result<void> result = await _inner.update(prediction, submittedAt);
-    _drop(prediction.participantId);
+    _afterWrite(prediction, submittedAt, result);
     return result;
   }
 
