@@ -25,7 +25,8 @@
 /// marked in the cell, with a card to share from that prediction. The hero
 /// himself sees his own, and on a double it is the special hero of the day
 /// (2026-10-24). Admins also see each match's doubles that paid, with a card
-/// to share (`double_hits_card.dart`).
+/// to share (`double_hits_card.dart`), and the day's three most points, with
+/// a card to share (`day_top_three_card.dart`, 2026-10-25).
 library;
 
 import 'dart:async';
@@ -46,12 +47,14 @@ import '../../../l10n/app_localizations.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
 import '../../history/prediction_lookup_providers.dart';
+import '../../leaderboards/leaderboards_providers.dart';
 import '../current_month_fixtures_providers.dart';
 import '../prediction_reactions_providers.dart';
 import '../predictions_board_providers.dart';
 import '../../auth/session_controller.dart';
 import '../../auth/session_state.dart';
 import 'day_hero_card.dart';
+import 'day_top_three_card.dart';
 import 'double_hits_card.dart';
 import 'fixtures_date_bar.dart';
 import 'prediction_reaction_sheet.dart';
@@ -345,6 +348,23 @@ class _FixturePredictionsBoardPageState
       );
     }
 
+    // Admins only: the day's three most points, from the same server board
+    // as the leaderboard's "today" tab (2026-10-25), read only for them.
+    final DayTopThree? topThree = isAdmin && day != null && started.isNotEmpty
+        ? dayTopThreeOf(
+            ref
+                .watch(
+                  dayFixtureLeaderboardProvider((
+                    seasonId: started.first.seasonId,
+                    day: day,
+                  )),
+                )
+                .value,
+            day: day,
+            unnamed: l10n.fixturePredictionsUnnamed,
+          )
+        : null;
+
     // Until the viewer gives a first reaction on this day's matches, a line
     // says the predictions can be reacted to. Read from the server's own
     // tallies, so nothing is kept on the device; unknown while any read is
@@ -418,6 +438,7 @@ class _FixturePredictionsBoardPageState
                 ],
               ),
             ),
+          if (topThree != null) DayTopThreeBanner(top: topThree),
           for (final DayHero hero in heroes.values)
             DayHeroBanner(
               hero: hero,
