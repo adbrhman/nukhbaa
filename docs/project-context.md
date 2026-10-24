@@ -6139,6 +6139,38 @@ to measure what remains.
   `ListMyFixturePredictions`, wired as the composition root wires it),
   `read_coalescing_test.dart` (a season's fixtures).
 
+### A new league from the add-match form (script 139, 2026-10-24)
+
+Asked by the owner: some competitions play rarely but carry strong
+matches, and the league list held only what the seed migrations put there
+(0027, 0038, 0103, 0104, 0180), so their matches had no league of their
+own.
+
+- The league list of both match forms (`LeaguePickerField`) ends with
+  «دوري جديد» (`admin.fixtures.leagueField.new`). It opens
+  `AddLeagueDialog` (`add_league_dialog.dart`): the admin types the name;
+  a league on file under the same spelling key (`clubNameKey`) is offered
+  instead and the add stays off; else `POST /admin/leagues`, the league
+  list is read again and the new league is picked for the match. A
+  cancelled dialog puts the list back on the league picked before.
+- `POST /admin/leagues` (`AdminAddLeague`, port `LeagueCatalogWriter`,
+  `PostgresLeagueCatalogWriter`): admin only; the name folded, 1-80
+  letters; one transaction (an advisory lock on
+  `competition.team_name_key`, the league on file, else a new row). The
+  league is added with `is_continental = true`, as 0104 filed the big
+  derbies: its clubs come from the whole catalog, and a club added under
+  it is filed under none. A name already on file is `409`
+  `football_data.league_exists`, its Arabic message naming that league;
+  every league added is audited (`league_added`, migration 0183).
+  `GET /leagues` reads the table directly, so the league is in the next
+  read; the provider sync maps leagues by name and ignores it.
+- No new dependency, no l10n key. Tests: `admin_add_league_test.dart`,
+  `admin_leagues_route_test.dart`, `admin_leagues_api_test.dart`,
+  `add_league_test.dart` (through `FixtureScheduleSection`),
+  `0183_league_added_audit_test.sql`, `league_catalog_add_query_test.sql`.
+
+**0183 must be on the live DB before this server is deployed.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

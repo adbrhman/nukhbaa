@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 
+import '../../../core/design/app_spacing.dart';
 import '../../../core/error/error_presenter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_providers.dart';
 import '../../competition/leagues_providers.dart';
 import '../../competition/month_label.dart';
 import '../admin_providers.dart';
+import 'add_league_dialog.dart';
 
 /// The competition dropdown: reads the public catalogue
 /// (`GET /competitions`, via `competitionListProvider`) and lets the admin
@@ -238,7 +240,10 @@ class MonthPickerField extends ConsumerWidget {
 /// منتقي الدوري: يقرأ `GET /leagues` (`leagueCatalogProvider`). اختياره
 /// إلزامي في نموذج الإضافة — هو ما يُسمّي المباراة في شاشة المباريات وما
 /// يحصر قائمتَي الفريقين في أندية ذلك الدوري وحدها.
-class LeaguePickerField extends ConsumerWidget {
+///
+/// آخر خانة فيه «دوري جديد» (script 139): تفتح [showAddLeagueDialog]، ويُختار
+/// الدوري المضاف للمباراة. إن أُلغيت عاد المنتقي إلى ما كان عليه.
+class LeaguePickerField extends ConsumerStatefulWidget {
   const LeaguePickerField({
     super.key,
     required this.enabled,
@@ -251,7 +256,26 @@ class LeaguePickerField extends ConsumerWidget {
   final ValueChanged<LeagueDto> onSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LeaguePickerField> createState() => _LeaguePickerFieldState();
+}
+
+class _LeaguePickerFieldState extends ConsumerState<LeaguePickerField> {
+  /// Bumped after the «دوري جديد» entry is picked: the field is built anew
+  /// from [LeaguePickerField.selectedId], so it never stays on the entry.
+  int _generation = 0;
+
+  Future<void> _addLeague(List<LeagueDto> catalog) async {
+    final LeagueDto? added = await showAddLeagueDialog(
+      context,
+      catalog: catalog,
+    );
+    if (!mounted) return;
+    setState(() => _generation++);
+    if (added != null) widget.onSelected(added);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final AsyncValue<List<LeagueDto>> leagues = ref.watch(
       leagueCatalogProvider,
@@ -275,30 +299,52 @@ class LeaguePickerField extends ConsumerWidget {
             child: Text(l10n.adminNoLeaguesHint),
           );
         }
-        final String? value = list.any((LeagueDto l) => l.id == selectedId)
-            ? selectedId
+        final String? value =
+            list.any((LeagueDto l) => l.id == widget.selectedId)
+            ? widget.selectedId
             : null;
-        return DropdownButtonFormField<String>(
-          key: const Key('admin.fixtures.leagueField.field'),
-          initialValue: value,
-          decoration: InputDecoration(
-            labelText: l10n.adminSelectLeagueLabel,
-            border: const OutlineInputBorder(),
-          ),
-          items: <DropdownMenuItem<String>>[
-            for (final LeagueDto league in list)
-              DropdownMenuItem<String>(
-                key: Key('admin.fixtures.leagueField.${league.id}'),
-                value: league.id,
-                child: Text(league.name),
+        return KeyedSubtree(
+          key: ValueKey<int>(_generation),
+          child: DropdownButtonFormField<String>(
+            key: const Key('admin.fixtures.leagueField.field'),
+            initialValue: value,
+            decoration: InputDecoration(
+              labelText: l10n.adminSelectLeagueLabel,
+              border: const OutlineInputBorder(),
+            ),
+            items: <DropdownMenuItem<String>>[
+              for (final LeagueDto league in list)
+                DropdownMenuItem<String>(
+                  key: Key('admin.fixtures.leagueField.${league.id}'),
+                  value: league.id,
+                  child: Text(league.name),
+                ),
+              const DropdownMenuItem<String>(
+                key: Key('admin.fixtures.leagueField.new'),
+                value: newLeagueEntryValue,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.add_circle_outline, size: 18),
+                    SizedBox(width: AppSpacing.sm),
+                    Flexible(child: Text('دوري جديد')),
+                  ],
+                ),
               ),
-          ],
-          onChanged: !enabled
-              ? null
-              : (String? id) {
-                  if (id == null) return;
-                  onSelected(list.firstWhere((LeagueDto l) => l.id == id));
-                },
+            ],
+            onChanged: !widget.enabled
+                ? null
+                : (String? id) async {
+                    if (id == null) return;
+                    if (id == newLeagueEntryValue) {
+                      await _addLeague(list);
+                      return;
+                    }
+                    widget.onSelected(
+                      list.firstWhere((LeagueDto l) => l.id == id),
+                    );
+                  },
+          ),
         );
       },
     );

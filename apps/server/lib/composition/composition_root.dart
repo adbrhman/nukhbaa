@@ -88,6 +88,7 @@ final class CompositionRoot {
     required this.adminCountFixtureScores,
     required this.adminViewPlayerPoints,
     required this.adminAddTeam,
+    required this.adminAddLeague,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
     required this.createGroup,
@@ -299,6 +300,7 @@ final class CompositionRoot {
     AdminCountFixtureScores? adminCountFixtureScores,
     AdminViewPlayerPoints? adminViewPlayerPoints,
     AdminAddTeam? adminAddTeam,
+    AdminAddLeague? adminAddLeague,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
@@ -519,6 +521,7 @@ final class CompositionRoot {
        adminViewPlayerPoints =
            adminViewPlayerPoints ?? _absentAdminViewPlayerPoints(),
        adminAddTeam = adminAddTeam ?? _absentAdminAddTeam(),
+       adminAddLeague = adminAddLeague ?? _absentAdminAddLeague(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        getSportingSeasonLeaderboard =
            getSportingSeasonLeaderboard ??
@@ -1155,6 +1158,13 @@ final class CompositionRoot {
   /// catalog write it never wired.
   static AdminAddTeam _absentAdminAddTeam() => AdminAddTeam(
     writer: _UnwiredTeamCatalogWriter(),
+    auditRecorder: _absentAuditRecorder(),
+  );
+
+  /// Backs the "absent" [AdminAddLeague]: throws if a test reaches the
+  /// league catalog write it never wired.
+  static AdminAddLeague _absentAdminAddLeague() => AdminAddLeague(
+    writer: _UnwiredLeagueCatalogWriter(),
     auditRecorder: _absentAuditRecorder(),
   );
 
@@ -2125,6 +2135,10 @@ final class CompositionRoot {
   /// Adds a club to the team catalog, audited (backs `POST /admin/teams`,
   /// script 91, migration 0173).
   final AdminAddTeam adminAddTeam;
+
+  /// Adds a league to the league catalog, audited (backs
+  /// `POST /admin/leagues`, script 139, migration 0183).
+  final AdminAddLeague adminAddLeague;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -3680,6 +3694,12 @@ final class CompositionRoot {
         ),
         auditRecorder: auditRecorder,
       ),
+      // GET /leagues reads the table directly (no cache): the league
+      // added is in the next read (script 139).
+      adminAddLeague: AdminAddLeague(
+        writer: PostgresLeagueCatalogWriter(connection),
+        auditRecorder: auditRecorder,
+      ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
       ),
@@ -4040,6 +4060,14 @@ final class _UnwiredTeamCatalogWriter implements TeamCatalogWriter {
     required String name,
     required LeagueRef? leagueId,
   }) => throw StateError('AdminAddTeam was not wired into this test root');
+}
+
+/// Backs an "absent" [AdminAddLeague]: throws if a test reaches the league
+/// catalog write it never wired.
+final class _UnwiredLeagueCatalogWriter implements LeagueCatalogWriter {
+  @override
+  Future<Result<LeagueAddition>> add({required String name}) =>
+      throw StateError('AdminAddLeague was not wired into this test root');
 }
 
 /// Backs an "absent" [AdminCountFixtureScores]: throws if a test reaches

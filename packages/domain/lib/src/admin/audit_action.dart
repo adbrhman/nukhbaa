@@ -103,6 +103,11 @@ enum AuditAction {
   /// name.
   teamAdded,
 
+  /// An admin added a league to the league catalog (`AdminAddLeague`,
+  /// migration 0183, script 139); the target is the new league's id, the
+  /// reason its name.
+  leagueAdded,
+
   /// An admin merged a copy of a match into the copy kept
   /// (`AdminMergeFixtureCopies`, migration 0176, script 95); the target is
   /// the copy, the reason the kept copy and what moved. Written by
@@ -132,6 +137,7 @@ enum AuditAction {
     AuditAction.fixtureHidden => 'fixture_hidden',
     AuditAction.fixtureShown => 'fixture_shown',
     AuditAction.teamAdded => 'team_added',
+    AuditAction.leagueAdded => 'league_added',
     AuditAction.fixturesMerged => 'fixtures_merged',
   };
 
