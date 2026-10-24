@@ -12,6 +12,7 @@ export 'src/admin_player_points_dto.dart';
 export 'src/admin_user_names_dto.dart';
 export 'src/admin_user_prediction_dto.dart';
 export 'src/announcement_dto.dart';
+export 'src/app_build_header.dart';
 export 'src/auth_dto.dart';
 export 'src/badge_dto.dart';
 export 'src/champion_dto.dart';

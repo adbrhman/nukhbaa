@@ -6237,6 +6237,42 @@ no contract change); pagination waits for the next measurement.
   schedule); `read_caches_test.dart` and `read_coalescing_test.dart`
   unchanged.
 
+### Every build names itself; the server refuses old ones (script 142, 2026-10-25)
+
+`ops.error_group_builds` (7 days to 2026-10-25) held 27 builds; 19 of them
+(534 of 588 errors) were the old Android app `com.example.mobile` (before
+script 110, 2026-10-18), whose update installs the new app beside it, and
+10 were older than batch 147, so they do not know the minimum build. The
+owner reported that no player answers a notification. Every build since
+2026-10-03 shows a `409` envelope's Arabic message as it is
+(`ErrorPresenter`, `kindForStatus`), so the server is the one channel
+that reaches all of them. Decided by the owner on 2026-10-25: the gate
+starts only when he sets the variable, after the release that sends the
+header can be downloaded.
+
+- The app's one HTTP client (`createHttpClient`, both transports) wraps
+  `BuildHeaderClient` (api_client) off the web: every request carries
+  `x-nukhba-build` (`appBuildHeader`, contracts) with
+  `NUKHBA_BUILD_NUMBER` (0 for a local run). The web build sends nothing
+  (no CORS change) and reloads to the newest release by itself.
+- `buildGate` (`apps/server/lib/http/build_gate.dart`), wired in the root
+  middleware: with `NUKHBA_BUILD_HEADER_SINCE` set to a release number on
+  Northflank, a request without the header or from an older build gets
+  `409 app.update_required` with `oldBuildMessage` (install the new app
+  from links.nukhbaa.app, sign in with the same account, delete the old
+  app), before any route or the database. Always open: `/`, `/health`,
+  `/app/latest-build`, a browser request (an `Origin` header) and build 0.
+  Unset, empty or not a positive number: the gate is off. No database
+  read, no migration, no new dependency, no l10n key.
+- Rollout: push; when the new release is on the links page, set
+  `NUKHBA_BUILD_HEADER_SINCE` to its number (Northflank redeploys); remove
+  it to let every build in again.
+- Tests: `build_gate_test.dart` (server: the root middleware without the
+  variable, the gate the root wires), `build_header_client_test.dart`
+  (api_client: the header through the real `ApiTransport`, the refusal read
+  as an invariant with its Arabic message), `http_client_test.dart`
+  (mobile).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

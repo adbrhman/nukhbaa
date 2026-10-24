@@ -8,6 +8,8 @@
 /// §2.8) — this is dependency injection of a transport, not networking logic.
 library;
 
+import 'package:api_client/api_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 /// Creates the platform-default [http.Client].
@@ -16,4 +18,19 @@ import 'package:http/http.dart' as http;
 /// browser `fetch`-backed client — `package:http` selects the right one. The
 /// caller owns the returned client's lifecycle (it is closed when the owning
 /// provider is disposed).
-http.Client createHttpClient() => http.Client();
+///
+/// Off the web it names this build on every request ([BuildHeaderClient],
+/// script 142), so the server can refuse a release too old to be served.
+/// The web build sends no such header (a custom header would need a CORS
+/// change): it reloads to the newest release by itself, and the server lets
+/// a browser request through.
+http.Client createHttpClient() {
+  final http.Client client = http.Client();
+  if (kIsWeb) {
+    return client;
+  }
+  return BuildHeaderClient(
+    client,
+    build: const int.fromEnvironment('NUKHBA_BUILD_NUMBER'),
+  );
+}

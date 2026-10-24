@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/build_gate.dart';
 import 'package:server/http/error_capture.dart';
 import 'package:server/http/request_scope.dart';
 import 'package:server/http/security_headers.dart';
@@ -63,6 +64,13 @@ Handler middleware(Handler handler) {
     recorder: () async => (await CompositionRoot.instance()).recordError,
   );
 
+  // A build too old to be served is answered here with the Arabic update
+  // message, before any route or the database (script 142); off until
+  // NUKHBA_BUILD_HEADER_SINCE is set on Northflank.
+  final gated = buildGate(minBuild: minServedBuild(Platform.environment))(
+    captured,
+  );
+
   return (context) async {
     final origin = context.request.headers['origin'];
     final corsHeaders = <String, Object>{
@@ -84,7 +92,7 @@ Handler middleware(Handler handler) {
 
     // captureServerErrors answers an escaped exception with the uniform
     // `server.unexpected` envelope, so the CORS headers below reach it too.
-    final response = await captured(context);
+    final response = await gated(context);
     return response.copyWith(
       headers: {...response.headers, ...corsHeaders, ...securityHeaders},
     );
