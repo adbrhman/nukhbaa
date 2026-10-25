@@ -44,40 +44,6 @@ const String oldBuildMessage =
 /// builds' own "update available" row reads it) and the health checks.
 const Set<String> _alwaysOpen = <String>{'/', '/health', '/app/latest-build'};
 
-/// The oldest build served (script 148): the higher of
-/// `NUKHBA_BUILD_HEADER_SINCE` ([fromEnvironment]) and the minimum an admin
-/// raised from the dashboard ([fromAdmin], migration 0113); `null`, the gate
-/// off, when neither is set. The admin's button turns the refusal on and
-/// off: once the variable is removed from Northflank, clearing the minimum
-/// lets every build in again.
-int? servedMinimum({required int? fromEnvironment, required int? fromAdmin}) {
-  if (fromEnvironment == null) {
-    return fromAdmin != null && fromAdmin > 0 ? fromAdmin : null;
-  }
-  if (fromAdmin == null || fromAdmin <= fromEnvironment) {
-    return fromEnvironment;
-  }
-  return fromAdmin;
-}
-
-/// Whether [path] with [headers] is refused at all by a gate that is on:
-/// false for the always-open paths, a browser and a local run (build 0).
-bool _gated(String path, Map<String, String> headers) {
-  final String trimmed = path.length > 1 && path.endsWith('/')
-      ? path.substring(0, path.length - 1)
-      : path;
-  if (_alwaysOpen.contains(trimmed) || headers['origin'] != null) {
-    return false;
-  }
-  return _buildOf(headers) != 0;
-}
-
-/// The build named by [appBuildHeader], or null without one.
-int? _buildOf(Map<String, String> headers) {
-  final String? raw = headers[appBuildHeader];
-  return raw == null ? null : int.tryParse(raw.trim());
-}
-
 /// The refusal for a request too old to be served, or `null` to serve it.
 ///
 /// Off while [minBuild] is `null`. A browser request (one with an `Origin`
@@ -90,67 +56,52 @@ AppError? oldBuildRefusal({
   required Map<String, String> headers,
   required int? minBuild,
 }) {
-  if (minBuild == null || !_gated(path, headers)) {
+  if (minBuild == null) {
     return null;
   }
-  final int? build = _buildOf(headers);
-  if (build != null && build >= minBuild) {
+  final String trimmed = path.length > 1 && path.endsWith('/')
+      ? path.substring(0, path.length - 1)
+      : path;
+  if (_alwaysOpen.contains(trimmed) || headers['origin'] != null) {
+    return null;
+  }
+  final String? raw = headers[appBuildHeader];
+  final int? build = raw == null ? null : int.tryParse(raw.trim());
+  if (build == 0 || (build != null && build >= minBuild)) {
     return null;
   }
   return const AppError.invariant('app.update_required', oldBuildMessage);
 }
 
+/// Whether a request with [headers] comes from an app build that names no
+/// build (every build before script 142): no [appBuildHeader] and no
+/// `Origin` (the web build). Such a request is refused for a player on a
+/// retired build while an admin holds a minimum (script 149, `bearerAuth`).
+bool sentNoBuild(Map<String, String> headers) =>
+    headers[appBuildHeader] == null && headers['origin'] == null;
+
+/// The refusal a player on a retired build reads (script 149): the same
+/// words as the gate's.
+const AppError retiredBuildRefusal = AppError.invariant(
+  'app.update_required',
+  oldBuildMessage,
+);
+
 /// The root middleware's gate: answers a request too old to be served with
 /// [oldBuildMessage] (`409`, the uniform error envelope) before it reaches
 /// any route or the database.
-///
-/// [minBuild] is the variable's; [adminMinimum], when given, reads the
-/// admin's minimum (cached in the process, script 148) for a request the
-/// gate may refuse, and the higher of the two applies ([servedMinimum]). An
-/// unreadable minimum is no minimum: the gate never shuts the service by
-/// mistake.
-Middleware buildGate({
-  required int? minBuild,
-  Future<int?> Function()? adminMinimum,
-}) {
+Middleware buildGate({required int? minBuild}) {
   return (Handler handler) {
-    return (RequestContext context) async {
-      final String path = context.request.uri.path;
-      final Map<String, String> headers = context.request.headers;
-      if (!_gated(path, headers)) {
-        return handler(context);
-      }
-      int? fromAdmin;
-      if (adminMinimum != null) {
-        try {
-          fromAdmin = await adminMinimum();
-        } on Object {
-          fromAdmin = null;
-        }
-      }
+    return (RequestContext context) {
       final AppError? refusal = oldBuildRefusal(
-        path: path,
-        headers: headers,
-        minBuild: servedMinimum(
-          fromEnvironment: minBuild,
-          fromAdmin: fromAdmin,
-        ),
+        path: context.request.uri.path,
+        headers: context.request.headers,
+        minBuild: minBuild,
       );
       if (refusal != null) {
         return errorResponse(refusal);
       }
       return handler(context);
     };
-  };
-}
-
-/// The admin's minimum as the root middleware hands it to [buildGate]:
-/// [read] (the composition root's `ReadMinSupportedBuild`), null on a
-/// failure.
-Future<int?> adminMinimumFrom(Future<Result<int?>> Function() read) async {
-  final Result<int?> result = await read();
-  return switch (result) {
-    Ok<int?>(:final value) => value,
-    Err<int?>() => null,
   };
 }

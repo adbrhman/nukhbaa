@@ -21,7 +21,7 @@ final class CompositionRoot {
     required this.checkHealth,
     required this.getLatestBuild,
     required this.setMinSupportedBuild,
-    required this.readMinSupportedBuild,
+    required this.refuseRetiredBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
     required this.enrolInOpenSeasons,
@@ -234,7 +234,7 @@ final class CompositionRoot {
     CheckHealth? checkHealth,
     GetLatestBuild? getLatestBuild,
     SetMinSupportedBuild? setMinSupportedBuild,
-    ReadMinSupportedBuild? readMinSupportedBuild,
+    RefuseRetiredBuild? refuseRetiredBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
     NotifyNewUserRegistered? notifyNewUserRegistered,
@@ -418,9 +418,12 @@ final class CompositionRoot {
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        setMinSupportedBuild =
            setMinSupportedBuild ?? _absentSetMinSupportedBuild(),
-       readMinSupportedBuild =
-           readMinSupportedBuild ??
-           const ReadMinSupportedBuild(_NoMinimumPolicyStore()),
+       refuseRetiredBuild =
+           refuseRetiredBuild ??
+           RefuseRetiredBuild(
+             policy: const _NoMinimumPolicyStore(),
+             players: const _NoRetiredPlayers(),
+           ),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
        notifyNewUserRegistered =
@@ -1869,9 +1872,11 @@ final class CompositionRoot {
   /// `PUT /admin/app/min-build`, migration 0113).
   final SetMinSupportedBuild setMinSupportedBuild;
 
-  /// The oldest supported build as the root middleware's build gate reads
-  /// it (script 148), over the same cached store the admin's button writes.
-  final ReadMinSupportedBuild readMinSupportedBuild;
+  /// Whether a request naming no build comes from a player on a build older
+  /// than the head-to-head tab, refused by `bearerAuth` while an admin holds
+  /// a minimum (script 149), over the same cached store the admin's button
+  /// writes.
+  final RefuseRetiredBuild refuseRetiredBuild;
 
   /// Logs in with email/password, exchanging credentials for a session.
   final LoginWithPassword login;
@@ -2640,7 +2645,7 @@ final class CompositionRoot {
       base: MirroredBuildInfoRepository.baseFrom(env),
     );
     // One cached store for the update check, the admin's button and the
-    // build gate (script 148): the gate asks on every request.
+    // retired builds' refusal (scripts 148-149), asked on many requests.
     final appUpdatePolicy = CachedAppUpdatePolicyStore(
       PostgresAppUpdatePolicyStore(connection),
     );
@@ -3131,7 +3136,12 @@ final class CompositionRoot {
       checkHealth: checkHealth,
       getLatestBuild: getLatestBuild,
       setMinSupportedBuild: setMinSupportedBuild,
-      readMinSupportedBuild: ReadMinSupportedBuild(appUpdatePolicy),
+      refuseRetiredBuild: RefuseRetiredBuild(
+        policy: appUpdatePolicy,
+        players: CachedRetiredBuildReader(
+          PostgresRetiredBuildReader(connection),
+        ),
+      ),
       authenticateRequest: AuthenticateRequest(verifier, directory: directory),
       getCurrentUser: GetCurrentUser(directory),
       enrolInOpenSeasons: EnrolInOpenSeasons(
@@ -4120,8 +4130,8 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
       throw StateError('GetLatestBuild was not wired into this test root');
 }
 
-/// Backs the default [ReadMinSupportedBuild] of [CompositionRoot.forTesting]:
-/// no minimum, so a test root's build gate follows the variable alone.
+/// Backs the default [RefuseRetiredBuild] of [CompositionRoot.forTesting]:
+/// no minimum, so a test root refuses nobody.
 final class _NoMinimumPolicyStore implements AppUpdatePolicyStore {
   const _NoMinimumPolicyStore();
 
@@ -4133,6 +4143,16 @@ final class _NoMinimumPolicyStore implements AppUpdatePolicyStore {
     required int? buildNumber,
     required UserId by,
   }) => throw StateError('the default test minimum is read-only');
+}
+
+/// Backs the default [RefuseRetiredBuild] of [CompositionRoot.forTesting]:
+/// nobody is on a retired build.
+final class _NoRetiredPlayers implements RetiredBuildReader {
+  const _NoRetiredPlayers();
+
+  @override
+  Future<Result<Set<UserId>>> playersOnBuildsBefore(DateTime before) async =>
+      const Result.ok(<UserId>{});
 }
 
 /// Backs an "absent" [SetMinSupportedBuild] in [CompositionRoot.forTesting]:

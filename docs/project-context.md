@@ -6469,6 +6469,40 @@ server's text. Shipped with 146 and 147.
   `cached_app_update_policy_store_test.dart`, `update_required_test.dart`
   (the download by itself, a cancel, no second start on a return).
 
+### Only the builds before the head-to-head tab read the refusal (script 149, 2026-10-26)
+
+The owner's list of players by build (`ops.frame_reports`, 2026-10-26):
+93 Android players, 36 of them on builds first seen before the
+head-to-head tab (10 October; «توقعاتي» in their bottom bar), 14 between it
+and batch 147 (11-14 October), 43 on builds that know the minimum. Asked by
+the owner: the server's refusal for those 36 only, and only while the
+minimum is held. This replaces script 148's server half.
+
+- The build gate is the variable's again (script 142): `buildGate` and the
+  root middleware read `NUKHBA_BUILD_HEADER_SINCE` alone; script 148's
+  `servedMinimum`, `adminMinimumFrom` and `ReadMinSupportedBuild` are gone.
+- `bearerAuth`, once the principal is verified: a request that names no
+  build (`sentNoBuild`: no `x-nukhba-build`, no `Origin`) from a player
+  `RefuseRetiredBuild` finds retired is answered `409 app.update_required`
+  with `oldBuildMessage` (`retiredBuildRefusal`). Retired: an admin holds a
+  minimum (the cached 0113 row) and the player's newest Android session ran
+  a build first seen before `RefuseRetiredBuild.retiredBefore`
+  (2026-10-10 00:00 Riyadh) -- `PostgresRetiredBuildReader.playersSql`,
+  held 10 minutes by `CachedRetiredBuildReader`. No minimum, an unreadable
+  one or an unreadable list refuses nobody; a build that names itself and
+  the web are never refused. A player who updates names his build and is
+  served at once.
+- Who sees what while a minimum is held: the 36 read the refusal; the
+  builds since batch 147 show their update screen (the download by itself
+  from 148's build on); 11-14 October are served as before.
+  `NUKHBA_BUILD_HEADER_SINCE` should be removed from Northflank: while set,
+  it still refuses every build without the header.
+- No migration, no new dependency, no l10n key. Tests:
+  `retired_build_refusal_test.dart` (through `bearerAuth`, the root's
+  wiring, the admin's button), `refuse_retired_build_test.dart`,
+  `retired_build_reader_test.dart`, `retired_build_players_query_test.sql`
+  (PostgreSQL 16).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

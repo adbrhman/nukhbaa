@@ -65,15 +65,11 @@ Handler middleware(Handler handler) {
   );
 
   // A build too old to be served is answered here with the Arabic update
-  // message, before any route or the database (script 142): below
-  // NUKHBA_BUILD_HEADER_SINCE, or below the minimum an admin raised from the
-  // dashboard, held in the process (script 148).
-  final gated = buildGate(
-    minBuild: minServedBuild(Platform.environment),
-    adminMinimum: () async => adminMinimumFrom(
-      (await CompositionRoot.instance()).readMinSupportedBuild.call,
-    ),
-  )(captured);
+  // message, before any route or the database (script 142); off until
+  // NUKHBA_BUILD_HEADER_SINCE is set on Northflank.
+  final gated = buildGate(minBuild: minServedBuild(Platform.environment))(
+    captured,
+  );
 
   return (context) async {
     final origin = context.request.headers['origin'];

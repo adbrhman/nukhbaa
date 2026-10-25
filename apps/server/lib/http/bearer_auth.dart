@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/build_gate.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/rate_limit.dart';
 import 'package:server/http/request_scope.dart';
@@ -31,6 +32,11 @@ import 'package:shared/shared.dart';
 /// (`auth.user_suspended` vs. `auth.account_suspended`). `ensureUser` /
 /// `GetCurrentUser` are owned exclusively by the `GET /me` boundary.
 ///
+/// A request that names no build (an app from before script 142) from a
+/// player whose app is older than the head-to-head tab is answered with the
+/// update message while an admin holds a minimum (script 149,
+/// [RefuseRetiredBuild]): those builds know no update screen of their own.
+///
 /// Once the principal is known, a player's writes are counted against
 /// [writeLimiter] ([playerWriteLimiter] unless a test passes its own); one
 /// over the limit is answered `429` before it reaches the route.
@@ -49,6 +55,11 @@ Middleware bearerAuth({RateLimiter? writeLimiter}) {
       final principal = (verifyResult as Ok<AuthenticatedUser>).value;
       // The error log counts the players a failure hit (migration 0087).
       RequestScope.current?.userId = principal.userId.value;
+
+      if (sentNoBuild(context.request.headers) &&
+          await root.refuseRetiredBuild(principal.userId)) {
+        return errorResponse(retiredBuildRefusal);
+      }
 
       final limited = limitPlayerWrite(
         limiter,
