@@ -185,6 +185,8 @@ jobs:
       # header, a missing .br copy or a name the loader cannot find stops
       # the deploy, and both sites keep the build they have.
       - name: Stage the mirror and check it in its own image
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           DIST="$RUNNER_TEMP/web-dist"
@@ -192,6 +194,25 @@ jobs:
           mkdir -p "$DIST/site"
           cp -R apps/mobile/build/web "$DIST/site/nukhbaa"
           cp -R deploy/web-mirror/landing/. "$DIST/site/"
+          # The release's APKs on the mirror too (script 144): GitHub's
+          # download host is very slow in Yemen without a VPN, nukhbaa.app
+          # is not. The server hands /apk/<name> to the in-app updater once
+          # the mirror answers it; until then, or without these files, the
+          # app keeps GitHub's address. 64- and 32-bit phones only.
+          SHORT_SHA=$(git rev-parse HEAD | cut -c1-7)
+          mkdir -p "$DIST/site/apk"
+          if gh release download "build-$SHORT_SHA" -R "$GITHUB_REPOSITORY" -D "$DIST/site/apk" \
+               -p "nukhbaa-arm64-v8a-$SHORT_SHA.apk" -p "nukhbaa-armeabi-v7a-$SHORT_SHA.apk" \
+             && [ -f "$DIST/site/apk/nukhbaa-arm64-v8a-$SHORT_SHA.apk" ]; then
+            cp "$DIST/site/apk/nukhbaa-arm64-v8a-$SHORT_SHA.apk" "$DIST/site/apk/nukhbaa.apk"
+            if [ -f "$DIST/site/apk/nukhbaa-armeabi-v7a-$SHORT_SHA.apk" ]; then
+              cp "$DIST/site/apk/nukhbaa-armeabi-v7a-$SHORT_SHA.apk" "$DIST/site/apk/nukhbaa-32bit.apk"
+            fi
+            ls -l "$DIST/site/apk"
+          else
+            echo "::warning::no APKs in release build-$SHORT_SHA: the mirror serves none, the app keeps GitHub's address"
+            rm -rf "$DIST/site/apk"
+          fi
           cp deploy/web-mirror/Dockerfile deploy/web-mirror/nginx.conf "$DIST/"
           node deploy/web-mirror/finalize_build.mjs compress "$DIST/site/nukhbaa"
           docker build -q -t nukhbaa-web-check "$DIST" > /dev/null

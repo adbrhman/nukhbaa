@@ -140,12 +140,13 @@
       </div>
 
       <div class="actions">
-        <a id="dl" class="btn primary" href="https://github.com/adbrhman/nukhbaa/releases/latest">
+        <a id="dl" class="btn primary" href="/apk/nukhbaa.apk">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
           حمّل التطبيق لأندرويد
         </a>
         <a id="web" class="btn ghost" href="/nukhbaa/">افتح نسخة الويب</a>
         <div id="dlnote" class="note"></div>
+        <a id="dl32" class="note" href="/apk/nukhbaa-32bit.apk">هاتف قديم (32-bit)؟ حمّل هذه النسخة</a>
       </div>
     </section>
 
@@ -198,28 +199,30 @@
       });
     })();
 
-    // يجلب آخر إصدار ويضع رابط ملف الـ APK المناسب مباشرة على الزر.
-    // إن فشل الطلب يبقى الزر يفتح صفحة الإصدارات.
+    // ملف الـ APK من هذا الموقع (script 144): خوادم GitHub بطيئة جدًا في
+    // اليمن بدون VPN. إن لم يكن الملف هنا بعد يفتح الزر صفحة الإصدارات.
     (function () {
       var btn = document.getElementById('dl');
       var note = document.getElementById('dlnote');
-      fetch('https://api.github.com/repos/adbrhman/nukhbaa/releases/latest')
-        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-        .then(function (rel) {
-          var apks = (rel.assets || []).filter(function (a) { return /\.apk$/i.test(a.name); });
-          var pick = ['arm64-v8a', 'universal', 'armeabi-v7a'];
-          var asset = null;
-          for (var i = 0; i < pick.length && !asset; i++) {
-            asset = apks.find(function (a) { return a.name.indexOf(pick[i]) !== -1; }) || null;
-          }
-          asset = asset || apks[0];
-          if (!asset) return;
-          btn.href = asset.browser_download_url;
-          var mb = (asset.size / 1048576).toFixed(0);
-          var d = rel.published_at ? new Date(rel.published_at).toLocaleDateString('ar') : '';
-          note.textContent = 'الحجم ' + mb + ' م.ب' + (d ? ' · آخر تحديث ' + d : '');
+      var dl32 = document.getElementById('dl32');
+      fetch('/apk/nukhbaa.apk', { method: 'HEAD', cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw 0;
+          var size = Number(r.headers.get('content-length') || 0);
+          var when = r.headers.get('last-modified');
+          var parts = [];
+          if (size) parts.push('الحجم ' + (size / 1048576).toFixed(0) + ' م.ب');
+          if (when) parts.push('آخر تحديث ' + new Date(when).toLocaleDateString('ar'));
+          note.textContent = parts.join(' · ');
         })
-        .catch(function () {});
+        .catch(function () {
+          btn.href = 'https://github.com/adbrhman/nukhbaa/releases/latest';
+        });
+      fetch('/apk/nukhbaa-32bit.apk', { method: 'HEAD', cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw 0; })
+        .catch(function () {
+          dl32.href = 'https://github.com/adbrhman/nukhbaa/releases/latest';
+        });
     })();
   </script>
 </body>

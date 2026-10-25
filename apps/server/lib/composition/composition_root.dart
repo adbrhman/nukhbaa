@@ -2619,9 +2619,16 @@ final class CompositionRoot {
     // Public/unauthenticated, like health. One GitHub reader, so the admin's
     // "make the newest the minimum" sees the release the players see.
     // NUKHBA_GITHUB_TOKEN, optional, lifts GitHub's 60 calls an hour.
-    final buildInfo = GithubBuildInfoRepository(
+    // Each APK's address moves to the web mirror (nukhbaa.app/apk/) once
+    // the mirror serves it: GitHub's download host is slow in Yemen
+    // (script 144). NUKHBA_APK_MIRROR=off keeps GitHub's addresses.
+    final buildInfo = MirroredBuildInfoRepository(
+      GithubBuildInfoRepository(
+        http.Client(),
+        token: env['NUKHBA_GITHUB_TOKEN'],
+      ),
       http.Client(),
-      token: env['NUKHBA_GITHUB_TOKEN'],
+      base: MirroredBuildInfoRepository.baseFrom(env),
     );
     final appUpdatePolicy = PostgresAppUpdatePolicyStore(connection);
     final getLatestBuild = GetLatestBuild(buildInfo, policy: appUpdatePolicy);

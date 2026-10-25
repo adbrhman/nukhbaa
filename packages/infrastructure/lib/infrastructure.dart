@@ -93,6 +93,7 @@ export 'src/notification/postgres_prediction_reminder_repository.dart';
 export 'src/notification/postgres_score_announcement_repository.dart';
 export 'src/notification/postgres_streak_saver_repository.dart';
 export 'src/platform/github_build_info_repository.dart';
+export 'src/platform/mirrored_build_info_repository.dart';
 export 'src/platform/postgres_app_update_policy_store.dart';
 export 'src/platform/postgres_error_alert_repository.dart';
 export 'src/platform/postgres_error_log_admin_repository.dart';

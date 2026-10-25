@@ -6295,6 +6295,41 @@ be 32-bit. Asked by the owner on 2026-10-25.
 - Server and CI only; no APK change needed for the message. Test:
   `build_gate_test.dart` (the two button names).
 
+### Updates download from nukhbaa.app (script 144, 2026-10-25)
+
+Players reported that an update downloads very slowly, and normally over a
+VPN: the in-app updater and the download buttons took the APK from GitHub's
+download host (`GithubBuildInfoRepository`, `releases/latest/download`),
+which is throttled in Yemen like github.io, while nukhbaa.app (the
+Northflank web mirror) is reachable. The owner asked for the best option
+on 2026-10-25; chosen over Cloudflare R2 (an account and keys) and asking
+players for a VPN; Supabase Storage was ruled out (egress).
+
+- Deploy Web downloads the release's arm64-v8a and armeabi-v7a APKs
+  (`gh release download build-<sha>`) into the mirror's `site/apk/`, with
+  copies `nukhbaa.apk` and `nukhbaa-32bit.apk` for the buttons; no APKs (a
+  manual deploy of a commit without a release) leaves the folder out.
+- `nginx.conf`: `/apk/` sends them as they are with the APK type; the
+  commit's names are kept a year, the buttons' copies `no-cache`; a
+  missing file is a 404, never a page. `check_mirror.mjs` checks each one
+  in the image (type, no compression, cache rule, bytes, the 404).
+- Server: `MirroredBuildInfoRepository` (infrastructure) wraps the GitHub
+  reader in the composition root. An APK whose release name carries the
+  commit moves to `https://nukhbaa.app/apk/<name>` once a `HEAD` there
+  answers 200 with the APK type (asked again after 2 minutes on a miss,
+  never again on a hit); until then the GitHub address stays. The SHA-256
+  stays the release's, which the updater checks whatever the host. Every
+  build reads the address from `GET /app/latest-build`, so old builds
+  download from the mirror too. `NUKHBA_APK_MIRROR` (Northflank) sets
+  another https folder, or `off`.
+- The landing page's button points at `/apk/nukhbaa.apk` (GitHub's release
+  page only when the mirror lacks it), with a link for 32-bit phones. The
+  links page (outside this repo) should use the same two addresses.
+- Northflank egress, about 6 GB when 145 players take a 41 MB update, sits
+  within the free plan's resources. No migration, no new dependency, no
+  APK needed. Test: `mirrored_build_info_repository_test.dart` (through
+  `GetLatestBuild` over the real GitHub reader).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

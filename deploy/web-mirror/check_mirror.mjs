@@ -12,7 +12,10 @@
 //   the files that exist;
 // * an old content name: 404, never the app page; a .br name asked for
 //   directly: 404; a deep link: the app page;
-// * a team crest: kept a week (audit L-54).
+// * a team crest: kept a week (audit L-54);
+// * the release APKs, when the deploy copied them (script 144): the APK
+//   type, never compressed, the commit's names kept a year and the
+//   buttons' copies no-cache; a missing APK: 404, never a page.
 // Node's own modules only.
 
 import fs from 'node:fs';
@@ -197,6 +200,24 @@ async function main() {
     const res = await get(page, 'gzip, deflate, br');
     expect(res.status === 200 && /text\/html/.test(res.headers['content-type'] || ''), `${page} answered ${res.status} ${res.headers['content-type']}`);
     expectSecure(res, page);
+  }
+  const apkDir = path.join(site, 'apk');
+  if (fs.existsSync(apkDir)) {
+    const APK = 'application/vnd.android.package-archive';
+    for (const f of fs.readdirSync(apkDir).filter((n) => n.endsWith('.apk'))) {
+      const res = await get(`/apk/${f}`, 'gzip, deflate, br');
+      const label = `/apk/${f}`;
+      const named = /^nukhbaa-(arm64-v8a|armeabi-v7a|x86_64|x86)-[0-9a-f]{7}[.]apk$/.test(f);
+      expect(res.status === 200, `${label}: status ${res.status}`);
+      expect((res.headers['content-type'] || '').startsWith(APK), `${label}: content-type ${res.headers['content-type']}`);
+      expect(!res.headers['content-encoding'], `${label}: sent ${res.headers['content-encoding']}`);
+      expect(res.headers['cache-control'] === (named ? YEAR : 'no-cache'), `${label}: cache-control ${res.headers['cache-control']}`);
+      expect(res.body.equals(fs.readFileSync(path.join(apkDir, f))), `${label}: different bytes than the file`);
+      expectSecure(res, label);
+    }
+    const missing = await get('/apk/nukhbaa-arm64-v8a-0000000.apk', 'gzip, deflate, br');
+    expect(missing.status === 404, `a missing APK answered ${missing.status}, expected 404`);
+    expectSecure(missing, 'a missing APK (404)');
   }
 }
 
