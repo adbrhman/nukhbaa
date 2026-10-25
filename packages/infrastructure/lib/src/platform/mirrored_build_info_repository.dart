@@ -22,6 +22,13 @@ import 'package:shared/shared.dart';
 /// Only names that carry the commit are moved: such a file never changes,
 /// so a mirror that answered once is not asked again. A miss is asked
 /// again after [recheck]. Everything else of the build passes through.
+///
+/// [LatestBuild.apkUrl] keeps GitHub's address (script 145): every build
+/// decides it is the newest when that address holds `/build-<its sha>/`
+/// (`UpdateGate`, on Android and on the web), so a mirrored address there
+/// offered the update forever, even right after it was installed. The
+/// in-app updater downloads from [LatestBuild.assets], the file for the
+/// phone's processor, so the download still comes from the mirror.
 final class MirroredBuildInfoRepository implements BuildInfoRepository {
   /// Wraps [inner]; [base] is the mirror's folder (ending in `/`), or
   /// `null` to leave every address as [inner] gives it.
@@ -94,7 +101,8 @@ final class MirroredBuildInfoRepository implements BuildInfoRepository {
     return Result.ok(
       LatestBuild(
         publishedAt: build.publishedAt,
-        apkUrl: await _addressOf(build.apkUrl, base),
+        // GitHub's, always: the apps compare it with their own sha.
+        apkUrl: build.apkUrl,
         sha256: build.sha256,
         assets: assets,
         buildNumber: build.buildNumber,

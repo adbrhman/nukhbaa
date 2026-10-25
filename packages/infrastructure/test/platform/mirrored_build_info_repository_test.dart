@@ -96,6 +96,10 @@ void main() {
   Future<LatestBuild> read(GetLatestBuild useCase) async =>
       ((await useCase()) as Ok<LatestBuild>).value;
 
+  /// The address the updater downloads on a 64-bit phone.
+  String arm64Of(LatestBuild build) =>
+      build.assets.firstWhere((BuildAsset a) => a.abi == 'arm64-v8a').url;
+
   test('an APK the mirror serves is downloaded from the mirror, with the '
       'release\'s checksum', () async {
     hosts.mirror[_arm64] = 'application/vnd.android.package-archive';
@@ -103,7 +107,10 @@ void main() {
 
     final LatestBuild build = await read(check());
 
-    expect(build.apkUrl, 'https://nukhbaa.app/apk/$_arm64');
+    // GitHub's address stays where every build compares its own sha
+    // ("/build-<sha>/" means the newest is installed; script 145).
+    expect(build.apkUrl, '$_download/$_arm64');
+    expect(build.apkUrl, contains('/build-$_sha/'));
     expect(build.sha256, 'a' * 64);
     expect(
       <String, String>{
@@ -126,16 +133,16 @@ void main() {
     final GetLatestBuild useCase = check();
 
     final LatestBuild before = await read(useCase);
-    expect(before.apkUrl, '$_download/$_arm64');
+    expect(arm64Of(before), '$_download/$_arm64');
     expect(hosts.heads.where((String n) => n == _arm64), hasLength(1));
 
     hosts.mirror[_arm64] = 'application/vnd.android.package-archive';
     clock = clock.add(const Duration(minutes: 1));
-    expect((await read(useCase)).apkUrl, '$_download/$_arm64');
+    expect(arm64Of(await read(useCase)), '$_download/$_arm64');
     expect(hosts.heads.where((String n) => n == _arm64), hasLength(1));
 
     clock = clock.add(const Duration(minutes: 2));
-    expect((await read(useCase)).apkUrl, 'https://nukhbaa.app/apk/$_arm64');
+    expect(arm64Of(await read(useCase)), 'https://nukhbaa.app/apk/$_arm64');
     expect(hosts.heads.where((String n) => n == _arm64), hasLength(2));
   });
 
@@ -156,7 +163,7 @@ void main() {
   test('a page instead of the APK (the wrong type) is not the file', () async {
     hosts.mirror[_arm64] = 'text/html';
 
-    expect((await read(check())).apkUrl, '$_download/$_arm64');
+    expect(arm64Of(await read(check())), '$_download/$_arm64');
   });
 
   test('NUKHBA_APK_MIRROR: the mirror by default, off, or another https '

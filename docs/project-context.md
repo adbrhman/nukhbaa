@@ -6330,6 +6330,22 @@ players for a VPN; Supabase Storage was ruled out (egress).
   APK needed. Test: `mirrored_build_info_repository_test.dart` (through
   `GetLatestBuild` over the real GitHub reader).
 
+### The update row stayed after updating (script 145, 2026-10-25)
+
+After script 144 the account tab kept offering «يتوفر تحديث جديد» right
+after the update was installed (the owner, 2026-10-25). `UpdateGate`
+decides a build is the newest when `apk_url` holds `/build-<its sha>/`
+(Android, and the web build's reload check); script 144 had moved
+`apk_url` to `nukhbaa.app/apk/nukhbaa-<abi>-<sha>.apk`, which never holds
+it, so every build saw an update forever.
+
+- `MirroredBuildInfoRepository` keeps `apk_url` GitHub's and moves only
+  `assets` (what the in-app updater downloads, by processor) to the
+  mirror. Server only: every build, old ones included, reads it from
+  `GET /app/latest-build`, so the row goes away with the next check.
+- Test: `mirrored_build_info_repository_test.dart` (`apk_url` keeps
+  `/build-<sha>/` while the assets come from the mirror).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
