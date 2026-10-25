@@ -249,6 +249,7 @@ export 'src/platform/ports/error_log_repository.dart';
 export 'src/platform/ports/error_release_reader.dart';
 export 'src/platform/ports/frame_report_repository.dart';
 export 'src/platform/ports/health_repository.dart';
+export 'src/platform/read_min_supported_build.dart';
 export 'src/platform/record_error.dart';
 export 'src/platform/record_frame_report.dart';
 export 'src/platform/set_min_supported_build.dart';

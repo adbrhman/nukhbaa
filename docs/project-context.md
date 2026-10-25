@@ -6436,6 +6436,39 @@ before the first November round locks.
   `AuthApi`: the match card, the rounds, the round page, the group section,
   the rules; 360px at text x1.3 and x2).
 
+### The admin's minimum forces the update (script 148, 2026-10-26)
+
+Asked by the owner on 2026-10-26: most players do not understand the
+refusal screen (the old builds' plain text), so while an admin holds a
+minimum the app must download the update by itself, a cancelled download
+must keep the player out with a warning, and clearing the minimum must
+bring back the quiet row; the builds too old to know the minimum keep the
+server's text. Shipped with 146 and 147.
+
+- Server: the build gate (script 142) now refuses below the higher of
+  `NUKHBA_BUILD_HEADER_SINCE` and the minimum an admin raised from the
+  dashboard («ارفع الحد الأدنى», 0113) -- `servedMinimum`, read through
+  `ReadMinSupportedBuild` for a request the gate may refuse only (never for
+  the update check, the web build or a local run). One
+  `CachedAppUpdatePolicyStore` (60 s, concurrent reads shared, the admin's
+  write held at once, a failed write drops it) serves the gate, the update
+  check and the admin's button. An unreadable minimum is no minimum. Once
+  the variable is removed from Northflank, the admin's button alone turns
+  the refusal on and off.
+- App: `RequiredUpdateScreen` («يتوفر تحديث جديد · حدِّثه لتكمل») starts the
+  in-app download by itself once per screen (not the Play build); cancelled
+  or failed, it stays with «لتدخل إلى نُخبة حدِّث التطبيق أولًا. لن يفتح قبل
+  التحديث.» and its button. `installUpdate` answers the terminal phase. The
+  admin's confirmation says what the button now does.
+- Who sees what while a minimum is held: builds since batch 147 (they read
+  `min_supported_build`) see the update screen and the download; older
+  builds send no header and get the server's 409 text on every request.
+- No migration, no new dependency, no l10n key. Tests:
+  `build_gate_admin_minimum_test.dart` (the root's wiring: raised, cleared,
+  the higher of the two, unreadable, exempt requests never read it),
+  `cached_app_update_policy_store_test.dart`, `update_required_test.dart`
+  (the download by itself, a cancel, no second start on a return).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

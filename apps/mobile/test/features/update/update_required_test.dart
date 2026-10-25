@@ -2,7 +2,9 @@
 /// through the real [UpdateGate], the real `AppApi` and
 /// `GET /app/latest-build`, with only the socket and the installer faked:
 /// a build older than the minimum shows the update screen and nothing else,
-/// and installs from it; a build at the minimum, a local run and a
+/// and its download starts by itself (script 148); cancelled, the screen
+/// stays, warns and starts it again from its button; a build at the
+/// minimum, a local run and a
 /// minimum the admin cleared go on as before; a build a week old with a
 /// release waiting raises the home reminder, a fresh one does not.
 library;
@@ -20,14 +22,17 @@ import 'package:mobile/features/update/update_gate.dart';
 import '../../support/auth_harness.dart';
 
 final class _FakeUpdater implements InAppUpdater {
+  _FakeUpdater([this.ends = UpdatePhase.completed]);
+
+  /// The phase each download ends in.
+  final UpdatePhase ends;
+
   final List<LatestBuildDto> started = <LatestBuildDto>[];
 
   @override
   Stream<UpdateProgress>? start(LatestBuildDto build) {
     started.add(build);
-    return Stream<UpdateProgress>.value(
-      const UpdateProgress(UpdatePhase.completed),
-    );
+    return Stream<UpdateProgress>.value(UpdateProgress(ends));
   }
 
   @override
@@ -65,10 +70,11 @@ Future<_FakeUpdater> _open(
   _Releases releases, {
   int buildNumber = 200,
   String builtAt = '',
+  UpdatePhase ends = UpdatePhase.completed,
 }) async {
   final harness = buildAuthHarness(releases.handle, seedToken: 'jwt');
   addTearDown(harness.dispose);
-  final _FakeUpdater updater = _FakeUpdater();
+  final _FakeUpdater updater = _FakeUpdater(ends);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -91,22 +97,62 @@ Future<_FakeUpdater> _open(
     ),
   );
   await tester.pumpAndSettle();
+  // A finished download closes its dialog after a short pause.
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pumpAndSettle();
   return updater;
 }
 
 void main() {
   testWidgets('older than the minimum: the update screen and nothing else, '
-      'and it installs', (tester) async {
+      'and the download starts by itself', (tester) async {
     final _FakeUpdater updater = await _open(tester, _Releases(210));
 
     expect(find.byKey(const Key('update.required')), findsOneWidget);
+    expect(find.text('يتوفر تحديث جديد · حدِّثه لتكمل'), findsOneWidget);
     expect(find.textContaining('child'), findsNothing);
+    // Nobody tapped anything.
+    expect(updater.started.single.apkUrl, contains('/build-bbbbbbb/'));
+    expect(find.byKey(const Key('update.required.warning')), findsNothing);
+  });
+
+  testWidgets('cancelled: the screen stays, says the app opens only once '
+      'updated, and its button starts the download again', (tester) async {
+    final _FakeUpdater updater = await _open(
+      tester,
+      _Releases(210),
+      ends: UpdatePhase.cancelled,
+    );
+
+    expect(updater.started, hasLength(1));
+    expect(find.byKey(const Key('update.required')), findsOneWidget);
+    expect(find.textContaining('child'), findsNothing);
+    expect(
+      find.text('لتدخل إلى نُخبة حدِّث التطبيق أولًا. لن يفتح قبل التحديث.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('update.required.install')));
-    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    expect(updater.started.single.apkUrl, contains('/build-bbbbbbb/'));
+    expect(updater.started, hasLength(2));
+    expect(find.byKey(const Key('update.required')), findsOneWidget);
+  });
+
+  testWidgets('a return to the app does not start a second download by '
+      'itself', (tester) async {
+    final _FakeUpdater updater = await _open(
+      tester,
+      _Releases(210),
+      ends: UpdatePhase.cancelled,
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(updater.started, hasLength(1));
+    expect(find.byKey(const Key('update.required.warning')), findsOneWidget);
   });
 
   testWidgets('at the minimum, the app goes on', (tester) async {

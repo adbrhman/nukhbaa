@@ -21,6 +21,7 @@ final class CompositionRoot {
     required this.checkHealth,
     required this.getLatestBuild,
     required this.setMinSupportedBuild,
+    required this.readMinSupportedBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
     required this.enrolInOpenSeasons,
@@ -233,6 +234,7 @@ final class CompositionRoot {
     CheckHealth? checkHealth,
     GetLatestBuild? getLatestBuild,
     SetMinSupportedBuild? setMinSupportedBuild,
+    ReadMinSupportedBuild? readMinSupportedBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
     NotifyNewUserRegistered? notifyNewUserRegistered,
@@ -416,6 +418,9 @@ final class CompositionRoot {
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        setMinSupportedBuild =
            setMinSupportedBuild ?? _absentSetMinSupportedBuild(),
+       readMinSupportedBuild =
+           readMinSupportedBuild ??
+           const ReadMinSupportedBuild(_NoMinimumPolicyStore()),
        login = login ?? _absentLogin(),
        register = register ?? _absentRegister(),
        notifyNewUserRegistered =
@@ -1864,6 +1869,10 @@ final class CompositionRoot {
   /// `PUT /admin/app/min-build`, migration 0113).
   final SetMinSupportedBuild setMinSupportedBuild;
 
+  /// The oldest supported build as the root middleware's build gate reads
+  /// it (script 148), over the same cached store the admin's button writes.
+  final ReadMinSupportedBuild readMinSupportedBuild;
+
   /// Logs in with email/password, exchanging credentials for a session.
   final LoginWithPassword login;
 
@@ -2630,7 +2639,11 @@ final class CompositionRoot {
       http.Client(),
       base: MirroredBuildInfoRepository.baseFrom(env),
     );
-    final appUpdatePolicy = PostgresAppUpdatePolicyStore(connection);
+    // One cached store for the update check, the admin's button and the
+    // build gate (script 148): the gate asks on every request.
+    final appUpdatePolicy = CachedAppUpdatePolicyStore(
+      PostgresAppUpdatePolicyStore(connection),
+    );
     final getLatestBuild = GetLatestBuild(buildInfo, policy: appUpdatePolicy);
     final setMinSupportedBuild = SetMinSupportedBuild(
       policy: appUpdatePolicy,
@@ -3118,6 +3131,7 @@ final class CompositionRoot {
       checkHealth: checkHealth,
       getLatestBuild: getLatestBuild,
       setMinSupportedBuild: setMinSupportedBuild,
+      readMinSupportedBuild: ReadMinSupportedBuild(appUpdatePolicy),
       authenticateRequest: AuthenticateRequest(verifier, directory: directory),
       getCurrentUser: GetCurrentUser(directory),
       enrolInOpenSeasons: EnrolInOpenSeasons(
@@ -4104,6 +4118,21 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
   @override
   Future<Result<LatestBuild>> fetchLatest() =>
       throw StateError('GetLatestBuild was not wired into this test root');
+}
+
+/// Backs the default [ReadMinSupportedBuild] of [CompositionRoot.forTesting]:
+/// no minimum, so a test root's build gate follows the variable alone.
+final class _NoMinimumPolicyStore implements AppUpdatePolicyStore {
+  const _NoMinimumPolicyStore();
+
+  @override
+  Future<Result<int?>> minSupportedBuild() async => const Result.ok(null);
+
+  @override
+  Future<Result<int?>> setMinSupportedBuild({
+    required int? buildNumber,
+    required UserId by,
+  }) => throw StateError('the default test minimum is read-only');
 }
 
 /// Backs an "absent" [SetMinSupportedBuild] in [CompositionRoot.forTesting]:

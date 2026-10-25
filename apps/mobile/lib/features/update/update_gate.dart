@@ -464,7 +464,15 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 /// The one screen of a build older than the oldest one the service still
 /// supports (batch 147): why, and the in-app install. Nothing else opens
 /// until the new build is installed.
-class RequiredUpdateScreen extends ConsumerWidget {
+///
+/// Since script 148 the download starts by itself as the screen appears
+/// (once per screen; not in the Play build, which opens its store): most
+/// players did not understand a screen that only asked them to tap. Should
+/// they cancel it, or should it fail, the screen stays and says the app
+/// opens only once it is updated, with the button to try again. The
+/// minimum is the admin's (the dashboard's «ارفع الحد الأدنى»); cleared,
+/// the app is back to its quiet row on the account tab.
+class RequiredUpdateScreen extends ConsumerStatefulWidget {
   /// Creates the screen for [update].
   const RequiredUpdateScreen({
     required this.update,
@@ -480,8 +488,42 @@ class RequiredUpdateScreen extends ConsumerWidget {
   final bool fromPlay;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RequiredUpdateScreen> createState() =>
+      _RequiredUpdateScreenState();
+}
+
+class _RequiredUpdateScreenState extends ConsumerState<RequiredUpdateScreen> {
+  /// Whether a download was started from this screen and did not finish:
+  /// the screen then says the app opens only once it is updated.
+  bool _unfinished = false;
+  bool _installing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.fromPlay) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_install());
+      });
+    }
+  }
+
+  Future<void> _install() async {
+    if (_installing) return;
+    _installing = true;
+    final UpdatePhase? phase = await installUpdate(context, ref, widget.update);
+    _installing = false;
+    if (!mounted) return;
+    setState(() {
+      _unfinished =
+          phase != UpdatePhase.completed && phase != UpdatePhase.installing;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    final bool fromPlay = widget.fromPlay;
     return Scaffold(
       key: const Key('update.required'),
       backgroundColor: tokens.background,
@@ -499,7 +541,7 @@ class RequiredUpdateScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'حدِّث نُخبة لتكمل',
+                  'يتوفر تحديث جديد · حدِّثه لتكمل',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: tokens.textPrimary,
@@ -514,6 +556,18 @@ class RequiredUpdateScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: tokens.textSecondary),
                 ),
+                if (_unfinished) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Text(
+                    'لتدخل إلى نُخبة حدِّث التطبيق أولًا. لن يفتح قبل التحديث.',
+                    key: const Key('update.required.warning'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('update.required.install'),
@@ -522,7 +576,7 @@ class RequiredUpdateScreen extends ConsumerWidget {
                         ? ref.read(storeOpenerProvider)(
                             Uri.parse(playStoreListing),
                           )
-                        : installUpdate(context, ref, update),
+                        : _install(),
                   ),
                   icon: const Icon(Icons.download_rounded),
                   label: const Text('حدِّث الآن'),
@@ -538,9 +592,11 @@ class RequiredUpdateScreen extends ConsumerWidget {
 
 /// Downloads and installs [dto] in-app ([InAppUpdater]): download progress,
 /// SHA-256 integrity check and the platform installer, with a browser
-/// fallback when the native path fails. Started only by the player, from the
-/// account tab's "update available" row.
-Future<void> installUpdate(
+/// fallback when the native path fails. Started by the player from the
+/// account tab's "update available" row, or by itself on the update screen
+/// while a minimum holds the build back (script 148). Answers the terminal
+/// phase, or null when the native path never started.
+Future<UpdatePhase?> installUpdate(
   BuildContext context,
   WidgetRef ref,
   LatestBuildDto dto,
@@ -549,9 +605,9 @@ Future<void> installUpdate(
   final Stream<UpdateProgress>? stream = updater.start(dto);
   if (stream == null) {
     if (context.mounted) await _offerBrowserFallback(context, dto);
-    return;
+    return null;
   }
-  if (!context.mounted) return;
+  if (!context.mounted) return null;
 
   // The dialog returns the TERMINAL phase (no shared mutable state).
   final UpdatePhase? terminal = await showDialog<UpdatePhase>(
@@ -561,7 +617,7 @@ Future<void> installUpdate(
         _UpdateProgressDialog(stream: stream, onCancel: updater.cancel),
   );
 
-  if (!context.mounted) return;
+  if (!context.mounted) return terminal;
   final bool isFailure =
       terminal == UpdatePhase.downloadFailed ||
       terminal == UpdatePhase.checksumFailed ||
@@ -570,6 +626,7 @@ Future<void> installUpdate(
   if (isFailure) {
     await _offerBrowserFallback(context, dto);
   }
+  return terminal;
 }
 
 Future<void> _offerBrowserFallback(
