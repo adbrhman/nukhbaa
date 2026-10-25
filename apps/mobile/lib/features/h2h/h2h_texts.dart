@@ -136,6 +136,28 @@ String h2hCountdownLabel(Duration left) {
 /// The opponent's name when the caller plays the group average.
 const String h2hAverageOpponent = 'متوسط المجموعة';
 
+/// The opponent's name while it is secret: the server names nobody until
+/// the round's last match kicks off (decided 2026-10-25). Never read as the
+/// group average.
+const String h2hSecretOpponent = 'خصم سري';
+
+/// When a secret opponent is named: at the round's last kickoff, on the
+/// Riyadh clock, when the server sent it; else in words.
+String h2hRevealLabel(String? revealsAt) {
+  final String time = h2hKickoffTime(revealsAt);
+  if (revealsAt == null || time == '—') {
+    return 'يُكشف عند انطلاق آخر مباراة في الجولة';
+  }
+  return 'يُكشف الساعة $time';
+}
+
+/// Why nobody's match of a round is shown yet.
+const String h2hSecretPairs =
+    'مواجهات هذه الجولة سرية حتى انطلاق آخر مباراة فيها.';
+
+/// In place of the opponent's picks while the opponent is secret.
+const String h2hSecretPick = 'مخفي حتى كشف الخصم';
+
 /// The name shown for a member with no display name.
 const String h2hUnnamed = 'لاعب';
 
@@ -148,6 +170,7 @@ const List<String> h2hRules = <String>[
       'الثانية ثم الثالثة، والباقون في الرابعة.',
   'الجولة يوم مباريات يُعلن قبل يومه، وتواجه فيها لاعبًا واحدًا من '
       'مجموعتك. في الشهر 19 جولة على الأكثر.',
+  'خصمك في كل جولة سري، ويُكشف عند انطلاق آخر مباراة فيها.',
   'من يجمع نقاط توقّع أكثر في الجولة يفوز بـ3 نقاط، والتعادل نقطة.',
   'من لم يتوقّع في الجولة يخسرها.',
   'في نهاية الشهر يصعد أوائل كل درجة ويهبط أواخرها، حتى 3 لاعبين بحسب '

@@ -29,10 +29,14 @@ H2hStandingDto? h2hMyStanding(MyH2hLeagueDto league) {
 String h2hNameOf(String? name) =>
     (name ?? '').trim().isEmpty ? h2hUnnamed : name!.trim();
 
-/// The opponent of [round] in words: a member, or the group average.
-String h2hOpponentOf(H2hRoundViewDto round) => round.opponentUserId == null
-    ? h2hAverageOpponent
-    : h2hNameOf(round.opponentName);
+/// The opponent of [round] in words: a member, the group average, or
+/// secret while the server names nobody.
+String h2hOpponentOf(H2hRoundViewDto round) {
+  if (round.opponentHidden) return h2hSecretOpponent;
+  return round.opponentUserId == null
+      ? h2hAverageOpponent
+      : h2hNameOf(round.opponentName);
+}
 
 /// The round that matters now: the one being played, else the next one
 /// (`open`; a version 1 server's first `upcoming`), else the last one
@@ -61,6 +65,7 @@ class H2hSide extends StatelessWidget {
     required this.avatarUrl,
     required this.average,
     this.size = 48,
+    this.secret = false,
     super.key,
   });
 
@@ -73,6 +78,9 @@ class H2hSide extends StatelessWidget {
   /// Whether this side is the group average.
   final bool average;
 
+  /// Whether this side is an opponent the server has not named yet.
+  final bool secret;
+
   /// The picture's size.
   final double size;
 
@@ -81,7 +89,14 @@ class H2hSide extends StatelessWidget {
     final AppTokens t = context.tokens;
     return Column(
       children: <Widget>[
-        if (average)
+        if (secret)
+          CircleAvatar(
+            key: const Key('h2h.side.secret'),
+            radius: size / 2,
+            backgroundColor: t.surfaceHigh,
+            child: Icon(Icons.lock_outline_rounded, color: t.textSecondary),
+          )
+        else if (average)
           CircleAvatar(
             radius: size / 2,
             backgroundColor: t.surfaceHigh,
@@ -152,6 +167,34 @@ class H2hStatusChip extends StatelessWidget {
       _ => null,
     },
   );
+}
+
+/// When a secret opponent is named, as a small muted line.
+class H2hRevealLine extends StatelessWidget {
+  /// Creates the line for [revealsAt] (ISO-8601 UTC, or null).
+  const H2hRevealLine({required this.revealsAt, super.key});
+
+  /// The round's last kickoff, when the server sent it.
+  final String? revealsAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(Icons.lock_clock_outlined, size: 16, color: t.textSecondary),
+        const SizedBox(width: AppSpacing.xs),
+        Flexible(
+          child: Text(
+            h2hRevealLabel(revealsAt),
+            textAlign: TextAlign.center,
+            style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// A section's heading.

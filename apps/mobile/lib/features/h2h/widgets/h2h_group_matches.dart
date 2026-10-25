@@ -183,6 +183,23 @@ class _H2hGroupMatchesState extends ConsumerState<H2hGroupMatches> {
             ),
           ],
           data: (H2hGroupRoundDto group) => <Widget>[
+            if (group.matchesHidden)
+              AppCard(
+                key: const Key('h2h.matches.secret'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      h2hSecretPairs,
+                      style: context.text.bodyMedium?.copyWith(
+                        color: t.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    H2hRevealLine(revealsAt: group.revealsAt),
+                  ],
+                ),
+              ),
             for (int i = 0; i < group.matches.length; i++) ...<Widget>[
               MergeSemantics(
                 child: H2hPairCard(
@@ -199,11 +216,12 @@ class _H2hGroupMatchesState extends ConsumerState<H2hGroupMatches> {
               const SizedBox(height: AppSpacing.sm),
             ],
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              'تظهر النقاط بعد انتهاء المباريات، ولا تظهر هنا توقعات أي لاعب.',
-              key: const Key('h2h.matches.note'),
-              style: context.text.bodySmall?.copyWith(color: t.textSecondary),
-            ),
+            if (!group.matchesHidden)
+              Text(
+                'تظهر النقاط بعد انتهاء المباريات، ولا تظهر هنا توقعات أي لاعب.',
+                key: const Key('h2h.matches.note'),
+                style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+              ),
           ],
         ),
       ],

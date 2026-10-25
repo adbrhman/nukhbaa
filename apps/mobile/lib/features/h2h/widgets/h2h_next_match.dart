@@ -56,8 +56,26 @@ class H2hNextMatch extends StatelessWidget {
       color: t.textPrimary,
       fontWeight: FontWeight.w800,
     );
+    final bool secret = round.opponentHidden;
     final Widget middle;
-    if (round.myPoints != null) {
+    if (secret && round.myPoints != null) {
+      // Only the caller's own points: the other side has no name yet.
+      middle = Column(
+        key: const Key('h2h.featured.ownScore'),
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            h2hPointsLabel(round.myPoints!),
+            key: const Key('h2h.featured.mine'),
+            style: scoreStyle,
+          ),
+          Text(
+            'نقاطك',
+            style: context.text.labelSmall?.copyWith(color: t.textSecondary),
+          ),
+        ],
+      );
+    } else if (round.myPoints != null) {
       middle = Wrap(
         key: const Key('h2h.featured.score'),
         alignment: WrapAlignment.center,
@@ -117,11 +135,19 @@ class H2hNextMatch extends StatelessWidget {
                 child: H2hSide(
                   name: h2hOpponentOf(round),
                   avatarUrl: round.opponentAvatarUrl,
-                  average: round.opponentUserId == null,
+                  average: !secret && round.opponentUserId == null,
+                  secret: secret,
                 ),
               ),
             ],
           ),
+          if (secret) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            H2hRevealLine(
+              key: const Key('h2h.featured.reveal'),
+              revealsAt: round.revealsAt,
+            ),
+          ],
           if (round.result != null) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
             Center(

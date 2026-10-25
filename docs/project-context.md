@@ -6409,6 +6409,33 @@ follows in script 147.
 
 **Apply 0184 in the Supabase SQL editor before pushing this server.**
 
+### The secret opponent on the screen (script 147, 2026-10-25)
+
+The app side of script 146. Builds before it read an empty opponent as the
+group average (`h2h_parts.dart`, `h2h_next_match.dart`, the round page),
+so a secret one would show as «متوسط المجموعة»; this build reads
+`opponent_hidden` first everywhere. Push it with 146; then, decided by the
+owner on 2026-10-25, `NUKHBA_BUILD_HEADER_SINCE` goes up to this release
+before the first November round locks.
+
+- `h2h_texts.dart`: «خصم سري» (`h2hSecretOpponent`), `h2hRevealLabel`
+  («يُكشف الساعة 23:00» on the Riyadh clock from `reveals_at`, else
+  «يُكشف عند انطلاق آخر مباراة في الجولة»), `h2hSecretPairs`,
+  `h2hSecretPick` («مخفي حتى كشف الخصم»), and a rule: «خصمك في كل جولة
+  سري، ويُكشف عند انطلاق آخر مباراة فيها.»
+- `h2hOpponentOf` and `H2hSide(secret:)` (a lock in place of a picture);
+  `H2hRevealLine`. The match card and a round's tile show the caller's
+  own points only («نقاطك 6») and when the opponent is named; the round
+  page names nobody, withholds every pick of theirs with «مخفي حتى كشف
+  الخصم» and their counts with «—»; the group section shows
+  «مواجهات هذه الجولة سرية…» instead of pairs (`matches_hidden`); the
+  admin's group round and player tab say the same.
+- Nothing is decided in the app: the secret is the server's flag.
+  No l10n key, no dependency, no server change.
+- Test: `h2h_secret_opponent_test.dart` (the real screens over the real
+  `AuthApi`: the match card, the rounds, the round page, the group section,
+  the rules; 360px at text x1.3 and x2).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -7,6 +7,11 @@
 /// the server sends `theirs_hidden` and this page says "hidden until
 /// kickoff". Nothing here reads the device clock to decide it, and nothing
 /// is computed: points, counts and results are the server's (Axioms 2/5).
+///
+/// **The opponent is secret until the round's last kickoff** (2026-10-25):
+/// while the server sends `opponent_hidden`, the page names nobody, shows
+/// the caller's own points only and every pick of theirs as withheld --
+/// never the group average.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -75,6 +80,7 @@ class H2hRoundScreen extends ConsumerWidget {
           value: ref.watch(myH2hRoundProvider(round)),
           onRetry: () => ref.invalidate(myH2hRoundProvider(round)),
           builder: (BuildContext context, MyH2hRoundDto detail) {
+            final bool secret = detail.opponentHidden;
             final bool anyHidden = detail.fixtures.any(
               (H2hRoundFixtureDto f) => f.theirsHidden,
             );
@@ -96,7 +102,10 @@ class H2hRoundScreen extends ConsumerWidget {
                 if (anyHidden) ...<Widget>[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'توقّع خصمك في كل مباراة يظهر عند انطلاقها.',
+                    secret
+                        ? 'خصمك سري، وتظهر توقعاته بعد كشفه عند انطلاق آخر '
+                              'مباراة في الجولة.'
+                        : 'توقّع خصمك في كل مباراة يظهر عند انطلاقها.',
                     key: const Key('h2h.detail.hiddenNote'),
                     style: context.text.bodySmall?.copyWith(
                       color: t.textSecondary,
@@ -118,7 +127,8 @@ class H2hRoundScreen extends ConsumerWidget {
                   MergeSemantics(
                     child: _FixtureTile(
                       fixture: f,
-                      average: detail.opponentUserId == null,
+                      average: !secret && detail.opponentUserId == null,
+                      secret: secret,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -152,7 +162,8 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
-    final bool average = detail.opponentUserId == null;
+    final bool secret = detail.opponentHidden;
+    final bool average = !secret && detail.opponentUserId == null;
     final TextStyle? scoreStyle = context.text.headlineSmall?.copyWith(
       color: t.textPrimary,
       fontWeight: FontWeight.w800,
@@ -200,6 +211,12 @@ class _MatchCard extends StatelessWidget {
                               color: t.textSecondary,
                             ),
                           )
+                        : secret
+                        ? Text(
+                            h2hPointsLabel(detail.myPoints!),
+                            key: const Key('h2h.detail.mine'),
+                            style: scoreStyle,
+                          )
                         : Wrap(
                             key: const Key('h2h.detail.score'),
                             alignment: WrapAlignment.center,
@@ -222,15 +239,25 @@ class _MatchCard extends StatelessWidget {
               ),
               Expanded(
                 child: H2hSide(
-                  name: average
+                  name: secret
+                      ? h2hSecretOpponent
+                      : average
                       ? h2hAverageOpponent
                       : h2hNameOf(detail.opponentName),
                   avatarUrl: detail.opponentAvatarUrl,
                   average: average,
+                  secret: secret,
                 ),
               ),
             ],
           ),
+          if (secret) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            H2hRevealLine(
+              key: const Key('h2h.detail.reveal'),
+              revealsAt: detail.revealsAt,
+            ),
+          ],
           if (detail.result != null) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
             Center(
@@ -303,7 +330,9 @@ class _Totals extends StatelessWidget {
                   const SizedBox.shrink(),
                   Text('أنت', textAlign: TextAlign.center, style: head),
                   Text(
-                    detail.opponentUserId == null
+                    detail.opponentHidden
+                        ? h2hSecretOpponent
+                        : detail.opponentUserId == null
                         ? h2hAverageOpponent
                         : h2hNameOf(detail.opponentName),
                     textAlign: TextAlign.center,
@@ -338,10 +367,15 @@ class _Totals extends StatelessWidget {
 
 /// One fixture of the round: the match, then both picks.
 class _FixtureTile extends StatelessWidget {
-  const _FixtureTile({required this.fixture, required this.average});
+  const _FixtureTile({
+    required this.fixture,
+    required this.average,
+    required this.secret,
+  });
 
   final H2hRoundFixtureDto fixture;
   final bool average;
+  final bool secret;
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +454,10 @@ class _FixtureTile extends StatelessWidget {
               ),
               if (!average)
                 f.theirsHidden
-                    ? _HiddenBox(key: Key('h2h.fixture.${f.fixtureId}.hidden'))
+                    ? _HiddenBox(
+                        key: Key('h2h.fixture.${f.fixtureId}.hidden'),
+                        text: secret ? h2hSecretPick : h2hHiddenPick,
+                      )
                     : _PickBox(
                         key: Key('h2h.fixture.${f.fixtureId}.theirs'),
                         label: 'توقع الخصم',
@@ -489,9 +526,12 @@ class _PickBox extends StatelessWidget {
   }
 }
 
-/// The opponent's pick of a fixture that has not kicked off.
+/// The opponent's pick of a fixture that has not kicked off, or of any
+/// fixture while the opponent is secret.
 class _HiddenBox extends StatelessWidget {
-  const _HiddenBox({super.key});
+  const _HiddenBox({required this.text, super.key});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -505,7 +545,7 @@ class _HiddenBox extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           Flexible(
             child: Text(
-              h2hHiddenPick,
+              text,
               style: context.text.labelMedium?.copyWith(
                 color: t.textSecondary,
                 fontWeight: FontWeight.w700,

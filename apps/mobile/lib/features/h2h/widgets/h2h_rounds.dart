@@ -69,6 +69,7 @@ class H2hRoundTile extends StatelessWidget {
     final AppTokens t = context.tokens;
     final bool current = round.status == 'open' || round.status == 'live';
     final bool scored = round.myPoints != null;
+    final bool secret = round.opponentHidden;
     final bool showResult =
         round.result != null &&
         (round.status == 'settled' || round.status == 'live');
@@ -124,8 +125,10 @@ class H2hRoundTile extends StatelessWidget {
               children: <Widget>[
                 if (scored)
                   Text(
-                    '${h2hPointsLabel(round.myPoints!)} مقابل '
-                    '${h2hPointsLabel(round.opponentPoints ?? 0)}',
+                    secret
+                        ? 'نقاطك ${h2hPointsLabel(round.myPoints!)}'
+                        : '${h2hPointsLabel(round.myPoints!)} مقابل '
+                              '${h2hPointsLabel(round.opponentPoints ?? 0)}',
                     key: Key('h2h.round.${round.round}.score'),
                     style: context.text.titleSmall?.copyWith(
                       color: t.textPrimary,
@@ -138,6 +141,14 @@ class H2hRoundTile extends StatelessWidget {
                     live: round.status == 'live',
                   ),
               ],
+            ),
+          ],
+          if (secret && round.status != 'voided') ...<Widget>[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              h2hRevealLabel(round.revealsAt),
+              key: Key('h2h.round.${round.round}.reveal'),
+              style: context.text.bodySmall?.copyWith(color: t.textSecondary),
             ),
           ],
         ],

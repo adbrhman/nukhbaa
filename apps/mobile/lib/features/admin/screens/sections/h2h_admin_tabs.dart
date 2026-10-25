@@ -464,6 +464,15 @@ class _GroupRound extends ConsumerWidget {
             style: _heading(context),
           ),
         ),
+        if (data.matchesHidden)
+          Padding(
+            key: Key('admin.h2h.group.$leagueId.secret.$round'),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Text(
+              '$h2hSecretPairs ${h2hRevealLabel(data.revealsAt)}',
+              style: _muted(context),
+            ),
+          ),
         for (final H2hGroupMatchDto m in data.matches)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -862,7 +871,11 @@ class _PlayerMonth extends ConsumerWidget {
             child: Text(
               'الجولة ${r.round} · ${h2hDayLabel(r.day)} · '
               '${h2hRoundStatusLabel(r.status)} · '
-              '${r.opponentUserId == null ? h2hAverageOpponent : ((r.opponentName ?? '').isEmpty ? h2hUnnamed : r.opponentName!)}'
+              '${r.opponentHidden
+                  ? h2hSecretOpponent
+                  : r.opponentUserId == null
+                  ? h2hAverageOpponent
+                  : ((r.opponentName ?? '').isEmpty ? h2hUnnamed : r.opponentName!)}'
               '${r.myPoints == null ? '' : ' · ${r.myPoints} - ${r.opponentPoints == null ? '-' : h2hPointsLabel(r.opponentPoints!)}'}'
               '${r.result == null ? '' : ' · ${h2hResultLabel(r.result!)}'}',
               style: context.text.bodyMedium?.copyWith(
