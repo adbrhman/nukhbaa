@@ -6,21 +6,6 @@ import 'package:test/test.dart';
 const UserId _retired = UserId('00000000-0149-4000-8149-000000000001');
 const UserId _other = UserId('00000000-0149-4000-8149-000000000002');
 
-final class _Policy implements AppUpdatePolicyStore {
-  _Policy(this.result);
-
-  Result<int?> result;
-
-  @override
-  Future<Result<int?>> minSupportedBuild() async => result;
-
-  @override
-  Future<Result<int?>> setMinSupportedBuild({
-    required int? buildNumber,
-    required UserId by,
-  }) => throw UnimplementedError();
-}
-
 final class _Players implements RetiredBuildReader {
   _Players(this.result);
 
@@ -35,13 +20,10 @@ final class _Players implements RetiredBuildReader {
 }
 
 void main() {
-  test('with a minimum held, the players on a retired build are refused, '
-      'nobody else', () async {
+  test('switched on, the players on a retired build are refused, nobody '
+      'else', () async {
     final players = _Players(Result.ok(<UserId>{_retired}));
-    final refuse = RefuseRetiredBuild(
-      policy: _Policy(const Result.ok(800)),
-      players: players,
-    );
+    final refuse = RefuseRetiredBuild(enabled: true, players: players);
 
     expect(await refuse(_retired), isTrue);
     expect(await refuse(_other), isFalse);
@@ -49,35 +31,31 @@ void main() {
     expect(players.asked.first, DateTime.utc(2026, 10, 9, 21));
   });
 
-  test(
-    'without a minimum nobody is refused, and the list is not read',
-    () async {
-      final players = _Players(Result.ok(<UserId>{_retired}));
-      final refuse = RefuseRetiredBuild(
-        policy: _Policy(const Result.ok(null)),
-        players: players,
-      );
+  test('switched off, nobody is refused, and the list is not read', () async {
+    final players = _Players(Result.ok(<UserId>{_retired}));
+    final refuse = RefuseRetiredBuild(enabled: false, players: players);
 
-      expect(await refuse(_retired), isFalse);
-      expect(players.asked, isEmpty);
-    },
-  );
+    expect(await refuse(_retired), isFalse);
+    expect(players.asked, isEmpty);
+  });
 
-  test('an unreadable minimum or list refuses nobody', () async {
-    const down = Result<Never>.err(AppError.transient('db.down', 'down'));
-    expect(
-      await RefuseRetiredBuild(
-        policy: _Policy(down),
-        players: _Players(Result.ok(<UserId>{_retired})),
-      )(_retired),
-      isFalse,
+  test('an unreadable list refuses nobody', () async {
+    final refuse = RefuseRetiredBuild(
+      enabled: true,
+      players: _Players(
+        const Result.err(AppError.transient('db.down', 'down')),
+      ),
     );
-    expect(
-      await RefuseRetiredBuild(
-        policy: _Policy(const Result.ok(800)),
-        players: _Players(down),
-      )(_retired),
-      isFalse,
-    );
+
+    expect(await refuse(_retired), isFalse);
+  });
+
+  test('the switch reads on, true, yes or 1; anything else is off', () {
+    for (final raw in <String>['on', 'ON', ' true ', 'yes', '1']) {
+      expect(RefuseRetiredBuild.switchedOn(raw), isTrue, reason: raw);
+    }
+    for (final raw in <String?>[null, '', 'off', '0', 'no', 'soon']) {
+      expect(RefuseRetiredBuild.switchedOn(raw), isFalse, reason: raw);
+    }
   });
 }

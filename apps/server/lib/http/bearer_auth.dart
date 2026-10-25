@@ -34,8 +34,9 @@ import 'package:shared/shared.dart';
 ///
 /// A request that names no build (an app from before script 142) from a
 /// player whose app is older than the head-to-head tab is answered with the
-/// update message while an admin holds a minimum (script 149,
-/// [RefuseRetiredBuild]): those builds know no update screen of their own.
+/// update message while `NUKHBA_REFUSE_RETIRED_BUILDS` is on (scripts
+/// 149-150, [RefuseRetiredBuild]): those builds know no update screen of
+/// their own.
 ///
 /// Once the principal is known, a player's writes are counted against
 /// [writeLimiter] ([playerWriteLimiter] unless a test passes its own); one

@@ -6503,6 +6503,29 @@ minimum is held. This replaces script 148's server half.
   `retired_build_reader_test.dart`, `retired_build_players_query_test.sql`
   (PostgreSQL 16).
 
+### The 36 alone, by their own switch (script 150, 2026-10-26)
+
+The owner, on 2026-10-26: the update is for the 36 players on the oldest
+builds first, and for nobody else; a plan for the rest comes after. The
+dashboard's minimum cannot do that -- every build since batch 147 obeys it
+with its own update screen (43 players) -- so script 149's refusal no
+longer follows it.
+
+- `RefuseRetiredBuild(enabled:, players:)`: on while
+  `NUKHBA_REFUSE_RETIRED_BUILDS` is `on` (`true`, `yes`, `1`; Northflank
+  redeploys on a change), off when it is removed; the minimum plays no
+  part. The rest is 149's: the request names no build, the player's newest
+  Android session ran a build first seen before 2026-10-10 00:00 Riyadh.
+- To retire the 36 alone: remove `NUKHBA_BUILD_HEADER_SINCE` (while set it
+  refuses every build without the header, 87 of the 93 players listed),
+  set `NUKHBA_REFUSE_RETIRED_BUILDS=on`, and leave the dashboard's minimum
+  unset. The players inactive since before that list, on the same old
+  builds, are refused too when they come back.
+- The admin's confirmation says the minimum reaches the builds since 15
+  October only. Tests: `refuse_retired_build_test.dart` (the switch),
+  `retired_build_refusal_test.dart` (through `bearerAuth`: off, on, a build
+  that names itself, the web, one read for many requests).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

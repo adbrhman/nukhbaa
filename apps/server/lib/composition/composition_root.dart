@@ -421,7 +421,7 @@ final class CompositionRoot {
        refuseRetiredBuild =
            refuseRetiredBuild ??
            RefuseRetiredBuild(
-             policy: const _NoMinimumPolicyStore(),
+             enabled: false,
              players: const _NoRetiredPlayers(),
            ),
        login = login ?? _absentLogin(),
@@ -1873,9 +1873,8 @@ final class CompositionRoot {
   final SetMinSupportedBuild setMinSupportedBuild;
 
   /// Whether a request naming no build comes from a player on a build older
-  /// than the head-to-head tab, refused by `bearerAuth` while an admin holds
-  /// a minimum (script 149), over the same cached store the admin's button
-  /// writes.
+  /// than the head-to-head tab, refused by `bearerAuth` while
+  /// `NUKHBA_REFUSE_RETIRED_BUILDS` is on (scripts 149-150).
   final RefuseRetiredBuild refuseRetiredBuild;
 
   /// Logs in with email/password, exchanging credentials for a session.
@@ -2644,8 +2643,8 @@ final class CompositionRoot {
       http.Client(),
       base: MirroredBuildInfoRepository.baseFrom(env),
     );
-    // One cached store for the update check, the admin's button and the
-    // retired builds' refusal (scripts 148-149), asked on many requests.
+    // One cached store for the update check and the admin's button (script
+    // 148): the update check is asked on every launch and return.
     final appUpdatePolicy = CachedAppUpdatePolicyStore(
       PostgresAppUpdatePolicyStore(connection),
     );
@@ -3137,7 +3136,9 @@ final class CompositionRoot {
       getLatestBuild: getLatestBuild,
       setMinSupportedBuild: setMinSupportedBuild,
       refuseRetiredBuild: RefuseRetiredBuild(
-        policy: appUpdatePolicy,
+        enabled: RefuseRetiredBuild.switchedOn(
+          env['NUKHBA_REFUSE_RETIRED_BUILDS'],
+        ),
         players: CachedRetiredBuildReader(
           PostgresRetiredBuildReader(connection),
         ),
@@ -4128,21 +4129,6 @@ final class _UnwiredBuildInfoRepository implements BuildInfoRepository {
   @override
   Future<Result<LatestBuild>> fetchLatest() =>
       throw StateError('GetLatestBuild was not wired into this test root');
-}
-
-/// Backs the default [RefuseRetiredBuild] of [CompositionRoot.forTesting]:
-/// no minimum, so a test root refuses nobody.
-final class _NoMinimumPolicyStore implements AppUpdatePolicyStore {
-  const _NoMinimumPolicyStore();
-
-  @override
-  Future<Result<int?>> minSupportedBuild() async => const Result.ok(null);
-
-  @override
-  Future<Result<int?>> setMinSupportedBuild({
-    required int? buildNumber,
-    required UserId by,
-  }) => throw StateError('the default test minimum is read-only');
 }
 
 /// Backs the default [RefuseRetiredBuild] of [CompositionRoot.forTesting]:

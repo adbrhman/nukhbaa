@@ -76,7 +76,8 @@ AppError? oldBuildRefusal({
 /// Whether a request with [headers] comes from an app build that names no
 /// build (every build before script 142): no [appBuildHeader] and no
 /// `Origin` (the web build). Such a request is refused for a player on a
-/// retired build while an admin holds a minimum (script 149, `bearerAuth`).
+/// retired build while `NUKHBA_REFUSE_RETIRED_BUILDS` is on (scripts
+/// 149-150, `bearerAuth`).
 bool sentNoBuild(Map<String, String> headers) =>
     headers[appBuildHeader] == null && headers['origin'] == null;
 
