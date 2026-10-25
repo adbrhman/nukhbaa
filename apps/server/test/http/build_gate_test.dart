@@ -84,6 +84,9 @@ void main() {
     expect(body.code, 'app.update_required');
     expect(body.message, oldBuildMessage);
     expect(body.message, contains('links.nukhbaa.app'));
+    // The old app's own buttons, as its screens spell them (script 143).
+    expect(body.message, contains('«تسجيل الدخول بحساب آخر»'));
+    expect(body.message, contains('«يتوفر تحديث جديد»'));
     expect(RegExp('[؀-ۿ]').hasMatch(body.message), isTrue);
     expect(route.reached, 0);
   });

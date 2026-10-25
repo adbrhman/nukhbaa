@@ -994,6 +994,12 @@ jobs:
           if [ -f "nukhbaa-arm64-v8a-$SHORT_SHA.apk" ]; then
             cp "nukhbaa-arm64-v8a-$SHORT_SHA.apk" nukhbaa.apk
           fi
+          # The same for 32-bit phones (script 143), for a second button on
+          # the links page: releases/latest/download/nukhbaa-32bit.apk. No
+          # ABI in its name, so /app/latest-build never lists it.
+          if [ -f "nukhbaa-armeabi-v7a-$SHORT_SHA.apk" ]; then
+            cp "nukhbaa-armeabi-v7a-$SHORT_SHA.apk" nukhbaa-32bit.apk
+          fi
 
       - name: Publish an immutable per-build release
         uses: softprops/action-gh-release@v3

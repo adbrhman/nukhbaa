@@ -27,10 +27,18 @@ int? minServedBuild(Map<String, String> environment) {
 /// who ignores every notification still reads it on every screen and on the
 /// sign-in screen. The builds before 2026-10-18 are another Android app
 /// (`com.example.mobile`), so the new one installs beside them.
+///
+/// The old screen shows it as plain text, so the link cannot be tapped
+/// (script 143). It names the old app's own buttons first: «تسجيل الدخول
+/// بحساب آخر» clears the session on the phone and opens the sign-in screen,
+/// whose «يتوفر تحديث جديد» row (every build since 2026-10-13) installs the
+/// release matching the phone's processor; the builds before it have only
+/// the link.
 const String oldBuildMessage =
-    'نسختك من نُخبة قديمة ولم تعد تعمل. حمّل النسخة الجديدة من '
-    'links.nukhbaa.app ثم سجّل الدخول بنفس حسابك، واحذف التطبيق القديم إن '
-    'بقي. نقاطك وتوقعاتك محفوظة.';
+    'نسختك من نُخبة قديمة ولم تعد تعمل. للتحديث اضغط «تسجيل الدخول بحساب '
+    'آخر» ثم «يتوفر تحديث جديد». إن لم يظهر، حمّل النسخة الجديدة من '
+    'links.nukhbaa.app. بعدها افتح نُخبة الجديد وسجّل الدخول بنفس حسابك، '
+    'واحذف القديم إن بقي. نقاطك وتوقعاتك محفوظة.';
 
 /// The paths every build may still reach: the update check (the old
 /// builds' own "update available" row reads it) and the health checks.

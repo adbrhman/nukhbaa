@@ -6273,6 +6273,28 @@ header can be downloaded.
   as an invariant with its Arabic message), `http_client_test.dart`
   (mobile).
 
+### The refusal names the old app's own buttons; a 32-bit file (script 143, 2026-10-25)
+
+After `NUKHBA_BUILD_HEADER_SINCE=772` (2026-10-25) an old build shows the
+refusal on its session screen (`_ConnectionRetry`) as plain text, so the
+link cannot be tapped; and `nukhbaa.apk` on the links page is arm64 only,
+while `ops.frame_reports` names up to 8 players on low-end phones that may
+be 32-bit. Asked by the owner on 2026-10-25.
+
+- `oldBuildMessage` now leads with the old app's own buttons: «تسجيل
+  الدخول بحساب آخر» (clears the session on the phone even when the server
+  refuses, then the sign-in screen) and «يتوفر تحديث جديد» (the sign-in
+  row since 2026-10-13, d55f4b3; the in-app install picks the phone's
+  processor). Builds before it (8, among them 599e510 and 9d7c474) have
+  only the link, which stays in the message.
+- The release job also publishes `nukhbaa-32bit.apk` (the armeabi-v7a
+  file), copied after `checksums.json` like `nukhbaa.apk`; no ABI in its
+  name, so `GithubBuildInfoRepository` never lists it. The links page
+  (outside this repo) gets a second button:
+  `https://github.com/adbrhman/nukhbaa/releases/latest/download/nukhbaa-32bit.apk`.
+- Server and CI only; no APK change needed for the message. Test:
+  `build_gate_test.dart` (the two button names).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
