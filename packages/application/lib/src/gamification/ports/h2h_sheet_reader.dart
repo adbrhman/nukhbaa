@@ -36,6 +36,8 @@ final class H2hGroupSheet {
     required this.scores,
     required this.settledRounds,
     required this.voidRounds,
+    this.turns = const <int>[],
+    this.lastKickoffs = const <int, DateTime>{},
   });
 
   /// The seats, suspended members left out.
@@ -51,4 +53,14 @@ final class H2hGroupSheet {
   /// Numbers of the locked rounds with no fixture left (all moved, hidden or
   /// test): they count for nobody.
   final Set<int> voidRounds;
+
+  /// The group's secret order of the round-robin's turns
+  /// (`H2hLeaguePolicy.turnOf`, migration 0184); empty when the group has
+  /// none and plays them in order.
+  final List<int> turns;
+
+  /// When the last fixture that still counts kicks off, keyed by the number
+  /// of a locked round that has one (UTC). Once it has, no pick of the
+  /// round can change, and the opponents are named.
+  final Map<int, DateTime> lastKickoffs;
 }

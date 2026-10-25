@@ -108,6 +108,8 @@ final class H2hGroupRoundDto {
     required this.day,
     required this.status,
     required this.matches,
+    this.matchesHidden = false,
+    this.revealsAt,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -121,6 +123,8 @@ final class H2hGroupRoundDto {
         matches: [
           for (final m in _maps(json['matches'])) H2hGroupMatchDto.fromJson(m),
         ],
+        matchesHidden: (json['matches_hidden'] as bool?) ?? false,
+        revealsAt: json['reveals_at'] as String?,
       );
 
   /// The current schema version for this DTO.
@@ -135,8 +139,16 @@ final class H2hGroupRoundDto {
   /// `open`, `upcoming`, `live`, `settled` or `voided`.
   final String status;
 
-  /// Every match of the round in the caller's group, the caller's first.
+  /// Every match of the round in the caller's group, the caller's first;
+  /// empty while [matchesHidden].
   final List<H2hGroupMatchDto> matches;
+
+  /// True while the round's opponents are secret (until its last kickoff).
+  final bool matchesHidden;
+
+  /// When the secret opponents are named, ISO-8601 UTC (a live round's
+  /// last kickoff), or null.
+  final String? revealsAt;
 
   /// The schema version of this payload.
   final int schemaVersion;
@@ -148,5 +160,7 @@ final class H2hGroupRoundDto {
     'day': day,
     'status': status,
     'matches': [for (final m in matches) m.toJson()],
+    'matches_hidden': matchesHidden,
+    'reveals_at': revealsAt,
   };
 }

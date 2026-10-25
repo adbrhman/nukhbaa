@@ -5,6 +5,7 @@ import 'package:application/src/gamification/approve_h2h_round.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
+import 'package:application/src/gamification/ports/h2h_turn_keeper.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -39,6 +40,12 @@ final class H2hRoundsRun {
 /// affected: should the controls be unreadable, nothing is approved, the
 /// rounds due are still locked, and the error is returned after.
 ///
+/// **The secret order (0184)**, when [turns] is given: before anything is
+/// approved or locked, every group of the months whose rounds may lock gets
+/// its order if it has none and may take one. Should that fail, nothing is
+/// approved or locked in this run: a round locked first would keep a group
+/// in the order of the slots for good.
+///
 /// Never throws; a failure is returned and the next run repeats the work
 /// harmlessly (approval refuses a day already taken; locking is idempotent).
 final class RunH2hRounds {
@@ -48,15 +55,18 @@ final class RunH2hRounds {
     required H2hLeagueStore leagues,
     required IdGenerator idGenerator,
     H2hControlStore? controls,
+    H2hTurnKeeper? turns,
   }) : _rounds = rounds,
        _leagues = leagues,
        _ids = idGenerator,
-       _controls = controls;
+       _controls = controls,
+       _turns = turns;
 
   final H2hRoundStore _rounds;
   final H2hLeagueStore _leagues;
   final IdGenerator _ids;
   final H2hControlStore? _controls;
+  final H2hTurnKeeper? _turns;
 
   /// Approves and locks what is due as of [now].
   Future<Result<H2hRoundsRun>> call({required DateTime now}) async {
@@ -65,6 +75,20 @@ final class RunH2hRounds {
     var approved = 0;
     var locked = 0;
     final tomorrow = today.add(const Duration(days: 1));
+    final months = <DateTime>{
+      H2hLeaguePolicy.monthStartOf(today.subtract(const Duration(days: 1))),
+      H2hLeaguePolicy.monthStartOf(today),
+    };
+
+    final turns = _turns;
+    if (turns != null) {
+      for (final month in months) {
+        final ensured = await turns.ensureTurns(month);
+        if (ensured is Err<int>) {
+          return Result.err(ensured.error);
+        }
+      }
+    }
 
     var approving = true;
     var lead = H2hLeaguePolicy.autoApproveLead;
@@ -126,10 +150,6 @@ final class RunH2hRounds {
       }
     }
 
-    final months = <DateTime>{
-      H2hLeaguePolicy.monthStartOf(today.subtract(const Duration(days: 1))),
-      H2hLeaguePolicy.monthStartOf(today),
-    };
     for (final month in months) {
       final listResult = await _rounds.roundsOf(month);
       if (listResult is Err<List<H2hRound>>) {

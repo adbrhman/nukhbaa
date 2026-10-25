@@ -14,6 +14,8 @@ import 'package:domain/domain.dart';
 /// ahead by points alone; a settled one, the policy's result -- the same
 /// rules as [GetMyH2hGroupRound]. When [first] is a member, that member's
 /// match comes first and on its first side; the rest follow by seat.
+/// [turns] is the group's secret order of the turns
+/// (`H2hLeaguePolicy.turnOf`); empty, the rounds take them in order.
 List<H2hGroupPair> h2hGroupPairs({
   required List<H2hMember> members,
   required int capacity,
@@ -21,6 +23,7 @@ List<H2hGroupPair> h2hGroupPairs({
   required H2hRoundStatus status,
   required List<H2hRoundScore> scores,
   UserId? first,
+  List<int> turns = const <int>[],
 }) {
   final ordered = List<H2hMember>.of(members)
     ..sort((a, b) => a.slot.compareTo(b.slot));
@@ -35,6 +38,7 @@ List<H2hGroupPair> h2hGroupPairs({
       members: ordered,
       rounds: [round],
       scores: scores,
+      turns: turns,
     )) {
       if (standing.matches.isNotEmpty) {
         matchOf[standing.userId] = standing.matches.single;
@@ -52,7 +56,7 @@ List<H2hGroupPair> h2hGroupPairs({
     final candidate =
         bySlot[H2hLeaguePolicy.opponentSlot(
           slot: member.slot,
-          round: round.number,
+          round: H2hLeaguePolicy.turnOf(round: round.number, turns: turns),
           capacity: capacity,
         )];
     final opponent =

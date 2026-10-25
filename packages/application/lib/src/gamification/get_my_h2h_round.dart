@@ -88,8 +88,8 @@ final class H2hRoundFixtureView {
   /// The opponent's pick: only after kickoff, and null when they made none.
   final H2hFixturePick? theirs;
 
-  /// True while the opponent's pick is withheld because the fixture has not
-  /// kicked off. False with the group average.
+  /// True while the opponent's pick is withheld: the fixture has not kicked
+  /// off, or the opponent is still secret. False with the group average.
   final bool theirsHidden;
 }
 
@@ -131,13 +131,24 @@ final class MyH2hRoundDetail {
     required this.fixtures,
     required this.mine,
     required this.theirs,
+    this.opponentHidden = false,
+    this.revealsAt,
   });
 
   /// The round.
   final H2hRound round;
 
-  /// The caller's opponent, or null when they play the group average.
+  /// The caller's opponent, or null when they play the group average or
+  /// while the opponent is secret ([opponentHidden]).
   final UserId? opponentId;
+
+  /// True while the opponent is secret (`h2hOpponentSecret`): no opponent,
+  /// no pick of theirs and no count of theirs.
+  final bool opponentHidden;
+
+  /// When the secret opponent is named (a live round's last kickoff), or
+  /// null.
+  final DateTime? revealsAt;
 
   /// The caller's stored points in the round; null before it starts and
   /// when it is void.
@@ -182,6 +193,10 @@ final class MyH2hRoundDetail {
 ///
 /// **It reads; it does not score.** Points are the stored scores; the
 /// match, the opponent and the round state are [GetMyH2hLeague]'s.
+///
+/// **A secret opponent stays secret** (`MyH2hRound.opponentHidden`): no
+/// pick of anybody but the caller is read, every pick of theirs is withheld
+/// and only the caller's own points are shown.
 ///
 /// Never throws; returns a typed [Result]. A caller with no seat this month
 /// gets `h2h.not_seated`; a round number the month does not have,
@@ -240,6 +255,7 @@ final class GetMyH2hRound {
 
     final now = _clock.nowUtc().toUtc();
     final opponent = view.opponentId;
+    final secret = view.opponentHidden;
     final readResult = await _fixtures.fixturesOf(
       round: view.round,
       reader: league.readerId,
@@ -317,7 +333,7 @@ final class GetMyH2hRound {
           awayGoals: fixture.awayGoals,
           mine: fixture.mine,
           theirs: theirs,
-          theirsHidden: opponent != null && !started,
+          theirsHidden: secret || (opponent != null && !started),
         ),
       );
     }
@@ -327,7 +343,7 @@ final class GetMyH2hRound {
       MyH2hRoundDetail(
         round: view.round,
         opponentId: opponent,
-        myPoints: match?.points,
+        myPoints: match?.points ?? view.ownPoints,
         opponentPoints: match?.opponentPoints,
         phase: h2hRoundPhasesOf(league.rounds)[view.round.number]!,
         result: h2hShownResultOf(view),
@@ -346,6 +362,8 @@ final class GetMyH2hRound {
                 exact: theirExact,
                 doubles: theirDoubles,
               ),
+        opponentHidden: secret,
+        revealsAt: view.revealsAt,
       ),
     );
   }

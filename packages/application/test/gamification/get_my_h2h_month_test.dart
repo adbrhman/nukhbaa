@@ -21,7 +21,13 @@ H2hRound _round(int number, int day, {required bool locked}) => H2hRound(
 
 /// The October pilot, four seats. Round 1 settled, round 2 void, round 3
 /// live, rounds 4 and 5 not started.
-Future<MyH2hMonth> _read(DateTime now, {bool seated = true}) async {
+/// Round 3's last fixture that counts kicked off at 08:00 on the 10th
+/// unless [lastOfRound3] says otherwise.
+Future<MyH2hMonth> _read(
+  DateTime now, {
+  bool seated = true,
+  DateTime? lastOfRound3,
+}) async {
   final leagues = FakeH2hLeagueStore();
   if (seated) {
     leagues.seat(
@@ -72,6 +78,10 @@ Future<MyH2hMonth> _read(DateTime now, {bool seated = true}) async {
       ],
       settledRounds: const <int>{1},
       voidRounds: const <int>{2},
+      lastKickoffs: {
+        1: DateTime.utc(2026, 10, 4, 20),
+        3: lastOfRound3 ?? DateTime.utc(2026, 10, 10, 8),
+      },
     );
   final clock = AtClock(now);
   final result = await GetMyH2hMonth(
@@ -138,6 +148,21 @@ void main() {
       expect(month.results[3], H2hMatchResult.draw);
       expect(month.results.containsKey(4), isFalse);
       expect(month.results.containsKey(2), isFalse);
+    });
+
+    test('before a live round last kickoff it shows no result', () async {
+      final month = await _read(
+        DateTime.utc(2026, 10, 10, 9),
+        lastOfRound3: DateTime.utc(2026, 10, 10, 21),
+      );
+
+      final live = month.league.rounds.singleWhere((r) => r.round.number == 3);
+      expect(live.opponentHidden, isTrue);
+      expect(live.opponentId, isNull);
+      expect(live.match, isNull);
+      expect(live.ownPoints, 0);
+      expect(month.phases[3], H2hRoundPhase.live);
+      expect(month.results.containsKey(3), isFalse);
     });
 
     test('first kickoffs of the round days only', () async {

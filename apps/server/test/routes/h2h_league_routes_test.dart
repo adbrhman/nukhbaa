@@ -282,6 +282,11 @@ final _sheet = H2hGroupSheet(
   ],
   settledRounds: const {1},
   voidRounds: const {3},
+  // Round 2's last fixture kicked off on the 4th: its opponent is named.
+  lastKickoffs: {
+    1: DateTime.utc(2026, 11, 1, 20),
+    2: DateTime.utc(2026, 11, 4, 20),
+  },
 );
 
 CompositionRoot _root({
@@ -439,9 +444,14 @@ void main() {
         [for (final r in rounds) r['day']],
         ['2026-11-01', '2026-11-04', '2026-11-07', '2026-11-12'],
       );
+      // The round not started names nobody: its opponent is secret.
       expect(
         [for (final r in rounds) r['opponent_user_id']],
-        [_id(2), _id(1), _id(3), _id(2)],
+        [_id(2), _id(1), _id(3), null],
+      );
+      expect(
+        [for (final r in rounds) r['opponent_hidden']],
+        [false, false, false, true],
       );
       expect(rounds.first['my_points'], 10);
       expect(rounds.first['opponent_points'], 6.0);

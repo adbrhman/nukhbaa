@@ -372,9 +372,12 @@ final class H2hDrawSeat {
 /// day of exactly five is a fill round, approved only by an admin to
 /// complete the round-robin. At most 19 rounds a month.
 ///
-/// **One opponent a round, by a fixed schedule.** Each member holds a slot
-/// of a 20-seat round-robin (the circle method): rounds 1 to 19 meet every
-/// other seat once. Nothing is random.
+/// **One opponent a round, by a fixed schedule in a secret order.** Each
+/// member holds a slot of a 20-seat round-robin (the circle method): its 19
+/// turns meet every other seat once. The rounds take the turns in the
+/// group's own order (`turnOf`, migration 0184, decided 2026-10-25), drawn
+/// at random and never sent to a client, so nobody can work out an opponent
+/// ahead of time; a group without one takes them in order.
 ///
 /// **The round.** Both played: more points wins, equal points draw. One
 /// played: that one wins, whatever the score. Neither played: both lose. An
@@ -470,6 +473,17 @@ final class H2hLeaguePolicy {
   /// the next month.
   static bool isEligible(int activeDays) => activeDays >= minActiveDays;
 
+  /// The turn of the round-robin that round [round] plays, by the group's
+  /// secret order [turns] (a permutation of 1 .. capacity - 1, migration
+  /// 0184), counted again from its start past its end. An empty [turns] is
+  /// the order of the slots themselves: round n plays turn n.
+  static int turnOf({required int round, required List<int> turns}) {
+    if (turns.isEmpty) {
+      return round;
+    }
+    return turns[(round - 1) % turns.length];
+  }
+
   /// The slot [slot] meets in [round] of a group of [capacity] seats.
   ///
   /// The circle method: slot 0 stays put and the others rotate one place a
@@ -518,12 +532,14 @@ final class H2hLeaguePolicy {
   /// Every member's month over [rounds], oldest first.
   ///
   /// [scores] holds what members did in those rounds; a member missing from
-  /// a round did not play it.
+  /// a round did not play it. [turns] is the group's secret order of the
+  /// round-robin's turns (`turnOf`); empty, the rounds take them in order.
   static List<H2hStanding> table({
     required int capacity,
     required List<H2hMember> members,
     required List<H2hRoundRef> rounds,
     required List<H2hRoundScore> scores,
+    List<int> turns = const <int>[],
   }) {
     final bySlot = <int, H2hMember>{
       for (final member in members) member.slot: member,
@@ -553,7 +569,7 @@ final class H2hLeaguePolicy {
         final candidate =
             bySlot[opponentSlot(
               slot: member.slot,
-              round: round.number,
+              round: turnOf(round: round.number, turns: turns),
               capacity: capacity,
             )];
         final opponent = candidate != null && candidate.userId != member.userId

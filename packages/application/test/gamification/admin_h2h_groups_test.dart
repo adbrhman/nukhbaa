@@ -178,7 +178,38 @@ void main() {
 
       final group = (result as Ok<H2hAdminGroupRound>).value;
       expect(group.phase, H2hRoundPhase.open);
-      expect(group.pairs.every((p) => p.winner == null), isTrue);
+      // Secret to the admins too: they play the league as well.
+      expect(group.pairsHidden, isTrue);
+      expect(group.pairs, isEmpty);
+      expect(group.revealsAt, isNull);
+    });
+
+    test('the group secret order decides the pairs', () async {
+      final w = _world();
+      final plain = w.sheets.sheets[_groupB]!;
+      // A group of twenty seats, four taken. In the slots' order round 1
+      // meets no one; played as turn 3 it pairs slots 0-2 and 1-3.
+      w.sheets.sheets[_groupB] = H2hGroupSheet(
+        members: plain.members,
+        scores: plain.scores,
+        settledRounds: plain.settledRounds,
+        voidRounds: plain.voidRounds,
+        turns: [3, 1, 2, for (var t = 4; t <= 19; t++) t],
+      );
+      final result = await AdminGetH2hGroupRound(
+        leagues: w.leagues,
+        rounds: w.rounds,
+        sheets: w.sheets,
+        profiles: NamingProfiles(),
+        clock: AtClock(_now),
+      )(principal: admin, leagueId: _groupB, round: 1);
+
+      final group = (result as Ok<H2hAdminGroupRound>).value;
+      expect(group.pairsHidden, isFalse);
+      expect(group.pairs.map((p) => (p.home, p.away)).toList(), [
+        (userNo(5), userNo(7)),
+        (userNo(6), userNo(8)),
+      ]);
     });
 
     test('an unknown group or round is refused', () async {

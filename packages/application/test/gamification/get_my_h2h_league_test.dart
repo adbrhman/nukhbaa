@@ -88,7 +88,13 @@ void main() {
     final u3 = userNo(3);
     final u4 = userNo(4);
 
-    Future<MyH2hLeague> read() async {
+    // Round 2's last fixture that counts kicks off at 20:00 on the 5th.
+    final lastOfRound2 = DateTime.utc(2026, 11, 5, 20);
+
+    Future<MyH2hLeague> read({
+      DateTime? now,
+      List<int> turns = const <int>[],
+    }) async {
       final leagues = FakeH2hLeagueStore()
         ..seat(
           _me,
@@ -128,12 +134,14 @@ void main() {
         ],
         settledRounds: const <int>{1},
         voidRounds: const <int>{},
+        turns: turns,
+        lastKickoffs: {1: DateTime.utc(2026, 11, 3, 20), 2: lastOfRound2},
       );
       final result = await _useCase(
         leagues: leagues,
         rounds: rounds,
         sheets: sheets,
-        now: DateTime.utc(2026, 11, 5, 15),
+        now: now ?? DateTime.utc(2026, 11, 5, 15),
       ).call(principal: player);
       return (result as Ok<MyH2hLeague>).value;
     }
@@ -153,22 +161,74 @@ void main() {
       expect(reading.myRank, 1);
     });
 
-    test(
-      'each round shows where it stands and whom the caller meets',
-      () async {
-        final reading = await read();
+    test('each round shows where it stands; only the settled one names the '
+        'opponent before the live one last kickoff', () async {
+      final reading = await read();
 
-        expect(reading.rounds.map((r) => r.status).toList(), [
-          H2hRoundStatus.settled,
-          H2hRoundStatus.live,
-          H2hRoundStatus.upcoming,
+      expect(reading.rounds.map((r) => r.status).toList(), [
+        H2hRoundStatus.settled,
+        H2hRoundStatus.live,
+        H2hRoundStatus.upcoming,
+      ]);
+      expect(reading.rounds.map((r) => r.opponentId).toList(), [
+        u4,
+        null,
+        null,
+      ]);
+      expect(reading.rounds.map((r) => r.opponentHidden).toList(), [
+        false,
+        true,
+        true,
+      ]);
+      expect(reading.rounds.map((r) => r.revealsAt).toList(), [
+        null,
+        lastOfRound2,
+        null,
+      ]);
+      expect(reading.rounds[0].match!.result, H2hMatchResult.win);
+      // The live round: the caller's own points, no match against anyone.
+      expect(reading.rounds[1].match, isNull);
+      expect(reading.rounds[1].ownPoints, 1);
+      expect(reading.rounds[2].match, isNull);
+      expect(reading.rounds[2].ownPoints, isNull);
+    });
+
+    test('at the live round last kickoff its opponent is named', () async {
+      final reading = await read(now: lastOfRound2);
+
+      expect(reading.rounds.map((r) => r.opponentId).toList(), [u4, u2, null]);
+      expect(reading.rounds[1].opponentHidden, isFalse);
+      expect(reading.rounds[1].revealsAt, isNull);
+      expect(reading.rounds[1].ownPoints, isNull);
+      expect(reading.rounds[1].match!.points, 1);
+      expect(reading.rounds[1].match!.opponentPoints, 4);
+      expect(reading.rounds[1].match!.result, H2hMatchResult.loss);
+      expect(reading.rounds[2].opponentHidden, isTrue);
+    });
+
+    test(
+      'the group secret order decides the opponents and the table',
+      () async {
+        // Round 1 plays turn 3 (0-2, 1-3), round 2 turn 1 (0-3, 1-2).
+        final reading = await read(now: lastOfRound2, turns: const [3, 1, 2]);
+
+        expect(reading.rounds.map((r) => r.opponentId).toList(), [
+          u3,
+          u4,
+          null,
         ]);
-        expect(reading.rounds.map((r) => r.opponentId).toList(), [u4, u2, u3]);
+        // Round 1 in that order: me 5 beat u3's 3, u4's 2 lost to u2's 3.
+        expect(reading.rounds[0].match!.opponentPoints, 3);
         expect(reading.rounds[0].match!.result, H2hMatchResult.win);
-        expect(reading.rounds[1].match!.points, 1);
-        expect(reading.rounds[1].match!.opponentPoints, 4);
-        expect(reading.rounds[1].match!.result, H2hMatchResult.loss);
-        expect(reading.rounds[2].match, isNull);
+        final byUser = {
+          for (final p in reading.placings) p.standing.userId: p.standing,
+        };
+        expect(byUser[u2]!.leaguePoints, 3);
+        expect(byUser[u3]!.leaguePoints, 0);
+        expect(byUser[u4]!.leaguePoints, 0);
+        // Round 2 in that order: me 1 against u4, who has no score.
+        expect(reading.rounds[1].match!.opponentPoints, 0);
+        expect(reading.rounds[1].match!.result, H2hMatchResult.win);
       },
     );
 

@@ -5,6 +5,7 @@ import 'package:infrastructure/src/gamification/postgres_h2h_draw_source.dart';
 import 'package:infrastructure/src/gamification/postgres_h2h_league_store.dart';
 import 'package:infrastructure/src/gamification/postgres_h2h_round_store.dart';
 import 'package:infrastructure/src/gamification/postgres_h2h_sheet_reader.dart';
+import 'package:infrastructure/src/gamification/postgres_h2h_turn_keeper.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -87,7 +88,8 @@ void main() {
       expect(connection.sqls, hasLength(1));
     });
 
-    test('a draw writes the month, each group and each seat', () async {
+    test('a draw writes the month, each group, each seat and then the '
+        'groups secret orders', () async {
       final connection = _answers([
         [
           {'inserted': 1},
@@ -116,7 +118,9 @@ void main() {
       );
 
       expect((result as Ok<int>).value, 2);
-      expect(connection.sqls, hasLength(4));
+      expect(connection.sqls, hasLength(5));
+      expect(connection.sqls.last, PostgresH2hTurnKeeper.ensureSql);
+      expect(connection.parameters.last, {'month': '2026-11-01'});
       expect(connection.parameters[0]['is_pilot'], isTrue);
       expect(connection.parameters[0]['seated'], 2);
       expect(connection.parameters[1]['division'], 1);
@@ -309,6 +313,34 @@ void main() {
     });
   });
 
+  group('PostgresH2hTurnKeeper', () {
+    test('orders the groups of the month, counting what it wrote', () async {
+      final connection = _answers([
+        [
+          {'league_id': _league},
+        ],
+      ]);
+
+      final result = await PostgresH2hTurnKeeper(
+        connection,
+      ).ensureTurns(DateTime.utc(2026, 11));
+
+      expect((result as Ok<int>).value, 1);
+      expect(connection.sqls.single, PostgresH2hTurnKeeper.ensureSql);
+      expect(connection.parameters.single, {'month': '2026-11-01'});
+    });
+
+    test('a failed write is returned as it is', () async {
+      final result = await PostgresH2hTurnKeeper(
+        _FakeConnection([
+          const Result.err(AppError.transient('db.down', 'unreachable')),
+        ]),
+      ).ensureTurns(DateTime.utc(2026, 11));
+
+      expect((result as Err<int>).error.code, 'db.down');
+    });
+  });
+
   group('PostgresH2hSheetReader', () {
     test('maps members, scores and which rounds are settled or void', () async {
       final connection = _answers([
@@ -330,9 +362,22 @@ void main() {
           },
         ],
         [
-          {'round_no': 1, 'fixtures': 9, 'settled': 9},
-          {'round_no': 2, 'fixtures': 8, 'settled': 3},
-          {'round_no': 3, 'fixtures': 0, 'settled': 0},
+          {
+            'round_no': 1,
+            'fixtures': 9,
+            'settled': 9,
+            'last_kickoff': DateTime.utc(2026, 11, 3, 19),
+          },
+          {
+            'round_no': 2,
+            'fixtures': 8,
+            'settled': 3,
+            'last_kickoff': '2026-11-05T20:00:00Z',
+          },
+          {'round_no': 3, 'fixtures': 0, 'settled': 0, 'last_kickoff': null},
+        ],
+        [
+          {'turns': '3,1,2'},
         ],
       ]);
 
@@ -347,6 +392,52 @@ void main() {
       expect(sheet.scores.single.present, isTrue);
       expect(sheet.settledRounds, {1});
       expect(sheet.voidRounds, {3});
+      expect(sheet.lastKickoffs, {
+        1: DateTime.utc(2026, 11, 3, 19),
+        2: DateTime.utc(2026, 11, 5, 20),
+      });
+      expect(sheet.turns, [3, 1, 2]);
+      expect(connection.sqls.last, PostgresH2hSheetReader.turnsSql);
+      expect(connection.parameters.last, {'league_id': _league});
+    });
+
+    test('a group without an order reads none', () async {
+      final result =
+          await PostgresH2hSheetReader(
+            _answers([
+              <Map<String, dynamic>>[],
+              <Map<String, dynamic>>[],
+              <Map<String, dynamic>>[],
+              <Map<String, dynamic>>[],
+            ]),
+          ).sheetOf(
+            leagueId: const H2hLeagueId(_league),
+            rounds: const <H2hRound>[],
+          );
+
+      expect((result as Ok<H2hGroupSheet>).value.turns, isEmpty);
+    });
+
+    test('a corrupt order is an error, never a guess', () async {
+      final result =
+          await PostgresH2hSheetReader(
+            _answers([
+              <Map<String, dynamic>>[],
+              <Map<String, dynamic>>[],
+              <Map<String, dynamic>>[],
+              [
+                {'turns': '3,x,2'},
+              ],
+            ]),
+          ).sheetOf(
+            leagueId: const H2hLeagueId(_league),
+            rounds: const <H2hRound>[],
+          );
+
+      expect(
+        (result as Err<H2hGroupSheet>).error.code,
+        'gamification.h2h_row_corrupt',
+      );
     });
 
     test('maps active days', () async {

@@ -115,6 +115,7 @@ export 'src/gamification/ports/h2h_month_report_reader.dart';
 export 'src/gamification/ports/h2h_round_fixture_reader.dart';
 export 'src/gamification/ports/h2h_round_store.dart';
 export 'src/gamification/ports/h2h_sheet_reader.dart';
+export 'src/gamification/ports/h2h_turn_keeper.dart';
 export 'src/gamification/ports/match_day_settlement_store.dart';
 export 'src/gamification/ports/player_badge_reader.dart';
 export 'src/gamification/ports/prediction_outcome_reader.dart';

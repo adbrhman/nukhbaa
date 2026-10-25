@@ -69,6 +69,8 @@ final class MyH2hGroupRound {
     required this.readerId,
     required this.pairs,
     required this.profiles,
+    this.pairsHidden = false,
+    this.revealsAt,
   });
 
   /// The round.
@@ -76,6 +78,14 @@ final class MyH2hGroupRound {
 
   /// Its phase in the month.
   final H2hRoundPhase phase;
+
+  /// True while the round's opponents are secret (`h2hOpponentSecret`):
+  /// [pairs] is then empty.
+  final bool pairsHidden;
+
+  /// When the secret opponents are named (a live round's last kickoff), or
+  /// null.
+  final DateTime? revealsAt;
 
   /// The user this reading was made for.
   final UserId readerId;
@@ -92,6 +102,10 @@ final class MyH2hGroupRound {
 /// **It reads; it does not score.** Points are the stored scores the table
 /// is built from (`H2hSheetReader`), and the pairs are
 /// `H2hLeaguePolicy.opponentSlot`'s.
+///
+/// **Nobody's opponent before the round's last kickoff**
+/// (`h2hOpponentSecret`): until then the round has no pairs at all. The
+/// pairs come from the group's secret order of the turns (migration 0184).
 ///
 /// **Nobody's predictions, and nobody's absence, before it is over.** No
 /// pick is read here at all. A live round shows who is ahead by points
@@ -151,6 +165,19 @@ final class GetMyH2hGroupRound {
         ),
       );
     }
+    if (view.opponentHidden) {
+      return Result.ok(
+        MyH2hGroupRound(
+          round: view.round,
+          phase: h2hRoundPhasesOf(league.rounds)[view.round.number]!,
+          readerId: league.readerId,
+          pairs: const <H2hGroupPair>[],
+          profiles: league.profiles,
+          pairsHidden: true,
+          revealsAt: view.revealsAt,
+        ),
+      );
+    }
 
     final sheetResult = await _sheets.sheetOf(
       leagueId: seat.leagueId,
@@ -175,6 +202,7 @@ final class GetMyH2hGroupRound {
         members: members,
         rounds: [view.round.ref],
         scores: sheet.scores,
+        turns: sheet.turns,
       )) {
         if (standing.matches.isNotEmpty) {
           matchOf[standing.userId] = standing.matches.single;
@@ -193,7 +221,7 @@ final class GetMyH2hGroupRound {
       final candidate =
           bySlot[H2hLeaguePolicy.opponentSlot(
             slot: member.slot,
-            round: round,
+            round: H2hLeaguePolicy.turnOf(round: round, turns: sheet.turns),
             capacity: seat.capacity,
           )];
       final opponent =

@@ -145,11 +145,13 @@ H2hRoundViewDto _roundViewToDto(MyH2hRound view, MyH2hLeague league) {
     opponentAvatarUrl: opponent == null
         ? null
         : _avatarUrlOf(opponent, league.profiles),
-    myPoints: match?.points,
+    myPoints: match?.points ?? (played ? view.ownPoints : null),
     opponentPoints: match?.opponentPoints,
     // A live round shows points only: the policy's live result would
     // tell whether the opponent predicted fixtures not kicked off yet.
     result: h2hShownResultOf(view)?.wireName,
+    opponentHidden: view.opponentHidden,
+    revealsAt: view.revealsAt?.toUtc().toIso8601String(),
   );
 }
 
@@ -200,6 +202,8 @@ MyH2hLeagueDto myH2hMonthToDto(MyH2hMonth month) {
           firstKickoff: month.firstKickoffs[round.round]
               ?.toUtc()
               .toIso8601String(),
+          opponentHidden: round.opponentHidden,
+          revealsAt: round.revealsAt,
         ),
     ],
   );
@@ -232,6 +236,8 @@ MyH2hRoundDto myH2hRoundToDto(MyH2hRoundDetail detail) {
     fixtures: [
       for (final fixture in detail.fixtures) _roundFixtureToDto(fixture),
     ],
+    opponentHidden: detail.opponentHidden,
+    revealsAt: detail.revealsAt?.toUtc().toIso8601String(),
   );
 }
 
@@ -276,6 +282,8 @@ H2hGroupRoundDto h2hGroupRoundToDto(MyH2hGroupRound group) => H2hGroupRoundDto(
   day: isoDayOf(group.round.day),
   status: group.phase.name,
   matches: [for (final pair in group.pairs) _groupMatchToDto(pair, group)],
+  matchesHidden: group.pairsHidden,
+  revealsAt: group.revealsAt?.toUtc().toIso8601String(),
 );
 
 H2hGroupMatchDto _groupMatchToDto(H2hGroupPair pair, MyH2hGroupRound group) {

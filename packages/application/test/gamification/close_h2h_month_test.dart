@@ -165,6 +165,28 @@ void main() {
       },
     );
 
+    test('judges the month in the group secret order', () async {
+      final world = _world();
+      final plain = world.sheets.sheets[_league]!;
+      // Round 1 played as turn 2: seats 0 and 1 meet; in the slots' order
+      // both would have played the average.
+      world.sheets.sheets[_league] = H2hGroupSheet(
+        members: plain.members,
+        scores: plain.scores,
+        settledRounds: plain.settledRounds,
+        voidRounds: plain.voidRounds,
+        turns: [2, 1, for (var t = 3; t <= 19; t++) t],
+      );
+      final events = RecordingEvents();
+
+      await _close(world, events).call(now: _afterGrace);
+
+      final byUser = {for (final e in events.recorded) e.userId: e.payload};
+      // User 2's 6 lost to user 1's 10; against the average (4.75) it won.
+      expect(byUser[userNo(1)]!['league_points'], 3);
+      expect(byUser[userNo(2)]!['league_points'], 0);
+    });
+
     test('waits for unsettled rounds, then judges without them', () async {
       final world = _world(settled: false);
       final events = RecordingEvents();

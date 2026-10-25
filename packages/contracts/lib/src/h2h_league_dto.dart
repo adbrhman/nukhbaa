@@ -122,6 +122,8 @@ final class H2hRoundViewDto {
     this.opponentPoints,
     this.result,
     this.firstKickoff,
+    this.opponentHidden = false,
+    this.revealsAt,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -138,6 +140,8 @@ final class H2hRoundViewDto {
         opponentPoints: (json['opponent_points'] as num?)?.toDouble(),
         result: json['result'] as String?,
         firstKickoff: json['first_kickoff'] as String?,
+        opponentHidden: (json['opponent_hidden'] as bool?) ?? false,
+        revealsAt: json['reveals_at'] as String?,
       );
 
   /// 1-based round of the month.
@@ -153,7 +157,8 @@ final class H2hRoundViewDto {
   /// The round's fixtures: frozen once it started.
   final int fixtureCount;
 
-  /// The opponent, or null when the caller plays the group average.
+  /// The opponent, or null when the caller plays the group average or
+  /// while the opponent is secret ([opponentHidden]).
   final String? opponentUserId;
 
   /// The opponent's display name, or null with the average.
@@ -174,6 +179,15 @@ final class H2hRoundViewDto {
   /// The round's first kickoff, ISO-8601 UTC, when known.
   final String? firstKickoff;
 
+  /// True while the opponent is secret (until the round's last kickoff):
+  /// no opponent, no opponent points and no result are sent, whoever the
+  /// opponent is. Never the group average.
+  final bool opponentHidden;
+
+  /// When a secret opponent is named, ISO-8601 UTC: the last kickoff of a
+  /// live round; null for a round not started, and when not secret.
+  final String? revealsAt;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'round': round,
@@ -187,6 +201,8 @@ final class H2hRoundViewDto {
     'opponent_points': opponentPoints,
     'result': result,
     'first_kickoff': firstKickoff,
+    'opponent_hidden': opponentHidden,
+    'reveals_at': revealsAt,
   };
 }
 

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:domain/domain.dart';
 import 'package:test/test.dart';
 
@@ -236,6 +238,47 @@ void main() {
     });
   });
 
+  group('H2hLeaguePolicy.turnOf', () {
+    test('without an order, round n plays turn n', () {
+      for (var round = 1; round <= 19; round++) {
+        expect(
+          H2hLeaguePolicy.turnOf(round: round, turns: const <int>[]),
+          round,
+        );
+      }
+    });
+
+    test('with an order, round n plays its n-th turn, again past the end', () {
+      const turns = [3, 1, 2];
+      expect(
+        [
+          for (var round = 1; round <= 7; round++)
+            H2hLeaguePolicy.turnOf(round: round, turns: turns),
+        ],
+        [3, 1, 2, 3, 1, 2, 3],
+      );
+    });
+
+    test('any order of the 19 turns still meets every pair once', () {
+      const capacity = H2hLeaguePolicy.groupCapacity;
+      final turns = [for (var t = 19; t >= 1; t--) t]..shuffle(Random(7));
+      final met = <String>{};
+      for (var round = 1; round < capacity; round++) {
+        for (var slot = 0; slot < capacity; slot++) {
+          final other = H2hLeaguePolicy.opponentSlot(
+            slot: slot,
+            round: H2hLeaguePolicy.turnOf(round: round, turns: turns),
+            capacity: capacity,
+          );
+          final low = slot < other ? slot : other;
+          final high = slot < other ? other : slot;
+          met.add('$low-$high');
+        }
+      }
+      expect(met, hasLength(capacity * (capacity - 1) ~/ 2));
+    });
+  });
+
   group('H2hLeaguePolicy.cut', () {
     test('twenty to a division, the rest to the open one', () {
       expect(H2hLeaguePolicy.seedDivision(0), H2hDivision.first);
@@ -312,6 +355,27 @@ void main() {
         scores: scores,
       ),
     );
+
+    test('the secret order decides who met whom', () {
+      // Turns 3, 1, 2: round 1 is 0-2 / 1-3, round 2 is 0-3 / 1-2, round 3
+      // is 0-1 / 2-3.
+      final a = H2hLeaguePolicy.table(
+        capacity: 4,
+        members: members,
+        rounds: rounds,
+        scores: scores,
+        turns: const [3, 1, 2],
+      ).singleWhere((s) => s.userId == const UserId('a'));
+      expect(a.matches.map((m) => m.opponentId).toList(), const [
+        UserId('c'),
+        UserId('d'),
+        UserId('b'),
+      ]);
+      // Round 1: a's 5 against c, who did not play.
+      expect(a.matches.first.result, H2hMatchResult.win);
+      // Round 3: a and b both absent.
+      expect(a.matches.last.result, H2hMatchResult.loss);
+    });
 
     test('more points win, equal points draw, both absent both lose', () {
       final a = table().first.standing;

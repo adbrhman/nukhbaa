@@ -82,6 +82,8 @@ final class H2hAdminGroupRound {
     required this.phase,
     required this.pairs,
     required this.profiles,
+    this.pairsHidden = false,
+    this.revealsAt,
   });
 
   /// The round.
@@ -90,8 +92,16 @@ final class H2hAdminGroupRound {
   /// Its phase in the month.
   final H2hRoundPhase phase;
 
-  /// The matches, by seat.
+  /// The matches, by seat; empty while [pairsHidden].
   final List<H2hGroupPair> pairs;
+
+  /// True while the round's opponents are secret to the admins too
+  /// (`h2hOpponentSecret`): admins play the league as well.
+  final bool pairsHidden;
+
+  /// When the secret opponents are named (a live round's last kickoff), or
+  /// null.
+  final DateTime? revealsAt;
 
   /// The name and picture version of each member.
   final Map<UserId, WeeklyLeagueMemberProfile> profiles;
@@ -204,6 +214,7 @@ final class AdminGetH2hGroups {
               members: sheet.members,
               rounds: settled,
               scores: sheet.scores,
+              turns: sheet.turns,
             ),
           ),
           promotionZone: divisionGroups <= 1
@@ -234,7 +245,9 @@ final class AdminGetH2hGroups {
 
 /// Reads every match of round `round` in group `leagueId` of the month
 /// containing `day`. Admin only. Never throws; a group or round the month
-/// does not have is `h2h.group_unknown` / `h2h.round_unknown`.
+/// does not have is `h2h.group_unknown` / `h2h.round_unknown`. Until the
+/// round's last kickoff the pairs are secret here too (`h2hOpponentSecret`):
+/// the admins play the league, and the suspicious matches are read after.
 final class AdminGetH2hGroupRound {
   /// Creates the use-case over its collaborators.
   const AdminGetH2hGroupRound({
@@ -333,17 +346,29 @@ final class AdminGetH2hGroupRound {
           match: null,
         ),
     ];
+    final status = _statusOf(target, sheet);
+    final lastKickoff = sheet.lastKickoffs[target.number];
+    final secret = h2hOpponentSecret(
+      status: status,
+      lastKickoff: lastKickoff,
+      now: _clock.nowUtc(),
+    );
     return Result.ok(
       H2hAdminGroupRound(
         round: target,
         phase: h2hRoundPhasesOf(views)[target.number]!,
-        pairs: h2hGroupPairs(
-          members: sheet.members,
-          capacity: ref.capacity,
-          round: target.ref,
-          status: _statusOf(target, sheet),
-          scores: sheet.scores,
-        ),
+        pairs: secret
+            ? const <H2hGroupPair>[]
+            : h2hGroupPairs(
+                members: sheet.members,
+                capacity: ref.capacity,
+                round: target.ref,
+                status: status,
+                scores: sheet.scores,
+                turns: sheet.turns,
+              ),
+        pairsHidden: secret,
+        revealsAt: secret && status == H2hRoundStatus.live ? lastKickoff : null,
         profiles: (profilesResult as Ok<Map<UserId, WeeklyLeagueMemberProfile>>)
             .value,
       ),

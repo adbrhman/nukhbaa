@@ -44,6 +44,28 @@ enum H2hRoundStatus {
   voided,
 }
 
+/// Whether the opponents of a round in [status] are still secret at [now]
+/// (decided 2026-10-25, option D): until the last fixture that counts
+/// ([lastKickoff], the sheet's) has kicked off, by the rule that closes
+/// predictions (`FixtureLock`: at or after the kickoff). After it no pick of
+/// the round can change. A round not started is secret; a settled or void
+/// one is not; a live one without a kickoff stays secret.
+bool h2hOpponentSecret({
+  required H2hRoundStatus status,
+  required DateTime? lastKickoff,
+  required DateTime now,
+}) {
+  switch (status) {
+    case H2hRoundStatus.upcoming:
+      return true;
+    case H2hRoundStatus.settled:
+    case H2hRoundStatus.voided:
+      return false;
+    case H2hRoundStatus.live:
+      return lastKickoff == null || now.toUtc().isBefore(lastKickoff.toUtc());
+  }
+}
+
 /// One round as the caller sees it.
 final class MyH2hRound {
   /// Creates a round view.
@@ -52,6 +74,9 @@ final class MyH2hRound {
     required this.status,
     required this.opponentId,
     required this.match,
+    this.opponentHidden = false,
+    this.revealsAt,
+    this.ownPoints,
   });
 
   /// The round.
@@ -61,11 +86,26 @@ final class MyH2hRound {
   final H2hRoundStatus status;
 
   /// The caller's opponent in it, or null when the opposite seat is empty
-  /// and the caller plays the group average.
+  /// and the caller plays the group average, or while the opponent is
+  /// secret ([opponentHidden]).
   final UserId? opponentId;
 
-  /// The caller's match so far: null while upcoming or voided.
+  /// The caller's match so far: null while upcoming or voided, and while
+  /// the opponent is secret.
   final H2hMatch? match;
+
+  /// True while the opponent is secret (`h2hOpponentSecret`): [opponentId]
+  /// and [match] are then null, whoever the opponent is -- never read as
+  /// the group average.
+  final bool opponentHidden;
+
+  /// When the secret opponent is named: the last kickoff of a live round.
+  /// Null when not secret, and for a round not started.
+  final DateTime? revealsAt;
+
+  /// The caller's own stored points in a live round whose opponent is
+  /// still secret; null otherwise ([match] carries them).
+  final int? ownPoints;
 }
 
 /// The caller's head-to-head month.
@@ -126,6 +166,12 @@ final class MyH2hLeague {
 /// **A pilot month is visible only to its members**: anybody else reads
 /// [H2hLeagueState.notStarted] until the league opens.
 ///
+/// **The opponent is secret until the round's last kickoff**
+/// (`h2hOpponentSecret`, decided 2026-10-25): a round not started, or live
+/// before its last fixture kicks off, carries no opponent and no match, only
+/// the caller's own points. The opponents come from the group's secret order
+/// of the turns (`H2hLeaguePolicy.turnOf`, migration 0184).
+///
 /// Never throws; returns a typed [Result].
 final class GetMyH2hLeague {
   /// Creates the use-case over its collaborators.
@@ -156,7 +202,8 @@ final class GetMyH2hLeague {
       return Result.err(auth.error);
     }
     final reader = principal.userId;
-    final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(_clock.nowUtc()));
+    final now = _clock.nowUtc().toUtc();
+    final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(now));
 
     final seatResult = await _leagues.seatFor(
       userId: reader,
@@ -219,6 +266,7 @@ final class GetMyH2hLeague {
         members: sheet.members,
         rounds: settled,
         scores: sheet.scores,
+        turns: sheet.turns,
       ),
     );
     var myRank = 0;
@@ -236,6 +284,7 @@ final class GetMyH2hLeague {
       members: sheet.members,
       rounds: started,
       scores: sheet.scores,
+      turns: sheet.turns,
     )) {
       if (standing.userId == reader) {
         for (final match in standing.matches) {
@@ -247,20 +296,46 @@ final class GetMyH2hLeague {
     final bySlot = <int, UserId>{
       for (final member in sheet.members) member.slot: member.userId,
     };
-    final views = <MyH2hRound>[
-      for (final round in rounds)
+    final views = <MyH2hRound>[];
+    for (final round in rounds) {
+      final status = _statusOf(round, sheet);
+      final lastKickoff = sheet.lastKickoffs[round.number];
+      final match = myMatches[round.number];
+      if (h2hOpponentSecret(
+        status: status,
+        lastKickoff: lastKickoff,
+        now: now,
+      )) {
+        views.add(
+          MyH2hRound(
+            round: round,
+            status: status,
+            opponentId: null,
+            match: null,
+            opponentHidden: true,
+            revealsAt: status == H2hRoundStatus.live ? lastKickoff : null,
+            ownPoints: match?.points,
+          ),
+        );
+        continue;
+      }
+      views.add(
         MyH2hRound(
           round: round,
-          status: _statusOf(round, sheet),
+          status: status,
           opponentId:
               bySlot[H2hLeaguePolicy.opponentSlot(
                 slot: seat.slot,
-                round: round.number,
+                round: H2hLeaguePolicy.turnOf(
+                  round: round.number,
+                  turns: sheet.turns,
+                ),
                 capacity: seat.capacity,
               )],
-          match: myMatches[round.number],
+          match: match,
         ),
-    ];
+      );
+    }
 
     final profilesResult = await _profiles.profilesOf([
       for (final member in sheet.members) member.userId,

@@ -60,6 +60,24 @@ void main() {
       expect(back.schemaVersion, 1);
     });
 
+    test('secret pairs say so; old payloads read not secret', () {
+      const round = H2hGroupRoundDto(
+        round: 3,
+        day: '2026-11-07',
+        status: 'open',
+        matches: [],
+        matchesHidden: true,
+      );
+      final json = _wire(round.toJson());
+      expect(json['matches_hidden'], isTrue);
+      expect(json['reveals_at'], isNull);
+      expect(H2hGroupRoundDto.fromJson(json).matchesHidden, isTrue);
+      expect(
+        H2hGroupRoundDto.fromJson(const {'round': 1}).matchesHidden,
+        isFalse,
+      );
+    });
+
     test('a match not started carries no points and no winner', () {
       final back = H2hGroupMatchDto.fromJson(
         _wire(<String, Object?>{

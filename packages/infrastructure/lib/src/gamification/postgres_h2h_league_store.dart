@@ -1,6 +1,7 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+import 'package:infrastructure/src/gamification/postgres_h2h_turn_keeper.dart';
 import 'package:shared/shared.dart';
 
 /// Postgres-backed [H2hLeagueStore] over the tables of migration 0100.
@@ -8,7 +9,9 @@ import 'package:shared/shared.dart';
 /// [draw] runs in one transaction that starts by inserting the month row:
 /// when the row exists already the insert does nothing, the draw writes
 /// nothing more and returns 0, so two concurrent draws cannot both seat a
-/// month.
+/// month. It ends by giving each new group its secret order of the turns
+/// (`PostgresH2hTurnKeeper.ensureSql`, migration 0184), in the same
+/// transaction, so no group is ever read without one.
 ///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
@@ -183,6 +186,10 @@ ON CONFLICT (month_start) DO NOTHING
             return Result.err(row.error);
           }
         }
+      }
+      final turns = await PostgresH2hTurnKeeper.ensureIn(tx, monthStart);
+      if (turns is Err<int>) {
+        return Result.err(turns.error);
       }
       return Result.ok(total);
     });

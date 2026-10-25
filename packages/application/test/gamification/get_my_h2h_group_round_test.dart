@@ -30,14 +30,20 @@ H2hRoundScore _score(UserId user, int round, int points) => H2hRoundScore(
   predictedCount: 2,
 );
 
+/// Round 2's last fixture that counts kicks off at 14:00 on the 5th.
+final _lastOfRound2 = DateTime.utc(2026, 11, 5, 14);
+
 /// Four seats. Round 1: 0-3, 1-2. Round 2: 0-1, 2-3. Round 3: 0-2, 1-3.
 /// Round 4 pairs as round 1. Round 1 settled, 2 live, 3 void, 4 ahead.
+/// Read at 15:00 on the 5th unless [now] says otherwise.
 Future<Result<MyH2hGroupRound>> _read({
   required int round,
   int mySlot = 0,
   bool withU4 = true,
   AuthenticatedUser principal = player,
   bool seated = true,
+  DateTime? now,
+  List<int> turns = const <int>[],
 }) {
   final leagues = FakeH2hLeagueStore();
   if (seated) {
@@ -92,6 +98,8 @@ Future<Result<MyH2hGroupRound>> _read({
       ],
       settledRounds: const <int>{1},
       voidRounds: const <int>{3},
+      turns: turns,
+      lastKickoffs: {1: DateTime.utc(2026, 11, 3, 20), 2: _lastOfRound2},
     );
   return GetMyH2hGroupRound(
     league: GetMyH2hLeague(
@@ -99,7 +107,7 @@ Future<Result<MyH2hGroupRound>> _read({
       rounds: rounds,
       sheets: sheets,
       profiles: NamingProfiles(),
-      clock: AtClock(DateTime.utc(2026, 11, 5, 15)),
+      clock: AtClock(now ?? DateTime.utc(2026, 11, 5, 15)),
     ),
     sheets: sheets,
   ).call(principal: principal, round: round);
@@ -125,10 +133,24 @@ void main() {
     expect(group.profiles[_u3]!.displayName, 'name ${_u3.value}');
   });
 
-  test('a live round: points only, never who has not predicted', () async {
+  test('a live round before its last kickoff: no pairs at all', () async {
+    final group = _ok(
+      await _read(round: 2, now: DateTime.utc(2026, 11, 5, 13, 59)),
+    );
+
+    expect(group.phase, H2hRoundPhase.live);
+    expect(group.pairsHidden, isTrue);
+    expect(group.pairs, isEmpty);
+    expect(group.revealsAt, _lastOfRound2);
+  });
+
+  test('a live round after its last kickoff: points only, never who has '
+      'not predicted', () async {
     final group = _ok(await _read(round: 2));
 
     expect(group.phase, H2hRoundPhase.live);
+    expect(group.pairsHidden, isFalse);
+    expect(group.revealsAt, isNull);
     final mine = group.pairs.first;
     expect((mine.home, mine.away), (_me, _u2));
     expect(mine.winner, H2hPairWinner.away);
@@ -154,15 +176,25 @@ void main() {
     }
   });
 
-  test('a round ahead: who meets whom, nothing else', () async {
+  test('a round ahead: nobody knows who meets whom', () async {
     final group = _ok(await _read(round: 4));
 
     expect(group.phase, H2hRoundPhase.open);
+    expect(group.pairsHidden, isTrue);
+    expect(group.pairs, isEmpty);
+    expect(group.revealsAt, isNull);
+  });
+
+  test('the group secret order decides who meets whom', () async {
+    // Round 1 plays turn 2: 0-1, 2-3.
+    final group = _ok(await _read(round: 1, turns: const [2, 3, 1]));
+
     expect(group.pairs.map((p) => (p.home, p.away)).toList(), [
-      (_me, _u4),
-      (_u2, _u3),
+      (_me, _u2),
+      (_u3, _u4),
     ]);
-    expect(group.pairs.every((p) => p.winner == null), isTrue);
+    // The caller's 5 against u2, who played nothing.
+    expect(group.pairs.first.winner, H2hPairWinner.home);
   });
 
   test('the caller comes first and on the first side, whatever the seat', () {

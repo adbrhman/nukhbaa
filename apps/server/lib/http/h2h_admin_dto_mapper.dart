@@ -104,6 +104,8 @@ H2hGroupRoundDto h2hAdminGroupRoundToDto(H2hAdminGroupRound group) =>
             winner: pair.winner?.wireName,
           ),
       ],
+      matchesHidden: group.pairsHidden,
+      revealsAt: group.revealsAt?.toUtc().toIso8601String(),
     );
 
 /// The settings as the controls and `PUT /admin/h2h/settings` send them.

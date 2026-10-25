@@ -124,6 +124,9 @@ FakeH2hLeagueStore _seated() => FakeH2hLeagueStore()
     ),
   );
 
+/// The last kickoff of round 1 that counts (f2): the opponent is named then.
+final _lastKickoff = DateTime.utc(2026, 11, 3, 15);
+
 FakeH2hSheetReader _sheet({required bool withOpponent, int myPoints = 10}) {
   final members = <UserId>[_me, _u2, _u3, if (withOpponent) _u4];
   return FakeH2hSheetReader()
@@ -147,6 +150,7 @@ FakeH2hSheetReader _sheet({required bool withOpponent, int myPoints = 10}) {
       ],
       settledRounds: const <int>{},
       voidRounds: const <int>{},
+      lastKickoffs: {1: _lastKickoff},
     );
 }
 
@@ -179,38 +183,68 @@ H2hRoundFixtureView _line(MyH2hRoundDetail detail, String id) =>
     detail.fixtures.singleWhere((f) => f.fixtureId == id);
 
 void main() {
-  group('GetMyH2hRound keeps the opponent secret until kickoff', () {
-    test('a minute before kickoff the pick is withheld', () async {
-      final detail =
-          ((await _read(now: DateTime.utc(2026, 11, 3, 14, 59)))
-                  as Ok<MyH2hRoundDetail>)
-              .value;
+  group('GetMyH2hRound keeps the opponent secret until the last kickoff', () {
+    test(
+      'a minute before it: nobody, none of theirs, my points only',
+      () async {
+        final detail =
+            ((await _read(now: DateTime.utc(2026, 11, 3, 14, 59)))
+                    as Ok<MyH2hRoundDetail>)
+                .value;
 
-      final f2 = _line(detail, 'f2');
-      expect(f2.theirs, isNull);
-      expect(f2.theirsHidden, isTrue);
-      expect(f2.state, H2hFixtureState.notStarted);
-      expect(f2.mine!.homeGoals, 1, reason: 'the caller sees their own pick');
-
-      final f1 = _line(detail, 'f1');
-      expect(f1.theirs!.awayGoals, 1);
-      expect(f1.theirsHidden, isFalse);
-      expect(f1.state, H2hFixtureState.finished);
-    });
+        expect(detail.opponentHidden, isTrue);
+        expect(detail.revealsAt, _lastKickoff);
+        expect(detail.opponentId, isNull);
+        expect(detail.opponentProfile, isNull);
+        expect(detail.theirs, isNull);
+        expect(detail.opponentPoints, isNull);
+        expect(detail.result, isNull);
+        expect(detail.myPoints, 10);
+        expect(detail.phase, H2hRoundPhase.live);
+        // f1 kicked off and finished, and the leaky reader hands back a pick
+        // of theirs on every line: none of it leaves while the opponent is
+        // secret.
+        for (final line in detail.fixtures) {
+          expect(line.theirs, isNull, reason: line.fixtureId);
+          expect(line.theirsHidden, isTrue, reason: line.fixtureId);
+        }
+        final f2 = _line(detail, 'f2');
+        expect(f2.state, H2hFixtureState.notStarted);
+        expect(f2.mine!.homeGoals, 1, reason: 'the caller sees their own pick');
+        expect(_line(detail, 'f1').state, H2hFixtureState.finished);
+      },
+    );
 
     test(
-      'at the kickoff minute the pick is shown (the lock is inclusive)',
+      'while secret, the reader is asked for nobody but the caller',
+      () async {
+        final reader = _LeakyReader();
+        await _read(now: DateTime.utc(2026, 11, 3, 14, 59), reader: reader);
+
+        expect(reader.calls.single.opponent, isNull);
+        expect(reader.calls.single.reader, _me);
+      },
+    );
+
+    test(
+      'at the last kickoff the opponent is named (the lock is inclusive)',
       () async {
         final detail =
             ((await _read(now: DateTime.utc(2026, 11, 3, 15)))
                     as Ok<MyH2hRoundDetail>)
                 .value;
 
+        expect(detail.opponentHidden, isFalse);
+        expect(detail.revealsAt, isNull);
+        expect(detail.opponentId, _u4);
         final f2 = _line(detail, 'f2');
         expect(f2.theirs!.homeGoals, 2);
         expect(f2.theirs!.isDouble, isTrue);
         expect(f2.theirsHidden, isFalse);
         expect(f2.state, H2hFixtureState.live);
+        final f1 = _line(detail, 'f1');
+        expect(f1.theirs!.awayGoals, 1);
+        expect(f1.theirsHidden, isFalse);
       },
     );
 
@@ -228,13 +262,13 @@ void main() {
 
     test('their counts cover kicked-off fixtures that count, only', () async {
       final detail =
-          ((await _read(now: DateTime.utc(2026, 11, 3, 14, 59)))
+          ((await _read(now: DateTime.utc(2026, 11, 3, 15)))
                   as Ok<MyH2hRoundDetail>)
               .value;
 
-      // f1 only: f2 and f3 are not kicked off, f4 is void.
-      expect(detail.theirs!.predicted, 1);
-      expect(detail.theirs!.doubles, 0);
+      // f1 and f2: f3 has no kickoff, f4 is void.
+      expect(detail.theirs!.predicted, 2);
+      expect(detail.theirs!.doubles, 1);
       expect(detail.theirs!.exact, 0);
     });
 
@@ -242,7 +276,7 @@ void main() {
       'the reader is asked with the server clock and the opponent',
       () async {
         final reader = _LeakyReader();
-        final now = DateTime.utc(2026, 11, 3, 14, 59);
+        final now = DateTime.utc(2026, 11, 3, 15);
         await _read(now: now, reader: reader);
 
         expect(reader.calls, hasLength(1));
@@ -288,7 +322,7 @@ void main() {
 
     test('the round, its phase, the opponent and the points', () async {
       final detail =
-          ((await _read(now: DateTime.utc(2026, 11, 3, 14, 59)))
+          ((await _read(now: DateTime.utc(2026, 11, 3, 15)))
                   as Ok<MyH2hRoundDetail>)
               .value;
 
@@ -304,7 +338,7 @@ void main() {
       // u4 has no pick on any fixture yet, kicked off or not. The policy
       // calls that a win for the caller; shown live, it would say so.
       final detail =
-          ((await _read(now: DateTime.utc(2026, 11, 3, 14, 59), myPoints: 0))
+          ((await _read(now: DateTime.utc(2026, 11, 3, 15), myPoints: 0))
                   as Ok<MyH2hRoundDetail>)
               .value;
 
@@ -316,12 +350,13 @@ void main() {
     test('with the group average nothing of an opponent is shown', () async {
       final detail =
           ((await _read(
-                    now: DateTime.utc(2026, 11, 3, 14, 59),
+                    now: DateTime.utc(2026, 11, 3, 15),
                     withOpponent: false,
                   ))
                   as Ok<MyH2hRoundDetail>)
               .value;
 
+      expect(detail.opponentHidden, isFalse);
       expect(detail.opponentId, isNull);
       expect(detail.opponentProfile, isNull);
       expect(detail.theirs, isNull);
@@ -339,11 +374,15 @@ void main() {
 
       expect(detail.phase, H2hRoundPhase.open);
       expect(detail.result, isNull);
-      expect(detail.opponentId, _u2);
-      // The leaky reader's 13:00 and 12:00 fixtures have kicked off on the
-      // 3rd; everything kicking off later stays hidden.
-      expect(_line(detail, 'f2').theirs, isNull);
-      expect(_line(detail, 'f3').theirs, isNull);
+      // A round not started is secret: no opponent, none of the leaky
+      // reader's picks, not even on fixtures that kicked off.
+      expect(detail.opponentHidden, isTrue);
+      expect(detail.revealsAt, isNull);
+      expect(detail.opponentId, isNull);
+      for (final line in detail.fixtures) {
+        expect(line.theirs, isNull, reason: line.fixtureId);
+        expect(line.theirsHidden, isTrue, reason: line.fixtureId);
+      }
     });
 
     test('a caller with no seat is refused', () async {

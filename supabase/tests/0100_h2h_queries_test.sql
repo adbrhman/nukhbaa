@@ -332,7 +332,7 @@ WITH rounds AS (
   WHERE l.id = $1::uuid
 ),
 valid AS (
-  SELECT rd.round_no, rf.fixture_id
+  SELECT rd.round_no, rf.fixture_id, fs.kickoff_at
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
@@ -348,7 +348,8 @@ SELECT rd.round_no                      AS round_no,
              SELECT 1 FROM scoring.fixture_scores sp
              WHERE sp.fixture_id = v.fixture_id
                AND sp.grade = 'pending'
-           ))::integer                  AS settled
+           ))::integer                  AS settled,
+       max(v.kickoff_at)                AS last_kickoff
 FROM rounds rd
 LEFT JOIN valid v ON v.round_no = rd.round_no
 LEFT JOIN scoring.fixture_results res ON res.fixture_id = v.fixture_id
@@ -569,6 +570,13 @@ begin
                       order by round_no) from status_out)
       = array['1:2:1', '2:0:0'],
     'round 1 waits for one result; round 2 lost its fixture');
+  perform pg_temp.check(
+    (select last_kickoff from status_out where round_no = 1)
+      = '2099-11-03 18:00Z'::timestamptz,
+    'a round names its opponents at its last fixture that counts (f2)');
+  perform pg_temp.check(
+    (select last_kickoff is null from status_out where round_no = 2),
+    'a round with no fixture left has no last kickoff');
 end $$;
 
 -- f2's result and scores arrive: round 1 is settled.

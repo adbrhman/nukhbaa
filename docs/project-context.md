@@ -6346,6 +6346,69 @@ it, so every build saw an update forever.
 - Test: `mirrored_build_info_repository_test.dart` (`apk_url` keeps
   `/build-<sha>/` while the assets come from the mirror).
 
+### The head-to-head opponent is secret until the last kickoff (script 146, 2026-10-25)
+
+A group played its round-robin in the slots' own order
+(`opponentSlot(slot, round)`), and `/me/h2h-league` named the opponent of
+every approved round; the board shows everyone's picks as each match kicks
+off. A player who knew his opponent could shape his later picks of the day
+against the opponent's earlier ones, and two friends could arrange their
+round. Decided by the owner on 2026-10-25 (option D): a secret round order,
+the opponent named at the last match of the day, the admins watching the
+suspicious matches (a later batch). Server and database only; the screen
+follows in script 147.
+
+- Migration 0184 (additive): `gamification.h2h_league_turns`, one row per
+  group: a permutation of 1 .. capacity - 1 (the circle's turns), shuffled
+  by `gen_random_uuid()` in the database. Round n plays turn turns[n]
+  (`H2hLeaguePolicy.turnOf`; again from the start past the end), so every
+  pair still meets once; a group without a row plays the turns in order.
+  Append-only, server-only (RLS, no grants). Its insert trigger refuses an
+  order that is not a permutation (`h2h_league_turns_order`) and an order
+  for a group whose member was seated at or before a lock of a round of
+  its month (`h2h_league_turns_played`): the table is recomputed from the
+  order on every read, so a group that may have played keeps its order
+  (the October pilot).
+- Written by `PostgresH2hTurnKeeper.ensureSql` (the same guard in its
+  WHERE): at the end of the draw's transaction and of the extra groups'
+  one, and by `RunH2hRounds` (port `H2hTurnKeeper`) for yesterday's and
+  today's months before anything is approved or locked; a failed order
+  approves and locks nothing in that run.
+- Every pairing reads the order: `H2hLeaguePolicy.table(turns:)`,
+  `h2hGroupPairs`, `GetMyH2hLeague`, `GetMyH2hGroupRound`, the admin's
+  groups and `CloseH2hMonth`. `PostgresH2hSheetReader` reads it
+  (`turnsSql`, as text) and each locked round's last kickoff among the
+  fixtures that count (`roundStatusSql.last_kickoff`).
+- The secret (`h2hOpponentSecret`): a round not started, or live before its
+  last fixture that counts kicks off (`FixtureLock`: at or after the
+  kickoff), names nobody. `MyH2hRound` carries `opponentHidden`,
+  `revealsAt` (the live round's last kickoff) and `ownPoints`; no opponent,
+  no match, no opponent points, no result. `GetMyH2hRound` then reads no
+  pick but the caller's and withholds every line of theirs;
+  `GetMyH2hGroupRound` and the admin's group round return no pairs
+  (`pairsHidden`): the admins play too. Settled and void rounds are open.
+- Contracts (additive): `opponent_hidden` and `reveals_at` on
+  `H2hRoundViewDto` and `MyH2hRoundDto`, `matches_hidden` and `reveals_at`
+  on `H2hGroupRoundDto`. Builds before 147 read a secret opponent as the
+  group average: decided 2026-10-25, `NUKHBA_BUILD_HEADER_SINCE` goes up to
+  147's release before the first November round locks.
+- Known limit: by elimination a member can tell the opponent of the last
+  rounds (two candidates before round 18, one before round 19).
+- Tests: `h2h_league_policy_test.dart` (`turnOf`, every pair once in any
+  order, the ordered table), `get_my_h2h_league_test.dart`,
+  `get_my_h2h_month_test.dart`, `get_my_h2h_round_test.dart`,
+  `get_my_h2h_group_round_test.dart`, `admin_h2h_groups_test.dart`,
+  `close_h2h_month_test.dart`, `h2h_rounds_test.dart` (the keeper before any
+  lock; a failure locks nothing), `postgres_h2h_adapters_test.dart`,
+  `postgres_h2h_group_extension_test.dart`, the routes through
+  `h2h_round_routes_test.dart`, `h2h_group_routes_test.dart`,
+  `h2h_league_routes_test.dart`, `h2h_admin_desk_routes_test.dart`, the
+  DTO tests; `0184_h2h_secret_turns_test.sql` (18 checks) and
+  `0100_h2h_queries_test.sql` (the last kickoff). All 71 SQL tests pass on
+  PostgreSQL 16 with every migration (127 files).
+
+**Apply 0184 in the Supabase SQL editor before pushing this server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

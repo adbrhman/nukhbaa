@@ -3359,6 +3359,7 @@ final class CompositionRoot {
         leagues: PostgresH2hLeagueStore(connection),
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
+        turns: PostgresH2hTurnKeeper(connection),
       ),
       closeH2hMonth: CloseH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),
@@ -3413,6 +3414,7 @@ final class CompositionRoot {
             leagues: PostgresH2hLeagueStore(connection),
             idGenerator: idGenerator,
             controls: PostgresH2hControlStore(connection),
+            turns: PostgresH2hTurnKeeper(connection),
           ),
           closeMonth: CloseH2hMonth(
             leagues: PostgresH2hLeagueStore(connection),

@@ -209,6 +209,8 @@ final class MyH2hRoundDto {
     this.opponentPoints,
     this.result,
     this.theirs,
+    this.opponentHidden = false,
+    this.revealsAt,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -233,6 +235,8 @@ final class MyH2hRoundDto {
       fixtures: [
         for (final m in _maps(json['fixtures'])) H2hRoundFixtureDto.fromJson(m),
       ],
+      opponentHidden: (json['opponent_hidden'] as bool?) ?? false,
+      revealsAt: json['reveals_at'] as String?,
     );
   }
 
@@ -254,7 +258,8 @@ final class MyH2hRoundDto {
   /// The round's first kickoff, ISO-8601 UTC, when known.
   final String? firstKickoff;
 
-  /// The opponent, or null when the caller plays the group average.
+  /// The opponent, or null when the caller plays the group average or
+  /// while the opponent is secret ([opponentHidden]).
   final String? opponentUserId;
 
   /// The opponent's display name.
@@ -282,6 +287,15 @@ final class MyH2hRoundDto {
   /// Every fixture of the round, by kickoff.
   final List<H2hRoundFixtureDto> fixtures;
 
+  /// True while the opponent is secret (until the round's last kickoff):
+  /// no opponent, no pick or count of theirs, no result. Never the group
+  /// average.
+  final bool opponentHidden;
+
+  /// When a secret opponent is named, ISO-8601 UTC (a live round's last
+  /// kickoff), or null.
+  final String? revealsAt;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -302,5 +316,7 @@ final class MyH2hRoundDto {
     'mine': mine.toJson(),
     'theirs': theirs?.toJson(),
     'fixtures': [for (final f in fixtures) f.toJson()],
+    'opponent_hidden': opponentHidden,
+    'reveals_at': revealsAt,
   };
 }

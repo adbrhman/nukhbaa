@@ -5,6 +5,7 @@
 /// never tells who has not predicted.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:application/application.dart';
@@ -29,6 +30,9 @@ final _novemberStart = DateTime.utc(2026, 11);
 
 /// 2026-11-10 14:59 UTC: round 1 (the 10th) is being played.
 final _now = DateTime.utc(2026, 11, 10, 14, 59);
+
+/// Round 1's last fixture that counts kicks off at 14:00 on the 10th.
+final _lastOfRound1 = DateTime.utc(2026, 11, 10, 14);
 
 H2hRound _round(int number, DateTime day, {required bool locked}) => H2hRound(
   id: H2hRoundId(
@@ -163,6 +167,7 @@ final class _Sheets implements H2hSheetReader {
         scores: [score(kNonMemberUserId, 4), score(_u3, 7), score(_u1, 0)],
         settledRounds: const <int>{},
         voidRounds: const <int>{},
+        lastKickoffs: {1: _lastOfRound1},
       ),
     );
   }
@@ -182,7 +187,7 @@ final class _Profiles implements WeeklyLeagueProfileReader {
   });
 }
 
-CompositionRoot _root() {
+CompositionRoot _root({DateTime? now}) {
   final sheets = _Sheets();
   return CompositionRoot.forTesting(
     getMyH2hGroupRound: GetMyH2hGroupRound(
@@ -191,28 +196,49 @@ CompositionRoot _root() {
         rounds: _Rounds(),
         sheets: sheets,
         profiles: _Profiles(),
-        clock: FixedClock(_now),
+        clock: FixedClock(now ?? _now),
       ),
       sheets: sheets,
     ),
   );
 }
 
-Future<Response> _get(String n, {AuthenticatedUser? principal}) =>
-    matches_route.onRequest(
-      wireContext(
-        root: _root(),
-        principal: principal ?? nonMemberPrincipal(),
-        method: HttpMethod.get,
-      ),
-      n,
-    );
+Future<Response> _get(
+  String n, {
+  AuthenticatedUser? principal,
+  DateTime? now,
+}) => matches_route.onRequest(
+  wireContext(
+    root: _root(now: now),
+    principal: principal ?? nonMemberPrincipal(),
+    method: HttpMethod.get,
+  ),
+  n,
+);
 
 List<Map<String, Object?>> _matches(Map<String, Object?> body) =>
     (body['matches']! as List).cast<Map<String, Object?>>();
 
 void main() {
-  test('a live round: every pair, the caller first, points only', () async {
+  test('a live round before its last kickoff: nobody meets anybody', () async {
+    final response = await _get(
+      '1',
+      now: _lastOfRound1.subtract(const Duration(minutes: 1)),
+    );
+
+    expect(response.statusCode, HttpStatus.ok);
+    final text = await response.body();
+    expect(text, isNot(contains(_u1)));
+    expect(text, isNot(contains(_u3)));
+    final body = jsonDecode(text) as Map<String, Object?>;
+    expect(body['status'], 'live');
+    expect(body['matches_hidden'], isTrue);
+    expect(body['reveals_at'], '2026-11-10T14:00:00.000Z');
+    expect(_matches(body), isEmpty);
+  });
+
+  test('a live round after its last kickoff: every pair, the caller first, '
+      'points only', () async {
     final response = await _get('1');
 
     expect(response.statusCode, HttpStatus.ok);
@@ -225,6 +251,8 @@ void main() {
     expect(body['round'], 1);
     expect(body['day'], '2026-11-10');
     expect(body['status'], 'live');
+    expect(body['matches_hidden'], isFalse);
+    expect(body['reveals_at'], isNull);
     final matches = _matches(body);
     expect(matches, hasLength(2));
 
@@ -246,17 +274,13 @@ void main() {
     expect(theirs['winner'], 'draw');
   });
 
-  test('the next round: the pairs, no points, no winner', () async {
+  test('the next round: nobody knows who meets whom', () async {
     final body = await decodeBody(await _get('2'));
 
     expect(body['status'], 'open');
-    for (final match in _matches(body)) {
-      expect(match['home_points'], isNull);
-      expect(match['away_points'], isNull);
-      expect(match['winner'], isNull);
-    }
-    // Round 2 with four seats: 0-1, 2-3.
-    expect(_matches(body).first['away_user_id'], _u1);
+    expect(body['matches_hidden'], isTrue);
+    expect(body['reveals_at'], isNull);
+    expect(_matches(body), isEmpty);
   });
 
   test('a caller with no seat is refused', () async {

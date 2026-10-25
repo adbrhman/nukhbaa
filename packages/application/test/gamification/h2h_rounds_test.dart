@@ -218,6 +218,45 @@ void main() {
         '00000000-0000-4000-8000-000000000102',
       ]);
     });
+
+    test('gives the groups their secret order before anything is locked, '
+        'for yesterday and today', () async {
+      final rounds = FakeH2hRoundStore()
+        ..addRound(_round(1, 1))
+        ..dayOf(_day(1), 8, _kickoff(1, 15));
+      final turns = _RecordingTurns(rounds);
+      // 00:30 Riyadh on 1 November: yesterday is in October.
+      final now = DateTime.utc(2026, 10, 31, 21, 30);
+
+      await RunH2hRounds(
+        rounds: rounds,
+        leagues: FakeH2hLeagueStore(),
+        idGenerator: SequenceIds(),
+        turns: turns,
+      ).call(now: now);
+
+      expect(turns.months, [DateTime.utc(2026, 10), _november]);
+      expect(turns.locksSeen, [0, 0]);
+    });
+
+    test('a failed order approves and locks nothing', () async {
+      final rounds = FakeH2hRoundStore()
+        ..addRound(_round(1, 8))
+        ..dayOf(_day(10), 8, _kickoff(10, 15))
+        ..dayOf(_day(11), 9, _kickoff(11, 15));
+      final now = DateTime.utc(2026, 11, 10, 13); // 16:00 Riyadh
+
+      final result = await RunH2hRounds(
+        rounds: rounds,
+        leagues: FakeH2hLeagueStore(),
+        idGenerator: SequenceIds(),
+        turns: _RecordingTurns(rounds, fail: true),
+      ).call(now: now);
+
+      expect((result as Err<H2hRoundsRun>).error.kind, ErrorKind.transient);
+      expect(rounds.lockCalls, isEmpty);
+      expect(rounds.byMonth[_november], hasLength(1));
+    });
   });
 
   group('ListH2hRounds', () {
@@ -250,4 +289,27 @@ void main() {
       ]);
     });
   });
+}
+
+/// Records each month it is asked to order, and how many rounds were locked
+/// by then; fails every call when [fail].
+final class _RecordingTurns implements H2hTurnKeeper {
+  _RecordingTurns(this._rounds, {this.fail = false});
+
+  final FakeH2hRoundStore _rounds;
+  final bool fail;
+  final List<DateTime> months = <DateTime>[];
+  final List<int> locksSeen = <int>[];
+
+  @override
+  Future<Result<int>> ensureTurns(DateTime monthStart) async {
+    months.add(monthStart);
+    locksSeen.add(_rounds.lockCalls.length);
+    if (fail) {
+      return const Result.err(
+        AppError.transient('test.turns', 'The order could not be written'),
+      );
+    }
+    return const Result.ok(0);
+  }
 }

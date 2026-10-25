@@ -157,6 +157,7 @@ final class CloseH2hMonth {
         members: sheet.members,
         rounds: played,
         scores: sheet.scores,
+        turns: sheet.turns,
       );
       results.add(
         H2hGroupResult(

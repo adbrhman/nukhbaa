@@ -97,6 +97,44 @@ void main() {
       expect(H2hRoundViewDto.fromJson(const {'round': 1}).firstKickoff, isNull);
     });
 
+    test('a secret opponent says so, with when it is named; old payloads '
+        'read not secret', () {
+      const view = H2hRoundViewDto(
+        round: 2,
+        day: '2026-11-05',
+        status: 'live',
+        fixtureCount: 8,
+        myPoints: 3,
+        opponentHidden: true,
+        revealsAt: '2026-11-05T20:00:00.000Z',
+      );
+      final json = _wire(view.toJson());
+      expect(json['opponent_hidden'], isTrue);
+      expect(json['reveals_at'], '2026-11-05T20:00:00.000Z');
+      expect(json['opponent_user_id'], isNull);
+      final back = H2hRoundViewDto.fromJson(json);
+      expect(back.opponentHidden, isTrue);
+      expect(back.revealsAt, view.revealsAt);
+      final old = H2hRoundViewDto.fromJson(const {'round': 1});
+      expect(old.opponentHidden, isFalse);
+      expect(old.revealsAt, isNull);
+
+      const detail = MyH2hRoundDto(
+        round: 2,
+        day: '2026-11-05',
+        status: 'live',
+        fixtureCount: 8,
+        mine: H2hSideTotalsDto(predicted: 3, exact: 0, doubles: 1),
+        fixtures: [],
+        opponentHidden: true,
+        revealsAt: '2026-11-05T20:00:00.000Z',
+      );
+      final detailBack = MyH2hRoundDto.fromJson(_wire(detail.toJson()));
+      expect(detailBack.opponentHidden, isTrue);
+      expect(detailBack.revealsAt, detail.revealsAt);
+      expect(MyH2hRoundDto.fromJson(const {}).opponentHidden, isFalse);
+    });
+
     test('the month carries the days left; old payloads read 0', () {
       final json = _wire(
         const MyH2hLeagueDto(

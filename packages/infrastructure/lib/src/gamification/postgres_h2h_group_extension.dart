@@ -1,6 +1,7 @@
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+import 'package:infrastructure/src/gamification/postgres_h2h_turn_keeper.dart';
 import 'package:postgres/postgres.dart' show ServerException;
 import 'package:shared/shared.dart';
 
@@ -142,6 +143,12 @@ VALUES (@league_id::uuid, @month::date, @user_id::uuid, @slot::smallint)
           }
           seats++;
         }
+      }
+      // Each new group's secret order of the turns (0184), in this
+      // transaction: its members were seated after every lock so far.
+      final turns = await PostgresH2hTurnKeeper.ensureIn(tx, monthStart);
+      if (turns is Err<int>) {
+        return Result.err(turns.error);
       }
       return Result.ok(seats);
     });

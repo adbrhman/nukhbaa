@@ -2,6 +2,7 @@ import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:infrastructure/src/gamification/postgres_h2h_group_extension.dart';
+import 'package:infrastructure/src/gamification/postgres_h2h_turn_keeper.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -106,7 +107,8 @@ void main() {
       );
     });
 
-    test('writes each group, then its seats, in one transaction', () async {
+    test('writes each group, then its seats, then their secret orders, in '
+        'one transaction', () async {
       final connection = _FakeConnection([
         const Result.ok(<Map<String, dynamic>>[]),
       ]);
@@ -133,7 +135,9 @@ void main() {
         PostgresH2hGroupExtension.insertSeatSql,
         PostgresH2hGroupExtension.insertGroupSql,
         PostgresH2hGroupExtension.insertSeatSql,
+        PostgresH2hTurnKeeper.ensureSql,
       ]);
+      expect(connection.parameters.last, {'month': '2026-10-01'});
       expect(connection.parameters.first, {
         'id': '22222222-2222-4222-8222-222222222222',
         'month': '2026-10-01',

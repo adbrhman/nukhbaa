@@ -6,8 +6,8 @@
 /// The database here is deliberately broken: it answers the opponent's
 /// predictions on EVERY fixture, kicked off or not, as if the reader's
 /// `kickoff_at <= now` filter were gone. What the client receives must still
-/// hold the opponent's pick of a fixture back until that fixture kicks off
-/// by the server clock.
+/// name no opponent and hold every pick of theirs back until the round's
+/// last fixture kicks off by the server clock (decided 2026-10-25).
 library;
 
 import 'dart:convert';
@@ -231,6 +231,8 @@ final class _Sheets implements H2hSheetReader {
         ],
         settledRounds: const <int>{},
         voidRounds: const <int>{},
+        // f3 was moved off the day: f2 is the last fixture that counts.
+        lastKickoffs: {1: _f2Kickoff},
       ),
     );
   }
@@ -381,7 +383,8 @@ Map<String, Object?> _line(Map<String, Object?> body, String fixtureId) =>
 
 void main() {
   group('GET /me/h2h-league/rounds/{n}: the opponent stays secret', () {
-    test('a minute before kickoff the opponent pick is not sent', () async {
+    test('a minute before the last kickoff: no opponent, none of their '
+        'picks, not even of a finished fixture', () async {
       final database = _database();
       final response = await _getRound(
         _root(now: _minuteBefore, database: database),
@@ -390,10 +393,21 @@ void main() {
 
       expect(response.statusCode, HttpStatus.ok);
       final text = await response.body();
+      expect(text, isNot(contains(_opponent)));
       expect(text, isNot(contains('"home_goals":7')));
       expect(text, isNot(contains('"home_goals":8')));
 
       final body = jsonDecode(text) as Map<String, Object?>;
+      expect(body['opponent_hidden'], isTrue);
+      expect(body['reveals_at'], '2026-11-10T15:00:00.000Z');
+      expect(body['opponent_user_id'], isNull);
+      expect(body['opponent_name'], isNull);
+      expect(body['opponent_points'], isNull);
+      expect(body['result'], isNull);
+      expect(body['my_points'], 6);
+      expect(body['theirs'], isNull);
+      expect(body['mine'], {'predicted': 2, 'exact': 1, 'doubles': 1});
+
       final f2 = _line(body, _f2);
       expect(f2['theirs'], isNull);
       expect(f2['theirs_hidden'], isTrue);
@@ -406,24 +420,29 @@ void main() {
       expect(f3['state'], 'void');
 
       final f1 = _line(body, _f1);
-      expect((f1['theirs']! as Map)['away_goals'], 1);
-      expect(f1['theirs_hidden'], isFalse);
+      expect(f1['theirs'], isNull);
+      expect(f1['theirs_hidden'], isTrue);
       expect(f1['state'], 'finished');
 
-      // Their counts: f1 only (kicked off and counted).
-      expect(body['theirs'], {'predicted': 1, 'exact': 0, 'doubles': 0});
-      expect(body['mine'], {'predicted': 2, 'exact': 1, 'doubles': 1});
-
-      // The database was asked with the server clock and the opponent.
+      // The database was asked for nobody's picks but the caller's.
       expect(database.parameters[1]['now'], _minuteBefore);
-      expect(database.parameters[1]['opponent'], _opponent);
+      expect(database.parameters[1]['opponent'], isNull);
       expect(database.parameters[1]['reader'], kNonMemberUserId);
     });
 
-    test('at the kickoff minute it is sent', () async {
+    test('at the last kickoff the opponent and their picks are sent', () async {
+      final database = _database();
       final body = await decodeBody(
-        await _getRound(_root(now: _f2Kickoff, database: _database()), '1'),
+        await _getRound(_root(now: _f2Kickoff, database: database), '1'),
       );
+
+      expect(body['opponent_hidden'], isFalse);
+      expect(body['reveals_at'], isNull);
+      expect(body['opponent_user_id'], _opponent);
+      expect(database.parameters[1]['opponent'], _opponent);
+      final f1 = _line(body, _f1);
+      expect((f1['theirs']! as Map)['away_goals'], 1);
+      expect(f1['theirs_hidden'], isFalse);
 
       final f2 = _line(body, _f2);
       expect(f2['theirs'], {
@@ -446,7 +465,7 @@ void main() {
         final body = await decodeBody(
           await _getRound(
             _root(
-              now: _minuteBefore,
+              now: _f2Kickoff,
               database: _database(),
               sheets: _Sheets(myPoints: 0, opponentPlayed: false),
             ),
@@ -473,6 +492,7 @@ void main() {
         ),
       );
 
+      expect(body['opponent_hidden'], isFalse);
       expect(body['opponent_user_id'], isNull);
       expect(body['opponent_name'], isNull);
       expect(body['theirs'], isNull);
@@ -487,7 +507,7 @@ void main() {
   group('GET /me/h2h-league/rounds/{n}: the round', () {
     test('the round, its opponent and the fixtures by kickoff', () async {
       final body = await decodeBody(
-        await _getRound(_root(now: _minuteBefore, database: _database()), '1'),
+        await _getRound(_root(now: _f2Kickoff, database: _database()), '1'),
       );
 
       expect(body['round'], 1);
@@ -581,14 +601,36 @@ void main() {
 
     test('a live round shows points only, not the policy result', () async {
       final body = await month(
-        _minuteBefore,
+        _f2Kickoff,
         sheets: _Sheets(myPoints: 0, opponentPlayed: false),
       );
 
       final live = (body['rounds']! as List).cast<Map<String, Object?>>().first;
+      expect(live['opponent_hidden'], isFalse);
+      expect(live['opponent_user_id'], _opponent);
       expect(live['my_points'], 0);
       expect(live['opponent_points'], 0);
       expect(live['result'], 'draw');
+    });
+
+    test('before the last kickoff no round names an opponent', () async {
+      final body = await month(_minuteBefore);
+
+      final rounds = (body['rounds']! as List).cast<Map<String, Object?>>();
+      final live = rounds.first;
+      expect(live['status'], 'live');
+      expect(live['opponent_hidden'], isTrue);
+      expect(live['reveals_at'], '2026-11-10T15:00:00.000Z');
+      expect(live['opponent_user_id'], isNull);
+      expect(live['opponent_name'], isNull);
+      expect(live['opponent_points'], isNull);
+      expect(live['result'], isNull);
+      expect(live['my_points'], 6);
+      final next = rounds.last;
+      expect(next['status'], 'open');
+      expect(next['opponent_hidden'], isTrue);
+      expect(next['reveals_at'], isNull);
+      expect(next['opponent_user_id'], isNull);
     });
   });
 }

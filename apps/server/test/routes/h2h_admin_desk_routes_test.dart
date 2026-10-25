@@ -528,6 +528,7 @@ void main() {
       final body = await decodeBody(response);
       expect(body['round'], 1);
       expect(body['status'], 'settled');
+      expect(body['matches_hidden'], isFalse);
       final matches = _list(body['matches']);
       expect(matches, hasLength(2));
       for (final match in matches) {
@@ -537,6 +538,24 @@ void main() {
         expect(keys.where((k) => k.contains('goals')), isEmpty);
         expect(keys.where((k) => k.contains('pick')), isEmpty);
       }
+    });
+
+    test('the round not started is secret to the admins too', () async {
+      final response = await group_round_route.onRequest(
+        wireContext(
+          root: _root(_Controls()),
+          principal: adminPrincipal(),
+          method: HttpMethod.get,
+        ),
+        _leagueId,
+        '2',
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      final body = await decodeBody(response);
+      expect(body['status'], 'open');
+      expect(body['matches_hidden'], isTrue);
+      expect(_list(body['matches']), isEmpty);
     });
 
     test('a round number out of range is 400', () async {

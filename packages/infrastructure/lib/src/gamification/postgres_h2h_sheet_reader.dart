@@ -15,7 +15,12 @@ import 'package:shared/shared.dart';
 /// holds -- the reading the weekly league used. A round is SETTLED when each
 /// of its fixtures has a result and no score of it is still pending.
 ///
-/// Three statements, each one round trip; suspended members are left out,
+/// **A round's last kickoff** is the latest kickoff among those fixtures:
+/// once it has passed, no pick of the round can change and its opponents
+/// are named. **The group's order of the turns** is its 0184 row
+/// (`h2h_league_turns`); a group without one reads an empty order.
+///
+/// Four statements, each one round trip; suspended members are left out,
 /// so their seat plays the group average.
 ///
 /// Total (Application ADR, Section 2): never throws, binds every value
@@ -87,7 +92,7 @@ WITH rounds AS (
   WHERE l.id = @league_id::uuid
 ),
 valid AS (
-  SELECT rd.round_no, rf.fixture_id
+  SELECT rd.round_no, rf.fixture_id, fs.kickoff_at
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
@@ -103,12 +108,21 @@ SELECT rd.round_no                      AS round_no,
              SELECT 1 FROM scoring.fixture_scores sp
              WHERE sp.fixture_id = v.fixture_id
                AND sp.grade = 'pending'
-           ))::integer                  AS settled
+           ))::integer                  AS settled,
+       max(v.kickoff_at)                AS last_kickoff
 FROM rounds rd
 LEFT JOIN valid v ON v.round_no = rd.round_no
 LEFT JOIN scoring.fixture_results res ON res.fixture_id = v.fixture_id
 GROUP BY rd.round_no
 ORDER BY rd.round_no
+''';
+
+  /// The group's secret order of the turns (0184), as `1,2,...` text: no row
+  /// for a group without one.
+  static const String turnsSql = '''
+SELECT array_to_string(t.turns, ',') AS turns
+FROM gamification.h2h_league_turns t
+WHERE t.league_id = @league_id::uuid
 ''';
 
   static const String activeDaysSql = '''
@@ -204,6 +218,7 @@ GROUP BY p.user_id
     }
     final settled = <int>{};
     final voided = <int>{};
+    final lastKickoffs = <int, DateTime>{};
     for (final row in (statusResult as Ok<List<Map<String, dynamic>>>).value) {
       final round = _int(row['round_no']);
       final fixtures = _int(row['fixtures']);
@@ -216,6 +231,36 @@ GROUP BY p.user_id
       } else if (done == fixtures) {
         settled.add(round);
       }
+      final last = row['last_kickoff'];
+      if (last != null) {
+        final kickoff = _timestamp(last);
+        if (kickoff == null) {
+          return Result.err(_corrupt('round'));
+        }
+        lastKickoffs[round] = kickoff;
+      }
+    }
+
+    final turnsResult = await _connection.query(
+      turnsSql,
+      parameters: parameters,
+    );
+    if (turnsResult is Err<List<Map<String, dynamic>>>) {
+      return Result.err(turnsResult.error);
+    }
+    final turns = <int>[];
+    for (final row in (turnsResult as Ok<List<Map<String, dynamic>>>).value) {
+      final text = row['turns']?.toString();
+      if (text == null || text.isEmpty) {
+        continue;
+      }
+      for (final part in text.split(',')) {
+        final turn = int.tryParse(part.trim());
+        if (turn == null || turn < 1) {
+          return Result.err(_corrupt('turn order'));
+        }
+        turns.add(turn);
+      }
     }
 
     return Result.ok(
@@ -224,6 +269,8 @@ GROUP BY p.user_id
         scores: List<H2hRoundScore>.unmodifiable(scores),
         settledRounds: Set<int>.unmodifiable(settled),
         voidRounds: Set<int>.unmodifiable(voided),
+        turns: List<int>.unmodifiable(turns),
+        lastKickoffs: Map<int, DateTime>.unmodifiable(lastKickoffs),
       ),
     );
   }
