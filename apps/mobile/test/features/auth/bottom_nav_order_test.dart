@@ -52,57 +52,102 @@ void main() {
     expect(opened, <int>[0, 2, 1, 3, 4]);
   });
 
-  testWidgets('matches sit in the middle on the brand mark, raised', (
-    tester,
-  ) async {
-    final List<int> opened = <int>[];
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark,
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            bottomNavigationBar: NukhbaaBottomNav(
-              index: 1,
-              onChanged: opened.add,
+  for (final (String name, ThemeData theme) in <(String, ThemeData)>[
+    ('dark', AppTheme.dark),
+    ('light', AppTheme.light),
+  ]) {
+    testWidgets('$name: every glyph wears the brand mark; the open tab is '
+        'underlined; labels read at 4.5:1', (tester) async {
+      final List<int> opened = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              bottomNavigationBar: NukhbaaBottomNav(
+                index: 1,
+                onChanged: opened.add,
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    final Finder brand = find.byKey(const Key('nav.brand'));
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('nav.item.fixtures')),
-        matching: brand,
-      ),
-      findsOneWidget,
-    );
-    final Image logo = tester.widget<Image>(
-      find.descendant(of: brand, matching: find.byType(Image)),
-    );
-    expect((logo.image as AssetImage).assetName, kBrandLogoAsset);
-    // The smaller mark (script 155): 44 across, no bigger.
-    expect(tester.getSize(brand), const Size.square(44));
-    // Raised over the bar: its top is above the other items' icons.
-    final double brandTop = tester.getTopLeft(brand).dy;
-    final double homeIconTop = tester
-        .getTopLeft(
-          find.descendant(
-            of: find.byKey(const Key('nav.item.home')),
-            matching: find.byType(Icon),
-          ),
-        )
-        .dy;
-    expect(brandTop, lessThan(homeIconTop));
-    expect(find.text('المباريات'), findsOneWidget);
-    expect(
-      tester.getSemantics(find.byKey(const Key('nav.item.fixtures'))),
-      isSemantics(isSelected: true, isButton: true),
-    );
+      for (final String tab in <String>[
+        'home',
+        'h2h',
+        'fixtures',
+        'leaders',
+        'account',
+      ]) {
+        final Finder badge = find.descendant(
+          of: find.byKey(Key('nav.item.$tab')),
+          matching: find.byKey(Key('nav.badge.$tab')),
+        );
+        expect(badge, findsOneWidget, reason: tab);
+        final Image logo = tester.widget<Image>(
+          find.descendant(of: badge, matching: find.byType(Image)),
+        );
+        expect((logo.image as AssetImage).assetName, kBrandLogoAsset);
+      }
+      // The ball sits in the middle item, inside the bar: no longer raised.
+      final Finder brand = find.byKey(const Key('nav.brand'));
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('nav.item.fixtures')),
+          matching: brand,
+        ),
+        findsOneWidget,
+      );
+      final Rect bar = tester.getRect(find.byType(NukhbaaBottomNav));
+      expect(tester.getRect(brand).top, greaterThanOrEqualTo(bar.top));
+      // One underline, under the open tab.
+      expect(find.byKey(const Key('nav.indicator')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('nav.item.fixtures')),
+          matching: find.byKey(const Key('nav.indicator')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSemantics(find.byKey(const Key('nav.item.fixtures'))),
+        isSemantics(isSelected: true, isButton: true),
+      );
 
-    await tester.tap(find.byKey(const Key('nav.item.fixtures')));
-    expect(opened, <int>[1]);
-  });
+      // Every label, open or not, on the bar's own colour.
+      final Color under = tester
+          .widget<Material>(
+            find
+                .ancestor(
+                  of: find.text('الحساب'),
+                  matching: find.byType(Material),
+                )
+                .first,
+          )
+          .color!;
+      for (final String label in <String>[
+        'الرئيسية',
+        'المواجهات',
+        'المباريات',
+        'المتصدرون',
+        'الحساب',
+      ]) {
+        final Color fg = tester.widget<Text>(find.text(label)).style!.color!;
+        expect(_contrast(fg, under), greaterThanOrEqualTo(4.5), reason: label);
+      }
+
+      await tester.tap(find.byKey(const Key('nav.item.fixtures')));
+      expect(opened, <int>[1]);
+    });
+  }
+}
+
+double _contrast(Color a, Color b) {
+  final double la = a.computeLuminance();
+  final double lb = b.computeLuminance();
+  final double hi = la > lb ? la : lb;
+  final double lo = la > lb ? lb : la;
+  return (hi + 0.05) / (lo + 0.05);
 }

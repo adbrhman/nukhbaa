@@ -314,22 +314,47 @@ class NukhbaaBottomNav extends StatelessWidget {
   /// The bar's height at normal text size; it grows with larger text.
   static const double minHeight = 70;
 
+  /// The ball's size in the middle: a little larger than the other glyphs.
+  static const double brandSize = 32;
+
+  /// The bar's rounded top corners.
+  static const double _corner = 24;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    // Opaque, closed by a hairline on top: at 96% the list scrolled under
-    // the bar read through it. No fixed height: the five items share the
-    // tallest one's height, so the bar grows with the system text size
-    // instead of overflowing at x2.0 (UI-04).
-    //
-    // The hairline is painted under the items, not over them, so the
-    // raised brand mark covers it rather than being cut by it.
-    return Material(
-      color: tokens.backgroundElevated,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: tokens.border)),
+    // nk-nav-glow: a rounded bar closed by a thin blue rim that glows, the
+    // page colour under it in the dark theme and a white card in the light
+    // one. Opaque: at 96% the list scrolled under the bar read through it.
+    // No fixed height: the five items share the tallest one's height, so
+    // the bar grows with the system text size instead of overflowing at
+    // x2.0 (UI-04).
+    final Color bar = tokens.isDark ? tokens.background : tokens.surface;
+    const BorderRadius top = BorderRadius.vertical(
+      top: Radius.circular(_corner),
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: top,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: tokens.primary.withValues(
+              alpha: tokens.isDark ? 0.35 : 0.18,
+            ),
+            blurRadius: 18,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: bar,
+        shape: RoundedRectangleBorder(
+          borderRadius: top,
+          side: BorderSide(
+            color: tokens.primary.withValues(alpha: tokens.isDark ? 0.6 : 0.4),
+          ),
         ),
+        clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
           child: ConstrainedBox(
@@ -340,44 +365,70 @@ class NukhbaaBottomNav extends StatelessWidget {
                 children: <Widget>[
                   // The bar's order (2026-10-10, agreed with the players):
                   // home, the league, matches, leaders, account. Each item
-                  // keeps its page index, so pushes and the screen-view names
-                  // still find the page they name.
+                  // keeps its page index, so pushes and the screen-view
+                  // names still find the page they name. Every glyph wears
+                  // the brand mark.
                   _item(
                     context,
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home_rounded,
+                    glyph: _NavGlyph(
+                      icon: Icons.home_rounded,
+                      badgeAt: const Alignment(0, 0.45),
+                      badgeKey: const Key('nav.badge.home'),
+                      active: index == 0,
+                    ),
                     label: 'الرئيسية',
                     navKey: const Key('nav.item.home'),
                     destination: 0,
                   ),
                   _item(
                     context,
-                    icon: Icons.shield_outlined,
-                    activeIcon: Icons.shield_rounded,
+                    glyph: _NavGlyph(
+                      icon: index == 2
+                          ? Icons.shield_rounded
+                          : Icons.shield_outlined,
+                      badgeAt: const Alignment(0, -0.1),
+                      badgeKey: const Key('nav.badge.h2h'),
+                      active: index == 2,
+                    ),
                     label: 'المواجهات',
                     navKey: const Key('nav.item.h2h'),
                     destination: 2,
                   ),
-                  // nk-nav-brand: the matches, in the middle, on the brand
-                  // mark -- the one raised button of the bar.
-                  _brandItem(
+                  _item(
                     context,
+                    glyph: _NavGlyph(
+                      key: const Key('nav.brand'),
+                      icon: Icons.sports_soccer,
+                      size: brandSize,
+                      badgeAt: Alignment.center,
+                      badgeKey: const Key('nav.badge.fixtures'),
+                      active: index == 1,
+                      ring: true,
+                    ),
                     label: 'المباريات',
                     navKey: const Key('nav.item.fixtures'),
                     destination: 1,
                   ),
                   _item(
                     context,
-                    icon: Icons.leaderboard_outlined,
-                    activeIcon: Icons.leaderboard_rounded,
+                    glyph: _NavGlyph(
+                      icon: Icons.leaderboard_rounded,
+                      badgeAt: const Alignment(0, -1.25),
+                      badgeKey: const Key('nav.badge.leaders'),
+                      active: index == 3,
+                    ),
                     label: 'المتصدرون',
                     navKey: const Key('nav.item.leaders'),
                     destination: 3,
                   ),
                   _item(
                     context,
-                    icon: Icons.person_outline_rounded,
-                    activeIcon: Icons.person_rounded,
+                    glyph: _NavGlyph(
+                      icon: Icons.person_rounded,
+                      badgeAt: const Alignment(1.1, 0.9),
+                      badgeKey: const Key('nav.badge.account'),
+                      active: index == 4,
+                    ),
                     label: 'الحساب',
                     navKey: const Key('nav.item.account'),
                     destination: 4,
@@ -391,101 +442,9 @@ class NukhbaaBottomNav extends StatelessWidget {
     );
   }
 
-  /// The middle item: the brand mark in a ring, raised over the bar's top
-  /// edge, with its label under it like the others. The ring is the action
-  /// blue while its page is open.
-  Widget _brandItem(
-    BuildContext context, {
-    required String label,
-    required int destination,
-    required Key navKey,
-  }) {
-    final tokens = context.tokens;
-    final active = index == destination;
-    final color = active ? tokens.primaryText : tokens.textSecondary;
-    return Expanded(
-      child: Semantics(
-        container: true,
-        button: true,
-        selected: active,
-        child: InkWell(
-          key: navKey,
-          onTap: () => onChanged(destination),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.sm,
-              horizontal: AppSpacing.xs,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                // The mark takes an icon's height in the row, so its label
-                // lines up with the others; the rest of it rises above.
-                SizedBox(
-                  width: brandSize,
-                  height: 22,
-                  child: OverflowBox(
-                    maxWidth: brandSize,
-                    maxHeight: brandSize,
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      key: const Key('nav.brand'),
-                      width: brandSize,
-                      height: brandSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: tokens.backgroundElevated,
-                        border: Border.all(
-                          color: active ? tokens.primary : tokens.border,
-                          width: 2,
-                        ),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: tokens.primary.withValues(
-                              alpha: active ? 0.45 : 0.2,
-                            ),
-                            blurRadius: active ? 12 : 6,
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          kBrandLogoAsset,
-                          fit: BoxFit.cover,
-                          excludeFromSemantics: true,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: AppFontSize.s12,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// The brand button's diameter: small enough that it rises only a little
-  /// over the bar and covers less of the page under it (script 155).
-  static const double brandSize = 44;
-
   Widget _item(
     BuildContext context, {
-    required IconData icon,
-    required IconData activeIcon,
+    required Widget glyph,
     required String label,
     required int destination,
     required Key navKey,
@@ -504,14 +463,16 @@ class NukhbaaBottomNav extends StatelessWidget {
           key: navKey,
           onTap: () => onChanged(destination),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.sm,
-              horizontal: AppSpacing.xs,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xs,
+              AppSpacing.sm,
+              AppSpacing.xs,
+              AppSpacing.xs,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                Icon(active ? activeIcon : icon, size: 22, color: color),
+                glyph,
                 const SizedBox(height: AppSpacing.xs),
                 // 12px, from 10: the smallest label the bar may carry.
                 Text(
@@ -522,14 +483,132 @@ class NukhbaaBottomNav extends StatelessWidget {
                   style: TextStyle(
                     color: color,
                     fontSize: AppFontSize.s12,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                // The open tab is underlined with a short glowing bar; the
+                // others keep its room so every label sits on one line.
+                Container(
+                  key: active ? const Key('nav.indicator') : null,
+                  width: 24,
+                  height: 3,
+                  decoration: active
+                      ? BoxDecoration(
+                          color: tokens.primary,
+                          borderRadius: BorderRadius.circular(2),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: tokens.primary.withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One glyph of the bar: the tab's icon with the brand mark on it, glowing
+/// blue while its tab is open. The middle one is the ball in a ring.
+class _NavGlyph extends StatelessWidget {
+  const _NavGlyph({
+    required this.icon,
+    required this.badgeAt,
+    required this.badgeKey,
+    required this.active,
+    this.size = 26,
+    this.ring = false,
+    super.key,
+  });
+
+  final IconData icon;
+
+  /// Where the brand mark sits on the icon.
+  final Alignment badgeAt;
+  final Key badgeKey;
+  final bool active;
+  final double size;
+
+  /// The ball's ring, blue and glowing while open.
+  final bool ring;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final Color color = active ? tokens.primaryText : tokens.textSecondary;
+    final double badge = (size * 0.46).roundToDouble();
+    final Widget glyph = SizedBox.square(
+      dimension: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          Positioned.fill(
+            child: Icon(
+              icon,
+              size: size,
+              color: color,
+              shadows: active
+                  ? <Shadow>[
+                      Shadow(
+                        color: tokens.primary.withValues(alpha: 0.7),
+                        blurRadius: 12,
+                      ),
+                    ]
+                  : null,
+            ),
+          ),
+          Align(
+            alignment: badgeAt,
+            child: Container(
+              key: badgeKey,
+              width: badge,
+              height: badge,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(badge * 0.26),
+                border: Border.all(
+                  color: tokens.isDark ? tokens.background : tokens.surface,
+                  width: 1,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(badge * 0.22),
+                child: Image.asset(
+                  kBrandLogoAsset,
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!ring) return glyph;
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: active ? tokens.primary : tokens.border,
+          width: 1.5,
+        ),
+        boxShadow: active
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: tokens.primary.withValues(alpha: 0.45),
+                  blurRadius: 10,
+                ),
+              ]
+            : null,
+      ),
+      child: glyph,
     );
   }
 }
