@@ -6526,6 +6526,17 @@ longer follows it.
   `retired_build_refusal_test.dart` (through `bearerAuth`: off, on, a build
   that names itself, the web, one read for many requests).
 
+### The retired builds' own words (script 151, 2026-10-26)
+
+The owner tested the refusal on a build from before the head-to-head tab
+(2026-10-26): it worked, but `oldBuildMessage` sends the player to
+«تسجيل الدخول بحساب آخر» then «يتوفر تحديث جديد», and those builds' sign-in
+screen has no such row (it came on 13 October). `retiredBuildRefusal` now
+carries `retiredBuildMessage`: open the browser, type nukhbaa.app, tap
+«حمّل التطبيق لأندرويد» (the landing page's button), sign in with the same
+account, delete the old app. The gate's own message is unchanged. Test:
+`retired_build_refusal_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

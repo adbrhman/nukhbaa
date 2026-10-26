@@ -103,7 +103,13 @@ void main() {
       jsonDecode(await refused.body()) as Map<String, Object?>,
     );
     expect(body.code, 'app.update_required');
-    expect(body.message, oldBuildMessage);
+    expect(body.message, retiredBuildMessage);
+    // The one way those builds have (script 151): the landing page and its
+    // button; their sign-in screen has no update row.
+    expect(body.message, contains('nukhbaa.app'));
+    expect(body.message, contains('«حمّل التطبيق لأندرويد»'));
+    expect(body.message, isNot(contains('تسجيل الدخول بحساب آخر')));
+    expect(body.message, isNot(contains('يتوفر تحديث جديد')));
 
     expect((await _call(root, _other)).statusCode, HttpStatus.ok);
   });

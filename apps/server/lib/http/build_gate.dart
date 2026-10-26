@@ -81,11 +81,23 @@ AppError? oldBuildRefusal({
 bool sentNoBuild(Map<String, String> headers) =>
     headers[appBuildHeader] == null && headers['origin'] == null;
 
-/// The refusal a player on a retired build reads (script 149): the same
-/// words as the gate's.
+/// What a player on a retired build reads (script 151, the owner's test on
+/// 2026-10-26). Those builds (before 10 October) have no «يتوفر تحديث جديد»
+/// row on their sign-in screen (it came on 13 October), so
+/// [oldBuildMessage]'s first way led them to a sign-in screen and nothing
+/// more; and their screen shows the text plain, so a link cannot be
+/// tapped. It names the one way that works: the landing page at
+/// nukhbaa.app (reachable in Yemen without a VPN, script 144) and its
+/// button, as `deploy/web-mirror/landing/index.html` spells it.
+const String retiredBuildMessage =
+    'نسختك من نُخبة قديمة جدًا ولم تعد تعمل. افتح المتصفح واكتب '
+    'nukhbaa.app ثم اضغط «حمّل التطبيق لأندرويد» وثبّته، وسجّل الدخول '
+    'بنفس حسابك، ثم احذف التطبيق القديم. نقاطك وتوقعاتك محفوظة.';
+
+/// The refusal a player on a retired build reads (scripts 149, 151).
 const AppError retiredBuildRefusal = AppError.invariant(
   'app.update_required',
-  oldBuildMessage,
+  retiredBuildMessage,
 );
 
 /// The root middleware's gate: answers a request too old to be served with
