@@ -90,22 +90,9 @@ final class LeaderboardsApi {
     );
   }
 
-  /// `GET /seasons/{id}/duel-wins` -- how many duels each player of the
-  /// season won, by participant id, for the marks beside the names on the
-  /// month's board. Same gate as [fixtureLeaderboard]:
-  /// `Err(authorization, code: leaderboard.not_a_participant)` for anyone
-  /// outside the season.
-  Future<Result<SeasonDuelWinsDto>> seasonDuelWins(String seasonId) {
-    return _transport.getObject<SeasonDuelWinsDto>(
-      '/seasons/$seasonId/duel-wins',
-      parse: SeasonDuelWinsDto.fromJson,
-    );
-  }
-
   /// `GET /seasons/{id}/live` -- while the season's matches are in play,
   /// what the caller's predictions would earn if they ended now, their
-  /// place on the month board now and then, and their duels on those
-  /// matches. Same gate as [fixtureLeaderboard]:
+  /// place on the month board now and then. Same gate as [fixtureLeaderboard]:
   /// `Err(authorization, code: leaderboard.not_a_participant)` for anyone
   /// outside the season.
   Future<Result<LiveStandingDto>> seasonLive(String seasonId) {

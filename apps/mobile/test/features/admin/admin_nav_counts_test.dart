@@ -61,7 +61,7 @@ Future<void> _pumpHub(WidgetTester tester, Size size) async {
               _dashboard(<CurrentMonthFixtureItemDto>[_awaiting('f-1')]),
         ),
         adminAttentionProvider.overrideWith(
-          (ref) async => const AdminAttention(heldReferrals: 2, freshErrors: 3),
+          (ref) async => const AdminAttention(freshErrors: 3),
         ),
         adminMonthPulseProvider.overrideWith(
           (ref) async => AdminMonthPulse(
@@ -102,7 +102,6 @@ String? _count(WidgetTester tester, AdminSection section) {
 
 const Map<AdminSection, String> _expected = <AdminSection, String>{
   AdminSection.resultsScoring: '1',
-  AdminSection.referrals: '2',
   AdminSection.errorLog: '3',
   AdminSection.champions: '1',
 };
@@ -126,7 +125,7 @@ void main() {
           _awaiting('a'),
           _awaiting('b'),
         ]),
-        attention: const AdminAttention(heldReferrals: 0, freshErrors: 4),
+        attention: const AdminAttention(freshErrors: 4),
         month: const AdminMonthPulse(
           current: null,
           board: null,
@@ -147,7 +146,7 @@ void main() {
     expect(
       adminNavCounts(
         dashboard: null,
-        attention: const AdminAttention(heldReferrals: null, freshErrors: null),
+        attention: const AdminAttention(freshErrors: null),
         month: null,
         now: now,
       ),
@@ -165,7 +164,6 @@ void main() {
     // The home page's rows carry the same numbers.
     for (final (String key, String count) in <(String, String)>[
       ('admin.dashboard.attention.results', '1'),
-      ('admin.dashboard.attention.referrals', '2'),
       ('admin.dashboard.attention.errors', '3'),
       ('admin.dashboard.attention.crowning', '1'),
     ]) {

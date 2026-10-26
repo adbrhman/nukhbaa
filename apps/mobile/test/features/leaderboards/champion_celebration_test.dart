@@ -50,7 +50,6 @@ Map<String, Object?> _champion({
   'points': 126,
   'exact_count': 21,
   'decided_count': 210,
-  'referral_points': 0,
   'crowned_at': until.subtract(const Duration(hours: 40)).toIso8601String(),
   'celebrate_until': until.toIso8601String(),
   'photo_url': ?photoUrl,

@@ -1,8 +1,7 @@
 /// The home page's live card through the real card, the real
 /// `LeaderboardsApi` and a fake server: while a match the viewer predicted
 /// is in play it shows the running score, what their prediction would earn
-/// if it ended now, who leads their duel and their month place now and
-/// then; it stays hidden when nothing they predicted is in play.
+/// if it ended now and their month place now and then; it stays hidden when nothing they predicted is in play.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -82,14 +81,6 @@ const Map<String, Object?> _inPlay = {
       'my_points': 6,
     },
   ],
-  'duels': [
-    {
-      'fixture_id': 'f-1',
-      'opponent_name': 'Khaled',
-      'my_points': 6,
-      'opponent_points': 0,
-    },
-  ],
   'rank_now': 5,
   'rank_if_ended': 2,
   'points_now': 3,
@@ -131,8 +122,9 @@ Future<(_Server, List<int>)> _pump(
 }
 
 void main() {
-  testWidgets('a match in play shows the score, the points, the duel and '
-      'the place', (tester) async {
+  testWidgets('a match in play shows the score, the points and the place', (
+    tester,
+  ) async {
     final (_Server server, List<int> opened) = await _pump(tester);
 
     expect(server.liveReads, 1);
@@ -144,10 +136,8 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('home.live.points.f-1'))).data,
       contains('ونقاطك لو انتهت الآن: 6'),
     );
-    expect(
-      tester.widget<Text>(find.byKey(const Key('home.live.duel.f-1.0'))).data,
-      'تتقدم على Khaled في التحدي (6 - 0)',
-    );
+    // The duels were removed (2026-10-26): no line names an opponent.
+    expect(find.textContaining('التحدي'), findsNothing);
     expect(
       tester.widget<Text>(find.byKey(const Key('home.live.rank.s-1'))).data,
       'مركزك في الشهر 5، ولو انتهت الآن: المركز 2 من 12',
@@ -177,46 +167,17 @@ void main() {
   });
 
   testWidgets('nothing in play on the server shows nothing', (tester) async {
-    await _pump(
-      tester,
-      standing: const {'schema_version': 1, 'fixtures': [], 'duels': []},
-    );
+    await _pump(tester, standing: const {'schema_version': 1, 'fixtures': []});
 
     expect(find.byKey(const Key('home.live')), findsNothing);
   });
 
   group('lines', () {
-    test('a duel behind and level', () {
-      expect(
-        liveDuelLine(
-          const LiveDuelStandingDto(
-            fixtureId: 'f',
-            opponentName: 'Sara',
-            myPoints: 0,
-            opponentPoints: 3,
-          ),
-        ),
-        'Sara يتقدم عليك في التحدي (0 - 3)',
-      );
-      expect(
-        liveDuelLine(
-          const LiveDuelStandingDto(
-            fixtureId: 'f',
-            opponentName: 'Sara',
-            myPoints: 0,
-            opponentPoints: 0,
-          ),
-        ),
-        'تحديك مع Sara متعادل (0 - 0)',
-      );
-    });
-
     test('a viewer not yet on the board', () {
       expect(
         liveRankLine(
           const LiveStandingDto(
             fixtures: [],
-            duels: [],
             rankIfEnded: 7,
             pointsNow: 0,
             pointsIfEnded: 3,

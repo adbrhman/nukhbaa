@@ -1,7 +1,7 @@
 /// The friends' league tab through the real board, the real `GroupsApi`
 /// and a fake server: with a league it shows the league's month board as
-/// the server ranked it; before any league it names the players the viewer
-/// duels most and opens league creation; the shared invitation carries a
+/// the server ranked it; before any league it opens league creation, and
+/// reads nothing of the removed duels; the shared invitation carries a
 /// one-tap link.
 library;
 
@@ -25,22 +25,6 @@ const GroupDto _league = GroupDto(
   createdAt: '2026-10-01T00:00:00.000Z',
   memberCount: 4,
 );
-
-DuelSummaryDto _duel(String id, String opponentId, String name) =>
-    DuelSummaryDto(
-      id: id,
-      challengeId: 'c-$id',
-      fixtureId: 'f-$id',
-      homeTeam: 'Arsenal',
-      awayTeam: 'Chelsea',
-      kickoffAt: '2026-10-05T18:00:00.000Z',
-      acceptedAt: '2026-10-05T12:00:00.000Z',
-      isChallenger: true,
-      opponentUserId: opponentId,
-      opponentName: name,
-      myIsDouble: false,
-      state: 'settled',
-    );
 
 final class _Server {
   _Server({required this.inLeague});
@@ -83,17 +67,6 @@ final class _Server {
                 totalPoints: 6,
                 fixturesScored: 4,
               ),
-            ],
-          ).toJson(),
-        );
-      case '/me/duels':
-        return okJsonObject(
-          MyDuelsDto(
-            challenges: const <DuelChallengeDto>[],
-            duels: <DuelSummaryDto>[
-              _duel('1', 'u-sara', 'Sara'),
-              _duel('2', 'u-khaled', 'Khaled'),
-              _duel('3', 'u-khaled', 'Khaled'),
             ],
           ).toJson(),
         );
@@ -144,15 +117,12 @@ void main() {
     );
   });
 
-  testWidgets('before any league it names the players duelled most', (
-    tester,
-  ) async {
-    await _pump(tester, inLeague: false);
+  testWidgets('before any league it opens league creation', (tester) async {
+    final _Server server = await _pump(tester, inLeague: false);
 
-    expect(
-      tester.widget<Text>(find.byKey(const Key('friends.rivals'))).data,
-      contains('Khaled، Sara'),
-    );
+    expect(find.byKey(const Key('friends.start')), findsOneWidget);
+    expect(find.byKey(const Key('friends.rivals')), findsNothing);
+    expect(server.paths, isNot(contains('/me/duels')));
 
     await tester.tap(find.byKey(const Key('friends.start.create')));
     await tester.pump();

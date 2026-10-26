@@ -21,7 +21,6 @@ import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/fixtures_admin_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
-import 'screens/sections/referral_admin_section.dart';
 import 'screens/sections/results_scoring_section.dart';
 import 'screens/sections/user_names_section.dart';
 import 'screens/sections/user_sanction_section.dart';
@@ -39,7 +38,6 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.analytics => 'التحليلات',
     AdminSection.audit => l10n.adminAuditLogTab,
     AdminSection.errorLog => 'سجل الأخطاء',
-    AdminSection.referrals => 'نظام الدعوات',
     AdminSection.champions => 'الترتيب والأبطال',
     AdminSection.h2hLeague => 'دوري المواجهات',
   };
@@ -76,7 +74,6 @@ const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
     title: 'اللاعبون والتواصل',
     sections: [
       AdminSection.users,
-      AdminSection.referrals,
       AdminSection.ledger,
       AdminSection.announcements,
     ],
@@ -253,7 +250,6 @@ class AdminShell extends StatelessWidget {
         ],
       ),
       AdminSection.predictions => const AdminPredictionsSection(),
-      AdminSection.referrals => const ReferralAdminSection(),
       AdminSection.champions => const ChampionAdminSection(),
       AdminSection.h2hLeague => const H2hAdminSection(),
     };

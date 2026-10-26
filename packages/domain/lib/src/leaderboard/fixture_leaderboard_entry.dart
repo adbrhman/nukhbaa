@@ -32,7 +32,6 @@ final class FixtureLeaderboardEntry {
     required this.fixturesScored,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     required this.outcomeCount,
     required this.joinedAt,
     required this.previousRank,
@@ -53,7 +52,6 @@ final class FixtureLeaderboardEntry {
     required int fixturesScored,
     int exactCount = 0,
     int decidedCount = 0,
-    int referralPoints = 0,
     int outcomeCount = 0,
     DateTime? joinedAt,
     int? previousRank,
@@ -67,7 +65,6 @@ final class FixtureLeaderboardEntry {
       fixturesScored: fixturesScored,
       exactCount: exactCount,
       decidedCount: decidedCount,
-      referralPoints: referralPoints,
       outcomeCount: outcomeCount,
       joinedAt: joinedAt?.toUtc(),
       previousRank: previousRank,
@@ -114,11 +111,6 @@ final class FixtureLeaderboardEntry {
   /// played. The denominator is therefore predictions actually made and
   /// actually settled.
   final int decidedCount;
-
-  /// The month's invitation points (migration 0073, capped at 20): the
-  /// first tie-break after [totalPoints], never added to it. Zero on a
-  /// board that does not break ties by invitations (the day board).
-  final int referralPoints;
 
   /// Decided fixtures with the right outcome but not the exact score: the
   /// tie-break after [exactCount] (batch 129).
@@ -193,7 +185,6 @@ final class FixtureLeaderboardEntry {
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
-        referralPoints: referralPoints,
         outcomeCount: outcomeCount,
         joinedAt: joinedAt,
         previousRank: previousRank,
@@ -213,7 +204,6 @@ final class FixtureLeaderboardEntry {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
-      other.referralPoints == referralPoints &&
       other.outcomeCount == outcomeCount &&
       other.joinedAt == joinedAt &&
       other.previousRank == previousRank &&
@@ -229,7 +219,6 @@ final class FixtureLeaderboardEntry {
     fixturesScored,
     exactCount,
     decidedCount,
-    referralPoints,
     outcomeCount,
     joinedAt,
     previousRank,

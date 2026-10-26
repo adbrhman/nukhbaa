@@ -1,6 +1,6 @@
 /// Audit L-03: a search by name that finds nobody, or fails, says so
 /// instead of showing an empty list. Through the real invitation sheet,
-/// the real `DuelsApi` and a fake server.
+/// the real `GroupsApi` and a fake server.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -49,9 +49,9 @@ void main() {
   testWidgets('nobody by that name is said', (tester) async {
     await _search(
       tester,
-      (request) async => request.url.path == '/duels/players'
+      (request) async => request.url.path == '/groups/invitees'
           ? okJsonObject(
-              const DuelPlayersDto(players: <DuelPlayerDto>[]).toJson(),
+              const GroupInviteesDto(players: <GroupInviteeDto>[]).toJson(),
             )
           : http.Response('not found', 404),
     );

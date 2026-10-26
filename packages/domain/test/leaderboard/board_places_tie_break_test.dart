@@ -1,8 +1,8 @@
 // Batch 129 (decided 2026-10-14): three players on 45 points all showed
-// tenth. After points, the month's invitation points and exact scorelines,
-// a tie now goes to the right outcomes, then to the earlier join of the
-// contest, so every player gets a place of his own. Players share a place
-// only when level on all five. The same chain ranks the daily snapshot
+// tenth. After points and exact scorelines, a tie now goes to the right
+// outcomes, then to the earlier join of the contest, so every player gets a
+// place of his own. Players share a place only when level on all four (the
+// month's invitation points left the chain on 2026-10-26). The same chain ranks the daily snapshot
 // (supabase/tests/0108_board_places_tie_break_test.sql) and the season.
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -19,7 +19,6 @@ ParticipantFixtureTotals _line(
   int points = 45,
   int exact = 14,
   int outcome = 0,
-  int referral = 0,
   DateTime? joinedAt,
 }) =>
     (ParticipantFixtureTotals.of(
@@ -28,7 +27,6 @@ ParticipantFixtureTotals _line(
               fixturesScored: 115,
               exactCount: exact,
               decidedCount: 110,
-              referralPoints: referral,
               outcomeCount: outcome,
               joinedAt: joinedAt,
             )
@@ -91,10 +89,10 @@ void main() {
       _places([
         _line(_a, outcome: 40, joinedAt: day1),
         _line(_b, exact: 15, points: 45, outcome: 0, joinedAt: day3),
-        _line(_c, referral: 1, outcome: 0, joinedAt: day3),
+        _line(_c, outcome: 0, joinedAt: day3),
         _line(_d, points: 48, joinedAt: day3),
       ]),
-      [(_d, 1), (_c, 2), (_b, 3), (_a, 4)],
+      [(_d, 1), (_b, 2), (_a, 3), (_c, 4)],
     );
   });
 
@@ -105,7 +103,7 @@ void main() {
     );
   });
 
-  test('level on all five: the same place, the next one skipped', () {
+  test('level on all four: the same place, the next one skipped', () {
     expect(
       _places([
         _line(_a, outcome: 5, joinedAt: day1),

@@ -1,5 +1,5 @@
 /// Inviting to a friends' league by name, through the real league board,
-/// the real invitation sheet, the real `GroupsApi` and `DuelsApi` and a
+/// the real invitation sheet, the real `GroupsApi` and a
 /// fake server: "invite" offers the link and a search; a player found by
 /// name is invited once and marked sent; a player already in the league is
 /// marked so.
@@ -49,12 +49,12 @@ final class _Server {
       return okJsonObject(const <String, Object?>{'invited': true});
     }
     switch (path) {
-      case '/duels/players':
+      case '/groups/invitees':
         return okJsonObject(
-          const DuelPlayersDto(
-            players: <DuelPlayerDto>[
-              DuelPlayerDto(userId: 'u-khaled', displayName: 'Khaled'),
-              DuelPlayerDto(userId: 'u-member', displayName: 'Khalid'),
+          const GroupInviteesDto(
+            players: <GroupInviteeDto>[
+              GroupInviteeDto(userId: 'u-khaled', displayName: 'Khaled'),
+              GroupInviteeDto(userId: 'u-member', displayName: 'Khalid'),
             ],
           ).toJson(),
         );
@@ -75,13 +75,6 @@ final class _Server {
           const FixtureLeaderboardDto(
             seasonId: 's-1',
             entries: <FixtureLeaderboardEntryDto>[],
-          ).toJson(),
-        );
-      case '/me/duels':
-        return okJsonObject(
-          const MyDuelsDto(
-            challenges: <DuelChallengeDto>[],
-            duels: <DuelSummaryDto>[],
           ).toJson(),
         );
       case '/me/fixture-predictions':

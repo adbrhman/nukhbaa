@@ -18,7 +18,6 @@ LeaderboardEntry _entry(
   int entryCount = 1,
   int exact = 0,
   int outcome = 0,
-  int referral = 0,
 }) {
   final result = LeaderboardEntry.projected(
     participantId: ParticipantId(participant),
@@ -29,7 +28,6 @@ LeaderboardEntry _entry(
     exactCount: exact,
     settledCount: exact + outcome,
     outcomeCount: outcome,
-    referralPoints: referral,
   );
   return (result as Ok<LeaderboardEntry>).value;
 }
@@ -199,10 +197,10 @@ void main() {
       expect(board.entries.map((e) => e.rank).toList(), [1, 2, 3, 4]);
     });
 
-    test('an invitation point comes before exact calls', () {
+    test('exact calls break a points tie (no invitation points)', () {
       final board = _rank([
-        _entry(_pA, 10, exact: 3),
-        _entry(_pB, 10, exact: 1, referral: 1),
+        _entry(_pA, 10, exact: 1),
+        _entry(_pB, 10, exact: 3),
       ]);
       expect(board.entries.first.participantId.value, _pB);
       expect(board.entries.map((e) => e.rank).toList(), [1, 2]);

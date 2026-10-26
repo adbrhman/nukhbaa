@@ -89,7 +89,6 @@ final class ChampionToCrown {
     required this.points,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     this.prize,
   });
 
@@ -104,9 +103,6 @@ final class ChampionToCrown {
 
   /// Decided fixtures (the accuracy's denominator).
   final int decidedCount;
-
-  /// The month's invitation points (a tie-break only).
-  final int referralPoints;
 
   /// What the champion wins, as the admin typed it (migration 0078), or
   /// null without one.
@@ -124,7 +120,6 @@ final class MonthChampion {
     required this.points,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     required this.crownedAt,
     this.photoUpdatedAt,
     this.avatarUpdatedAt,
@@ -152,9 +147,6 @@ final class MonthChampion {
 
   /// Decided fixtures.
   final int decidedCount;
-
-  /// The month's invitation points.
-  final int referralPoints;
 
   /// When the month was crowned (UTC).
   final DateTime crownedAt;

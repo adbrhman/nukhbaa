@@ -56,7 +56,6 @@ ChampionCandidateDto _line(int rank, String id, String name, int points) =>
       points: points,
       exactCount: rank,
       decidedCount: 8,
-      referralPoints: 0,
     );
 
 ChampionCandidatesDto _board(
@@ -105,7 +104,7 @@ Future<List<AdminSection>> _pump(
           ),
         ),
         adminAttentionProvider.overrideWith(
-          (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+          (ref) async => const AdminAttention(freshErrors: 0),
         ),
         adminMonthPulseProvider.overrideWith((ref) => pulse()),
         adminRetentionProvider.overrideWith(

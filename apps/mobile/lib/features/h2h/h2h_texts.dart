@@ -5,8 +5,8 @@
 /// as the nearest neutral word, never as an error.
 library;
 
-/// The tab's name. Only this league is called المواجهات: the friends'
-/// duels are التحديات and the fourth section is المجموعة (audit M-10).
+/// The tab's name. Only this league is called المواجهات: the fourth
+/// section is المجموعة (audit M-10).
 const String h2hTitle = 'المواجهات';
 
 /// The league's name.

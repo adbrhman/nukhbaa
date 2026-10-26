@@ -111,22 +111,6 @@
     "layout13": 0,
     "layout20": 0
   },
-  "duels/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "duels/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
   "elite-card/dark": {
     "contrast": 0,
     "tapTarget": 0,
@@ -408,22 +392,6 @@
     "layout20": 0
   },
   "insights/light": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "invite/dark": {
-    "contrast": 0,
-    "tapTarget": 0,
-    "label": 0,
-    "layout10": 0,
-    "layout13": 0,
-    "layout20": 0
-  },
-  "invite/light": {
     "contrast": 0,
     "tapTarget": 0,
     "label": 0,

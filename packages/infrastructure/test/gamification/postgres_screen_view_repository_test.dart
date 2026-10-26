@@ -46,7 +46,7 @@ void main() {
     final result = await PostgresScreenViewRepository(connection).add(
       userId: user,
       day: DateTime.utc(2026, 10, 7),
-      opens: {'home': 4, 'duels': 1},
+      opens: {'home': 4, 'badges': 1},
       reportedAt: reportedAt,
     );
 
@@ -59,7 +59,7 @@ void main() {
       'view_date': '2026-10-07',
       'user_id': user.value,
       'reported_at': reportedAt,
-      'screens': ['home', 'duels'],
+      'screens': ['home', 'badges'],
       'opens': [4, 1],
     });
   });

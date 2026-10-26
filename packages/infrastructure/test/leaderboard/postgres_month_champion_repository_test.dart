@@ -108,14 +108,12 @@ void main() {
           points: 42,
           exactCount: 6,
           decidedCount: 30,
-          referralPoints: 2,
         ),
         ChampionToCrown(
           userId: UserId('00000000-0000-4000-8077-000000000002'),
           points: 42,
           exactCount: 6,
           decidedCount: 28,
-          referralPoints: 2,
           prize: '150 ريال سعودي',
         ),
       ],
@@ -130,6 +128,7 @@ void main() {
     expect(connection.sqls, hasLength(2));
     expect(connection.params.first['points'], 42);
     expect(connection.params.last['decided_count'], 28);
+    expect(connection.params.first.containsKey('referral_points'), isFalse);
     expect(
       connection.params.first['crowned_at'],
       DateTime.utc(2026, 10, 1, 12),
@@ -152,7 +151,6 @@ void main() {
               points: 42,
               exactCount: 6,
               decidedCount: 30,
-              referralPoints: 0,
             ),
           ],
           crownedBy: const UserId('00000000-0000-4000-8077-0000000000aa'),
@@ -174,7 +172,6 @@ void main() {
             'points': 42,
             'exact_count': 6,
             'decided_count': 30,
-            'referral_points': 2,
             'crowned_at': DateTime.utc(2026, 10, 1, 12),
             'photo_updated_at': DateTime.utc(2026, 10, 1, 12, 5),
             'avatar_updated_at': null,
@@ -188,7 +185,6 @@ void main() {
     final champion = (result as Ok<List<MonthChampion>>).value.single;
     expect(champion.displayName, 'Ahmad');
     expect(champion.points, 42);
-    expect(champion.referralPoints, 2);
     expect(champion.photoUpdatedAt, DateTime.utc(2026, 10, 1, 12, 5));
     expect(champion.avatarUpdatedAt, isNull);
     expect(champion.monthEndAt, DateTime.utc(2026, 9, 30, 21));

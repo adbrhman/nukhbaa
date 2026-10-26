@@ -13,7 +13,6 @@ import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/features/auth/account_settings_screen.dart';
 import 'package:mobile/features/auth/rules_screen.dart';
 import 'package:mobile/features/auth/session_gate.dart';
-import 'package:mobile/features/duels/duels_screen.dart';
 import 'package:mobile/features/gamification/insights_screen.dart';
 import 'package:mobile/features/gamification/my_badges_screen.dart';
 import 'package:mobile/features/groups/my_groups_screen.dart';
@@ -26,7 +25,7 @@ class _Sheet extends StatelessWidget implements NamedScreen {
   const _Sheet();
 
   @override
-  String get screenName => ScreenNames.duelAccept;
+  String get screenName => ScreenNames.predictionReactions;
 
   @override
   Widget build(BuildContext context) => const SizedBox(height: 200);
@@ -63,15 +62,18 @@ void main() {
   group('ScreenViewLog', () {
     test('counts known names only, up to the server limit', () {
       final ScreenViewLog log = ScreenViewLog()
-        ..record(ScreenNames.duels)
-        ..record(ScreenNames.duels)
-        ..record('not_a_screen');
+        ..record(ScreenNames.groups)
+        ..record(ScreenNames.groups)
+        ..record('not_a_screen')
+        // The duels and the invitations were removed (2026-10-26).
+        ..record('duels')
+        ..record('invite');
       for (int i = 0; i < ScreenViewLog.maxOpensPerScreen + 5; i++) {
         log.record(ScreenNames.home);
       }
 
       expect(log.pending, <String, int>{
-        'duels': 2,
+        'groups': 2,
         'home': ScreenViewLog.maxOpensPerScreen,
       });
     });
@@ -124,7 +126,7 @@ void main() {
       await tester.tap(find.byKey(const Key('open')));
       await tester.pumpAndSettle();
 
-      expect(log.pending, <String, int>{'duel_accept': 1});
+      expect(log.pending, <String, int>{'prediction_reactions': 1});
     });
 
     testWidgets('a dialog counts nothing', (tester) async {
@@ -150,7 +152,6 @@ void main() {
       const RulesScreen(): 'rules',
       const AccountSettingsScreen(): 'settings',
       const NotificationsScreen(): 'notifications',
-      const DuelsScreen(): 'duels',
       const MyGroupsScreen(): 'groups',
       const MyBadgesScreen(): 'badges',
       const InsightsScreen(): 'insights',
@@ -164,7 +165,7 @@ void main() {
 
   group('ScreenViewReporter', () {
     test('a kept report empties the log', () async {
-      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.duels);
+      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.groups);
       final List<Map<String, int>> sent = <Map<String, int>>[];
       final ScreenViewReporter reporter = ScreenViewReporter(
         log: log,
@@ -178,13 +179,13 @@ void main() {
       await reporter.flush();
 
       expect(sent, <Map<String, int>>[
-        <String, int>{'duels': 1},
+        <String, int>{'groups': 1},
       ]);
       expect(log.pending, isEmpty);
     });
 
     test('a failed report is kept for the next one', () async {
-      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.duels);
+      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.groups);
       final ScreenViewReporter reporter = ScreenViewReporter(
         log: log,
         send: (Map<String, int> opens) async => throw StateError('offline'),
@@ -192,11 +193,11 @@ void main() {
 
       await reporter.flush();
 
-      expect(log.pending, <String, int>{'duels': 1});
+      expect(log.pending, <String, int>{'groups': 1});
     });
 
     test('a local build never sends', () async {
-      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.duels);
+      final ScreenViewLog log = ScreenViewLog()..record(ScreenNames.groups);
       int calls = 0;
       final ScreenViewReporter reporter = ScreenViewReporter(
         log: log,
@@ -210,7 +211,7 @@ void main() {
       await reporter.flush();
 
       expect(calls, 0);
-      expect(log.pending, <String, int>{'duels': 1});
+      expect(log.pending, <String, int>{'groups': 1});
     });
   });
 

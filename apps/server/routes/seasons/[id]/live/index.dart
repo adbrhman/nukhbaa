@@ -9,9 +9,8 @@ import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
 /// `GET /seasons/{id}/live` -- while the season's matches are in play, what
-/// the caller's predictions would earn if they ended now, their place on
-/// the month board now and then, and who leads each of their duels on them
-/// (`GetLiveStanding`). Graded on the server; nothing is stored. Only a
+/// the caller's predictions would earn if they ended now and their place on
+/// the month board now and then (`GetLiveStanding`). Graded on the server; nothing is stored. Only a
 /// member of the season reads it: otherwise `401
 /// leaderboard.not_a_participant`, as for the leaderboard itself.
 ///
@@ -39,15 +38,6 @@ Future<Response> onRequest(RequestContext context, String id) async {
               minute: f.minute,
               finished: f.finished,
               myPoints: f.myPoints,
-            ),
-        ],
-        duels: [
-          for (final LiveDuelStanding d in value.duels)
-            LiveDuelStandingDto(
-              fixtureId: d.fixture.value,
-              opponentName: d.opponentName,
-              myPoints: d.myPoints,
-              opponentPoints: d.opponentPoints,
             ),
         ],
         rankNow: value.rankNow,

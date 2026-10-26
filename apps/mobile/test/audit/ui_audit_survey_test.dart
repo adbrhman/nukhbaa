@@ -32,7 +32,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/auth/biometric_unlock.dart';
-import 'package:mobile/core/auth/install_id.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/theme/theme_controller.dart';
@@ -48,12 +47,10 @@ import 'package:mobile/features/auth/session_gate.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/features/competition/team_catalog_index.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
-import 'package:mobile/features/duels/duels_screen.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fixtures_calendar_page.dart';
 import 'package:mobile/features/gamification/insights_screen.dart';
-import 'package:mobile/features/gamification/invite_friends_screen.dart';
 import 'package:mobile/features/gamification/my_badges_screen.dart';
 import 'package:mobile/features/groups/create_group_screen.dart';
 import 'package:mobile/features/groups/group_feed_screen.dart';
@@ -201,28 +198,6 @@ final List<_Screen> _screens = <_Screen>[
   _Screen('badges', _served(const MyBadgesScreen(), answers: _badges)),
   _Screen('insights', _served(const InsightsScreen(), answers: _insights)),
   _Screen(
-    'invite',
-    _served(
-      const InviteFriendsScreen(),
-      answers: const <String, Object>{
-        '/me/referral': <String, Object?>{
-          'schema_version': 1,
-          'code': 'ABCDEFGH',
-          'month_points': 3,
-          'season_points': 7,
-          'invited_count': 5,
-          'pending_count': 2,
-          'month_cap': 20,
-        },
-      },
-      overrides: <Override>[
-        installIdStoreProvider.overrideWithValue(
-          const FixedInstallIdStore('inst-12345678'),
-        ),
-      ],
-    ),
-  ),
-  _Screen(
     'champions-record',
     _served(
       const ChampionsRecordScreen(),
@@ -241,7 +216,6 @@ final List<_Screen> _screens = <_Screen>[
       },
     ),
   ),
-  _Screen('duels', _served(const DuelsScreen(), answers: _duels)),
   _Screen(
     'h2h.round',
     _served(
@@ -302,7 +276,7 @@ final List<_Screen> _screens = <_Screen>[
         body: FriendsLeagueBoard(seasonId: 's-10', keyPrefix: 'friends'),
       ),
       answers: <String, Object>{
-        ..._duels,
+        ..._myPredictions,
         '/me/groups': const MyGroupsDto(groups: <MyGroupEntryDto>[]).toJson(),
       },
     ),
@@ -703,8 +677,7 @@ Future<void> _admin(WidgetTester tester, ThemeData theme, double scale) =>
             ),
           ),
           adminAttentionProvider.overrideWith(
-            (ref) async =>
-                const AdminAttention(heldReferrals: 0, freshErrors: 0),
+            (ref) async => const AdminAttention(freshErrors: 0),
           ),
           adminMonthPulseProvider.overrideWith(
             (ref) async => const AdminMonthPulse(
@@ -1375,7 +1348,6 @@ const MonthChampionsDto _champions = MonthChampionsDto(
       points: 128,
       exactCount: 31,
       decidedCount: 236,
-      referralPoints: 4,
       crownedAt: '2026-10-01T09:00:00.000Z',
       celebrateUntil: '2026-10-04T09:00:00.000Z',
       prize: 'اشتراك شهري',
@@ -1388,7 +1360,6 @@ const MonthChampionsDto _champions = MonthChampionsDto(
       points: 128,
       exactCount: 29,
       decidedCount: 236,
-      referralPoints: 0,
       crownedAt: '2026-10-01T09:00:00.000Z',
       celebrateUntil: '2026-10-04T09:00:00.000Z',
     ),
@@ -1400,7 +1371,6 @@ const MonthChampionsDto _champions = MonthChampionsDto(
       points: 97,
       exactCount: 22,
       decidedCount: 180,
-      referralPoints: 2,
       crownedAt: '2026-09-01T09:00:00.000Z',
       celebrateUntil: '2026-09-04T09:00:00.000Z',
     ),
@@ -1526,82 +1496,8 @@ final Map<String, Object> _favoriteTeams = <String, Object>{
   },
 };
 
-Map<String, Object?> _challenge({
-  required String id,
-  required String code,
-  bool isMine = false,
-  bool isForMe = false,
-}) => <String, Object?>{
-  'schema_version': 1,
-  'id': id,
-  'code': code,
-  'season_id': 's-1',
-  'fixture_id': 'f-1',
-  'home_team': 'الهلال',
-  'away_team': 'النصر',
-  'kickoff_at': '2099-01-01T18:00:00.000Z',
-  'challenger_user_id': isMine ? 'me' : 'rival',
-  'challenger_name': isMine ? 'عبدالرحمن المغربي' : 'سليمان الرفاعي',
-  'is_private': isForMe,
-  'capacity': isForMe ? 1 : 5,
-  'accepted_count': 0,
-  'state': 'open',
-  'is_mine': isMine,
-  'is_for_me': isForMe,
-};
-
-Map<String, Object?> _duel({
-  required String id,
-  required String state,
-  required String kickoffAt,
-  int? myPoints,
-  int? opponentPoints,
-  String? outcome,
-}) => <String, Object?>{
-  'schema_version': 1,
-  'id': id,
-  'challenge_id': 'c-$id',
-  'fixture_id': 'f-$id',
-  'home_team': 'الاتحاد',
-  'away_team': 'الأهلي',
-  'kickoff_at': kickoffAt,
-  'accepted_at': '2026-10-05T12:00:00.000Z',
-  'is_challenger': state == 'upcoming',
-  'opponent_user_id': 'rival',
-  'opponent_name': 'حذيفه عبدالخالق حميد المجيدي',
-  'my_home_goals': 2,
-  'my_away_goals': 1,
-  'my_is_double': state == 'settled',
-  'opponent_home_goals': state == 'settled' ? 0 : null,
-  'opponent_away_goals': state == 'settled' ? 0 : null,
-  'opponent_is_double': state == 'settled' ? false : null,
-  'state': state,
-  'my_points': myPoints,
-  'opponent_points': opponentPoints,
-  'outcome': outcome,
-};
-
-/// An invitation for the caller, the caller's own open challenge, a duel
-/// still to play and one won.
-final Map<String, Object> _duels = <String, Object>{
-  '/me/duels': <String, Object?>{
-    'schema_version': 1,
-    'challenges': <Object?>[
-      _challenge(id: 'c-in', code: 'INVITEDCODE2', isForMe: true),
-      _challenge(id: 'c-own', code: 'MYOWNCODE234', isMine: true),
-    ],
-    'duels': <Object?>[
-      _duel(id: 'up', state: 'upcoming', kickoffAt: '2099-01-01T18:00:00.000Z'),
-      _duel(
-        id: 'done',
-        state: 'settled',
-        kickoffAt: '2026-10-01T18:00:00.000Z',
-        myPoints: 6,
-        opponentPoints: 0,
-        outcome: 'won',
-      ),
-    ],
-  },
+/// The caller's own predictions, read by the friends' league board.
+final Map<String, Object> _myPredictions = <String, Object>{
   '/me/fixture-predictions': <Object?>[
     <String, Object?>{
       'schema_version': 1,
@@ -1722,9 +1618,9 @@ GroupMembershipDto _member(int i, String role, String name) =>
       displayName: name,
     );
 
-/// Every read of league g-1, the caller's leagues and duels.
+/// Every read of league g-1, the caller's leagues and predictions.
 final Map<String, Object> _groupAnswers = <String, Object>{
-  ..._duels,
+  ..._myPredictions,
   '/me/groups': _myGroups.toJson(),
   '/groups/g-1': _league.toJson(),
   '/groups/g-1/members': GroupMembersDto(

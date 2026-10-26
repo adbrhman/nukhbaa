@@ -25,17 +25,17 @@ import 'package:shared/shared.dart';
 ///
 /// **Total order (deterministic, reproducible — never arbitrary DB order):**
 /// 1. [FixtureLeaderboardEntry.totalPoints] descending;
-/// 2. [FixtureLeaderboardEntry.referralPoints] descending -- the month's
-///    invitation points break a points tie and are never added to the
-///    points (decided 2026-09-27, migration 0073);
-/// 3. [FixtureLeaderboardEntry.exactCount] descending;
-/// 4. [FixtureLeaderboardEntry.outcomeCount] descending -- right outcome,
+/// 2. [FixtureLeaderboardEntry.exactCount] descending;
+/// 3. [FixtureLeaderboardEntry.outcomeCount] descending -- right outcome,
 ///    wrong score (batch 129);
-/// 5. [FixtureLeaderboardEntry.joinedAt] ascending -- the earlier joiner of
+/// 4. [FixtureLeaderboardEntry.joinedAt] ascending -- the earlier joiner of
 ///    the contest; an unknown join time goes last (batch 129);
-/// 6. participant id value ascending, for a stable display order only.
+/// 5. participant id value ascending, for a stable display order only.
 ///
-/// **Rank rule:** entries share a rank only when level on steps 1-5. Real
+/// Invitation points no longer break a points tie: the invitations were
+/// removed (2026-10-26).
+///
+/// **Rank rule:** entries share a rank only when level on steps 1-4. Real
 /// players never join at the same instant, so every player gets a place of
 /// his own (decided 2026-10-14: three players on 45 points all showed 10).
 /// The daily snapshot (migration 0108) ranks the same way.
@@ -160,7 +160,6 @@ final class FixtureLeaderboard {
     Map<String, int> previousRanks = const <String, int>{},
     Map<String, UserId> avatarUserIds = const <String, UserId>{},
     Map<String, DateTime> avatarUpdatedAt = const <String, DateTime>{},
-    bool breakTiesByReferrals = true,
   }) {
     final seen = <String>{};
     for (final line in totals) {
@@ -184,7 +183,6 @@ final class FixtureLeaderboard {
           fixturesScored: line.fixturesScored,
           exactCount: line.exactCount,
           decidedCount: line.decidedCount,
-          referralPoints: breakTiesByReferrals ? line.referralPoints : 0,
           outcomeCount: line.outcomeCount,
           joinedAt: line.joinedAt,
           previousRank: previousRanks[line.participantId.value],
@@ -219,10 +217,6 @@ final class FixtureLeaderboard {
     if (byPoints != 0) {
       return byPoints;
     }
-    final byReferrals = b.referralPoints.compareTo(a.referralPoints);
-    if (byReferrals != 0) {
-      return byReferrals;
-    }
     final byExact = b.exactCount.compareTo(a.exactCount);
     if (byExact != 0) {
       return byExact;
@@ -246,11 +240,10 @@ final class FixtureLeaderboard {
     return a.compareTo(b);
   }
 
-  /// Whether two neighbours share a rank: level on points, invitation
-  /// points, exact scorelines, right outcomes and join time.
+  /// Whether two neighbours share a rank: level on points, exact
+  /// scorelines, right outcomes and join time.
   static bool _level(FixtureLeaderboardEntry a, FixtureLeaderboardEntry b) =>
       a.totalPoints == b.totalPoints &&
-      a.referralPoints == b.referralPoints &&
       a.exactCount == b.exactCount &&
       a.outcomeCount == b.outcomeCount &&
       a.joinedAt == b.joinedAt;

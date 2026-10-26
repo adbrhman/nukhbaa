@@ -17,3 +17,12 @@ GroupInvitationsDto groupInvitationsToDto(List<GroupInvitation> invitations) =>
           ),
       ],
     );
+
+/// Projects the players a league can invite by name onto their wire shape.
+GroupInviteesDto groupInviteesToDto(List<GroupInvitee> players) =>
+    GroupInviteesDto(
+      players: <GroupInviteeDto>[
+        for (final GroupInvitee p in players)
+          GroupInviteeDto(userId: p.userId.value, displayName: p.displayName),
+      ],
+    );

@@ -20,7 +20,7 @@ end $$;
 -- PostgresFixtureTotalsReader._totalsSql
 create function pg_temp.month_totals(p_fixtures uuid[])
 returns table (participant_id text, total_points bigint, fixtures_scored bigint,
-               exact_count bigint, decided_count bigint, referral_points bigint)
+               exact_count bigint, decided_count bigint)
 language sql as $q$
 SELECT fs.participant_id::text AS participant_id,
        sum(fs.points)::bigint AS total_points,
@@ -29,8 +29,7 @@ SELECT fs.participant_id::text AS participant_id,
          AS exact_count,
        count(*) FILTER (
          WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
-       )::bigint AS decided_count,
-       COALESCE(max(rm.referral_points), 0)::bigint AS referral_points
+       )::bigint AS decided_count
 FROM scoring.fixture_scores fs
 JOIN competition.participants p
   ON p.id = fs.participant_id
@@ -39,9 +38,6 @@ JOIN competition.participants p
 JOIN identity.users u
   ON u.id = p.user_id
  AND u.status <> 'suspended'
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 WHERE fs.fixture_id = ANY(p_fixtures)
   -- A hidden fixture is off every board while it stays hidden (0107,
   -- audit M-23); a test fixture never counts.

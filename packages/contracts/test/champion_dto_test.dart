@@ -11,7 +11,6 @@ void main() {
       points: 42,
       exactCount: 6,
       decidedCount: 30,
-      referralPoints: 2,
       crownedAt: '2026-10-01T12:00:00.000Z',
       celebrateUntil: '2026-10-03T12:00:00.000Z',
       photoUrl: '/champions/s-9/photos/u-1?v=1',
@@ -28,6 +27,7 @@ void main() {
     expect(back.avatarUrl, isNull);
     expect(back.accuracyPercent, 20);
     expect(dto.toJson().containsKey('avatar_url'), isFalse);
+    expect(dto.toJson().containsKey('referral_points'), isFalse);
   });
 
   test('the crowning body carries the prize only when there is one', () {
@@ -61,7 +61,6 @@ void main() {
             points: 42,
             exactCount: 6,
             decidedCount: 30,
-            referralPoints: 0,
             crownedAt: '2026-10-01T12:00:00.000Z',
             celebrateUntil: '2026-10-03T12:00:00.000Z',
           ),
@@ -85,7 +84,6 @@ void main() {
             points: 42,
             exactCount: 6,
             decidedCount: 30,
-            referralPoints: 0,
           ),
         ],
       ).toJson(),

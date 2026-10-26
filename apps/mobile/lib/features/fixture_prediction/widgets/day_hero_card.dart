@@ -21,6 +21,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/web_links.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
@@ -31,7 +32,6 @@ import '../../../core/ui/share_picture.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../../competition/team_identity.dart';
-import '../../gamification/invite_friends_screen.dart';
 
 // A picture that leaves the app keeps the brand's dark colours whatever
 // theme the admin runs, read from AppColors so it cannot drift.
@@ -205,7 +205,6 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final String? code = ref.watch(myReferralProvider).value?.code;
     return Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.md),
       child: SingleChildScrollView(
@@ -223,7 +222,7 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
                 Expanded(
                   child: FilledButton.icon(
                     key: const Key('dayHero.share'),
-                    onPressed: _sharing ? null : () => unawaited(_share(code)),
+                    onPressed: _sharing ? null : () => unawaited(_share()),
                     icon: const Icon(Icons.ios_share_rounded),
                     label: const Text('مشاركة البطاقة'),
                   ),
@@ -252,7 +251,7 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
     );
   }
 
-  Future<void> _share(String? code) async {
+  Future<void> _share() async {
     final DayHero hero = widget.hero;
     setState(() {
       _sharing = true;
@@ -266,9 +265,7 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
           : 'بطل النخبة اليوم: ${hero.playerName}، وحده توقّع '
                 '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
                 '${hero.away.displayName} تماماً.';
-      final String text = code == null || code.isEmpty
-          ? message
-          : '$message\nشاركنا في نُخبة: ${inviteLinkFor(code)}';
+      final String text = '$message\nشاركنا في نُخبة: ${appSiteLink()}';
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
         text: text,

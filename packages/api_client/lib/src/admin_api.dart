@@ -413,16 +413,6 @@ final class AdminApi {
     );
   }
 
-  /// `GET /admin/referral-overview` -- the invitation system: the switch,
-  /// the totals per state, the inviters and the newest invitations
-  /// (migration 0075). Admin-authorized inside the use-case.
-  Future<Result<AdminReferralOverviewDto>> referralOverview() {
-    return _transport.getObject<AdminReferralOverviewDto>(
-      '/admin/referral-overview',
-      parse: AdminReferralOverviewDto.fromJson,
-    );
-  }
-
   /// `PUT /admin/app/min-build` -- makes the newest published release the
   /// oldest supported Android build ([toLatest]) or clears that (batch
   /// 147); answers the newest build number and the stored minimum.
@@ -433,35 +423,6 @@ final class AdminApi {
       '/admin/app/min-build',
       body: AppUpdatePolicyDto.request(toLatest: toLatest),
       parse: AppUpdatePolicyDto.fromJson,
-    );
-  }
-
-  /// `PUT /admin/referral-switch` -- turns the invitation system on or off;
-  /// answers what the server stored.
-  Future<Result<ReferralSwitchDto>> setReferralsEnabled({
-    required bool enabled,
-  }) {
-    return _transport.putObject<ReferralSwitchDto>(
-      '/admin/referral-switch',
-      body: ReferralSwitchDto(enabled: enabled).toJson(),
-      parse: ReferralSwitchDto.fromJson,
-    );
-  }
-
-  /// `POST /admin/referrals/{inviteeId}` -- approve or reject a held
-  /// invitation, or revoke a paid one, with a mandatory [reason].
-  Future<Result<ReferralStatusDto>> reviewReferral({
-    required String inviteeId,
-    required String decision,
-    required String reason,
-  }) {
-    return _transport.postObject<ReferralStatusDto>(
-      '/admin/referrals/$inviteeId',
-      body: ReferralReviewRequestDto(
-        decision: decision,
-        reason: reason,
-      ).toJson(),
-      parse: ReferralStatusDto.fromJson,
     );
   }
 

@@ -20,7 +20,6 @@ import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import 'champion_crown.dart';
-import 'duel_wins_mark.dart';
 
 class BoardEntry {
   const BoardEntry({
@@ -37,7 +36,6 @@ class BoardEntry {
     this.outcome,
     this.outcomeLabel,
     this.champion = false,
-    this.duelWins = 0,
   });
 
   final String participantId;
@@ -72,10 +70,6 @@ class BoardEntry {
   /// the name. Only the boards keyed by user can tell (the season and the
   /// weekly league); a monthly board's lines carry no user id.
   final bool champion;
-
-  /// Duels this player won in the board's month: a mark beside the name
-  /// when above zero. Only the month's board reads them.
-  final int duelWins;
 }
 
 /// A weekly-league line's projected result, drawn from the server's
@@ -545,13 +539,6 @@ class _PodiumTile extends StatelessWidget {
                     ).championCrownLabel,
                   ),
                 ],
-                if (entry.duelWins > 0) ...<Widget>[
-                  const SizedBox(width: 4),
-                  DuelWinsMark(
-                    key: Key('$keyPrefix.duelWins.${entry.participantId}'),
-                    wins: entry.duelWins,
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 2),
@@ -703,7 +690,6 @@ class _BoardRow extends StatelessWidget {
           l10n.boardPoints(entry.points),
           if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
           if (entry.champion) l10n.championCrownLabel,
-          if (entry.duelWins > 0) duelWinsLabel(entry.duelWins),
           if (isMe) l10n.boardYou,
         ].join(l10n.boardListSeparator),
         excludeSemantics: true,
@@ -777,15 +763,6 @@ class _BoardRow extends StatelessWidget {
                           ChampionCrown(
                             key: Key('$keyPrefix.crown.${entry.participantId}'),
                             size: 16,
-                          ),
-                        ],
-                        if (entry.duelWins > 0) ...<Widget>[
-                          const SizedBox(width: 6),
-                          DuelWinsMark(
-                            key: Key(
-                              '$keyPrefix.duelWins.${entry.participantId}',
-                            ),
-                            wins: entry.duelWins,
                           ),
                         ],
                       ],

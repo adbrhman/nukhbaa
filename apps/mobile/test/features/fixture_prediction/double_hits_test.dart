@@ -230,10 +230,12 @@ void main() {
     const String sentence =
         'اختار 3 لاعبين مباراة ليفربول × برايتون مضاعفة، '
         'فحصلوا على نقاط المضاعفة، كل لاعب 6 نقاط';
-    expect(doubleHitsShareText(doubles, showNames: false), sentence);
+    // The site's link, never an invitation code (removed 2026-10-26).
+    const String link = '\nشاركنا في نُخبة: https://nukhbaa.app';
+    expect(doubleHitsShareText(doubles, showNames: false), '$sentence$link');
     expect(
       doubleHitsShareText(doubles, showNames: true),
-      '$sentence\n1. Ali 6\n2. Huda 6\n3. Omar 6',
+      '$sentence\n1. Ali 6\n2. Huda 6\n3. Omar 6$link',
     );
   });
 

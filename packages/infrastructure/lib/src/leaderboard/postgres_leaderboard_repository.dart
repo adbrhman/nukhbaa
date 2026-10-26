@@ -52,14 +52,10 @@ SELECT p.id AS participant_id,
        snap.rank AS previous_rank,
        COALESCE(f.exact_count, 0)::bigint AS exact_count,
        COALESCE(f.decided_count, 0)::bigint AS settled_count,
-       COALESCE(f.outcome_count, 0)::bigint AS outcome_count,
-       COALESCE(rm.referral_points, 0)::bigint AS referral_points
+       COALESCE(f.outcome_count, 0)::bigint AS outcome_count
 FROM competition.participants p
 JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 LEFT JOIN leaderboard.season_rank_snapshots snap
   ON snap.season_id = p.season_id
  AND snap.participant_id = p.id
@@ -117,7 +113,6 @@ board AS (
          rank() OVER (
            PARTITION BY p.season_id
            ORDER BY COALESCE(f.total_points, 0) DESC,
-                    COALESCE(rm.referral_points, 0) DESC,
                     COALESCE(f.exact_count, 0) DESC,
                     COALESCE(f.outcome_count, 0) DESC,
                     p.joined_at ASC
@@ -128,9 +123,6 @@ board AS (
    AND (u.status <> 'suspended' OR p.user_id = @user_id)
   LEFT JOIN leaderboard.season_fixture_standings f
     ON f.participant_id = p.id
-  LEFT JOIN gamification.referral_month_points rm
-    ON rm.season_id = p.season_id
-   AND rm.user_id = p.user_id
   WHERE p.season_id IN (SELECT m.season_id FROM mine m)
 )
 SELECT c.id AS competition_id, c.name AS competition_name,
@@ -313,7 +305,6 @@ ORDER BY s.start_at DESC, s.id DESC
     final settledCount = _readInt(row['settled_count']) ?? 0;
     // Tie-breaks (batch 134): absent reads as none.
     final outcomeCount = _readInt(row['outcome_count']) ?? 0;
-    final referralPoints = _readInt(row['referral_points']) ?? 0;
 
     if (participantIdResult is Err<ParticipantId>) {
       return Result.err(
@@ -359,7 +350,6 @@ ORDER BY s.start_at DESC, s.id DESC
       exactCount: exactCount,
       settledCount: settledCount,
       outcomeCount: outcomeCount,
-      referralPoints: referralPoints,
     );
     if (projected is Err<LeaderboardEntry>) {
       return Result.err(

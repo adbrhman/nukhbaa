@@ -19,6 +19,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/web_links.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
@@ -27,7 +28,6 @@ import '../../../core/design/app_typography.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/share_picture.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
-import '../../gamification/invite_friends_screen.dart';
 import 'day_hero_card.dart' show pointsText;
 
 // A picture that leaves the app keeps the brand's dark colours whatever
@@ -129,18 +129,16 @@ String dayTopThreeDateLabel(DateTime day) =>
     '${_weekdays[day.weekday - 1]} ${day.day} '
     '${_months[day.month - 1]} ${day.year}';
 
-/// The share text: the day, each player with his points, and the
-/// invitation link for [code] when there is one.
-String dayTopThreeShareText(DayTopThree top, {String? code}) {
+/// The share text: the day, each player with his points, and the site's
+/// link.
+String dayTopThreeShareText(DayTopThree top) {
   final StringBuffer text = StringBuffer(
     'الأكثر نقاطاً في النخبة · ${dayTopThreeDateLabel(top.day)}',
   );
   for (final DayTopEntry e in top.entries) {
     text.write('\n${e.rank}. ${e.playerName} · ${pointsText(e.points)}');
   }
-  if (code != null && code.isNotEmpty) {
-    text.write('\nشاركنا في نُخبة: ${inviteLinkFor(code)}');
-  }
+  text.write('\nشاركنا في نُخبة: ${appSiteLink()}');
   return text.toString();
 }
 
@@ -238,7 +236,6 @@ class _DayTopThreeShareDialogState
 
   @override
   Widget build(BuildContext context) {
-    final String? code = ref.watch(myReferralProvider).value?.code;
     return Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.md),
       child: SingleChildScrollView(
@@ -256,7 +253,7 @@ class _DayTopThreeShareDialogState
                 Expanded(
                   child: FilledButton.icon(
                     key: const Key('dayTopThree.share'),
-                    onPressed: _sharing ? null : () => unawaited(_share(code)),
+                    onPressed: _sharing ? null : () => unawaited(_share()),
                     icon: const Icon(Icons.ios_share_rounded),
                     label: const Text('مشاركة البطاقة'),
                   ),
@@ -284,7 +281,7 @@ class _DayTopThreeShareDialogState
     );
   }
 
-  Future<void> _share(String? code) async {
+  Future<void> _share() async {
     setState(() {
       _sharing = true;
       _shareFailed = false;
@@ -292,7 +289,7 @@ class _DayTopThreeShareDialogState
     try {
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
-        text: dayTopThreeShareText(widget.top, code: code),
+        text: dayTopThreeShareText(widget.top),
         fileName: 'nukhba-top-three.png',
       );
       if (mounted && !shared) setState(() => _shareFailed = true);

@@ -339,7 +339,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             points: c.points,
             exactCount: c.exactCount,
             decidedCount: c.decidedCount,
-            referralPoints: c.referralPoints,
             crownedAt: '',
             celebrateUntil: '',
             avatarUrl: c.avatarUrl,
@@ -582,7 +581,7 @@ class _CandidateRow extends StatelessWidget {
                     ),
                     Text(
                       '${arabicCount(c.points, ArabicNoun.points)} · '
-                      'دقة $accuracy · دعوات ${c.referralPoints}',
+                      'دقة $accuracy',
                       style: context.text.labelSmall?.copyWith(
                         color: t.textSecondary,
                       ),

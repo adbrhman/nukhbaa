@@ -13,7 +13,6 @@ final class ParticipantFixtureTotals {
     required this.fixturesScored,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     required this.outcomeCount,
     required this.joinedAt,
   });
@@ -27,7 +26,6 @@ final class ParticipantFixtureTotals {
     required int fixturesScored,
     required int exactCount,
     required int decidedCount,
-    int referralPoints = 0,
     int outcomeCount = 0,
     DateTime? joinedAt,
   }) {
@@ -35,7 +33,6 @@ final class ParticipantFixtureTotals {
         fixturesScored < 0 ||
         exactCount < 0 ||
         decidedCount < 0 ||
-        referralPoints < 0 ||
         outcomeCount < 0) {
       return const Result.err(
         AppError.invariant(
@@ -60,7 +57,6 @@ final class ParticipantFixtureTotals {
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
-        referralPoints: referralPoints,
         outcomeCount: outcomeCount,
         joinedAt: joinedAt?.toUtc(),
       ),
@@ -82,11 +78,6 @@ final class ParticipantFixtureTotals {
   /// Decided fixtures (pending excluded).
   final int decidedCount;
 
-  /// The month's invitation points of the user behind this participant
-  /// (migration 0073, capped at 20). A tie-break only: never part of
-  /// [totalPoints].
-  final int referralPoints;
-
   /// Decided fixtures with the right outcome but not the exact score
   /// (`correct_outcome`): the tie-break after [exactCount] (batch 129).
   final int outcomeCount;
@@ -103,7 +94,6 @@ final class ParticipantFixtureTotals {
       other.fixturesScored == fixturesScored &&
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
-      other.referralPoints == referralPoints &&
       other.outcomeCount == outcomeCount &&
       other.joinedAt == joinedAt;
 
@@ -114,7 +104,6 @@ final class ParticipantFixtureTotals {
     fixturesScored,
     exactCount,
     decidedCount,
-    referralPoints,
     outcomeCount,
     joinedAt,
   );

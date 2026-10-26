@@ -201,10 +201,10 @@ class _WebPushCardState extends ConsumerState<WebPushCard> {
             else ...<Widget>[
               Text(
                 offer == WebPushOffer.install
-                    ? 'لتصلك تذكيرات المباريات والتحديات: اضغط زر المشاركة في '
+                    ? 'لتصلك تذكيرات المباريات: اضغط زر المشاركة في '
                           'Safari، ثم «إضافة إلى الشاشة الرئيسية»، وافتح نُخبة '
                           'من أيقونتها.'
-                    : 'يصلك تذكير قبل المباريات، وتحديات أصدقائك ونتائجها.',
+                    : 'يصلك تذكير قبل المباريات، ونتائج توقعاتك.',
                 key: const Key('home.webPush.message'),
                 style: line,
               ),

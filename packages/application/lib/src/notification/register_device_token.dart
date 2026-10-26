@@ -68,8 +68,8 @@ final class RegisterDeviceToken {
   }
 
   /// Unbinds [token] from [principal] at sign-out (audit M-05): a shared
-  /// phone stops receiving the previous player's pushes -- duels by name,
-  /// "so-and-so passed you" -- the moment he signs out. Only the caller's
+  /// phone stops receiving the previous player's pushes -- "so-and-so
+  /// passed you" -- the moment he signs out. Only the caller's
   /// own token is removed.
   Future<Result<void>> unregister({
     required AuthenticatedUser principal,

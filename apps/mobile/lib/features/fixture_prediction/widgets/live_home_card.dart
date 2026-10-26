@@ -1,7 +1,6 @@
 /// The home page's live card: while a match the viewer predicted is in
-/// play, what their prediction would earn if it ended now, their place on
-/// the month board now and then, and who leads each of their duels on it.
-/// Hidden when nothing they predicted is in play. Everything is graded on
+/// play, what their prediction would earn if it ended now and their place
+/// on the month board now and then. Hidden when nothing they predicted is in play. Everything is graded on
 /// the server (`GET /seasons/{id}/live`); nothing here is stored.
 library;
 
@@ -56,19 +55,16 @@ class LiveHomeCard extends ConsumerWidget {
                 case final LiveStandingDto standing)
               (seasonId, standing),
         ];
-    // A match shows once, with the duels of the season that reported it.
+    // A match shows once, from the first season that reported it.
     final Set<String> shown = <String>{};
-    final List<
-      (CurrentMonthFixtureItemDto, LiveFixtureStandingDto, LiveStandingDto)
-    >
-    lines =
-        <(CurrentMonthFixtureItemDto, LiveFixtureStandingDto, LiveStandingDto)>[
+    final List<(CurrentMonthFixtureItemDto, LiveFixtureStandingDto)> lines =
+        <(CurrentMonthFixtureItemDto, LiveFixtureStandingDto)>[
           for (final (String _, LiveStandingDto s) in standings)
             for (final LiveFixtureStandingDto f in s.fixtures)
               if (playing[f.fixtureId]
                   case final CurrentMonthFixtureItemDto item
                   when f.myPoints != null && shown.add(f.fixtureId))
-                (item, f, s),
+                (item, f),
         ];
     if (lines.isEmpty) return const SizedBox.shrink();
 
@@ -128,7 +124,6 @@ class LiveHomeCard extends ConsumerWidget {
                 for (final (
                       CurrentMonthFixtureItemDto item,
                       LiveFixtureStandingDto f,
-                      LiveStandingDto s,
                     )
                     in lines) ...<Widget>[
                   const SizedBox(height: AppSpacing.sm),
@@ -147,16 +142,6 @@ class LiveHomeCard extends ConsumerWidget {
                     key: Key('home.live.points.${f.fixtureId}'),
                     style: line,
                   ),
-                  for (final (int n, LiveDuelStandingDto d)
-                      in <LiveDuelStandingDto>[
-                        for (final LiveDuelStandingDto x in s.duels)
-                          if (x.fixtureId == f.fixtureId) x,
-                      ].indexed)
-                    Text(
-                      liveDuelLine(d),
-                      key: Key('home.live.duel.${f.fixtureId}.$n'),
-                      style: line,
-                    ),
                 ],
                 for (final (String seasonId, LiveStandingDto s) in standings)
                   if (s.rankIfEnded != null &&
@@ -185,18 +170,6 @@ String liveClock(LiveFixtureStandingDto f) {
   if (f.finished) return ' · انتهت';
   final int? minute = f.minute;
   return minute == null ? '' : ' · الدقيقة $minute';
-}
-
-/// Who leads a duel if the match ended now.
-String liveDuelLine(LiveDuelStandingDto d) {
-  final String score = '${d.myPoints} - ${d.opponentPoints}';
-  if (d.myPoints > d.opponentPoints) {
-    return 'تتقدم على ${d.opponentName} في التحدي ($score)';
-  }
-  if (d.myPoints < d.opponentPoints) {
-    return '${d.opponentName} يتقدم عليك في التحدي ($score)';
-  }
-  return 'تحديك مع ${d.opponentName} متعادل ($score)';
 }
 
 /// The month place now and if the matches in play ended now.

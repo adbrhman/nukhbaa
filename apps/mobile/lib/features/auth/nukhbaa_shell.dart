@@ -18,8 +18,6 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
-import '../duels/duels_providers.dart';
-import '../duels/duels_screen.dart';
 import '../groups/groups_providers.dart';
 import '../groups/join_group_screen.dart';
 import '../h2h/h2h_screen.dart';
@@ -72,59 +70,39 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
   /// the shell is built again at every sign-in.
   static bool _launchInviteOpened = false;
 
-  /// Opens the league or duel invitation the app's address carries (the
-  /// links players share open the web build): the league's join page with
-  /// its code filled in, one tap to join, or the duel's accept sheet.
+  /// Opens the league invitation the app's address carries (the links
+  /// players share open the web build): the league's join page with its
+  /// code filled in, one tap to join.
   Future<void> _openLaunchInvite() async {
     if (_launchInviteOpened) return;
-    final LaunchInvite invite = launchInviteFrom(Uri.base);
-    final String? league = invite.league;
-    final String? duel = invite.duel;
-    if (league == null && duel == null) return;
+    final String? league = launchInviteFrom(Uri.base).league;
+    if (league == null) return;
     _launchInviteOpened = true;
     // After the frame being built.
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
-    if (league != null) {
-      await Navigator.of(context).push<Object?>(
-        MaterialPageRoute<Object?>(
-          builder: (_) => JoinGroupScreen(initialCode: league),
-        ),
-      );
-      if (mounted) ref.invalidate(myGroupsProvider);
-    } else {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(builder: (_) => DuelsScreen(openCode: duel)),
-      );
-    }
+    await Navigator.of(context).push<Object?>(
+      MaterialPageRoute<Object?>(
+        builder: (_) => JoinGroupScreen(initialCode: league),
+      ),
+    );
+    if (mounted) ref.invalidate(myGroupsProvider);
   }
 
   /// Opens what a tapped push is about (see push_link.dart): its tab, and
-  /// for the inbox the inbox itself on top of the home tab. A duel push
-  /// opens the Duels page, and `duel:CODE` that challenge's accept sheet.
+  /// for the inbox the inbox itself on top of the home tab.
   void _openLink(String link) {
     final int? tab = shellTabForLink(link);
     if (tab == null || !mounted) {
       return;
     }
     // P3-8: the open rate per push. Never awaited: the tap must not wait.
-    unawaited(
-      ref
-          .read(authApiProvider)
-          .reportPushOpened(link: pushOpenNameForLink(link)),
-    );
+    unawaited(ref.read(authApiProvider).reportPushOpened(link: link));
     _select(tab);
     if (link == PushLinks.inbox) {
       unawaited(
         Navigator.of(context).push<void>(
           MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
-        ),
-      );
-    } else if (pushOpenNameForLink(link) == PushLinks.duel) {
-      final String? code = duelCodeForLink(link);
-      unawaited(
-        Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(builder: (_) => DuelsScreen(openCode: code)),
         ),
       );
     }
@@ -146,7 +124,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
     ref.invalidate(myFixturePredictionsProvider);
   }
 
-  /// Reads the bell's count (and the duels a push may be about) again
+  /// Reads the bell's count again
   /// whenever a notification may have arrived without the app seeing it: the
   /// app came back to the foreground from the launcher rather than from the
   /// push, or a push arrived while it was open, which Android shows no
@@ -154,7 +132,6 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
   void _refreshBell() {
     if (!mounted) return;
     ref.invalidate(unreadCountProvider);
-    ref.invalidate(myDuelsProvider);
   }
 
   @override
@@ -181,7 +158,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
           .read(pushTokenServiceProvider)
           .listenForOpenedPushes(_openLink, onForegroundPush: _refreshBell),
     );
-    // A shared league or duel link opens on its invitation (the web build).
+    // A shared league link opens on its invitation (the web build).
     unawaited(_openLaunchInvite());
     // The device's own clock offset, for notification timing only -- no day
     // boundary is derived from it. Re-sent on every start because an offset

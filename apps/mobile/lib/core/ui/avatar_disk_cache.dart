@@ -3,7 +3,7 @@
 ///
 /// The server answers a picture with `max-age=31536000, immutable` and its
 /// URL carries `?v=` (the upload time), but the app fetches the bytes
-/// through `api_client`, which has no disk cache: every board, group or duel
+/// through `api_client`, which has no disk cache: every board or group
 /// opened after the two-minute memory hold, and every launch, downloaded
 /// every face again. On Android the bytes are now kept in the app's cache
 /// folder, keyed by the whole URL, so a replaced picture is a new file and

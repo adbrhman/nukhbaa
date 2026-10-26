@@ -83,7 +83,6 @@ final class CompositionRoot {
     required this.getPredictionsBoard,
     required this.reactToPrediction,
     required this.removePredictionReaction,
-    required this.listSeasonDuelWins,
     required this.getLiveStanding,
     required this.adminGetFixtureScores,
     required this.adminCountFixtureScores,
@@ -114,13 +113,7 @@ final class CompositionRoot {
     required this.reactToFixture,
     required this.removeFixtureReaction,
     required this.listFixtureReactions,
-    required this.createDuelChallenge,
-    required this.acceptDuelChallenge,
-    required this.cancelDuelChallenge,
-    required this.declineDuelChallenge,
-    required this.getDuelChallengeByCode,
-    required this.listMyDuels,
-    required this.searchDuelPlayers,
+    required this.searchGroupInvitees,
     required this.getGroupActivityFeed,
     required this.listMyNotifications,
     required this.listMyNotificationFeed,
@@ -142,13 +135,6 @@ final class CompositionRoot {
     required this.adminSetChampionPhoto,
     required this.listMonthChampions,
     required this.readChampionPhoto,
-    required this.getMyReferral,
-    required this.claimReferral,
-    required this.qualifyReferrals,
-    required this.adminListHeldReferrals,
-    required this.adminReviewReferral,
-    required this.adminGetReferralOverview,
-    required this.adminSetReferralsEnabled,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
     required this.settleMatchDays,
@@ -296,7 +282,6 @@ final class CompositionRoot {
     GetPredictionsBoard? getPredictionsBoard,
     ReactToPrediction? reactToPrediction,
     RemovePredictionReaction? removePredictionReaction,
-    ListSeasonDuelWins? listSeasonDuelWins,
     GetLiveStanding? getLiveStanding,
     AdminGetFixtureScores? adminGetFixtureScores,
     AdminCountFixtureScores? adminCountFixtureScores,
@@ -327,13 +312,7 @@ final class CompositionRoot {
     ReactToFixture? reactToFixture,
     RemoveFixtureReaction? removeFixtureReaction,
     ListFixtureReactions? listFixtureReactions,
-    CreateDuelChallenge? createDuelChallenge,
-    AcceptDuelChallenge? acceptDuelChallenge,
-    CancelDuelChallenge? cancelDuelChallenge,
-    DeclineDuelChallenge? declineDuelChallenge,
-    GetDuelChallengeByCode? getDuelChallengeByCode,
-    ListMyDuels? listMyDuels,
-    SearchDuelPlayers? searchDuelPlayers,
+    SearchGroupInvitees? searchGroupInvitees,
     GetGroupActivityFeed? getGroupActivityFeed,
     ListMyNotifications? listMyNotifications,
     ListMyNotificationFeed? listMyNotificationFeed,
@@ -355,13 +334,6 @@ final class CompositionRoot {
     AdminSetChampionPhoto? adminSetChampionPhoto,
     ListMonthChampions? listMonthChampions,
     ReadChampionPhoto? readChampionPhoto,
-    GetMyReferral? getMyReferral,
-    ClaimReferral? claimReferral,
-    QualifyReferrals? qualifyReferrals,
-    AdminListHeldReferrals? adminListHeldReferrals,
-    AdminReviewReferral? adminReviewReferral,
-    AdminGetReferralOverview? adminGetReferralOverview,
-    AdminSetReferralsEnabled? adminSetReferralsEnabled,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
     SettleMatchDays? settleMatchDays,
@@ -520,7 +492,6 @@ final class CompositionRoot {
        reactToPrediction = reactToPrediction ?? _absentReactToPrediction(),
        removePredictionReaction =
            removePredictionReaction ?? _absentRemovePredictionReaction(),
-       listSeasonDuelWins = listSeasonDuelWins ?? _absentListSeasonDuelWins(),
        getLiveStanding = getLiveStanding ?? _absentGetLiveStanding(),
        adminGetFixtureScores =
            adminGetFixtureScores ?? _absentAdminGetFixtureScores(),
@@ -562,18 +533,8 @@ final class CompositionRoot {
            removeFixtureReaction ?? _absentRemoveFixtureReaction(),
        listFixtureReactions =
            listFixtureReactions ?? _absentListFixtureReactions(),
-       createDuelChallenge =
-           createDuelChallenge ?? _absentCreateDuelChallenge(),
-       acceptDuelChallenge =
-           acceptDuelChallenge ?? _absentAcceptDuelChallenge(),
-       cancelDuelChallenge =
-           cancelDuelChallenge ?? _absentCancelDuelChallenge(),
-       declineDuelChallenge =
-           declineDuelChallenge ?? _absentDeclineDuelChallenge(),
-       getDuelChallengeByCode =
-           getDuelChallengeByCode ?? _absentGetDuelChallengeByCode(),
-       listMyDuels = listMyDuels ?? _absentListMyDuels(),
-       searchDuelPlayers = searchDuelPlayers ?? _absentSearchDuelPlayers(),
+       searchGroupInvitees =
+           searchGroupInvitees ?? _absentSearchGroupInvitees(),
        getGroupActivityFeed =
            getGroupActivityFeed ?? _absentGetGroupActivityFeed(),
        listMyNotifications =
@@ -607,17 +568,6 @@ final class CompositionRoot {
            adminSetChampionPhoto ?? _absentAdminSetChampionPhoto(),
        listMonthChampions = listMonthChampions ?? _absentListMonthChampions(),
        readChampionPhoto = readChampionPhoto ?? _absentReadChampionPhoto(),
-       getMyReferral = getMyReferral ?? _absentGetMyReferral(),
-       claimReferral = claimReferral ?? _absentClaimReferral(),
-       qualifyReferrals = qualifyReferrals ?? _absentQualifyReferrals(),
-       adminListHeldReferrals =
-           adminListHeldReferrals ?? _absentAdminListHeldReferrals(),
-       adminReviewReferral =
-           adminReviewReferral ?? _absentAdminReviewReferral(),
-       adminGetReferralOverview =
-           adminGetReferralOverview ?? _absentAdminGetReferralOverview(),
-       adminSetReferralsEnabled =
-           adminSetReferralsEnabled ?? _absentAdminSetReferralsEnabled(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
        ensureUpcomingMonthlySeasons =
@@ -1117,12 +1067,6 @@ final class CompositionRoot {
         reactions: _UnwiredPredictionReactionRepository(),
       );
 
-  /// Backs the "absent" [ListSeasonDuelWins]: loud if a test reaches it.
-  static ListSeasonDuelWins _absentListSeasonDuelWins() => ListSeasonDuelWins(
-    competition: _unwiredCompetitionRepository,
-    records: _UnwiredDuelRecordReader(),
-  );
-
   /// Backs the "absent" [GetLiveStanding]: loud if a test reaches it.
   static GetLiveStanding _absentGetLiveStanding() => GetLiveStanding(
     competition: _unwiredCompetitionRepository,
@@ -1130,9 +1074,7 @@ final class CompositionRoot {
     totals: _UnwiredFixtureTotalsReader(),
     results: _unwiredFixtureResultRepository,
     rulesets: _unwiredRulesetProvider,
-    duels: _unwiredDuelReader,
     liveScores: null,
-    clock: _unwiredClock,
   );
 
   /// Unlike the other absent use-cases this one is quiet: the result is an
@@ -1349,46 +1291,9 @@ final class CompositionRoot {
         groups: _unwiredGroupRepository,
       );
 
-  /// Duel stand-ins (migration 0090): loud if a test reaches one without
-  /// wiring it.
-  static final DuelChallengeRepository _unwiredDuelChallengeRepository =
-      _UnwiredDuelChallengeRepository();
-
-  static final DuelReader _unwiredDuelReader = _UnwiredDuelReader();
-
-  static CreateDuelChallenge _absentCreateDuelChallenge() =>
-      CreateDuelChallenge(
-        duels: _unwiredDuelChallengeRepository,
-        competition: _unwiredCompetitionRepository,
-        predictions: _unwiredFixturePredictionRepository,
-        schedules: _unwiredFixtureScheduleRepository,
-        clock: _unwiredClock,
-      );
-
-  static AcceptDuelChallenge _absentAcceptDuelChallenge() =>
-      AcceptDuelChallenge(
-        duels: _unwiredDuelChallengeRepository,
-        submitPrediction: _absentSubmitFixturePrediction(),
-        clock: _unwiredClock,
-      );
-
-  static CancelDuelChallenge _absentCancelDuelChallenge() =>
-      CancelDuelChallenge(
-        duels: _unwiredDuelChallengeRepository,
-        competition: _unwiredCompetitionRepository,
-      );
-
-  static DeclineDuelChallenge _absentDeclineDuelChallenge() =>
-      DeclineDuelChallenge(duels: _unwiredDuelChallengeRepository);
-
-  static GetDuelChallengeByCode _absentGetDuelChallengeByCode() =>
-      GetDuelChallengeByCode(duels: _unwiredDuelReader, clock: _unwiredClock);
-
-  static ListMyDuels _absentListMyDuels() =>
-      ListMyDuels(duels: _unwiredDuelReader, clock: _unwiredClock);
-
-  static SearchDuelPlayers _absentSearchDuelPlayers() =>
-      SearchDuelPlayers(players: _UnwiredDuelPlayerDirectory());
+  /// Backs the "absent" [SearchGroupInvitees]: loud if a test reaches it.
+  static SearchGroupInvitees _absentSearchGroupInvitees() =>
+      SearchGroupInvitees(players: _UnwiredInviteeDirectory());
 
   static GetGroupActivityFeed _absentGetGroupActivityFeed() =>
       GetGroupActivityFeed(
@@ -1648,52 +1553,6 @@ final class CompositionRoot {
   /// without wiring it.
   static ReadChampionPhoto _absentReadChampionPhoto() =>
       ReadChampionPhoto(champions: _UnwiredMonthChampionRepository());
-
-  /// Builds an "absent" [GetMyReferral]: loud if a test reaches it without
-  /// wiring it.
-  static GetMyReferral _absentGetMyReferral() => GetMyReferral(
-    referrals: _UnwiredReferralRepository(),
-    clock: _unwiredClock,
-  );
-
-  /// Builds an "absent" [ClaimReferral]: loud if a test reaches it without
-  /// wiring it.
-  static ClaimReferral _absentClaimReferral() => ClaimReferral(
-    referrals: _UnwiredReferralRepository(),
-    userDirectory: _UnwiredUserDirectory(),
-    clock: _unwiredClock,
-  );
-
-  /// Builds an "absent" [QualifyReferrals]: driven by the scheduler, never
-  /// by a route test, and loud if one ever does.
-  static QualifyReferrals _absentQualifyReferrals() =>
-      QualifyReferrals(referrals: _UnwiredReferralRepository());
-
-  /// Builds an "absent" [AdminListHeldReferrals]: loud if a test reaches it
-  /// without wiring it.
-  static AdminListHeldReferrals _absentAdminListHeldReferrals() =>
-      AdminListHeldReferrals(referrals: _UnwiredReferralRepository());
-
-  /// Builds an "absent" [AdminReviewReferral]: loud if a test reaches it
-  /// without wiring it.
-  static AdminReviewReferral _absentAdminReviewReferral() =>
-      AdminReviewReferral(
-        referrals: _UnwiredReferralRepository(),
-        clock: _unwiredClock,
-      );
-
-  /// Builds an "absent" [AdminGetReferralOverview]: loud if a test reaches
-  /// it without wiring it.
-  static AdminGetReferralOverview _absentAdminGetReferralOverview() =>
-      AdminGetReferralOverview(
-        referrals: _UnwiredReferralAdminRepository(),
-        clock: _unwiredClock,
-      );
-
-  /// Builds an "absent" [AdminSetReferralsEnabled]: loud if a test reaches
-  /// it without wiring it.
-  static AdminSetReferralsEnabled _absentAdminSetReferralsEnabled() =>
-      AdminSetReferralsEnabled(referrals: _UnwiredReferralAdminRepository());
 
   /// Backs an "absent" [FlushNotificationQueue]: like the reminder sweep,
   /// never reached by a route test, and loud if one ever does.
@@ -2123,12 +1982,8 @@ final class CompositionRoot {
   /// Takes a reaction back (backs `DELETE` of the same path).
   final RemovePredictionReaction removePredictionReaction;
 
-  /// How many duels each player of a season won, beside their name on the
-  /// month's leaderboard (backs `GET /seasons/{id}/duel-wins`).
-  final ListSeasonDuelWins listSeasonDuelWins;
-
-  /// While a season's matches are in play: points, month place and duels
-  /// as if they ended now (backs `GET /seasons/{id}/live`).
+  /// While a season's matches are in play: points and month place as if
+  /// they ended now (backs `GET /seasons/{id}/live`).
   final GetLiveStanding getLiveStanding;
 
   /// Admin fixture-scores read — same shape as [getFixtureScores] but
@@ -2255,30 +2110,9 @@ final class CompositionRoot {
   /// Axiom 4 Amendment; the per-fixture sibling of [listRoundReactions]).
   final ListFixtureReactions listFixtureReactions;
 
-  /// Creates a duel challenge (backs `POST /duels/challenges`, migration
-  /// 0090).
-  final CreateDuelChallenge createDuelChallenge;
-
-  /// Accepts a duel challenge with the caller's prediction (backs
-  /// `POST /duels/challenges/{id}/accept`).
-  final AcceptDuelChallenge acceptDuelChallenge;
-
-  /// The challenger closes an open challenge (backs
-  /// `POST /duels/challenges/{id}/cancel`).
-  final CancelDuelChallenge cancelDuelChallenge;
-
-  /// The invited player refuses a private challenge (backs
-  /// `POST /duels/challenges/{id}/decline`).
-  final DeclineDuelChallenge declineDuelChallenge;
-
-  /// Opens a shared duel link (backs `GET /duels/codes/{code}`).
-  final GetDuelChallengeByCode getDuelChallengeByCode;
-
-  /// The caller's challenges and duels (backs `GET /me/duels`).
-  final ListMyDuels listMyDuels;
-
-  /// Finds players to challenge by name (backs `GET /duels/players`).
-  final SearchDuelPlayers searchDuelPlayers;
+  /// Finds players to invite to a friends' league by name (backs
+  /// `GET /groups/invitees`).
+  final SearchGroupInvitees searchGroupInvitees;
 
   /// Reads a group's activity feed — a pure read projection over already-
   /// ratified data (member-gated; NO table, NEVER a source of truth — Social
@@ -2365,31 +2199,6 @@ final class CompositionRoot {
   /// A champion's picture bytes (backs
   /// `GET /champions/{id}/photos/{userId}`).
   final ReadChampionPhoto readChampionPhoto;
-
-  /// The caller's invitation code and counters (backs `GET /me/referral`,
-  /// migration 0073).
-  final GetMyReferral getMyReferral;
-
-  /// A new account names its inviter (backs `POST /me/referral/claim`).
-  final ClaimReferral claimReferral;
-
-  /// Pays or holds the invitations that became eligible. Driven by the
-  /// scheduler, never by a request.
-  final QualifyReferrals qualifyReferrals;
-
-  /// The invitations held for review (backs `GET /admin/referrals`).
-  final AdminListHeldReferrals adminListHeldReferrals;
-
-  /// An admin decision on an invitation (backs
-  /// `POST /admin/referrals/{inviteeId}`).
-  final AdminReviewReferral adminReviewReferral;
-
-  /// The invitation system for the admin page (backs
-  /// `GET /admin/referral-overview`, migration 0075).
-  final AdminGetReferralOverview adminGetReferralOverview;
-
-  /// The invitation system's switch (backs `PUT /admin/referral-switch`).
-  final AdminSetReferralsEnabled adminSetReferralsEnabled;
 
   /// Delivers the pushes deferred out of quiet hours once their time has
   /// come (P3-2). Driven by the scheduler, never by a request.
@@ -2831,11 +2640,6 @@ final class CompositionRoot {
     );
     final activityFeedReader = PostgresActivityFeedReader(connection);
 
-    // Duels (migration 0090): every rule is a database function. The
-    // repository calls them; the reader projects what the screens read.
-    final duelChallengeRepository = PostgresDuelChallengeRepository(connection);
-    final duelReader = PostgresDuelReader(connection);
-
     // Notifications slice (Tier-3, peripheral, rebuildable — NEVER a source of
     // truth; Database ADR §3 / Deployment ADR §Tier-3). One Postgres-backed
     // adapter over the single new stored surface `notification.notifications`
@@ -3092,24 +2896,6 @@ final class CompositionRoot {
       connection,
     );
 
-    // Duel pushes (migration 0092): a private challenge tells its target,
-    // an acceptance tells the challenger. Same inbox, sender and quiet-hour
-    // queue as the exact-hit announcement.
-    final duelNotifier = NotifyDuelEvents(
-      notices: PostgresDuelNoticeReader(connection),
-      create: CreateNotification(
-        notifications: notificationRepository,
-        idGenerator: idGenerator,
-        clock: clock,
-      ),
-      sender: pushSender,
-      queue: notificationQueue,
-      idGenerator: idGenerator,
-      clock: clock,
-    );
-
-    // One instance backs both the prediction route and duel acceptance,
-    // so accepting a duel saves the prediction the way the match card does.
     final submitFixturePrediction = SubmitFixturePrediction(
       // Its writes drop the player's cached history (script 138).
       fixturePredictionRepository: predictionHistory,
@@ -3279,32 +3065,6 @@ final class CompositionRoot {
       ),
       readChampionPhoto: ReadChampionPhoto(
         champions: PostgresMonthChampionRepository(connection),
-      ),
-      getMyReferral: GetMyReferral(
-        referrals: PostgresReferralRepository(connection),
-        clock: clock,
-      ),
-      claimReferral: ClaimReferral(
-        referrals: PostgresReferralRepository(connection),
-        userDirectory: directory,
-        clock: clock,
-      ),
-      qualifyReferrals: QualifyReferrals(
-        referrals: PostgresReferralRepository(connection),
-      ),
-      adminListHeldReferrals: AdminListHeldReferrals(
-        referrals: PostgresReferralRepository(connection),
-      ),
-      adminReviewReferral: AdminReviewReferral(
-        referrals: PostgresReferralRepository(connection),
-        clock: clock,
-      ),
-      adminGetReferralOverview: AdminGetReferralOverview(
-        referrals: PostgresReferralAdminRepository(connection),
-        clock: clock,
-      ),
-      adminSetReferralsEnabled: AdminSetReferralsEnabled(
-        referrals: PostgresReferralAdminRepository(connection),
       ),
       flushNotificationQueue: FlushNotificationQueue(
         queue: notificationQueue,
@@ -3690,10 +3450,6 @@ final class CompositionRoot {
         reveal: predictionReveal,
         reactions: predictionReactions,
       ),
-      listSeasonDuelWins: ListSeasonDuelWins(
-        competition: competitionRepository,
-        records: PostgresDuelRecordReader(connection),
-      ),
       // Read every minute by each player watching it (script 138): the
       // season's fixtures and the in-play predictions, frozen at kickoff,
       // come from the read cache. Results stay direct: a recorded one must
@@ -3706,9 +3462,7 @@ final class CompositionRoot {
         ),
         results: fixtureResultRepository,
         rulesets: rulesetProvider,
-        duels: duelReader,
         liveScores: liveScoreBoard,
-        clock: clock,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,
@@ -3852,34 +3606,8 @@ final class CompositionRoot {
         reactions: fixtureReactionRepository,
         groups: groupRepository,
       ),
-      createDuelChallenge: CreateDuelChallenge(
-        duels: duelChallengeRepository,
-        competition: competitionRepository,
-        predictions: fixturePredictionRepository,
-        schedules: fixtureScheduleRepository,
-        clock: clock,
-        notify: duelNotifier,
-      ),
-      acceptDuelChallenge: AcceptDuelChallenge(
-        duels: duelChallengeRepository,
-        submitPrediction: submitFixturePrediction,
-        clock: clock,
-        notify: duelNotifier,
-      ),
-      cancelDuelChallenge: CancelDuelChallenge(
-        duels: duelChallengeRepository,
-        competition: competitionRepository,
-      ),
-      declineDuelChallenge: DeclineDuelChallenge(
-        duels: duelChallengeRepository,
-      ),
-      getDuelChallengeByCode: GetDuelChallengeByCode(
-        duels: duelReader,
-        clock: clock,
-      ),
-      listMyDuels: ListMyDuels(duels: duelReader, clock: clock),
-      searchDuelPlayers: SearchDuelPlayers(
-        players: PostgresDuelPlayerDirectory(connection),
+      searchGroupInvitees: SearchGroupInvitees(
+        players: PostgresInviteeDirectory(connection),
       ),
       getGroupActivityFeed: GetGroupActivityFeed(
         feed: activityFeedReader,
@@ -5166,13 +4894,6 @@ final class _UnwiredScreenViewRepository implements ScreenViewRepository {
   }) => throw StateError('RecordScreenViews was not wired into this test root');
 }
 
-/// Refuses every call: see [_absentListSeasonDuelWins].
-final class _UnwiredDuelRecordReader implements DuelRecordReader {
-  @override
-  Future<Result<Map<ParticipantId, int>>> winsInSeason(SeasonId seasonId) =>
-      throw StateError('ListSeasonDuelWins was not wired into this test root');
-}
-
 /// Refuses every call: see [_absentInviteToGroup].
 final class _UnwiredGroupInvitationRepository
     implements GroupInvitationRepository {
@@ -5243,70 +4964,6 @@ final class _UnwiredPredictionReactionRepository
     required SeasonId seasonId,
     required FixtureRef fixture,
     required UserId viewer,
-  }) => _unwired();
-}
-
-/// Refuses every call: see [_absentAdminGetReferralOverview].
-final class _UnwiredReferralAdminRepository implements ReferralAdminRepository {
-  static Never _unwired() => throw StateError(
-    'the invitation admin was not wired into this test root',
-  );
-
-  @override
-  Future<Result<ReferralOverview>> overview({
-    required DateTime now,
-    required int referrerLimit,
-    required int invitationLimit,
-  }) => _unwired();
-
-  @override
-  Future<Result<bool>> setEnabled({required bool enabled}) => _unwired();
-}
-
-/// Refuses every call: see [_absentGetMyReferral].
-final class _UnwiredReferralRepository implements ReferralRepository {
-  static Never _unwired() =>
-      throw StateError('invitations were not wired into this test root');
-
-  @override
-  Future<Result<String>> ensureCode(UserId userId) => _unwired();
-
-  @override
-  Future<Result<void>> markInstall({
-    required UserId userId,
-    required String installId,
-    required DateTime now,
-  }) => _unwired();
-
-  @override
-  Future<Result<ReferralCounts>> counts({
-    required UserId userId,
-    required DateTime now,
-    required int seasonStartYear,
-  }) => _unwired();
-
-  @override
-  Future<Result<ReferralClaimOutcome>> claim({
-    required UserId invitee,
-    required String code,
-    required String? ip,
-    required String? installId,
-    required DateTime now,
-  }) => _unwired();
-
-  @override
-  Future<Result<int>> qualify({required DateTime now}) => _unwired();
-
-  @override
-  Future<Result<List<HeldReferral>>> held({required int limit}) => _unwired();
-
-  @override
-  Future<Result<ReferralReviewOutcome>> review({
-    required UserId invitee,
-    required ReferralDecision decision,
-    required UserId admin,
-    required String reason,
-    required DateTime now,
   }) => _unwired();
 }
 
@@ -5587,73 +5244,10 @@ final class _UnwiredAuthGateway implements AuthGateway {
 /// person; never issued to a session.
 const String _providerSyncUserId = '00000000-0000-4000-8000-00000000517c';
 
-/// Refuses every call: backs the "absent" duel commands of a test root.
-final class _UnwiredDuelChallengeRepository implements DuelChallengeRepository {
-  static Never _unwired() =>
-      throw StateError('duels were not wired into this test root');
-
-  @override
-  Future<Result<DuelChallenge>> createChallenge({
-    required SeasonId seasonId,
-    required FixtureRef fixture,
-    required ParticipantId challengerParticipantId,
-    required UserId? targetUserId,
-    required int capacity,
-    required DateTime nowUtc,
-  }) => _unwired();
-
-  @override
-  Future<Result<DuelChallenge?>> findChallenge(DuelChallengeId id) =>
-      _unwired();
-
-  @override
-  Future<Result<Duel>> acceptChallenge({
-    required DuelChallengeId challengeId,
-    required UserId opponentUserId,
-    required DateTime nowUtc,
-  }) => _unwired();
-
-  @override
-  Future<Result<void>> cancelChallenge({
-    required DuelChallengeId challengeId,
-    required UserId challengerUserId,
-  }) => _unwired();
-
-  @override
-  Future<Result<void>> declineChallenge({
-    required DuelChallengeId challengeId,
-    required UserId targetUserId,
-  }) => _unwired();
-}
-
-/// Refuses every call: backs the "absent" duel reads of a test root.
-final class _UnwiredDuelReader implements DuelReader {
-  static Never _unwired() =>
-      throw StateError('duel reads were not wired into this test root');
-
-  @override
-  Future<Result<DuelChallengePreview?>> findChallengeByCode(DuelCode code) =>
-      _unwired();
-
-  @override
-  Future<Result<List<DuelChallengePreview>>> listOpenChallengesFor({
-    required UserId userId,
-    required DateTime now,
-    required int limit,
-  }) => _unwired();
-
-  @override
-  Future<Result<List<DuelRecord>>> listDuelsFor({
-    required UserId userId,
-    required DateTime since,
-    required int limit,
-  }) => _unwired();
-}
-
 /// Refuses every call: backs the "absent" player search of a test root.
-final class _UnwiredDuelPlayerDirectory implements DuelPlayerDirectory {
+final class _UnwiredInviteeDirectory implements InviteeDirectory {
   @override
-  Future<Result<List<DuelPlayer>>> search({
+  Future<Result<List<GroupInvitee>>> search({
     required String query,
     required UserId excluding,
     required int limit,

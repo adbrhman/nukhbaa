@@ -28,7 +28,7 @@ List<Override> _overrides() => <Override>[
     ),
   ),
   adminAttentionProvider.overrideWith(
-    (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+    (ref) async => const AdminAttention(freshErrors: 0),
   ),
   adminMonthPulseProvider.overrideWith(
     (ref) async =>

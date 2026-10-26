@@ -140,14 +140,13 @@ void main() {
     });
 
     // Batch 134: the month board's tie-breaks reach this board too.
-    test('reads the right outcomes and invitation points', () async {
+    test('reads the right outcomes, and no invitation points', () async {
       final conn = _rows([
         {
           ..._standingRow(totalPoints: 45),
           'exact_count': 14,
           'settled_count': 110,
           'outcome_count': 52,
-          'referral_points': 2,
         },
       ]);
 
@@ -157,8 +156,8 @@ void main() {
 
       final entry = (result as Ok<List<LeaderboardEntry>>).value.single;
       expect(entry.outcomeCount, 52);
-      expect(entry.referralPoints, 2);
-      expect(conn.sqls.single, contains('gamification.referral_month_points'));
+      // The invitations were removed (2026-10-26).
+      expect(conn.sqls.single, isNot(contains('referral')));
     });
 
     test('reads a bigint total (SUM) and count arriving as BigInt', () async {

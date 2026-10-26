@@ -1,8 +1,7 @@
 /// The friends' league tab of the leaderboard (phase 2 of the plan): the
 /// month's board of the player's own league, ranked among its members by
 /// the server with the month board's points, a one-tap invitation link,
-/// and -- before any league -- a start that names the players they duel
-/// most.
+/// and -- before any league -- a start with the two ways in.
 library;
 
 import 'dart:async';
@@ -14,12 +13,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
-import '../../duels/duels_providers.dart';
 import '../../groups/create_group_screen.dart';
 import '../../groups/group_members_screen.dart';
 import '../../groups/groups_providers.dart';
 import '../../groups/join_group_screen.dart';
-import '../../groups/league_invite.dart';
 import '../../groups/league_invite_sheet.dart';
 import 'fixture_standings_board.dart';
 
@@ -184,8 +181,8 @@ class _FriendsLeagueBoardState extends ConsumerState<FriendsLeagueBoard> {
   }
 }
 
-/// Before any league: what it is, who to invite, and the two ways in.
-class _StartLeague extends ConsumerWidget {
+/// Before any league: what it is and the two ways in.
+class _StartLeague extends StatelessWidget {
   const _StartLeague({
     required this.keyPrefix,
     required this.onCreate,
@@ -197,13 +194,9 @@ class _StartLeague extends ConsumerWidget {
   final VoidCallback onJoin;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final TextTheme text = context.text;
-    final MyDuelsDto? duels = ref.watch(myDuelsProvider).value;
-    final List<String> rivals = duels == null
-        ? const <String>[]
-        : frequentOpponents(duels);
     return ListView(
       key: Key('$keyPrefix.start'),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -231,14 +224,6 @@ class _StartLeague extends ConsumerWidget {
                 'وأرسل رابطه، فينضم صديقك بضغطة.',
                 style: text.bodyMedium?.copyWith(color: tokens.textSecondary),
               ),
-              if (rivals.isNotEmpty) ...<Widget>[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'تواجه كثيراً: ${rivals.join('، ')}. اجمعهم في دوري.',
-                  key: Key('$keyPrefix.rivals'),
-                  style: text.bodyMedium?.copyWith(color: tokens.primaryText),
-                ),
-              ],
               const SizedBox(height: AppSpacing.md),
               FilledButton(
                 key: Key('$keyPrefix.start.create'),

@@ -24,7 +24,7 @@ create function pg_temp.season_board(p_season uuid)
 returns table (participant_id uuid, display_name text, total_points bigint,
                entry_count bigint, joined_at timestamptz, previous_rank int,
                exact_count bigint, settled_count bigint,
-               outcome_count bigint, referral_points bigint)
+               outcome_count bigint)
 language sql as $q$
 SELECT p.id AS participant_id,
        u.display_name AS display_name,
@@ -34,14 +34,10 @@ SELECT p.id AS participant_id,
        snap.rank AS previous_rank,
        COALESCE(f.exact_count, 0)::bigint AS exact_count,
        COALESCE(f.decided_count, 0)::bigint AS settled_count,
-       COALESCE(f.outcome_count, 0)::bigint AS outcome_count,
-       COALESCE(rm.referral_points, 0)::bigint AS referral_points
+       COALESCE(f.outcome_count, 0)::bigint AS outcome_count
 FROM competition.participants p
 JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 LEFT JOIN leaderboard.season_rank_snapshots snap
   ON snap.season_id = p.season_id
  AND snap.participant_id = p.id
@@ -59,7 +55,7 @@ create function pg_temp.group_board(p_group uuid, p_season uuid)
 returns table (participant_id uuid, user_id uuid, display_name text,
                total_points bigint, entry_count bigint, joined_at timestamptz,
                exact_count bigint, settled_count bigint,
-               outcome_count bigint, referral_points bigint)
+               outcome_count bigint)
 language sql as $q$
 SELECT
   p.id         AS participant_id,
@@ -70,15 +66,11 @@ SELECT
   p.joined_at  AS joined_at,
   COALESCE(f.exact_count, 0)::bigint     AS exact_count,
   COALESCE(f.decided_count, 0)::bigint   AS settled_count,
-  COALESCE(f.outcome_count, 0)::bigint   AS outcome_count,
-  COALESCE(rm.referral_points, 0)::bigint AS referral_points
+  COALESCE(f.outcome_count, 0)::bigint   AS outcome_count
 FROM competition.participants p
 JOIN "group".group_memberships m ON m.user_id = p.user_id
 JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 WHERE p.season_id = p_season
   AND m.group_id = p_group
   AND u.status <> 'suspended'
@@ -175,9 +167,8 @@ begin
    where participant_id = scorer
      and fixture_id = '00000000-0c01-4000-8000-0000000000f2';
   perform pg_temp.check(
-    (select outcome_count from pg_temp.season_board(season) where participant_id = scorer) = 1
-    and (select referral_points from pg_temp.season_board(season) where participant_id = scorer) = 0,
-    'season board: right outcomes and invitation points are read');
+    (select outcome_count from pg_temp.season_board(season) where participant_id = scorer) = 1,
+    'season board: right outcomes are read');
   perform pg_temp.check(
     (select exact_count from pg_temp.group_board(grp, season) where participant_id = scorer) = 1
     and (select settled_count from pg_temp.group_board(grp, season) where participant_id = scorer) = 2

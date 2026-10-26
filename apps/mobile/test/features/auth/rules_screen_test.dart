@@ -95,8 +95,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final Finder rule = find.byKey(const Key('rules.tieBreak'));
+    // The invitations were removed (2026-10-26): no step names them.
+    expect(
+      find.descendant(of: rule, matching: find.textContaining('الدعوة')),
+      findsNothing,
+    );
     for (final String step in <String>[
-      'نقاط الدعوة الأكثر',
       'التوقعات الدقيقة الأكثر',
       'الاتجاهات الصحيحة الأكثر',
       'الأسبق انضماماً',

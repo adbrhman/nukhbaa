@@ -44,27 +44,6 @@ final class _Rules implements RulesetProvider {
       );
 }
 
-final class _Duels implements DuelReader {
-  @override
-  Future<Result<DuelChallengePreview?>> findChallengeByCode(
-    DuelCode code,
-  ) async => const Result.ok(null);
-
-  @override
-  Future<Result<List<DuelChallengePreview>>> listOpenChallengesFor({
-    required UserId userId,
-    required DateTime now,
-    required int limit,
-  }) async => const Result.ok(<DuelChallengePreview>[]);
-
-  @override
-  Future<Result<List<DuelRecord>>> listDuelsFor({
-    required UserId userId,
-    required DateTime since,
-    required int limit,
-  }) async => const Result.ok(<DuelRecord>[]);
-}
-
 /// Paris FC - Rennes, 2026-10-18: the feed kept 2-2 after Rennes' second
 /// goal was ruled out. Through the real wiring -- the in-process boards the
 /// composition root builds, `PUT /fixtures/{id}/live-score`, and the
@@ -123,12 +102,10 @@ void main() {
         totals: _Totals(),
         results: InMemoryFixtureResultRepository(),
         rulesets: _Rules(),
-        duels: _Duels(),
         liveScores: CorrectedLiveScoreBoard(
           raw: provider,
           corrections: corrections,
         ),
-        clock: FixedClock(_now),
       ),
       correctLiveScore: AdminCorrectLiveScore(
         providerScores: provider,

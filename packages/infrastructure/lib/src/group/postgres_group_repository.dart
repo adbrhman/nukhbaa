@@ -410,15 +410,11 @@ SELECT
   p.joined_at  AS joined_at,
   COALESCE(f.exact_count, 0)::bigint     AS exact_count,
   COALESCE(f.decided_count, 0)::bigint   AS settled_count,
-  COALESCE(f.outcome_count, 0)::bigint   AS outcome_count,
-  COALESCE(rm.referral_points, 0)::bigint AS referral_points
+  COALESCE(f.outcome_count, 0)::bigint   AS outcome_count
 FROM competition.participants p
 JOIN "group".group_memberships m ON m.user_id = p.user_id
 JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 WHERE p.season_id = @season_id
   AND m.group_id = @group_id
   AND u.status <> 'suspended'
@@ -627,7 +623,6 @@ WHERE p.season_id = @season_id
       final exactCount = _readInt(row['exact_count']) ?? 0;
       final settledCount = _readInt(row['settled_count']) ?? 0;
       final outcomeCount = _readInt(row['outcome_count']) ?? 0;
-      final referralPoints = _readInt(row['referral_points']) ?? 0;
 
       if (userIdResult is Err<UserId>) {
         return Result.err(
@@ -673,7 +668,6 @@ WHERE p.season_id = @season_id
         exactCount: exactCount,
         settledCount: settledCount,
         outcomeCount: outcomeCount,
-        referralPoints: referralPoints,
       );
       if (projected is Err<LeaderboardEntry>) {
         return Result.err(

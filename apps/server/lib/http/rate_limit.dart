@@ -122,11 +122,6 @@ enum PlayerAppend {
   /// `POST /me/screen-views`: the app sends one each time it goes to the
   /// background, so 30 an hour is generous.
   screenViews,
-
-  /// `POST /duels/challenges`: each adds a challenge row, and cancelling
-  /// one frees a pending seat, so the database cap alone would not bound
-  /// the rows; 30 an hour.
-  duelChallenge,
 }
 
 final RateLimiter _frameReportLimiter = RateLimiter(
@@ -144,11 +139,6 @@ final RateLimiter _screenViewsLimiter = RateLimiter(
   window: const Duration(hours: 1),
 );
 
-final RateLimiter _duelChallengeLimiter = RateLimiter(
-  limit: 30,
-  window: const Duration(hours: 1),
-);
-
 /// The `429` for a [kind] append by [principal] over its hourly cap, or
 /// `null` when it may be stored.
 Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
@@ -159,7 +149,6 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
     PlayerAppend.frameReport => _frameReportLimiter,
     PlayerAppend.pushOpened => _pushOpenLimiter,
     PlayerAppend.screenViews => _screenViewsLimiter,
-    PlayerAppend.duelChallenge => _duelChallengeLimiter,
   };
   final wait = limiter.hit(principal.userId.value);
   return wait == null ? null : tooManyRequests(wait);
@@ -171,8 +160,7 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
 /// A league's name is free text and used to be the title of the invitation
 /// push, so one account could send any words to anyone it found by name,
 /// as often as it liked: a new league for each push, the player-write
-/// limit (600 a minute) the only bound, and a private challenge cancelled
-/// and sent again. Only what succeeded is counted ([countPlayerReach]), so
+/// limit (600 a minute) the only bound. Only what succeeded is counted ([countPlayerReach]), so
 /// a refused attempt costs nothing; a refusal is an Arabic `409` the app
 /// shows as it is, not a `429` that reads "wait a minute".
 enum PlayerReach {
@@ -182,9 +170,6 @@ enum PlayerReach {
   /// `POST /groups/{id}/invitations`: 30 invitations in 24 hours, enough
   /// to bring a whole chat group into a league in one evening.
   groupInvite,
-
-  /// A private `POST /duels/challenges`: 3 to the same player in 24 hours.
-  privateChallenge,
 }
 
 final RateLimiter _groupCreateLimiter = RateLimiter(
@@ -197,35 +182,19 @@ final RateLimiter _groupInviteLimiter = RateLimiter(
   window: const Duration(hours: 24),
 );
 
-final RateLimiter _privateChallengeLimiter = RateLimiter(
-  limit: 3,
-  window: const Duration(hours: 24),
-);
-
 RateLimiter _reachLimiter(PlayerReach kind) => switch (kind) {
   PlayerReach.groupCreate => _groupCreateLimiter,
   PlayerReach.groupInvite => _groupInviteLimiter,
-  PlayerReach.privateChallenge => _privateChallengeLimiter,
 };
 
-// A user id is a UUID, which Postgres compares without case: an upper-case
-// copy of the same id must not open a second allowance.
-String _reachKey(AuthenticatedUser principal, String? target) => target == null
-    ? principal.userId.value
-    : '${principal.userId.value}|${target.trim().toLowerCase()}';
-
-/// The `409` when [principal] has done [kind] (to [target], for a private
-/// challenge) as often as 24 hours allow, or `null`. Counts nothing; admins
-/// and the service principal are never refused.
-Response? limitPlayerReach(
-  PlayerReach kind,
-  AuthenticatedUser principal, {
-  String? target,
-}) {
+/// The `409` when [principal] has done [kind] as often as 24 hours allow,
+/// or `null`. Counts nothing; admins and the service principal are never
+/// refused.
+Response? limitPlayerReach(PlayerReach kind, AuthenticatedUser principal) {
   if (principal.role != PlatformRole.user) {
     return null;
   }
-  final wait = _reachLimiter(kind).blockedFor(_reachKey(principal, target));
+  final wait = _reachLimiter(kind).blockedFor(principal.userId.value);
   if (wait == null) {
     return null;
   }
@@ -234,8 +203,6 @@ Response? limitPlayerReach(
       'أنشأت 5 دوريات خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
     PlayerReach.groupInvite =>
       'أرسلت 30 دعوة خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
-    PlayerReach.privateChallenge =>
-      'تحدّيت هذا اللاعب 3 مرات خلال 24 ساعة، وهذا هو الحد. حاول لاحقاً.',
   };
   return Response.json(
     statusCode: HttpStatus.conflict,
@@ -246,17 +213,13 @@ Response? limitPlayerReach(
   );
 }
 
-/// Counts one [kind] that succeeded for [principal] (to [target], for a
-/// private challenge). Admins and the service principal are not counted.
-void countPlayerReach(
-  PlayerReach kind,
-  AuthenticatedUser principal, {
-  String? target,
-}) {
+/// Counts one [kind] that succeeded for [principal]. Admins and the
+/// service principal are not counted.
+void countPlayerReach(PlayerReach kind, AuthenticatedUser principal) {
   if (principal.role != PlatformRole.user) {
     return;
   }
-  _reachLimiter(kind).hit(_reachKey(principal, target));
+  _reachLimiter(kind).hit(principal.userId.value);
 }
 
 /// The anonymous `/auth/*` attempts that are counted.

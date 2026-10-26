@@ -52,14 +52,14 @@ void main() {
 
     final result = await useCase(views)(
       principal: _principal,
-      opens: {ScreenName.duels: 2, ScreenName.home: 5},
+      opens: {ScreenName.badges: 2, ScreenName.home: 5},
     );
 
     expect((result as Ok<int>).value, 2);
     final call = views.calls.single;
     expect(call.$1, _user);
     expect(call.$2, DateTime.utc(2026, 10, 7));
-    expect(call.$3, {'duels': 2, 'home': 5});
+    expect(call.$3, {'badges': 2, 'home': 5});
     expect(call.$4, now);
   });
 

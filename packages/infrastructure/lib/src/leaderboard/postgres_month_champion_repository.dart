@@ -57,12 +57,12 @@ ORDER BY user_id
 
   static const String _crownSql = '''
 INSERT INTO competition.month_champions
-  (season_id, user_id, points, exact_count, decided_count, referral_points,
-   crowned_at, crowned_by, prize)
+  (season_id, user_id, points, exact_count, decided_count, crowned_at,
+   crowned_by, prize)
 VALUES
   (@season_id::uuid, @user_id::uuid, @points::int, @exact_count::int,
-   @decided_count::int, @referral_points::int, @crowned_at::timestamptz,
-   @crowned_by::uuid, @prize::text)
+   @decided_count::int, @crowned_at::timestamptz, @crowned_by::uuid,
+   @prize::text)
 ''';
 
   static const String _listSql = '''
@@ -73,7 +73,6 @@ SELECT c.season_id::text AS season_id,
        c.points,
        c.exact_count,
        c.decided_count,
-       c.referral_points,
        c.crowned_at,
        c.photo_updated_at,
        u.avatar_updated_at,
@@ -191,7 +190,6 @@ WHERE season_id = @season_id::uuid
             'points': champion.points,
             'exact_count': champion.exactCount,
             'decided_count': champion.decidedCount,
-            'referral_points': champion.referralPoints,
             'crowned_at': crownedAt.toUtc(),
             'crowned_by': crownedBy.value,
             'prize': champion.prize,
@@ -239,7 +237,6 @@ WHERE season_id = @season_id::uuid
           points: _int(row['points']),
           exactCount: _int(row['exact_count']),
           decidedCount: _int(row['decided_count']),
-          referralPoints: _int(row['referral_points']),
           crownedAt: crownedAt.toUtc(),
           photoUpdatedAt: photoAt is DateTime ? photoAt.toUtc() : null,
           avatarUpdatedAt: avatarAt is DateTime ? avatarAt.toUtc() : null,

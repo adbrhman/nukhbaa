@@ -14,14 +14,6 @@ void main() {
           myPoints: 6,
         ),
       ],
-      duels: [
-        LiveDuelStandingDto(
-          fixtureId: 'f1',
-          opponentName: 'Rival',
-          myPoints: 3,
-          opponentPoints: 0,
-        ),
-      ],
       rankNow: 3,
       rankIfEnded: 1,
       pointsNow: 3,
@@ -35,11 +27,6 @@ void main() {
     expect((line.homeGoals, line.awayGoals, line.minute), (1, 0, 63));
     expect((line.finished, line.myPoints), (false, 6));
     expect(back.fixture('f9'), isNull);
-    final LiveDuelStandingDto duel = back.duels.single;
-    expect(
-      (duel.opponentName, duel.myPoints, duel.opponentPoints),
-      ('Rival', 3, 0),
-    );
     expect((back.rankNow, back.rankIfEnded), (3, 1));
     expect((back.pointsNow, back.pointsIfEnded, back.players), (3, 9, 3));
     expect(dto.toJson()['schema_version'], 1);
@@ -53,7 +40,6 @@ void main() {
     });
 
     expect(dto.fixtures, isEmpty);
-    expect(dto.duels, isEmpty);
     expect(dto.rankNow, isNull);
     expect(dto.players, 0);
   });

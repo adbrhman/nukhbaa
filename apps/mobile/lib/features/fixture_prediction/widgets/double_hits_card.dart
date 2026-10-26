@@ -18,6 +18,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/web_links.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
@@ -28,7 +29,6 @@ import '../../../core/ui/share_picture.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../../competition/team_identity.dart';
-import '../../gamification/invite_friends_screen.dart';
 import 'day_hero_card.dart' show pointsText;
 
 // A picture that leaves the app keeps the brand's dark colours whatever
@@ -141,12 +141,8 @@ String doubleHitsSentence(DoubleHits doubles) {
 }
 
 /// The share text: the sentence, the names when [showNames], and the
-/// invitation link for [code] when there is one.
-String doubleHitsShareText(
-  DoubleHits doubles, {
-  required bool showNames,
-  String? code,
-}) {
+/// site's link.
+String doubleHitsShareText(DoubleHits doubles, {required bool showNames}) {
   final StringBuffer text = StringBuffer(doubleHitsSentence(doubles));
   if (showNames) {
     for (var i = 0; i < doubles.hits.length; i++) {
@@ -154,9 +150,7 @@ String doubleHitsShareText(
       text.write('\n${i + 1}. ${hit.playerName} ${hit.points}');
     }
   }
-  if (code != null && code.isNotEmpty) {
-    text.write('\nشاركنا في نُخبة: ${inviteLinkFor(code)}');
-  }
+  text.write('\nشاركنا في نُخبة: ${appSiteLink()}');
   return text.toString();
 }
 
@@ -255,7 +249,6 @@ class _DoubleHitsShareDialogState extends ConsumerState<DoubleHitsShareDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final String? code = ref.watch(myReferralProvider).value?.code;
     return Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.md),
       child: SingleChildScrollView(
@@ -284,7 +277,7 @@ class _DoubleHitsShareDialogState extends ConsumerState<DoubleHitsShareDialog> {
                 Expanded(
                   child: FilledButton.icon(
                     key: const Key('doubleHits.share'),
-                    onPressed: _sharing ? null : () => unawaited(_share(code)),
+                    onPressed: _sharing ? null : () => unawaited(_share()),
                     icon: const Icon(Icons.ios_share_rounded),
                     label: const Text('مشاركة البطاقة'),
                   ),
@@ -312,7 +305,7 @@ class _DoubleHitsShareDialogState extends ConsumerState<DoubleHitsShareDialog> {
     );
   }
 
-  Future<void> _share(String? code) async {
+  Future<void> _share() async {
     setState(() {
       _sharing = true;
       _shareFailed = false;
@@ -320,11 +313,7 @@ class _DoubleHitsShareDialogState extends ConsumerState<DoubleHitsShareDialog> {
     try {
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
-        text: doubleHitsShareText(
-          widget.doubles,
-          showNames: _showNames,
-          code: code,
-        ),
+        text: doubleHitsShareText(widget.doubles, showNames: _showNames),
         fileName: 'nukhba-doubles.png',
       );
       if (mounted && !shared) setState(() => _shareFailed = true);

@@ -20,15 +20,14 @@ import 'package:shared/shared.dart';
 /// **Total order (deterministic, reproducible — never arbitrary DB order),
 /// the month board's chain (batch 129, applied here in batch 134):**
 /// 1. [LeaderboardEntry.totalPoints] descending (more points ranks higher);
-/// 2. [LeaderboardEntry.referralPoints] descending;
-/// 3. [LeaderboardEntry.exactCount] descending;
-/// 4. [LeaderboardEntry.outcomeCount] descending;
-/// 5. [LeaderboardEntry.joinedAt] ascending (the earlier joiner first);
-/// 6. final tie-break: [ParticipantId] value ascending, for a stable display
+/// 2. [LeaderboardEntry.exactCount] descending;
+/// 3. [LeaderboardEntry.outcomeCount] descending;
+/// 4. [LeaderboardEntry.joinedAt] ascending (the earlier joiner first);
+/// 5. final tie-break: [ParticipantId] value ascending, for a stable display
 ///    order only.
 ///
 /// **Rank rule:** entries share a rank (and the next skips, "1224") only
-/// when level on keys 1-5. Real players never join at the same instant, so
+/// when level on keys 1-4. Real players never join at the same instant, so
 /// every player gets a place of his own, as on the month board -- the same
 /// month read from the match card no longer shows three players tenth.
 final class SeasonLeaderboard {
@@ -104,10 +103,6 @@ final class SeasonLeaderboard {
     if (byPoints != 0) {
       return byPoints;
     }
-    final byReferrals = b.referralPoints.compareTo(a.referralPoints);
-    if (byReferrals != 0) {
-      return byReferrals;
-    }
     final byExact = b.exactCount.compareTo(a.exactCount);
     if (byExact != 0) {
       return byExact;
@@ -128,7 +123,6 @@ final class SeasonLeaderboard {
   /// Whether two neighbours share a rank: level on every ranking key.
   static bool _level(LeaderboardEntry a, LeaderboardEntry b) =>
       a.totalPoints == b.totalPoints &&
-      a.referralPoints == b.referralPoints &&
       a.exactCount == b.exactCount &&
       a.outcomeCount == b.outcomeCount &&
       a.joinedAt == b.joinedAt;

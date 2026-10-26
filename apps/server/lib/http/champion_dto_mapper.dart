@@ -33,7 +33,6 @@ MonthChampionDto monthChampionToDto(MonthChampion champion) {
     points: champion.points,
     exactCount: champion.exactCount,
     decidedCount: champion.decidedCount,
-    referralPoints: champion.referralPoints,
     crownedAt: crownedAt.toIso8601String(),
     celebrateUntil: ListMonthChampions.celebrateUntil(
       champion,
@@ -85,7 +84,6 @@ ChampionCandidateDto _candidateToDto(ChampionCandidate line) {
     points: line.entry.totalPoints,
     exactCount: line.entry.exactCount,
     decidedCount: line.entry.decidedCount,
-    referralPoints: line.entry.referralPoints,
     avatarUrl: avatarUser == null || avatarAt == null
         ? null
         : avatarUrlOf(userId: avatarUser, updatedAt: avatarAt),

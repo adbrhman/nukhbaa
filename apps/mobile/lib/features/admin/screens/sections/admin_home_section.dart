@@ -24,8 +24,8 @@ import '../../widgets/admin_ui_kit.dart';
 ///
 /// كل رقم من API حقيقي. عدد اللاعبين من `GET /admin/user-stats` (تجميع
 /// `COUNT(*)` على كل `identity.users`، لا صفحة `GET /admin/users`
-/// المحدودة)، ولاعبو الأسبوع من `GET /admin/retention`، والدعوات المحجوزة
-/// والأخطاء الجديدة من [adminAttentionProvider]. كل مصدر يفشل وحده: يظهر
+/// المحدودة)، ولاعبو الأسبوع من `GET /admin/retention`، والأخطاء الجديدة
+/// من [adminAttentionProvider]. كل مصدر يفشل وحده: يظهر
 /// «تعذّر التحقق» مكانه بدل صفر غير صحيح، وتعمل بقية الصفحة.
 ///
 /// «اليوم» هو يوم الرياض، يوم التطبيق في كل مكان (الهجرة 0076).
@@ -299,20 +299,6 @@ class _NeedsAttention extends StatelessWidget {
     }
     switch (attention) {
       case AsyncData<AdminAttention>(:final value):
-        final int? held = value.heldReferrals;
-        if (held == null) {
-          unchecked.add('الدعوات');
-        } else if (held > 0) {
-          rows.add(
-            _AttentionRow(
-              key: const Key('admin.dashboard.attention.referrals'),
-              icon: Icons.group_add_rounded,
-              label: 'دعوات محجوزة للمراجعة',
-              count: held,
-              onTap: () => onNavigate(AdminSection.referrals),
-            ),
-          );
-        }
         final int? fresh = value.freshErrors;
         if (fresh == null) {
           unchecked.add('الأخطاء');
@@ -328,7 +314,7 @@ class _NeedsAttention extends StatelessWidget {
           );
         }
       case AsyncError<AdminAttention>():
-        unchecked.addAll(<String>['الدعوات', 'الأخطاء']);
+        unchecked.add('الأخطاء');
       default:
         loading = true;
     }

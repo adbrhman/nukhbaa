@@ -15,7 +15,6 @@ import '../../core/error/error_presenter.dart';
 import '../../core/ui/app_button.dart';
 import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
-import '../gamification/invite_friends_screen.dart';
 import '../update/update_gate.dart';
 import 'app_lock.dart';
 import 'session_controller.dart';
@@ -38,13 +37,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  // A link that carries `?ref=` opens on the registration tab with the
-  // friend's code already in place (migration 0073).
-  final TextEditingController _referralController = TextEditingController(
-    text: referralCodeFromLaunchUrl(),
-  );
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _isRegister = referralCodeFromLaunchUrl().isNotEmpty;
+  bool _isRegister = false;
 
   @override
   void dispose() {
@@ -52,7 +46,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _referralController.dispose();
     super.dispose();
   }
 
@@ -67,7 +60,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   displayName: _nameController.text.trim(),
                   email: _emailController.text.trim(),
                   password: _passwordController.text,
-                  referralCode: _referralController.text,
                 )
           : ref
                 .read(sessionControllerProvider.notifier)
@@ -319,19 +311,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   }
                                   return null;
                                 },
-                              ),
-                            ],
-                            if (_isRegister) ...[
-                              const SizedBox(height: AppSpacing.lg),
-                              AppTextField(
-                                fieldKey: const Key('signIn.referralField'),
-                                controller: _referralController,
-                                enabled: !inFlight,
-                                label: 'رمز الدعوة (اختياري)',
-                                hint: 'إن دعاك صديق، اكتب رمزه هنا',
-                                prefixIcon: Icons.group_add_outlined,
-                                textInputAction: TextInputAction.done,
-                                onFieldSubmitted: (_) => _submit(session),
                               ),
                             ],
                             const SizedBox(height: AppSpacing.xl),

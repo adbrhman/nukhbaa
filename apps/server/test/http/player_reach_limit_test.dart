@@ -37,43 +37,19 @@ void main() {
       role: PlatformRole.user,
     );
 
-    test('three private challenges to one player in 24 hours, then an '
-        'Arabic 409; another player can still be challenged', () async {
-      for (var i = 0; i < 3; i++) {
-        expect(
-          limitPlayerReach(
-            PlayerReach.privateChallenge,
-            player,
-            target: 'rival-a',
-          ),
-          isNull,
-        );
-        countPlayerReach(
-          PlayerReach.privateChallenge,
-          player,
-          target: 'rival-a',
-        );
+    test('five new leagues in 24 hours, then an Arabic 409', () async {
+      for (var i = 0; i < 5; i++) {
+        expect(limitPlayerReach(PlayerReach.groupCreate, player), isNull);
+        countPlayerReach(PlayerReach.groupCreate, player);
       }
 
-      final refused = limitPlayerReach(
-        PlayerReach.privateChallenge,
-        player,
-        target: 'rival-a',
-      );
+      final refused = limitPlayerReach(PlayerReach.groupCreate, player);
 
       expect(refused, isNotNull);
       expect(refused!.statusCode, HttpStatus.conflict);
       final body = jsonDecode(await refused.body()) as Map<String, Object?>;
       expect(body['code'], 'social.daily_limit');
       expect(body['message'], contains('24'));
-      expect(
-        limitPlayerReach(
-          PlayerReach.privateChallenge,
-          player,
-          target: 'rival-b',
-        ),
-        isNull,
-      );
     });
 
     test('thirty invitations, then a refusal; a check alone counts '

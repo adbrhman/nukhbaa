@@ -39,14 +39,6 @@ enum NotificationKind {
   /// text -- the notification row itself stays free of prose (decision #1).
   adminAnnouncement,
 
-  /// A player challenged the recipient privately to a duel (migration
-  /// 0092). Subject references the challenge and the challenger.
-  duelChallenged,
-
-  /// A player accepted a duel challenge the recipient created (migration
-  /// 0092). Subject references the challenge and the player who accepted.
-  duelAccepted,
-
   /// A player reacted to the recipient's prediction for a fixture
   /// (migration 0094). Subject references the fixture and the player who
   /// reacted; one per reacting player per fixture.
@@ -69,8 +61,6 @@ enum NotificationKind {
     NotificationKind.reactionReceived => 'reaction_received',
     NotificationKind.fixtureScored => 'fixture_scored',
     NotificationKind.adminAnnouncement => 'admin_announcement',
-    NotificationKind.duelChallenged => 'duel_challenged',
-    NotificationKind.duelAccepted => 'duel_accepted',
     NotificationKind.predictionReaction => 'prediction_reaction',
     NotificationKind.groupInvited => 'group_invited',
     NotificationKind.doubleReleased => 'double_released',

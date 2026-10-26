@@ -1,14 +1,11 @@
 /// A random id for this app install, kept in the secure store (migration
-/// 0073). It travels with the invitation requests so the server can hold an
-/// invitation whose invitee is on the inviter's own install for review; the
-/// server stores it only hashed. Clearing the app's data makes a new one,
-/// which is why it is a signal for a human, never proof on its own.
+/// 0073). It travels with the crash reports only, so the server can limit
+/// how often one device reports (the invitations it was made for were
+/// removed on 2026-10-26). Clearing the app's data makes a new one.
 library;
 
 import 'dart:math';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Reads this install's id, creating it on first use.
@@ -47,8 +44,8 @@ final class SecureInstallIdStore implements InstallIdStore {
       _cached = fresh;
       return fresh;
     } on Object {
-      // No id is a complete answer: the invitation still goes through, it
-      // only carries one signal fewer.
+      // No id is a complete answer: the report still goes through, it is
+      // only limited by account instead.
       return null;
     }
   }
@@ -78,11 +75,3 @@ String newInstallId(Random random) {
   }
   return out.toString();
 }
-
-/// This install's id store. The web build has none (migration 0086): a
-/// browser cannot be told apart from the phone it runs on, so an
-/// invitation claimed there is refused as `app_required` and the player
-/// is told to use the app.
-final installIdStoreProvider = Provider<InstallIdStore>(
-  (ref) => kIsWeb ? const FixedInstallIdStore(null) : SecureInstallIdStore(),
-);

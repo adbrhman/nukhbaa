@@ -4,8 +4,7 @@ import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
 import '../competition/fake_competition_repository.dart';
-import '../competition/fakes.dart'
-    show FakeRulesetProvider, FixedClock, userPrincipal;
+import '../competition/fakes.dart' show FakeRulesetProvider, userPrincipal;
 import '../prediction/fake_fixture_prediction_repository.dart';
 import '../scoring/fakes.dart'
     show FakeFixtureResultRepository, scoringParticipant;
@@ -86,48 +85,6 @@ final class _Totals implements FixtureTotalsReader {
   }
 }
 
-final class _Duels implements DuelReader {
-  _Duels(this.duels);
-
-  final List<DuelRecord> duels;
-
-  @override
-  Future<Result<DuelChallengePreview?>> findChallengeByCode(
-    DuelCode code,
-  ) async => const Result.ok(null);
-
-  @override
-  Future<Result<List<DuelChallengePreview>>> listOpenChallengesFor({
-    required UserId userId,
-    required DateTime now,
-    required int limit,
-  }) async => const Result.ok(<DuelChallengePreview>[]);
-
-  @override
-  Future<Result<List<DuelRecord>>> listDuelsFor({
-    required UserId userId,
-    required DateTime since,
-    required int limit,
-  }) async => Result.ok(duels);
-}
-
-DuelRecord _duel(String fixture, DuelPick mine, DuelPick theirs) => DuelRecord(
-  duelId: const DuelId('51111111-1111-1111-1111-111111111111'),
-  challengeId: const DuelChallengeId('52222222-1111-1111-1111-111111111111'),
-  fixture: FixtureRef(fixture),
-  homeTeam: 'Home',
-  awayTeam: 'Away',
-  kickoffAt: _now.subtract(const Duration(hours: 1)),
-  acceptedAt: _now.subtract(const Duration(hours: 3)),
-  callerIsChallenger: true,
-  opponentUserId: const UserId('61111111-1111-1111-1111-111111111111'),
-  opponentName: 'Rival',
-  myPick: mine,
-  opponentPick: theirs,
-  myScore: null,
-  opponentScore: null,
-);
-
 LiveScore _score(int home, int away) => LiveScore(
   homeGoals: home,
   awayGoals: away,
@@ -143,7 +100,7 @@ typedef _Harness = ({
   _Board board,
 });
 
-_Harness _harness({LiveScoreBoard? board, List<DuelRecord> duels = const []}) {
+_Harness _harness({LiveScoreBoard? board}) {
   final competition = FakeCompetitionRepository()
     ..seedParticipant(
       scoringParticipant(id: _me, seasonId: _season, userId: _meUser),
@@ -195,9 +152,7 @@ _Harness _harness({LiveScoreBoard? board, List<DuelRecord> duels = const []}) {
       totals: totals,
       results: results,
       rulesets: FakeRulesetProvider(Result.ok(_rules)),
-      duels: _Duels(duels),
       liveScores: board == null ? null : live,
-      clock: FixedClock(_now),
     ),
     totals: totals,
     results: results,
@@ -239,31 +194,6 @@ void main() {
     expect((standing.rankNow, standing.pointsNow), (3, 3));
     expect((standing.rankIfEnded, standing.pointsIfEnded), (1, 9));
     expect(standing.players, 3);
-  });
-
-  test('a duel on the match says who leads', () async {
-    final h = _harness(
-      board: _Board({_live: _score(1, 0)}),
-      duels: [
-        _duel(
-          _live,
-          const DuelPick(homeGoals: 1, awayGoals: 0, isDouble: false),
-          const DuelPick(homeGoals: 0, awayGoals: 0, isDouble: false),
-        ),
-        _duel(
-          _later,
-          const DuelPick(homeGoals: 1, awayGoals: 0, isDouble: false),
-          const DuelPick(homeGoals: 0, awayGoals: 0, isDouble: false),
-        ),
-      ],
-    );
-
-    final LiveStanding standing = await _read(h);
-
-    expect(standing.duels, hasLength(1));
-    final LiveDuelStanding duel = standing.duels.single;
-    expect(duel.opponentName, 'Rival');
-    expect((duel.myPoints, duel.opponentPoints), (3, 0));
   });
 
   test('a recorded result is left to the board, never counted twice', () async {

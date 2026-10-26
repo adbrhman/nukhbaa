@@ -39,7 +39,7 @@ Widget _host() => ProviderScope(
     ),
     adminFrameStatsProvider.overrideWith((ref) async => _emptyFrameStats),
     adminAttentionProvider.overrideWith(
-      (ref) async => const AdminAttention(heldReferrals: 0, freshErrors: 0),
+      (ref) async => const AdminAttention(freshErrors: 0),
     ),
     adminMonthPulseProvider.overrideWith(
       (ref) async =>

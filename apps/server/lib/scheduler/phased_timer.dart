@@ -11,7 +11,8 @@ import 'dart:async';
 /// period after a phase of its own, below a minute. Every tick is a whole
 /// number of minutes, so two phases that differ by less than a minute never
 /// meet again (audit NUKHBA-007b, script 99). The weekly league was deleted
-/// on 2026-10-18 (script 114), with its closure and overtaken jobs.
+/// on 2026-10-18 (script 114), with its closure and overtaken jobs, and
+/// the invitations on 2026-10-26, with their qualification job.
 const Duration providerLivePhase = Duration.zero;
 
 /// See [providerLivePhase].
@@ -43,9 +44,6 @@ const Duration badgeEvaluationPhase = Duration(seconds: 32);
 
 /// See [providerLivePhase].
 const Duration rescorePhase = Duration(seconds: 36);
-
-/// See [providerLivePhase].
-const Duration referralQualificationPhase = Duration(seconds: 44);
 
 /// See [providerLivePhase].
 const Duration matchDaySettlementPhase = Duration(seconds: 48);

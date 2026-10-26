@@ -1,13 +1,13 @@
-/// The friends' league (phase 2 of the plan): its month board, the link
-/// that invites a friend in one tap, and who to invite first.
+/// The friends' league (phase 2 of the plan): its month board and the link
+/// that invites a friend in one tap.
 library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../core/config/web_links.dart';
 import '../../core/providers.dart';
-import '../gamification/invite_friends_screen.dart' show inviteWebBase;
 
 /// A group's board for a month contest.
 typedef GroupMonthBoardKey = ({String groupId, String seasonId});
@@ -33,17 +33,3 @@ String leagueShareText(GroupDto group) =>
     'انضم إلى دوري «${group.name}» في نُخبة، ونتنافس على ترتيب الشهر.\n'
     '${leagueLinkFor(group.inviteCode)}\n'
     'أو أدخل الرمز: ${group.inviteCode}';
-
-/// The players [mine] faced most in duels, most first, at most [limit].
-List<String> frequentOpponents(MyDuelsDto mine, {int limit = 3}) {
-  final Map<String, int> times = <String, int>{};
-  final Map<String, String> names = <String, String>{};
-  for (final DuelSummaryDto d in mine.duels) {
-    if (d.opponentName.trim().isEmpty) continue;
-    times.update(d.opponentUserId, (n) => n + 1, ifAbsent: () => 1);
-    names[d.opponentUserId] = d.opponentName;
-  }
-  final List<String> ids = times.keys.toList()
-    ..sort((a, b) => times[b]!.compareTo(times[a]!));
-  return <String>[for (final String id in ids.take(limit)) names[id]!];
-}

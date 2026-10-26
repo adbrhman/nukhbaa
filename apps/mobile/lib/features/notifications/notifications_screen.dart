@@ -14,7 +14,6 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../competition/widgets/async_list_view.dart';
-import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import '../groups/group_invitations.dart';
@@ -319,7 +318,6 @@ class _NotificationRow extends ConsumerWidget {
     'group_member_joined' => Icons.group_add_outlined,
     'reaction_received' => Icons.favorite_border,
     'admin_announcement' => Icons.campaign_outlined,
-    'duel_challenged' || 'duel_accepted' => Icons.compare_arrows_rounded,
     'prediction_reaction' => Icons.add_reaction_outlined,
     'group_invited' => Icons.group_add_rounded,
     'double_released' => Icons.bolt_rounded,
@@ -343,8 +341,6 @@ class _NotificationRow extends ConsumerWidget {
       'group_member_joined' => l10n.notificationGroupMemberJoined,
       'reaction_received' => l10n.notificationReactionReceived,
       'admin_announcement' => l10n.notificationAdminAnnouncement,
-      'duel_challenged' => 'لاعب يتحداك على مباراة. اضغط لتتوقّع.',
-      'duel_accepted' => 'قُبل تحديك. اضغط لتتابعه.',
       'prediction_reaction' => 'لاعب تفاعل مع توقعك. اضغط لترى جدول التوقعات.',
       'group_invited' => 'دعوة إلى دوري أصدقاء.',
       // Migration 0172: a hidden match's double is free again.
@@ -408,19 +404,16 @@ class _NotificationRow extends ConsumerWidget {
     final String? body = notification.body;
     final bool hasBody = body != null && body.isNotEmpty;
     final List<Uri> links = _linksIn(body ?? '');
-    final bool isDuel = notification.kind.startsWith('duel_');
     // A reaction row opens the predictions board of its match's day, when
     // the match is in the current month's feed.
     final SeasonFixtureCardDto? reacted =
         notification.kind == 'prediction_reaction'
         ? _fixtureOf(ref, notification.fixtureId)
         : null;
-    // Where the row leads: a duel to the Duels page, where the challenge
-    // waits; a reaction to its day's board; a scored match to the history;
-    // a new member to My Groups (audit L-04). An announcement reads in place.
-    final Widget Function()? opens = isDuel
-        ? () => const DuelsScreen()
-        : reacted != null
+    // Where the row leads: a reaction to its day's board; a scored match to
+    // the history; a new member to My Groups (audit L-04). An announcement
+    // reads in place.
+    final Widget Function()? opens = reacted != null
         ? () => FixturePredictionsBoardPage(kickoffAt: reacted.kickoffAt)
         : notification.kind == 'fixture_scored'
         ? () => const PredictionHistoryScreen()

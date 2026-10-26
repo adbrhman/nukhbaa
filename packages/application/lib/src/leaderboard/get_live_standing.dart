@@ -1,4 +1,3 @@
-import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/ruleset_provider.dart';
 import 'package:application/src/football_data/ports/live_score_board.dart';
@@ -7,8 +6,6 @@ import 'package:application/src/leaderboard/ports/fixture_totals_reader.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
-import 'package:application/src/social/duel_views.dart';
-import 'package:application/src/social/ports/duel_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -44,35 +41,11 @@ final class LiveFixtureStanding {
   final int? myPoints;
 }
 
-/// One of the viewer's duels on a match in play.
-final class LiveDuelStanding {
-  /// Creates the line.
-  const LiveDuelStanding({
-    required this.fixture,
-    required this.opponentName,
-    required this.myPoints,
-    required this.opponentPoints,
-  });
-
-  /// The match.
-  final FixtureRef fixture;
-
-  /// The other player.
-  final String opponentName;
-
-  /// What the viewer would earn if the match ended now.
-  final int myPoints;
-
-  /// What the other player would earn.
-  final int opponentPoints;
-}
-
 /// Where the viewer stands while the season's matches are in play.
 final class LiveStanding {
   /// Creates the standing.
   const LiveStanding({
     required this.fixtures,
-    required this.duels,
     required this.rankNow,
     required this.rankIfEnded,
     required this.pointsNow,
@@ -83,7 +56,6 @@ final class LiveStanding {
   /// Nothing in play.
   static const LiveStanding none = LiveStanding(
     fixtures: <LiveFixtureStanding>[],
-    duels: <LiveDuelStanding>[],
     rankNow: null,
     rankIfEnded: null,
     pointsNow: 0,
@@ -93,9 +65,6 @@ final class LiveStanding {
 
   /// The season's matches in play, in the season's order.
   final List<LiveFixtureStanding> fixtures;
-
-  /// The viewer's duels on them.
-  final List<LiveDuelStanding> duels;
 
   /// The viewer's place on the month board now; null when not on it.
   final int? rankNow;
@@ -114,9 +83,9 @@ final class LiveStanding {
 }
 
 /// Query use-case: while a season's matches are in play, what the viewer's
-/// predictions would earn if they ended now, their place on the month board
-/// now and then, and who leads each of their duels on them (phase 5 of the
-/// plan: the match is live inside the app).
+/// predictions would earn if they ended now and their place on the month
+/// board now and then (phase 5 of the plan: the match is live inside the
+/// app).
 ///
 /// Points are graded here, on the server, by the same rules as a recorded
 /// result ([Scoring.gradeScoreline]) against the running score the provider
@@ -137,30 +106,20 @@ final class GetLiveStanding {
     required FixtureTotalsReader totals,
     required FixtureResultRepository results,
     required RulesetProvider rulesets,
-    required DuelReader duels,
     required LiveScoreBoard? liveScores,
-    required Clock clock,
   }) : _competition = competition,
        _fixturePredictions = fixturePredictions,
        _totals = totals,
        _results = results,
        _rulesets = rulesets,
-       _duels = duels,
-       _liveScores = liveScores,
-       _clock = clock;
+       _liveScores = liveScores;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureTotalsReader _totals;
   final FixtureResultRepository _results;
   final RulesetProvider _rulesets;
-  final DuelReader _duels;
   final LiveScoreBoard? _liveScores;
-  final Clock _clock;
-
-  /// How far back the viewer's duels are read: a match in play kicked off
-  /// within the last day.
-  static const Duration duelWindow = Duration(days: 1);
 
   /// The viewer's live standing in [seasonId].
   Future<Result<LiveStanding>> call({
@@ -237,7 +196,6 @@ final class GetLiveStanding {
     final ScoringRuleset ruleset = (rulesetResult as Ok<ScoringRuleset>).value;
 
     final Map<String, _Gain> gains = <String, _Gain>{};
-    final Map<String, FixtureResult> asIfEnded = <String, FixtureResult>{};
     final List<LiveFixtureStanding> lines = <LiveFixtureStanding>[];
     for (final FixtureRef fixture in inPlay) {
       final LiveScore score = running[fixture.value]!;
@@ -248,7 +206,6 @@ final class GetLiveStanding {
       );
       if (resultNow is Err<FixtureResult>) continue;
       final FixtureResult result = (resultNow as Ok<FixtureResult>).value;
-      asIfEnded[fixture.value] = result;
       final predictions = await _fixturePredictions.listByFixture(fixture);
       if (predictions is Err<List<FixturePredictionView>>) {
         return Result.err(predictions.error);
@@ -303,29 +260,9 @@ final class GetLiveStanding {
     final _Place? placeNow = (rankNow as Ok<_Place?>).value;
     final _Place? placeThen = (rankThen as Ok<_Place?>).value;
 
-    final duelsResult = await _duels.listDuelsFor(
-      userId: principal.userId,
-      since: _clock.nowUtc().subtract(duelWindow),
-      limit: 50,
-    );
-    if (duelsResult is Err<List<DuelRecord>>) {
-      return Result.err(duelsResult.error);
-    }
-    final List<LiveDuelStanding> duels = <LiveDuelStanding>[
-      for (final DuelRecord d in (duelsResult as Ok<List<DuelRecord>>).value)
-        if (asIfEnded[d.fixture.value] case final FixtureResult result)
-          LiveDuelStanding(
-            fixture: d.fixture,
-            opponentName: d.opponentName,
-            myPoints: _pickPoints(ruleset, result, d.myPick),
-            opponentPoints: _pickPoints(ruleset, result, d.opponentPick),
-          ),
-    ];
-
     return Result.ok(
       LiveStanding(
         fixtures: List<LiveFixtureStanding>.unmodifiable(lines),
-        duels: List<LiveDuelStanding>.unmodifiable(duels),
         rankNow: placeNow?.rank,
         rankIfEnded: placeThen?.rank,
         pointsNow: placeNow?.points ?? 0,
@@ -352,20 +289,6 @@ final class GetLiveStanding {
     ruleset: ruleset,
   );
 
-  static int _pickPoints(
-    ScoringRuleset ruleset,
-    FixtureResult result,
-    DuelPick? pick,
-  ) => pick == null
-      ? 0
-      : _grade(
-          ruleset,
-          result,
-          homeGoals: pick.homeGoals,
-          awayGoals: pick.awayGoals,
-          isDouble: pick.isDouble,
-        ).points;
-
   /// [now] with every gain added, and a line for a player whose first
   /// points would come from a match in play.
   static Result<List<ParticipantFixtureTotals>> _project(
@@ -386,7 +309,6 @@ final class GetLiveStanding {
             : line.fixturesScored,
         exactCount: line.exactCount + gain.exact,
         decidedCount: decided,
-        referralPoints: line.referralPoints,
         outcomeCount: line.outcomeCount + gain.outcome,
         joinedAt: line.joinedAt,
       );

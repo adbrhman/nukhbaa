@@ -672,7 +672,6 @@ final class FixtureLeaderboardEntryDto {
     this.decidedCount = 0,
     this.previousRank,
     this.avatarUrl,
-    this.referralPoints = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -693,14 +692,15 @@ final class FixtureLeaderboardEntryDto {
       decidedCount: (json['decided_count'] as int?) ?? 0,
       previousRank: json['previous_rank'] as int?,
       avatarUrl: json['avatar_url'] as String?,
-      referralPoints: (json['referral_points'] as int?) ?? 0,
     );
   }
 
   /// The current schema version for this DTO. Version 2 added
   /// [exactCount]/[decidedCount]; version 3 added [previousRank]; version 4
-  /// adds [avatarUrl]; version 5 adds [referralPoints]. An older payload
-  /// lacks the keys and deserializes to 0/null, so a cached response still
+  /// adds [avatarUrl]; version 5 added `referral_points`, no longer sent
+  /// since the invitations were removed (2026-10-26) and ignored when an
+  /// older payload carries it. An older payload lacks the keys and
+  /// deserializes to 0/null, so a cached response still
   /// renders -- without accuracy, without arrows, without pictures.
   static const int currentSchemaVersion = 5;
 
@@ -748,11 +748,6 @@ final class FixtureLeaderboardEntryDto {
   /// device keeps serving the old bytes.
   final String? avatarUrl;
 
-  /// The month's invitation points (migration 0073, capped at 20): the
-  /// first tie-break after [totalPoints], never added to it. 0 on a day
-  /// board.
-  final int referralPoints;
-
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -768,7 +763,6 @@ final class FixtureLeaderboardEntryDto {
     'decided_count': decidedCount,
     'previous_rank': previousRank,
     'avatar_url': avatarUrl,
-    'referral_points': referralPoints,
   };
 
   @override
@@ -783,7 +777,6 @@ final class FixtureLeaderboardEntryDto {
       other.decidedCount == decidedCount &&
       other.previousRank == previousRank &&
       other.avatarUrl == avatarUrl &&
-      other.referralPoints == referralPoints &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -797,7 +790,6 @@ final class FixtureLeaderboardEntryDto {
     decidedCount,
     previousRank,
     avatarUrl,
-    referralPoints,
     schemaVersion,
   );
 }
@@ -894,7 +886,6 @@ final class SportingSeasonEntryDto {
     required this.exactCount,
     required this.decidedCount,
     required this.monthsPlayed,
-    this.referralPoints = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -911,7 +902,6 @@ final class SportingSeasonEntryDto {
       exactCount: (json['exact_count'] as int?) ?? 0,
       decidedCount: (json['decided_count'] as int?) ?? 0,
       monthsPlayed: (json['months_played'] as int?) ?? 0,
-      referralPoints: (json['referral_points'] as int?) ?? 0,
     );
   }
 
@@ -942,10 +932,6 @@ final class SportingSeasonEntryDto {
   /// How many months contributed.
   final int monthsPlayed;
 
-  /// The season's invitation points (migration 0073): the first tie-break
-  /// after [totalPoints], never added to it.
-  final int referralPoints;
-
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -960,7 +946,6 @@ final class SportingSeasonEntryDto {
     'exact_count': exactCount,
     'decided_count': decidedCount,
     'months_played': monthsPlayed,
-    'referral_points': referralPoints,
   };
 
   @override
@@ -974,7 +959,6 @@ final class SportingSeasonEntryDto {
       other.exactCount == exactCount &&
       other.decidedCount == decidedCount &&
       other.monthsPlayed == monthsPlayed &&
-      other.referralPoints == referralPoints &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -987,7 +971,6 @@ final class SportingSeasonEntryDto {
     exactCount,
     decidedCount,
     monthsPlayed,
-    referralPoints,
     schemaVersion,
   );
 }

@@ -80,7 +80,6 @@ final class _Champions implements MonthChampionRepository {
           points: champion.points,
           exactCount: champion.exactCount,
           decidedCount: champion.decidedCount,
-          referralPoints: champion.referralPoints,
           crownedAt: crownedAt,
           monthEndAt: _monthEnd,
           prize: champion.prize,
@@ -138,7 +137,6 @@ final class _Totals implements FixtureTotalsReader {
     required int points,
     required int exact,
     required int decided,
-    int referral = 0,
   }) {
     final result = ParticipantFixtureTotals.of(
       participantId: ParticipantId(participantId),
@@ -146,7 +144,6 @@ final class _Totals implements FixtureTotalsReader {
       fixturesScored: decided,
       exactCount: exact,
       decidedCount: decided,
-      referralPoints: referral,
     );
     lines.add((result as Ok<ParticipantFixtureTotals>).value);
   }
@@ -223,7 +220,7 @@ void main() {
     test('crowns the leader with the final figures frozen', () async {
       final world = _World();
       world.totals
-        ..add(_p1, points: 42, exact: 6, decided: 30, referral: 2)
+        ..add(_p1, points: 42, exact: 6, decided: 30)
         ..add(_p2, points: 39, exact: 7, decided: 31);
 
       final result = await world.crown(
@@ -238,7 +235,6 @@ void main() {
       expect(crowned.single.points, 42);
       expect(crowned.single.exactCount, 6);
       expect(crowned.single.decidedCount, 30);
-      expect(crowned.single.referralPoints, 2);
       expect(crowned.single.crownedAt, world.clock.now);
       expect(world.champions.crownedBy, const UserId(_admin));
       expect(crowned.single.prize, isNull);
@@ -316,7 +312,6 @@ void main() {
               points: champion.points,
               exactCount: champion.exactCount,
               decidedCount: champion.decidedCount,
-              referralPoints: champion.referralPoints,
               crownedAt: champion.crownedAt,
             ),
           ),
@@ -330,8 +325,8 @@ void main() {
       () async {
         final world = _World();
         world.totals
-          ..add(_p1, points: 42, exact: 6, decided: 30, referral: 2)
-          ..add(_p2, points: 42, exact: 6, decided: 28, referral: 2)
+          ..add(_p1, points: 42, exact: 6, decided: 30)
+          ..add(_p2, points: 42, exact: 6, decided: 28)
           ..add(_p3, points: 20, exact: 2, decided: 25);
 
         final result = await world.crown(

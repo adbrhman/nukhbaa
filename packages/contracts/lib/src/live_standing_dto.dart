@@ -56,60 +56,14 @@ final class LiveFixtureStandingDto {
   };
 }
 
-/// One of the viewer's duels on a match in play.
-final class LiveDuelStandingDto {
-  /// Creates the line.
-  const LiveDuelStandingDto({
-    required this.fixtureId,
-    required this.opponentName,
-    required this.myPoints,
-    required this.opponentPoints,
-  });
-
-  /// Deserializes from a JSON map; null when the line is unreadable.
-  static LiveDuelStandingDto? tryFromJson(Map<String, Object?> json) {
-    final Object? id = json['fixture_id'];
-    final Object? mine = json['my_points'];
-    final Object? theirs = json['opponent_points'];
-    if (id is! String || mine is! int || theirs is! int) return null;
-    return LiveDuelStandingDto(
-      fixtureId: id,
-      opponentName: (json['opponent_name'] as String?) ?? '',
-      myPoints: mine,
-      opponentPoints: theirs,
-    );
-  }
-
-  /// The match.
-  final String fixtureId;
-
-  /// The other player.
-  final String opponentName;
-
-  /// What the viewer would earn if the match ended now.
-  final int myPoints;
-
-  /// What the other player would earn.
-  final int opponentPoints;
-
-  /// Serializes to a JSON-encodable map.
-  Map<String, Object?> toJson() => {
-    'fixture_id': fixtureId,
-    'opponent_name': opponentName,
-    'my_points': myPoints,
-    'opponent_points': opponentPoints,
-  };
-}
-
 /// Body of `GET /seasons/{id}/live`: while the season's matches are in
 /// play, what the viewer's predictions would earn if they ended now, their
-/// place on the month board now and then, and their duels on those matches.
+/// place on the month board now and then.
 /// Graded on the server; nothing here is stored.
 final class LiveStandingDto {
   /// Creates the answer.
   const LiveStandingDto({
     required this.fixtures,
-    required this.duels,
     required this.pointsNow,
     required this.pointsIfEnded,
     required this.players,
@@ -122,7 +76,6 @@ final class LiveStandingDto {
   /// line is left out.
   factory LiveStandingDto.fromJson(Map<String, Object?> json) {
     final Object? fixtures = json['fixtures'];
-    final Object? duels = json['duels'];
     return LiveStandingDto(
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       fixtures: <LiveFixtureStandingDto>[
@@ -130,12 +83,6 @@ final class LiveStandingDto {
           for (final Object? item in fixtures)
             if (item is Map<String, Object?>)
               ?LiveFixtureStandingDto.tryFromJson(item),
-      ],
-      duels: <LiveDuelStandingDto>[
-        if (duels is List<Object?>)
-          for (final Object? item in duels)
-            if (item is Map<String, Object?>)
-              ?LiveDuelStandingDto.tryFromJson(item),
       ],
       rankNow: json['rank_now'] as int?,
       rankIfEnded: json['rank_if_ended'] as int?,
@@ -150,9 +97,6 @@ final class LiveStandingDto {
 
   /// The season's matches in play; empty when none is.
   final List<LiveFixtureStandingDto> fixtures;
-
-  /// The viewer's duels on them.
-  final List<LiveDuelStandingDto> duels;
 
   /// The viewer's place on the month board now; null when not on it.
   final int? rankNow;
@@ -184,7 +128,6 @@ final class LiveStandingDto {
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'fixtures': [for (final f in fixtures) f.toJson()],
-    'duels': [for (final d in duels) d.toJson()],
     'rank_now': rankNow,
     'rank_if_ended': rankIfEnded,
     'points_now': pointsNow,

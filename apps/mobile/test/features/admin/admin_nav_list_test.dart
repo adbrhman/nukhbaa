@@ -58,7 +58,8 @@ void main() {
       find.byKey(const Key('admin.shell.nav.countedFixtures')),
       findsNothing,
     );
-    expect(find.byType(ListTile), findsNWidgets(14));
+    // 13 sections: «نظام الدعوات» left with the invitations (2026-10-26).
+    expect(find.byType(ListTile), findsNWidgets(13));
     await tester.tap(find.byKey(const Key('admin.shell.nav.users')));
     await tester.pumpAndSettle();
 

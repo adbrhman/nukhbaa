@@ -83,18 +83,6 @@
     .ghost:hover { background: rgba(255,255,255,.07); }
     .btn svg { width: 22px; height: 22px; flex: none; }
     .note { font-size: 14px; color: var(--muted); margin-top: 6px; min-height: 1.7em; }
-    .invite {
-      max-width: 340px; margin: 0 auto 24px; padding: 16px; border-radius: 16px;
-      border: 1px solid rgba(25,120,209,.55); background: rgba(25,120,209,.12); text-align: center;
-    }
-    .invite b { display: block; font-size: 18px; }
-    .invite p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
-    .code-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 8px; flex-wrap: wrap; }
-    .code-row code { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: var(--text); direction: ltr; }
-    .copy {
-      font: inherit; font-weight: 700; font-size: 15px; padding: 6px 14px; border-radius: 10px;
-      border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text); cursor: pointer;
-    }
     .features {
       list-style: none; padding: 0; margin: 40px 0 0;
       display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -128,16 +116,6 @@
       <img class="logo" src="/icon-512.png" width="104" height="104" alt="شعار نُخبة">
       <h1>نُخبة</h1>
       <p class="tag">توقّع نتائج المباريات، اجمع النقاط، وتصدّر الترتيب مع أصدقائك.</p>
-
-      <!-- رابط الدعوة (?ref=): يظهر الرمز ليُلصق في التطبيق؛ الدعوة تُحتسب من تطبيق أندرويد فقط -->
-      <div id="invite" class="invite" hidden>
-        <b>دعاك صديق إلى نُخبة</b>
-        <div class="code-row">
-          <code id="refcode"></code>
-          <button id="copyref" class="copy" type="button">نسخ الرمز</button>
-        </div>
-        <p>حمّل التطبيق لأندرويد، وعند إنشاء حسابك الصق الرمز في خانة «رمز الدعوة». تُحتسب الدعوة من التطبيق خلال 24 ساعة من إنشاء الحساب، ولا تُحتسب من المتصفح.</p>
-      </div>
 
       <div class="actions">
         <a id="dl" class="btn primary" href="/apk/nukhbaa.apk">
@@ -181,24 +159,6 @@
   <footer>© نُخبة · <a href="/privacy/">سياسة الخصوصية</a> · <a href="/rules/">شروط المسابقة</a> · <a href="/delete-account/">حذف الحساب</a></footer>
 
   <script>
-    // رابط دعوة: يعرض الرمز مع زر النسخ، ويمرّره إلى نسخة الويب.
-    (function () {
-      var m = /[?&]ref=([^&#]*)/.exec(location.search);
-      var code = '';
-      try { code = m ? decodeURIComponent(m[1]).trim().toUpperCase() : ''; } catch (e) {}
-      if (!/^[A-Z0-9]{4,32}$/.test(code)) return;
-      document.getElementById('refcode').textContent = code;
-      document.getElementById('invite').hidden = false;
-      document.getElementById('web').href = '/nukhbaa/?ref=' + code;
-      var copy = document.getElementById('copyref');
-      copy.addEventListener('click', function () {
-        var done = function () { copy.textContent = 'نُسخ الرمز'; };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(code).then(done, function () {});
-        }
-      });
-    })();
-
     // ملف الـ APK من هذا الموقع (script 144): خوادم GitHub بطيئة جدًا في
     // اليمن بدون VPN. إن لم يكن الملف هنا بعد يفتح الزر صفحة الإصدارات.
     (function () {

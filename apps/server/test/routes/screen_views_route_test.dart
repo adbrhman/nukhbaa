@@ -57,22 +57,25 @@ Future<Response> _call(
 
 void main() {
   group('POST /me/screen-views', () {
-    test('keeps the known screens of the report', () async {
-      final views = _MemoryViews();
+    test(
+      'keeps the known screens of the report, never a removed one',
+      () async {
+        final views = _MemoryViews();
 
-      final response = await _call(
-        views,
-        HttpMethod.post,
-        body: {
-          'opens': {'duels': 2, 'badges': 1, 'not_a_screen': 4},
-        },
-      );
+        final response = await _call(
+          views,
+          HttpMethod.post,
+          body: {
+            'opens': {'groups': 2, 'badges': 1, 'not_a_screen': 4, 'duels': 3},
+          },
+        );
 
-      expect(response.statusCode, HttpStatus.ok);
-      expect((await decodeBody(response))['recorded'], 2);
-      expect(views.reports.single, {'duels': 2, 'badges': 1});
-      expect(views.days.single, DateTime.utc(2026, 10, 6));
-    });
+        expect(response.statusCode, HttpStatus.ok);
+        expect((await decodeBody(response))['recorded'], 2);
+        expect(views.reports.single, {'groups': 2, 'badges': 1});
+        expect(views.days.single, DateTime.utc(2026, 10, 6));
+      },
+    );
 
     test('a body without a map of integers is 400 and keeps nothing', () async {
       final views = _MemoryViews();
@@ -86,14 +89,14 @@ void main() {
         views,
         HttpMethod.post,
         body: {
-          'opens': {'duels': 'two'},
+          'opens': {'groups': 'two'},
         },
       );
       final notAMap = await _call(
         views,
         HttpMethod.post,
         body: {
-          'opens': ['duels'],
+          'opens': ['groups'],
         },
       );
 

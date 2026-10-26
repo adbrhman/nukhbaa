@@ -26,6 +26,7 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/web_links.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
@@ -34,7 +35,6 @@ import '../../../core/ui/avatar_bytes_provider.dart';
 import '../../../core/ui/share_picture.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
-import '../../gamification/invite_friends_screen.dart';
 import 'champion_crown.dart';
 
 // The hero is a picture that can leave the app (the champion shares it), so
@@ -899,7 +899,6 @@ class _ChampionShareDialogState extends ConsumerState<ChampionShareDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String? code = ref.watch(myReferralProvider).value?.code;
     return Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.md),
       child: SingleChildScrollView(
@@ -922,7 +921,7 @@ class _ChampionShareDialogState extends ConsumerState<ChampionShareDialog> {
                 Expanded(
                   child: FilledButton.icon(
                     key: const Key('championShare.share'),
-                    onPressed: _sharing ? null : () => unawaited(_send(code)),
+                    onPressed: _sharing ? null : () => unawaited(_send()),
                     icon: const Icon(Icons.ios_share_rounded),
                     label: Text(l10n.shareHitShareButton),
                   ),
@@ -951,7 +950,7 @@ class _ChampionShareDialogState extends ConsumerState<ChampionShareDialog> {
     );
   }
 
-  Future<void> _send(String? code) async {
+  Future<void> _send() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Locale locale = Localizations.localeOf(context);
     setState(() {
@@ -962,9 +961,7 @@ class _ChampionShareDialogState extends ConsumerState<ChampionShareDialog> {
       final String message = l10n.championShareMessage(
         championMonthName(widget.champion.seasonLabel, locale),
       );
-      final String text = code == null || code.isEmpty
-          ? message
-          : '$message\n${l10n.shareHitJoin(inviteLinkFor(code))}';
+      final String text = '$message\n${l10n.shareHitJoin(appSiteLink())}';
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
         text: text,

@@ -115,6 +115,17 @@ final class GroupsApi {
     );
   }
 
+  /// `GET /groups/invitees?q=NAME` -- players to invite to a league by
+  /// name. The server answers nothing for fewer than two characters and
+  /// never lists the caller.
+  Future<Result<GroupInviteesDto>> searchInvitees(String query) {
+    return _transport.getObject<GroupInviteesDto>(
+      '/groups/invitees',
+      query: {'q': query.trim()},
+      parse: GroupInviteesDto.fromJson,
+    );
+  }
+
   /// `GET /groups/invitations` -- the caller's own invitations to friends'
   /// leagues, newest first.
   Future<Result<GroupInvitationsDto>> myInvitations() {

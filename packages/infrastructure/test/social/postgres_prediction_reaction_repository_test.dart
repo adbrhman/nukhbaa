@@ -228,7 +228,6 @@ void main() {
           'actor_user_id': _reactor,
           'fixture_id': _fixture,
           'announcement_id': null,
-          'duel_challenge_id': null,
           'read_at': null,
           'created_at': '2026-10-06T19:00:00.000Z',
         },

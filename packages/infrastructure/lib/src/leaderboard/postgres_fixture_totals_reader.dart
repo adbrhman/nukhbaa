@@ -14,11 +14,8 @@ import 'package:shared/shared.dart';
 /// use: `decided` excludes `pending`. The primary key
 /// `(fixture_id, participant_id)` serves the `ANY` filter.
 ///
-/// Each line also carries the month's invitation points of the user behind
-/// the participant (`gamification.referral_month_points`, migration 0073):
-/// a tie-break only, never added to `total_points`. The right outcomes
-/// (`correct_outcome`) and the participant's join time are the last two
-/// tie-breaks (batch 129).
+/// The right outcomes (`correct_outcome`) and the participant's join time
+/// are the last two tie-breaks (batch 129).
 final class PostgresFixtureTotalsReader implements FixtureTotalsReader {
   /// Creates the reader over [_connection].
   const PostgresFixtureTotalsReader(this._connection);
@@ -34,7 +31,6 @@ SELECT fs.participant_id::text AS participant_id,
        count(*) FILTER (
          WHERE fs.grade IN ('exact_scoreline', 'correct_outcome', 'incorrect')
        )::bigint AS decided_count,
-       COALESCE(max(rm.referral_points), 0)::bigint AS referral_points,
        count(*) FILTER (WHERE fs.grade = 'correct_outcome')::bigint
          AS outcome_count,
        min(p.joined_at) AS joined_at
@@ -46,9 +42,6 @@ JOIN competition.participants p
 JOIN identity.users u
   ON u.id = p.user_id
  AND u.status <> 'suspended'
-LEFT JOIN gamification.referral_month_points rm
-  ON rm.season_id = p.season_id
- AND rm.user_id = p.user_id
 WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
   -- A hidden fixture is off every board while it stays hidden (0107,
   -- audit M-23); a test fixture never counts.
@@ -107,7 +100,6 @@ GROUP BY fs.participant_id
         fixturesScored: fixturesScored,
         exactCount: exactCount,
         decidedCount: decidedCount,
-        referralPoints: _readInt(row['referral_points']) ?? 0,
         outcomeCount: _readInt(row['outcome_count']) ?? 0,
         joinedAt: _readTime(row['joined_at']),
       );

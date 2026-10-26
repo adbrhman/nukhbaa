@@ -102,10 +102,7 @@ const List<AuditEntryDto> _entries = <AuditEntryDto>[
 Future<List<AdminSection>> _pump(
   WidgetTester tester, {
   List<CurrentMonthFixtureItemDto>? fixtures,
-  AdminAttention attention = const AdminAttention(
-    heldReferrals: 2,
-    freshErrors: 3,
-  ),
+  AdminAttention attention = const AdminAttention(freshErrors: 3),
   Size size = const Size(900, 6000),
   double textScale = 1,
 }) async {
@@ -194,9 +191,10 @@ void main() {
       _in('admin.dashboard.attention.results', find.text('1')),
       findsOneWidget,
     );
+    // The invitations were removed (2026-10-26): no row waits on them.
     expect(
-      _in('admin.dashboard.attention.referrals', find.text('2')),
-      findsOneWidget,
+      find.byKey(const Key('admin.dashboard.attention.referrals')),
+      findsNothing,
     );
     expect(
       _in('admin.dashboard.attention.errors', find.text('3')),
@@ -211,15 +209,10 @@ void main() {
       find.byKey(const Key('admin.dashboard.attention.results')),
     );
     await tester.pump();
-    await tester.tap(
-      find.byKey(const Key('admin.dashboard.attention.referrals')),
-    );
-    await tester.pump();
     await tester.tap(find.byKey(const Key('admin.dashboard.attention.errors')));
     await tester.pump();
     expect(opened, <AdminSection>[
       AdminSection.resultsScoring,
-      AdminSection.referrals,
       AdminSection.errorLog,
     ]);
   });
@@ -230,7 +223,7 @@ void main() {
     await _pump(
       tester,
       fixtures: <CurrentMonthFixtureItemDto>[_done, _later],
-      attention: const AdminAttention(heldReferrals: 0, freshErrors: 0),
+      attention: const AdminAttention(freshErrors: 0),
     );
 
     expect(
@@ -249,10 +242,10 @@ void main() {
     await _pump(
       tester,
       fixtures: <CurrentMonthFixtureItemDto>[_done],
-      attention: const AdminAttention(heldReferrals: null, freshErrors: null),
+      attention: const AdminAttention(freshErrors: null),
     );
 
-    expect(find.text('تعذّر التحقق من الدعوات والأخطاء'), findsOneWidget);
+    expect(find.text('تعذّر التحقق من الأخطاء'), findsOneWidget);
     expect(
       find.byKey(const Key('admin.dashboard.attention.clear')),
       findsNothing,

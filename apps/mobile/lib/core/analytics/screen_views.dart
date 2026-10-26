@@ -1,5 +1,5 @@
 /// Which screens a player opens (migration 0093): the baseline every display
-/// feature (badges, insights, the elite card, groups, duels) is measured
+/// feature (badges, insights, the elite card, groups) is measured
 /// against.
 ///
 /// A screen says its name by implementing [NamedScreen]. [ScreenViewObserver]
@@ -37,9 +37,6 @@ abstract final class ScreenNames {
   static const String account = 'account';
   static const String h2h = 'h2h';
   static const String notifications = 'notifications';
-  static const String duels = 'duels';
-  static const String duelAccept = 'duel_accept';
-  static const String duelCreate = 'duel_create';
   static const String predictionReactions = 'prediction_reactions';
   static const String groups = 'groups';
   static const String groupFeed = 'group_feed';
@@ -48,7 +45,6 @@ abstract final class ScreenNames {
   static const String groupJoin = 'group_join';
   static const String badges = 'badges';
   static const String insights = 'insights';
-  static const String invite = 'invite';
   static const String champions = 'champions';
   static const String seasonLeaderboard = 'season_leaderboard';
   static const String predictionsBoard = 'predictions_board';
@@ -82,9 +78,6 @@ abstract final class ScreenNames {
     account,
     h2h,
     notifications,
-    duels,
-    duelAccept,
-    duelCreate,
     predictionReactions,
     groups,
     groupFeed,
@@ -93,7 +86,6 @@ abstract final class ScreenNames {
     groupJoin,
     badges,
     insights,
-    invite,
     champions,
     seasonLeaderboard,
     predictionsBoard,

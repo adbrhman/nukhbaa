@@ -308,6 +308,22 @@ void main() {
   });
 
   group('PostgresNotificationRepository.listForRecipient', () {
+    test('never reads back the rows of the removed duels', () async {
+      final conn = _rows(const []);
+      final repo = PostgresNotificationRepository(conn);
+
+      await repo.listForRecipient(_recipient, limit: 20);
+      await repo.unreadCount(_recipient);
+
+      for (final String sql in conn.sqls) {
+        expect(
+          sql,
+          contains("kind::text NOT IN ('duel_challenged', 'duel_accepted')"),
+        );
+      }
+      expect(conn.sqls, hasLength(2));
+    });
+
     test('maps rows newest-first, binds recipient + limit, across all three '
         'kinds', () async {
       final conn = _rows([_roundScoredRow(), _groupJoinRow(), _reactionRow()]);

@@ -21,10 +21,8 @@ import '../../core/ui/unread_badge.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
-import '../duels/duels_screen.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../gamification/insights_screen.dart';
-import '../gamification/invite_friends_screen.dart';
 import '../gamification/my_badges_screen.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -39,9 +37,9 @@ import 'session_controller.dart';
 import 'widgets/account_menu.dart';
 
 /// The signed-in user's account tab: a profile card with this month's
-/// figures (each opens its detail), then three captioned groups -- what the
-/// player earned, the friends, the app -- the admin's dashboard on its own,
-/// and sign-out last.
+/// figures (each opens its detail), then two captioned groups -- what the
+/// player earned, the app -- the admin's dashboard on its own, and sign-out
+/// last.
 ///
 /// No row repeats a way the app already offers (phase 1 of the plan, a
 /// shorter menu): "my predictions" and "matches" are bottom-bar tabs and the
@@ -129,7 +127,7 @@ class AccountScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   // nk-account-groups: what the player earned, then the
-                  // friends, then the app; sign-out stays last.
+                  // app; sign-out stays last.
                   const AccountSectionTitle('إنجازاتك'),
                   AccountMenuCard(
                     key: const Key('account.group.progress'),
@@ -163,28 +161,6 @@ class AccountScreen extends ConsumerWidget {
                         title: l10n.insightsTitle,
                         subtitle: l10n.insightsSubtitle,
                         onTap: () => open(const InsightsScreen()),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  const AccountSectionTitle('الأصدقاء'),
-                  AccountMenuCard(
-                    key: const Key('account.group.friends'),
-                    children: [
-                      AccountMenuRow(
-                        key: const Key('account.invite'),
-                        icon: Icons.group_add_outlined,
-                        title: 'ادعُ أصدقاءك',
-                        subtitle: 'نقاط الدعوة تكسر التعادل في الترتيب',
-                        onTap: () => open(const InviteFriendsScreen()),
-                      ),
-                      AccountMenuRow(
-                        key: const Key('account.duels'),
-                        icon: Icons.compare_arrows_rounded,
-                        // Not المواجهات: that is the league tab (M-10).
-                        title: 'التحديات',
-                        subtitle: 'تحدَّ أصدقاءك على مباراة',
-                        onTap: () => open(const DuelsScreen()),
                       ),
                     ],
                   ),

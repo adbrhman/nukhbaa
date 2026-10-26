@@ -13,7 +13,6 @@ final class MonthChampionDto {
     required this.points,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     required this.crownedAt,
     required this.celebrateUntil,
     this.photoUrl,
@@ -31,7 +30,6 @@ final class MonthChampionDto {
         points: (json['points'] as int?) ?? 0,
         exactCount: (json['exact_count'] as int?) ?? 0,
         decidedCount: (json['decided_count'] as int?) ?? 0,
-        referralPoints: (json['referral_points'] as int?) ?? 0,
         crownedAt: (json['crowned_at'] as String?) ?? '',
         celebrateUntil: (json['celebrate_until'] as String?) ?? '',
         photoUrl: json['photo_url'] as String?,
@@ -59,9 +57,6 @@ final class MonthChampionDto {
 
   /// Decided fixtures (the accuracy's denominator).
   final int decidedCount;
-
-  /// The month's invitation points (a tie-break only).
-  final int referralPoints;
 
   /// When the month was crowned (ISO-8601 UTC).
   final String crownedAt;
@@ -92,7 +87,6 @@ final class MonthChampionDto {
     'points': points,
     'exact_count': exactCount,
     'decided_count': decidedCount,
-    'referral_points': referralPoints,
     'crowned_at': crownedAt,
     'celebrate_until': celebrateUntil,
     if (photoUrl != null) 'photo_url': photoUrl,
@@ -145,7 +139,6 @@ final class ChampionCandidateDto {
     required this.points,
     required this.exactCount,
     required this.decidedCount,
-    required this.referralPoints,
     this.avatarUrl,
   });
 
@@ -158,7 +151,6 @@ final class ChampionCandidateDto {
         points: (json['points'] as int?) ?? 0,
         exactCount: (json['exact_count'] as int?) ?? 0,
         decidedCount: (json['decided_count'] as int?) ?? 0,
-        referralPoints: (json['referral_points'] as int?) ?? 0,
         avatarUrl: json['avatar_url'] as String?,
       );
 
@@ -180,9 +172,6 @@ final class ChampionCandidateDto {
   /// Decided fixtures.
   final int decidedCount;
 
-  /// The month's invitation points.
-  final int referralPoints;
-
   /// The player's profile picture (server-relative), or null.
   final String? avatarUrl;
 
@@ -194,7 +183,6 @@ final class ChampionCandidateDto {
     'points': points,
     'exact_count': exactCount,
     'decided_count': decidedCount,
-    'referral_points': referralPoints,
     if (avatarUrl != null) 'avatar_url': avatarUrl,
   };
 }

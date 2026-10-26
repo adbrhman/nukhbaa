@@ -1,7 +1,7 @@
--- End-to-end test for migration 0108: after points, invitation points and
--- exact scorelines, the daily rank snapshot breaks a tie by right outcomes,
--- then by the earlier join of the month; players share a place only when
--- level on all five. The same order as the Dart FixtureLeaderboard
+-- End-to-end test for migration 0108: after points and exact scorelines,
+-- the daily rank snapshot breaks a tie by right outcomes, then by the
+-- earlier join of the month; players share a place only when level on all
+-- four (the invitation points left the order in 0185). The same order as the Dart FixtureLeaderboard
 -- (packages/domain/test/leaderboard/board_places_tie_break_test.dart).
 -- Rolled back at the end.
 \set ON_ERROR_STOP on
@@ -77,7 +77,7 @@ begin
   end if;
   raise notice 'ok - a right outcome puts P2 and P3 above P1 and P4';
   raise notice 'ok - level on outcomes: the earlier joiner P3 is first';
-  raise notice 'ok - level on all five: P1 and P4 share third';
+  raise notice 'ok - level on all four: P1 and P4 share third';
 end $$;
 
 rollback;

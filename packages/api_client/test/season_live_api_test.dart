@@ -20,7 +20,6 @@ void main() {
             'my_points': 3,
           },
         ],
-        'duels': <Object?>[],
         'rank_now': 4,
         'rank_if_ended': 2,
         'points_now': 3,

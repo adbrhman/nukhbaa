@@ -6537,6 +6537,59 @@ carries `retiredBuildMessage`: open the browser, type nukhbaa.app, tap
 account, delete the old app. The gate's own message is unchanged. Test:
 `retired_build_refusal_test.dart`.
 
+### The invitations and the duels removed (script 153, 2026-10-26)
+
+The owner removed both features from every layer ("full removal"). What a
+player and an admin see:
+
+- **App**: no «ادعُ أصدقاءك» or «التحديات» row on the account tab, no
+  invitation code at registration or on the name screen, no duels card on
+  the home page, no duel offer after a saved prediction, no duel lines on
+  the live card, no duel-win marks on the month board, no "who you duel
+  most" on the friends' league start, no admin section «نظام الدعوات» and
+  no held-invitations row on the admin home. A shared card (exact hit,
+  day hero, top three, doubles, champion) now carries the site's link
+  (`appSiteLink()`, `core/config/web_links.dart`), never an invitation
+  code. A `?duel=` or `?ref=` link opens nothing special; a `duel` push
+  opens the app as a plain tap. When no group row is left in the account's
+  friends group, the group goes too.
+- **Ranking**: invitation points no longer break a points tie anywhere --
+  month board, season board, day board, group boards, personal record,
+  crown and the daily snapshot: points, exact scorelines, right outcomes,
+  the earlier join. Migration **0185** redefines
+  `leaderboard.capture_season_rank_snapshots` the same way, re-orders each
+  season's latest snapshot among players level on points (as 0108 did) and
+  switches `gamification.feature_flags.referrals` off. The rules page
+  (`rules.tieBreak`) and the public terms (`/rules/`) say so; the privacy
+  page says the install id now only limits crash reports.
+- **Kept**: every stored invitation, invitation point, duel and duel
+  notification row (additive rule, section 5 of the protocol); the
+  champions' frozen `referral_points` column (no longer sent); the
+  `NUKHBA_INVITE_BASE_URL` define (league links). The inbox, its unread
+  count and a single read leave out the stored `duel_challenged` /
+  `duel_accepted` rows
+  (`PostgresNotificationRepository`, `kind NOT IN (...)`); a screen-views
+  report naming `duels`, `duel_accept`, `duel_create` or `invite` drops
+  those names, as any unknown name.
+- **Moved, not removed**: the search by name that invites a player to a
+  friends' league used `GET /duels/players`; it is now
+  `GET /groups/invitees?q=` (`SearchGroupInvitees`, `InviteeDirectory`,
+  `PostgresInviteeDirectory`, `GroupInviteesDto`,
+  `GroupsApi.searchInvitees`), same SQL and limits.
+- **Server**: the `/duels/*`, `/me/duels`, `/me/referral*`,
+  `/seasons/{id}/duel-wins` and `/admin/referral*` routes, their use-cases,
+  ports, adapters, DTOs and API methods, the referral qualification
+  scheduler, the duel rate limits and `keepStoredDouble` of
+  `SubmitFixturePrediction` (used by duel acceptance only) are gone;
+  `GET /seasons/{id}/live` no longer carries `duels`. Older APKs read the
+  missing keys as empty; their duel and invitation screens show an error,
+  and their league search finds nobody, until they update.
+
+Order: apply **0185** in the SQL Editor, then push (the running server keeps
+working on 0185). After Northflank has redeployed, script 154 brings
+migration 0186, which drops the invitation and duel functions and views
+the old server still called.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

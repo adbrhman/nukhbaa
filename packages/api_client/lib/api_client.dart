@@ -46,7 +46,6 @@ export 'src/app_api.dart' show AppApi;
 export 'src/auth_api.dart' show AuthApi;
 export 'src/build_header_client.dart' show BuildHeaderClient;
 export 'src/competition_api.dart' show CompetitionApi;
-export 'src/duels_api.dart' show DuelsApi;
 export 'src/fixture_schedule_api.dart' show FixtureScheduleApi;
 export 'src/groups_api.dart' show GroupsApi;
 export 'src/leaderboards_api.dart' show LeaderboardsApi;

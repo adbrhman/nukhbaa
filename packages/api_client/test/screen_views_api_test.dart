@@ -16,7 +16,7 @@ void main() {
 
     final result = await AuthApi(
       ctx.transport,
-    ).reportScreenViews(const {'duels': 2, 'home': 1});
+    ).reportScreenViews(const {'groups': 2, 'home': 1});
 
     expect((result as Ok<ScreenViewsAckDto>).value.recorded, 2);
     final req = ctx.captured.single;
@@ -24,7 +24,7 @@ void main() {
     expect(req.url.path, '/me/screen-views');
     expect(req.headers['authorization'], 'Bearer jwt-abc');
     expect((jsonDecode(req.body) as Map<String, Object?>)['opens'], {
-      'duels': 2,
+      'groups': 2,
       'home': 1,
     });
   });

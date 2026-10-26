@@ -83,7 +83,6 @@ import '../../competition/competition_logo_assets.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_registry.dart';
 import '../../competition/team_identity.dart';
-import '../../duels/duel_offer.dart';
 import '../../history/my_fixture_scores_providers.dart';
 import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
@@ -289,9 +288,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
         // same moment the check badge turns blue. Auto-save has no button,
         // so this is the only "saved" the hand feels.
         unawaited(HapticFeedback.lightImpact());
-        // Once per fixture, a bar offers to challenge a friend on it; the
-        // card itself keeps its layout.
-        offerDuelAfterSave(context: context, ref: ref, fixture: _fixture);
         // Once per session, a player with no favourite team is offered the
         // two teams of the match they just predicted.
         unawaited(

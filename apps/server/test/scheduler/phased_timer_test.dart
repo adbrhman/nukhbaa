@@ -9,7 +9,6 @@ import 'package:server/scheduler/notification_queue_scheduler.dart';
 import 'package:server/scheduler/phased_timer.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
-import 'package:server/scheduler/referral_qualification_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
@@ -129,10 +128,6 @@ void main() {
       'incomplete day': (incompleteDayPhase, incompleteDayTick),
       'badge evaluation': (badgeEvaluationPhase, badgeEvaluationTick),
       'rescore': (rescorePhase, rescoreTick),
-      'referral qualification': (
-        referralQualificationPhase,
-        referralQualificationTick,
-      ),
       'match-day settlement': (matchDaySettlementPhase, matchDaySettlementTick),
       'monthly season': (monthlySeasonPhase, monthlySeasonTick),
       'match details': (matchDetailsPhase, matchDetailsTick),

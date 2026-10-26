@@ -38,7 +38,6 @@ final class LeaderboardEntry {
     required this.previousRank,
     required this.exactCount,
     required this.settledCount,
-    required this.referralPoints,
     required this.outcomeCount,
   });
 
@@ -66,7 +65,6 @@ final class LeaderboardEntry {
     int? previousRank,
     int exactCount = 0,
     int settledCount = 0,
-    int referralPoints = 0,
     int outcomeCount = 0,
   }) {
     if (entryCount < 0) {
@@ -96,7 +94,6 @@ final class LeaderboardEntry {
         previousRank: previousRank,
         exactCount: exactCount,
         settledCount: settledCount,
-        referralPoints: referralPoints,
         outcomeCount: outcomeCount,
       ),
     );
@@ -155,10 +152,6 @@ final class LeaderboardEntry {
   /// grade other than `pending`) -- the denominator of [accuracy].
   final int settledCount;
 
-  /// The month's invitation points: a tie-break after [totalPoints], never
-  /// added to it (batch 134, the same chain as the month board).
-  final int referralPoints;
-
   /// Settled fixtures with the right outcome but not the exact score: the
   /// tie-break after [exactCount] (batch 134).
   final int outcomeCount;
@@ -197,7 +190,6 @@ final class LeaderboardEntry {
         previousRank: previousRank,
         exactCount: exactCount,
         settledCount: settledCount,
-        referralPoints: referralPoints,
         outcomeCount: outcomeCount,
       ),
     );
@@ -215,7 +207,6 @@ final class LeaderboardEntry {
       other.previousRank == previousRank &&
       other.exactCount == exactCount &&
       other.settledCount == settledCount &&
-      other.referralPoints == referralPoints &&
       other.outcomeCount == outcomeCount;
 
   @override
@@ -229,7 +220,6 @@ final class LeaderboardEntry {
     previousRank,
     exactCount,
     settledCount,
-    referralPoints,
     outcomeCount,
   );
 

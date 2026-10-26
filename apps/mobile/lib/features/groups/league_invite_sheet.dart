@@ -18,7 +18,6 @@ import '../../core/design/app_tokens.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/providers.dart';
-import '../duels/duels_providers.dart';
 import 'league_invite.dart';
 
 /// Opens the invitation sheet for [group].
@@ -49,7 +48,7 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
   final TextEditingController _search = TextEditingController();
   Timer? _debounce;
   int _searchSeq = 0;
-  List<DuelPlayerDto> _players = const <DuelPlayerDto>[];
+  List<GroupInviteeDto> _players = const <GroupInviteeDto>[];
 
   /// What the last search came to (audit L-03: a failed or empty search
   /// showed nothing at all). Null while nothing was searched.
@@ -71,7 +70,7 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
     final String query = text.trim();
     if (query.length < 2) {
       setState(() {
-        _players = const <DuelPlayerDto>[];
+        _players = const <GroupInviteeDto>[];
         _searchNote = null;
       });
       return;
@@ -84,25 +83,25 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
 
   Future<void> _runSearch(String query) async {
     final int seq = ++_searchSeq;
-    final Result<DuelPlayersDto> result = await ref
-        .read(duelsApiProvider)
-        .searchPlayers(query);
+    final Result<GroupInviteesDto> result = await ref
+        .read(groupsApiProvider)
+        .searchInvitees(query);
     if (!mounted || seq != _searchSeq) return;
     setState(() {
       _players = switch (result) {
-        Ok<DuelPlayersDto>(:final value) => value.players,
-        Err<DuelPlayersDto>() => const <DuelPlayerDto>[],
+        Ok<GroupInviteesDto>(:final value) => value.players,
+        Err<GroupInviteesDto>() => const <GroupInviteeDto>[],
       };
       _searchNote = switch (result) {
-        Ok<DuelPlayersDto>(:final value) when value.players.isEmpty =>
+        Ok<GroupInviteesDto>(:final value) when value.players.isEmpty =>
           'لا يوجد لاعب بهذا الاسم.',
-        Ok<DuelPlayersDto>() => null,
-        Err<DuelPlayersDto>(:final error) => ErrorPresenter.message(error),
+        Ok<GroupInviteesDto>() => null,
+        Err<GroupInviteesDto>(:final error) => ErrorPresenter.message(error),
       };
     });
   }
 
-  Future<void> _invite(DuelPlayerDto player) async {
+  Future<void> _invite(GroupInviteeDto player) async {
     setState(() => _invites[player.userId] = _Invite.sending);
     final GroupsApi api = ref.read(groupsApiProvider);
     final Result<bool> result = await api.invite(
@@ -186,7 +185,7 @@ class _LeagueInviteSheetState extends ConsumerState<LeagueInviteSheet> {
               child: ListView(
                 shrinkWrap: true,
                 children: <Widget>[
-                  for (final DuelPlayerDto player in _players)
+                  for (final GroupInviteeDto player in _players)
                     _PlayerRow(
                       player: player,
                       state: _invites[player.userId],
@@ -209,7 +208,7 @@ class _PlayerRow extends StatelessWidget {
     required this.onInvite,
   });
 
-  final DuelPlayerDto player;
+  final GroupInviteeDto player;
   final _Invite? state;
   final VoidCallback onInvite;
 

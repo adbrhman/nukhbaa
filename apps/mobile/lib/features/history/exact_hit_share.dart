@@ -17,6 +17,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/web_links.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
@@ -27,7 +28,6 @@ import '../../core/ui/share_picture.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/sign_in_screen.dart' show kBrandLogoAsset;
 import '../competition/team_registry.dart';
-import '../gamification/invite_friends_screen.dart';
 import '../leaderboards/leaderboards_providers.dart';
 
 // The card is a picture that leaves the app, so it keeps the brand's own
@@ -129,7 +129,6 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
         }
       }
     }
-    final String? code = ref.watch(myReferralProvider).value?.code;
 
     return Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.lg),
@@ -148,7 +147,7 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
                 Expanded(
                   child: FilledButton.icon(
                     key: const Key('shareHit.share'),
-                    onPressed: _sharing ? null : () => unawaited(_share(code)),
+                    onPressed: _sharing ? null : () => unawaited(_share()),
                     icon: const Icon(Icons.ios_share_rounded),
                     label: Text(l10n.shareHitShareButton),
                   ),
@@ -177,7 +176,7 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
     );
   }
 
-  Future<void> _share(String? code) async {
+  Future<void> _share() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ExactHit hit = widget.hit;
     setState(() {
@@ -190,9 +189,7 @@ class _ExactHitShareDialogState extends ConsumerState<ExactHitShareDialog> {
         '${hit.prediction.homeGoals}-${hit.prediction.awayGoals}',
         teamDisplayName(hit.fixture?.awayTeam),
       );
-      final String text = code == null || code.isEmpty
-          ? message
-          : '$message\n${l10n.shareHitJoin(inviteLinkFor(code))}';
+      final String text = '$message\n${l10n.shareHitJoin(appSiteLink())}';
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
         text: text,

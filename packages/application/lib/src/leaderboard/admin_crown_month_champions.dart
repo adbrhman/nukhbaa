@@ -133,7 +133,6 @@ final class AdminCrownMonthChampions {
           points: line.entry.totalPoints,
           exactCount: line.entry.exactCount,
           decidedCount: line.entry.decidedCount,
-          referralPoints: line.entry.referralPoints,
           prize: cleanPrize,
         ),
       );

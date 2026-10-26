@@ -1,7 +1,7 @@
 /// A finished prediction that earned points offers "share your hit": the
 /// preview card shows the logo, the call against the final score, the
 /// server's points and the viewer's place in the month -- through the real
-/// [PredictionHistoryScreen] and the real scores, board and referral reads.
+/// [PredictionHistoryScreen] and the real scores and board reads.
 /// A prediction that earned nothing offers no share.
 library;
 
@@ -72,18 +72,6 @@ Future<void> _pump(
               fixturesScored: 10,
             ),
           ],
-        ).toJson(),
-      );
-    }
-    if (path == '/me/referral') {
-      return ph.okJsonObject(
-        const ReferralSummaryDto(
-          code: 'GC9HAERG',
-          monthPoints: 0,
-          seasonPoints: 0,
-          invitedCount: 0,
-          pendingCount: 0,
-          monthCap: 20,
         ).toJson(),
       );
     }

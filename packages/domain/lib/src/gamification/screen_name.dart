@@ -27,15 +27,6 @@ abstract final class ScreenName {
   /// The notifications inbox.
   static const String notifications = 'notifications';
 
-  /// The Duels page.
-  static const String duels = 'duels';
-
-  /// The sheet that accepts a duel challenge with a prediction.
-  static const String duelAccept = 'duel_accept';
-
-  /// The sheet that creates a duel challenge.
-  static const String duelCreate = 'duel_create';
-
   /// The sheet of reactions on one prediction of the board (0094).
   static const String predictionReactions = 'prediction_reactions';
 
@@ -59,9 +50,6 @@ abstract final class ScreenName {
 
   /// The "learn from your predictions" insights.
   static const String insights = 'insights';
-
-  /// Inviting friends.
-  static const String invite = 'invite';
 
   /// The hall of fame.
   static const String hallOfFame = 'hall_of_fame';
@@ -114,9 +102,6 @@ abstract final class ScreenName {
     account,
     h2h,
     notifications,
-    duels,
-    duelAccept,
-    duelCreate,
     predictionReactions,
     groups,
     groupFeed,
@@ -125,7 +110,6 @@ abstract final class ScreenName {
     groupJoin,
     badges,
     insights,
-    invite,
     hallOfFame,
     champions,
     seasonLeaderboard,
