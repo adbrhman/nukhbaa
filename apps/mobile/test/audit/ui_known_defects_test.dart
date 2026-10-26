@@ -453,11 +453,16 @@ void main() {
         ),
       );
       final Finder label = find.text('الرئيسية');
-      final Material bar = tester.widget<Material>(
-        find.ancestor(of: label, matching: find.byType(Material)).first,
-      );
+      // The bar has no colour of its own since script 158: the label sits
+      // on the fade's page colour.
+      final Gradient fade =
+          (tester
+                      .widget<DecoratedBox>(find.byKey(const Key('nav.fade')))
+                      .decoration
+                  as BoxDecoration)
+              .gradient!;
       final Color under = Color.alphaBlend(
-        bar.color!,
+        fade.colors.last,
         AppTheme.light.scaffoldBackgroundColor,
       );
       expect(

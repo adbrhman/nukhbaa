@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
@@ -318,8 +317,12 @@ class NukhbaaBottomNav extends StatelessWidget {
   /// The ball's size in the middle: a little larger than the other glyphs.
   static const double brandSize = 32;
 
-  /// The bar's rounded top corners.
-  static const double _corner = 24;
+  /// The fade behind the glyphs: clear at the top, [fadeMid] of the page
+  /// colour by [fadeMidStop], the page colour itself from [fadeFullStop]
+  /// down, where the labels sit.
+  static const double fadeMid = 0.85;
+  static const double fadeMidStop = 0.3;
+  static const double fadeFullStop = 0.55;
 
   @override
   Widget build(BuildContext context) {
@@ -330,110 +333,106 @@ class NukhbaaBottomNav extends StatelessWidget {
     // No fixed height: the five items share the tallest one's height, so
     // the bar grows with the system text size instead of overflowing at
     // x2.0 (UI-04).
-    // nk-nav-glass: see-through, frosted. The page scrolls under the bar
-    // (the shell's `extendBody`) and shows through it blurred, so no black
-    // band runs from edge to edge; the tint keeps the labels at 4.5:1 over
-    // whatever passes under them.
-    final Color bar = (tokens.isDark ? tokens.background : tokens.surface)
-        .withValues(alpha: 0.85);
-    const BorderRadius top = BorderRadius.vertical(
-      top: Radius.circular(_corner),
-    );
-    return ClipRRect(
-      borderRadius: top,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Material(
-          color: bar,
-          shape: RoundedRectangleBorder(
-            borderRadius: top,
-            side: BorderSide(
-              color: tokens.primary.withValues(
-                alpha: tokens.isDark ? 0.7 : 0.45,
-              ),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: SafeArea(
-            top: false,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: minHeight),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    // The bar's order (2026-10-10, agreed with the players):
-                    // home, the league, matches, leaders, account. Each item
-                    // keeps its page index, so pushes and the screen-view
-                    // names still find the page they name. Every glyph wears
-                    // the brand mark.
-                    _item(
-                      context,
-                      glyph: _NavGlyph(
-                        icon: Icons.home_rounded,
-                        badgeAt: const Alignment(0, 0.45),
-                        badgeKey: const Key('nav.badge.home'),
-                        active: index == 0,
-                      ),
-                      label: 'الرئيسية',
-                      navKey: const Key('nav.item.home'),
-                      destination: 0,
+    // nk-nav-float: no bar at all -- the glyphs float on the page, with no
+    // band, rim or corners from edge to edge. The page scrolls under them
+    // (the shell's `extendBody`); a fade into the page colour behind the
+    // labels keeps them at 4.5:1 over whatever passes under (script 158).
+    final Color page = tokens.background;
+    return DecoratedBox(
+      key: const Key('nav.fade'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            page.withValues(alpha: 0),
+            page.withValues(alpha: fadeMid),
+            page,
+          ],
+          stops: const <double>[0, fadeMidStop, fadeFullStop],
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: minHeight),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  // The bar's order (2026-10-10, agreed with the players):
+                  // home, the league, matches, leaders, account. Each item
+                  // keeps its page index, so pushes and the screen-view
+                  // names still find the page they name. Every glyph wears
+                  // the brand mark.
+                  _item(
+                    context,
+                    glyph: _NavGlyph(
+                      icon: Icons.home_rounded,
+                      badgeAt: const Alignment(0, 0.45),
+                      badgeKey: const Key('nav.badge.home'),
+                      active: index == 0,
                     ),
-                    _item(
-                      context,
-                      glyph: _NavGlyph(
-                        icon: index == 2
-                            ? Icons.shield_rounded
-                            : Icons.shield_outlined,
-                        badgeAt: const Alignment(0, -0.1),
-                        badgeKey: const Key('nav.badge.h2h'),
-                        active: index == 2,
-                      ),
-                      label: 'المواجهات',
-                      navKey: const Key('nav.item.h2h'),
-                      destination: 2,
+                    label: 'الرئيسية',
+                    navKey: const Key('nav.item.home'),
+                    destination: 0,
+                  ),
+                  _item(
+                    context,
+                    glyph: _NavGlyph(
+                      icon: index == 2
+                          ? Icons.shield_rounded
+                          : Icons.shield_outlined,
+                      badgeAt: const Alignment(0, -0.1),
+                      badgeKey: const Key('nav.badge.h2h'),
+                      active: index == 2,
                     ),
-                    _item(
-                      context,
-                      glyph: _NavGlyph(
-                        key: const Key('nav.brand'),
-                        icon: Icons.sports_soccer,
-                        size: brandSize,
-                        badgeAt: Alignment.center,
-                        badgeKey: const Key('nav.badge.fixtures'),
-                        active: index == 1,
-                        ring: true,
-                      ),
-                      label: 'المباريات',
-                      navKey: const Key('nav.item.fixtures'),
-                      destination: 1,
+                    label: 'المواجهات',
+                    navKey: const Key('nav.item.h2h'),
+                    destination: 2,
+                  ),
+                  _item(
+                    context,
+                    glyph: _NavGlyph(
+                      key: const Key('nav.brand'),
+                      icon: Icons.sports_soccer,
+                      size: brandSize,
+                      badgeAt: Alignment.center,
+                      badgeKey: const Key('nav.badge.fixtures'),
+                      active: index == 1,
+                      ring: true,
                     ),
-                    _item(
-                      context,
-                      glyph: _NavGlyph(
-                        icon: Icons.leaderboard_rounded,
-                        badgeAt: const Alignment(0, -1.25),
-                        badgeKey: const Key('nav.badge.leaders'),
-                        active: index == 3,
-                      ),
-                      label: 'المتصدرون',
-                      navKey: const Key('nav.item.leaders'),
-                      destination: 3,
+                    label: 'المباريات',
+                    navKey: const Key('nav.item.fixtures'),
+                    destination: 1,
+                  ),
+                  _item(
+                    context,
+                    glyph: _NavGlyph(
+                      icon: Icons.leaderboard_rounded,
+                      badgeAt: const Alignment(0, -1.25),
+                      badgeKey: const Key('nav.badge.leaders'),
+                      active: index == 3,
                     ),
-                    _item(
-                      context,
-                      glyph: _NavGlyph(
-                        icon: Icons.person_rounded,
-                        badgeAt: const Alignment(1.1, 0.9),
-                        badgeKey: const Key('nav.badge.account'),
-                        active: index == 4,
-                      ),
-                      label: 'الحساب',
-                      navKey: const Key('nav.item.account'),
-                      destination: 4,
+                    label: 'المتصدرون',
+                    navKey: const Key('nav.item.leaders'),
+                    destination: 3,
+                  ),
+                  _item(
+                    context,
+                    glyph: _NavGlyph(
+                      icon: Icons.person_rounded,
+                      badgeAt: const Alignment(1.1, 0.9),
+                      badgeKey: const Key('nav.badge.account'),
+                      active: index == 4,
                     ),
-                  ],
-                ),
+                    label: 'الحساب',
+                    navKey: const Key('nav.item.account'),
+                    destination: 4,
+                  ),
+                ],
               ),
             ),
           ),
@@ -596,8 +595,10 @@ class _NavGlyph extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: active ? tokens.primary : tokens.border,
-          width: 1.5,
+          // The brand's ring is blue whether or not its tab is open; only
+          // the glow says it is.
+          color: tokens.primary,
+          width: 2,
         ),
         boxShadow: active
             ? <BoxShadow>[

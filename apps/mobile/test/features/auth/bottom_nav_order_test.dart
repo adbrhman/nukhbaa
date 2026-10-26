@@ -100,8 +100,8 @@ void main() {
         ),
         findsOneWidget,
       );
-      final Rect bar = tester.getRect(find.byType(NukhbaaBottomNav));
-      expect(tester.getRect(brand).top, greaterThanOrEqualTo(bar.top));
+      final Rect navRect = tester.getRect(find.byType(NukhbaaBottomNav));
+      expect(tester.getRect(brand).top, greaterThanOrEqualTo(navRect.top));
       // One underline, under the open tab.
       expect(find.byKey(const Key('nav.indicator')), findsOneWidget);
       expect(
@@ -116,43 +116,63 @@ void main() {
         isSemantics(isSelected: true, isButton: true),
       );
 
-      // The bar is see-through (script 157): every label, open or not,
-      // must hold 4.5:1 over the page and over the worst content that can
-      // scroll under it -- white in the dark theme, black in the light one.
-      final Color tint = tester
-          .widget<Material>(
-            find
-                .ancestor(
-                  of: find.text('الحساب'),
-                  matching: find.byType(Material),
-                )
-                .first,
-          )
-          .color!;
-      expect(tint.a, lessThan(1.0));
+      // No bar (script 158): no colour, rim or blur of its own -- only a
+      // fade into the page colour, clear at the top.
       expect(
         find.ancestor(
           of: find.text('الحساب'),
           matching: find.byType(BackdropFilter),
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      final LinearGradient fade =
+          (tester
+                          .widget<DecoratedBox>(
+                            find.byKey(const Key('nav.fade')),
+                          )
+                          .decoration
+                      as BoxDecoration)
+                  .gradient!
+              as LinearGradient;
+      expect(fade.colors.first.a, 0);
+      final Rect bar = tester.getRect(find.byKey(const Key('nav.fade')));
+      // The fade's opacity where a label starts, from its stops.
+      double alphaAt(double y) {
+        final double f = ((y - bar.top) / bar.height).clamp(0.0, 1.0);
+        final List<double> stops = fade.stops!;
+        for (int i = 1; i < stops.length; i++) {
+          if (f <= stops[i]) {
+            final double t = (f - stops[i - 1]) / (stops[i] - stops[i - 1]);
+            final double a0 = fade.colors[i - 1].a;
+            final double a1 = fade.colors[i].a;
+            return a0 + (a1 - a0) * t;
+          }
+        }
+        return fade.colors.last.a;
+      }
+
+      // Every label, open or not, holds 4.5:1 over the page and over the
+      // worst content that can scroll under it -- white in the dark theme,
+      // black in the light one -- through the fade where it sits.
       final bool dark = theme.brightness == Brightness.dark;
-      for (final Color behind in <Color>[
-        theme.scaffoldBackgroundColor,
-        dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+      for (final String label in <String>[
+        'الرئيسية',
+        'المواجهات',
+        'المباريات',
+        'المتصدرون',
+        'الحساب',
       ]) {
-        final Color under = Color.alphaBlend(tint, behind);
-        for (final String label in <String>[
-          'الرئيسية',
-          'المواجهات',
-          'المباريات',
-          'المتصدرون',
-          'الحساب',
+        final Finder text = find.text(label);
+        final Color fg = tester.widget<Text>(text).style!.color!;
+        final Color tint = fade.colors.last.withValues(
+          alpha: alphaAt(tester.getRect(text).top),
+        );
+        for (final Color behind in <Color>[
+          theme.scaffoldBackgroundColor,
+          dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
         ]) {
-          final Color fg = tester.widget<Text>(find.text(label)).style!.color!;
           expect(
-            _contrast(fg, under),
+            _contrast(fg, Color.alphaBlend(tint, behind)),
             greaterThanOrEqualTo(4.5),
             reason: '$label over $behind',
           );
