@@ -6590,6 +6590,22 @@ working on 0185). After Northflank has redeployed, script 154 brings
 migration 0186, which drops the invitation and duel functions and views
 the old server still called.
 
+### The invitation and duel functions dropped (script 154, 2026-10-26)
+
+Migration **0186**, applied once the server of script 153 was live, drops
+what only the removed features called: the invitation functions
+(`ensure_referral_code`, `mark_referral_install`, `claim_referral`,
+`qualify_referrals`, `expire_idle_referrals`, `review_referral`,
+`referral_hash`) and views (`referral_invitations`,
+`referral_season_points`, `referral_month_points`), the duel functions
+(`create_`, `accept_`, `cancel_`, `decline_duel_challenge`,
+`new_duel_code`) and the `users_cancel_open_duel_challenges` trigger on
+`identity.users`. Every table and row stays, with the guards that keep
+the history unaltered (`reject_referral_mutation`, `guard_referral_claim`,
+`guard_referral_event`, `guard_duel_challenge_change`) and
+`gamification.normalized_email` (an index uses it). The SQL tests of the
+dropped functions went with them; `0186_..._test.sql` checks what is left.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
