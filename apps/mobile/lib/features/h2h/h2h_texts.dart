@@ -108,9 +108,36 @@ String h2hPointsLabel(num points) {
 /// The caller's place in the group: `3 من 20`.
 String h2hRankLabel(int rank, int of) => '$rank من $of';
 
-/// Where the month stands: the round that matters now out of the most a
-/// month may hold.
-String h2hRoundProgressLabel(int round) => 'الجولة $round من 19 كحد أقصى';
+/// Where the month stands: the round that matters now. The most a month
+/// may hold is a rule, said beside it in a smaller line
+/// ([h2hRoundCapLabel]).
+String h2hRoundProgressLabel(int round) => 'الجولة $round';
+
+/// The most rounds a month may hold, under the round that matters now.
+const String h2hRoundCapLabel = 'من 19 كحد أقصى';
+
+/// League points in words: `نقطة واحدة`, `نقطتان`, `3 نقاط`, `11 نقطة`.
+String h2hLeaguePointsWords(int points) {
+  if (points == 1) return 'نقطة واحدة';
+  if (points == 2) return 'نقطتان';
+  if (points >= 3 && points <= 10) return '$points نقاط';
+  return '$points نقطة';
+}
+
+/// How far the caller is from the place above, in league points, as the
+/// table the server sent reads: the leader is told so, a caller level on
+/// points with the place above is told that, else the gap and the place.
+String h2hGapLabel({required int myRank, int? aboveRank, int gap = 0}) {
+  if (myRank == 1 || aboveRank == null) return 'أنت في الصدارة';
+  if (gap <= 0) return 'متعادل بالنقاط مع المركز $aboveRank';
+  return '${h2hLeaguePointsWords(gap)} عن المركز $aboveRank';
+}
+
+/// The zone the caller stands in if the month ended now.
+const String h2hInPromotionZone = 'في منطقة الصعود';
+
+/// The zone the caller stands in if the month ended now.
+const String h2hInRelegationZone = 'في منطقة الهبوط';
 
 /// The whole days left in the month after today, as the server counted
 /// them (Riyadh days).

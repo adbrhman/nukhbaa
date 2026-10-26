@@ -150,6 +150,42 @@ MyH2hLeagueDto _open({
   ],
 );
 
+/// [_open] seen by another member of the group: [id] holds the caller's
+/// line, at [rank] as the server ranked it.
+MyH2hLeagueDto _openAs(String id, int rank) {
+  final MyH2hLeagueDto base = _open();
+  return MyH2hLeagueDto(
+    state: base.state,
+    monthStart: base.monthStart,
+    startsOn: base.startsOn,
+    isPilot: base.isPilot,
+    division: base.division,
+    groupIndex: base.groupIndex,
+    myRank: rank,
+    promotionZone: base.promotionZone,
+    relegationZone: base.relegationZone,
+    daysLeft: base.daysLeft,
+    standings: <H2hStandingDto>[
+      for (final H2hStandingDto s in base.standings)
+        H2hStandingDto(
+          rank: s.rank,
+          userId: s.userId,
+          displayName: s.displayName,
+          played: s.played,
+          won: s.won,
+          drawn: s.drawn,
+          lost: s.lost,
+          leaguePoints: s.leaguePoints,
+          pointsFor: s.pointsFor,
+          exactCount: s.exactCount,
+          form: s.form,
+          isMe: s.userId == id,
+        ),
+    ],
+    rounds: base.rounds,
+  );
+}
+
 /// Round 2 is the next one: open, its first kickoff at 15:00 UTC on the
 /// 4th; nothing is being played.
 MyH2hLeagueDto _openNext() => _open(
@@ -253,9 +289,62 @@ void main() {
       expect(_text(tester, 'h2h.month'), 'دوري المواجهات · نوفمبر 2026');
       expect(_text(tester, 'h2h.myRank'), '1 من 4');
       // Round 2 is being played: it is the one that matters now.
-      expect(_text(tester, 'h2h.progress'), 'الجولة 2 من 19 كحد أقصى');
+      expect(_text(tester, 'h2h.progress'), 'الجولة 2');
+      // The cap is a rule: a smaller line under the round.
+      expect(_text(tester, 'h2h.progress.cap'), 'من 19 كحد أقصى');
       expect(_text(tester, 'h2h.daysLeft'), 'باقي 21 يومًا');
       expect(find.byKey(const Key('h2h.pilot')), findsNothing);
+    });
+
+    testWidgets('the place reads first: the leader, in the promotion zone', (
+      tester,
+    ) async {
+      await _pump(tester, _open());
+
+      expect(_text(tester, 'h2h.gap'), 'أنت في الصدارة');
+      expect(find.byKey(const Key('h2h.zone.promotion')), findsOneWidget);
+      expect(find.byKey(const Key('h2h.zone.relegation')), findsNothing);
+      // The place is the largest figure of the card.
+      double size(String key) =>
+          tester.widget<Text>(find.byKey(Key(key))).style!.fontSize!;
+      expect(size('h2h.myRank'), greaterThan(size('h2h.progress')));
+      expect(size('h2h.myRank'), greaterThan(size('h2h.division')));
+    });
+
+    testWidgets('level on points with the place above says so', (tester) async {
+      await _pump(tester, _openAs('u-c', 3));
+
+      expect(_text(tester, 'h2h.myRank'), '3 من 4');
+      expect(_text(tester, 'h2h.gap'), 'متعادل بالنقاط مع المركز 2');
+      expect(find.byKey(const Key('h2h.zone.relegation')), findsOneWidget);
+    });
+
+    testWidgets('the gap to the place above, in league points', (tester) async {
+      await _pump(tester, _openAs('u-d', 4));
+
+      expect(_text(tester, 'h2h.gap'), 'نقطة واحدة عن المركز 3');
+      expect(find.byKey(const Key('h2h.zone.relegation')), findsOneWidget);
+    });
+
+    testWidgets('a pilot month shows no zone: its results do not count', (
+      tester,
+    ) async {
+      await _pump(tester, _open(pilot: true));
+
+      expect(find.byKey(const Key('h2h.zone.promotion')), findsNothing);
+      expect(_text(tester, 'h2h.gap'), 'أنت في الصدارة');
+    });
+
+    testWidgets('the card holds at 360px and text x2', (tester) async {
+      await _pump(
+        tester,
+        _openAs('u-d', 4),
+        size: const Size(360, 4000),
+        textScale: 2,
+      );
+
+      expect(find.byKey(const Key('h2h.gap')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a pilot month says its results do not count', (tester) async {
