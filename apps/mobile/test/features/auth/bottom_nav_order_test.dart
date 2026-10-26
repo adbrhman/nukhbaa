@@ -116,8 +116,10 @@ void main() {
         isSemantics(isSelected: true, isButton: true),
       );
 
-      // Every label, open or not, on the bar's own colour.
-      final Color under = tester
+      // The bar is see-through (script 157): every label, open or not,
+      // must hold 4.5:1 over the page and over the worst content that can
+      // scroll under it -- white in the dark theme, black in the light one.
+      final Color tint = tester
           .widget<Material>(
             find
                 .ancestor(
@@ -127,15 +129,34 @@ void main() {
                 .first,
           )
           .color!;
-      for (final String label in <String>[
-        'الرئيسية',
-        'المواجهات',
-        'المباريات',
-        'المتصدرون',
-        'الحساب',
+      expect(tint.a, lessThan(1.0));
+      expect(
+        find.ancestor(
+          of: find.text('الحساب'),
+          matching: find.byType(BackdropFilter),
+        ),
+        findsOneWidget,
+      );
+      final bool dark = theme.brightness == Brightness.dark;
+      for (final Color behind in <Color>[
+        theme.scaffoldBackgroundColor,
+        dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
       ]) {
-        final Color fg = tester.widget<Text>(find.text(label)).style!.color!;
-        expect(_contrast(fg, under), greaterThanOrEqualTo(4.5), reason: label);
+        final Color under = Color.alphaBlend(tint, behind);
+        for (final String label in <String>[
+          'الرئيسية',
+          'المواجهات',
+          'المباريات',
+          'المتصدرون',
+          'الحساب',
+        ]) {
+          final Color fg = tester.widget<Text>(find.text(label)).style!.color!;
+          expect(
+            _contrast(fg, under),
+            greaterThanOrEqualTo(4.5),
+            reason: '$label over $behind',
+          );
+        }
       }
 
       await tester.tap(find.byKey(const Key('nav.item.fixtures')));

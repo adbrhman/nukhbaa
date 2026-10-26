@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
@@ -329,111 +330,110 @@ class NukhbaaBottomNav extends StatelessWidget {
     // No fixed height: the five items share the tallest one's height, so
     // the bar grows with the system text size instead of overflowing at
     // x2.0 (UI-04).
-    final Color bar = tokens.isDark ? tokens.background : tokens.surface;
+    // nk-nav-glass: see-through, frosted. The page scrolls under the bar
+    // (the shell's `extendBody`) and shows through it blurred, so no black
+    // band runs from edge to edge; the tint keeps the labels at 4.5:1 over
+    // whatever passes under them.
+    final Color bar = (tokens.isDark ? tokens.background : tokens.surface)
+        .withValues(alpha: 0.85);
     const BorderRadius top = BorderRadius.vertical(
       top: Radius.circular(_corner),
     );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: top,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: tokens.primary.withValues(
-              alpha: tokens.isDark ? 0.35 : 0.18,
+    return ClipRRect(
+      borderRadius: top,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Material(
+          color: bar,
+          shape: RoundedRectangleBorder(
+            borderRadius: top,
+            side: BorderSide(
+              color: tokens.primary.withValues(
+                alpha: tokens.isDark ? 0.7 : 0.45,
+              ),
             ),
-            blurRadius: 18,
-            offset: const Offset(0, -2),
           ),
-        ],
-      ),
-      child: Material(
-        color: bar,
-        shape: RoundedRectangleBorder(
-          borderRadius: top,
-          side: BorderSide(
-            color: tokens.primary.withValues(alpha: tokens.isDark ? 0.6 : 0.4),
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: SafeArea(
-          top: false,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: minHeight),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  // The bar's order (2026-10-10, agreed with the players):
-                  // home, the league, matches, leaders, account. Each item
-                  // keeps its page index, so pushes and the screen-view
-                  // names still find the page they name. Every glyph wears
-                  // the brand mark.
-                  _item(
-                    context,
-                    glyph: _NavGlyph(
-                      icon: Icons.home_rounded,
-                      badgeAt: const Alignment(0, 0.45),
-                      badgeKey: const Key('nav.badge.home'),
-                      active: index == 0,
+          clipBehavior: Clip.antiAlias,
+          child: SafeArea(
+            top: false,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: minHeight),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    // The bar's order (2026-10-10, agreed with the players):
+                    // home, the league, matches, leaders, account. Each item
+                    // keeps its page index, so pushes and the screen-view
+                    // names still find the page they name. Every glyph wears
+                    // the brand mark.
+                    _item(
+                      context,
+                      glyph: _NavGlyph(
+                        icon: Icons.home_rounded,
+                        badgeAt: const Alignment(0, 0.45),
+                        badgeKey: const Key('nav.badge.home'),
+                        active: index == 0,
+                      ),
+                      label: 'الرئيسية',
+                      navKey: const Key('nav.item.home'),
+                      destination: 0,
                     ),
-                    label: 'الرئيسية',
-                    navKey: const Key('nav.item.home'),
-                    destination: 0,
-                  ),
-                  _item(
-                    context,
-                    glyph: _NavGlyph(
-                      icon: index == 2
-                          ? Icons.shield_rounded
-                          : Icons.shield_outlined,
-                      badgeAt: const Alignment(0, -0.1),
-                      badgeKey: const Key('nav.badge.h2h'),
-                      active: index == 2,
+                    _item(
+                      context,
+                      glyph: _NavGlyph(
+                        icon: index == 2
+                            ? Icons.shield_rounded
+                            : Icons.shield_outlined,
+                        badgeAt: const Alignment(0, -0.1),
+                        badgeKey: const Key('nav.badge.h2h'),
+                        active: index == 2,
+                      ),
+                      label: 'المواجهات',
+                      navKey: const Key('nav.item.h2h'),
+                      destination: 2,
                     ),
-                    label: 'المواجهات',
-                    navKey: const Key('nav.item.h2h'),
-                    destination: 2,
-                  ),
-                  _item(
-                    context,
-                    glyph: _NavGlyph(
-                      key: const Key('nav.brand'),
-                      icon: Icons.sports_soccer,
-                      size: brandSize,
-                      badgeAt: Alignment.center,
-                      badgeKey: const Key('nav.badge.fixtures'),
-                      active: index == 1,
-                      ring: true,
+                    _item(
+                      context,
+                      glyph: _NavGlyph(
+                        key: const Key('nav.brand'),
+                        icon: Icons.sports_soccer,
+                        size: brandSize,
+                        badgeAt: Alignment.center,
+                        badgeKey: const Key('nav.badge.fixtures'),
+                        active: index == 1,
+                        ring: true,
+                      ),
+                      label: 'المباريات',
+                      navKey: const Key('nav.item.fixtures'),
+                      destination: 1,
                     ),
-                    label: 'المباريات',
-                    navKey: const Key('nav.item.fixtures'),
-                    destination: 1,
-                  ),
-                  _item(
-                    context,
-                    glyph: _NavGlyph(
-                      icon: Icons.leaderboard_rounded,
-                      badgeAt: const Alignment(0, -1.25),
-                      badgeKey: const Key('nav.badge.leaders'),
-                      active: index == 3,
+                    _item(
+                      context,
+                      glyph: _NavGlyph(
+                        icon: Icons.leaderboard_rounded,
+                        badgeAt: const Alignment(0, -1.25),
+                        badgeKey: const Key('nav.badge.leaders'),
+                        active: index == 3,
+                      ),
+                      label: 'المتصدرون',
+                      navKey: const Key('nav.item.leaders'),
+                      destination: 3,
                     ),
-                    label: 'المتصدرون',
-                    navKey: const Key('nav.item.leaders'),
-                    destination: 3,
-                  ),
-                  _item(
-                    context,
-                    glyph: _NavGlyph(
-                      icon: Icons.person_rounded,
-                      badgeAt: const Alignment(1.1, 0.9),
-                      badgeKey: const Key('nav.badge.account'),
-                      active: index == 4,
+                    _item(
+                      context,
+                      glyph: _NavGlyph(
+                        icon: Icons.person_rounded,
+                        badgeAt: const Alignment(1.1, 0.9),
+                        badgeKey: const Key('nav.badge.account'),
+                        active: index == 4,
+                      ),
+                      label: 'الحساب',
+                      navKey: const Key('nav.item.account'),
+                      destination: 4,
                     ),
-                    label: 'الحساب',
-                    navKey: const Key('nav.item.account'),
-                    destination: 4,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
