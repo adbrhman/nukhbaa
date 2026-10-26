@@ -83,6 +83,8 @@ void main() {
       find.descendant(of: brand, matching: find.byType(Image)),
     );
     expect((logo.image as AssetImage).assetName, kBrandLogoAsset);
+    // The smaller mark (script 155): 44 across, no bigger.
+    expect(tester.getSize(brand), const Size.square(44));
     // Raised over the bar: its top is above the other items' icons.
     final double brandTop = tester.getTopLeft(brand).dy;
     final double homeIconTop = tester

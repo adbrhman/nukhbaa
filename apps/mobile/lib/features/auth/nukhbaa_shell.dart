@@ -437,14 +437,14 @@ class NukhbaaBottomNav extends StatelessWidget {
                         color: tokens.backgroundElevated,
                         border: Border.all(
                           color: active ? tokens.primary : tokens.border,
-                          width: 3,
+                          width: 2,
                         ),
                         boxShadow: <BoxShadow>[
                           BoxShadow(
                             color: tokens.primary.withValues(
                               alpha: active ? 0.45 : 0.2,
                             ),
-                            blurRadius: active ? 16 : 8,
+                            blurRadius: active ? 12 : 6,
                           ),
                         ],
                       ),
@@ -478,8 +478,9 @@ class NukhbaaBottomNav extends StatelessWidget {
     );
   }
 
-  /// The brand button's diameter.
-  static const double brandSize = 54;
+  /// The brand button's diameter: small enough that it rises only a little
+  /// over the bar and covers less of the page under it (script 155).
+  static const double brandSize = 44;
 
   Widget _item(
     BuildContext context, {
