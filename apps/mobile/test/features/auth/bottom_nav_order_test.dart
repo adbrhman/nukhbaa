@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/nukhbaa_shell.dart';
+import 'package:mobile/features/auth/sign_in_screen.dart' show kBrandLogoAsset;
 
 void main() {
   testWidgets('home, the league, matches, leaders, account; each its page', (
@@ -49,5 +50,57 @@ void main() {
     // The pages keep their indexes: home 0, matches 1, league 2,
     // leaders 3, account 4.
     expect(opened, <int>[0, 2, 1, 3, 4]);
+  });
+
+  testWidgets('matches sit in the middle on the brand mark, raised', (
+    tester,
+  ) async {
+    final List<int> opened = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            bottomNavigationBar: NukhbaaBottomNav(
+              index: 1,
+              onChanged: opened.add,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Finder brand = find.byKey(const Key('nav.brand'));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('nav.item.fixtures')),
+        matching: brand,
+      ),
+      findsOneWidget,
+    );
+    final Image logo = tester.widget<Image>(
+      find.descendant(of: brand, matching: find.byType(Image)),
+    );
+    expect((logo.image as AssetImage).assetName, kBrandLogoAsset);
+    // Raised over the bar: its top is above the other items' icons.
+    final double brandTop = tester.getTopLeft(brand).dy;
+    final double homeIconTop = tester
+        .getTopLeft(
+          find.descendant(
+            of: find.byKey(const Key('nav.item.home')),
+            matching: find.byType(Icon),
+          ),
+        )
+        .dy;
+    expect(brandTop, lessThan(homeIconTop));
+    expect(find.text('المباريات'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byKey(const Key('nav.item.fixtures'))),
+      isSemantics(isSelected: true, isButton: true),
+    );
+
+    await tester.tap(find.byKey(const Key('nav.item.fixtures')));
+    expect(opened, <int>[1]);
   });
 }

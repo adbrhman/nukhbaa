@@ -1,5 +1,6 @@
-/// The ranked table as the board draws it: every header label sits over its
-/// own column, accuracy is a bare percentage in the table and the summary,
+/// The ranked board as it draws it: the podium (the leader crowned and
+/// raised, places on diamonds), then each line as a card with its figures
+/// under the name; accuracy is a bare percentage in the line and the summary,
 /// a line without movement shows a muted dash rather than an empty cell, and
 /// nothing claims a refresh time the board does not know.
 library;
@@ -7,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/ui/user_avatar.dart';
 import 'package:mobile/features/leaderboards/widgets/leaderboard_board.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -91,16 +93,69 @@ void main() {
     expect(find.text('10 نقاط للوصول للمرتبة 1'), findsOneWidget);
   });
 
-  testWidgets('each header label sits over its own column', (tester) async {
+  testWidgets('below the podium each line is a card; no table header', (
+    tester,
+  ) async {
     await _pump(tester);
 
-    for (final String column in <String>['accuracy', 'matches', 'points']) {
-      final double header = tester
-          .getCenter(find.byKey(Key('boardHeader.$column')))
-          .dx;
-      final double cell = tester.getCenter(find.byKey(Key('$_p.$column.d'))).dx;
-      // The row's 1.4px highlight border is the only difference allowed.
-      expect((header - cell).abs(), lessThan(2.0), reason: column);
+    expect(find.byKey(const Key('boardHeader.accuracy')), findsNothing);
+    // The cards stand apart: a gap between one line and the next.
+    final Rect d = tester.getRect(find.byKey(const Key('$_p.item.d')));
+    final Rect e = tester.getRect(find.byKey(const Key('$_p.item.e')));
+    expect(e.top - d.bottom, greaterThan(4));
+    // Accuracy and the counted matches sit under the name, inside the card.
+    for (final String figure in <String>['accuracy', 'matches', 'points']) {
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('$_p.item.d')),
+          matching: find.byKey(Key('$_p.$figure.d')),
+        ),
+        findsOneWidget,
+        reason: figure,
+      );
     }
+    final Rect name = tester.getRect(
+      find.byKey(const Key('$_p.participant.d')),
+    );
+    final Rect accuracy = tester.getRect(
+      find.byKey(const Key('$_p.accuracy.d')),
+    );
+    expect(accuracy.top, greaterThanOrEqualTo(name.bottom));
+    expect(_textOf(tester, '$_p.points.d'), '10');
+  });
+
+  testWidgets('the podium: the leader crowned and raised, places on '
+      'diamonds', (tester) async {
+    await _pump(tester);
+
+    Finder within(String id, Finder f) =>
+        find.descendant(of: find.byKey(Key('$_p.item.$id')), matching: f);
+    expect(
+      within('a', find.byIcon(Icons.workspace_premium_rounded)),
+      findsOneWidget,
+    );
+    expect(
+      within('b', find.byIcon(Icons.workspace_premium_rounded)),
+      findsNothing,
+    );
+    for (final (String id, String rank) in <(String, String)>[
+      ('a', '1'),
+      ('b', '2'),
+      ('c', '3'),
+    ]) {
+      expect(
+        find.descendant(
+          of: within(id, find.byType(Transform)),
+          matching: find.text(rank),
+        ),
+        findsWidgets,
+        reason: id,
+      );
+    }
+    // The leader's picture stands higher than second and third.
+    double top(String id) =>
+        tester.getTopLeft(within(id, find.byType(UserAvatar))).dy;
+    expect(top('a'), lessThan(top('b')));
+    expect(top('a'), lessThan(top('c')));
   });
 }
