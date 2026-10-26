@@ -16,6 +16,7 @@ import '../../core/design/app_tokens.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/ui/app_dialog.dart';
 import '../../core/ui/app_tab_header.dart';
+import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/unread_badge.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
@@ -25,6 +26,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../gamification/insights_screen.dart';
 import '../gamification/invite_friends_screen.dart';
 import '../gamification/my_badges_screen.dart';
+import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
 import '../record/elite_card_screen.dart';
@@ -37,7 +39,9 @@ import 'session_controller.dart';
 import 'widgets/account_menu.dart';
 
 /// The signed-in user's account tab: a profile card with this month's
-/// figures, the personal destinations, the settings group and sign-out.
+/// figures (each opens its detail), then three captioned groups -- what the
+/// player earned, the friends, the app -- the admin's dashboard on its own,
+/// and sign-out last.
 ///
 /// No row repeats a way the app already offers (phase 1 of the plan, a
 /// shorter menu): "my predictions" and "matches" are bottom-bar tabs and the
@@ -117,9 +121,18 @@ class AccountScreen extends ConsumerWidget {
                     tokens: tokens,
                     text: text,
                     l10n: l10n,
+                    // Each figure opens its own detail.
+                    onOpenAccuracy: () => open(const InsightsScreen()),
+                    onOpenMatches: () => open(const PredictionHistoryScreen()),
+                    onOpenPoints: () =>
+                        open(MyPointsScreen(userDisplayName: user.displayName)),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.xl),
+                  // nk-account-groups: what the player earned, then the
+                  // friends, then the app; sign-out stays last.
+                  const AccountSectionTitle('إنجازاتك'),
                   AccountMenuCard(
+                    key: const Key('account.group.progress'),
                     children: [
                       AccountMenuRow(
                         key: const Key('account.myPoints'),
@@ -151,6 +164,13 @@ class AccountScreen extends ConsumerWidget {
                         subtitle: l10n.insightsSubtitle,
                         onTap: () => open(const InsightsScreen()),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  const AccountSectionTitle('الأصدقاء'),
+                  AccountMenuCard(
+                    key: const Key('account.group.friends'),
+                    children: [
                       AccountMenuRow(
                         key: const Key('account.invite'),
                         icon: Icons.group_add_outlined,
@@ -168,8 +188,10 @@ class AccountScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.xl),
+                  const AccountSectionTitle('التطبيق'),
                   AccountMenuCard(
+                    key: const Key('account.group.app'),
                     children: [
                       // Android only: set by UpdateGate when a newer release
                       // exists. A quiet row instead of a pop-up.
@@ -191,15 +213,22 @@ class AccountScreen extends ConsumerWidget {
                       ),
                       const _DarkModeRow(),
                       const BiometricUnlockRow(),
-                      if (user.role == 'admin')
+                    ],
+                  ),
+                  // Admins only, on its own: the dashboard is not a setting.
+                  if (user.role == 'admin') ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    AccountMenuCard(
+                      children: [
                         AccountMenuRow(
                           key: const Key('account.adminDashboard'),
                           icon: Icons.admin_panel_settings_outlined,
                           title: l10n.adminDashboard,
                           onTap: () => open(const AdminHubScreen()),
                         ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                   // The account's e-mail, so a player knows which address
                   // to sign in with on another phone (audit L-19).
                   if (user.email != null) ...[
@@ -270,8 +299,8 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-/// Avatar and name, then this month's points, decided matches and accuracy.
-/// There is no rename affordance: the display name is chosen once at
+/// Avatar and name, then this month's points, decided matches and accuracy,
+/// each opening its own detail. There is no rename affordance: the display name is chosen once at
 /// registration and is immutable afterwards.
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
@@ -280,6 +309,9 @@ class _ProfileCard extends StatelessWidget {
     required this.tokens,
     required this.text,
     required this.l10n,
+    required this.onOpenAccuracy,
+    required this.onOpenMatches,
+    required this.onOpenPoints,
   });
 
   final AuthenticatedUserDto user;
@@ -288,6 +320,15 @@ class _ProfileCard extends StatelessWidget {
   final TextTheme text;
   final AppLocalizations l10n;
 
+  /// The accuracy figure opens the insights (دقتك وأنماطك).
+  final VoidCallback onOpenAccuracy;
+
+  /// The matches figure opens the caller's predictions.
+  final VoidCallback onOpenMatches;
+
+  /// The points figure opens the points page.
+  final VoidCallback onOpenPoints;
+
   static const double _avatarSize = 64;
 
   @override
@@ -295,25 +336,57 @@ class _ProfileCard extends StatelessWidget {
     final MySeasonRecordDto? row = record;
     final int? accuracy = row?.accuracyPercent;
 
-    // Each figure is read with its label, as one node.
-    Widget stat(String value, String label, Key valueKey) => Expanded(
+    // Each figure is read with its label, as one node, and is a button
+    // that opens its detail: the chevron beside the label says so.
+    Widget stat(
+      String value,
+      String label,
+      Key valueKey,
+      Key openKey,
+      VoidCallback onTap,
+    ) => Expanded(
       child: MergeSemantics(
-        child: Column(
-          children: [
-            Text(
-              value,
-              key: valueKey,
-              style: text.titleLarge?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w800,
+        child: Semantics(
+          button: true,
+          child: InkWell(
+            key: openKey,
+            onTap: onTap,
+            borderRadius: AppRadius.brMd,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Column(
+                children: [
+                  Text(
+                    value,
+                    key: valueKey,
+                    style: text.titleLarge?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: text.bodySmall?.copyWith(
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                      ),
+                      ForwardChevron(
+                        color: tokens.textMuted,
+                        size: AppSizes.iconXs,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: text.bodySmall?.copyWith(color: tokens.textSecondary),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -375,16 +448,22 @@ class _ProfileCard extends StatelessWidget {
                 accuracy == null ? '—' : '$accuracy%',
                 l10n.accountStatAccuracy,
                 const Key('account.stat.accuracy'),
+                const Key('account.stat.accuracy.open'),
+                onOpenAccuracy,
               ),
               stat(
                 row == null ? '—' : '${row.settledCount}',
                 l10n.accountStatMatches,
                 const Key('account.stat.matches'),
+                const Key('account.stat.matches.open'),
+                onOpenMatches,
               ),
               stat(
                 row == null ? '—' : '${row.totalPoints}',
                 l10n.accountStatPoints,
                 const Key('account.stat.points'),
+                const Key('account.stat.points.open'),
+                onOpenPoints,
               ),
             ],
           ),
