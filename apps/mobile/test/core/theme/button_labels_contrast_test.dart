@@ -3,7 +3,9 @@
 /// leave, delete) and the home card's "start predicting". Before the colour
 /// audit of 2026-10-15 the destructive confirm was white on the dark
 /// theme's bright red (3.5:1), and the home button's blue sat at 4.54:1 on
-/// white, on the edge (CA-12).
+/// white, on the edge (CA-12). Since script 162 both reach WCAG AAA (7:1),
+/// and the home button is an outline on the month card, not a white fill
+/// on a blue one.
 library;
 
 import 'package:flutter/material.dart';
@@ -78,12 +80,12 @@ void main() {
       );
       expect(
         ratio,
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: the confirm label is ${ratio.toStringAsFixed(2)}:1',
       );
     });
 
-    testWidgets('$name: the home "start predicting" label reads on white', (
+    testWidgets('$name: the home "start predicting" label reads on its card', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(1080, 4000);
@@ -123,13 +125,22 @@ void main() {
         of: find.byKey(const Key('home.startPredicting')),
         matching: find.byType(Text),
       );
-      final double ratio = _contrast(
-        _labelColour(tester, label),
-        _fillUnder(tester, label),
-      );
+      // An outline: its own Material is clear, so the label sits on the
+      // month card's fill.
+      final Color button = _fillUnder(tester, label);
+      final Color under = button.a == 1
+          ? button
+          : ((tester
+                        .widget<Container>(
+                          find.byKey(const Key('home.overview')),
+                        )
+                        .decoration!
+                    as BoxDecoration)
+                .color!);
+      final double ratio = _contrast(_labelColour(tester, label), under);
       expect(
         ratio,
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: "start predicting" is ${ratio.toStringAsFixed(2)}:1',
       );
     });

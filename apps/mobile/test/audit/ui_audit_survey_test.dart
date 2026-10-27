@@ -2,8 +2,10 @@
 ///
 /// Opens every screen the existing harnesses reach, through the real widgets
 /// and providers, in the dark and the light theme, and measures:
-///   * Flutter's own guidelines at normal text size: textContrastGuideline,
-///     androidTapTargetGuideline and labeledTapTargetGuideline;
+///   * Flutter's own guidelines at normal text size: text contrast at WCAG
+///     AAA (MinimumTextContrastGuidelineAAA: 7:1, large text 4.5:1 -- the
+///     owner's level since script 162; AA before), androidTapTargetGuideline
+///     and labeledTapTargetGuideline;
 ///   * every framework error (an overflow above all) while the screen lays
 ///     out at text scale 1.0, 1.3 and 2.0.
 ///
@@ -97,7 +99,7 @@ const Size _desktop = Size(1280, 800);
 
 /// What is measured, in report order.
 enum _Check {
-  contrast('textContrastGuideline'),
+  contrast('MinimumTextContrastGuidelineAAA'),
   tapTarget('androidTapTargetGuideline'),
   label('labeledTapTargetGuideline'),
   layout10('layout at x1.0'),
@@ -829,7 +831,7 @@ Future<Map<_Check, List<String>>> _measure(
     found[_Check.layout10] = await _layOut(tester, screen, theme, 1.0);
     found[_Check.contrast] = await _evaluate(
       tester,
-      textContrastGuideline,
+      const MinimumTextContrastGuidelineAAA(),
       'Expected contrast ratio',
     );
     found[_Check.tapTarget] = await _evaluate(

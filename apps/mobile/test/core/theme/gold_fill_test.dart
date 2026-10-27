@@ -1,8 +1,9 @@
-/// Gold as a fill -- a selected chip, a tonal button, the day strip's
-/// "today" badge -- is the same goldenrod in both themes, bright enough to
-/// read as gold. The light theme filled with its dark text gold (#6B5300,
-/// #755D00) under white, which read olive brown in the owner's screenshots
-/// (colour audit of 2026-10-15, CA-20).
+/// Gold as a fill -- a selected chip, a tonal button -- is the same
+/// goldenrod in both themes, bright enough to read as gold. The light theme
+/// filled with its dark text gold (#6B5300, #755D00) under white, which read
+/// olive brown in the owner's screenshots (colour audit of 2026-10-15,
+/// CA-20). Since script 162 gold means an achievement only: the day strip's
+/// "today" badge is a neutral tag.
 library;
 
 import 'package:flutter/material.dart';
@@ -49,12 +50,12 @@ void main() {
       _expectGoldenrod(scheme.secondaryContainer, t.goldAccent, 'fill');
       expect(
         _contrast(scheme.onSecondaryContainer, scheme.secondaryContainer),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: content on the gold fill',
       );
     });
 
-    testWidgets('$name: the day strip\'s "today" badge is the gold fill', (
+    testWidgets('$name: the day strip\'s "today" badge is neutral, not gold', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -87,10 +88,10 @@ void main() {
                       .decoration!
                   as BoxDecoration)
               .color!;
-      _expectGoldenrod(fill, t.goldAccent, 'the "today" badge');
+      expect(fill, t.surfaceHigh, reason: '$name: the "today" badge fill');
       expect(
         _contrast(tester.widget<Text>(today).style!.color!, fill),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: the "today" badge label',
       );
     });

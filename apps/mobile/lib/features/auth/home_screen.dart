@@ -623,9 +623,8 @@ class _HighlightState extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.surfaceElevated,
         borderRadius: AppRadius.brSm,
-        border: Border.all(
-          color: live ? tokens.error.withValues(alpha: 0.6) : tokens.border,
-        ),
+        // Script 162: red is the live dot and its word, never an edge.
+        border: Border.all(color: tokens.border),
       ),
       // Sized to the label, centred in the 56 minimum.
       child: Align(
@@ -1016,12 +1015,15 @@ class _OverviewCard extends StatelessWidget {
         .length;
     final AppError? failure = _failure(fixtures);
     final _MonthStanding? place = failure == null ? standing : null;
-    final TextStyle onBlue = TextStyle(color: tokens.onPrimary);
-    final ButtonStyle whiteButton = FilledButton.styleFrom(
-      backgroundColor: tokens.onPrimary,
-      // The deeper blue: the dark theme's bright primary sat at
-      // 4.54:1 on white, on the edge (colour audit, CA-12).
-      foregroundColor: context.scheme.primaryContainer,
+    // Script 162: a card like the others, not a second blue block beside
+    // the pending card's button -- one solid blue action per screen. Its
+    // figures are white, its secondary lines grey, its action an outline
+    // in the text blue (AAA on the card).
+    final TextStyle onCard = TextStyle(color: tokens.textPrimary);
+    final TextStyle onCardSecondary = TextStyle(color: tokens.textSecondary);
+    final ButtonStyle cardButton = OutlinedButton.styleFrom(
+      foregroundColor: tokens.primaryText,
+      side: BorderSide(color: tokens.primaryText),
       minimumSize: const Size.fromHeight(AppSizes.controlMd),
       // A button's textStyle replaces the theme's instead of merging
       // with it, so the family has to be named or the label falls
@@ -1039,10 +1041,9 @@ class _OverviewCard extends StatelessWidget {
       key: const Key('home.overview'),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        // White text sits on it: the gradient made for white (UI-07).
-        gradient: tokens.actionGradient,
+        color: tokens.surface,
         borderRadius: AppRadius.brLg,
-        boxShadow: tokens.shadowMd,
+        border: Border.all(color: tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1053,7 +1054,7 @@ class _OverviewCard extends StatelessWidget {
                 child: Text(
                   place == null ? 'لوحة النخبة' : 'ترتيبك هذا الشهر',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: tokens.onPrimary,
+                    color: tokens.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1062,7 +1063,7 @@ class _OverviewCard extends StatelessWidget {
                 place == null
                     ? Icons.auto_awesome_rounded
                     : Icons.leaderboard_rounded,
-                color: tokens.onPrimary,
+                color: tokens.primaryText,
               ),
             ],
           ),
@@ -1071,17 +1072,13 @@ class _OverviewCard extends StatelessWidget {
             Text(
               ErrorPresenter.message(failure),
               key: const Key('home.overview.error'),
-              style: onBlue.copyWith(fontSize: AppFontSize.s13),
+              style: onCardSecondary.copyWith(fontSize: AppFontSize.s13),
             ),
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               key: const Key('home.overview.retry'),
               onPressed: onRetry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: tokens.onPrimary,
-                side: BorderSide(color: tokens.onPrimary),
-                minimumSize: const Size.fromHeight(AppSizes.controlMd),
-              ),
+              style: cardButton,
               icon: const Icon(Icons.refresh_rounded),
               label: Text(l10n.retry),
             ),
@@ -1095,7 +1092,7 @@ class _OverviewCard extends StatelessWidget {
                 Text(
                   '${place.rank}',
                   key: const Key('home.overview.rank'),
-                  style: onBlue.copyWith(
+                  style: onCard.copyWith(
                     fontSize: AppFontSize.s26,
                     fontWeight: FontWeight.w900,
                     height: 1,
@@ -1109,7 +1106,7 @@ class _OverviewCard extends StatelessWidget {
                       'من ${place.players}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: onBlue.copyWith(
+                      style: onCardSecondary.copyWith(
                         fontSize: AppFontSize.s13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1120,7 +1117,7 @@ class _OverviewCard extends StatelessWidget {
                 Text(
                   l10n.boardPoints(place.points),
                   key: const Key('home.overview.points'),
-                  style: onBlue.copyWith(
+                  style: onCard.copyWith(
                     fontSize: AppFontSize.s18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1137,8 +1134,7 @@ class _OverviewCard extends StatelessWidget {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  // Navy on the blue: white text holds well over 4.5:1.
-                  color: tokens.background.withValues(alpha: 0.35),
+                  color: tokens.surfaceHigh,
                   borderRadius: AppRadius.brXxl,
                 ),
                 child: Text(
@@ -1150,7 +1146,8 @@ class _OverviewCard extends StatelessWidget {
                           place.nextRank!,
                         )
                       : countLine,
-                  style: onBlue.copyWith(
+                  style: TextStyle(
+                    color: tokens.primaryText,
                     fontSize: AppFontSize.s13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1161,27 +1158,26 @@ class _OverviewCard extends StatelessWidget {
             Text(
               countLine,
               key: const Key('home.overview.count'),
-              style: onBlue.copyWith(fontSize: AppFontSize.s12),
+              style: onCardSecondary.copyWith(fontSize: AppFontSize.s12),
             ),
           ] else
             Text(
               countLine,
-              // Full white: at 90% it fell to 3.9:1 on the gradient (UI-07).
-              style: onBlue.copyWith(fontSize: AppFontSize.s13),
+              style: onCardSecondary.copyWith(fontSize: AppFontSize.s13),
             ),
           const SizedBox(height: AppSpacing.md),
           if (place != null && failure == null)
-            FilledButton(
+            OutlinedButton(
               key: const Key('home.overview.leaders'),
               onPressed: onOpenLeaders,
-              style: whiteButton,
+              style: cardButton,
               child: const Text('عرض الترتيب'),
             )
           else
-            FilledButton(
+            OutlinedButton(
               key: const Key('home.startPredicting'),
               onPressed: onOpenMatches,
-              style: whiteButton,
+              style: cardButton,
               child: const Text('ابدأ التوقع'),
             ),
         ],

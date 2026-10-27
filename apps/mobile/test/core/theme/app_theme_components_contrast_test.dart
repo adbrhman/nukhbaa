@@ -2,7 +2,8 @@
 /// selected tab, a focused field's label and its error line, a selected
 /// list tile, the snack bar's action, today in the date picker -- and every
 /// text token on every surface, read from the real [AppTheme] in both
-/// themes. Each must reach WCAG AA (4.5:1). Before the colour audit of
+/// themes. Each must reach WCAG AAA (7:1; AA's 4.5:1 until script 162).
+/// Before the colour audit of
 /// 2026-10-15 the tonal buttons read 3.3:1 in the dark theme, the selected
 /// tab and a focused label 3.4-4.1:1 there, and the snack bar's "copy the
 /// code" action was white on the light bar (1.3:1).
@@ -43,12 +44,12 @@ void main() {
       void expectAA(Color fg, Color bg, String what) {
         expect(
           _contrast(fg, bg),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(7),
           reason: '$name: $what is ${_contrast(fg, bg).toStringAsFixed(2)}:1',
         );
       }
 
-      test('every text token reaches 4.5:1 on every surface', () {
+      test('every text token reaches 7:1 on every surface', () {
         final Map<String, Color> texts = <String, Color>{
           'textPrimary': t.textPrimary,
           'textSecondary': t.textSecondary,
@@ -65,7 +66,7 @@ void main() {
         }
       });
 
-      test('every content colour reaches 4.5:1 on its own fill', () {
+      test('every content colour reaches 7:1 on its own fill', () {
         expectAA(scheme.onPrimary, scheme.primary, 'onPrimary on primary');
         expectAA(
           scheme.onPrimaryContainer,
@@ -78,7 +79,7 @@ void main() {
           'a tonal button or selected chip label on its fill',
         );
         expectAA(t.onGold, t.gold, 'onGold on gold');
-        expectAA(t.onPrimary, t.errorFill, 'white on the red badge');
+        expectAA(scheme.onError, t.errorFill, 'white on the red badge');
         expectAA(t.errorText, t.errorContainer, 'errorText on its container');
         expectAA(
           t.successText,
@@ -87,7 +88,7 @@ void main() {
         );
       });
 
-      testWidgets('a tonal button label reaches 4.5:1 (FilledButton.tonal)', (
+      testWidgets('a tonal button label reaches 7:1 (FilledButton.tonal)', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -118,7 +119,7 @@ void main() {
         expectAA(label, fill.color!, 'tonal button label');
       });
 
-      test('the selected tab label reaches 4.5:1 on the app bar', () {
+      test('the selected tab label reaches 7:1 on the app bar', () {
         expectAA(
           theme.tabBarTheme.labelColor!,
           theme.appBarTheme.backgroundColor!,

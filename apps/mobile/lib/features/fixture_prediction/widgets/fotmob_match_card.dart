@@ -910,8 +910,9 @@ class _CardHeader extends StatelessWidget {
         IconButton(
           tooltip: l10n.viewLeaderboardTooltip,
           // script 123: a ranking, not a link out of the app.
-          // script 133: gold ranking -- the gold of standings and medals.
-          icon: Icon(Icons.leaderboard_rounded, color: tokens.gold),
+          // Script 162: a way to a page, not an achievement -- secondary
+          // grey, so gold on the card means a point won (was gold, 133).
+          icon: Icon(Icons.leaderboard_rounded, color: tokens.textSecondary),
           iconSize: AppSizes.iconSm,
           constraints: const BoxConstraints(
             minWidth: AppSizes.minTouchTarget,
@@ -1518,14 +1519,11 @@ class _DoubleGlowButton extends StatelessWidget {
     final String label = takenElsewhere
         ? _takenLabel
         : l10n.predictionMakeItDoubleLabel;
-    // script 133: gold double -- unselected, the toggle reads gold (9.8:1
-    // dark, 6.3:1 light on the card); a double taken elsewhere stays grey.
-    final Color unselectedInk = takenElsewhere
-        ? tokens.textSecondary
-        : tokens.gold;
-    final Color unselectedRim = takenElsewhere
-        ? tokens.controlBorder
-        : tokens.goldAccent;
+    // Script 162: unselected, the toggle is a quiet secondary outline on
+    // every card; gold marks it only once chosen (its rim), so gold keeps
+    // meaning a reward. Was gold unselected (script 133).
+    final Color unselectedInk = tokens.textSecondary;
+    final Color unselectedRim = tokens.controlBorder;
 
     return Opacity(
       opacity: enabled || takenElsewhere ? 1 : AppOpacity.disabled,
@@ -1567,16 +1565,9 @@ class _DoubleGlowButton extends StatelessWidget {
                     // width it was given (script 128).
                     borderRadius: AppRadius.brButton,
                     color: selected ? null : Colors.transparent,
-                    gradient: selected
-                        ? LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: <Color>[
-                              tokens.primary,
-                              Color.lerp(tokens.primary, Colors.black, 0.25)!,
-                            ],
-                          )
-                        : null,
+                    // The gradient made for onPrimary ink: 7:1 or better
+                    // across it in both themes (script 162).
+                    gradient: selected ? tokens.actionGradient : null,
                     border: Border.all(
                       color: selected ? tokens.goldAccent : unselectedRim,
                       width: selected ? 1.5 : AppStroke.hairline,

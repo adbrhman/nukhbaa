@@ -255,23 +255,22 @@ class _DayTab extends StatelessWidget {
                       : Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           alignment: Alignment.center,
-                          // The scheme's gold fill: goldenrod in both
-                          // themes; the light theme's text gold read olive
-                          // as a fill (CA-20).
+                          // Script 162: a neutral tag -- yesterday, today and
+                          // tomorrow are dates, not achievements, so no gold.
                           decoration: BoxDecoration(
-                            color: context.scheme.secondaryContainer,
+                            color: tokens.surfaceHigh,
                             borderRadius: AppRadius.brSm,
                           ),
                           child: Text(
                             relative,
                             maxLines: 1,
-                            // The theme's own content colour on its gold
-                            // fill (UI-02): 5.0:1 in both themes.
+                            // 13:1 or better on the raised surface in both
+                            // themes (AAA).
                             style: TextStyle(
                               fontSize: AppFontSize.s10,
                               height: 1.1,
                               fontWeight: FontWeight.w800,
-                              color: context.scheme.onSecondaryContainer,
+                              color: tokens.textPrimary,
                             ),
                           ),
                         ),

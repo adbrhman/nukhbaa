@@ -854,9 +854,10 @@ class _MovementChip extends StatelessWidget {
       );
     }
     final bool up = m > 0;
-    // The text shades: success/error read 3.7:1 / 4.2:1 on the blue viewer
-    // row (UI-13).
-    final Color color = up ? t.successText : t.errorText;
+    // A rise is the success text shade; a fall is muted grey, not red --
+    // dropping places is no error, and a board of red arrows read as one
+    // (script 162). Both 7:1 or better on the viewer row (AAA).
+    final Color color = up ? t.successText : t.textMuted;
     // A two-digit move (or larger system text) overflowed the 30px column;
     // the chip now scales down to fit it instead.
     return FittedBox(

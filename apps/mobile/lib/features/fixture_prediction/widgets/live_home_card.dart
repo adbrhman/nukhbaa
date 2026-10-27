@@ -96,7 +96,9 @@ class LiveHomeCard extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               borderRadius: AppRadius.brCard,
-              border: Border.all(color: tokens.error.withValues(alpha: 0.5)),
+              // Script 162: the red dot says live; the card keeps the
+              // hairline every card has.
+              border: Border.all(color: tokens.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

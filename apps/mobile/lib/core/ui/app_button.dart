@@ -45,8 +45,13 @@ class AppButton extends StatelessWidget {
     final (Color bg, Color fg, Color? border) = switch (variant) {
       AppButtonVariant.primary => (tokens.primary, tokens.onPrimary, null),
       // errorFill, not error: white on the dark theme's bright red read
-      // 3.5:1 on every destructive confirm (sign out, leave, delete).
-      AppButtonVariant.danger => (tokens.errorFill, tokens.onPrimary, null),
+      // 3.5:1 on every destructive confirm (sign out, leave, delete). White
+      // is the scheme's onError: the dark onPrimary is navy ink (script 162).
+      AppButtonVariant.danger => (
+        tokens.errorFill,
+        context.scheme.onError,
+        null,
+      ),
       AppButtonVariant.secondary => (
         Colors.transparent,
         tokens.textPrimary,

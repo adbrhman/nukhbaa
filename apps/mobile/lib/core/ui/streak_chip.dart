@@ -12,6 +12,10 @@ class StreakChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    // On the dark raised surface the ink is white; on the light theme's
+    // blue fill it is that fill's own content colour (script 162: the dark
+    // onPrimary is navy, made for the light blue fill).
+    final Color ink = tokens.isDark ? tokens.textPrimary : tokens.onPrimary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -25,7 +29,7 @@ class StreakChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (icon != null) ...<Widget>[
-            Icon(icon, size: 13, color: tokens.onPrimary),
+            Icon(icon, size: 13, color: ink),
             const SizedBox(width: 4),
           ],
           Flexible(
@@ -33,7 +37,7 @@ class StreakChip extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: tokens.onPrimary,
+                color: ink,
                 fontSize: AppFontSize.s12,
                 fontWeight: FontWeight.w700,
               ),

@@ -387,7 +387,7 @@ void main() {
     'UI-02',
     'fixed dark text on the light gold is 2.86:1; the selected date line '
         'is 3.73:1 (fixtures_date_bar.dart:231-241, 193-194)',
-    'the day strip text reaches 4.5:1 in both themes',
+    'the day strip text reaches 7:1 in both themes',
     (WidgetTester tester) async {
       _phone(tester);
       for (final (ThemeData theme, AppTokens t) in <(ThemeData, AppTokens)>[
@@ -409,7 +409,7 @@ void main() {
         final Finder badge = find.text(_ar.fixturesDateToday);
         expect(
           _contrast(_textColor(tester, badge), _backdrop(badge, t.surface)),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(7),
           reason: '${t.brightness} badge',
         );
         final Finder dateLine = find.byWidgetPredicate(
@@ -425,7 +425,7 @@ void main() {
               Color.alphaBlend(_textColor(tester, first), under),
               under,
             ),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(7),
             reason: '${t.brightness} selected date line',
           );
         }
@@ -437,7 +437,7 @@ void main() {
     'UI-03',
     'the active tab is primaryLight, 4.49:1 on the light bar '
         '(nukhbaa_shell.dart:283)',
-    'the active tab label reaches 4.5:1 in the light theme',
+    'the active tab label reaches 7:1 in the light theme',
     (WidgetTester tester) async {
       _phone(tester);
       await tester.pumpWidget(
@@ -467,7 +467,7 @@ void main() {
       );
       expect(
         _contrast(_textColor(tester, label), under),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
       );
     },
   );
@@ -508,7 +508,7 @@ void main() {
     'UI-05',
     'white on the dark error red is 3.51:1 (home_screen.dart:479, '
         'account_screen.dart:80)',
-    'the unread badge reaches 4.5:1 in both themes',
+    'the unread badge reaches 7:1 in both themes',
     (WidgetTester tester) async {
       _phone(tester);
       for (final ThemeData theme in <ThemeData>[
@@ -532,7 +532,7 @@ void main() {
             theme.colorScheme.onError;
         expect(
           _contrast(label, fill),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(7),
           reason: '${theme.brightness}',
         );
       }
@@ -543,7 +543,7 @@ void main() {
     'UI-06',
     'the success badge is blue (4.35:1 dark, 3.61:1 light) and the danger '
         'badge is 4.37:1 / 4.28:1 (app_badge.dart:33-40)',
-    'success and danger badges reach 4.5:1 and success reads as green',
+    'success and danger badges reach 7:1 and success reads as green',
     (WidgetTester tester) async {
       for (final (ThemeData theme, AppTokens t) in <(ThemeData, AppTokens)>[
         (AppTheme.dark, _dark),
@@ -572,7 +572,7 @@ void main() {
           final Finder text = find.text(label);
           expect(
             _contrast(_textColor(tester, text), _backdrop(text, t.surface)),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(7),
             reason: '${t.brightness} $label',
           );
         }
@@ -588,8 +588,8 @@ void main() {
     'UI-07',
     'white on the gradient start #008BFF is 3.42:1 (home_screen.dart:529, '
         'app_colors.dart:130)',
-    'the overview card keeps 4.5:1 for its white text over the whole '
-        'gradient',
+    'the overview card is a plain card since script 162, its title 7:1 '
+        'on the card',
     (WidgetTester tester) async {
       // Tall enough that the lazy home list builds its last card.
       tester.view.physicalSize = const Size(1080, 7200);
@@ -602,21 +602,20 @@ void main() {
         await _pumpHome(tester, theme);
         final Finder title = find.text('لوحة النخبة');
         await tester.ensureVisible(title);
-        final Gradient? gradient = find
-            .ancestor(of: title, matching: find.byType(DecoratedBox))
-            .evaluate()
-            .map((Element e) => (e.widget as DecoratedBox).decoration)
-            .whereType<BoxDecoration>()
-            .map((BoxDecoration d) => d.gradient)
-            .firstWhere((Gradient? g) => g != null, orElse: () => null);
-        expect(gradient, isNotNull);
-        for (final Color stop in gradient!.colors) {
-          expect(
-            _contrast(t.onPrimary, stop),
-            greaterThanOrEqualTo(4.5),
-            reason: '${t.brightness} $stop',
-          );
-        }
+        final BoxDecoration card =
+            tester
+                    .widget<Container>(find.byKey(const Key('home.overview')))
+                    .decoration!
+                as BoxDecoration;
+        // No blue block beside the pending card's button (one solid blue
+        // action per screen): the card's own surface, no gradient.
+        expect(card.gradient, isNull, reason: '${t.brightness}');
+        expect(card.color, t.surface, reason: '${t.brightness}');
+        expect(
+          _contrast(tester.widget<Text>(title).style!.color!, card.color!),
+          greaterThanOrEqualTo(7),
+          reason: '${t.brightness} title',
+        );
       }
     },
   );
@@ -734,7 +733,7 @@ void main() {
     'UI-13',
     'light silver rank 3.90:1, bronze 4.22:1, moves on the viewer row '
         '3.66:1 / 4.24:1 (leaderboard_board.dart:578-600, 848)',
-    'rank pills and moves reach 4.5:1 in both themes',
+    'rank pills and moves reach 7:1 in both themes',
     (WidgetTester tester) async {
       _phone(tester);
       for (final (ThemeData theme, AppTokens t) in <(ThemeData, AppTokens)>[
@@ -758,7 +757,7 @@ void main() {
           );
           expect(
             _contrast(_textColor(tester, pill), _backdrop(pill, t.surface)),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(7),
             reason: '${t.brightness} rank $rank',
           );
         }
@@ -768,7 +767,7 @@ void main() {
         );
         expect(
           _contrast(_textColor(tester, move), _backdrop(move, t.surface)),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(7),
           reason: '${t.brightness} move on the viewer row',
         );
       }

@@ -57,7 +57,7 @@ void main() {
     ('light', AppTheme.light),
   ]) {
     testWidgets('$name: every glyph wears the brand mark; the open tab is '
-        'underlined; labels read at 4.5:1', (tester) async {
+        'underlined; labels read at 7:1', (tester) async {
       final List<int> opened = <int>[];
       await tester.pumpWidget(
         MaterialApp(
@@ -180,7 +180,7 @@ void main() {
         return fade.colors.last.a;
       }
 
-      // Every label, open or not, holds 4.5:1 over the page and over the
+      // Every label, open or not, holds 7:1 over the page and over the
       // worst content that can scroll under it -- white in the dark theme,
       // black in the light one -- through the fade where it sits.
       final bool dark = theme.brightness == Brightness.dark;
@@ -202,7 +202,7 @@ void main() {
         ]) {
           expect(
             _contrast(fg, Color.alphaBlend(tint, behind)),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(7),
             reason: '$label over $behind',
           );
         }

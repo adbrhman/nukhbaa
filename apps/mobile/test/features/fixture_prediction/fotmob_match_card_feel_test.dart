@@ -148,7 +148,7 @@ void main() {
     for (final Color stop in gradient!.colors) {
       expect(
         _contrast(AppTokens.dark.onPrimary, stop),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: stop.toString(),
       );
     }

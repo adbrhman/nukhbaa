@@ -59,8 +59,8 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color primary;
   final Color primaryLight;
 
-  /// Blue for text, figures and links: AA (4.5:1) on every surface and blue
-  /// wash of its theme, which [primary] -- a fill colour -- is not.
+  /// Blue for text, figures and links: AAA (7:1) on every surface and blue
+  /// wash of its theme (script 162).
   final Color primaryText;
   final Color gold;
 
@@ -87,7 +87,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
   /// Red for text, likewise; [error] stays the fill and icon colour.
   final Color errorText;
 
-  /// Red under white text (the unread badge): 5.4:1 in both themes.
+  /// Red under white text (the unread badge): 7.8:1 in both themes.
   final Color errorFill;
 
   /// Content on a [success] fill (the saved check).
@@ -108,8 +108,8 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Gradient primaryGradient;
   final Gradient goldGradient;
 
-  /// The gradient behind white text (4.5:1 or better across it);
-  /// [primaryGradient] is decorative.
+  /// The gradient behind [onPrimary] content: 7:1 or better across it in
+  /// both themes (script 162).
   final Gradient actionGradient;
   final List<BoxShadow> shadowSm;
   final List<BoxShadow> shadowMd;
@@ -198,7 +198,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     goldContainer: AppColorsLight.warningContainer,
     successText: AppColorsLight.successText,
     errorText: AppColorsLight.errorText,
-    errorFill: AppColorsLight.error,
+    errorFill: AppColorsLight.errorFill,
     onSuccess: AppColorsLight.onSuccess,
     onGold: AppColorsLight.onGold,
     tintStrength: 0.07,

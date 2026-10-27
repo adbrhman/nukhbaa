@@ -46,7 +46,7 @@ void main() {
       _expectAmber(t.goldContainer, t.goldAccent, 'goldContainer');
       expect(
         _contrast(t.gold, t.goldContainer),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: gold text on its container',
       );
       expect(
@@ -84,7 +84,7 @@ void main() {
       _expectAmber(ground.color!, t.goldAccent, 'the gold badge');
       expect(
         _contrast(label, ground.color!),
-        greaterThanOrEqualTo(4.5),
+        greaterThanOrEqualTo(7),
         reason: '$name: the gold badge label',
       );
     });

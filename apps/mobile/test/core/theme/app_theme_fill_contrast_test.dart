@@ -1,6 +1,6 @@
-/// A filled button's label -- white on the action blue -- reaches WCAG AA
-/// (4.5:1) in both themes. The sheet's `#2F6BFF` measured 4.499:1, a hair
-/// under, which is why the dark primary sits one step deeper.
+/// A filled button's label on the action blue reaches WCAG AAA (7:1) in
+/// both themes (script 162; AA's 4.5:1 before): navy ink on the dark
+/// theme's light blue, white on the light theme's deep blue.
 library;
 
 import 'package:flutter/material.dart';
@@ -20,11 +20,11 @@ void main() {
     ('dark', AppTheme.dark),
     ('light', AppTheme.light),
   ]) {
-    test('$name: a filled button label reaches 4.5:1 on its fill', () {
+    test('$name: a filled button label reaches 7:1 on its fill', () {
       final ButtonStyle style = theme.filledButtonTheme.style!;
       final Color fill = style.backgroundColor!.resolve(<WidgetState>{})!;
       final Color label = style.foregroundColor!.resolve(<WidgetState>{})!;
-      expect(_contrast(label, fill), greaterThanOrEqualTo(4.5));
+      expect(_contrast(label, fill), greaterThanOrEqualTo(7));
     });
   }
 }

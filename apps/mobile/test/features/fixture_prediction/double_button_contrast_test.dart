@@ -1,5 +1,5 @@
 /// The selected "make it double" button, through the real matches screen in
-/// both themes: its bolt reaches 3:1 and its label 4.5:1 on both ends of
+/// both themes: its bolt reaches 3:1 and its label 7:1 on both ends of
 /// the blue gradient, and its gold rim 3:1 on the card. The bolt was gold
 /// until the colour audit of 2026-10-15 -- 1.1:1 on the light blue (the
 /// owner's screenshot: a bolt hardly there) and 2.8:1 on the dark one.
@@ -113,7 +113,7 @@ void main() {
         );
         expect(
           _contrast(label, blue),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(7),
           reason: '$name: the label on $blue',
         );
       }
@@ -129,8 +129,8 @@ void main() {
     ('dark', AppTheme.dark),
     ('light', AppTheme.light),
   ]) {
-    testWidgets('$name: script 133: the unselected double reads gold, '
-        'and so does the ranking icon', (tester) async {
+    testWidgets('$name: script 162: the unselected double and the ranking '
+        'icon are secondary grey -- gold is kept for a reward', (tester) async {
       final CurrentMonthFixturesHarness harness = _harness();
       addTearDown(harness.dispose);
       await tester.pumpWidget(
@@ -172,23 +172,23 @@ void main() {
           .map((AnimatedContainer box) => box.decoration)
           .whereType<BoxDecoration>()
           .first;
-      expect(label, t.gold);
-      expect(bolt.color, t.gold);
-      expect(frame.border!.top.color, t.goldAccent);
+      expect(label, t.textSecondary);
+      expect(bolt.color, t.textSecondary);
+      expect(frame.border!.top.color, t.controlBorder);
       expect(
         _contrast(label, t.surface),
-        greaterThanOrEqualTo(4.5),
-        reason: '$name: the gold label on the card',
+        greaterThanOrEqualTo(7),
+        reason: '$name: the label on the card',
       );
       expect(
         _contrast(frame.border!.top.color, t.surface),
         greaterThanOrEqualTo(3),
-        reason: '$name: the gold outline on the card',
+        reason: '$name: the outline on the card',
       );
       final Icon ranking = tester.widget<Icon>(
         find.byIcon(Icons.leaderboard_rounded),
       );
-      expect(ranking.color, t.gold);
+      expect(ranking.color, t.textSecondary);
     });
   }
 }

@@ -20,10 +20,10 @@ void main() {
     group('$name theme', () {
       final Color background = theme.scaffoldBackgroundColor;
 
-      test('text buttons and links reach 4.5:1 on the background', () {
+      test('text buttons and links reach 7:1 on the background', () {
         final Color link = theme.textButtonTheme.style!.foregroundColor!
             .resolve(<WidgetState>{})!;
-        expect(_contrast(link, background), greaterThanOrEqualTo(4.5));
+        expect(_contrast(link, background), greaterThanOrEqualTo(7));
       });
 
       test('a text field outline reaches 3:1 on the background and on the '
@@ -41,7 +41,7 @@ void main() {
         );
       });
 
-      test('blue text reaches 4.5:1 on every surface and blue wash', () {
+      test('blue text reaches 7:1 on every surface and blue wash', () {
         final AppTokens tokens = theme.extension<AppTokens>()!;
         for (final Color under in <Color>[
           background,
@@ -55,7 +55,7 @@ void main() {
         ]) {
           expect(
             _contrast(tokens.primaryText, under),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(7),
             reason: under.toString(),
           );
         }

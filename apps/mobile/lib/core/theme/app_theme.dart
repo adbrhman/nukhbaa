@@ -23,9 +23,9 @@ abstract final class AppTheme {
       secondary: AppColors.gold,
       onSecondary: AppColors.onGold,
       secondaryContainer: AppColors.goldDark,
-      // Dark text on the dark gold: white read 3.3:1 there, on every tonal
+      // Dark text on the gold: white read 3.3:1 there, on every tonal
       // button (the retry buttons, sign-in by fingerprint) and a
-      // selected chip (2026-10-15 colour audit); this is 5.0:1.
+      // selected chip (2026-10-15 colour audit); 7.0:1 since script 162.
       onSecondaryContainer: AppColors.onGold,
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,

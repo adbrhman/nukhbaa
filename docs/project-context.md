@@ -6789,6 +6789,64 @@ contract or migration change, no new request type (the month card reads
   `home_reading_order_test.dart`, `home_screen_ui_test.dart`; the survey's
   text x2 checks pass unchanged.
 
+### The colour system, settled at WCAG AAA (script 162, 2026-10-27)
+
+Asked by the owner on 2026-10-27: settle the app's colours for good, with
+clarity and contrast at the excellent level. Three blues were judged
+(the then action blue #2E6AFF, the logo's #1978D1, the bright #008BFF);
+the logo's hue won -- the app had two blues, the logo's and the buttons'.
+White on the logo blue is only 4.52:1 (AA), so of three ways to reach
+AAA the owner's panel chose a light blue fill with navy ink in the dark
+theme (the Material 3 way): 10:1 for the label, 9.6:1 off the page. A
+deep #135A9E under white (7.04:1) sat 2.6:1 off the navy and dimmed the
+main action.
+
+The rules (supersede the 2026-09-24 list where they differ):
+- Blue (hue 209-211) is the identity and what the player can act on: ONE
+  solid blue action per screen; links and figures in `primaryText`.
+- White is content; grey (`textSecondary`, `textMuted`) is secondary --
+  including a fall on the board and a navigation icon.
+- Green: a saved prediction, a right call, a rise.
+- Gold: an achievement only -- first place, the podium, the crown, the
+  first division, the double once chosen (its rim). Not a date, not a
+  link, not an unchosen toggle.
+- Red: an error, a destructive action, a relegation zone. Live is the red
+  dot and its word only, never a card edge.
+- Text 7:1 (AAA) on every surface, wash and container, both themes;
+  icons, rims and bars 3:1.
+
+Values (dark / light):
+- `primary` #84C0FF (ink `onPrimary` #04101C) / #0D4273 (white, 10.3:1);
+  `primaryDark` #135A9E / #0A3458; `primaryLight` #A8D3FF / #135A9E;
+  `primaryText` #A8D3FF / = primary. The logo tile keeps #1978D1
+  (`kBrandMarkBlue`), the bottom bar's disc unchanged.
+- Text: `textMuted` #BEC8D5 / #3F4753, light `textSecondary` #2C3747;
+  `successText` #7DD9AF / #004F35; `errorText` #FFB3B9 / #8A1A12; `gold`
+  #F6C85C / #564400; `goldDark` and the light `goldFill` #DBA00D (gold
+  content 7.0:1); `errorFill` #A3141F in both (white 7.8:1; at 7.0:1 the survey
+  measured the unread "9+" at 6.5:1 over the light bell).
+
+Code: `app_colors.dart`, `app_colors_light.dart`, `app_tokens.dart`,
+`app_theme.dart`; `AppButton.danger` takes the scheme's `onError` (the
+dark `onPrimary` is navy now); the streak chip inks white on its dark
+surface; the home month card is a plain card with an outline button;
+the home highlight's score and the live card lose their red edge; the
+match card's ranking icon and the unchosen double are grey, the chosen
+double fills with `actionGradient`; the day strip's yesterday / today /
+tomorrow tag is neutral; a fall on the board is muted grey.
+
+Tests: every text threshold is 7:1 (`app_tokens_pairs_contrast_test`,
+`app_theme_components_contrast_test`, `app_theme_contrast_test`,
+`app_theme_fill_contrast_test`, `button_labels_contrast_test`,
+`gold_container_test`, `gold_fill_test`, `double_button_contrast_test`,
+`bottom_nav_order_test`, `fotmob_match_card_feel_test`,
+`ui_known_defects_test`); the screen survey measures every screen with
+`MinimumTextContrastGuidelineAAA` (7:1, large text 4.5:1) in both
+themes, its baseline zero.
+
+No migration, no server change; the web on deploy, Android with the
+next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
