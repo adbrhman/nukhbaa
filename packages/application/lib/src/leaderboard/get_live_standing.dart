@@ -1,4 +1,5 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/competition/ports/ruleset_provider.dart';
 import 'package:application/src/football_data/ports/live_score_board.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -92,7 +93,10 @@ final class LiveStanding {
 /// reported ([LiveScoreBoard]); nothing is stored and nothing changes the
 /// board. A match whose result is already recorded is left out: the board
 /// counts it. The month board is ranked as `GetSeasonFixtureLeaderboard`
-/// ranks it.
+/// ranks it. The only exact call of a match in play earns the sole exact
+/// bonus as `ScoreFixture` will pay it ([Scoring.soloExactIndex]), read
+/// from the match's stored kickoff; without [FixtureScheduleRepository]
+/// no kickoff is known and no bonus is shown.
 ///
 /// Only a member of the season reads it, refused otherwise as
 /// [ErrorKind.authorization] `leaderboard.not_a_participant`. Never throws;
@@ -107,12 +111,14 @@ final class GetLiveStanding {
     required FixtureResultRepository results,
     required RulesetProvider rulesets,
     required LiveScoreBoard? liveScores,
+    FixtureScheduleRepository? schedules,
   }) : _competition = competition,
        _fixturePredictions = fixturePredictions,
        _totals = totals,
        _results = results,
        _rulesets = rulesets,
-       _liveScores = liveScores;
+       _liveScores = liveScores,
+       _schedules = schedules;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
@@ -120,6 +126,7 @@ final class GetLiveStanding {
   final FixtureResultRepository _results;
   final RulesetProvider _rulesets;
   final LiveScoreBoard? _liveScores;
+  final FixtureScheduleRepository? _schedules;
 
   /// The viewer's live standing in [seasonId].
   Future<Result<LiveStanding>> call({
@@ -210,17 +217,33 @@ final class GetLiveStanding {
       if (predictions is Err<List<FixturePredictionView>>) {
         return Result.err(predictions.error);
       }
+      final List<FixturePredictionView> views =
+          (predictions as Ok<List<FixturePredictionView>>).value;
+      final List<FixtureScoreResult> grades = <FixtureScoreResult>[
+        for (final FixturePredictionView view in views)
+          _grade(
+            ruleset,
+            result,
+            homeGoals: view.prediction.homeGoals,
+            awayGoals: view.prediction.awayGoals,
+            isDouble: view.prediction.isDouble,
+          ),
+      ];
+      final int? solo = Scoring.soloExactIndex(
+        grades: <FixtureScoreGrade>[for (final g in grades) g.grade],
+        ruleset: ruleset,
+        kickoffAt: await _kickoffOf(fixture),
+      );
       int? mine;
-      for (final FixturePredictionView view
-          in (predictions as Ok<List<FixturePredictionView>>).value) {
-        final FixturePrediction p = view.prediction;
-        final FixtureScoreResult graded = _grade(
-          ruleset,
-          result,
-          homeGoals: p.homeGoals,
-          awayGoals: p.awayGoals,
-          isDouble: p.isDouble,
-        );
+      for (var i = 0; i < views.length; i++) {
+        final FixturePrediction p = views[i].prediction;
+        final FixtureScoreResult graded = i == solo
+            ? FixtureScoreResult(
+                fixture: grades[i].fixture,
+                grade: grades[i].grade,
+                points: grades[i].points + ruleset.soloExactBonusPoints,
+              )
+            : grades[i];
         gains.update(
           p.participantId.value,
           (g) => g.plus(graded),
@@ -270,6 +293,15 @@ final class GetLiveStanding {
         players: then.length,
       ),
     );
+  }
+
+  /// The stored kickoff of [fixture]; null when unknown or unreadable (no
+  /// bonus is shown then -- the live line is a projection, never a fault).
+  Future<DateTime?> _kickoffOf(FixtureRef fixture) async {
+    final schedules = _schedules;
+    if (schedules == null) return null;
+    final found = await schedules.findByFixture(fixture);
+    return found is Ok<FixtureSchedule?> ? found.value?.kickoffAt : null;
   }
 
   static FixtureScoreResult _grade(

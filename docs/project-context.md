@@ -6690,6 +6690,50 @@ Mobile only: no server, contract or migration change.
   `account_contact_test.dart` (placement, the opened address, the failure
   line, text x2 at 360px).
 
+### The sole exact call earns 6, or 9 on the double (script 159, 2026-10-27)
+
+Decided by the owner on 2026-10-27, from the kickoffs of 1 November 2026
+(00:00 Riyadh, `2026-10-31T21:00:00Z`): the hero of the day -- the only
+player of all who called a match's exact score -- earns 6 points instead
+of 3, and 9 instead of 6 when that call was his double. Two or more exact
+calls: 3 each (6 on a double), as before. Server and app; no migration.
+
+- Ruleset v4 (`ConfiguredRulesetProvider`): `solo_exact_bonus: 3` and
+  `solo_exact_since`, read by `ScoringRuleset` (`soloExactBonusPoints`,
+  `soloExactSince`, `soloExactBonusAppliesTo`); absent on older snapshots
+  (0, no effect). The bonus is added once, never multiplied.
+- `Scoring.soloExactIndex` / `Scoring.applySoloExactBonus` (pure): the
+  grade stays `exact_scoreline`, so accuracy, exact-call counts and every
+  tie-break are unchanged; only the points move.
+- `ScoreFixture` applies it over every prediction of the fixture once the
+  result is in, by the stored kickoff (unknown kickoff: no bonus). A
+  fixture that kicked off before 1 November keeps 3 and 6 however often it
+  is scored again. A corrected result moves the bonus with the facts: the
+  ledger's existing `correction` entries carry the difference. The monthly
+  board, the season and the head-to-head rounds read the stored points, so
+  the bonus counts there too.
+- `GetLiveStanding` shows the same bonus on the running score (the
+  composition root hands it the schedule repository for the kickoff).
+- `NotifyFixtureWinners`: the double is named by the prediction
+  (`doubled`), no longer guessed from 6 points, and the one alone reads
+  «أصبت النتيجة بالضبط وحدك» (`solo`).
+- App: the hero card is «بطاقة بطل اليوم للنخبة» and, on a double,
+  «بطاقة البطل الاحترافي لليوم» (formerly البطل المميز لليوم); a single hero's
+  card shows his points (`dayHero.points`); the share text reads «بطل اليوم
+  للنخبة: … وحده أصاب مباراة ليفربول × أرسنال 2-2، وحصل على 6 نقاط.» and
+  «البطل الاحترافي لليوم: … وحده أصاب نتيجة مباراة … مضاعفة كما انتهت
+  بالضبط، وحصل على 9 نقاط.» (`DayHero.shareMessage`). The rules page and
+  the sign-in rules list carry `rulesSoloExact`.
+- Tests: `solo_exact_bonus_test.dart` (new), `scoring_ruleset_test.dart`,
+  `get_live_standing_test.dart`, `notify_fixture_winners_test.dart`
+  (through `ScoreFixture` too), `fixture_prediction_scoring_test.dart`
+  (`POST /fixtures/{id}/score` over the production ruleset: 6, 9, two
+  exact calls, a kickoff a minute before 1 November), `day_hero_test.dart`,
+  `rules_screen_test.dart`.
+- The head-to-head league needs no change for 1 November: `DrawH2hMonth`
+  draws November as the first public month (`is_pilot` false), seeded
+  from October's active players even though October was the pilot.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

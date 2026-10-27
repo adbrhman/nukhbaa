@@ -123,6 +123,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'الدبل يضاعف النقاط: النتيجة الدقيقة فيه 6 نقاط';
 
   @override
+  String get rulesSoloExact =>
+      'من 1 نوفمبر 2026: إن كنت الوحيد بين كل المتوقعين الذي أصاب النتيجة الدقيقة لمباراة فلك 6 نقاط، و9 نقاط إن كانت دبلك';
+
+  @override
   String get rulesOneDoublePerDay =>
       'دبل واحد فقط في اليوم، تختاره من مباريات ذلك اليوم';
 

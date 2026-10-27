@@ -33,7 +33,13 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
   /// defaults a missing `double_multiplier` to 1 (no effect) on any
   /// already-frozen v1 snapshot, so a historical round keeps reproducing its
   /// original score exactly (Axiom 5) even though new rounds open under v2.
-  static const int _footballScorelineVersion = 3;
+  ///
+  /// Bumped 3 -> 4 to add the sole exact bonus (decided by the owner
+  /// 2026-10-27): from the kickoffs of 1 November 2026 (Riyadh midnight),
+  /// the only exact call of a fixture earns 3 more points -- 6, or 9 on a
+  /// double. An earlier fixture scored again keeps 3 and 6: the bonus
+  /// reads its kickoff.
+  static const int _footballScorelineVersion = 4;
 
   @override
   Future<Result<RulesetSnapshot>> currentSnapshotFor(FormatType format) async {
@@ -55,6 +61,11 @@ final class ConfiguredRulesetProvider implements RulesetProvider {
             // Multiplies whatever points a fixture earns (any grade except
             // `missed`) when the participant marked it as their round double.
             'double_multiplier': 2,
+            // Added once to the only exact call of a fixture, never
+            // multiplied: 3 + 3 = 6, a double 6 + 3 = 9.
+            'solo_exact_bonus': 3,
+            // 2026-11-01 00:00 Riyadh (UTC+3): the first kickoff it pays on.
+            'solo_exact_since': '2026-10-31T21:00:00.000Z',
           },
         );
     }

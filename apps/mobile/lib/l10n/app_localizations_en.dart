@@ -124,6 +124,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your double doubles the points: an exact score on it is 6 points';
 
   @override
+  String get rulesSoloExact =>
+      'From 1 November 2026: the only player of all to call a match\'s exact score gets 6 points, or 9 on his double';
+
+  @override
   String get rulesOneDoublePerDay =>
       'One double per day, picked from that day\'s matches';
 

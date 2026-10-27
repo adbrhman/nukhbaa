@@ -3,6 +3,11 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
+import '../competition/fakes.dart' show FakeRulesetProvider, adminPrincipal;
+import '../prediction/fake_fixture_prediction_repository.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
+import '../scoring/fake_fixture_score_repository.dart';
+import '../scoring/fakes.dart' show FakeFixtureResultRepository;
 import 'fakes.dart';
 
 final class _FakeAnnouncements implements ScoreAnnouncementRepository {
@@ -202,6 +207,134 @@ void main() {
 
     expect(sender.titles.single, NotifyFixtureWinners.doubleTitle);
     expect(sender.bodies.single, contains('+6'));
+  });
+
+  group('the sole exact call (script 159)', () {
+    ParticipantId b() =>
+        (ParticipantId.tryParse(uuidB) as Ok<ParticipantId>).value;
+
+    test('6 points alone is an exact hit, not a double', () async {
+      await useCase(
+        fixture: fixture(),
+        scores: <ParticipantFixtureScore>[
+          _score(
+            participantId: uuidB,
+            grade: FixtureScoreGrade.exactScoreline,
+            points: 6,
+          ),
+        ],
+        doubled: <ParticipantId>{},
+        solo: b(),
+      );
+
+      expect(sender.titles.single, NotifyFixtureWinners.exactTitle);
+      expect(
+        sender.bodies.single,
+        'أصبت النتيجة '
+        'بالضبط وحدك '
+        'في Home x Away — +6 نقاط ✅',
+      );
+    });
+
+    test('9 points alone on the double', () async {
+      await useCase(
+        fixture: fixture(),
+        scores: <ParticipantFixtureScore>[
+          _score(
+            participantId: uuidB,
+            grade: FixtureScoreGrade.exactScoreline,
+            points: 9,
+          ),
+        ],
+        doubled: <ParticipantId>{b()},
+        solo: b(),
+      );
+
+      expect(sender.titles.single, NotifyFixtureWinners.doubleTitle);
+      expect(sender.bodies.single, contains('وحدك'));
+      expect(sender.bodies.single, contains('+9'));
+    });
+
+    test('ScoreFixture names the double and the one alone', () async {
+      final FixtureRef match = fixture();
+      final predictions = FakeFixturePredictionRepository();
+      for (final (String id, String participant, int home) in [
+        ('aaaaaaaa-0000-4000-8000-000000000001', uuidB, 2),
+        ('aaaaaaaa-0000-4000-8000-000000000002', uuidC, 0),
+      ]) {
+        predictions.seedPrediction(
+          FixturePrediction.fromStored(
+            id: PredictionId(id),
+            fixture: match,
+            participantId: ParticipantId(participant),
+            homeGoals: home,
+            awayGoals: 1,
+            isDouble: participant == uuidB,
+          ),
+          DateTime.utc(2026, 11, 2, 10),
+        );
+      }
+      final results = FakeFixtureResultRepository()
+        ..seed(
+          FixtureResult.fromStored(fixture: match, homeGoals: 2, awayGoals: 1),
+        );
+      final schedules = FakeFixtureScheduleRepository()
+        ..seed(
+          (FixtureSchedule.create(
+                    fixture: match,
+                    homeTeam: 'Home',
+                    awayTeam: 'Away',
+                    kickoffAt: DateTime.utc(2026, 11, 2, 18),
+                  )
+                  as Ok<FixtureSchedule>)
+              .value,
+        );
+      final scored = await ScoreFixture(
+        fixturePredictionRepository: predictions,
+        resultRepository: results,
+        scoreRepository: FakeFixtureScoreRepository(),
+        rulesetProvider: FakeRulesetProvider(
+          RulesetSnapshot.create(
+            payload: const {
+              'format': 'football_scoreline',
+              'points': {
+                'exact_scoreline': 3,
+                'correct_outcome': 0,
+                'incorrect': 0,
+              },
+              'double_multiplier': 2,
+              'solo_exact_bonus': 3,
+              'solo_exact_since': '2026-10-31T21:00:00.000Z',
+            },
+            rulesetVersion: 4,
+          ),
+        ),
+        fixtureScheduleRepository: schedules,
+        winnerNotifier: useCase,
+      )(principal: adminPrincipal('admin-1'), fixtureId: match.value);
+
+      expect(scored, isA<Ok<List<ParticipantFixtureScore>>>());
+      expect(sender.titles.single, NotifyFixtureWinners.doubleTitle);
+      expect(sender.bodies.single, contains('وحدك'));
+      expect(sender.bodies.single, contains('+9'));
+    });
+
+    test('a double shared with others: the double title, no alone', () async {
+      await useCase(
+        fixture: fixture(),
+        scores: <ParticipantFixtureScore>[
+          _score(
+            participantId: uuidB,
+            grade: FixtureScoreGrade.exactScoreline,
+            points: 6,
+          ),
+        ],
+        doubled: <ParticipantId>{b()},
+      );
+
+      expect(sender.titles.single, NotifyFixtureWinners.doubleTitle);
+      expect(sender.bodies.single, isNot(contains('وحدك')));
+    });
   });
 
   test(

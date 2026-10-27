@@ -3466,6 +3466,8 @@ final class CompositionRoot {
         results: fixtureResultRepository,
         rulesets: rulesetProvider,
         liveScores: liveScoreBoard,
+        // The kickoff decides the sole exact bonus (script 159).
+        schedules: fixtureScheduleRepository,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,

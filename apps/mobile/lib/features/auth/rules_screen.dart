@@ -73,6 +73,12 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                       label: l10n.rulesDoubleMatch,
                     ),
                     _RuleRow(
+                      key: const Key('rules.soloExact'),
+                      icon: Icons.workspace_premium_rounded,
+                      color: tokens.goldAccent,
+                      label: l10n.rulesSoloExact,
+                    ),
+                    _RuleRow(
                       key: const Key('rules.oneDouble'),
                       icon: Icons.today_rounded,
                       color: tokens.goldAccent,

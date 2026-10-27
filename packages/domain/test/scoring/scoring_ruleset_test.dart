@@ -24,6 +24,74 @@ void main() {
       expect(ruleset.incorrectPoints, 0);
     });
 
+    test('reads the sole exact bonus and its first kickoff (v4)', () {
+      final ruleset =
+          (ScoringRuleset.fromSnapshot(
+                    _snapshot(const {
+                      'format': 'football_scoreline',
+                      'points': {
+                        'exact_scoreline': 3,
+                        'correct_outcome': 0,
+                        'incorrect': 0,
+                      },
+                      'double_multiplier': 2,
+                      'solo_exact_bonus': 3,
+                      'solo_exact_since': '2026-10-31T21:00:00.000Z',
+                    }, version: 4),
+                  )
+                  as Ok<ScoringRuleset>)
+              .value;
+      expect(ruleset.soloExactBonusPoints, 3);
+      expect(ruleset.soloExactSince, DateTime.utc(2026, 10, 31, 21));
+      expect(
+        ruleset.soloExactBonusAppliesTo(DateTime.utc(2026, 10, 31, 21)),
+        isTrue,
+      );
+      expect(
+        ruleset.soloExactBonusAppliesTo(DateTime.utc(2026, 10, 31, 20, 59)),
+        isFalse,
+      );
+      expect(ruleset.soloExactBonusAppliesTo(null), isFalse);
+    });
+
+    test('a snapshot before the bonus pays none', () {
+      final ruleset =
+          (ScoringRuleset.fromSnapshot(_defaultSnapshot())
+                  as Ok<ScoringRuleset>)
+              .value;
+      expect(ruleset.soloExactBonusPoints, 0);
+      expect(ruleset.soloExactSince, isNull);
+      expect(
+        ruleset.soloExactBonusAppliesTo(DateTime.utc(2027, 1, 1)),
+        isFalse,
+      );
+    });
+
+    test('rejects a negative bonus or a since that is not a UTC instant', () {
+      Map<String, Object?> payload(Object? bonus, Object? since) => {
+        'format': 'football_scoreline',
+        'points': {'exact_scoreline': 3, 'correct_outcome': 0, 'incorrect': 0},
+        'solo_exact_bonus': bonus,
+        'solo_exact_since': since,
+      };
+      expect(
+        (ScoringRuleset.fromSnapshot(_snapshot(payload(-1, null)))
+                as Err<ScoringRuleset>)
+            .error
+            .code,
+        'scoring.ruleset_solo_exact_bonus_invalid',
+      );
+      for (final since in <Object?>['2026-11-01', 'soon', 20261101]) {
+        expect(
+          (ScoringRuleset.fromSnapshot(_snapshot(payload(3, since)))
+                  as Err<ScoringRuleset>)
+              .error
+              .code,
+          'scoring.ruleset_solo_exact_since_invalid',
+        );
+      }
+    });
+
     test('rejects a snapshot for an unsupported format', () {
       final result = ScoringRuleset.fromSnapshot(
         _snapshot(const {

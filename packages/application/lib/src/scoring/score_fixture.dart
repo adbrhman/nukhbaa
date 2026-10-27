@@ -35,7 +35,14 @@ import 'package:shared/shared.dart';
 /// 5. runs the pure domain [Scoring.scoreFixture] per prediction — a missing
 ///    result grades every prediction [FixtureScoreGrade.pending] (always
 ///    zero), exactly like `ScoreRound`'s live/partial scoring;
-/// 6. persists all [ParticipantFixtureScore]s atomically
+/// 6. adds the sole exact bonus ([Scoring.applySoloExactBonus], decided by
+///    the owner 2026-10-27): once the result is in, the only exact call of
+///    the fixture among every prediction of it earns
+///    [ScoringRuleset.soloExactBonusPoints] more (3 + 3 = 6, a double
+///    6 + 3 = 9), on a fixture that kicked off at or after
+///    [ScoringRuleset.soloExactSince] -- read from the stored kickoff, so an
+///    unknown kickoff (no schedule repository) pays no bonus;
+/// 7. persists all [ParticipantFixtureScore]s atomically
 ///    ([FixtureScoreRepository.saveFixtureScores]).
 ///
 /// **Idempotent**: re-running scoring for the same fixture — before or after
@@ -175,7 +182,26 @@ final class ScoreFixture {
       fixtureScores.add((scored as Ok<ParticipantFixtureScore>).value);
     }
 
-    final saved = await _scores.saveFixtureScores(fixtureScores);
+    // The sole exact call, among every prediction of the fixture: graded
+    // here, where all of them are, and stored in its points.
+    final int? soloIndex = result == null
+        ? null
+        : Scoring.soloExactIndex(
+            grades: <FixtureScoreGrade>[
+              for (final score in fixtureScores) score.result.grade,
+            ],
+            ruleset: ruleset,
+            kickoffAt: kickoffAt,
+          );
+    final List<ParticipantFixtureScore> finalScores = result == null
+        ? fixtureScores
+        : Scoring.applySoloExactBonus(
+            scores: fixtureScores,
+            ruleset: ruleset,
+            kickoffAt: kickoffAt,
+          );
+
+    final saved = await _scores.saveFixtureScores(finalScores);
     if (saved is Err<void>) {
       return Result.err(saved.error);
     }
@@ -185,9 +211,17 @@ final class ScoreFixture {
     // -- an unreachable phone must never fail a scored fixture.
     final notifier = _winnerNotifier;
     if (notifier != null) {
-      await notifier(fixture: fixture, scores: fixtureScores);
+      await notifier(
+        fixture: fixture,
+        scores: finalScores,
+        doubled: <ParticipantId>{
+          for (final view in predictions)
+            if (view.prediction.isDouble) view.prediction.participantId,
+        },
+        solo: soloIndex == null ? null : finalScores[soloIndex].participantId,
+      );
     }
 
-    return Result.ok(List<ParticipantFixtureScore>.unmodifiable(fixtureScores));
+    return Result.ok(List<ParticipantFixtureScore>.unmodifiable(finalScores));
   }
 }

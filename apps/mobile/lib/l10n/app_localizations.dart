@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'Your double doubles the points: an exact score on it is 6 points'**
   String get rulesDoubleMatch;
 
+  /// No description provided for @rulesSoloExact.
+  ///
+  /// In en, this message translates to:
+  /// **'From 1 November 2026: the only player of all to call a match\'s exact score gets 6 points, or 9 on his double'**
+  String get rulesSoloExact;
+
   /// No description provided for @rulesOneDoublePerDay.
   ///
   /// In en, this message translates to:

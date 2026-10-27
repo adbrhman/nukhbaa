@@ -51,6 +51,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('التوقع الصحيح'), findsNothing);
+    // Script 159: the only exact call earns 6, or 9 on the double.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('rules.soloExact')),
+        matching: find.textContaining('6 نقاط، و9 نقاط إن كانت دبلك'),
+      ),
+      findsOneWidget,
+    );
 
     // The three rules the page left out.
     expect(

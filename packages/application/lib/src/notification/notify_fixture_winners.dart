@@ -71,9 +71,16 @@ final class NotifyFixtureWinners {
   static const String doubleTitle = 'دبل مطابق ⚡';
 
   /// Announces every exact call among [scores] for [fixture].
+  ///
+  /// [doubled] names the participants whose prediction was their double;
+  /// null (an older caller) reads a double from the points, as before the
+  /// sole exact bonus made 6 points a single exact call too. [solo] is the
+  /// fixture's only exact caller when the sole exact bonus paid him.
   Future<Result<int>> call({
     required FixtureRef fixture,
     required List<ParticipantFixtureScore> scores,
+    Set<ParticipantId>? doubled,
+    ParticipantId? solo,
   }) async {
     final winners = <ParticipantId, ParticipantFixtureScore>{};
     for (final score in scores) {
@@ -133,10 +140,16 @@ final class NotifyFixtureWinners {
         continue;
       }
 
-      final String title = score.points >= _doubleFrom
-          ? doubleTitle
-          : exactTitle;
-      final String body = _body(points: score.points, label: label);
+      final bool isDouble = doubled == null
+          ? score.points >= _doubleFrom
+          : doubled.contains(target.participantId);
+      final String title = isDouble ? doubleTitle : exactTitle;
+      final String body = _body(
+        points: score.points,
+        label: label,
+        isDouble: isDouble,
+        isSolo: solo == target.participantId,
+      );
 
       if (QuietHours.covers(now, utcOffsetMinutes: target.utcOffsetMinutes)) {
         deferred.add(
@@ -186,10 +199,18 @@ final class NotifyFixtureWinners {
   /// award is 3, its double 6 (docs/project-context.md, scoring rules).
   static const int _doubleFrom = 6;
 
-  static String _body({required int points, required String? label}) {
-    final String head = points >= _doubleFrom
-        ? 'ضاعفت نقاطك وأصبت النتيجة بالضبط'
-        : 'أصبت النتيجة بالضبط';
+  static String _body({
+    required int points,
+    required String? label,
+    required bool isDouble,
+    required bool isSolo,
+  }) {
+    final String head = switch ((isDouble, isSolo)) {
+      (true, true) => 'ضاعفت نقاطك وأصبت النتيجة بالضبط وحدك',
+      (true, false) => 'ضاعفت نقاطك وأصبت النتيجة بالضبط',
+      (false, true) => 'أصبت النتيجة بالضبط وحدك',
+      (false, false) => 'أصبت النتيجة بالضبط',
+    };
     final String where = label == null ? '' : ' في $label';
     return '$head$where — +$points نقاط ✅';
   }

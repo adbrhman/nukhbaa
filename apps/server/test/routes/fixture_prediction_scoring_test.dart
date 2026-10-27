@@ -336,6 +336,120 @@ void main() {
       },
     );
 
+    // The sole exact call (script 159), through the route and the
+    // production ruleset: from the kickoffs of 1 November 2026 (Riyadh
+    // midnight), the only exact call earns 6, or 9 on a double.
+    group('the sole exact call', () {
+      const kSecond = '88888888-8888-8888-8888-888888888888';
+      const kThird = '77777777-7777-7777-7777-777777777777';
+
+      Future<Map<String, Object?>> scoreAt(
+        DateTime kickoff, {
+        required List<(String, int, int, bool)> calls,
+      }) async {
+        final predRepo = _InMemoryFixturePredictionRepository();
+        for (final (participant, home, away, isDouble) in calls) {
+          predRepo.seed(
+            fixtureId: kFixtureId,
+            participantId: participant,
+            homeGoals: home,
+            awayGoals: away,
+            isDouble: isDouble,
+          );
+        }
+        final resultRepo = InMemoryFixtureResultRepository()
+          ..upsert(
+            FixtureResult.fromStored(
+              fixture:
+                  (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+              homeGoals: 2,
+              awayGoals: 1,
+            ),
+            kickoff.add(const Duration(hours: 2)),
+          );
+        final schedRepo = InMemoryFixtureScheduleRepository()
+          ..seed(
+            FixtureSchedule.fromStored(
+              fixture:
+                  (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+              homeTeam: 'Home FC',
+              awayTeam: 'Away FC',
+              kickoffAt: kickoff,
+            ),
+          );
+        final root = CompositionRoot.forTesting(
+          scoreFixture: ScoreFixture(
+            fixturePredictionRepository: predRepo,
+            resultRepository: resultRepo,
+            scoreRepository: _InMemoryFixtureScoreRepository(),
+            rulesetProvider: const ConfiguredRulesetProvider(),
+            fixtureScheduleRepository: schedRepo,
+          ),
+        );
+        final response = await score_route.onRequest(
+          wireContext(root: root, principal: adminPrincipal()),
+          kFixtureId,
+        );
+        expect(response.statusCode, HttpStatus.ok);
+        final body = await decodeBody(response);
+        return <String, Object?>{
+          for (final raw in body['scores']! as List<Object?>)
+            ((raw! as Map<Object?, Object?>)['participant_id']! as String):
+                (raw as Map<Object?, Object?>)['points'],
+        };
+      }
+
+      // 2026-11-01 00:00 Riyadh.
+      final firstNovemberKickoff = DateTime.utc(2026, 10, 31, 21);
+
+      test('alone on the exact score: 6 points', () async {
+        final points = await scoreAt(
+          firstNovemberKickoff,
+          calls: [
+            (kParticipantId, 2, 1, false),
+            (kSecond, 1, 1, false),
+            (kThird, 0, 2, true),
+          ],
+        );
+        expect(points[kParticipantId], 6);
+        expect(points[kSecond], 0);
+        expect(points[kThird], 0);
+      });
+
+      test('alone on the exact score with the double: 9 points', () async {
+        final points = await scoreAt(
+          firstNovemberKickoff,
+          calls: [(kParticipantId, 2, 1, true), (kSecond, 1, 1, false)],
+        );
+        expect(points[kParticipantId], 9);
+      });
+
+      test('two on the exact score: 3 each, 6 on a double', () async {
+        final points = await scoreAt(
+          firstNovemberKickoff,
+          calls: [(kParticipantId, 2, 1, false), (kSecond, 2, 1, true)],
+        );
+        expect(points[kParticipantId], 3);
+        expect(points[kSecond], 6);
+      });
+
+      test('a kickoff before 1 November keeps 3 and 6', () async {
+        final lastOctober = firstNovemberKickoff.subtract(
+          const Duration(minutes: 1),
+        );
+        final single = await scoreAt(
+          lastOctober,
+          calls: [(kParticipantId, 2, 1, false), (kSecond, 0, 0, false)],
+        );
+        expect(single[kParticipantId], 3);
+        final doubled = await scoreAt(
+          lastOctober,
+          calls: [(kParticipantId, 2, 1, true)],
+        );
+        expect(doubled[kParticipantId], 6);
+      });
+    });
+
     test('405s on a non-POST method', () async {
       final setup = scoreRootFor();
       final response = await score_route.onRequest(

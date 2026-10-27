@@ -40,6 +40,7 @@
   "rulesCorrectPrediction": "Exact score (e.g. 2-1): 3 points",
   "rulesWrongPrediction": "Any other prediction: 0 points, even with the right outcome (winner or draw)",
   "rulesDoubleMatch": "Your double doubles the points: an exact score on it is 6 points",
+  "rulesSoloExact": "From 1 November 2026: the only player of all to call a match's exact score gets 6 points, or 9 on his double",
   "rulesOneDoublePerDay": "One double per day, picked from that day's matches",
   "rulesLockAtKickoff": "You can change your prediction until kick-off; then it locks",
   "rulesMonthStartsAtZero": "Each month is a new contest that starts from zero; the season (September to August) adds its months up",

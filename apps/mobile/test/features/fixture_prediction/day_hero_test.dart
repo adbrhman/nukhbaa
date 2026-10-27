@@ -3,8 +3,10 @@
 /// called a finished match exactly is named above the table for an admin
 /// and marked in the cell, and tapping that prediction opens the card to
 /// share. Another player is not shown any of it, the hero himself sees his
-/// own (2026-10-24), an exact double makes the special hero of the day, and
-/// a match two players called exactly has no hero.
+/// own (2026-10-24), an exact double makes the professional hero of the day
+/// (2026-10-27), and a match two players called exactly has no hero. The
+/// server pays the one exact call 6, 9 on the double (script 159), and the
+/// card and its share text show those points.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -12,6 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/features/competition/team_identity.dart';
+import 'package:mobile/features/fixture_prediction/widgets/day_hero_card.dart';
 import 'package:mobile/features/fixture_prediction/widgets/fixture_predictions_board_page.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -40,12 +44,13 @@ ParticipantFixtureScoreDto _score(
   String participantId,
   String grade, {
   bool doubled = false,
+  bool alone = false,
 }) => ParticipantFixtureScoreDto(
   fixtureId: 'f-1',
   participantId: participantId,
-  rulesetVersion: 3,
+  rulesetVersion: 4,
   grade: grade,
-  points: grade == 'exact_scoreline' ? (doubled ? 6 : 3) : 0,
+  points: grade == 'exact_scoreline' ? (doubled ? 6 : 3) + (alone ? 3 : 0) : 0,
 );
 
 /// A finished match, Slovakia 4-0 Moldova. Sara called 4-0; Ahmad (the
@@ -110,7 +115,12 @@ final class _Server {
             fixtureId: 'f-1',
             scores: <ParticipantFixtureScoreDto>[
               _score('p-me', twoExact ? 'exact_scoreline' : 'incorrect'),
-              _score('p-sara', 'exact_scoreline', doubled: saraDouble),
+              _score(
+                'p-sara',
+                'exact_scoreline',
+                doubled: saraDouble,
+                alone: !twoExact,
+              ),
             ],
           ).toJson(),
         );
@@ -189,7 +199,14 @@ void main() {
     final Finder card = find.byKey(const Key('dayHero.card'));
     expect(card, findsOneWidget);
     expect(
-      find.descendant(of: card, matching: find.text('بطاقة بطل النخبة لليوم')),
+      find.descendant(of: card, matching: find.text('بطاقة بطل اليوم للنخبة')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dayHero.points')),
+        matching: find.text('6 نقاط'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -237,7 +254,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(_banner),
-        matching: find.textContaining('حصلت على بطل اليوم'),
+        matching: find.textContaining('حصلت على بطل اليوم للنخبة'),
       ),
       findsOneWidget,
     );
@@ -252,19 +269,21 @@ void main() {
     await _frames(tester);
     expect(
       tester.widget<Text>(find.byKey(const Key('dayHero.title'))).data,
-      'بطاقة بطل النخبة لليوم',
+      'بطاقة بطل اليوم للنخبة',
     );
     expect(find.byKey(const Key('dayHero.double')), findsNothing);
     expect(find.byKey(const Key('dayHero.share')), findsOneWidget);
   });
 
-  testWidgets('an exact double is the special hero of the day', (tester) async {
+  testWidgets('an exact double is the professional hero of the day', (
+    tester,
+  ) async {
     await _pump(tester, _Server(role: 'admin', saraDouble: true));
 
     expect(
       find.descendant(
         of: find.byKey(_banner),
-        matching: find.textContaining('البطل المميز لليوم: Sara'),
+        matching: find.textContaining('البطل الاحترافي لليوم: Sara'),
       ),
       findsOneWidget,
     );
@@ -272,18 +291,21 @@ void main() {
     await _frames(tester);
     expect(
       tester.widget<Text>(find.byKey(const Key('dayHero.title'))).data,
-      'بطاقة البطل المميز لليوم',
+      'بطاقة البطل الاحترافي لليوم',
     );
     expect(
       find.descendant(
         of: find.byKey(const Key('dayHero.double')),
-        matching: find.text('مضاعفة · 6 نقاط'),
+        matching: find.text('مضاعفة · 9 نقاط'),
       ),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('dayHero.points')), findsNothing);
   });
 
-  testWidgets('the special hero sees his own under that name', (tester) async {
+  testWidgets('the professional hero sees his own under that name', (
+    tester,
+  ) async {
     await _pump(
       tester,
       _Server(role: 'user', saraViews: true, saraDouble: true),
@@ -292,7 +314,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(_banner),
-        matching: find.textContaining('حصلت على البطل المميز لليوم'),
+        matching: find.textContaining('حصلت على البطل الاحترافي لليوم'),
       ),
       findsOneWidget,
     );
@@ -300,6 +322,36 @@ void main() {
     expect(
       find.byKey(const Key('fixturePredictions.doubles.f-1')),
       findsNothing,
+    );
+  });
+
+  test('the share text names the match, the score and the points', () {
+    DayHero hero({required bool isDouble, int? points}) => DayHero(
+      fixtureId: 'f-1',
+      participantId: 'p-1',
+      playerName: 'عبد الرحمن المغربي',
+      home: const ResolvedTeamIdentity(displayName: 'ليفربول'),
+      away: const ResolvedTeamIdentity(displayName: 'أرسنال'),
+      homeGoals: 2,
+      awayGoals: 2,
+      isDouble: isDouble,
+      points: points,
+    );
+
+    expect(
+      hero(isDouble: false, points: 6).shareMessage,
+      'بطل اليوم للنخبة: عبد الرحمن المغربي، وحده أصاب مباراة '
+      'ليفربول × أرسنال 2-2، وحصل على 6 نقاط.',
+    );
+    expect(
+      hero(isDouble: true, points: 9).shareMessage,
+      'البطل الاحترافي لليوم: عبد الرحمن المغربي، وحده أصاب نتيجة مباراة '
+      'ليفربول × أرسنال 2-2 مضاعفة كما انتهت بالضبط، وحصل على 9 نقاط.',
+    );
+    expect(
+      hero(isDouble: false).shareMessage,
+      'بطل اليوم للنخبة: عبد الرحمن المغربي، وحده أصاب مباراة '
+      'ليفربول × أرسنال 2-2.',
     );
   });
 

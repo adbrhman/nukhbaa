@@ -168,6 +168,73 @@ abstract final class Scoring {
     );
   }
 
+  /// Adds the sole exact bonus ([ScoringRuleset.soloExactBonusPoints]) to
+  /// the one exact call among [scores], every score of one fixture, when
+  /// it is the only one and the fixture kicked off at or after
+  /// [ScoringRuleset.soloExactSince] ([kickoffAt]; unknown pays nothing).
+  /// The grade stays `exact_scoreline`: accuracy and exact-call counts do
+  /// not change, only the points (3 + 3 = 6, a double 6 + 3 = 9).
+  ///
+  /// Pure and deterministic, like the grading: the same scores give the
+  /// same answer, so scoring a fixture again (a corrected result, a second
+  /// exact call that appears or goes) moves the bonus with the facts.
+  /// Returns [scores] unchanged, in the same order, when nothing is paid.
+  static List<ParticipantFixtureScore> applySoloExactBonus({
+    required List<ParticipantFixtureScore> scores,
+    required ScoringRuleset ruleset,
+    required DateTime? kickoffAt,
+  }) {
+    final solo = soloExactIndex(
+      grades: <FixtureScoreGrade>[for (final s in scores) s.result.grade],
+      ruleset: ruleset,
+      kickoffAt: kickoffAt,
+    );
+    if (solo == null) {
+      return scores;
+    }
+    final hero = scores[solo];
+    return <ParticipantFixtureScore>[
+      for (var i = 0; i < scores.length; i++)
+        if (i != solo)
+          scores[i]
+        else
+          ParticipantFixtureScore.fromStored(
+            fixture: hero.fixture,
+            participantId: hero.participantId,
+            rulesetVersion: hero.rulesetVersion,
+            result: FixtureScoreResult(
+              fixture: hero.result.fixture,
+              grade: hero.result.grade,
+              points: hero.result.points + ruleset.soloExactBonusPoints,
+            ),
+          ),
+    ];
+  }
+
+  /// The place in [grades] (every prediction of one fixture) of its only
+  /// exact call, when the sole exact bonus pays on a kickoff at
+  /// [kickoffAt]; null when there is none, more than one, or no bonus.
+  static int? soloExactIndex({
+    required List<FixtureScoreGrade> grades,
+    required ScoringRuleset ruleset,
+    required DateTime? kickoffAt,
+  }) {
+    if (!ruleset.soloExactBonusAppliesTo(kickoffAt)) {
+      return null;
+    }
+    int? found;
+    for (var i = 0; i < grades.length; i++) {
+      if (grades[i] != FixtureScoreGrade.exactScoreline) {
+        continue;
+      }
+      if (found != null) {
+        return null;
+      }
+      found = i;
+    }
+    return found;
+  }
+
   /// Grades one scoreline [prediction] against [result] under [ruleset],
   /// with nothing stored: what the prediction would earn if [result] stood.
   /// The live view grades every prediction against the running score with

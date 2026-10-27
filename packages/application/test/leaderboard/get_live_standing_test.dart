@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 import '../competition/fake_competition_repository.dart';
 import '../competition/fakes.dart' show FakeRulesetProvider, userPrincipal;
 import '../prediction/fake_fixture_prediction_repository.dart';
+import '../prediction/fake_fixture_schedule_repository.dart';
 import '../scoring/fakes.dart'
     show FakeFixtureResultRepository, scoringParticipant;
 
@@ -34,6 +35,26 @@ final RulesetSnapshot _rules =
                 },
               },
               rulesetVersion: 3,
+            )
+            as Ok<RulesetSnapshot>)
+        .value;
+
+/// The rules from script 159: the only exact call earns 3 more, from the
+/// kickoffs of 1 November 2026 (Riyadh midnight).
+final RulesetSnapshot _soloRules =
+    (RulesetSnapshot.create(
+              payload: const {
+                'format': 'football_scoreline',
+                'double_multiplier': 2,
+                'solo_exact_bonus': 3,
+                'solo_exact_since': '2026-10-31T21:00:00.000Z',
+                'points': {
+                  'exact_scoreline': 3,
+                  'correct_outcome': 0,
+                  'incorrect': 0,
+                },
+              },
+              rulesetVersion: 4,
             )
             as Ok<RulesetSnapshot>)
         .value;
@@ -100,7 +121,12 @@ typedef _Harness = ({
   _Board board,
 });
 
-_Harness _harness({LiveScoreBoard? board}) {
+_Harness _harness({
+  LiveScoreBoard? board,
+  RulesetSnapshot? rules,
+  DateTime? kickoff,
+  bool rivalExactToo = false,
+}) {
   final competition = FakeCompetitionRepository()
     ..seedParticipant(
       scoringParticipant(id: _me, seasonId: _season, userId: _meUser),
@@ -138,7 +164,12 @@ _Harness _harness({LiveScoreBoard? board}) {
   // The live match stands 1-0: the viewer's 1-0 double is exact (6), the
   // rival's 2-1 earns nothing.
   predict('71111111-1111-1111-1111-111111111111', _me, 1, 0, isDouble: true);
-  predict('72222222-1111-1111-1111-111111111111', _rival, 2, 1);
+  predict(
+    '72222222-1111-1111-1111-111111111111',
+    _rival,
+    rivalExactToo ? 1 : 2,
+    rivalExactToo ? 0 : 1,
+  );
   final totals = _Totals()
     ..add(_leader, points: 8, exact: 2)
     ..add(_rival, points: 6, exact: 2)
@@ -151,8 +182,20 @@ _Harness _harness({LiveScoreBoard? board}) {
       fixturePredictions: predictions,
       totals: totals,
       results: results,
-      rulesets: FakeRulesetProvider(Result.ok(_rules)),
+      rulesets: FakeRulesetProvider(Result.ok(rules ?? _rules)),
       liveScores: board == null ? null : live,
+      schedules: kickoff == null
+          ? null
+          : (FakeFixtureScheduleRepository()..seed(
+              (FixtureSchedule.create(
+                        fixture: const FixtureRef(_live),
+                        homeTeam: 'A',
+                        awayTeam: 'B',
+                        kickoffAt: kickoff,
+                      )
+                      as Ok<FixtureSchedule>)
+                  .value,
+            )),
     ),
     totals: totals,
     results: results,
@@ -183,6 +226,49 @@ void main() {
       expect(line.myPoints, 6);
     },
   );
+
+  group('the sole exact call (script 159)', () {
+    final DateTime november = DateTime.utc(2026, 11, 2, 18);
+
+    test('alone on the running score with the double: 9', () async {
+      final h = _harness(
+        board: _Board({_live: _score(1, 0)}),
+        rules: _soloRules,
+        kickoff: november,
+      );
+
+      final LiveStanding standing = await _read(h);
+
+      expect(standing.fixtures.single.myPoints, 9);
+      expect(standing.pointsIfEnded, 12);
+    });
+
+    test('two on the running score share no bonus', () async {
+      final h = _harness(
+        board: _Board({_live: _score(1, 0)}),
+        rules: _soloRules,
+        kickoff: november,
+        rivalExactToo: true,
+      );
+
+      expect((await _read(h)).fixtures.single.myPoints, 6);
+    });
+
+    test('a kickoff before 1 November, or none known, pays none', () async {
+      final before = _harness(
+        board: _Board({_live: _score(1, 0)}),
+        rules: _soloRules,
+        kickoff: DateTime.utc(2026, 10, 31, 20, 59),
+      );
+      expect((await _read(before)).fixtures.single.myPoints, 6);
+
+      final unknown = _harness(
+        board: _Board({_live: _score(1, 0)}),
+        rules: _soloRules,
+      );
+      expect((await _read(unknown)).fixtures.single.myPoints, 6);
+    });
+  });
 
   test('the month place now and if the match ended now', () async {
     final h = _harness(board: _Board({_live: _score(1, 0)}));

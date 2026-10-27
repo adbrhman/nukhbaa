@@ -5,8 +5,12 @@
 /// Admins see every hero, and the hero alone sees his own (owner's
 /// decision 2026-10-24): the predictions board names each hero above the
 /// table and marks the cell, and tapping that prediction offers the card.
-/// A hero whose exact call was also his double of the day is the special
-/// hero of the day (البطل المميز لليوم): the same card under that name.
+/// A hero whose exact call was also his double of the day is the
+/// professional hero of the day (البطل الاحترافي لليوم, the owner's name of
+/// 2026-10-27, formerly البطل المميز لليوم): the same card under that name;
+/// the other is the hero of the day for the elite (بطل اليوم للنخبة). From
+/// the kickoffs of 1 November 2026 the server pays such a call 6 points, 9
+/// on the double (script 159); the card shows the server's points.
 /// The card is drawn on screen, captured exactly as seen and handed to the
 /// system share sheet (`share_plus`), with the admin's invitation link in
 /// the text, like the hit card (`exact_hit_share.dart`).
@@ -103,8 +107,24 @@ final class DayHero {
   /// The points the server gave the call, when graded.
   final int? points;
 
-  /// The hero's title: بطل اليوم, or البطل المميز لليوم on a double.
-  String get title => isDouble ? 'البطل المميز لليوم' : 'بطل اليوم';
+  /// The hero's title: بطل اليوم للنخبة, or البطل الاحترافي لليوم on a
+  /// double.
+  String get title => isDouble ? 'البطل الاحترافي لليوم' : 'بطل اليوم للنخبة';
+
+  /// The share text: who, which match, the score and the server's points
+  /// (the owner's wording of 2026-10-27).
+  String get shareMessage {
+    final int? earned = points;
+    final String gained = earned != null && earned > 0
+        ? '، وحصل على ${pointsText(earned)}'
+        : '';
+    final String match =
+        '${home.displayName} × ${away.displayName} $homeGoals-$awayGoals';
+    return isDouble
+        ? '$title: $playerName، وحده أصاب نتيجة مباراة $match '
+              'مضاعفة كما انتهت بالضبط$gained.'
+        : '$title: $playerName، وحده أصاب مباراة $match$gained.';
+  }
 }
 
 /// Opens the card for [hero] with its share and close actions.
@@ -258,14 +278,8 @@ class _DayHeroShareDialogState extends ConsumerState<DayHeroShareDialog> {
       _shareFailed = false;
     });
     try {
-      final String message = hero.isDouble
-          ? 'البطل المميز لليوم في النخبة: ${hero.playerName}، وحده توقّع '
-                '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
-                '${hero.away.displayName} تماماً وضاعفها.'
-          : 'بطل النخبة اليوم: ${hero.playerName}، وحده توقّع '
-                '${hero.home.displayName} ${hero.homeGoals}-${hero.awayGoals} '
-                '${hero.away.displayName} تماماً.';
-      final String text = '$message\nشاركنا في نُخبة: ${appSiteLink()}';
+      final String text =
+          '${hero.shareMessage}\nشاركنا في نُخبة: ${appSiteLink()}';
       final bool shared = await sharePicture(
         boundaryKey: _cardKey,
         text: text,
@@ -313,9 +327,7 @@ class DayHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            hero.isDouble
-                ? 'بطاقة البطل المميز لليوم'
-                : 'بطاقة بطل النخبة لليوم',
+            'بطاقة ${hero.title}',
             key: const Key('dayHero.title'),
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -451,6 +463,31 @@ class DayHeroCard extends StatelessWidget {
                     fontSize: AppFontSize.s13,
                   ),
                 ),
+                if (!hero.isDouble && (hero.points ?? 0) > 0) ...<Widget>[
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    key: const Key('dayHero.points'),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: _gold,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          pointsText(hero.points!),
+                          style: const TextStyle(
+                            color: _gold,
+                            fontWeight: FontWeight.w800,
+                            fontSize: AppFontSize.s14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (hero.isDouble) ...<Widget>[
                   const SizedBox(height: AppSpacing.sm),
                   Row(

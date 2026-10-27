@@ -25,6 +25,8 @@ final class ScoringRuleset {
     required this.correctOutcomePoints,
     required this.incorrectPoints,
     required this.doubleMultiplier,
+    this.soloExactBonusPoints = 0,
+    this.soloExactSince,
   });
 
   /// The wire token identifying the football-scoreline format inside a snapshot
@@ -111,6 +113,42 @@ final class ScoringRuleset {
       multiplier = rawMultiplier;
     }
 
+    // The sole exact call's bonus (decided by the owner 2026-10-27): read
+    // from the top level like the multiplier, absent on every snapshot
+    // before it -- 0, no effect. `solo_exact_since` is the first kickoff it
+    // pays on, an ISO-8601 instant; absent, it pays on every kickoff.
+    final rawSoloBonus = payload['solo_exact_bonus'];
+    var soloBonus = 0;
+    if (rawSoloBonus != null) {
+      if (rawSoloBonus is! int || rawSoloBonus < 0) {
+        return Result.err(
+          AppError.validation(
+            'scoring.ruleset_solo_exact_bonus_invalid',
+            'Ruleset "solo_exact_bonus" must be an integer >= 0; got '
+                '$rawSoloBonus',
+          ),
+        );
+      }
+      soloBonus = rawSoloBonus;
+    }
+    final rawSoloSince = payload['solo_exact_since'];
+    DateTime? soloSince;
+    if (rawSoloSince != null) {
+      final parsed = rawSoloSince is String
+          ? DateTime.tryParse(rawSoloSince)
+          : null;
+      if (parsed == null || !parsed.isUtc) {
+        return Result.err(
+          AppError.validation(
+            'scoring.ruleset_solo_exact_since_invalid',
+            'Ruleset "solo_exact_since" must be a UTC ISO-8601 instant; got '
+                '$rawSoloSince',
+          ),
+        );
+      }
+      soloSince = parsed;
+    }
+
     return Result.ok(
       ScoringRuleset._(
         rulesetVersion: snapshot.rulesetVersion,
@@ -118,6 +156,8 @@ final class ScoringRuleset {
         correctOutcomePoints: outcomePts,
         incorrectPoints: incorrectPts,
         doubleMultiplier: multiplier,
+        soloExactBonusPoints: soloBonus,
+        soloExactSince: soloSince,
       ),
     );
   }
@@ -163,6 +203,27 @@ final class ScoringRuleset {
   /// frozen snapshot predates the double feature.
   final int doubleMultiplier;
 
+  /// Points added to an exact call when it is the only exact call of the
+  /// fixture among everyone who predicted it (the hero of the day), on top
+  /// of its exact award and its double: 3 + 3 = 6, or 6 + 3 = 9 on a
+  /// double. Never multiplied. 0 when the frozen snapshot predates it.
+  final int soloExactBonusPoints;
+
+  /// The first kickoff the sole exact bonus pays on (UTC); null pays on
+  /// every kickoff. A fixture that kicked off earlier keeps the rules it
+  /// was played under, however often it is scored again.
+  final DateTime? soloExactSince;
+
+  /// Whether the sole exact bonus pays on a fixture that kicked off at
+  /// [kickoffAt]. An unknown kickoff never pays it.
+  bool soloExactBonusAppliesTo(DateTime? kickoffAt) {
+    if (soloExactBonusPoints <= 0 || kickoffAt == null) {
+      return false;
+    }
+    final since = soloExactSince;
+    return since == null || !kickoffAt.toUtc().isBefore(since);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is ScoringRuleset &&
@@ -170,7 +231,9 @@ final class ScoringRuleset {
       other.exactScorelinePoints == exactScorelinePoints &&
       other.correctOutcomePoints == correctOutcomePoints &&
       other.incorrectPoints == incorrectPoints &&
-      other.doubleMultiplier == doubleMultiplier;
+      other.doubleMultiplier == doubleMultiplier &&
+      other.soloExactBonusPoints == soloExactBonusPoints &&
+      other.soloExactSince == soloExactSince;
 
   @override
   int get hashCode => Object.hash(
@@ -179,11 +242,14 @@ final class ScoringRuleset {
     correctOutcomePoints,
     incorrectPoints,
     doubleMultiplier,
+    soloExactBonusPoints,
+    soloExactSince,
   );
 
   @override
   String toString() =>
       'ScoringRuleset(v$rulesetVersion, exact: $exactScorelinePoints, '
       'outcome: $correctOutcomePoints, incorrect: $incorrectPoints, '
-      'doubleMultiplier: $doubleMultiplier)';
+      'doubleMultiplier: $doubleMultiplier, '
+      'soloExactBonus: $soloExactBonusPoints since $soloExactSince)';
 }
