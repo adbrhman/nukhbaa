@@ -13,7 +13,12 @@ import '../design/app_tokens.dart';
 
 /// A row of equal-width pill tabs -- one filled with the action colour, the
 /// rest quiet. Used where a screen switches between a few views of the same
-/// data (the leaderboard's month / day / season, the predictions filter).
+/// data (the leaderboard's month / day / season, the head-to-head views,
+/// the predictions filter).
+///
+/// One rounded track holds the pills (script 161): four outlined buttons in
+/// a row read as four actions, where a track reads as one control with one
+/// choice made. Each pill keeps the whole track height as its touch target.
 ///
 /// Purely presentational: the caller owns the selection.
 class SegmentedPills extends StatelessWidget {
@@ -44,27 +49,34 @@ class SegmentedPills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    return Row(
-      children: <Widget>[
-        for (int index = 0; index < labels.length; index++) ...<Widget>[
-          if (index > 0) const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: _Pill(
-              key: keyPrefix == null ? null : Key('$keyPrefix.$index'),
-              label: labels[index],
-              selected: index == selectedIndex,
-              tokens: tokens,
-              onTap: () {
-                // A light tick only when the choice actually changes.
-                if (index != selectedIndex) {
-                  unawaited(HapticFeedback.selectionClick());
-                }
-                onSelected(index);
-              },
+    return Container(
+      key: const Key('segmentedPills.track'),
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: AppRadius.brButton,
+        border: Border.all(color: tokens.controlBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          for (int index = 0; index < labels.length; index++) ...<Widget>[
+            Expanded(
+              child: _Pill(
+                key: keyPrefix == null ? null : Key('$keyPrefix.$index'),
+                label: labels[index],
+                selected: index == selectedIndex,
+                tokens: tokens,
+                onTap: () {
+                  // A light tick only when the choice actually changes.
+                  if (index != selectedIndex) {
+                    unawaited(HapticFeedback.selectionClick());
+                  }
+                  onSelected(index);
+                },
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -93,25 +105,28 @@ class _Pill extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: AppRadius.brButton,
-          child: AnimatedContainer(
-            duration: AppMotion.fast,
+          child: SizedBox(
             height: SegmentedPills._height,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? tokens.primary : tokens.surfaceElevated,
-              borderRadius: AppRadius.brButton,
-              border: Border.all(
-                color: selected ? tokens.primary : tokens.controlBorder,
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              margin: const EdgeInsets.all(AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected
+                    ? tokens.primary
+                    : tokens.primary.withValues(alpha: 0),
+                borderRadius: AppRadius.brSm,
               ),
-            ),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: AppFontSize.s14,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? tokens.onPrimary : tokens.textSecondary,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppFontSize.s14,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? tokens.onPrimary : tokens.textSecondary,
+                ),
               ),
             ),
           ),

@@ -131,8 +131,11 @@ void main() {
       );
       expect(find.byKey(const Key('home.dailyChallenge')), findsNothing);
 
+      // The kickoff stands between the clubs (script 161), read with them.
       expect(
-        tester.getSemantics(find.text('ضد')).id,
+        tester
+            .getSemantics(find.byKey(const Key('home.highlight.kickoff.f-1')))
+            .id,
         tester.getSemantics(find.byKey(const Key('home.highlight.f-1'))).id,
         reason: 'a match row is one node, read as one sentence',
       );

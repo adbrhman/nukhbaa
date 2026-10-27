@@ -1,6 +1,7 @@
 /// Today's matches on the home page (script 126), through the real
 /// [HomeScreen]: the one in play first, then the one to come, then the one
-/// over; a score once there is one, «ضد» before; and the open-predictions
+/// over; a score once there is one, the kickoff before (script 161); and
+/// the open-predictions
 /// card counts what is still to call and names the nearest.
 library;
 
@@ -170,7 +171,10 @@ void main() {
     expect(textOf('home.highlight.score.f-done'), '3 - 2');
     expect(textOf('home.highlight.score.f-live'), '0 - 1');
     expect(find.byKey(const Key('home.highlight.score.f-up')), findsNothing);
-    expect(_in('home.highlight.f-up', find.text('ضد')), findsOneWidget);
+    expect(
+      find.byKey(const Key('home.highlight.kickoff.f-up')),
+      findsOneWidget,
+    );
     expect(
       _in('home.highlight.f-done', find.textContaining('انتهت')),
       findsOneWidget,

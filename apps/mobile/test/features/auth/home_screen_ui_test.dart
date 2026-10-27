@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile/core/design/app_tokens.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/home_screen.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
@@ -125,14 +124,8 @@ void main() {
       findsOneWidget,
     );
 
-    final streakText = find.text('موسم نشط واحد');
-    expect(streakText, findsOneWidget);
-    final chip = tester.widget<Container>(
-      find.ancestor(of: streakText, matching: find.byType(Container)).first,
-    );
-    expect(
-      (chip.decoration! as BoxDecoration).color,
-      AppTheme.dark.extension<AppTokens>()!.surfaceElevated,
-    );
+    // Script 161: the season-count chip is gone -- "one active season"
+    // told the player nothing; the card leads with his place instead.
+    expect(find.text('موسم نشط واحد'), findsNothing);
   });
 }

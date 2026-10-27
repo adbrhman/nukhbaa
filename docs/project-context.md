@@ -6756,6 +6756,39 @@ item inside the bar, the order and indexes).
   `Image`; the side marks share size and top; no ball), with the
   survey's text x2 checks unchanged.
 
+### The home leads with the month standing; one track for the tabs (script 161, 2026-10-27)
+
+Asked by the owner on 2026-10-27, after script 160: improve the five tab
+screens, the bottom bar staying as it is. Mobile only: no server,
+contract or migration change, no new request type (the month card reads
+`fixtureLeaderboardProvider`, the leaderboard tab's own read).
+
+- Home header: the vector mark (`BrandMark`) and «نُخبة» in place of the
+  Latin «NUKHBAA» (key `home.brand` kept).
+- Home month card (`home.overview`): once the viewer has a line on the
+  month's board, «ترتيبك هذا الشهر» -- the place and «من N», the points,
+  the next step up (`boardGapToRank` to the nearest higher total) or «أنت
+  في الصدارة», the matches left, and «عرض الترتيب»
+  (`home.overview.leaders`, `HomeScreen.onOpenLeaders`, the shell opens
+  tab 3). Before that, or on a failed read, the card is as it was, minus
+  the «موسم نشط واحد» chip, which told the player nothing.
+- Home highlights: the state sits between the clubs -- the score (a red
+  edge while live), else «مباشر», else the kickoff time
+  (`home.highlight.kickoff/live/score.<id>`); the line above carries the
+  league, with «مباشر» or «انتهت» beside a score only. Crests 34 px (from
+  30), club names on up to two lines; the state pill is at most 88 px and
+  scales its label down at large text.
+- `SegmentedPills` (the leaderboard's month/day/season/friends, the
+  head-to-head views, the predictions filter): one rounded track holding
+  the choices, the chosen one filled; each keeps a 48 px touch target.
+- The matches tab's card and the account tab are unchanged here: both were
+  reworked with the owner days before (scripts 127-133, 156-157).
+- Tests: `home_month_standing_test.dart` (new: the place, points, next
+  step and the leaderboard opened; the leader; not on the board yet; the
+  three highlight states), `home_cards_state_test.dart`,
+  `home_reading_order_test.dart`, `home_screen_ui_test.dart`; the survey's
+  text x2 checks pass unchanged.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

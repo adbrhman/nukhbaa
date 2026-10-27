@@ -215,6 +215,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
       user: widget.user,
       onOpenMatches: () => _select(1),
       onOpenAccount: () => _select(4),
+      onOpenLeaders: () => _select(3),
     ),
     1 => const CurrentMonthFixturesScreen(),
     2 => H2hScreen(onOpenMatches: () => _select(1)),

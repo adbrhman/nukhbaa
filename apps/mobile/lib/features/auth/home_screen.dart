@@ -15,9 +15,9 @@ import '../../core/error/error_presenter.dart';
 import '../../core/format/timestamps.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_button.dart';
+import '../../core/ui/brand_mark.dart';
 import '../../core/ui/forward_chevron.dart';
 import '../../core/ui/score_pill.dart';
-import '../../core/ui/streak_chip.dart';
 import '../../core/ui/team_logo.dart';
 import '../../core/ui/unread_badge.dart';
 import '../../l10n/app_localizations.dart';
@@ -27,6 +27,7 @@ import '../competition/team_identity.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/live_home_card.dart';
 import '../fixture_prediction/widgets/live_matches_chip.dart';
+import '../leaderboards/leaderboards_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -44,12 +45,17 @@ class HomeScreen extends ConsumerWidget {
     required this.user,
     required this.onOpenMatches,
     required this.onOpenAccount,
+    this.onOpenLeaders,
     super.key,
   });
 
   final AuthenticatedUserDto user;
   final VoidCallback onOpenMatches;
   final VoidCallback onOpenAccount;
+
+  /// Opens the leaderboard tab from the month card (script 161); without
+  /// it the card opens the matches instead.
+  final VoidCallback? onOpenLeaders;
 
   /// How many of the day's matches the home page lists.
   static const int highlightCount = 3;
@@ -62,6 +68,11 @@ class HomeScreen extends ConsumerWidget {
     final name = user.displayName.trim().isEmpty ? 'المتنبئ' : user.displayName;
     final _Highlights highlights = _Highlights.from(
       fixtures.value ?? const <CurrentMonthFixtureItemDto>[],
+    );
+    final _MonthStanding? standing = _MonthStanding.read(
+      ref,
+      seasons: seasons.value,
+      fixtures: fixtures.value,
     );
 
     return Scaffold(
@@ -135,8 +146,9 @@ class HomeScreen extends ConsumerWidget {
               MergeSemantics(
                 child: _OverviewCard(
                   fixtures: fixtures,
-                  seasons: seasons,
+                  standing: standing,
                   onOpenMatches: onOpenMatches,
+                  onOpenLeaders: onOpenLeaders ?? onOpenMatches,
                   onRetry: () {
                     ref.invalidate(currentMonthFixturesProvider);
                     ref.invalidate(activeSeasonsProvider);
@@ -386,7 +398,9 @@ class _HighlightRow extends ConsumerWidget {
   final CurrentMonthFixtureItemDto item;
   final VoidCallback onTap;
 
-  static const double _crestSize = 30;
+  /// Crests at the size the matches tab gives them room for: team
+  /// identity before density (2026-10-26).
+  static const double _crestSize = 34;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -420,13 +434,16 @@ class _HighlightRow extends ConsumerWidget {
     final int? shownAway = hasResult
         ? item.resultAwayGoals
         : item.liveAwayGoals;
+    final bool live = started && !over;
+    final bool scored = shownHome != null && shownAway != null;
+    // The state sits in the middle, where the eye already goes (script
+    // 161): the score once there is one, else the kickoff, else "live";
+    // the line above says "live" or "over" only beside a score.
     final String meta = over
         ? '$league · انتهت'
-        : started
+        : live && scored
         ? '$league · مباشر'
-        : kickoff == null
-        ? league
-        : '$league · ${formatKickoffTime(context, fixture.kickoffAt!)}';
+        : league;
 
     Widget crest(ResolvedTeamIdentity team) => TeamLogo(
       displayName: team.displayName,
@@ -435,9 +452,11 @@ class _HighlightRow extends ConsumerWidget {
       brandColor: team.brandColor,
       size: _crestSize,
     );
+    // Two lines before an ellipsis: the state pill took room from the
+    // names, and a long club name must still read whole (script 161).
     Widget teamName(ResolvedTeamIdentity team, TextAlign align) => Text(
       team.displayName,
-      maxLines: 1,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
       textAlign: align,
       style: TextStyle(
@@ -489,26 +508,16 @@ class _HighlightRow extends ConsumerWidget {
                     ),
                     // Arabic in an Arabic row, not a Latin "Vs" (UI-29);
                     // the score instead once there is one (script 126).
-                    child: shownHome != null && shownAway != null
-                        ? Text(
-                            orientedScoreLabel(context, shownHome, shownAway),
-                            key: Key(
-                              'home.highlight.score.${fixture.fixtureId}',
-                            ),
-                            textDirection: TextDirection.ltr,
-                            style: TextStyle(
-                              color: tokens.textPrimary,
-                              fontSize: AppFontSize.s16,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          )
-                        : Text(
-                            AppLocalizations.of(context).versusShort,
-                            style: TextStyle(
-                              color: tokens.textMuted,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                    child: _HighlightState(
+                      fixtureId: fixture.fixtureId,
+                      score: shownHome != null && shownAway != null
+                          ? orientedScoreLabel(context, shownHome, shownAway)
+                          : null,
+                      live: live,
+                      kickoff: !started && kickoff != null
+                          ? formatKickoffTime(context, fixture.kickoffAt!)
+                          : null,
+                    ),
                   ),
                   Expanded(
                     child: Row(
@@ -525,6 +534,104 @@ class _HighlightRow extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The middle of a highlighted match: its score (red-edged while live),
+/// else its kickoff time, else "live", else "vs".
+class _HighlightState extends StatelessWidget {
+  const _HighlightState({
+    required this.fixtureId,
+    required this.score,
+    required this.live,
+    required this.kickoff,
+  });
+
+  final String fixtureId;
+  final String? score;
+  final bool live;
+  final String? kickoff;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final String? shownScore = score;
+    final String? shownKickoff = kickoff;
+    final Widget label;
+    if (shownScore != null) {
+      label = Text(
+        shownScore,
+        key: Key('home.highlight.score.$fixtureId'),
+        textDirection: TextDirection.ltr,
+        style: TextStyle(
+          color: tokens.textPrimary,
+          fontSize: AppFontSize.s16,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+    } else if (live) {
+      label = Row(
+        key: Key('home.highlight.live.$fixtureId'),
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: tokens.error,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            'مباشر',
+            style: TextStyle(
+              color: tokens.errorText,
+              fontSize: AppFontSize.s12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      );
+    } else if (shownKickoff != null) {
+      label = Text(
+        shownKickoff,
+        key: Key('home.highlight.kickoff.$fixtureId'),
+        maxLines: 1,
+        style: TextStyle(
+          color: tokens.textPrimary,
+          fontSize: AppFontSize.s13,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+    } else {
+      return Text(
+        AppLocalizations.of(context).versusShort,
+        style: TextStyle(color: tokens.textMuted, fontWeight: FontWeight.w800),
+      );
+    }
+    // At most 88 wide: at large system text the label scales down inside
+    // it, so the two clubs keep their crests and names (UI-17).
+    return Container(
+      constraints: const BoxConstraints(minWidth: 56, maxWidth: 88),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.surfaceElevated,
+        borderRadius: AppRadius.brSm,
+        border: Border.all(
+          color: live ? tokens.error.withValues(alpha: 0.6) : tokens.border,
+        ),
+      ),
+      // Sized to the label, centred in the 56 minimum.
+      child: Align(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: FittedBox(fit: BoxFit.scaleDown, child: label),
       ),
     );
   }
@@ -699,20 +806,24 @@ class _HomeHeader extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (Rect bounds) =>
-                    tokens.primaryGradient.createShader(bounds),
-                child: const Text(
-                  'NUKHBAA',
-                  key: Key('home.brand'),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: AppFontSize.s22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.6,
+              // The mark and the name in Arabic (script 161), in place of a
+              // Latin wordmark on an Arabic page.
+              child: Row(
+                key: const Key('home.brand'),
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const BrandMark(size: 30),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'نُخبة',
+                    style: TextStyle(
+                      color: tokens.textPrimary,
+                      fontSize: AppFontSize.s24,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -744,19 +855,130 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// The month at a glance. A read that failed says so, with a retry,
-/// instead of "updating your matches..." for ever (audit M-06).
+/// Where the viewer stands on the month's board (script 161): the same
+/// read as the leaderboard tab's month view (`fixtureLeaderboardProvider`
+/// for the month that holds now), found by the viewer's participant id.
+/// Null until it is known, or when the viewer has no line on it yet.
+final class _MonthStanding {
+  const _MonthStanding({
+    required this.rank,
+    required this.points,
+    required this.players,
+    required this.leads,
+    this.nextPoints,
+    this.nextRank,
+  });
+
+  /// The viewer's rank (competition ranking: tied totals share it).
+  final int rank;
+
+  /// The viewer's points this month.
+  final int points;
+
+  /// Lines on the month's board.
+  final int players;
+
+  /// The viewer holds rank 1, alone or tied.
+  final bool leads;
+
+  /// Points to the nearest higher total, and the rank it holds.
+  final int? nextPoints;
+  final int? nextRank;
+
+  static _MonthStanding? read(
+    WidgetRef ref, {
+    required List<ActiveSeasonDto>? seasons,
+    required List<CurrentMonthFixtureItemDto>? fixtures,
+  }) {
+    if (seasons == null || fixtures == null) return null;
+    final Set<String> withFixtures = <String>{
+      for (final CurrentMonthFixtureItemDto item in fixtures)
+        item.fixture.seasonId,
+    };
+    final List<ActiveSeasonDto> visible = <ActiveSeasonDto>[
+      for (final ActiveSeasonDto season in seasons)
+        if (withFixtures.contains(season.seasonId)) season,
+    ];
+    if (visible.isEmpty) return null;
+    final ActiveSeasonDto season = _currentSeasonOf(visible);
+    String? me;
+    for (final FixturePredictionDto prediction
+        in ref.watch(myFixturePredictionsProvider).value ??
+            const <FixturePredictionDto>[]) {
+      if (prediction.seasonId == season.seasonId) {
+        me = prediction.participantId;
+        break;
+      }
+    }
+    if (me == null) return null;
+    final List<FixtureLeaderboardEntryDto>? entries = ref
+        .watch(fixtureLeaderboardProvider(season.seasonId))
+        .value
+        ?.entries;
+    if (entries == null || entries.isEmpty) return null;
+    FixtureLeaderboardEntryDto? mine;
+    for (final FixtureLeaderboardEntryDto entry in entries) {
+      if (entry.participantId == me) {
+        mine = entry;
+        break;
+      }
+    }
+    final FixtureLeaderboardEntryDto? viewer = mine;
+    if (viewer == null) return null;
+    FixtureLeaderboardEntryDto? above;
+    for (final FixtureLeaderboardEntryDto entry in entries) {
+      if (entry.totalPoints > viewer.totalPoints &&
+          (above == null || entry.totalPoints < above.totalPoints)) {
+        above = entry;
+      }
+    }
+    return _MonthStanding(
+      rank: viewer.rank,
+      points: viewer.totalPoints,
+      players: entries.length,
+      leads: viewer.rank == 1,
+      nextPoints: above == null ? null : above.totalPoints - viewer.totalPoints,
+      nextRank: above?.rank,
+    );
+  }
+
+  /// The season whose window holds now, else the first one: the month the
+  /// leaderboard tab opens on.
+  static ActiveSeasonDto _currentSeasonOf(List<ActiveSeasonDto> seasons) {
+    final DateTime now = DateTime.now().toUtc();
+    for (final ActiveSeasonDto season in seasons) {
+      final DateTime? start = DateTime.tryParse(season.startAt)?.toUtc();
+      final DateTime? end = DateTime.tryParse(season.endAt)?.toUtc();
+      if (start != null &&
+          end != null &&
+          !now.isBefore(start) &&
+          now.isBefore(end)) {
+        return season;
+      }
+    }
+    return seasons.first;
+  }
+}
+
+/// The month at a glance. Once the viewer has a line on the month's board
+/// it leads with where he stands -- his place, his points and the next
+/// step up -- and opens the leaderboard (script 161); before that, how
+/// many matches are left and the way to the matches. A read that failed
+/// says so, with a retry, instead of "updating your matches..." for ever
+/// (audit M-06).
 class _OverviewCard extends StatelessWidget {
   const _OverviewCard({
     required this.fixtures,
-    required this.seasons,
+    required this.standing,
     required this.onOpenMatches,
+    required this.onOpenLeaders,
     required this.onRetry,
   });
 
   final AsyncValue<List<CurrentMonthFixtureItemDto>> fixtures;
-  final AsyncValue<List<ActiveSeasonDto>> seasons;
+  final _MonthStanding? standing;
   final VoidCallback onOpenMatches;
+  final VoidCallback onOpenLeaders;
 
   /// Reads the month's matches and the seasons again.
   final VoidCallback onRetry;
@@ -777,6 +999,7 @@ class _OverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     // Only kickoffs still ahead can be predicted -- the lock rule of the
     // prediction card and [pendingPredictionsProvider]. The feed also
     // carries the month's played fixtures, which the label must not call
@@ -791,8 +1014,27 @@ class _OverviewCard extends StatelessWidget {
               false,
         )
         .length;
-    final seasonCount = seasons.value?.length;
     final AppError? failure = _failure(fixtures);
+    final _MonthStanding? place = failure == null ? standing : null;
+    final TextStyle onBlue = TextStyle(color: tokens.onPrimary);
+    final ButtonStyle whiteButton = FilledButton.styleFrom(
+      backgroundColor: tokens.onPrimary,
+      // The deeper blue: the dark theme's bright primary sat at
+      // 4.54:1 on white, on the edge (colour audit, CA-12).
+      foregroundColor: context.scheme.primaryContainer,
+      minimumSize: const Size.fromHeight(AppSizes.controlMd),
+      // A button's textStyle replaces the theme's instead of merging
+      // with it, so the family has to be named or the label falls
+      // back to the system font.
+      textStyle: const TextStyle(
+        fontFamily: AppTypography.fontFamily,
+        fontSize: AppFontSize.s16,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+    final String countLine = fixtureCount == null
+        ? 'جارٍ تحديث مبارياتك...'
+        : _monthFixturesLabel(fixtureCount);
     return Container(
       key: const Key('home.overview'),
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -805,46 +1047,31 @@ class _OverviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          LayoutBuilder(
-            builder: (context, constraints) => Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'لوحة النخبة',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: tokens.onPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  place == null ? 'لوحة النخبة' : 'ترتيبك هذا الشهر',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: tokens.onPrimary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                Icon(Icons.auto_awesome_rounded, color: tokens.onPrimary),
-                const SizedBox(width: AppSpacing.sm),
-                // At most 60% of the row; at large system text the chip's
-                // label wraps there instead of shrinking (UI-17). A failed
-                // read shows no count rather than "..." for ever.
-                if (_failure(seasons) == null)
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: constraints.maxWidth * 0.6,
-                    ),
-                    child: StreakChip(
-                      label: seasonCount == null
-                          ? '...'
-                          : _activeSeasonsLabel(seasonCount),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+              Icon(
+                place == null
+                    ? Icons.auto_awesome_rounded
+                    : Icons.leaderboard_rounded,
+                color: tokens.onPrimary,
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           if (failure != null) ...<Widget>[
             Text(
               ErrorPresenter.message(failure),
               key: const Key('home.overview.error'),
-              style: TextStyle(
-                color: tokens.onPrimary,
-                fontSize: AppFontSize.s13,
-              ),
+              style: onBlue.copyWith(fontSize: AppFontSize.s13),
             ),
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
@@ -856,40 +1083,107 @@ class _OverviewCard extends StatelessWidget {
                 minimumSize: const Size.fromHeight(AppSizes.controlMd),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(AppLocalizations.of(context).retry),
+              label: Text(l10n.retry),
+            ),
+          ] else if (place != null) ...<Widget>[
+            // The place first, the points at the other end: the two
+            // figures a player opens the app for.
+            Row(
+              key: const Key('home.overview.standing'),
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  '${place.rank}',
+                  key: const Key('home.overview.rank'),
+                  style: onBlue.copyWith(
+                    fontSize: AppFontSize.s26,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      'من ${place.players}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: onBlue.copyWith(
+                        fontSize: AppFontSize.s13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  l10n.boardPoints(place.points),
+                  key: const Key('home.overview.points'),
+                  style: onBlue.copyWith(
+                    fontSize: AppFontSize.s18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Container(
+                key: const Key('home.overview.next'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  // Navy on the blue: white text holds well over 4.5:1.
+                  color: tokens.background.withValues(alpha: 0.35),
+                  borderRadius: AppRadius.brXxl,
+                ),
+                child: Text(
+                  place.leads
+                      ? l10n.boardYouLead
+                      : place.nextPoints != null && place.nextRank != null
+                      ? l10n.boardGapToRank(
+                          l10n.boardPoints(place.nextPoints!),
+                          place.nextRank!,
+                        )
+                      : countLine,
+                  style: onBlue.copyWith(
+                    fontSize: AppFontSize.s13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              countLine,
+              key: const Key('home.overview.count'),
+              style: onBlue.copyWith(fontSize: AppFontSize.s12),
             ),
           ] else
             Text(
-              fixtureCount == null
-                  ? 'جارٍ تحديث مبارياتك...'
-                  : _monthFixturesLabel(fixtureCount),
+              countLine,
               // Full white: at 90% it fell to 3.9:1 on the gradient (UI-07).
-              style: TextStyle(
-                color: tokens.onPrimary,
-                fontSize: AppFontSize.s13,
-              ),
+              style: onBlue.copyWith(fontSize: AppFontSize.s13),
             ),
           const SizedBox(height: AppSpacing.md),
-          FilledButton(
-            key: const Key('home.startPredicting'),
-            onPressed: onOpenMatches,
-            style: FilledButton.styleFrom(
-              backgroundColor: tokens.onPrimary,
-              // The deeper blue: the dark theme's bright primary sat at
-              // 4.54:1 on white, on the edge (colour audit, CA-12).
-              foregroundColor: context.scheme.primaryContainer,
-              minimumSize: const Size.fromHeight(AppSizes.controlMd),
-              // A button's textStyle replaces the theme's instead of merging
-              // with it, so the family has to be named or the label falls
-              // back to the system font.
-              textStyle: const TextStyle(
-                fontFamily: AppTypography.fontFamily,
-                fontSize: AppFontSize.s16,
-                fontWeight: FontWeight.w800,
-              ),
+          if (place != null && failure == null)
+            FilledButton(
+              key: const Key('home.overview.leaders'),
+              onPressed: onOpenLeaders,
+              style: whiteButton,
+              child: const Text('عرض الترتيب'),
+            )
+          else
+            FilledButton(
+              key: const Key('home.startPredicting'),
+              onPressed: onOpenMatches,
+              style: whiteButton,
+              child: const Text('ابدأ التوقع'),
             ),
-            child: const Text('ابدأ التوقع'),
-          ),
         ],
       ),
     );
@@ -936,19 +1230,6 @@ class _SectionHeader extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Arabic number agreement: zero, one, two, few (3-10) and many (11-99)
-/// are different sentences, not a plural suffix -- the same split as the
-/// pending-fixtures line above.
-String _activeSeasonsLabel(int count) {
-  final int tail = count % 100;
-  if (count == 0) return 'لا مواسم نشطة';
-  if (count == 1) return 'موسم نشط واحد';
-  if (count == 2) return 'موسمان نشطان';
-  if (tail >= 3 && tail <= 10) return '$count مواسم نشطة';
-  if (tail >= 11) return '$count موسمًا نشطًا';
-  return '$count موسم نشط';
 }
 
 String _monthFixturesLabel(int count) {
