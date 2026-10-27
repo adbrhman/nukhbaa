@@ -1,7 +1,6 @@
-/// Widget tests for the grouped [AccountScreen]: the rows sit under two
-/// captions in reading order (what the player earned, the app), sign-out
-/// stays last, and each figure of the profile card opens its
-/// own detail page.
+/// Widget tests for the grouped [AccountScreen]: performance, achievements
+/// and app settings appear in order, sign-out stays last, and each profile
+/// figure opens its detail page.
 ///
 /// The real screen over the real [ApiTransport]; only the socket is faked
 /// ([buildAuthHarness]'s `MockClient`), so every request the pages make
@@ -75,15 +74,13 @@ double _top(WidgetTester tester, String key) =>
     tester.getTopLeft(find.byKey(Key(key))).dy;
 
 void main() {
-  testWidgets('two groups in reading order, sign-out last', (tester) async {
+  testWidgets('three groups in reading order, sign-out last', (tester) async {
     await _pump(tester);
 
-    for (final String row in <String>[
-      'account.myPoints',
-      'account.eliteCard',
-      'account.badges',
-      'account.insights',
-    ]) {
+    for (final String row in <String>['account.myPoints', 'account.insights']) {
+      expect(_inside('account.group.performance', row), findsOneWidget);
+    }
+    for (final String row in <String>['account.eliteCard', 'account.badges']) {
       expect(_inside('account.group.progress', row), findsOneWidget);
     }
     // The invitations and the duels were removed (2026-10-26), and with
@@ -96,11 +93,13 @@ void main() {
       _inside('account.group.app', 'account.darkModeToggle'),
       findsOneWidget,
     );
+    expect(find.text('أداؤك'), findsOneWidget);
     expect(find.text('إنجازاتك'), findsOneWidget);
     expect(find.text('الأصدقاء'), findsNothing);
     expect(find.text('التطبيق'), findsOneWidget);
 
     final List<double> tops = <double>[
+      _top(tester, 'account.group.performance'),
       _top(tester, 'account.group.progress'),
       _top(tester, 'account.group.app'),
       _top(tester, 'account.signOut'),
@@ -108,6 +107,24 @@ void main() {
     expect(tops, orderedEquals(<double>[...tops]..sort()));
     // A player sees no admin row.
     expect(find.byKey(const Key('account.adminDashboard')), findsNothing);
+  });
+
+  testWidgets('the points metric leads the RTL profile summary', (
+    tester,
+  ) async {
+    await _pump(tester);
+
+    final double points = tester
+        .getTopLeft(find.byKey(const Key('account.stat.points')))
+        .dx;
+    final double matches = tester
+        .getTopLeft(find.byKey(const Key('account.stat.matches')))
+        .dx;
+    final double accuracy = tester
+        .getTopLeft(find.byKey(const Key('account.stat.accuracy')))
+        .dx;
+    expect(points, greaterThan(matches));
+    expect(matches, greaterThan(accuracy));
   });
 
   testWidgets('the points figure opens the points page', (tester) async {

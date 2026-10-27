@@ -27,7 +27,6 @@ import '../competition/team_identity.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../fixture_prediction/widgets/live_home_card.dart';
 import '../fixture_prediction/widgets/live_matches_chip.dart';
-import '../gamification/daily_challenge_card.dart';
 import '../history/prediction_history_providers.dart';
 import '../history/prediction_history_screen.dart';
 import '../notifications/notifications_providers.dart';
@@ -39,6 +38,7 @@ import 'pending_predictions_provider.dart';
 /// The real authenticated home surface. It is intentionally a read-only
 /// summary: fixtures and active seasons come from server-backed providers,
 /// while detailed prediction and leaderboard flows remain in their own tabs.
+/// The daily-challenge card is not part of this screen's information flow.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({
     required this.user,
@@ -71,8 +71,7 @@ class HomeScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(currentMonthFixturesProvider);
             ref.invalidate(activeSeasonsProvider);
-            // The open-predictions card and the day's challenge follow the
-            // caller's own predictions.
+            // Refresh the prediction summary used by the home feed.
             ref.invalidate(myFixturePredictionsProvider);
             try {
               await ref.read(currentMonthFixturesProvider.future);
@@ -103,19 +102,13 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               // A newer build waiting, when the update check says so.
               const _UpdateNudgeCard(),
-              // Reading order: what to do now -- the predictions still open,
-              // with the one action -- then the matches they are about, then
-              // the day's challenge, then the season overview. Each card
-              // reads to a screen reader as one sentence.
+              // Flow: pending action, live match, fixtures, monthly overview, history.
               MergeSemantics(
                 child: _PendingPredictionsCard(
                   pending: ref.watch(pendingPredictionsProvider),
                   onPredict: onOpenMatches,
                 ),
               ),
-              // The web build only: how pushes reach this browser (on an
-              // iPhone, by adding the app to the home screen first).
-              const WebPushCard(),
               // While a match the player predicted is in play: what it
               // would earn and their month place if it ended now; hidden
               // otherwise.
@@ -139,14 +132,6 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ],
               const SizedBox(height: 24),
-              // "My predictions" left the bottom bar for the head-to-head
-              // league (2026-10-10); it opens from here.
-              const MergeSemantics(child: _MyPredictionsCard()),
-              const SizedBox(height: 18),
-              MergeSemantics(
-                child: DailyChallengeCard(onOpenMatches: onOpenMatches),
-              ),
-              const SizedBox(height: 18),
               MergeSemantics(
                 child: _OverviewCard(
                   fixtures: fixtures,
@@ -158,6 +143,13 @@ class HomeScreen extends ConsumerWidget {
                   },
                 ),
               ),
+              const SizedBox(height: 18),
+              // "My predictions" left the bottom bar for the head-to-head
+              // league (2026-10-10); it opens from here.
+              const MergeSemantics(child: _MyPredictionsCard()),
+              const SizedBox(height: 18),
+              // Web notification setup stays secondary to football activity.
+              const WebPushCard(),
             ],
           ),
         ),
@@ -802,6 +794,7 @@ class _OverviewCard extends StatelessWidget {
     final seasonCount = seasons.value?.length;
     final AppError? failure = _failure(fixtures);
     return Container(
+      key: const Key('home.overview'),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         // White text sits on it: the gradient made for white (UI-07).

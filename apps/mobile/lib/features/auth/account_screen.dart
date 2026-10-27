@@ -126,11 +126,9 @@ class AccountScreen extends ConsumerWidget {
                         open(MyPointsScreen(userDisplayName: user.displayName)),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  // nk-account-groups: what the player earned, then the
-                  // app; sign-out stays last.
-                  const AccountSectionTitle('إنجازاتك'),
+                  const AccountSectionTitle('أداؤك'),
                   AccountMenuCard(
-                    key: const Key('account.group.progress'),
+                    key: const Key('account.group.performance'),
                     children: [
                       AccountMenuRow(
                         key: const Key('account.myPoints'),
@@ -141,6 +139,20 @@ class AccountScreen extends ConsumerWidget {
                           MyPointsScreen(userDisplayName: user.displayName),
                         ),
                       ),
+                      AccountMenuRow(
+                        key: const Key('account.insights'),
+                        icon: Icons.insights_rounded,
+                        title: l10n.insightsTitle,
+                        subtitle: l10n.insightsSubtitle,
+                        onTap: () => open(const InsightsScreen()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const AccountSectionTitle('إنجازاتك'),
+                  AccountMenuCard(
+                    key: const Key('account.group.progress'),
+                    children: [
                       AccountMenuRow(
                         key: const Key('account.eliteCard'),
                         icon: Icons.badge_outlined,
@@ -154,13 +166,6 @@ class AccountScreen extends ConsumerWidget {
                         title: l10n.myBadges,
                         subtitle: l10n.accountBadgesSubtitle,
                         onTap: () => open(const MyBadgesScreen()),
-                      ),
-                      AccountMenuRow(
-                        key: const Key('account.insights'),
-                        icon: Icons.insights_rounded,
-                        title: l10n.insightsTitle,
-                        subtitle: l10n.insightsSubtitle,
-                        onTap: () => open(const InsightsScreen()),
                       ),
                     ],
                   ),
@@ -191,10 +196,12 @@ class AccountScreen extends ConsumerWidget {
                       const BiometricUnlockRow(),
                     ],
                   ),
-                  // Admins only, on its own: the dashboard is not a setting.
+                  // Administration is a separate destination, not an app setting.
                   if (user.role == 'admin') ...[
                     const SizedBox(height: AppSpacing.lg),
+                    const AccountSectionTitle('الإدارة'),
                     AccountMenuCard(
+                      key: const Key('account.group.admin'),
                       children: [
                         AccountMenuRow(
                           key: const Key('account.adminDashboard'),
@@ -205,10 +212,10 @@ class AccountScreen extends ConsumerWidget {
                       ],
                     ),
                   ],
-                  // The account's e-mail, so a player knows which address
-                  // to sign in with on another phone (audit L-19).
+                  // The e-mail identifies the address used on another device.
                   if (user.email != null) ...[
                     const SizedBox(height: AppSpacing.lg),
+                    const AccountSectionTitle('بيانات الحساب'),
                     _Field(
                       label: l10n.email,
                       value: user.email!,
@@ -418,14 +425,15 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           Divider(height: 1, color: tokens.border),
           const SizedBox(height: AppSpacing.md),
+          // RTL metric order: points, matches, accuracy.
           Row(
             children: [
               stat(
-                accuracy == null ? '—' : '$accuracy%',
-                l10n.accountStatAccuracy,
-                const Key('account.stat.accuracy'),
-                const Key('account.stat.accuracy.open'),
-                onOpenAccuracy,
+                row == null ? '—' : '${row.totalPoints}',
+                l10n.accountStatPoints,
+                const Key('account.stat.points'),
+                const Key('account.stat.points.open'),
+                onOpenPoints,
               ),
               stat(
                 row == null ? '—' : '${row.settledCount}',
@@ -435,11 +443,11 @@ class _ProfileCard extends StatelessWidget {
                 onOpenMatches,
               ),
               stat(
-                row == null ? '—' : '${row.totalPoints}',
-                l10n.accountStatPoints,
-                const Key('account.stat.points'),
-                const Key('account.stat.points.open'),
-                onOpenPoints,
+                accuracy == null ? '—' : '$accuracy%',
+                l10n.accountStatAccuracy,
+                const Key('account.stat.accuracy'),
+                const Key('account.stat.accuracy.open'),
+                onOpenAccuracy,
               ),
             ],
           ),

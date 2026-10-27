@@ -6644,6 +6644,24 @@ only: no APK, no contract, no migration.
 - To measure: reset `pg_stat_statements` after the deploy and read the
   egress per day in Usage after two days.
 
+### Home and account information architecture (script 156, 2026-10-27)
+
+Mobile only: no server, contract or migration change.
+
+- Home reads: pending predictions, live and upcoming fixtures, the
+  monthly overview, prediction history, then the web-only push setup.
+  `HomeScreen` no longer mounts the daily-challenge card; its widget,
+  API and own tests stay, so this removes it from the home only.
+- Account: the summary shows points first on the RTL right, then
+  settled matches, then accuracy. The rows are grouped as performance
+  (points, insights), achievements (elite card, badges), the app,
+  administration (admins only) and the account's e-mail; sign-out
+  stays last.
+- Tests through the real `HomeScreen` and `AccountScreen`:
+  `home_reading_order_test.dart`, `home_my_predictions_test.dart`,
+  `account_groups_test.dart` (order, no challenge card on the home,
+  RTL figure order).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

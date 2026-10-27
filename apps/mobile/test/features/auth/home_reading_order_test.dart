@@ -19,9 +19,8 @@ import '../../support/auth_harness.dart';
 import '../../support/current_month_fixtures_harness.dart';
 
 /// The home page's reading order and how it reads aloud, through the real
-/// [HomeScreen]: what to do now (the predictions still open) comes first,
-/// then the matches they are about, then the day's challenge, then the
-/// season overview; each match row is one spoken sentence.
+/// [HomeScreen]: pending predictions lead, followed by fixtures, the monthly
+/// overview and prediction history; each match row is one spoken sentence.
 void main() {
   testWidgets('home reads in the order of what to do', (tester) async {
     // Tall enough that the lazy ListView builds every card.
@@ -111,10 +110,8 @@ void main() {
         find.byKey(const Key('home.pendingPredictions')),
       );
       final double match = top(find.byKey(const Key('home.highlight.f-1')));
-      final double challenge = top(
-        find.byKey(const Key('home.dailyChallenge')),
-      );
-      final double overview = top(find.text('لوحة النخبة'));
+      final double overview = top(find.byKey(const Key('home.overview')));
+      final double history = top(find.byKey(const Key('home.myPredictions')));
       expect(pending, lessThan(match), reason: 'the action leads');
       // The count says what it counts, and names the nearest (126).
       expect(find.text('مباراة واحدة لم تتوقعها بعد'), findsOneWidget);
@@ -122,8 +119,17 @@ void main() {
         find.byKey(const Key('home.pendingPredictions.next')),
         findsOneWidget,
       );
-      expect(match, lessThan(challenge));
-      expect(challenge, lessThan(overview), reason: 'the overview is detail');
+      expect(
+        match,
+        lessThan(overview),
+        reason: 'the month summary follows fixtures',
+      );
+      expect(
+        overview,
+        lessThan(history),
+        reason: 'history follows the summary',
+      );
+      expect(find.byKey(const Key('home.dailyChallenge')), findsNothing);
 
       expect(
         tester.getSemantics(find.text('ضد')).id,

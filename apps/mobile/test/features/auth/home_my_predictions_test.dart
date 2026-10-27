@@ -95,13 +95,12 @@ void main() {
 
     final Finder card = find.byKey(const Key('home.myPredictions'));
     expect(card, findsOneWidget);
-    // In the place the day's challenge held: after the matches, before it.
+    // History follows the actionable monthly summary and has no challenge dependency.
     expect(
-      tester.getTopLeft(card).dy,
-      lessThan(
-        tester.getTopLeft(find.byKey(const Key('home.dailyChallenge'))).dy,
-      ),
+      tester.getTopLeft(find.byKey(const Key('home.overview'))).dy,
+      lessThan(tester.getTopLeft(card).dy),
     );
+    expect(find.byKey(const Key('home.dailyChallenge')), findsNothing);
 
     await tester.tap(card);
     await tester.pumpAndSettle();
