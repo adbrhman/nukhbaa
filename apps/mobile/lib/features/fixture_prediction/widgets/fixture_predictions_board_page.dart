@@ -27,6 +27,10 @@
 /// (2026-10-24). Admins also see each match's doubles that paid, with a card
 /// to share (`double_hits_card.dart`), and the day's three most points, with
 /// a card to share (`day_top_three_card.dart`, 2026-10-25).
+///
+/// The hint and those cards scroll away with the table, whose match headers
+/// stay pinned on top while the players scroll under them; more than
+/// [_cardsShownOpen] cards fold into one line that opens them (batch 157).
 library;
 
 import 'dart:async';
@@ -63,6 +67,11 @@ const double _nameWidth = 128;
 const double _cellWidth = 116;
 const double _headerHeight = 64;
 const double _rowHeight = 46;
+
+/// Up to this many cards of the day show as they are; more fold into one
+/// line (batch 157): eleven cards used to leave the table a third of the
+/// screen.
+const int _cardsShownOpen = 3;
 
 /// The table for the device-local day of [kickoffAt] (the day of the card
 /// the viewer came from).
@@ -374,6 +383,65 @@ class _FixturePredictionsBoardPageState
         columns.every((c) => c.reactions != null) &&
         !columns.any((c) => c.reactions!.reactions.any((t) => t.mine != null));
 
+    // The day's cards: the top three, the heroes, then the doubles that
+    // paid, most players first (kickoff order between equals).
+    final List<DoubleHits> paid = doubles.values.toList();
+    final List<DoubleHits> paidMostFirst = <DoubleHits>[...paid]
+      ..sort((a, b) {
+        final int byHits = b.hits.length.compareTo(a.hits.length);
+        if (byHits != 0) return byHits;
+        return paid.indexOf(a).compareTo(paid.indexOf(b));
+      });
+    final List<Widget> cards = <Widget>[
+      if (topThree != null) DayTopThreeBanner(top: topThree),
+      for (final DayHero hero in heroes.values)
+        DayHeroBanner(
+          hero: hero,
+          isMine: myParticipantIds.contains(hero.participantId),
+        ),
+      for (final DoubleHits match in paidMostFirst)
+        DoubleHitsBanner(doubles: match),
+    ];
+    final String cardsSummary = <String>[
+      if (topThree != null) 'الأكثر نقاطاً',
+      if (heroes.isNotEmpty) 'أبطال اليوم ${heroes.length}',
+      if (doubles.isNotEmpty) 'مضاعفات ناجحة ${doubles.length}',
+    ].join(' · ');
+
+    // What fills the space under the cards when there is no table to show.
+    final Widget? message = columns.isEmpty
+        ? _Message(
+            key: const Key('fixturePredictions.noStarted'),
+            text: l10n.fixturePredictionsNoStarted,
+          )
+        // A read that failed is said, with a retry: it used to read
+        // as "no predictions yet" (batch 156).
+        : byId.isEmpty &&
+              columns.every((c) => !c.loading) &&
+              columns.any((c) => c.failed)
+        ? _FailedRead(
+            key: const Key('fixturePredictions.failed'),
+            text:
+                columns.firstWhere((c) => c.failed).errorText ??
+                'تعذّر تحميل التوقعات.',
+            onRetry: () {
+              for (final _Column column in columns) {
+                if (column.failed) column.onRetry();
+              }
+            },
+          )
+        : byId.isEmpty && columns.every((c) => !c.loading)
+        ? _Message(
+            key: const Key('fixturePredictions.empty'),
+            text: l10n.fixturePredictionsEmpty,
+          )
+        : players.isEmpty && byId.isNotEmpty
+        ? _Message(
+            key: const Key('fixturePredictions.noMatch'),
+            text: l10n.fixturePredictionsNoMatch,
+          )
+        : null;
+
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
@@ -409,76 +477,53 @@ class _FixturePredictionsBoardPageState
               ),
             ),
           ),
-          if (showReactHint)
-            Padding(
-              key: const Key('fixturePredictions.reactHint'),
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                0,
-                AppSpacing.md,
-                AppSpacing.sm,
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    Icons.add_reaction_outlined,
-                    size: AppSizes.iconXs,
-                    color: tokens.primaryText,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      'اضغط على توقع أي لاعب لتتفاعل معه.',
-                      style: TextStyle(
-                        color: tokens.textSecondary,
-                        fontSize: AppFontSize.s12,
+          Expanded(
+            // The hint and the cards scroll away with the table; its match
+            // headers stay pinned on top (batch 157).
+            child: CustomScrollView(
+              key: const Key('fixturePredictions.scroll'),
+              slivers: <Widget>[
+                if (showReactHint)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      key: const Key('fixturePredictions.reactHint'),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        0,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.add_reaction_outlined,
+                            size: AppSizes.iconXs,
+                            color: tokens.primaryText,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              'اضغط على توقع أي لاعب لتتفاعل معه.',
+                              style: TextStyle(
+                                color: tokens.textSecondary,
+                                fontSize: AppFontSize.s12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                if (cards.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _DayCards(cards: cards, summary: cardsSummary),
+                  ),
+                if (message != null)
+                  SliverFillRemaining(hasScrollBody: false, child: message)
+                else
+                  _Board(columns: columns, players: players, heroes: heroes),
+              ],
             ),
-          if (topThree != null) DayTopThreeBanner(top: topThree),
-          for (final DayHero hero in heroes.values)
-            DayHeroBanner(
-              hero: hero,
-              isMine: myParticipantIds.contains(hero.participantId),
-            ),
-          for (final DoubleHits match in doubles.values)
-            DoubleHitsBanner(doubles: match),
-          Expanded(
-            child: columns.isEmpty
-                ? _Message(
-                    key: const Key('fixturePredictions.noStarted'),
-                    text: l10n.fixturePredictionsNoStarted,
-                  )
-                // A read that failed is said, with a retry: it used to read
-                // as "no predictions yet" (batch 156).
-                : byId.isEmpty &&
-                      columns.every((c) => !c.loading) &&
-                      columns.any((c) => c.failed)
-                ? _FailedRead(
-                    key: const Key('fixturePredictions.failed'),
-                    text:
-                        columns.firstWhere((c) => c.failed).errorText ??
-                        'تعذّر تحميل التوقعات.',
-                    onRetry: () {
-                      for (final _Column column in columns) {
-                        if (column.failed) column.onRetry();
-                      }
-                    },
-                  )
-                : byId.isEmpty && columns.every((c) => !c.loading)
-                ? _Message(
-                    key: const Key('fixturePredictions.empty'),
-                    text: l10n.fixturePredictionsEmpty,
-                  )
-                : players.isEmpty && byId.isNotEmpty
-                ? _Message(
-                    key: const Key('fixturePredictions.noMatch'),
-                    text: l10n.fixturePredictionsNoMatch,
-                  )
-                : _Board(columns: columns, players: players, heroes: heroes),
           ),
         ],
       ),
@@ -498,8 +543,10 @@ class _FixturePredictionsBoardPageState
 }
 
 /// The table: player names stay put on the reading side while the match
-/// columns scroll sideways; the whole table scrolls down.
-class _Board extends StatelessWidget {
+/// columns scroll sideways; the whole table scrolls down under its match
+/// headers, which stay pinned on top and follow the columns sideways
+/// (batch 157).
+class _Board extends StatefulWidget {
   const _Board({
     required this.columns,
     required this.players,
@@ -514,68 +561,248 @@ class _Board extends StatelessWidget {
   final Map<String, DayHero> heroes;
 
   @override
+  State<_Board> createState() => _BoardState();
+}
+
+class _BoardState extends State<_Board> {
+  /// The pinned headers' sideways scroll and the cells' own: each follows
+  /// the other, so a header always sits over its column.
+  final ScrollController _headers = ScrollController();
+  final ScrollController _cells = ScrollController();
+  bool _following = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _headers.addListener(() => _follow(_headers, _cells));
+    _cells.addListener(() => _follow(_cells, _headers));
+  }
+
+  void _follow(ScrollController from, ScrollController to) {
+    if (_following || !from.hasClients || !to.hasClients) return;
+    final ScrollPosition target = to.position;
+    final double offset = from.offset.clamp(
+      target.minScrollExtent,
+      target.maxScrollExtent,
+    );
+    if (offset == target.pixels) return;
+    _following = true;
+    to.jumpTo(offset);
+    _following = false;
+  }
+
+  @override
+  void dispose() {
+    _headers.dispose();
+    _cells.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
-    return SingleChildScrollView(
+    final List<_Column> columns = widget.columns;
+    final List<_Player> players = widget.players;
+    final Map<String, DayHero> heroes = widget.heroes;
+    return SliverMainAxisGroup(
       key: const Key('fixturePredictions.board'),
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: _nameWidth,
-            child: Column(
-              children: <Widget>[
-                _HeaderBox(
-                  child: Text(
-                    l10n.fixturePredictionsPlayerHeader,
-                    style: TextStyle(
-                      color: tokens.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: AppFontSize.s13,
-                    ),
-                  ),
-                ),
-                for (final _Player player in players) _NameCell(player: player),
-              ],
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              key: const Key('fixturePredictions.columns'),
-              scrollDirection: Axis.horizontal,
-              child: Column(
+      slivers: <Widget>[
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _PinnedHeaders(
+            child: ColoredBox(
+              key: const Key('fixturePredictions.pinnedHeaders'),
+              color: tokens.background,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      for (final _Column column in columns)
-                        _MatchHeader(column: column),
-                    ],
-                  ),
-                  for (final _Player player in players)
-                    Row(
-                      children: <Widget>[
-                        for (final _Column column in columns)
-                          _PredictionCell(
-                            column: column,
-                            player: player,
-                            hero:
-                                heroes[column.fixture.fixtureId]
-                                        ?.participantId ==
-                                    player.participantId
-                                ? heroes[column.fixture.fixtureId]
-                                : null,
-                          ),
-                      ],
+                  SizedBox(
+                    width: _nameWidth,
+                    child: _HeaderBox(
+                      child: Text(
+                        l10n.fixturePredictionsPlayerHeader,
+                        style: TextStyle(
+                          color: tokens.textSecondary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: AppFontSize.s13,
+                        ),
+                      ),
                     ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: const Key('fixturePredictions.headers'),
+                      controller: _headers,
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: <Widget>[
+                          for (final _Column column in columns)
+                            _MatchHeader(column: column),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(
+                  width: _nameWidth,
+                  child: Column(
+                    children: <Widget>[
+                      for (final _Player player in players)
+                        _NameCell(player: player),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: const Key('fixturePredictions.columns'),
+                    controller: _cells,
+                    scrollDirection: Axis.horizontal,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        for (final _Player player in players)
+                          Row(
+                            children: <Widget>[
+                              for (final _Column column in columns)
+                                _PredictionCell(
+                                  column: column,
+                                  player: player,
+                                  hero:
+                                      heroes[column.fixture.fixtureId]
+                                              ?.participantId ==
+                                          player.participantId
+                                      ? heroes[column.fixture.fixtureId]
+                                      : null,
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The header row, pinned on top of the table at the header's height.
+class _PinnedHeaders extends SliverPersistentHeaderDelegate {
+  const _PinnedHeaders({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => _headerHeight;
+
+  @override
+  double get maxExtent => _headerHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox.expand(child: child);
+
+  @override
+  bool shouldRebuild(_PinnedHeaders oldDelegate) => oldDelegate.child != child;
+}
+
+/// The day's cards above the table. Up to [_cardsShownOpen] show as they
+/// are; more fold into one line, [summary], that opens and closes them.
+class _DayCards extends StatefulWidget {
+  const _DayCards({required this.cards, required this.summary});
+
+  final List<Widget> cards;
+
+  /// What the folded line says the cards are.
+  final String summary;
+
+  @override
+  State<_DayCards> createState() => _DayCardsState();
+}
+
+class _DayCardsState extends State<_DayCards> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.cards.length <= _cardsShownOpen) {
+      return Column(children: widget.cards);
+    }
+    final AppTokens tokens = context.tokens;
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
+          child: Material(
+            color: tokens.surfaceElevated,
+            borderRadius: AppRadius.brButton,
+            child: InkWell(
+              key: const Key('fixturePredictions.cards.toggle'),
+              borderRadius: AppRadius.brButton,
+              onTap: () => setState(() => _open = !_open),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.style_rounded,
+                      size: AppSizes.iconSm,
+                      color: tokens.goldAccent,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        'بطاقات اليوم (${widget.cards.length}): '
+                        '${widget.summary}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.textPrimary,
+                          fontSize: AppFontSize.s12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _open
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: AppSizes.iconSm,
+                      color: tokens.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open) ...widget.cards,
+      ],
     );
   }
 }

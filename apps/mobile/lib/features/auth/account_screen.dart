@@ -196,6 +196,22 @@ class AccountScreen extends ConsumerWidget {
                       const BiometricUnlockRow(),
                     ],
                   ),
+                  // A way to the developer for a problem or a complaint
+                  // (2026-10-27): Nukhbaa's WhatsApp channel.
+                  const SizedBox(height: AppSpacing.lg),
+                  const AccountSectionTitle('الدعم'),
+                  AccountMenuCard(
+                    key: const Key('account.group.support'),
+                    children: [
+                      AccountMenuRow(
+                        key: const Key('account.contactDeveloper'),
+                        icon: Icons.support_agent_rounded,
+                        title: 'تواصل مع المطوّر',
+                        subtitle: 'للإبلاغ عن مشكلة أو تقديم شكوى عبر واتساب',
+                        onTap: () => unawaited(_openSupport(context, ref)),
+                      ),
+                    ],
+                  ),
                   // Administration is a separate destination, not an app setting.
                   if (user.role == 'admin') ...[
                     const SizedBox(height: AppSpacing.lg),
@@ -485,6 +501,32 @@ class _DarkModeRow extends ConsumerWidget {
       ),
       value: mode == ThemeMode.dark,
       onChanged: (_) => ref.read(themeControllerProvider.notifier).toggle(),
+    );
+  }
+}
+
+/// Nukhbaa's WhatsApp channel, the account tab's way to the developer
+/// (2026-10-27).
+final Uri nukhbaaSupportUri = Uri.parse(
+  'https://whatsapp.com/channel/0029VbDjBbEBlHpWTaJdKe2t',
+);
+
+/// Opens [nukhbaaSupportUri] in WhatsApp (or the browser) through the app's
+/// one link opener; when nothing could open it, a line says so.
+Future<void> _openSupport(BuildContext context, WidgetRef ref) async {
+  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+  bool opened;
+  try {
+    opened = await ref.read(notificationLinkOpenerProvider)(nukhbaaSupportUri);
+  } on Object {
+    opened = false;
+  }
+  if (!opened) {
+    messenger.showSnackBar(
+      const SnackBar(
+        key: Key('account.contactDeveloper.failed'),
+        content: Text('تعذّر فتح واتساب، حاول مرة أخرى.'),
+      ),
     );
   }
 }

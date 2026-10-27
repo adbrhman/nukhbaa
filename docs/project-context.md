@@ -6662,6 +6662,34 @@ Mobile only: no server, contract or migration change.
   `account_groups_test.dart` (order, no challenge card on the home,
   RTL figure order).
 
+### The board's headers pinned, the day's cards folded; a way to the developer (script 157, 2026-10-27)
+
+Mobile only: no server, contract or migration change.
+
+- Predictions board (`fixture_predictions_board_page.dart`): the search
+  stays on top; the reaction hint and the day's cards scroll away with
+  the table (one `CustomScrollView`), whose header row (the player
+  caption and every match) is a pinned `SliverPersistentHeader`. The
+  headers' sideways scroll and the cells' follow each other (two
+  controllers), so a header always sits over its column. An admin's day
+  had eleven cards above the table, which left it a third of the screen.
+- Up to three cards show as they were; more fold into one line,
+  `fixturePredictions.cards.toggle` ("بطاقات اليوم (N): ..."), closed on
+  opening the page. Order: the top three, the heroes, then the doubles
+  that paid, most players first (kickoff order between equals).
+- Account tab: a "الدعم" group after "التطبيق" with one row,
+  `account.contactDeveloper` ("تواصل مع المطوّر"), which opens Nukhbaa's
+  WhatsApp channel (`nukhbaaSupportUri`) through
+  `notificationLinkOpenerProvider`; when nothing opens it, a snack bar
+  says so. A WhatsApp channel is one-way: followers can react but not
+  write to it.
+- Tests through the real page and screen:
+  `predictions_board_layout_test.dart` (five cards fold and open, most
+  first; forty players scroll under the pinned headers; the headers and
+  columns follow each other both ways -- all three fail on the old page),
+  `account_contact_test.dart` (placement, the opened address, the failure
+  line, text x2 at 360px).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
