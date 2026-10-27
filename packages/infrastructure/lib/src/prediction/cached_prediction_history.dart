@@ -27,8 +27,12 @@ import 'package:shared/shared.dart';
 /// failed (it may still have landed), when no history is held for that
 /// player, when the participant is not known yet (a first prediction in a
 /// new month drops every history) and when an id is not in the lower-case
-/// form the database returns. A change made elsewhere (a merge by an admin,
-/// [forget]) shows within [ttl] at most.
+/// form the database returns. A merge by an admin calls [forget]; a change
+/// made outside this server shows within [ttl] at most.
+///
+/// Every write also calls [onFixtureWritten] with its fixture, failed ones
+/// too, so a cache of that fixture's predictions elsewhere (the feed's
+/// win-share split) drops it (script 155).
 ///
 /// Every other read and write passes straight through. Failures are never
 /// cached. The cache lives in this server process only.
@@ -36,16 +40,19 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
   /// Wraps [inner]; [now] is injectable for tests.
   CachedPredictionHistory(
     this._inner, {
-    Duration ttl = const Duration(minutes: 10),
+    Duration ttl = const Duration(minutes: 30),
     int maxEntries = 512,
     DateTime Function() now = DateTime.now,
-  }) : _histories = TtlCache<String, List<FixturePredictionView>>(
+    void Function(FixtureRef fixture)? onFixtureWritten,
+  }) : _onFixtureWritten = onFixtureWritten,
+       _histories = TtlCache<String, List<FixturePredictionView>>(
          ttl: ttl,
          maxEntries: maxEntries,
          now: now,
        );
 
   final FixturePredictionRepository _inner;
+  final void Function(FixtureRef fixture)? _onFixtureWritten;
   final TtlCache<String, List<FixturePredictionView>> _histories;
   final ReadCoalescer<String, Result<List<FixturePredictionView>>> _loads =
       ReadCoalescer<String, Result<List<FixturePredictionView>>>();
@@ -107,6 +114,7 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     DateTime submittedAt,
     Result<void> result,
   ) {
+    _onFixtureWritten?.call(prediction.fixture);
     final List<FixturePredictionView>? updated = result is Ok<void>
         ? _withWrite(prediction, submittedAt.toUtc())
         : null;

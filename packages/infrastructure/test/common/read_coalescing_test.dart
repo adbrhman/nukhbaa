@@ -254,7 +254,7 @@ void main() {
       );
       expect(inner.gate.reads, 1);
       expect((again as Ok<FixtureResult?>).value, isNull);
-      clock = clock.add(const Duration(seconds: 20));
+      clock = clock.add(const Duration(minutes: 30));
       await results.findByFixture(const FixtureRef(_f1));
       expect(inner.gate.reads, 2, reason: 'expired after the ttl');
     });

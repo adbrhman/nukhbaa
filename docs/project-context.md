@@ -6606,6 +6606,44 @@ the history unaltered (`reject_referral_mutation`, `guard_referral_claim`,
 `gamification.normalized_email` (an index uses it). The SQL tests of the
 dropped functions went with them; `0186_..._test.sql` checks what is left.
 
+### The feed's reads held until written (script 155, 2026-10-27)
+
+Supabase: the Free Plan's 5 GB egress went over again (7.62 GB in the
+cycle of 28 September - 28 October); the restriction starts on 22
+November if the organization stays over. The owner asked for a way that
+costs nothing and changes nothing in the app. `pg_stat_statements`
+(reset 2026-10-25 21:58 UTC) put first the month's feed reads: the
+results (1641 reads, about 217 rows each), the win-share split (1078,
+about 322), the schedules (2888, about 116 of the widest rows) -- each
+read again whole every 20 to 60 seconds, when its cache expired. Server
+only: no APK, no contract, no migration.
+
+- Every writer of these rows runs in this server, so each cache is held
+  until a write drops it; the ttl (30 minutes) only bounds an edit made
+  outside the server (the SQL Editor) or a deleted account's predictions.
+- `CachedFixtureResultReads`: held per fixture (a fixture without a result
+  too), shared by `findByFixture` and `findByFixtures`; a batch reads only
+  the fixtures not held. `RecordFixtureResult` (the admin's form and the
+  provider sync) is handed this decorator, so a result drops its fixture
+  and shows on the next read. Scoring keeps the plain repository.
+- `CachedFixturePredictionTallyReader`: held per fixture the same way.
+  `CachedPredictionHistory` (what `SubmitFixturePrediction` writes
+  through) calls `onFixtureWritten` for every save or amendment, failed
+  ones too, which drops that fixture's split; a merge drops every split.
+- `CachedFixtureScheduleRepository`: ttl 30 minutes (writes already drop
+  it); one cache (8192 fixtures) now serves the history too.
+- `CachedPredictionHistory` and `CachedFixtureScoreRepository`: ttl 30
+  minutes (their writes already update or drop them).
+- Should the server ever run more than one instance, a write would show
+  on the other instances only when their copy expires (30 minutes).
+- Tests: `feed_reads_until_written_test.dart` (new: the feed through
+  `ListCurrentMonthFixtures`, a result through `RecordFixtureResult`, a
+  prediction through `SubmitFixturePrediction`, wired as the composition
+  root wires them); `read_caches_test.dart`, `read_coalescing_test.dart`
+  and `cached_prediction_history_test.dart` follow the new ttls.
+- To measure: reset `pg_stat_statements` after the deploy and read the
+  egress per day in Usage after two days.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

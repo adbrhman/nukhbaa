@@ -17,15 +17,19 @@ import 'package:shared/shared.dart';
 /// schedule of the history again: 5320 reads, 748 thousand of the widest
 /// rows, in the day and a half after script 138). Each schedule write
 /// (register, correct, provider sync) goes through [upsert] here and drops
-/// the whole cache, so a changed kickoff shows on the next read. Reads that
-/// arrive while the same fixtures are loading share that load
-/// ([ReadCoalescer]): a provider sync drops the whole cache.
+/// the whole cache, so a changed kickoff shows on the next read; hiding a
+/// fixture and merging copies call [forget]. [ttl] only bounds an edit made
+/// outside this server (script 155: at 60 seconds the feed read the month's
+/// schedules again every minute, 2888 reads of the widest rows in the day
+/// and a half after script 141). Reads that arrive while the same fixtures
+/// are loading share that load ([ReadCoalescer]): a provider sync drops the
+/// whole cache.
 final class CachedFixtureScheduleRepository
     implements FixtureScheduleRepository {
   /// Wraps [inner]; [now] is injectable for tests.
   CachedFixtureScheduleRepository(
     this._inner, {
-    Duration ttl = const Duration(seconds: 60),
+    Duration ttl = const Duration(minutes: 30),
     int maxEntries = 4096,
     DateTime Function() now = DateTime.now,
   }) : _held = TtlCache<String, _Held>(

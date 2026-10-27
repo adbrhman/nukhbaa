@@ -343,14 +343,14 @@ void main() {
     expect(inner.batchReads, 2);
   });
 
-  test('CachedFixturePredictionTallyReader reads each fixture set once per '
+  test('CachedFixturePredictionTallyReader reads each fixture once per '
       'ttl', () async {
     final inner = _CountingTallies();
     final tallies = CachedFixturePredictionTallyReader(inner, now: () => clock);
     await tallies.tallyByFixtures(const [FixtureRef(_f1)]);
     await tallies.tallyByFixtures(const [FixtureRef(_f1)]);
     expect(inner.reads, 1);
-    clock = clock.add(const Duration(seconds: 30));
+    clock = clock.add(const Duration(minutes: 30));
     await tallies.tallyByFixtures(const [FixtureRef(_f1)]);
     expect(inner.reads, 2);
   });

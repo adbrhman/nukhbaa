@@ -174,10 +174,10 @@ void main() {
     history = CachedPredictionHistory(store, now: () => clock);
     listMine = ListMyFixturePredictions(
       fixturePredictionRepository: history,
+      // The one schedule cache the feed and the boards share (script 155).
       fixtureScheduleRepository: CachedFixtureScheduleRepository(
         schedules,
-        ttl: const Duration(minutes: 10),
-        maxEntries: 512,
+        maxEntries: 8192,
         now: () => clock,
       ),
     );
@@ -194,9 +194,9 @@ void main() {
     ];
   }
 
-  test('reopening the history within 10 minutes reads nothing again', () async {
+  test('reopening the history within 30 minutes reads nothing again', () async {
     expect(await mine(_userA), <String>[_f1]);
-    clock = clock.add(const Duration(minutes: 9));
+    clock = clock.add(const Duration(minutes: 29));
     expect(await mine(_userA), <String>[_f1]);
     expect(store.historyReads, 1);
     expect(schedules.batchReads, 1);

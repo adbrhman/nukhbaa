@@ -2543,8 +2543,12 @@ final class CompositionRoot {
       PostgresFixtureScoreRepository(connection),
     );
 
+    // One schedule cache for every reader (the feed, the boards and a
+    // player's history): each fixture held on its own until a write drops
+    // it (script 155; the history kept a copy of its own until then).
     final fixtureScheduleRepository = CachedFixtureScheduleRepository(
       PostgresFixtureScheduleRepository(connection),
+      maxEntries: 8192,
     );
 
     // The players' read routes (a fixture's scores, its predictions, the day
@@ -2552,7 +2556,9 @@ final class CompositionRoot {
     // all at once when a match ends; these read-only decorators answer them
     // from one query each (2026-10-12, after 150-180 requests queued for
     // the pool on 2026-10-11). Writers -- submitting a prediction, the
-    // admin's links and results, scoring -- keep the plain repositories.
+    // admin's links, scoring -- keep the plain repositories; a result is
+    // written through fixtureResultReads (RecordFixtureResult), which drops
+    // that fixture, so the result reads are held until then (script 155).
     final fixturePredictionReads = CachedFixturePredictionReads(
       fixturePredictionRepository,
     );
@@ -2564,20 +2570,15 @@ final class CompositionRoot {
     // prediction ever sent, then the schedule of each of those fixtures --
     // the two reads that returned the most rows when the Supabase egress
     // quota was exceeded (2026-10-23, script 138). The player's own writes
-    // go through predictionHistory and drop that history at once; hiding a
-    // fixture or merging copies drops both caches (forgetSchedules).
+    // go through predictionHistory and drop that history at once, and the
+    // win-share split of the fixture written (script 155); hiding a fixture
+    // or merging copies drops the schedules (forgetSchedules).
     final predictionHistory = CachedPredictionHistory(
       fixturePredictionRepository,
-    );
-    final historySchedules = CachedFixtureScheduleRepository(
-      PostgresFixtureScheduleRepository(connection),
-      ttl: const Duration(minutes: 10),
-      // One entry per fixture since script 141.
-      maxEntries: 4096,
+      onFixtureWritten: fixturePredictionTallyReader.forgetFixture,
     );
     void forgetSchedules() {
       fixtureScheduleRepository.forget();
-      historySchedules.forget();
     }
 
     // Football Data slice: read-only team catalog backing `GET /teams`
@@ -3336,8 +3337,10 @@ final class CompositionRoot {
         predictionRepository: predictionRepository,
         competitionRepository: competitionRepository,
       ),
+      // Through the result reads, so the feed and the boards show a new or
+      // corrected result on their next read (script 155).
       recordFixtureResult: RecordFixtureResult(
-        resultRepository: fixtureResultRepository,
+        resultRepository: fixtureResultReads,
         fixtureScheduleRepository: fixtureScheduleRepository,
         clock: clock,
         auditRecorder: auditRecorder,
@@ -3697,6 +3700,7 @@ final class CompositionRoot {
           onChanged: () {
             forgetSchedules();
             predictionHistory.forget();
+            fixturePredictionTallyReader.forget();
           },
         ),
         rescore: rescoreFixture,
@@ -3733,7 +3737,7 @@ final class CompositionRoot {
       listMyFixturePredictions: ListMyFixturePredictions(
         fixturePredictionRepository: predictionHistory,
         // A hidden fixture's prediction waits out of sight (migration 0098).
-        fixtureScheduleRepository: historySchedules,
+        fixtureScheduleRepository: fixtureScheduleRepository,
       ),
       listMyActiveSeasons: ListMyActiveSeasons(
         competitionRepository: competitionRepository,

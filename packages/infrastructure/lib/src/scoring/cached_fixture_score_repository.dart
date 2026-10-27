@@ -20,7 +20,7 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
   /// Wraps [inner]; [now] is injectable for tests.
   CachedFixtureScoreRepository(
     this._inner, {
-    Duration ttl = const Duration(minutes: 5),
+    Duration ttl = const Duration(minutes: 30),
     int maxEntries = 512,
     DateTime Function() now = DateTime.now,
   }) : _byFixture = TtlCache<String, List<ParticipantFixtureScore>>(
