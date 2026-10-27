@@ -13,6 +13,7 @@ import '../../core/notifications/push_link.dart';
 import '../../core/perf/frame_reporter.dart';
 import '../../core/providers.dart';
 import '../../core/time/riyadh_day_turnover.dart';
+import '../../core/ui/brand_mark.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
@@ -28,7 +29,6 @@ import '../fixture_prediction/current_month_fixtures_screen.dart';
 import 'account_screen.dart';
 import 'home_screen.dart';
 import 'launch_invite.dart';
-import 'sign_in_screen.dart' show kBrandLogoAsset;
 
 /// The authenticated app shell. The five destinations are kept alive in an
 /// IndexedStack so an in-progress prediction or scroll position survives tab
@@ -291,8 +291,9 @@ class NukhbaaBottomNav extends StatelessWidget {
   /// The bar's height at normal text size; it grows with larger text.
   static const double minHeight = 70;
 
-  /// The ball's size in the middle: a little larger than the other glyphs.
-  static const double brandSize = 32;
+  /// The middle disc carrying the brand mark: larger than the other glyphs,
+  /// still inside the bar (script 158).
+  static const double brandSize = 44;
 
   /// The fade behind the glyphs: clear at the top, [fadeMid] of the page
   /// colour by [fadeMidStop], the page colour itself from [fadeFullStop]
@@ -343,12 +344,13 @@ class NukhbaaBottomNav extends StatelessWidget {
                   // home, the league, matches, leaders, account. Each item
                   // keeps its page index, so pushes and the screen-view
                   // names still find the page they name. Every glyph wears
-                  // the brand mark.
+                  // the brand mark, drawn as a vector at one corner of
+                  // each (script 160), and the middle disc carries it.
                   _item(
                     context,
                     glyph: _NavGlyph(
-                      icon: Icons.home_rounded,
-                      badgeAt: const Alignment(0, 0.45),
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
                       badgeKey: const Key('nav.badge.home'),
                       active: index == 0,
                     ),
@@ -359,10 +361,8 @@ class NukhbaaBottomNav extends StatelessWidget {
                   _item(
                     context,
                     glyph: _NavGlyph(
-                      icon: index == 2
-                          ? Icons.shield_rounded
-                          : Icons.shield_outlined,
-                      badgeAt: const Alignment(0, -0.1),
+                      icon: Icons.shield_outlined,
+                      activeIcon: Icons.shield_rounded,
                       badgeKey: const Key('nav.badge.h2h'),
                       active: index == 2,
                     ),
@@ -372,14 +372,11 @@ class NukhbaaBottomNav extends StatelessWidget {
                   ),
                   _item(
                     context,
-                    glyph: _NavGlyph(
+                    glyph: _NavBrand(
                       key: const Key('nav.brand'),
-                      icon: Icons.sports_soccer,
                       size: brandSize,
-                      badgeAt: Alignment.center,
                       badgeKey: const Key('nav.badge.fixtures'),
                       active: index == 1,
-                      ring: true,
                     ),
                     label: 'المباريات',
                     navKey: const Key('nav.item.fixtures'),
@@ -388,8 +385,8 @@ class NukhbaaBottomNav extends StatelessWidget {
                   _item(
                     context,
                     glyph: _NavGlyph(
-                      icon: Icons.leaderboard_rounded,
-                      badgeAt: const Alignment(0, -1.25),
+                      icon: Icons.leaderboard_outlined,
+                      activeIcon: Icons.leaderboard_rounded,
                       badgeKey: const Key('nav.badge.leaders'),
                       active: index == 3,
                     ),
@@ -400,8 +397,8 @@ class NukhbaaBottomNav extends StatelessWidget {
                   _item(
                     context,
                     glyph: _NavGlyph(
-                      icon: Icons.person_rounded,
-                      badgeAt: const Alignment(1.1, 0.9),
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
                       badgeKey: const Key('nav.badge.account'),
                       active: index == 4,
                     ),
@@ -491,102 +488,126 @@ class NukhbaaBottomNav extends StatelessWidget {
   }
 }
 
-/// One glyph of the bar: the tab's icon with the brand mark on it, glowing
-/// blue while its tab is open. The middle one is the ball in a ring.
+/// One glyph of the bar (script 160): the tab's icon -- outlined while
+/// closed, filled in a soft blue pill while open -- with the brand mark,
+/// a vector tile, at its top corner on the reading side's end. Every tab
+/// wears it in the same place and size; on a picture of the logo scaled to
+/// 12 px it read as a blurred blue square laid over the icon.
 class _NavGlyph extends StatelessWidget {
   const _NavGlyph({
     required this.icon,
-    required this.badgeAt,
+    required this.activeIcon,
     required this.badgeKey,
     required this.active,
-    this.size = 26,
-    this.ring = false,
-    super.key,
   });
 
   final IconData icon;
-
-  /// Where the brand mark sits on the icon.
-  final Alignment badgeAt;
+  final IconData activeIcon;
   final Key badgeKey;
   final bool active;
-  final double size;
 
-  /// The ball's ring, blue and glowing while open.
-  final bool ring;
+  /// The pill behind the open tab's icon.
+  static const Size pill = Size(54, 32);
+
+  /// The icon itself.
+  static const double iconSize = 24;
+
+  /// The brand tile on the icon's corner.
+  static const double badgeSize = 11;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final Color color = active ? tokens.primaryText : tokens.textSecondary;
-    final double badge = (size * 0.46).roundToDouble();
-    final Widget glyph = SizedBox.square(
-      dimension: size,
+    final Color pillColor = active
+        ? tokens.primary.withValues(alpha: tokens.isDark ? 0.2 : 0.12)
+        : tokens.primary.withValues(alpha: 0);
+    // The ring is what sits behind the tile: the page, or the open pill.
+    final Color ring = Color.alphaBlend(pillColor, tokens.background);
+    return SizedBox.fromSize(
+      size: pill,
       child: Stack(
         clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: <Widget>[
-          Positioned.fill(
-            child: Icon(
-              icon,
-              size: size,
-              color: color,
-              shadows: active
-                  ? <Shadow>[
-                      Shadow(
-                        color: tokens.primary.withValues(alpha: 0.7),
-                        blurRadius: 12,
-                      ),
-                    ]
-                  : null,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            width: pill.width,
+            height: pill.height,
+            decoration: BoxDecoration(
+              color: pillColor,
+              borderRadius: BorderRadius.circular(pill.height / 2),
             ),
           ),
-          Align(
-            alignment: badgeAt,
+          Icon(active ? activeIcon : icon, size: iconSize, color: color),
+          // On the icon's top corner, cut out of it by a ring of the page
+          // colour so the two never blur into one shape.
+          PositionedDirectional(
+            top: (pill.height - iconSize) / 2 - 4,
+            end: (pill.width - iconSize) / 2 - 5,
             child: Container(
               key: badgeKey,
-              width: badge,
-              height: badge,
+              padding: const EdgeInsets.all(1.5),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(badge * 0.26),
-                border: Border.all(
-                  color: tokens.isDark ? tokens.background : tokens.surface,
-                  width: 1,
-                ),
+                color: ring,
+                borderRadius: BorderRadius.circular(4.5),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(badge * 0.22),
-                child: Image.asset(
-                  kBrandLogoAsset,
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                ),
-              ),
+              child: const BrandMark(size: badgeSize),
             ),
           ),
         ],
       ),
     );
-    if (!ring) return glyph;
-    return Container(
-      padding: const EdgeInsets.all(2),
+  }
+}
+
+/// The middle tab (script 160): a blue disc carrying the white brand mark,
+/// in place of the ball with a picture of the logo laid on it. Inside the
+/// bar, as since script 158; open, its rim lights and it glows.
+class _NavBrand extends StatelessWidget {
+  const _NavBrand({
+    required this.size,
+    required this.badgeKey,
+    required this.active,
+    super.key,
+  });
+
+  final double size;
+  final Key badgeKey;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          // The brand's ring is blue whether or not its tab is open; only
-          // the glow says it is.
-          color: tokens.primary,
-          width: 2,
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[Color(0xFF2F8FEA), kBrandMarkBlue, Color(0xFF1262B0)],
         ),
-        boxShadow: active
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: tokens.primary.withValues(alpha: 0.45),
-                  blurRadius: 10,
-                ),
-              ]
-            : null,
+        border: Border.all(
+          color: active
+              ? tokens.primaryText
+              : tokens.primary.withValues(alpha: 0.35),
+          width: active ? 2 : 1,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: kBrandMarkBlue.withValues(alpha: active ? 0.55 : 0.22),
+            blurRadius: active ? 14 : 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: glyph,
+      alignment: Alignment.center,
+      child: BrandMark(key: badgeKey, size: size * 0.6, tile: false),
     );
   }
 }

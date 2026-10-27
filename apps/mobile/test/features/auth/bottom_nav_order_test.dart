@@ -6,8 +6,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/core/ui/brand_mark.dart';
 import 'package:mobile/features/auth/nukhbaa_shell.dart';
-import 'package:mobile/features/auth/sign_in_screen.dart' show kBrandLogoAsset;
 
 void main() {
   testWidgets('home, the league, matches, leaders, account; each its page', (
@@ -86,12 +86,41 @@ void main() {
           matching: find.byKey(Key('nav.badge.$tab')),
         );
         expect(badge, findsOneWidget, reason: tab);
-        final Image logo = tester.widget<Image>(
-          find.descendant(of: badge, matching: find.byType(Image)),
+        // The mark is drawn as a vector (script 160), never the 512 px
+        // picture scaled down to a blur.
+        expect(
+          find.descendant(
+            of: find.byKey(Key('nav.item.$tab')),
+            matching: find.byType(BrandMark),
+          ),
+          findsOneWidget,
+          reason: tab,
         );
-        expect((logo.image as AssetImage).assetName, kBrandLogoAsset);
+        expect(
+          find.descendant(
+            of: find.byKey(Key('nav.item.$tab')),
+            matching: find.byType(Image),
+          ),
+          findsNothing,
+          reason: tab,
+        );
       }
-      // The ball sits in the middle item, inside the bar: no longer raised.
+      // The side tabs wear the mark at the same corner, the same size.
+      final List<Rect> marks = <Rect>[
+        for (final String tab in <String>['home', 'h2h', 'leaders', 'account'])
+          tester.getRect(find.byKey(Key('nav.badge.$tab'))),
+      ];
+      for (final Rect mark in marks.skip(1)) {
+        expect(mark.size, marks.first.size);
+        expect(mark.top, marks.first.top);
+      }
+      final Rect homeItem = tester.getRect(
+        find.byKey(const Key('nav.item.home')),
+      );
+      // Arabic reads from the right: the mark sits on the icon's left top.
+      expect(marks.first.center.dx, lessThan(homeItem.center.dx));
+      // The middle disc carries the mark alone, inside the bar: no ball.
+      expect(find.byIcon(Icons.sports_soccer), findsNothing);
       final Finder brand = find.byKey(const Key('nav.brand'));
       expect(
         find.descendant(

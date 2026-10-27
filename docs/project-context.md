@@ -6734,6 +6734,28 @@ calls: 3 each (6 on a double), as before. Server and app; no migration.
   draws November as the first public month (`is_pilot` false), seeded
   from October's active players even though October was the pilot.
 
+### The bar's brand mark drawn as a vector (script 160, 2026-10-27)
+
+Asked by the owner on 2026-10-27 with a screenshot of the bar: a better
+look for the five tabs and for the small Nukhbaa mark on them. Mobile
+only; the bar stays as script 158 left it (no band, the fade, the middle
+item inside the bar, the order and indexes).
+
+- `core/ui/brand_mark.dart` (new): `BrandMark` paints the logo's shapes
+  (the N, the nun's bowl, the dot) from `nukhbaa_logo.png`'s 512 px canvas
+  as paths, in its blue tile (`kBrandMarkBlue`, picked from the picture)
+  or alone. The 512 px picture scaled to 12 px read as a blurred square.
+- Side tabs (`_NavGlyph`): outlined icon while closed, filled in a soft
+  blue pill while open; the mark is an 11 px tile at the same top corner
+  of every icon (the left in Arabic), cut out by a ring of what is behind
+  it, instead of a picture laid over the icon at a different place each.
+- Middle tab (`_NavBrand`, key `nav.brand`): a 44 px blue disc carrying
+  the white mark, in place of the ball with the picture on it; open, its
+  rim lights and it glows. The underline under the open tab stays.
+- Test: `bottom_nav_order_test.dart` (every tab wears a `BrandMark`, no
+  `Image`; the side marks share size and top; no ball), with the
+  survey's text x2 checks unchanged.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
