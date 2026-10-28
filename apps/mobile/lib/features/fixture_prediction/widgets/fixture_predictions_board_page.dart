@@ -66,7 +66,11 @@ import 'prediction_reaction_sheet.dart';
 const double _nameWidth = 128;
 const double _cellWidth = 116;
 const double _headerHeight = 64;
-const double _rowHeight = 46;
+
+/// A full 48 dp: each prediction cell is a button (it opens the
+/// reactions), and 46 was under the touch target (Accessibility Scanner,
+/// 2026-10-28; script 170).
+const double _rowHeight = 48;
 
 /// Up to this many cards of the day show as they are; more fold into one
 /// line (batch 157): eleven cards used to leave the table a third of the
@@ -850,27 +854,36 @@ class _MatchHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           // Home on the reading side, as on the card and in each cell.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Flexible(
-                child: Text(
-                  column.homeName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: style,
-                ),
+          // Read once as "home vs away": as three texts the cross
+          // between them was read alone (script 170).
+          Semantics(
+            container: true,
+            label:
+                '${column.homeName} ${AppLocalizations.of(context).versusShort} ${column.awayName}',
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Flexible(
+                    child: Text(
+                      column.homeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
+                  ),
+                  Text(' × ', style: style.copyWith(color: tokens.textMuted)),
+                  Flexible(
+                    child: Text(
+                      column.awayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
+                  ),
+                ],
               ),
-              Text(' × ', style: style.copyWith(color: tokens.textMuted)),
-              Flexible(
-                child: Text(
-                  column.awayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: style,
-                ),
-              ),
-            ],
+            ),
           ),
           if (column.loading)
             const Padding(
@@ -1044,26 +1057,35 @@ class _PredictionCell extends StatelessWidget {
     if (prediction == null) return cell;
     // Every prediction on the board can be reacted to (migration 0094);
     // the viewer's own shows what it received.
-    return InkWell(
-      onTap: () {
-        column.onTouch();
-        unawaited(
-          showPredictionReactionSheet(
-            context: context,
-            seasonId: column.fixture.seasonId,
-            fixtureId: column.fixture.fixtureId,
-            participantId: player.participantId,
-            playerName: player.name,
-            homeName: column.homeName,
-            awayName: column.awayName,
-            homeGoals: prediction.homeGoals,
-            awayGoals: prediction.awayGoals,
-            isMine: player.isMine,
-            hero: hero,
-          ),
-        );
-      },
-      child: cell,
+    // One button per prediction, its player and match read before the
+    // score: as the bare score ("1 - 2") many cells read alike
+    // (Accessibility Scanner, 2026-10-28; script 170).
+    return Semantics(
+      container: true,
+      button: true,
+      label:
+          '${player.name}\n${column.homeName} ${AppLocalizations.of(context).versusShort} ${column.awayName}',
+      child: InkWell(
+        onTap: () {
+          column.onTouch();
+          unawaited(
+            showPredictionReactionSheet(
+              context: context,
+              seasonId: column.fixture.seasonId,
+              fixtureId: column.fixture.fixtureId,
+              participantId: player.participantId,
+              playerName: player.name,
+              homeName: column.homeName,
+              awayName: column.awayName,
+              homeGoals: prediction.homeGoals,
+              awayGoals: prediction.awayGoals,
+              isMine: player.isMine,
+              hero: hero,
+            ),
+          );
+        },
+        child: cell,
+      ),
     );
   }
 }

@@ -7097,6 +7097,37 @@ screenshots:
   finished card's two actions once each) and `app_button_semantics_test.dart`.
   All three fail on the code before this batch.
 
+### The predictions board read by name (script 170, 2026-10-28)
+
+A second Accessibility Scanner pass (38 screens, after script 169) left
+one real defect, on the predictions board (توقعات اللاعبين); the rest
+were the classes script 169 measured and left.
+
+- **Each prediction reads its player and match, fixed.** A cell read its
+  bare score ("1 - 2"), the same on up to eight cells of one screen. It
+  is now one button node, labelled with the player and «home ضد away»
+  before the score and its marks; tapping still opens the reactions.
+- **A match header reads once, fixed.** The two names and the cross
+  between them were three nodes, the cross read alone. The header is one
+  node, «home ضد away», from the existing `versusShort`; no new text.
+- **Rows are 48 dp, fixed.** `_rowHeight` went from 46 to 48, so each
+  cell (a button) is a full touch target; the name column follows it.
+- **Left as they are, measured again.** The date strip's edge days (20
+  dp), a card's ranking button under the strip (18 dp), a crest's 4 px
+  sliver and the board's first row under the pinned headers (6 dp) are
+  controls cut by a scroll edge; whole, they measure 48 dp. The tab names
+  match the page titles. The card's «عرض لوحة الصدارة» stays on each card
+  (owner asked for a comparison, 2026-10-28): every card opens the same
+  season table, so the shared name is true; the header already holds the
+  title, «مباشر» and the calendar, and a third icon there squeezes the
+  title at large text on a 360 px phone; the same month table is one tap
+  away on the «المتصدرون» tab; and moving it changes the card's measured
+  height for a scanner warning, not a defect.
+- Tests: `predictions_board_semantics_test.dart` (the real page: each
+  header one node without a lone cross, six cells six distinct button
+  nodes naming player and match, rows 48 dp). All three fail on the code
+  before this batch.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
