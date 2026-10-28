@@ -6679,10 +6679,9 @@ Mobile only: no server, contract or migration change.
   that paid, most players first (kickoff order between equals).
 - Account tab: a "الدعم" group after "التطبيق" with one row,
   `account.contactDeveloper` ("تواصل مع المطوّر"), which opens Nukhbaa's
-  WhatsApp channel (`nukhbaaSupportUri`) through
-  `notificationLinkOpenerProvider`; when nothing opens it, a snack bar
-  says so. A WhatsApp channel is one-way: followers can react but not
-  write to it.
+  support e-mail (`nukhbaaSupportUri`, since script 164 -- see below)
+  through `notificationLinkOpenerProvider`; when nothing opens it, a snack
+  bar says so.
 - Tests through the real page and screen:
   `predictions_board_layout_test.dart` (five cards fold and open, most
   first; forty players scroll under the pinned headers; the headers and
@@ -6882,6 +6881,27 @@ another day, hidden or a test fixture was dropped by the server.
 
 No migration; the server on push (Northflank), the wording with the next
 APK.
+
+### "Contact the developer" by e-mail, no phone number (script 164, 2026-10-28)
+
+Asked by the owner on 2026-10-28: a player who contacts the developer must
+not see his phone number, only Nukhbaa's address, nukhbaa.app@gmail.com.
+The WhatsApp channel of script 157 hid the number but is one-way (no
+complaint can be written to it); a WhatsApp chat (`wa.me`) always shows
+the number, and WhatsApp usernames are not yet available everywhere and
+have no documented link.
+
+- `account.contactDeveloper` opens a new mail to `nukhbaaSupportEmail`
+  with the subject "دعم نُخبة" (`nukhbaaSupportUri`, `mailto:`, the
+  subject percent-encoded so a space is not shown as `+`). The row's
+  subtitle shows the address on its own line, and the failure line names
+  it, so a phone without a mail app still has it. No new dependency
+  (`url_launcher` was there), no server change, no migration.
+- Tests: `account_contact_test.dart` (the opened mail's address and
+  decoded subject, the address on the row, no WhatsApp text, the failure
+  line with the address, text x2 at 360px).
+
+The app with the next APK.
 
 ## 3. Version-Verification Log
 

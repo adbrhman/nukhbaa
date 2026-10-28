@@ -197,7 +197,9 @@ class AccountScreen extends ConsumerWidget {
                     ],
                   ),
                   // A way to the developer for a problem or a complaint
-                  // (2026-10-27): Nukhbaa's WhatsApp channel.
+                  // (2026-10-27): Nukhbaa's support e-mail since script 164.
+                  // A WhatsApp channel cannot be written to, and a WhatsApp
+                  // chat shows the developer's phone number.
                   const SizedBox(height: AppSpacing.lg),
                   const AccountSectionTitle('الدعم'),
                   AccountMenuCard(
@@ -207,7 +209,9 @@ class AccountScreen extends ConsumerWidget {
                         key: const Key('account.contactDeveloper'),
                         icon: Icons.support_agent_rounded,
                         title: 'تواصل مع المطوّر',
-                        subtitle: 'للإبلاغ عن مشكلة أو تقديم شكوى عبر واتساب',
+                        subtitle:
+                            'للإبلاغ عن مشكلة أو تقديم شكوى عبر البريد\n'
+                            '$nukhbaaSupportEmail',
                         onTap: () => unawaited(_openSupport(context, ref)),
                       ),
                     ],
@@ -505,14 +509,19 @@ class _DarkModeRow extends ConsumerWidget {
   }
 }
 
-/// Nukhbaa's WhatsApp channel, the account tab's way to the developer
-/// (2026-10-27).
+/// Nukhbaa's support address, the account tab's way to the developer
+/// (script 164): the player sees this address only, never a phone number.
+const String nukhbaaSupportEmail = 'nukhbaa.app@gmail.com';
+
+/// A new mail to [nukhbaaSupportEmail] with the subject 'دعم نُخبة',
+/// percent-encoded here (a space as %20, not +, which mail apps show).
 final Uri nukhbaaSupportUri = Uri.parse(
-  'https://whatsapp.com/channel/0029VbDjBbEBlHpWTaJdKe2t',
+  'mailto:$nukhbaaSupportEmail'
+  '?subject=%D8%AF%D8%B9%D9%85%20%D9%86%D9%8F%D8%AE%D8%A8%D8%A9',
 );
 
-/// Opens [nukhbaaSupportUri] in WhatsApp (or the browser) through the app's
-/// one link opener; when nothing could open it, a line says so.
+/// Opens [nukhbaaSupportUri] in the phone's mail app through the app's one
+/// link opener; when nothing could open it, a line says so.
 Future<void> _openSupport(BuildContext context, WidgetRef ref) async {
   final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
   bool opened;
@@ -525,7 +534,9 @@ Future<void> _openSupport(BuildContext context, WidgetRef ref) async {
     messenger.showSnackBar(
       const SnackBar(
         key: Key('account.contactDeveloper.failed'),
-        content: Text('تعذّر فتح واتساب، حاول مرة أخرى.'),
+        content: Text(
+          'تعذّر فتح تطبيق البريد، راسلنا على $nukhbaaSupportEmail',
+        ),
       ),
     );
   }

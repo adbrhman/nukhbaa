@@ -1,7 +1,8 @@
 /// The account tab's way to the developer (2026-10-27), through the real
 /// [AccountScreen] over the real [ApiTransport]: a support group after the
-/// app's settings whose row opens Nukhbaa's WhatsApp channel through the
-/// app's link opener, and says so when nothing could open it.
+/// app's settings whose row opens a mail to Nukhbaa's support address
+/// (script 164; no phone number anywhere) through the app's link opener,
+/// and says so when nothing could open it.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -71,7 +72,9 @@ Future<List<Uri>> _pump(
 const Key _row = Key('account.contactDeveloper');
 
 void main() {
-  testWidgets('the support row opens the WhatsApp channel', (tester) async {
+  testWidgets('the support row opens a mail to the support address', (
+    tester,
+  ) async {
     final List<Uri> opened = await _pump(tester);
 
     expect(
@@ -83,6 +86,14 @@ void main() {
     );
     expect(find.text('الدعم'), findsOneWidget);
     expect(find.text('تواصل مع المطوّر'), findsOneWidget);
+    // The player sees the support address on the row; no WhatsApp.
+    expect(
+      find.text(
+        'للإبلاغ عن مشكلة أو تقديم شكوى عبر البريد\nnukhbaa.app@gmail.com',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('واتساب'), findsNothing);
     // After the app's settings, before sign-out.
     final double app = tester
         .getTopLeft(find.byKey(const Key('account.group.app')))
@@ -99,16 +110,21 @@ void main() {
     await tester.tap(find.byKey(_row));
     await tester.pumpAndSettle();
 
-    expect(opened, <Uri>[
-      Uri.parse('https://whatsapp.com/channel/0029VbDjBbEBlHpWTaJdKe2t'),
-    ]);
+    expect(opened, hasLength(1));
+    final Uri mail = opened.single;
+    expect(mail.scheme, 'mailto');
+    expect(mail.path, 'nukhbaa.app@gmail.com');
+    expect(mail.queryParameters, <String, String>{'subject': 'دعم نُخبة'});
+    expect(mail.query, isNot(contains('+')));
     expect(
       find.byKey(const Key('account.contactDeveloper.failed')),
       findsNothing,
     );
   });
 
-  testWidgets('a channel nothing could open is said', (tester) async {
+  testWidgets('a mail nothing could open is said, with the address', (
+    tester,
+  ) async {
     final List<Uri> opened = await _pump(tester, opens: false);
 
     await tester.tap(find.byKey(_row));
@@ -117,6 +133,10 @@ void main() {
     expect(opened, hasLength(1));
     expect(
       find.byKey(const Key('account.contactDeveloper.failed')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('تعذّر فتح تطبيق البريد، راسلنا على nukhbaa.app@gmail.com'),
       findsOneWidget,
     );
   });
