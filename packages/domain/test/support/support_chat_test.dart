@@ -95,4 +95,60 @@ void main() {
     expect(PushLink.support, 'support');
     expect(PushLink.supportInbox, 'support_inbox');
   });
+
+  group('SupportImage (0188)', () {
+    final List<int> jpeg = <int>[0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10];
+    final List<int> png = <int>[
+      0x89,
+      0x50,
+      0x4E,
+      0x47,
+      0x0D,
+      0x0A,
+      0x1A,
+      0x0A,
+      0,
+    ];
+    final List<int> webp = <int>[
+      0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, //
+    ];
+
+    test('JPEG, PNG and WEBP whose signature matches their type pass', () {
+      expect(SupportImage.parse(jpeg, 'image/jpeg'), isA<Ok<SupportImage>>());
+      expect(
+        SupportImage.parse(png, 'IMAGE/PNG; q=1'),
+        isA<Ok<SupportImage>>(),
+      );
+      expect(SupportImage.parse(webp, 'image/webp'), isA<Ok<SupportImage>>());
+    });
+
+    test('a file that claims to be a picture and is not is refused', () {
+      for (final (List<int>, String?) bad in <(List<int>, String?)>[
+        (png, 'image/jpeg'),
+        (<int>[0x25, 0x50, 0x44, 0x46], 'image/png'),
+        (jpeg, 'image/gif'),
+        (jpeg, null),
+      ]) {
+        final image = SupportImage.parse(bad.$1, bad.$2);
+        expect(
+          (image as Err<SupportImage>).error.code,
+          'support.image_unsupported',
+        );
+      }
+    });
+
+    test('empty, or over 512 KB, is refused', () {
+      expect(
+        (SupportImage.parse(const <int>[], 'image/jpeg') as Err<SupportImage>)
+            .error
+            .code,
+        'support.image_empty',
+      );
+      final List<int> big = <int>[...jpeg, ...List<int>.filled(512 * 1024, 0)];
+      expect(
+        (SupportImage.parse(big, 'image/jpeg') as Err<SupportImage>).error.code,
+        'support.image_too_large',
+      );
+    });
+  });
 }

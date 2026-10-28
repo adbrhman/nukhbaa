@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_client/src/api_transport.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -47,6 +49,25 @@ final class SupportApi {
       parse: (json) => SupportCountDto.fromJson(json).count,
     );
   }
+
+  /// `POST /me/support/images` -- sends support a picture (migration 0188):
+  /// the raw [bytes] under [contentType]; answers the message as stored.
+  Future<Result<SupportMessageDto>> sendImage(
+    List<int> bytes, {
+    required String contentType,
+  }) {
+    return _transport.postBytes<SupportMessageDto>(
+      '/me/support/images',
+      bytes: bytes,
+      contentType: contentType,
+      parse: SupportMessageDto.fromJson,
+    );
+  }
+
+  /// `GET /me/support/messages/{messageId}/image` -- a picture of the
+  /// caller's own chat; `Ok(null)` when there is none to read.
+  Future<Result<Uint8List?>> image(int messageId) =>
+      _transport.getBytes('/me/support/messages/$messageId/image');
 
   /// `GET /me/support/unread` -- support's answers the caller has not read.
   Future<Result<int>> unread() {

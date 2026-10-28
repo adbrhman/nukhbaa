@@ -40,6 +40,7 @@ class SupportBubble extends StatelessWidget {
     this.delivery,
     this.error,
     this.onRetry,
+    this.image,
   });
 
   /// Whether the reader sent it.
@@ -62,6 +63,9 @@ class SupportBubble extends StatelessWidget {
 
   /// Sends a failed message again.
   final VoidCallback? onRetry;
+
+  /// The picture that came with it (migration 0188), drawn above the text.
+  final Widget? image;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +149,12 @@ class SupportBubble extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Text(body, style: text.bodyLarge?.copyWith(color: ink)),
+                        ?image,
+                        if (body.isNotEmpty)
+                          Text(
+                            body,
+                            style: text.bodyLarge?.copyWith(color: ink),
+                          ),
                         const SizedBox(height: AppSpacing.xs),
                         Wrap(
                           spacing: AppSpacing.xs,
@@ -215,6 +224,7 @@ class SupportComposer extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onSend,
+    this.onAttach,
   });
 
   /// The longest message, as the server allows it.
@@ -222,6 +232,9 @@ class SupportComposer extends StatelessWidget {
 
   final TextEditingController controller;
   final VoidCallback? onSend;
+
+  /// Picks a picture to send (migration 0188); no button when null.
+  final VoidCallback? onAttach;
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +254,15 @@ class SupportComposer extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
+            if (onAttach != null) ...<Widget>[
+              IconButton(
+                key: const Key('support.attach'),
+                tooltip: 'إرفاق صورة',
+                onPressed: onAttach,
+                icon: const Icon(Icons.image_outlined),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
             Expanded(
               child: TextField(
                 key: const Key('support.input'),

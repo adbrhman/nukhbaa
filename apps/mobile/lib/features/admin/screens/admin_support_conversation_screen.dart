@@ -18,6 +18,7 @@ import '../../../core/ui/app_dialog.dart';
 import '../../../core/ui/app_error_state.dart';
 import '../../../core/ui/app_skeleton.dart';
 import '../../support/support_chat_widgets.dart';
+import '../../support/support_images.dart';
 import '../admin_support_providers.dart';
 
 /// The conversation: the player's messages, the answers, a box to answer,
@@ -42,10 +43,13 @@ class AdminSupportConversationScreen extends ConsumerStatefulWidget {
 }
 
 final class _PendingReply {
-  _PendingReply(this.localId, this.body);
+  _PendingReply(this.localId, this.body, {this.image});
 
   final int localId;
   final String body;
+
+  /// A picture being sent (migration 0188); its message has no text.
+  final SupportPickedImage? image;
   bool sending = true;
   String? error;
 }
@@ -164,9 +168,18 @@ class _AdminSupportConversationScreenState
         ..sending = true
         ..error = null;
     });
-    final Result<SupportMessageDto> result = await ref
-        .read(adminApiProvider)
-        .replySupport(widget.conversationId, reply.body);
+    final SupportPickedImage? image = reply.image;
+    final Result<SupportMessageDto> result = image == null
+        ? await ref
+              .read(adminApiProvider)
+              .replySupport(widget.conversationId, reply.body)
+        : await ref
+              .read(adminApiProvider)
+              .replySupportImage(
+                widget.conversationId,
+                image.bytes,
+                contentType: image.mime,
+              );
     if (!mounted) return;
     setState(() {
       switch (result) {
@@ -179,6 +192,19 @@ class _AdminSupportConversationScreenState
             ..error = ErrorPresenter.message(error);
       }
     });
+  }
+
+  /// Picks a picture, shows it first, then sends it as its own answer.
+  Future<void> _attach() async {
+    final SupportPickedImage? picked = await pickSupportImage(context, ref);
+    if (picked == null || !mounted) return;
+    final _PendingReply reply = _PendingReply(
+      _nextLocalId++,
+      '',
+      image: picked,
+    );
+    setState(() => _pending.add(reply));
+    unawaited(_deliver(reply));
   }
 
   Future<void> _setStatus(String status) async {
@@ -272,6 +298,7 @@ class _AdminSupportConversationScreenState
               SupportComposer(
                 controller: _input,
                 onSend: _input.text.trim().isEmpty ? null : _send,
+                onAttach: () => unawaited(_attach()),
               ),
           ],
         ),
@@ -315,6 +342,9 @@ class _AdminSupportConversationScreenState
                 : SupportDelivery.failed,
             error: p.error,
             onRetry: p.sending ? null : () => unawaited(_deliver(p)),
+            image: p.image == null
+                ? null
+                : SupportImageThumb(localBytes: p.image!.bytes),
           ),
         for (final SupportMessageDto m in _messages.reversed)
           SupportBubble(
@@ -328,6 +358,14 @@ class _AdminSupportConversationScreenState
                 : (m.readAt == null
                       ? SupportDelivery.sent
                       : SupportDelivery.read),
+            image: m.hasImage
+                ? SupportImageThumb(
+                    imageRef: (
+                      conversationId: widget.conversationId,
+                      messageId: m.id,
+                    ),
+                  )
+                : null,
           ),
         if (_hasMore)
           Center(

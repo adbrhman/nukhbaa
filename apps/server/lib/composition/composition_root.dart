@@ -99,6 +99,10 @@ final class CompositionRoot {
     required this.adminMarkSupportRead,
     required this.adminSetSupportStatus,
     required this.notifySupportMessage,
+    required this.sendSupportImage,
+    required this.getMySupportImage,
+    required this.adminReplySupportImage,
+    required this.adminGetSupportImage,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
     required this.createGroup,
@@ -308,6 +312,10 @@ final class CompositionRoot {
     AdminMarkSupportRead? adminMarkSupportRead,
     AdminSetSupportStatus? adminSetSupportStatus,
     NotifySupportMessage? notifySupportMessage,
+    SendSupportImage? sendSupportImage,
+    GetMySupportImage? getMySupportImage,
+    AdminReplySupportImage? adminReplySupportImage,
+    AdminGetSupportImage? adminGetSupportImage,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
@@ -536,6 +544,12 @@ final class CompositionRoot {
            adminSetSupportStatus ?? _absentAdminSetSupportStatus(),
        notifySupportMessage =
            notifySupportMessage ?? _absentNotifySupportMessage(),
+       sendSupportImage = sendSupportImage ?? _absentSendSupportImage(),
+       getMySupportImage = getMySupportImage ?? _absentGetMySupportImage(),
+       adminReplySupportImage =
+           adminReplySupportImage ?? _absentAdminReplySupportImage(),
+       adminGetSupportImage =
+           adminGetSupportImage ?? _absentAdminGetSupportImage(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        getSportingSeasonLeaderboard =
            getSportingSeasonLeaderboard ??
@@ -1200,6 +1214,23 @@ final class CompositionRoot {
         admins: _UnwiredAdminPushTargetReader(),
         sender: const NoopPushSender(),
       );
+
+  static SendSupportImage _absentSendSupportImage() => SendSupportImage(
+    images: _UnwiredSupportImageRepository(),
+    clock: _unwiredClock,
+  );
+
+  static GetMySupportImage _absentGetMySupportImage() =>
+      GetMySupportImage(images: _UnwiredSupportImageRepository());
+
+  static AdminReplySupportImage _absentAdminReplySupportImage() =>
+      AdminReplySupportImage(
+        images: _UnwiredSupportImageRepository(),
+        clock: _unwiredClock,
+      );
+
+  static AdminGetSupportImage _absentAdminGetSupportImage() =>
+      AdminGetSupportImage(images: _UnwiredSupportImageRepository());
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
   /// unwired Hall of Fame slice fails loudly instead of touching a real
@@ -2130,6 +2161,22 @@ final class CompositionRoot {
   /// Rings the other side's phone for a support message (after the
   /// support routes answer, script 165).
   final NotifySupportMessage notifySupportMessage;
+
+  /// A player sends support a picture (backs `POST /me/support/images`,
+  /// script 168, migration 0188).
+  final SendSupportImage sendSupportImage;
+
+  /// A picture of the caller's own support chat (backs
+  /// `GET /me/support/messages/{id}/image`, script 168).
+  final GetMySupportImage getMySupportImage;
+
+  /// An admin answers with a picture (backs
+  /// `POST /admin/support/conversations/{id}/images`, script 168).
+  final AdminReplySupportImage adminReplySupportImage;
+
+  /// A picture of one support conversation for an admin (backs
+  /// `GET /admin/support/conversations/{id}/messages/{messageId}/image`).
+  final AdminGetSupportImage adminGetSupportImage;
 
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
@@ -3644,6 +3691,14 @@ final class CompositionRoot {
         admins: PostgresAdminPushTargetReader(connection),
         sender: pushSender,
       ),
+      // Pictures in the support chat (script 168, migration 0188).
+      sendSupportImage: SendSupportImage(images: supportChats, clock: clock),
+      getMySupportImage: GetMySupportImage(images: supportChats),
+      adminReplySupportImage: AdminReplySupportImage(
+        images: supportChats,
+        clock: clock,
+      ),
+      adminGetSupportImage: AdminGetSupportImage(images: supportChats),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
       ),
@@ -3987,6 +4042,40 @@ final class _UnwiredLeagueCatalogWriter implements LeagueCatalogWriter {
   @override
   Future<Result<LeagueAddition>> add({required String name}) =>
       throw StateError('AdminAddLeague was not wired into this test root');
+}
+
+/// Backs the "absent" support picture use-cases: throws if a test reaches
+/// a picture slice it never wired (script 168).
+final class _UnwiredSupportImageRepository implements SupportImageRepository {
+  static Never _unwired() =>
+      throw StateError('Support pictures were not wired into this test root');
+
+  @override
+  Future<Result<SupportMessageStored>> addPlayerImage({
+    required UserId playerId,
+    required SupportImage image,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportMessageStored>> addSupportImage({
+    required SupportConversationId conversationId,
+    required UserId adminId,
+    required SupportImage image,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportImage?>> playerImage({
+    required UserId playerId,
+    required int messageId,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportImage?>> conversationImage({
+    required SupportConversationId conversationId,
+    required int messageId,
+  }) => _unwired();
 }
 
 /// Backs the "absent" support chat use-cases: throws if a test reaches a

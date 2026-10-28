@@ -20,6 +20,7 @@ import '../../core/ui/app_empty_state.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../notifications/notifications_screen.dart';
 import 'support_chat_widgets.dart';
+import 'support_images.dart';
 import 'support_providers.dart';
 
 /// Nukhbaa's support address: the way out of the chat when the server
@@ -57,10 +58,13 @@ class SupportChatScreen extends ConsumerStatefulWidget {
 
 /// A message the player sent that the server has not taken yet.
 final class _Pending {
-  _Pending(this.localId, this.body);
+  _Pending(this.localId, this.body, {this.image});
 
   final int localId;
   final String body;
+
+  /// A picture being sent (migration 0188); its message has no text.
+  final SupportPickedImage? image;
   bool sending = true;
   String? error;
 }
@@ -222,9 +226,12 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
         ..sending = true
         ..error = null;
     });
-    final Result<SupportMessageDto> result = await ref
-        .read(supportApiProvider)
-        .send(pending.body);
+    final SupportPickedImage? image = pending.image;
+    final Result<SupportMessageDto> result = image == null
+        ? await ref.read(supportApiProvider).send(pending.body)
+        : await ref
+              .read(supportApiProvider)
+              .sendImage(image.bytes, contentType: image.mime);
     if (!mounted) return;
     setState(() {
       switch (result) {
@@ -239,6 +246,15 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
             ..error = ErrorPresenter.message(error);
       }
     });
+  }
+
+  /// Picks a picture, shows it first, then sends it as its own message.
+  Future<void> _attach() async {
+    final SupportPickedImage? picked = await pickSupportImage(context, ref);
+    if (picked == null || !mounted) return;
+    final _Pending pending = _Pending(_nextLocalId++, '', image: picked);
+    setState(() => _pending.add(pending));
+    unawaited(_deliver(pending));
   }
 
   @override
@@ -266,6 +282,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
             SupportComposer(
               controller: _input,
               onSend: _input.text.trim().isEmpty ? null : _send,
+              onAttach: () => unawaited(_attach()),
             ),
           ],
         ),
@@ -306,6 +323,9 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
               : SupportDelivery.failed,
           error: p.error,
           onRetry: p.sending ? null : () => unawaited(_deliver(p)),
+          image: p.image == null
+              ? null
+              : SupportImageThumb(localBytes: p.image!.bytes),
         ),
       for (final SupportMessageDto m in _messages.reversed)
         SupportBubble(
@@ -319,6 +339,11 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
               : (m.readAt == null
                     ? SupportDelivery.sent
                     : SupportDelivery.read),
+          image: m.hasImage
+              ? SupportImageThumb(
+                  imageRef: (conversationId: null, messageId: m.id),
+                )
+              : null,
         ),
       if (_hasMore)
         Center(

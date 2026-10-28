@@ -26,6 +26,82 @@ final class FakeSupportServer {
 
   int _nextId = 1;
 
+  /// Pictures by message id (migration 0188), and the type each came as.
+  final Map<int, (List<int>, String)> images = <int, (List<int>, String)>{};
+
+  /// A 1x1 PNG, a picture the test image decoder can draw.
+  static const List<int> png = <int>[
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10,
+    0,
+    0,
+    0,
+    13,
+    73,
+    72,
+    68,
+    82,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    8,
+    2,
+    0,
+    0,
+    0,
+    144,
+    119,
+    83,
+    222,
+    0,
+    0,
+    0,
+    12,
+    73,
+    68,
+    65,
+    84,
+    120,
+    156,
+    99,
+    248,
+    207,
+    192,
+    0,
+    0,
+    3,
+    1,
+    1,
+    0,
+    201,
+    254,
+    146,
+    239,
+    0,
+    0,
+    0,
+    0,
+    73,
+    69,
+    78,
+    68,
+    174,
+    66,
+    96,
+    130,
+  ];
+
   /// Adds a stored message, as if it had been sent earlier.
   void add(String sender, String body, {bool read = false}) {
     final int id = _nextId++;
@@ -88,6 +164,24 @@ final class FakeSupportServer {
         'has_more': start > 0,
         'messages': older.sublist(start),
       });
+    }
+    if (url.path == '/me/support/images' && request.method == 'POST') {
+      add('player', '');
+      messages.last['has_image'] = true;
+      images[messages.last['id']! as int] = (
+        request.bodyBytes,
+        request.headers['content-type'] ?? '',
+      );
+      return _json(messages.last, 201);
+    }
+    final RegExpMatch? image = RegExp(
+      r'^/me/support/messages/(\d+)/image$',
+    ).firstMatch(url.path);
+    if (image != null && request.method == 'GET') {
+      final (List<int>, String)? stored = images[int.parse(image.group(1)!)];
+      return stored == null
+          ? http.Response('', 404)
+          : http.Response.bytes(stored.$1, 200);
     }
     if (url.path == '/me/support/messages' && request.method == 'POST') {
       final (int, String, String)? fail = failNextSend;

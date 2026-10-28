@@ -7027,6 +7027,37 @@ The app with the next APK; needs the server of script 165.
 
 The app with the next APK; needs the server of script 165.
 
+### The support chat, part 4: pictures (script 168, 2026-10-28)
+
+- Migration 0188: `support.messages.image_bytes` (1 byte to 512 KB) and
+  `image_mime` (JPEG, PNG, WEBP), both set or both null; the body check
+  allows an empty body when a picture is there. The bytes live in the row,
+  as the avatars (0033): no bucket, no secret, served behind the sign-in.
+- A picture is a message of its own, with no text; the inbox line and the
+  push say «📷 صورة». `SupportImage` (domain) checks the size, the type and
+  the file's own signature (a PDF called a JPEG is refused).
+- Routes: `POST /me/support/images` (raw bytes, `Content-Type`; 20 a day,
+  `PlayerAppend.supportImage`), `GET /me/support/messages/{id}/image`
+  (`404` when the message is not the caller's or has no picture),
+  `POST /admin/support/conversations/{id}/images`,
+  `GET /admin/support/conversations/{id}/messages/{messageId}/image`
+  (admin only, in the use-cases). A page's messages carry `has_image`.
+- App: «إرفاق صورة» beside the box in both chats; the gallery shrinks a
+  photo to 1280 px at 75%; the app reads the type from the bytes, refuses
+  a non-picture or one over 512 KB with a line, and shows the picture with
+  «إرسال» / «إلغاء» before it goes. A stored picture is read once through
+  the signed-in transport (`supportImageBytesProvider`) and opens full
+  screen with zoom.
+- Tests: the SQL test of 0187 now covers 0188 (stored, read only within its
+  conversation, type, size, no text and no picture); `SupportImage`, the
+  four use-cases, the adapter (live-checked once against Postgres 16 through
+  the real driver), `support_images_route_test.dart` (only the owner reads,
+  a non-picture and an oversize are 400, a player refused the admin routes,
+  20 a day), the clients, and both chats (preview, send, cancel, refused,
+  a stored picture drawn, full screen).
+
+Apply 0188 in the SQL Editor before pushing.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

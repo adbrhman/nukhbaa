@@ -50,7 +50,9 @@ final class NotifySupportMessage {
     if (targets is Err<List<String>>) return Result.err(targets.error);
     final List<String> tokens = (targets as Ok<List<String>>).value;
     if (tokens.isEmpty) return const Result.ok(false);
-    final String text = _short(stored.message.body);
+    final String text = stored.message.body.isEmpty
+        ? SupportImage.preview
+        : _short(stored.message.body);
     final String name = stored.playerName.trim().isEmpty
         ? 'لاعب'
         : stored.playerName.trim();

@@ -5,15 +5,20 @@ library;
 
 import 'dart:convert';
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/admin/screens/sections/admin_support_section.dart';
+import 'package:mobile/features/support/support_images.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/auth_harness.dart';
+import '../support/support_fake_server.dart';
 
 const String _c1 = 'aaaaaaaa-0000-4000-8000-000000000001';
 const String _c2 = 'aaaaaaaa-0000-4000-8000-000000000002';
@@ -64,6 +69,7 @@ final class _FakeAdminSupport {
         _c2: <Map<String, Object?>>[],
       };
   final List<String> calls = <String>[];
+  final Map<int, List<int>> images = <int, List<int>>{};
   int _nextId = 3;
 
   http.Response _json(Object body, [int code = 200]) => http.Response(
@@ -142,6 +148,24 @@ final class _FakeAdminSupport {
         }
         return _json(<String, Object?>{'count': marked});
       }
+      if (parts.length == 5 && parts[4] == 'images') {
+        final Map<String, Object?> m = <String, Object?>{
+          'id': _nextId++,
+          'sender': 'support',
+          'body': '',
+          'created_at': '2026-10-28T11:00:00.000Z',
+          'has_image': true,
+        };
+        thread.add(m);
+        images[m['id']! as int] = request.bodyBytes;
+        return _json(m, 201);
+      }
+      if (parts.length == 7 && parts[6] == 'image') {
+        final List<int>? bytes = images[int.parse(parts[5])];
+        return bytes == null
+            ? http.Response('', 404)
+            : http.Response.bytes(bytes, 200);
+      }
       if (parts.length == 5 && parts[4] == 'messages') {
         final String body =
             (jsonDecode(request.body) as Map<String, Object?>)['body']!
@@ -175,7 +199,15 @@ Future<void> _pump(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: harness.overrides,
+      overrides: <Override>[
+        ...harness.overrides,
+        supportImagePickerProvider.overrideWithValue(
+          () async => SupportPickedImage(
+            bytes: Uint8List.fromList(FakeSupportServer.png),
+            mime: 'image/png',
+          ),
+        ),
+      ],
       retry: (retryCount, error) => null,
       child: MaterialApp(
         theme: AppTheme.dark,
@@ -336,5 +368,33 @@ void main() {
 
     expect(find.byKey(const Key('admin.support.thread.list')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an admin answers with a picture; stored ones are drawn', (
+    tester,
+  ) async {
+    final _FakeAdminSupport server = _FakeAdminSupport();
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('support.attach')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('support.image.send')));
+    await tester.pumpAndSettle();
+
+    expect(server.images.values.single, FakeSupportServer.png);
+    expect(find.byKey(const Key('support.image')), findsOneWidget);
+
+    // Read again from the server, the picture comes by its message.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+    expect(
+      server.calls.where((c) => c.endsWith('/messages/3/image')),
+      isNotEmpty,
+    );
+    expect(find.byKey(const Key('support.image')), findsOneWidget);
   });
 }

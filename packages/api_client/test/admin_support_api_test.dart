@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -99,4 +101,52 @@ void main() {
       'closed',
     );
   });
+
+  test(
+    'an admin picture goes up as raw bytes; one is read by message',
+    () async {
+      final List<int> png = <int>[
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+      ];
+      final ctx = buildTransport((request) async {
+        if (request.method == 'POST') {
+          return okJson(const {
+            'id': 4,
+            'sender': 'support',
+            'body': '',
+            'created_at': '2026-10-28T10:00:00.000Z',
+            'has_image': true,
+          });
+        }
+        return http.Response.bytes(png, 200);
+      });
+      final AdminApi api = AdminApi(ctx.transport);
+
+      final sent = await api.replySupportImage(
+        _id,
+        png,
+        contentType: 'image/png',
+      );
+      final read = await api.supportImage(_id, 4);
+
+      expect((sent as Ok<SupportMessageDto>).value.sender, 'support');
+      expect(
+        ctx.captured.first.url.path,
+        '/admin/support/conversations/$_id/images',
+      );
+      expect(ctx.captured.first.request.bodyBytes, png);
+      expect(
+        ctx.captured.last.url.path,
+        '/admin/support/conversations/$_id/messages/4/image',
+      );
+      expect((read as Ok<Uint8List?>).value, png);
+    },
+  );
 }

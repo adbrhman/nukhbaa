@@ -131,3 +131,77 @@ final class SupportMessageBody {
     return line.substring(0, end);
   }
 }
+
+/// A picture sent in a support conversation (migration 0188): JPEG, PNG or
+/// WEBP, at most [maxBytes], and the file's own signature must match the
+/// type it claims, so nothing but a picture is ever stored or served.
+final class SupportImage {
+  const SupportImage._(this.bytes, this.mime);
+
+  /// 512 KB, as the avatars (0033); the app shrinks a photo well under it.
+  static const int maxBytes = 512 * 1024;
+
+  /// The types a support picture may have.
+  static const Set<String> mimeTypes = <String>{
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  };
+
+  /// What the inbox and a push say for a message that is only a picture.
+  static const String preview = '📷 صورة';
+
+  /// The picture.
+  final List<int> bytes;
+
+  /// Its content type.
+  final String mime;
+
+  /// Checks what a player or an admin sent.
+  static Result<SupportImage> parse(List<int> bytes, String? rawMime) {
+    final String mime = (rawMime ?? '').split(';').first.trim().toLowerCase();
+    if (bytes.isEmpty) {
+      return const Result.err(
+        AppError.validation('support.image_empty', 'الصورة فارغة.'),
+      );
+    }
+    if (bytes.length > maxBytes) {
+      return const Result.err(tooLarge);
+    }
+    if (!mimeTypes.contains(mime) || !_signatureMatches(bytes, mime)) {
+      return const Result.err(
+        AppError.validation(
+          'support.image_unsupported',
+          'أرسل صورة بصيغة JPEG أو PNG أو WEBP.',
+        ),
+      );
+    }
+    return Result.ok(SupportImage._(List<int>.unmodifiable(bytes), mime));
+  }
+
+  /// The answer for a picture over [maxBytes].
+  static const AppError tooLarge = AppError.validation(
+    'support.image_too_large',
+    'الصورة أكبر من 512 كيلوبايت.',
+  );
+
+  static bool _starts(List<int> bytes, List<int> prefix, [int at = 0]) {
+    if (bytes.length < at + prefix.length) return false;
+    for (int i = 0; i < prefix.length; i++) {
+      if (bytes[at + i] != prefix[i]) return false;
+    }
+    return true;
+  }
+
+  static bool _signatureMatches(List<int> bytes, String mime) => switch (mime) {
+    'image/jpeg' => _starts(bytes, const <int>[0xFF, 0xD8, 0xFF]),
+    'image/png' => _starts(bytes, const <int>[
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+    ]),
+    // RIFF....WEBP
+    'image/webp' =>
+      _starts(bytes, const <int>[0x52, 0x49, 0x46, 0x46]) &&
+          _starts(bytes, const <int>[0x57, 0x45, 0x42, 0x50], 8),
+    _ => false,
+  };
+}

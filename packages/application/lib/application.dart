@@ -296,5 +296,6 @@ export 'src/support/admin_support_inbox.dart';
 export 'src/support/notify_support_message.dart';
 export 'src/support/ports/support_chat_repository.dart';
 export 'src/support/send_support_message.dart';
+export 'src/support/support_images.dart';
 export 'src/support/support_reads.dart';
 export 'src/support/support_threads.dart';

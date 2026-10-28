@@ -12,6 +12,7 @@ SupportMessageDto supportMessageDto(SupportMessage m) => SupportMessageDto(
   body: m.body,
   createdAt: m.createdAt.toUtc().toIso8601String(),
   readAt: m.readAt?.toUtc().toIso8601String(),
+  hasImage: m.hasImage,
 );
 
 /// A page of a conversation.

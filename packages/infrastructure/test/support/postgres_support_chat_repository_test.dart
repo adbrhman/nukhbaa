@@ -85,6 +85,8 @@ void main() {
       'player_id': _player,
       'body': 'سطر\nثان',
       'preview': 'سطر ثان',
+      'image_bytes': null,
+      'image_mime': null,
       'at': at,
     });
     expect(stored.conversationId.value, _conv);
@@ -271,5 +273,93 @@ void main() {
     ).playerUnread(const UserId(_player));
 
     expect((result as Err<int>).error, down);
+  });
+
+  group('pictures (0188)', () {
+    final List<int> jpeg = <int>[0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3];
+
+    test('a picture is a message with no text, the inbox says so', () async {
+      final connection = _FakeConnection([
+        const Result.ok([]),
+        Result.ok([
+          {
+            'id': 8,
+            'conversation_id': _conv,
+            'created_at': at,
+            'unread_before': 1,
+            'player_name': 'سامي',
+          },
+        ]),
+      ]);
+      final SupportImage image =
+          (SupportImage.parse(jpeg, 'image/jpeg') as Ok<SupportImage>).value;
+
+      final result = await PostgresSupportChatRepository(
+        connection,
+      ).addPlayerImage(playerId: const UserId(_player), image: image, at: at);
+
+      final SupportMessageStored stored =
+          (result as Ok<SupportMessageStored>).value;
+      expect(stored.message.hasImage, isTrue);
+      expect(stored.message.body, isEmpty);
+      final Map<String, Object?> bound = connection.params.last;
+      expect(bound['body'], '');
+      expect(bound['preview'], SupportImage.preview);
+      expect(bound['image_mime'], 'image/jpeg');
+      expect(bound['image_bytes'], jpeg);
+    });
+
+    test('a picture is read by the player\'s own id, or not at all', () async {
+      final connection = _FakeConnection([
+        Result.ok([
+          {'image_bytes': jpeg, 'image_mime': 'image/jpeg'},
+        ]),
+        const Result.ok([]),
+      ]);
+      final repo = PostgresSupportChatRepository(connection);
+
+      final mine = await repo.playerImage(
+        playerId: const UserId(_player),
+        messageId: 8,
+      );
+      final none = await repo.conversationImage(
+        conversationId: const SupportConversationId(_conv),
+        messageId: 9,
+      );
+
+      expect((mine as Ok<SupportImage?>).value!.bytes, jpeg);
+      expect(connection.params.first, {'message_id': 8, 'player_id': _player});
+      expect((none as Ok<SupportImage?>).value, isNull);
+    });
+
+    test('a page says which messages carry a picture', () async {
+      final connection = _FakeConnection([
+        const Result.ok([
+          {'id': _conv, 'status': 'open', 'unread': 0},
+        ]),
+        Result.ok([
+          {
+            'id': 3,
+            'sender_role': 'player',
+            'body': '',
+            'created_at': at,
+            'read_at': null,
+            'has_image': true,
+          },
+        ]),
+      ]);
+
+      final result = await PostgresSupportChatRepository(connection)
+          .playerThread(
+            playerId: const UserId(_player),
+            beforeId: null,
+            limit: 30,
+          );
+
+      expect(
+        (result as Ok<SupportThread>).value.messages.single.hasImage,
+        isTrue,
+      );
+    });
   });
 }

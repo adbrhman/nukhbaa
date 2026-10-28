@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
@@ -9,7 +11,8 @@ import 'package:shared/shared.dart';
 /// through a `@named` parameter. A message and its conversation's counters
 /// change in one statement, under a lock on the conversation row, so two
 /// messages at once never lose a count.
-final class PostgresSupportChatRepository implements SupportChatRepository {
+final class PostgresSupportChatRepository
+    implements SupportChatRepository, SupportImageRepository {
   /// Creates the repository over an open [PostgresConnection].
   const PostgresSupportChatRepository(this._connection);
 
@@ -33,9 +36,11 @@ WITH conv AS (
   FOR UPDATE
 ), msg AS (
   INSERT INTO support.messages (
-    conversation_id, sender_id, sender_role, body, created_at
+    conversation_id, sender_id, sender_role, body,
+    image_bytes, image_mime, created_at
   )
-  SELECT conv.id, @player_id::uuid, 'player', @body::text, @at::timestamptz
+  SELECT conv.id, @player_id::uuid, 'player', @body::text,
+         @image_bytes::bytea, @image_mime::text, @at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -70,9 +75,11 @@ WITH conv AS (
   FOR UPDATE
 ), msg AS (
   INSERT INTO support.messages (
-    conversation_id, sender_id, sender_role, body, created_at
+    conversation_id, sender_id, sender_role, body,
+    image_bytes, image_mime, created_at
   )
-  SELECT conv.id, @admin_id::uuid, 'support', @body::text, @at::timestamptz
+  SELECT conv.id, @admin_id::uuid, 'support', @body::text,
+         @image_bytes::bytea, @image_mime::text, @at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -105,7 +112,8 @@ WHERE c.player_id = @player_id::uuid
   // One more than the page, newest first: the extra row says older ones
   // are left.
   static const String messagesSql = '''
-SELECT m.id, m.sender_role, m.body, m.created_at, m.read_at
+SELECT m.id, m.sender_role, m.body, m.created_at, m.read_at,
+       m.image_bytes IS NOT NULL AS has_image
 FROM support.messages m
 WHERE m.conversation_id = @conversation_id::uuid
   AND (@before::bigint IS NULL OR m.id < @before::bigint)
@@ -221,6 +229,24 @@ WHERE c.id = @conversation_id::uuid
 RETURNING c.id::text AS id
 ''';
 
+  // A picture of the player's own conversation only (0188).
+  static const String playerImageSql = '''
+SELECT m.image_bytes, m.image_mime
+FROM support.messages m
+JOIN support.conversations c ON c.id = m.conversation_id
+WHERE m.id = @message_id::bigint
+  AND c.player_id = @player_id::uuid
+  AND m.image_bytes IS NOT NULL
+''';
+
+  static const String conversationImageSql = '''
+SELECT m.image_bytes, m.image_mime
+FROM support.messages m
+WHERE m.id = @message_id::bigint
+  AND m.conversation_id = @conversation_id::uuid
+  AND m.image_bytes IS NOT NULL
+''';
+
   // Only an active account's phones: a suspended or deleted player is not
   // rung.
   static const String playerTokensSql = '''
@@ -238,6 +264,33 @@ ORDER BY dt.token
     required UserId playerId,
     required SupportMessageBody body,
     required DateTime at,
+  }) => _addPlayer(
+    playerId: playerId,
+    body: body.value,
+    preview: body.preview,
+    image: null,
+    at: at,
+  );
+
+  @override
+  Future<Result<SupportMessageStored>> addPlayerImage({
+    required UserId playerId,
+    required SupportImage image,
+    required DateTime at,
+  }) => _addPlayer(
+    playerId: playerId,
+    body: '',
+    preview: SupportImage.preview,
+    image: image,
+    at: at,
+  );
+
+  Future<Result<SupportMessageStored>> _addPlayer({
+    required UserId playerId,
+    required String body,
+    required String preview,
+    required SupportImage? image,
+    required DateTime at,
   }) => _connection.runInTransaction<SupportMessageStored>((tx) async {
     final ensured = await tx.query(
       ensureSql,
@@ -250,12 +303,14 @@ ORDER BY dt.token
       playerMessageSql,
       parameters: {
         'player_id': playerId.value,
-        'body': body.value,
-        'preview': body.preview,
+        'body': body,
+        'preview': preview,
+        'image_bytes': image == null ? null : Uint8List.fromList(image.bytes),
+        'image_mime': image?.mime,
         'at': at.toUtc(),
       },
     );
-    return _stored(stored, body.value, SupportSenderRole.player);
+    return _stored(stored, body, SupportSenderRole.player, image != null);
   });
 
   @override
@@ -264,18 +319,100 @@ ORDER BY dt.token
     required UserId adminId,
     required SupportMessageBody body,
     required DateTime at,
+  }) => _addSupport(
+    conversationId: conversationId,
+    adminId: adminId,
+    body: body.value,
+    preview: body.preview,
+    image: null,
+    at: at,
+  );
+
+  @override
+  Future<Result<SupportMessageStored>> addSupportImage({
+    required SupportConversationId conversationId,
+    required UserId adminId,
+    required SupportImage image,
+    required DateTime at,
+  }) => _addSupport(
+    conversationId: conversationId,
+    adminId: adminId,
+    body: '',
+    preview: SupportImage.preview,
+    image: image,
+    at: at,
+  );
+
+  Future<Result<SupportMessageStored>> _addSupport({
+    required SupportConversationId conversationId,
+    required UserId adminId,
+    required String body,
+    required String preview,
+    required SupportImage? image,
+    required DateTime at,
   }) async {
     final stored = await _connection.query(
       supportReplySql,
       parameters: {
         'conversation_id': conversationId.value,
         'admin_id': adminId.value,
-        'body': body.value,
-        'preview': body.preview,
+        'body': body,
+        'preview': preview,
+        'image_bytes': image == null ? null : Uint8List.fromList(image.bytes),
+        'image_mime': image?.mime,
         'at': at.toUtc(),
       },
     );
-    return _stored(stored, body.value, SupportSenderRole.support);
+    return _stored(stored, body, SupportSenderRole.support, image != null);
+  }
+
+  @override
+  Future<Result<SupportImage?>> playerImage({
+    required UserId playerId,
+    required int messageId,
+  }) async => _image(
+    await _connection.query(
+      playerImageSql,
+      parameters: {'message_id': messageId, 'player_id': playerId.value},
+    ),
+  );
+
+  @override
+  Future<Result<SupportImage?>> conversationImage({
+    required SupportConversationId conversationId,
+    required int messageId,
+  }) async => _image(
+    await _connection.query(
+      conversationImageSql,
+      parameters: {
+        'message_id': messageId,
+        'conversation_id': conversationId.value,
+      },
+    ),
+  );
+
+  static Result<SupportImage?> _image(
+    Result<List<Map<String, dynamic>>> result,
+  ) {
+    if (result is Err<List<Map<String, dynamic>>>) {
+      return Result.err(result.error);
+    }
+    final rows = (result as Ok<List<Map<String, dynamic>>>).value;
+    if (rows.isEmpty) return const Result.ok(null);
+    final Object? bytes = rows.first['image_bytes'];
+    if (bytes is! List<int>) {
+      return Result.err(_corrupt('image', 'no bytes'));
+    }
+    final image = SupportImage.parse(
+      bytes,
+      rows.first['image_mime'] as String?,
+    );
+    return switch (image) {
+      Ok<SupportImage>(:final value) => Result.ok(value),
+      Err<SupportImage>(:final error) => Result.err(
+        _corrupt('image', error.code),
+      ),
+    };
   }
 
   @override
@@ -522,6 +659,7 @@ ORDER BY dt.token
     Result<List<Map<String, dynamic>>> result,
     String body,
     SupportSenderRole role,
+    bool hasImage,
   ) {
     if (result is Err<List<Map<String, dynamic>>>) {
       return Result.err(result.error);
@@ -544,6 +682,7 @@ ORDER BY dt.token
           senderRole: role,
           body: body,
           createdAt: createdAt.toUtc(),
+          hasImage: hasImage,
         ),
       ),
     );
@@ -566,6 +705,7 @@ ORDER BY dt.token
         body: body,
         createdAt: createdAt.toUtc(),
         readAt: readAt is DateTime ? readAt.toUtc() : null,
+        hasImage: row['has_image'] == true,
       ),
     );
   }

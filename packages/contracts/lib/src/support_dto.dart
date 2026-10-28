@@ -21,6 +21,7 @@ final class SupportMessageDto {
     required this.body,
     required this.createdAt,
     this.readAt,
+    this.hasImage = false,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -33,6 +34,7 @@ final class SupportMessageDto {
         body: (json['body'] as String?) ?? '',
         createdAt: (json['created_at'] as String?) ?? '',
         readAt: json['read_at'] as String?,
+        hasImage: (json['has_image'] as bool?) ?? false,
       );
 
   /// The current schema version for this DTO.
@@ -53,6 +55,10 @@ final class SupportMessageDto {
   /// When the other side read it, ISO-8601 UTC; absent while unread.
   final String? readAt;
 
+  /// Whether a picture came with it (migration 0188): its bytes are read
+  /// by the message id. Absent (false) for text.
+  final bool hasImage;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -64,6 +70,7 @@ final class SupportMessageDto {
     'body': body,
     'created_at': createdAt,
     if (readAt != null) 'read_at': readAt,
+    if (hasImage) 'has_image': true,
   };
 }
 

@@ -10,6 +10,7 @@ final class SupportMessage {
     required this.body,
     required this.createdAt,
     this.readAt,
+    this.hasImage = false,
   });
 
   /// Ascending with time: a page is read before the oldest id it holds.
@@ -26,6 +27,10 @@ final class SupportMessage {
 
   /// When the other side read it; null while unread.
   final DateTime? readAt;
+
+  /// Whether a picture came with it (migration 0188); its bytes are read
+  /// on their own, by the message id.
+  final bool hasImage;
 }
 
 /// One page of a conversation, oldest first.
@@ -239,4 +244,41 @@ abstract interface class SupportChatRepository {
   Future<Result<List<String>>> playerPushTokens(
     SupportConversationId conversationId,
   );
+}
+
+/// Port over the pictures of `support.messages` (migration 0188).
+///
+/// Same contract as [SupportChatRepository]: never throws, maps driver
+/// failures to [ErrorKind.transient]. A picture is stored as a message of
+/// its own, with no text.
+abstract interface class SupportImageRepository {
+  /// Stores [image] from [playerId] in his conversation, opening or
+  /// reopening it as a text message does.
+  Future<Result<SupportMessageStored>> addPlayerImage({
+    required UserId playerId,
+    required SupportImage image,
+    required DateTime at,
+  });
+
+  /// Stores [image] from the admin [adminId] in [conversationId].
+  Future<Result<SupportMessageStored>> addSupportImage({
+    required SupportConversationId conversationId,
+    required UserId adminId,
+    required SupportImage image,
+    required DateTime at,
+  });
+
+  /// The picture of message [messageId] when it is in [playerId]'s own
+  /// conversation; null otherwise.
+  Future<Result<SupportImage?>> playerImage({
+    required UserId playerId,
+    required int messageId,
+  });
+
+  /// The picture of message [messageId] when it is in [conversationId];
+  /// null otherwise.
+  Future<Result<SupportImage?>> conversationImage({
+    required SupportConversationId conversationId,
+    required int messageId,
+  });
 }

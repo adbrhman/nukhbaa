@@ -3,12 +3,15 @@
 /// against a fake of the server's routes.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/notifications/notifications_screen.dart';
 import 'package:mobile/features/support/support_chat_screen.dart';
+import 'package:mobile/features/support/support_images.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/auth_harness.dart';
@@ -20,6 +23,7 @@ Future<List<Uri>> _pump(
   double textScale = 1,
   Size size = const Size(1080, 2400),
   bool mailOpens = true,
+  SupportPickedImage? picked,
 }) async {
   final List<Uri> opened = <Uri>[];
   final AuthHarness harness = buildAuthHarness(server.handle, seedToken: 'jwt');
@@ -35,6 +39,7 @@ Future<List<Uri>> _pump(
           opened.add(uri);
           return mailOpens;
         }),
+        supportImagePickerProvider.overrideWithValue(() async => picked),
       ],
       retry: (retryCount, error) => null,
       child: MaterialApp(
@@ -240,5 +245,97 @@ void main() {
 
     expect(find.byKey(const Key('support.title')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a picture is shown first, then sent as its own message', (
+    tester,
+  ) async {
+    final FakeSupportServer server = FakeSupportServer();
+    await _pump(
+      tester,
+      server,
+      picked: SupportPickedImage(
+        bytes: Uint8List.fromList(FakeSupportServer.png),
+        mime: 'image/png',
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('support.attach')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('support.image.preview')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('support.image.send')));
+    await tester.pumpAndSettle();
+
+    expect(server.images.values.single.$1, FakeSupportServer.png);
+    expect(server.images.values.single.$2, startsWith('image/png'));
+    expect(find.byKey(const Key('support.image')), findsOneWidget);
+    expect(find.byKey(const Key('support.status.sent')), findsOneWidget);
+
+    // A tap opens it full screen.
+    await tester.tap(find.byKey(const Key('support.image.open')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('support.image.viewer')), findsOneWidget);
+  });
+
+  testWidgets('a picture the player changes his mind about is not sent', (
+    tester,
+  ) async {
+    final FakeSupportServer server = FakeSupportServer();
+    await _pump(
+      tester,
+      server,
+      picked: SupportPickedImage(
+        bytes: Uint8List.fromList(FakeSupportServer.png),
+        mime: 'image/png',
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('support.attach')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('support.image.cancel')));
+    await tester.pumpAndSettle();
+
+    expect(server.images, isEmpty);
+    expect(find.byKey(const Key('support.empty')), findsOneWidget);
+  });
+
+  testWidgets('a file that is not a picture, or too large, is refused here', (
+    tester,
+  ) async {
+    final FakeSupportServer server = FakeSupportServer();
+    await _pump(
+      tester,
+      server,
+      picked: SupportPickedImage(
+        bytes: Uint8List.fromList(<int>[0x25, 0x50, 0x44, 0x46]),
+        mime: '',
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('support.attach')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('support.image.refused')), findsOneWidget);
+    expect(find.byKey(const Key('support.image.preview')), findsNothing);
+    expect(server.images, isEmpty);
+  });
+
+  testWidgets('a stored picture is read by its message and drawn', (
+    tester,
+  ) async {
+    final FakeSupportServer server = FakeSupportServer()..add('support', '');
+    server.messages.last['has_image'] = true;
+    server.images[1] = (FakeSupportServer.png, 'image/png');
+    await _pump(tester, server);
+
+    expect(server.calls, contains('GET /me/support/messages/1/image'));
+    expect(find.byKey(const Key('support.image')), findsOneWidget);
+  });
+
+  test('the type of a picture is read from its own bytes', () {
+    expect(supportImageMime(FakeSupportServer.png), 'image/png');
+    expect(supportImageMime(<int>[0xFF, 0xD8, 0xFF, 0xE0]), 'image/jpeg');
+    expect(supportImageMime(<int>[0x25, 0x50, 0x44, 0x46]), isNull);
   });
 }

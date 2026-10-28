@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_client/src/api_transport.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -657,6 +659,29 @@ final class AdminApi {
       parse: SupportMessageDto.fromJson,
     );
   }
+
+  /// `POST /admin/support/conversations/{id}/images` -- answers with a
+  /// picture (migration 0188): the raw [bytes] under [contentType].
+  Future<Result<SupportMessageDto>> replySupportImage(
+    String id,
+    List<int> bytes, {
+    required String contentType,
+  }) {
+    return _transport.postBytes<SupportMessageDto>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}/images',
+      bytes: bytes,
+      contentType: contentType,
+      parse: SupportMessageDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/support/conversations/{id}/messages/{messageId}/image` --
+  /// a picture of that conversation; `Ok(null)` when there is none.
+  Future<Result<Uint8List?>> supportImage(String id, int messageId) =>
+      _transport.getBytes(
+        '/admin/support/conversations/${Uri.encodeComponent(id)}'
+        '/messages/$messageId/image',
+      );
 
   /// `POST /admin/support/conversations/{id}/read` -- the player's messages
   /// were read; answers how many were marked.

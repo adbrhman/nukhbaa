@@ -88,4 +88,18 @@ void main() {
       'archived',
     );
   });
+
+  test('a picture message says so; a text one carries no key (0188)', () {
+    const SupportMessageDto picture = SupportMessageDto(
+      id: 3,
+      sender: 'player',
+      body: '',
+      createdAt: '2026-10-28T10:00:00.000Z',
+      hasImage: true,
+    );
+    expect(picture.toJson()['has_image'], true);
+    expect(SupportMessageDto.fromJson(picture.toJson()).hasImage, isTrue);
+    expect(answer.toJson().containsKey('has_image'), isFalse);
+    expect(SupportMessageDto.fromJson(answer.toJson()).hasImage, isFalse);
+  });
 }

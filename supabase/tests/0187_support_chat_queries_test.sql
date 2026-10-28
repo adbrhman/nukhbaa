@@ -1,9 +1,10 @@
--- End-to-end test of PostgresSupportChatRepository's statements (migration
--- 0187, script 165), each body identical to the adapter's constant
+-- End-to-end test of PostgresSupportChatRepository's statements (migrations
+-- 0187 and 0188, scripts 165 and 168), each body identical to the adapter's constant
 -- (parameters inlined as function arguments): a player's first message
 -- opens his one conversation, the unread counters of both sides, the
 -- admins' inbox (order, filters, name search), reads, pages, closing and
--- reopening, the player's phones, and a deleted account taking its
+-- reopening, the player's phones, pictures (stored, read only within their
+-- conversation, the checks behind them), and a deleted account taking its
 -- conversation with it. Rolled back at the end.
 \set ON_ERROR_STOP on
 begin;
@@ -27,7 +28,7 @@ ON CONFLICT (player_id) DO NOTHING
 $q$;
 
 -- playerMessageSql
-create function pg_temp.player_message(p_player_id uuid, p_body text, p_preview text, p_at timestamptz)
+create function pg_temp.player_message(p_player_id uuid, p_body text, p_preview text, p_image_bytes bytea, p_image_mime text, p_at timestamptz)
 returns table (id bigint, conversation_id text, created_at timestamptz, unread_before bigint, player_name text)
 language sql as $q$
 WITH conv AS (
@@ -37,9 +38,11 @@ WITH conv AS (
   FOR UPDATE
 ), msg AS (
   INSERT INTO support.messages (
-    conversation_id, sender_id, sender_role, body, created_at
+    conversation_id, sender_id, sender_role, body,
+    image_bytes, image_mime, created_at
   )
-  SELECT conv.id, p_player_id::uuid, 'player', p_body::text, p_at::timestamptz
+  SELECT conv.id, p_player_id::uuid, 'player', p_body::text,
+         p_image_bytes::bytea, p_image_mime::text, p_at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -65,7 +68,7 @@ JOIN identity.users u ON u.id = p_player_id::uuid
 $q$;
 
 -- supportReplySql
-create function pg_temp.support_reply(p_conversation_id uuid, p_admin_id uuid, p_body text, p_preview text, p_at timestamptz)
+create function pg_temp.support_reply(p_conversation_id uuid, p_admin_id uuid, p_body text, p_preview text, p_image_bytes bytea, p_image_mime text, p_at timestamptz)
 returns table (id bigint, conversation_id text, created_at timestamptz, unread_before bigint, player_name text)
 language sql as $q$
 WITH conv AS (
@@ -75,9 +78,11 @@ WITH conv AS (
   FOR UPDATE
 ), msg AS (
   INSERT INTO support.messages (
-    conversation_id, sender_id, sender_role, body, created_at
+    conversation_id, sender_id, sender_role, body,
+    image_bytes, image_mime, created_at
   )
-  SELECT conv.id, p_admin_id::uuid, 'support', p_body::text, p_at::timestamptz
+  SELECT conv.id, p_admin_id::uuid, 'support', p_body::text,
+         p_image_bytes::bytea, p_image_mime::text, p_at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -112,9 +117,10 @@ $q$;
 
 -- messagesSql
 create function pg_temp.messages(p_conversation_id uuid, p_before bigint, p_limit int)
-returns table (id bigint, sender_role text, body text, created_at timestamptz, read_at timestamptz)
+returns table (id bigint, sender_role text, body text, created_at timestamptz, read_at timestamptz, has_image boolean)
 language sql as $q$
-SELECT m.id, m.sender_role, m.body, m.created_at, m.read_at
+SELECT m.id, m.sender_role, m.body, m.created_at, m.read_at,
+       m.image_bytes IS NOT NULL AS has_image
 FROM support.messages m
 WHERE m.conversation_id = p_conversation_id::uuid
   AND (p_before::bigint IS NULL OR m.id < p_before::bigint)
@@ -268,6 +274,29 @@ WHERE c.id = p_conversation_id::uuid
 ORDER BY dt.token
 $q$;
 
+-- playerImageSql
+create function pg_temp.player_image(p_message_id bigint, p_player_id uuid)
+returns table (image_bytes bytea, image_mime text)
+language sql as $q$
+SELECT m.image_bytes, m.image_mime
+FROM support.messages m
+JOIN support.conversations c ON c.id = m.conversation_id
+WHERE m.id = p_message_id::bigint
+  AND c.player_id = p_player_id::uuid
+  AND m.image_bytes IS NOT NULL
+$q$;
+
+-- conversationImageSql
+create function pg_temp.conversation_image(p_message_id bigint, p_conversation_id uuid)
+returns table (image_bytes bytea, image_mime text)
+language sql as $q$
+SELECT m.image_bytes, m.image_mime
+FROM support.messages m
+WHERE m.id = p_message_id::bigint
+  AND m.conversation_id = p_conversation_id::uuid
+  AND m.image_bytes IS NOT NULL
+$q$;
+
 -- The adapter's transaction for a player's message: the conversation, then
 -- the message.
 create function pg_temp.send_player(p_player_id uuid, p_body text, p_at timestamptz)
@@ -277,7 +306,7 @@ language plpgsql as $$
 begin
   perform pg_temp.ensure_conversation(p_player_id, p_at);
   return query
-    select * from pg_temp.player_message(p_player_id, p_body, left(p_body, 120), p_at);
+    select * from pg_temp.player_message(p_player_id, p_body, left(p_body, 120), null, null, p_at);
 end $$;
 
 insert into auth.users (id, email, email_confirmed_at) values
@@ -357,7 +386,7 @@ begin
     (select count(*) from pg_temp.inbox('unread', '', 100)) = 1,
     'the unread filter keeps only the other one');
 
-  select * into r from pg_temp.support_reply(first_conv::uuid, adm, 'تم إصلاحها، حدّث التطبيق', 'تم إصلاحها، حدّث التطبيق', t0 + interval '4 minutes');
+  select * into r from pg_temp.support_reply(first_conv::uuid, adm, 'تم إصلاحها، حدّث التطبيق', 'تم إصلاحها، حدّث التطبيق', null, null, t0 + interval '4 minutes');
   perform pg_temp.check(r.unread_before = 0, 'the first answer is the first waiting for the player');
   perform pg_temp.check((select unread from pg_temp.player_unread(p1)) = 1,
     'the player has one answer to read');
@@ -370,7 +399,7 @@ begin
 
   -- A reply to a conversation that is not on file writes nothing.
   perform pg_temp.check(not exists (
-    select 1 from pg_temp.support_reply('00000000-0000-4000-8187-00000000ffff', adm, 'x', 'x', t0)),
+    select 1 from pg_temp.support_reply('00000000-0000-4000-8187-00000000ffff', adm, 'x', 'x', null, null, t0)),
     'no reply to a conversation not on file');
   select * into r from pg_temp.mark_read_by_support('00000000-0000-4000-8187-00000000ffff', t0);
   perform pg_temp.check(r.found = 0, 'mark read finds no such conversation');
@@ -422,6 +451,54 @@ begin
     perform pg_temp.check(false, 'a message over 2000 characters is refused');
   exception when check_violation then
     perform pg_temp.check(true, 'a message over 2000 characters is refused');
+  end;
+
+  -- Pictures (0188): a message of its own, no text, served only within
+  -- its conversation.
+  perform pg_temp.ensure_conversation(p1, t0);
+  select * into r from pg_temp.player_message(p1, '', '📷 صورة',
+    '\xffd8ffe000104a464946'::bytea, 'image/jpeg', t0 + interval '9 minutes');
+  perform pg_temp.check(r.id is not null, 'a picture is stored with no text');
+  perform pg_temp.check(
+    (select m.has_image and m.body = '' from pg_temp.messages(first_conv::uuid, null, 1) m),
+    'the page says a picture came with it');
+  perform pg_temp.check(
+    (select last_message_preview from pg_temp.conversation(first_conv::uuid)) = '📷 صورة',
+    'the inbox line says it is a picture');
+  perform pg_temp.check(
+    (select image_mime from pg_temp.player_image(r.id, p1)) = 'image/jpeg',
+    'the player reads his own picture');
+  perform pg_temp.check(not exists (select 1 from pg_temp.player_image(r.id, p2)),
+    'another player cannot read it');
+  perform pg_temp.check(
+    exists (select 1 from pg_temp.conversation_image(r.id, first_conv::uuid)),
+    'support reads it in its conversation');
+  perform pg_temp.check(
+    not exists (select 1 from pg_temp.conversation_image(r.id,
+      (select c.id from support.conversations c where c.player_id = p2))),
+    'and not through another conversation');
+  perform pg_temp.check(not exists (select 1 from pg_temp.player_image(first_id, p1)),
+    'a text message has no picture');
+  begin
+    insert into support.messages (conversation_id, sender_role, body, image_bytes, image_mime)
+    values (first_conv::uuid, 'player', '', '\x00'::bytea, 'image/gif');
+    perform pg_temp.check(false, 'a picture of another type is refused');
+  exception when check_violation then
+    perform pg_temp.check(true, 'a picture of another type is refused');
+  end;
+  begin
+    insert into support.messages (conversation_id, sender_role, body)
+    values (first_conv::uuid, 'player', '');
+    perform pg_temp.check(false, 'no text and no picture is refused');
+  exception when check_violation then
+    perform pg_temp.check(true, 'no text and no picture is refused');
+  end;
+  begin
+    insert into support.messages (conversation_id, sender_role, body, image_bytes, image_mime)
+    values (first_conv::uuid, 'player', '', decode(repeat('00', 524289), 'hex'), 'image/png');
+    perform pg_temp.check(false, 'a picture over 512 KB is refused');
+  exception when check_violation then
+    perform pg_temp.check(true, 'a picture over 512 KB is refused');
   end;
 
   -- A suspended player is not rung.

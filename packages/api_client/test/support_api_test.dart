@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:api_client/api_client.dart';
 import 'package:contracts/contracts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -91,4 +93,45 @@ void main() {
     expect(ctx.captured.last.method, 'GET');
     expect(ctx.captured.last.url.path, '/me/support/unread');
   });
+
+  test(
+    'a picture goes up as raw bytes and comes back the same (0188)',
+    () async {
+      final List<int> jpeg = <int>[0xFF, 0xD8, 0xFF, 0xE0, 1, 2];
+      final ctx = buildTransport((request) async {
+        if (request.method == 'POST') {
+          return okJson(const {
+            'id': 6,
+            'sender': 'player',
+            'body': '',
+            'created_at': '2026-10-28T10:00:00.000Z',
+            'has_image': true,
+          });
+        }
+        if (request.url.path == '/me/support/messages/6/image') {
+          return http.Response.bytes(
+            jpeg,
+            200,
+            headers: const {'content-type': 'image/jpeg'},
+          );
+        }
+        return http.Response('', 404);
+      });
+      final SupportApi api = SupportApi(ctx.transport);
+
+      final sent = await api.sendImage(jpeg, contentType: 'image/jpeg');
+      final back = await api.image(6);
+      final none = await api.image(7);
+
+      expect((sent as Ok<SupportMessageDto>).value.hasImage, isTrue);
+      expect(ctx.captured.first.url.path, '/me/support/images');
+      expect(
+        ctx.captured.first.headers['content-type'],
+        startsWith('image/jpeg'),
+      );
+      expect(ctx.captured.first.request.bodyBytes, jpeg);
+      expect((back as Ok<Uint8List?>).value, jpeg);
+      expect((none as Ok<Uint8List?>).value, isNull);
+    },
+  );
 }
