@@ -6847,6 +6847,42 @@ themes, its baseline zero.
 No migration, no server change; the web on deploy, Android with the
 next APK.
 
+### A head-to-head round no longer waits for ever (script 163, 2026-10-28)
+
+Reported by the owner on 2026-10-28: round 18 (27 October) stayed «جارية»
+because Al-Nassr - Al-Wasl was postponed with no new date. Its kickoff
+stayed on the round's day and no result ever came, so the round counted
+it and never settled. The app already told players that a postponed
+match does not count (`h2h_round_screen.dart`); only a match moved to
+another day, hidden or a test fixture was dropped by the server.
+
+- The result deadline: a fixture of a head-to-head round whose result was
+  not recorded by the end of the Riyadh day AFTER the round's day
+  (`(day + 2)` at 00:00 Riyadh) is void for both sides, like a moved or
+  hidden one. Until then it counts and the round waits; after it the
+  round is judged on what was played, and a round with no scored fixture
+  is void. No admin step, and the fixture itself is not touched: if the
+  match is played later its result still scores the monthly board.
+- Settled stays settled: the test is `fixture_results.created_at` (the
+  first recording; a correction never moves it), so a result that comes
+  after the deadline never changes a judged round, and a result corrected
+  after it keeps counting.
+- Round 18 settles at 00:00 Riyadh on 29 October on the matches that
+  were played, once the server is deployed.
+- Code: the `valid` fixtures of `PostgresH2hSheetReader` (`scoresSql`,
+  `roundStatusSql`) and `counted` in `PostgresH2hRoundFixtureReader`;
+  `CloseH2hMonth` reads the same sheet. The mobile wording names the late
+  result too, and the rules sheet gains the line (next APK).
+- Tests: `supabase/tests/0100_h2h_result_deadline_queries_test.sql` (new:
+  a past round settles on its scored fixture, a postponed and a late
+  result count for nobody, a round of only postponed matches is void, a
+  correction after the deadline keeps counting); the mirrored statements
+  in `0100_h2h_queries_test.sql` and
+  `0100_h2h_round_fixtures_queries_test.sql`.
+
+No migration; the server on push (Northflank), the wording with the next
+APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -136,7 +136,8 @@ class H2hRoundScreen extends ConsumerWidget {
                 if (anyVoid) ...<Widget>[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'المباراة المؤجلة أو التي خرجت من يوم الجولة لا تُحتسب '
+                    'المباراة المؤجلة، أو التي خرجت من يوم الجولة، أو لم '
+                    'تُسجَّل نتيجتها حتى نهاية اليوم التالي، لا تُحتسب '
                     'لأيٍّ من الطرفين.',
                     key: const Key('h2h.detail.voidNote'),
                     style: context.text.bodySmall?.copyWith(
@@ -469,7 +470,7 @@ class _FixtureTile extends StatelessWidget {
           if (voided) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'لا تُحتسب: أُجّلت أو خرجت من يوم الجولة.',
+              'لا تُحتسب: أُجّلت أو خرجت من يوم الجولة أو تأخّرت نتيجتها.',
               key: Key('h2h.fixture.${f.fixtureId}.void'),
               style: context.text.bodySmall?.copyWith(color: t.textSecondary),
             ),

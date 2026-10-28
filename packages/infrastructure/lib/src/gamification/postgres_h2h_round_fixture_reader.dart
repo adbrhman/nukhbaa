@@ -8,8 +8,9 @@ import 'package:shared/shared.dart';
 ///
 /// **A round's fixtures.** A locked round's are its frozen list
 /// (`h2h_round_fixtures`); a fixture of it that left the round's day, was
-/// hidden or is a test fixture comes back with `counted` false -- the very
-/// condition `PostgresH2hSheetReader` sums the round with. An unlocked
+/// hidden, is a test fixture or had no result by the end of the Riyadh day
+/// after the round's (script 163) comes back with `counted` false -- the
+/// very condition `PostgresH2hSheetReader` sums the round with. An unlocked
 /// round's are the visible, non-test fixtures of a season that kick off on
 /// its Riyadh day, the list `PostgresH2hRoundStore.lock` would freeze now.
 ///
@@ -60,7 +61,11 @@ SELECT fs.fixture_id::text    AS fixture_id,
        COALESCE(
          fs.hidden_at IS NULL
            AND NOT fs.is_test
-           AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = @day::date,
+           AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = @day::date
+           AND (res.created_at
+                  < ((@day::date + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+                OR now()
+                  < ((@day::date + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')),
          false)               AS counted,
        res.home_goals         AS home_goals,
        res.away_goals         AS away_goals

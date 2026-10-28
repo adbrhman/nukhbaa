@@ -299,9 +299,12 @@ valid AS (
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
+  LEFT JOIN scoring.fixture_results rr ON rr.fixture_id = rf.fixture_id
   WHERE fs.hidden_at IS NULL
     AND NOT fs.is_test
     AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = rd.day
+    AND (rr.created_at < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+         OR now() < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh'))
 )
 SELECT mb.user_id::text                                     AS user_id,
        v.round_no                                           AS round_no,
@@ -336,9 +339,12 @@ valid AS (
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
+  LEFT JOIN scoring.fixture_results rr ON rr.fixture_id = rf.fixture_id
   WHERE fs.hidden_at IS NULL
     AND NOT fs.is_test
     AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = rd.day
+    AND (rr.created_at < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+         OR now() < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh'))
 )
 SELECT rd.round_no                      AS round_no,
        count(v.fixture_id)::integer     AS fixtures,

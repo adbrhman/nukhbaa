@@ -10,6 +10,16 @@ import 'package:shared/shared.dart';
 /// is a test fixture: those are void for both sides. A locked round with no
 /// fixture left is void altogether.
 ///
+/// **The result deadline** (script 163, 2026-10-28): a fixture whose result
+/// was not recorded by the end of the Riyadh day AFTER the round's day is
+/// void for both sides too -- a match postponed without a new date (Al-Nassr
+/// - Al-Wasl, round 18 of October 2026) kept its kickoff on the round's day
+/// and held the round live for ever. Until the deadline the fixture counts
+/// and the round waits; after it the round is judged on what was played. A
+/// result recorded after the deadline (`fixture_results.created_at`, which a
+/// correction never moves) still scores the monthly board, never the round,
+/// so a settled round never changes.
+///
 /// **A round's points** for a member are the stored scores of those
 /// fixtures (the double included), over every participation the member
 /// holds -- the reading the weekly league used. A round is SETTLED when each
@@ -60,9 +70,12 @@ valid AS (
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
+  LEFT JOIN scoring.fixture_results rr ON rr.fixture_id = rf.fixture_id
   WHERE fs.hidden_at IS NULL
     AND NOT fs.is_test
     AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = rd.day
+    AND (rr.created_at < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+         OR now() < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh'))
 )
 SELECT mb.user_id::text                                     AS user_id,
        v.round_no                                           AS round_no,
@@ -96,9 +109,12 @@ valid AS (
   FROM rounds rd
   JOIN gamification.h2h_round_fixtures rf ON rf.round_id = rd.id
   JOIN competition.fixture_schedules fs ON fs.fixture_id = rf.fixture_id
+  LEFT JOIN scoring.fixture_results rr ON rr.fixture_id = rf.fixture_id
   WHERE fs.hidden_at IS NULL
     AND NOT fs.is_test
     AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = rd.day
+    AND (rr.created_at < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+         OR now() < ((rd.day + 2)::timestamp AT TIME ZONE 'Asia/Riyadh'))
 )
 SELECT rd.round_no                      AS round_no,
        count(v.fixture_id)::integer     AS fixtures,

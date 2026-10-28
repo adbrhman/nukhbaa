@@ -49,7 +49,11 @@ SELECT fs.fixture_id::text    AS fixture_id,
        COALESCE(
          fs.hidden_at IS NULL
            AND NOT fs.is_test
-           AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = $3::date,
+           AND (fs.kickoff_at AT TIME ZONE 'Asia/Riyadh')::date = $3::date
+           AND (res.created_at
+                  < (($3::date + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')
+                OR now()
+                  < (($3::date + 2)::timestamp AT TIME ZONE 'Asia/Riyadh')),
          false)               AS counted,
        res.home_goals         AS home_goals,
        res.away_goals         AS away_goals
