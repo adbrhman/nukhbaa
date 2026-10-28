@@ -77,11 +77,16 @@ class AppButton extends StatelessWidget {
                 Icon(icon, size: AppSizes.iconSm, color: fg),
                 const SizedBox(width: AppSpacing.sm),
               ],
+              // Drawn only: the Semantics below names the button; read
+              // again, the text doubled the name (Accessibility Scanner,
+              // 2026-10-28).
               Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.labelLarge?.copyWith(color: fg),
+                child: ExcludeSemantics(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.labelLarge?.copyWith(color: fg),
+                  ),
                 ),
               ),
             ],

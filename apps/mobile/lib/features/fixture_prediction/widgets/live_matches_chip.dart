@@ -74,6 +74,9 @@ class LiveMatchesChip extends StatelessWidget {
         : tokens.textMuted;
 
     return Semantics(
+      // Its own node: with its text drawn only, it would merge into what
+      // holds it (Accessibility Scanner, 2026-10-28).
+      container: true,
       button: true,
       enabled: enabled,
       selected: selected,
@@ -114,12 +117,17 @@ class LiveMatchesChip extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      l10n.fixturesLiveLabel,
-                      style: TextStyle(
-                        fontSize: AppFontSize.s13,
-                        fontWeight: FontWeight.w700,
-                        color: foreground,
+                    // Drawn only: the Semantics above names the chip; read
+                    // again, the text doubled the name (Accessibility
+                    // Scanner, 2026-10-28).
+                    ExcludeSemantics(
+                      child: Text(
+                        l10n.fixturesLiveLabel,
+                        style: TextStyle(
+                          fontSize: AppFontSize.s13,
+                          fontWeight: FontWeight.w700,
+                          color: foreground,
+                        ),
                       ),
                     ),
                   ],

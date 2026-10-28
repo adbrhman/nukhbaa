@@ -103,6 +103,13 @@ const int minShareSample = 5;
 /// The server's refusal of a second double on the same day.
 const String _dailyDoubleExceededCode = 'prediction.daily_double_exceeded';
 
+/// The match a card's control acts on, for a screen reader ("Arsenal vs
+/// Chelsea" in the viewer's words). Every card repeats the same controls,
+/// so one named only "Share" or "Increase" did not say which match or side
+/// it acts on (Accessibility Scanner, 2026-10-28).
+String _matchSpoken(BuildContext context, String home, String away) =>
+    '$home ${AppLocalizations.of(context).versusShort} $away';
+
 /// One fixture's FotMob-style card. Entirely independent of every other
 /// card on screen (`fixturePredictionControllerProvider` is a family keyed
 /// per `(seasonId, fixtureId)`).
@@ -538,6 +545,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       teamId: _fixture.awayTeamId,
       teamName: _fixture.awayTeam,
     );
+    final String matchSpoken = _matchSpoken(
+      context,
+      home.displayName,
+      away.displayName,
+    );
     // One surface for every card: the team-coloured wash on each side gave
     // each card its own cast, against one semantic colour system
     // (2026-09-24, UI-09). The team colour stays in the crest's halo
@@ -662,6 +674,8 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           final int? homeGoals = _homeGoals.value;
                           final int? awayGoals = _awayGoals.value;
                           return _MiddleSlot(
+                            homeName: home.displayName,
+                            awayName: away.displayName,
                             homeGoals: homeGoals,
                             awayGoals: awayGoals,
                             enabled: enabled,
@@ -729,6 +743,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                             takenElsewhere: doubleTakenElsewhere,
                             onTap: _toggleDouble,
                             fixtureId: fixtureId,
+                            matchLabel: matchSpoken,
                           ),
                         ),
                         if (myPrediction != null) ...<Widget>[
@@ -764,6 +779,11 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                                     AppLocalizations.of(
                                       context,
                                     ).shareHitShareButton,
+                                    // Which call it shares: every saved
+                                    // card had one "share" (Accessibility
+                                    // Scanner, 2026-10-28).
+                                    semanticsLabel:
+                                        '${AppLocalizations.of(context).shareHitShareButton} $matchSpoken',
                                   ),
                                 );
                               },
@@ -1066,6 +1086,8 @@ class _TeamColumn extends StatelessWidget {
 /// over their gap. After kickoff the whole card is [_StartedBody].
 class _MiddleSlot extends StatelessWidget {
   const _MiddleSlot({
+    required this.homeName,
+    required this.awayName,
     required this.homeGoals,
     required this.awayGoals,
     required this.enabled,
@@ -1091,6 +1113,10 @@ class _MiddleSlot extends StatelessWidget {
   final VoidCallback onIncrementAway;
   final VoidCallback onDecrementAway;
 
+  /// The sides' names, so each stepper says whose goals it changes.
+  final String homeName;
+  final String awayName;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -1106,6 +1132,7 @@ class _MiddleSlot extends StatelessWidget {
               onIncrement: onIncrementHome,
               onDecrement: onDecrementHome,
               fixtureId: fixtureId,
+              teamName: homeName,
               side: 'home',
             ),
             const SizedBox(width: AppSpacing.xs),
@@ -1115,6 +1142,7 @@ class _MiddleSlot extends StatelessWidget {
               onIncrement: onIncrementAway,
               onDecrement: onDecrementAway,
               fixtureId: fixtureId,
+              teamName: awayName,
               side: 'away',
             ),
           ],
@@ -1191,6 +1219,7 @@ class _ScoreStepper extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.fixtureId,
+    required this.teamName,
     required this.side,
   });
 
@@ -1200,6 +1229,10 @@ class _ScoreStepper extends StatelessWidget {
   final VoidCallback onDecrement;
   final String fixtureId;
   final String side;
+
+  /// The side's name, read with each half: four controls on a card were
+  /// all "increase" or "decrease" (Accessibility Scanner, 2026-10-28).
+  final String teamName;
 
   // Measured off the reference screenshot (1080px capture, 2.75x): the
   // stepper box is 167px wide there, i.e. 61 logical, not 68. The height is
@@ -1239,7 +1272,7 @@ class _ScoreStepper extends StatelessWidget {
                 child: _StepperZone(
                   key: Key('currentMonthFixtures.$side.increment.$fixtureId'),
                   icon: Icons.add_rounded,
-                  tooltip: l10n.scoreStepperIncreaseTooltip,
+                  tooltip: '${l10n.scoreStepperIncreaseTooltip} $teamName',
                   band: _iconBand,
                   alignment: Alignment.topCenter,
                   onTap: canIncrement ? onIncrement : null,
@@ -1249,7 +1282,7 @@ class _ScoreStepper extends StatelessWidget {
                 child: _StepperZone(
                   key: Key('currentMonthFixtures.$side.decrement.$fixtureId'),
                   icon: Icons.remove_rounded,
-                  tooltip: l10n.scoreStepperDecreaseTooltip,
+                  tooltip: '${l10n.scoreStepperDecreaseTooltip} $teamName',
                   band: _iconBand,
                   alignment: Alignment.bottomCenter,
                   onTap: canDecrement ? onDecrement : null,
@@ -1323,29 +1356,37 @@ class _StepperZone extends StatelessWidget {
     final bool enabled = tap != null;
     return Opacity(
       opacity: enabled ? 1 : AppOpacity.disabled,
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            // A selection tick per step, so a fast run of taps can be
-            // counted by feel.
-            onTap: tap == null
-                ? null
-                : () {
-                    unawaited(HapticFeedback.selectionClick());
-                    tap();
-                  },
-            child: SizedBox.expand(
-              child: Align(
-                alignment: alignment,
-                child: SizedBox(
-                  height: band,
-                  width: double.infinity,
-                  child: Icon(
-                    icon,
-                    size: AppSizes.iconSm,
-                    color: tokens.textSecondary,
+      // A button of its own, read "disabled" at 0 or 99: it had no button
+      // role, and a disabled half lent its name to the whole card
+      // (Accessibility Scanner, 2026-10-28).
+      child: Semantics(
+        container: true,
+        button: true,
+        enabled: enabled,
+        child: Tooltip(
+          message: tooltip,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              // A selection tick per step, so a fast run of taps can be
+              // counted by feel.
+              onTap: tap == null
+                  ? null
+                  : () {
+                      unawaited(HapticFeedback.selectionClick());
+                      tap();
+                    },
+              child: SizedBox.expand(
+                child: Align(
+                  alignment: alignment,
+                  child: SizedBox(
+                    height: band,
+                    width: double.infinity,
+                    child: Icon(
+                      icon,
+                      size: AppSizes.iconSm,
+                      color: tokens.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -1395,6 +1436,7 @@ class _OutlinedAction extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.fill = false,
+    this.spokenLabel,
   });
 
   final Key actionKey;
@@ -1403,12 +1445,17 @@ class _OutlinedAction extends StatelessWidget {
   final VoidCallback onTap;
   final bool fill;
 
+  /// What a screen reader hears instead of [label], when the label alone
+  /// does not say which match the action is for.
+  final String? spokenLabel;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Semantics(
+      container: true,
       button: true,
-      label: label,
+      label: spokenLabel ?? label,
       // An InkWell, not a bare GestureDetector: on the web it takes keyboard
       // focus (Tab, then Enter) and shows the pointer hand (UI-25).
       child: Material(
@@ -1455,14 +1502,19 @@ class _OutlinedAction extends StatelessWidget {
                       color: tokens.primaryText,
                     ),
                     const SizedBox(width: AppSpacing.xs),
+                    // Drawn only: the Semantics above names the button;
+                    // read again, the text doubled the name (Accessibility
+                    // Scanner, 2026-10-28).
                     Flexible(
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: AppFontSize.s12,
-                          color: tokens.primaryText,
+                      child: ExcludeSemantics(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.s12,
+                            color: tokens.primaryText,
+                          ),
                         ),
                       ),
                     ),
@@ -1495,6 +1547,7 @@ class _DoubleGlowButton extends StatelessWidget {
     required this.enabled,
     required this.onTap,
     required this.fixtureId,
+    required this.matchLabel,
     this.takenElsewhere = false,
   });
 
@@ -1502,6 +1555,10 @@ class _DoubleGlowButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
   final String fixtureId;
+
+  /// The match it doubles, read after its label: one toggle per card, all
+  /// read the same (Accessibility Scanner, 2026-10-28).
+  final String matchLabel;
 
   /// Another match of the same Riyadh day holds the player's double: the
   /// toggle reads [_takenLabel] at full strength, so it can be read, and
@@ -1528,9 +1585,12 @@ class _DoubleGlowButton extends StatelessWidget {
     return Opacity(
       opacity: enabled || takenElsewhere ? 1 : AppOpacity.disabled,
       child: Semantics(
+        // Its own node: with its text drawn only, the toggle merged into
+        // the card, and the whole card read as one button.
+        container: true,
         button: true,
         selected: selected,
-        label: label,
+        label: '$label $matchLabel',
         // An InkWell, not a bare GestureDetector: on the web it takes
         // keyboard focus (Tab, then Enter) and shows the pointer hand (UI-25).
         child: Material(
@@ -1592,14 +1652,21 @@ class _DoubleGlowButton extends StatelessWidget {
                         color: selected ? tokens.onPrimary : unselectedInk,
                       ),
                       const SizedBox(width: AppSpacing.xs),
+                      // Drawn only: the Semantics above names the toggle;
+                      // read again, the text doubled the name
+                      // (Accessibility Scanner, 2026-10-28).
                       Flexible(
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: AppFontSize.s12,
-                            color: selected ? tokens.onPrimary : unselectedInk,
+                        child: ExcludeSemantics(
+                          child: Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: AppFontSize.s12,
+                              color: selected
+                                  ? tokens.onPrimary
+                                  : unselectedInk,
+                            ),
                           ),
                         ),
                       ),
@@ -1664,6 +1731,11 @@ class _StartedBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String fixtureId = _fixture.fixtureId;
+    final String matchSpoken = _matchSpoken(
+      context,
+      home.displayName,
+      away.displayName,
+    );
     final bool recorded =
         item.resultHomeGoals != null && item.resultAwayGoals != null;
     final int? homeGoals = recorded ? item.resultHomeGoals : item.liveHomeGoals;
@@ -1782,6 +1854,7 @@ class _StartedBody extends StatelessWidget {
                   actionKey: Key('currentMonthFixtures.details.$fixtureId'),
                   icon: Icons.timeline_rounded,
                   label: 'تفاصيل المباراة',
+                  spokenLabel: 'تفاصيل المباراة $matchSpoken',
                   fill: true,
                   onTap: onOpenDetails!,
                 ),

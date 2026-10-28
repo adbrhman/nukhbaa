@@ -7058,6 +7058,45 @@ The app with the next APK; needs the server of script 165.
 
 Apply 0188 in the SQL Editor before pushing.
 
+### What a screen reader hears on a match card (script 169, 2026-10-28)
+
+The owner ran Google's Accessibility Scanner over 70 screens (85 touch
+targets, 73 descriptions, 7 image contrasts). Measured against its own
+screenshots:
+
+- **Touch targets, nothing changed.** Every one but the date picker's day
+  cells is a control cut by the screen's edge, the date strip or the tab
+  bar in mid-scroll (3 to 46 dp, ending at y 432 or 1945 of 2316); the
+  same controls whole measure 48 dp. The day cells (47 dp) are Flutter's
+  own `showDatePicker`.
+- **Image contrast, nothing changed.** Card edges cut at a scroll edge, a
+  club's crest and a player's photo.
+- **Read twice, fixed.** «تفاصيل المباراة», «توقعات الجميع», «ضاعِف النقاط
+  ×2», and -- not flagged, being unique on the screen -- «مباشر» and every
+  `AppButton`: a `Semantics(label:)` around an `InkWell` whose drawn text
+  was read again. The drawn text is now `ExcludeSemantics`, and the card's
+  wrappers and the live chip are `container: true`: without its text the
+  double toggle merged into the card, and the whole card read as one
+  button. `AppButton` still merges into what holds it: as a node of its
+  own, its small (40 dp) and medium (46 dp) sizes are under 48 dp
+  (`ui_audit_survey_test`, the leaderboard's retry) -- the owner's call.
+- **Four «زيادة» / «إنقاص» on a card, fixed.** Each half reads its side
+  («زيادة أرسنال») and is a button of its own, read disabled at 0; a
+  disabled half used to lend its tooltip to the whole card.
+- **The same name on every card, fixed where the target differs.** The
+  double toggle, «مشاركة» and «تفاصيل المباراة» read the match after their
+  label («مشاركة أرسنال ضد تشيلسي»), from the existing `versusShort`; no
+  new text.
+- **Left as they are.** «توقعات الجميع» and «عرض لوحة الصدارة» repeat on
+  every card because they open the same page (the day's board, the
+  season's table). The tab bar's names match the page titles; TalkBack
+  reads the tab's role and place.
+- Tests: `fotmob_match_card_semantics_test.dart` (the real matches screen:
+  four distinct stepper names, the disabled half, the toggle a node of its
+  own, the share and the details with their match, the live chip once; a
+  finished card's two actions once each) and `app_button_semantics_test.dart`.
+  All three fail on the code before this batch.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
