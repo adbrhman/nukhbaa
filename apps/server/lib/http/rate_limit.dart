@@ -122,6 +122,10 @@ enum PlayerAppend {
   /// `POST /me/screen-views`: the app sends one each time it goes to the
   /// background, so 30 an hour is generous.
   screenViews,
+
+  /// `POST /me/support/messages`: a player's message to support (migration
+  /// 0187); 60 an hour holds a long conversation, not a flood.
+  supportMessage,
 }
 
 final RateLimiter _frameReportLimiter = RateLimiter(
@@ -139,6 +143,11 @@ final RateLimiter _screenViewsLimiter = RateLimiter(
   window: const Duration(hours: 1),
 );
 
+final RateLimiter _supportMessageLimiter = RateLimiter(
+  limit: 60,
+  window: const Duration(hours: 1),
+);
+
 /// The `429` for a [kind] append by [principal] over its hourly cap, or
 /// `null` when it may be stored.
 Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
@@ -149,6 +158,7 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
     PlayerAppend.frameReport => _frameReportLimiter,
     PlayerAppend.pushOpened => _pushOpenLimiter,
     PlayerAppend.screenViews => _screenViewsLimiter,
+    PlayerAppend.supportMessage => _supportMessageLimiter,
   };
   final wait = limiter.hit(principal.userId.value);
   return wait == null ? null : tooManyRequests(wait);

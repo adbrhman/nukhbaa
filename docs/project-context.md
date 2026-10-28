@@ -6903,6 +6903,63 @@ have no documented link.
 
 The app with the next APK.
 
+### The support chat, part 1: the server (script 165, 2026-10-28)
+
+Asked by the owner on 2026-10-28: a private chat between a player and
+Nukhbaa support inside the app, with no WhatsApp and no e-mail. Part 1 of
+four: the database and the server (script 166: the player's chat screen;
+167: the admins' inbox; 168: pictures).
+
+- Migration 0187: schema `support`, server-only (RLS on, nothing granted).
+  `support.conversations`: one per player (unique `player_id`), status
+  `open` / `closed` / `archived`, the last message's time, preview (one
+  line, 120 characters) and side, `player_unread` (support's messages he
+  has not read) and `support_unread` (his messages no admin has read).
+  `support.messages`: id ascending with time, `sender_role` `player` or
+  `support` kept as it was when sent, `sender_id` (which admin answered,
+  never shown to the player), body 1..2000 characters trimmed, `read_at`.
+  A trigger on `identity.users.deleted_at` (0178) removes a deleted
+  account's conversation. `notification.push_opens` accepts the links
+  `support` and `support_inbox`.
+- The support side is the admin role, not a separate account: every
+  admin reads one inbox, and the player always sees one name,
+  "دعم نُخبة". A message's status is sent or read (`read_at`); sending
+  and a failed send are the app's own states.
+- Routes (`/me` for the player, by his own id only, never an id from the
+  request): `GET|POST /me/support/messages` (a page oldest first,
+  `?before=` a message id, `?limit=` 30 by default, 100 at most; a send
+  is 60 an hour, `PlayerAppend.supportMessage`), `POST /me/support/read`,
+  `GET /me/support/unread`. Admin only, in the use-cases (a player is
+  `401 auth.insufficient_role`): `GET /admin/support/conversations`
+  (`?filter=` all / unread / open / closed, `?search=` part of the name;
+  newest first, 100 at most, with the count of conversations waiting),
+  `GET|PATCH /admin/support/conversations/{id}`, `POST .../messages`,
+  `POST .../read`. An id not on file, or not a UUID, is
+  `409 support.conversation_not_found`.
+- A player's message reopens a closed or archived conversation. The first
+  message waiting rings the other side (`NotifySupportMessage`, after the
+  answer, best-effort): the admins' phones ("رسالة دعم جديدة", the
+  player's name and 90 characters, link `support_inbox`), or the player's
+  while his account is active ("دعم نُخبة", the answer, link `support`).
+  More lines before a read are counted, not rung again.
+- Code: domain `support_chat.dart` (`SupportSenderRole`,
+  `SupportConversationStatus`, `SupportConversationId`,
+  `SupportMessageBody`), `PushLink.support` / `supportInbox`;
+  application `support/` (port `SupportChatRepository`, ten use-cases);
+  `PostgresSupportChatRepository` (a message and its conversation's
+  counters change in one statement under a row lock); contracts
+  `support_dto.dart`; the routes and `support_dto_mapper.dart`.
+- Tests: `supabase/tests/0187_support_chat_queries_test.sql` (every
+  statement of the adapter on Postgres: one conversation per player, both
+  counters, the inbox's order, filters and name search, reads, pages,
+  closing and reopening, the player's phones, a deleted account), and the
+  domain, application, adapter, contracts and route tests
+  (`support_routes_test.dart`: a player refused every admin route,
+  another player reads nothing, 60 an hour).
+
+Apply 0187 in the SQL Editor before pushing. The app's screens come with
+scripts 166 and 167.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

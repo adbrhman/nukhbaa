@@ -57,4 +57,5 @@ export 'src/scoring_dto.dart';
 export 'src/screen_views_dto.dart';
 export 'src/social_dto.dart';
 export 'src/streak_dto.dart';
+export 'src/support_dto.dart';
 export 'src/time_zone_dto.dart';

@@ -15,4 +15,11 @@ abstract final class PushLink {
   /// The in-app inbox: exact-hit and announcement pushes, sent now or
   /// deferred out of the quiet hours.
   static const String inbox = 'inbox';
+
+  /// The player's chat with Nukhbaa support: support answered him
+  /// (migration 0187).
+  static const String support = 'support';
+
+  /// The admins' support inbox: a player wrote (migration 0187).
+  static const String supportInbox = 'support_inbox';
 }

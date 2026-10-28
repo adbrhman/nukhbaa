@@ -122,3 +122,4 @@ export 'src/social/postgres_activity_feed_reader.dart';
 export 'src/social/postgres_fixture_reaction_repository.dart';
 export 'src/social/postgres_prediction_reaction_repository.dart';
 export 'src/social/postgres_reaction_repository.dart';
+export 'src/support/postgres_support_chat_repository.dart';

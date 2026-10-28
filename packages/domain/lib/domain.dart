@@ -106,3 +106,4 @@ export 'src/social/fixture_reaction.dart';
 export 'src/social/reaction.dart';
 export 'src/social/reaction_emoji.dart';
 export 'src/social/reaction_id.dart';
+export 'src/support/support_chat.dart';

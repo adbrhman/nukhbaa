@@ -30,6 +30,8 @@ final class RecordPushOpen {
     PushLink.fixtures,
     PushLink.league,
     PushLink.inbox,
+    PushLink.support,
+    PushLink.supportInbox,
   };
 
   /// Records [principal]'s tap on a push carrying [link].

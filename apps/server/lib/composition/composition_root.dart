@@ -89,6 +89,16 @@ final class CompositionRoot {
     required this.adminViewPlayerPoints,
     required this.adminAddTeam,
     required this.adminAddLeague,
+    required this.sendSupportMessage,
+    required this.getMySupportThread,
+    required this.markMySupportRead,
+    required this.getMySupportUnread,
+    required this.adminGetSupportInbox,
+    required this.adminGetSupportConversation,
+    required this.adminReplySupport,
+    required this.adminMarkSupportRead,
+    required this.adminSetSupportStatus,
+    required this.notifySupportMessage,
     required this.getHallOfFame,
     required this.getSportingSeasonLeaderboard,
     required this.createGroup,
@@ -288,6 +298,16 @@ final class CompositionRoot {
     AdminViewPlayerPoints? adminViewPlayerPoints,
     AdminAddTeam? adminAddTeam,
     AdminAddLeague? adminAddLeague,
+    SendSupportMessage? sendSupportMessage,
+    GetMySupportThread? getMySupportThread,
+    MarkMySupportRead? markMySupportRead,
+    GetMySupportUnread? getMySupportUnread,
+    AdminGetSupportInbox? adminGetSupportInbox,
+    AdminGetSupportConversation? adminGetSupportConversation,
+    AdminReplySupport? adminReplySupport,
+    AdminMarkSupportRead? adminMarkSupportRead,
+    AdminSetSupportStatus? adminSetSupportStatus,
+    NotifySupportMessage? notifySupportMessage,
     GetHallOfFame? getHallOfFame,
     GetSportingSeasonLeaderboard? getSportingSeasonLeaderboard,
     CreateGroup? createGroup,
@@ -501,6 +521,21 @@ final class CompositionRoot {
            adminViewPlayerPoints ?? _absentAdminViewPlayerPoints(),
        adminAddTeam = adminAddTeam ?? _absentAdminAddTeam(),
        adminAddLeague = adminAddLeague ?? _absentAdminAddLeague(),
+       sendSupportMessage = sendSupportMessage ?? _absentSendSupportMessage(),
+       getMySupportThread = getMySupportThread ?? _absentGetMySupportThread(),
+       markMySupportRead = markMySupportRead ?? _absentMarkMySupportRead(),
+       getMySupportUnread = getMySupportUnread ?? _absentGetMySupportUnread(),
+       adminGetSupportInbox =
+           adminGetSupportInbox ?? _absentAdminGetSupportInbox(),
+       adminGetSupportConversation =
+           adminGetSupportConversation ?? _absentAdminGetSupportConversation(),
+       adminReplySupport = adminReplySupport ?? _absentAdminReplySupport(),
+       adminMarkSupportRead =
+           adminMarkSupportRead ?? _absentAdminMarkSupportRead(),
+       adminSetSupportStatus =
+           adminSetSupportStatus ?? _absentAdminSetSupportStatus(),
+       notifySupportMessage =
+           notifySupportMessage ?? _absentNotifySupportMessage(),
        getHallOfFame = getHallOfFame ?? _absentGetHallOfFame(),
        getSportingSeasonLeaderboard =
            getSportingSeasonLeaderboard ??
@@ -1117,6 +1152,54 @@ final class CompositionRoot {
     writer: _UnwiredLeagueCatalogWriter(),
     auditRecorder: _absentAuditRecorder(),
   );
+
+  /// Backs the "absent" support chat use-cases (script 165): each throws if
+  /// a test reaches a support slice it never wired.
+  static SendSupportMessage _absentSendSupportMessage() => SendSupportMessage(
+    chats: _UnwiredSupportChatRepository(),
+    clock: _unwiredClock,
+  );
+
+  static GetMySupportThread _absentGetMySupportThread() =>
+      GetMySupportThread(chats: _UnwiredSupportChatRepository());
+
+  static MarkMySupportRead _absentMarkMySupportRead() => MarkMySupportRead(
+    chats: _UnwiredSupportChatRepository(),
+    clock: _unwiredClock,
+  );
+
+  static GetMySupportUnread _absentGetMySupportUnread() =>
+      GetMySupportUnread(chats: _UnwiredSupportChatRepository());
+
+  static AdminGetSupportInbox _absentAdminGetSupportInbox() =>
+      AdminGetSupportInbox(chats: _UnwiredSupportChatRepository());
+
+  static AdminGetSupportConversation _absentAdminGetSupportConversation() =>
+      AdminGetSupportConversation(chats: _UnwiredSupportChatRepository());
+
+  static AdminReplySupport _absentAdminReplySupport() => AdminReplySupport(
+    chats: _UnwiredSupportChatRepository(),
+    clock: _unwiredClock,
+  );
+
+  static AdminMarkSupportRead _absentAdminMarkSupportRead() =>
+      AdminMarkSupportRead(
+        chats: _UnwiredSupportChatRepository(),
+        clock: _unwiredClock,
+      );
+
+  static AdminSetSupportStatus _absentAdminSetSupportStatus() =>
+      AdminSetSupportStatus(
+        chats: _UnwiredSupportChatRepository(),
+        clock: _unwiredClock,
+      );
+
+  static NotifySupportMessage _absentNotifySupportMessage() =>
+      NotifySupportMessage(
+        chats: _UnwiredSupportChatRepository(),
+        admins: _UnwiredAdminPushTargetReader(),
+        sender: const NoopPushSender(),
+      );
 
   /// Backs the "absent" [GetHallOfFame]: throws so a test that reaches an
   /// unwired Hall of Fame slice fails loudly instead of touching a real
@@ -2008,6 +2091,46 @@ final class CompositionRoot {
   /// `POST /admin/leagues`, script 139, migration 0183).
   final AdminAddLeague adminAddLeague;
 
+  /// A player writes to Nukhbaa support (backs `POST /me/support/messages`,
+  /// script 165, migration 0187).
+  final SendSupportMessage sendSupportMessage;
+
+  /// A page of the caller's own support chat (backs
+  /// `GET /me/support/messages`, script 165).
+  final GetMySupportThread getMySupportThread;
+
+  /// The caller read support's answers (backs `POST /me/support/read`,
+  /// script 165).
+  final MarkMySupportRead markMySupportRead;
+
+  /// Support's answers the caller has not read (backs
+  /// `GET /me/support/unread`, script 165).
+  final GetMySupportUnread getMySupportUnread;
+
+  /// The admins' support inbox (backs
+  /// `GET /admin/support/conversations`, script 165).
+  final AdminGetSupportInbox adminGetSupportInbox;
+
+  /// One support conversation for an admin (backs
+  /// `GET /admin/support/conversations/{id}`, script 165).
+  final AdminGetSupportConversation adminGetSupportConversation;
+
+  /// An admin answers as "Nukhbaa support" (backs
+  /// `POST /admin/support/conversations/{id}/messages`, script 165).
+  final AdminReplySupport adminReplySupport;
+
+  /// An admin read a player's messages (backs
+  /// `POST /admin/support/conversations/{id}/read`, script 165).
+  final AdminMarkSupportRead adminMarkSupportRead;
+
+  /// Closes, archives or reopens a conversation (backs
+  /// `PATCH /admin/support/conversations/{id}`, script 165).
+  final AdminSetSupportStatus adminSetSupportStatus;
+
+  /// Rings the other side's phone for a support message (after the
+  /// support routes answer, script 165).
+  final NotifySupportMessage notifySupportMessage;
+
   /// Reads the platform-wide, all-time standings (the Hall of Fame) — a
   /// read-side projection over the SAME append-only ledger aggregated across
   /// every season (Axiom 5); visible to any authenticated user, unlike the
@@ -2680,6 +2803,8 @@ final class CompositionRoot {
       targets: PostgresAdminPushTargetReader(connection),
       sender: pushSender,
     );
+    // The support chat (script 165, migration 0187).
+    final supportChats = PostgresSupportChatRepository(connection);
     // The one deferred-push queue: the exact-hit announcement and the admin
     // broadcast fill it in quiet hours, the flush sweep empties it.
     final notificationQueue = PostgresNotificationQueue(connection);
@@ -3494,6 +3619,31 @@ final class CompositionRoot {
         writer: PostgresLeagueCatalogWriter(connection),
         auditRecorder: auditRecorder,
       ),
+      // The support chat (script 165, migration 0187): one repository for
+      // both sides; the push after a message goes to the admins' or the
+      // player's phones.
+      sendSupportMessage: SendSupportMessage(chats: supportChats, clock: clock),
+      getMySupportThread: GetMySupportThread(chats: supportChats),
+      markMySupportRead: MarkMySupportRead(chats: supportChats, clock: clock),
+      getMySupportUnread: GetMySupportUnread(chats: supportChats),
+      adminGetSupportInbox: AdminGetSupportInbox(chats: supportChats),
+      adminGetSupportConversation: AdminGetSupportConversation(
+        chats: supportChats,
+      ),
+      adminReplySupport: AdminReplySupport(chats: supportChats, clock: clock),
+      adminMarkSupportRead: AdminMarkSupportRead(
+        chats: supportChats,
+        clock: clock,
+      ),
+      adminSetSupportStatus: AdminSetSupportStatus(
+        chats: supportChats,
+        clock: clock,
+      ),
+      notifySupportMessage: NotifySupportMessage(
+        chats: supportChats,
+        admins: PostgresAdminPushTargetReader(connection),
+        sender: pushSender,
+      ),
       getHallOfFame: GetHallOfFame(
         leaderboardRepository: leaderboardRepository,
       ),
@@ -3837,6 +3987,81 @@ final class _UnwiredLeagueCatalogWriter implements LeagueCatalogWriter {
   @override
   Future<Result<LeagueAddition>> add({required String name}) =>
       throw StateError('AdminAddLeague was not wired into this test root');
+}
+
+/// Backs the "absent" support chat use-cases: throws if a test reaches a
+/// support slice it never wired (script 165).
+final class _UnwiredSupportChatRepository implements SupportChatRepository {
+  static Never _unwired() =>
+      throw StateError('The support chat was not wired into this test root');
+
+  @override
+  Future<Result<SupportMessageStored>> addPlayerMessage({
+    required UserId playerId,
+    required SupportMessageBody body,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportMessageStored>> addSupportReply({
+    required SupportConversationId conversationId,
+    required UserId adminId,
+    required SupportMessageBody body,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportThread>> playerThread({
+    required UserId playerId,
+    required int? beforeId,
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportThread>> conversationThread({
+    required SupportConversationId conversationId,
+    required int? beforeId,
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> markReadByPlayer({
+    required UserId playerId,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> markReadBySupport({
+    required SupportConversationId conversationId,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> playerUnread(UserId playerId) => _unwired();
+
+  @override
+  Future<Result<SupportInbox>> inbox({
+    required SupportInboxFilter filter,
+    required String search,
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<SupportConversationSummary>> conversation(
+    SupportConversationId conversationId,
+  ) => _unwired();
+
+  @override
+  Future<Result<void>> setStatus({
+    required SupportConversationId conversationId,
+    required SupportConversationStatus status,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<String>>> playerPushTokens(
+    SupportConversationId conversationId,
+  ) => _unwired();
 }
 
 /// Backs an "absent" [AdminCountFixtureScores]: throws if a test reaches
