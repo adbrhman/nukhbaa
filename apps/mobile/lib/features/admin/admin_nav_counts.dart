@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'admin_providers.dart';
 import 'admin_sections.dart';
+import 'admin_support_providers.dart';
 import 'screens/sections/admin_home_section.dart';
 
 /// How many things wait in each admin section (2026-10-08), for the counts
@@ -19,6 +20,7 @@ Map<AdminSection, int> adminNavCounts({
   required AdminAttention? attention,
   required AdminMonthPulse? month,
   required DateTime now,
+  int? supportWaiting,
 }) {
   final Map<AdminSection, int> counts = <AdminSection, int>{};
   void put(AdminSection section, int? count) {
@@ -33,6 +35,8 @@ Map<AdminSection, int> adminNavCounts({
   );
   put(AdminSection.errorLog, attention?.freshErrors);
   put(AdminSection.champions, month?.uncrowned.length);
+  // Conversations with a player message no admin has read (0187).
+  put(AdminSection.support, supportWaiting);
   return counts;
 }
 
@@ -44,5 +48,6 @@ final adminNavCountsProvider = Provider<Map<AdminSection, int>>((ref) {
     attention: ref.watch(adminAttentionProvider).value,
     month: ref.watch(adminMonthPulseProvider).value,
     now: DateTime.now(),
+    supportWaiting: ref.watch(adminSupportWaitingProvider).value,
   );
 });

@@ -617,6 +617,67 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/support/conversations` -- the support inbox (migration
+  /// 0187, script 167): conversations by their last message, newest first.
+  /// [filter] is `all`, `unread`, `open` or `closed`; [search] part of the
+  /// player's name.
+  Future<Result<SupportInboxDto>> supportInbox({
+    String filter = 'all',
+    String search = '',
+  }) {
+    return _transport.getObject<SupportInboxDto>(
+      '/admin/support/conversations',
+      query: <String, String>{
+        'filter': filter,
+        if (search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      parse: SupportInboxDto.fromJson,
+    );
+  }
+
+  /// `GET /admin/support/conversations/{id}` -- one conversation's line and
+  /// its newest page, or the page before the message id [before].
+  Future<Result<SupportConversationPageDto>> supportConversation(
+    String id, {
+    int? before,
+  }) {
+    return _transport.getObject<SupportConversationPageDto>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}',
+      query: before == null ? null : <String, String>{'before': '$before'},
+      parse: SupportConversationPageDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/support/conversations/{id}/messages` -- answers the
+  /// player as "دعم نُخبة"; answers the message as stored.
+  Future<Result<SupportMessageDto>> replySupport(String id, String body) {
+    return _transport.postObject<SupportMessageDto>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}/messages',
+      body: SupportSendDto(body: body).toJson(),
+      parse: SupportMessageDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/support/conversations/{id}/read` -- the player's messages
+  /// were read; answers how many were marked.
+  Future<Result<int>> markSupportRead(String id) {
+    return _transport.postObject<int>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}/read',
+      body: const <String, Object?>{},
+      parse: (json) => SupportCountDto.fromJson(json).count,
+    );
+  }
+
+  /// `PATCH /admin/support/conversations/{id}` -- [status] `open`,
+  /// `closed` or `archived`.
+  Future<Result<String>> setSupportStatus(String id, String status) {
+    return _transport.patchObject<String>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}',
+      body: SupportStatusDto(status: status).toJson(),
+      parse: (json) => SupportStatusDto.fromJson(json).status,
+    );
+  }
+
   /// `POST /admin/h2h/extra-groups` -- adds [groups] groups (1..10) to
   /// the month open now, from the players waiting for a seat, most
   /// days of predictions first, twenty to a group.

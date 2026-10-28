@@ -18,6 +18,7 @@ import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/champion_admin_section.dart';
 import 'screens/sections/error_log_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
+import 'screens/sections/admin_support_section.dart';
 import 'screens/sections/fixtures_admin_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
@@ -34,6 +35,7 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
     AdminSection.resultsScoring => l10n.adminResultsScoringTab,
     AdminSection.users => l10n.adminUsersTab,
     AdminSection.announcements => 'إرسال إشعار',
+    AdminSection.support => 'رسائل الدعم',
     AdminSection.ledger => 'سجل النقاط',
     AdminSection.analytics => 'التحليلات',
     AdminSection.audit => l10n.adminAuditLogTab,
@@ -76,6 +78,7 @@ const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
       AdminSection.users,
       AdminSection.ledger,
       AdminSection.announcements,
+      AdminSection.support,
     ],
   ),
   (
@@ -239,6 +242,7 @@ class AdminShell extends StatelessWidget {
         ],
       ),
       AdminSection.announcements => const AnnouncementSection(),
+      AdminSection.support => const AdminSupportSection(),
       AdminSection.ledger => const LedgerLookupSection(),
       AdminSection.fixtures => const FixturesAdminSection(),
       // script 124: tabs -- recording results, then the counted matches.

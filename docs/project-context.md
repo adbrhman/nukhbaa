@@ -6996,6 +6996,37 @@ scripts 166 and 167.
 
 The app with the next APK; needs the server of script 165.
 
+### The support chat, part 3: the admins' inbox (script 167, 2026-10-28)
+
+- Admin menu: `AdminSection.support`, «رسائل الدعم», in «اللاعبون
+  والتواصل» (14 entries). Its count is the conversations with a player
+  message no admin has read (`adminSupportWaitingProvider`,
+  `GET /admin/support/conversations?filter=unread`), also on «إدارة
+  النخبة» in the account tab (`account.adminDashboard.support`).
+- `AdminSupportSection`: conversations by their last message, newest
+  first; the pills الكل / غير مقروءة (N) / مفتوحة / مغلقة (closed and
+  archived); a search by the player's name; read again every 15 seconds
+  and on pull. A line: the player's name, the last message (a reply icon
+  when support sent it), the unread count or the status, the day and time.
+- `AdminSupportConversationScreen`: the same chat as the player's, mirrored
+  (the shared `support_chat_widgets.dart`: `SupportBubble`,
+  `SupportStrip`, `SupportComposer`): the admin's answers are his side
+  and go out as «دعم نُخبة». Opening it marks the player's messages read;
+  read again every 8 seconds; older messages on demand. The bar's menu:
+  إغلاق and أرشفة (each asks first), إعادة فتح.
+- `AdminApi`: `supportInbox`, `supportConversation`, `replySupport`,
+  `markSupportRead`, `setSupportStatus`; `ApiTransport.patchObject` and
+  `PATCH` in its method switch (the status route is a `PATCH`).
+- Push link `support_inbox`: for an admin, the account tab and
+  `AdminHubScreen(initialSection: AdminSection.support)`.
+- Tests: `admin_support_test.dart` (a fake of the admin routes: order, the
+  waiting count, filters, search; open, read, answer, the inbox no longer
+  waiting; close asks first, reopen; x2 at 360px for the inbox and a
+  conversation), `admin_support_api_test.dart`, `admin_nav_counts_test`,
+  `admin_nav_list_test` (14 tiles), `push_link_test`.
+
+The app with the next APK; needs the server of script 165.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

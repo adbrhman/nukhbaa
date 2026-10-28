@@ -279,6 +279,23 @@ final class ApiTransport {
     );
   }
 
+  /// Performs `PATCH [path]` with a JSON object [body] and decodes a JSON
+  /// **object** response via [parse]: a partial change of one resource
+  /// (e.g. `PATCH /admin/support/conversations/{id}`, its status), with the
+  /// same pipeline and error contract as [putObject].
+  Future<Result<T>> patchObject<T>(
+    String path, {
+    required Map<String, Object?> body,
+    required T Function(Map<String, Object?> json) parse,
+  }) {
+    return _send<T>(
+      method: 'PATCH',
+      path: path,
+      requestBody: body,
+      decode: (respBody) => _decodeObject(respBody, parse),
+    );
+  }
+
   /// Performs `DELETE [path]` (no request body) and decodes a JSON **object**
   /// response via [parse]. Used for idempotent resource removals (e.g.
   /// `DELETE /rounds/{id}/fixtures/{fixtureId}`) — the same request pipeline
@@ -475,6 +492,11 @@ final class ApiTransport {
           body: requestBytes ?? jsonEncode(requestBody),
         ),
         'PUT' => _httpClient.put(
+          uri,
+          headers: headers,
+          body: jsonEncode(requestBody),
+        ),
+        'PATCH' => _httpClient.patch(
           uri,
           headers: headers,
           body: jsonEncode(requestBody),

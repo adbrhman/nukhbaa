@@ -142,6 +142,28 @@ void main() {
       adminNavCounts(dashboard: null, attention: null, month: null, now: now),
       isEmpty,
     );
+    // Players' conversations waiting for an admin (script 167); none, or a
+    // failed read, is no count.
+    expect(
+      adminNavCounts(
+        dashboard: null,
+        attention: null,
+        month: null,
+        now: now,
+        supportWaiting: 3,
+      ),
+      <AdminSection, int>{AdminSection.support: 3},
+    );
+    expect(
+      adminNavCounts(
+        dashboard: null,
+        attention: null,
+        month: null,
+        now: now,
+        supportWaiting: 0,
+      ),
+      isEmpty,
+    );
     // A failed attention read is null counts: no badge, not a zero badge.
     expect(
       adminNavCounts(

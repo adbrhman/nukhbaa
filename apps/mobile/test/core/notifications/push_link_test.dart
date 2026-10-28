@@ -9,6 +9,8 @@ void main() {
       expect(shellTabForLink(PushLinks.inbox), 0);
       // Support answered: the chat over the account tab (script 166).
       expect(shellTabForLink(PushLinks.support), 4);
+      // A player wrote: the admins' inbox over the account tab (167).
+      expect(shellTabForLink(PushLinks.supportInbox), 4);
     });
 
     test('an unknown link opens nothing in particular', () {

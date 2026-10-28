@@ -14,14 +14,18 @@ import 'admin_shell.dart';
 /// إلى [AdminShell] (الجسم دائماً) و[AdminNavList] (داخل Drawer على الجوال
 /// فقط — إضافة `drawer:` لـScaffold تُظهر أيقونة القائمة تلقائياً في AppBar).
 class AdminHubScreen extends StatefulWidget {
-  const AdminHubScreen({super.key});
+  const AdminHubScreen({super.key, this.initialSection});
+
+  /// The section opened first; the home page when null (a push about the
+  /// support inbox opens «رسائل الدعم», script 167).
+  final AdminSection? initialSection;
 
   @override
   State<AdminHubScreen> createState() => _AdminHubScreenState();
 }
 
 class _AdminHubScreenState extends State<AdminHubScreen> {
-  AdminSection _selected = AdminSection.dashboard;
+  late AdminSection _selected = widget.initialSection ?? AdminSection.dashboard;
 
   void _select(AdminSection section) {
     if (section == _selected) return;

@@ -19,6 +19,7 @@ import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
 import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
+import '../admin/admin_sections.dart';
 import '../groups/groups_providers.dart';
 import '../groups/join_group_screen.dart';
 import '../h2h/h2h_screen.dart';
@@ -110,6 +111,17 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
     }
     if (link == PushLinks.support) {
       unawaited(_openSupportChat());
+    }
+    // Only an admin is sent this push; the server checks every admin call.
+    if (link == PushLinks.supportInbox && widget.user.role == 'admin') {
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const AdminHubScreen(initialSection: AdminSection.support),
+          ),
+        ),
+      );
     }
   }
 

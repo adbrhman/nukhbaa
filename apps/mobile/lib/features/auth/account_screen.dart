@@ -22,6 +22,7 @@ import '../../core/ui/unread_badge.dart';
 import '../../core/ui/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 import '../admin/admin_hub_screen.dart';
+import '../admin/admin_support_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../gamification/insights_screen.dart';
 import '../gamification/my_badges_screen.dart';
@@ -69,6 +70,9 @@ class AccountScreen extends ConsumerWidget {
     );
     final int unreadCount = unread.value ?? 0;
     final int supportUnread = ref.watch(supportUnreadProvider).value ?? 0;
+    final int supportWaiting = user.role == 'admin'
+        ? ref.watch(adminSupportWaitingProvider).value ?? 0
+        : 0;
     final LatestBuildDto? update = ref.watch(pendingUpdateProvider);
 
     // Warm the matches feed: it is the destination most likely to be opened
@@ -238,6 +242,16 @@ class AccountScreen extends ConsumerWidget {
                           key: const Key('account.adminDashboard'),
                           icon: Icons.admin_panel_settings_outlined,
                           title: l10n.adminDashboard,
+                          // Players' messages waiting for an admin (0187).
+                          trailing: supportWaiting > 0
+                              ? AppBadge(
+                                  key: const Key(
+                                    'account.adminDashboard.support',
+                                  ),
+                                  label: UnreadBadge.labelFor(supportWaiting),
+                                  tone: AppBadgeTone.danger,
+                                )
+                              : null,
                           onTap: () => open(const AdminHubScreen()),
                         ),
                       ],

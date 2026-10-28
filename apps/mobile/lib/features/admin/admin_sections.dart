@@ -21,6 +21,8 @@ enum AdminSection {
   // userNames is a tab of users (script 124: merged).
   users(icon: Icons.people_alt_rounded),
   announcements(icon: Icons.campaign_rounded),
+  // The support chat's inbox (script 167, migration 0187).
+  support(icon: Icons.support_agent_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
   analytics(icon: Icons.insights_rounded),
   audit(icon: Icons.receipt_long_rounded),

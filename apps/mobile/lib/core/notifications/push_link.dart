@@ -27,5 +27,7 @@ int? shellTabForLink(String link) => switch (link) {
   PushLinks.inbox => 0,
   // The chat opens on top of the account tab, where its row is.
   PushLinks.support => 4,
+  // A player wrote: the admins' inbox over the account tab (script 167).
+  PushLinks.supportInbox => 4,
   _ => null,
 };
