@@ -53,4 +53,5 @@ export 'src/leagues_api.dart' show LeaguesApi;
 export 'src/ledger_api.dart' show LedgerApi;
 export 'src/notifications_api.dart' show NotificationsApi;
 export 'src/prediction_api.dart' show PredictionApi;
+export 'src/support_api.dart' show SupportApi;
 export 'src/teams_api.dart' show TeamsApi;

@@ -7,6 +7,8 @@ void main() {
       expect(shellTabForLink(PushLinks.fixtures), 1);
       expect(shellTabForLink(PushLinks.league), 3);
       expect(shellTabForLink(PushLinks.inbox), 0);
+      // Support answered: the chat over the account tab (script 166).
+      expect(shellTabForLink(PushLinks.support), 4);
     });
 
     test('an unknown link opens nothing in particular', () {
@@ -21,6 +23,8 @@ void main() {
       expect(PushLinks.fixtures, 'fixtures');
       expect(PushLinks.league, 'league');
       expect(PushLinks.inbox, 'inbox');
+      expect(PushLinks.support, 'support');
+      expect(PushLinks.supportInbox, 'support_inbox');
     });
   });
 }

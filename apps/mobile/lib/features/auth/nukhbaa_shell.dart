@@ -25,6 +25,8 @@ import '../h2h/h2h_screen.dart';
 import '../leaderboards/leaderboards_screen.dart';
 import '../notifications/notifications_providers.dart';
 import '../notifications/notifications_screen.dart';
+import '../support/support_chat_screen.dart';
+import '../support/support_providers.dart';
 import '../fixture_prediction/current_month_fixtures_screen.dart';
 import 'account_screen.dart';
 import 'home_screen.dart';
@@ -106,6 +108,18 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
         ),
       );
     }
+    if (link == PushLinks.support) {
+      unawaited(_openSupportChat());
+    }
+  }
+
+  /// Support answered (migration 0187): the chat on top of the account
+  /// tab; its count is read again when it closes.
+  Future<void> _openSupportChat() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const SupportChatScreen()),
+    );
+    if (mounted) ref.invalidate(supportUnreadProvider);
   }
 
   /// At 00:00 Riyadh the month (on the 1st) and the day change under an app
@@ -132,6 +146,8 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
   void _refreshBell() {
     if (!mounted) return;
     ref.invalidate(unreadCountProvider);
+    // Support's answers count on the account tab's support row (0187).
+    ref.invalidate(supportUnreadProvider);
   }
 
   @override

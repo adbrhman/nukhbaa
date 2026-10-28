@@ -10,6 +10,13 @@ abstract final class PushLinks {
 
   /// The in-app inbox.
   static const String inbox = 'inbox';
+
+  /// The player's chat with Nukhbaa support: support answered him
+  /// (migration 0187).
+  static const String support = 'support';
+
+  /// The admins' support inbox: a player wrote (migration 0187).
+  static const String supportInbox = 'support_inbox';
 }
 
 /// The shell tab a push [link] opens, or null for a link this build does
@@ -18,5 +25,7 @@ int? shellTabForLink(String link) => switch (link) {
   PushLinks.fixtures => 1,
   PushLinks.league => 3,
   PushLinks.inbox => 0,
+  // The chat opens on top of the account tab, where its row is.
+  PushLinks.support => 4,
   _ => null,
 };

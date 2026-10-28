@@ -14,6 +14,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/theme/theme_controller.dart';
+import '../../core/ui/app_badge.dart';
 import '../../core/ui/app_dialog.dart';
 import '../../core/ui/app_tab_header.dart';
 import '../../core/ui/forward_chevron.dart';
@@ -30,6 +31,8 @@ import '../notifications/notifications_screen.dart';
 import '../record/elite_card_screen.dart';
 import '../record/my_points_screen.dart';
 import '../record/season_record_providers.dart';
+import '../support/support_chat_screen.dart';
+import '../support/support_providers.dart';
 import '../update/update_gate.dart';
 import 'account_settings_screen.dart';
 import 'app_lock.dart';
@@ -65,6 +68,7 @@ class AccountScreen extends ConsumerWidget {
       ref.watch(mySeasonRecordsProvider).value,
     );
     final int unreadCount = unread.value ?? 0;
+    final int supportUnread = ref.watch(supportUnreadProvider).value ?? 0;
     final LatestBuildDto? update = ref.watch(pendingUpdateProvider);
 
     // Warm the matches feed: it is the destination most likely to be opened
@@ -197,9 +201,9 @@ class AccountScreen extends ConsumerWidget {
                     ],
                   ),
                   // A way to the developer for a problem or a complaint
-                  // (2026-10-27): Nukhbaa's support e-mail since script 164.
-                  // A WhatsApp channel cannot be written to, and a WhatsApp
-                  // chat shows the developer's phone number.
+                  // (2026-10-27): a private chat with Nukhbaa support inside
+                  // the app since script 166 -- no WhatsApp, no e-mail, no
+                  // phone number. The count is support's unread answers.
                   const SizedBox(height: AppSpacing.lg),
                   const AccountSectionTitle('الدعم'),
                   AccountMenuCard(
@@ -209,10 +213,17 @@ class AccountScreen extends ConsumerWidget {
                         key: const Key('account.contactDeveloper'),
                         icon: Icons.support_agent_rounded,
                         title: 'تواصل مع المطوّر',
-                        subtitle:
-                            'للإبلاغ عن مشكلة أو تقديم شكوى عبر البريد\n'
-                            '$nukhbaaSupportEmail',
-                        onTap: () => unawaited(_openSupport(context, ref)),
+                        subtitle: 'للإبلاغ عن مشكلة أو تقديم شكوى داخل التطبيق',
+                        trailing: supportUnread > 0
+                            ? AppBadge(
+                                key: const Key(
+                                  'account.contactDeveloper.badge',
+                                ),
+                                label: UnreadBadge.labelFor(supportUnread),
+                                tone: AppBadgeTone.danger,
+                              )
+                            : null,
+                        onTap: () => unawaited(_openSupportChat(context, ref)),
                       ),
                     ],
                   ),
@@ -509,37 +520,12 @@ class _DarkModeRow extends ConsumerWidget {
   }
 }
 
-/// Nukhbaa's support address, the account tab's way to the developer
-/// (script 164): the player sees this address only, never a phone number.
-const String nukhbaaSupportEmail = 'nukhbaa.app@gmail.com';
-
-/// A new mail to [nukhbaaSupportEmail] with the subject 'دعم نُخبة',
-/// percent-encoded here (a space as %20, not +, which mail apps show).
-final Uri nukhbaaSupportUri = Uri.parse(
-  'mailto:$nukhbaaSupportEmail'
-  '?subject=%D8%AF%D8%B9%D9%85%20%D9%86%D9%8F%D8%AE%D8%A8%D8%A9',
-);
-
-/// Opens [nukhbaaSupportUri] in the phone's mail app through the app's one
-/// link opener; when nothing could open it, a line says so.
-Future<void> _openSupport(BuildContext context, WidgetRef ref) async {
-  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-  bool opened;
-  try {
-    opened = await ref.read(notificationLinkOpenerProvider)(nukhbaaSupportUri);
-  } on Object {
-    opened = false;
-  }
-  if (!opened) {
-    messenger.showSnackBar(
-      const SnackBar(
-        key: Key('account.contactDeveloper.failed'),
-        content: Text(
-          'تعذّر فتح تطبيق البريد، راسلنا على $nukhbaaSupportEmail',
-        ),
-      ),
-    );
-  }
+/// Opens the support chat; its count is read again when the chat closes.
+Future<void> _openSupportChat(BuildContext context, WidgetRef ref) async {
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(builder: (_) => const SupportChatScreen()),
+  );
+  ref.invalidate(supportUnreadProvider);
 }
 
 /// Signing out ends the session on this device and, without fingerprint

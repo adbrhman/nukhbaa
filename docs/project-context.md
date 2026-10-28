@@ -6960,6 +6960,42 @@ four: the database and the server (script 166: the player's chat screen;
 Apply 0187 in the SQL Editor before pushing. The app's screens come with
 scripts 166 and 167.
 
+### The support chat, part 2: the player's chat (script 166, 2026-10-28)
+
+- Account tab: `account.contactDeveloper` ("تواصل مع المطوّر", "للإبلاغ
+  عن مشكلة أو تقديم شكوى داخل التطبيق") opens `SupportChatScreen`
+  instead of the e-mail of script 164. Its badge
+  (`account.contactDeveloper.badge`) is support's unread answers
+  (`supportUnreadProvider`, `GET /me/support/unread`), read again when the
+  chat closes, when the app comes back to the foreground and when a push
+  arrives while it is open. The account tab names no e-mail and no phone.
+- `SupportChatScreen` (`features/support/`): the header "دعم نُخبة" with
+  the "رسمي" badge; the player's messages on the start side (the right in
+  Arabic), support's on the other, newest at the bottom, each with its day
+  and time; the player's with sending, sent, read (`read_at`) or failed,
+  and a failed one keeps its reason and a resend. States: loading
+  (skeleton), empty ("كيف نساعدك؟"), a failed first read (retry, and the
+  e-mail `nukhbaa.app@gmail.com` as the way out, opened through
+  `notificationLinkOpenerProvider`), no connection (a strip while the
+  reads fail), closed or archived (a new message reopens it). Older
+  messages on demand ("رسائل أقدم", `?before=` the oldest id shown).
+- No realtime channel: the open chat reads its newest page every 8
+  seconds while the app is in the foreground (stopped in the background),
+  merges by id, and marks support's answers read when they are on screen.
+- `SupportApi` (api_client): `thread`, `send`, `markRead`, `unread`; plain
+  Riverpod providers (no code generation).
+- Push link `support` (mobile `PushLinks.support`): the account tab, then
+  the chat over it. `support_inbox` is the admins' (script 167).
+- Tests through the real screens and transport: `support_chat_test.dart`
+  (a fake of the routes: empty state, a send, sides in RTL and read marks,
+  a refused send resent, a new answer while open, no connection and back,
+  older messages, closed, a failed read with retry and e-mail, text x2 at
+  360px), `account_contact_test.dart` (placement, no e-mail or WhatsApp on
+  the tab, the count, opening reads and clears it, x2), `support_api_test`,
+  `push_link_test`.
+
+The app with the next APK; needs the server of script 165.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
