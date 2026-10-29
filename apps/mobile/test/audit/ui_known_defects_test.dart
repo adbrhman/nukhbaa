@@ -628,8 +628,15 @@ void main() {
     (WidgetTester tester) async {
       _phone(tester);
       await _pumpOpenMatch(tester);
+      // UI-08: the keyed wrapper only carries the margin; the card's own
+      // surface is the first Container inside it.
       final Container card = tester.widget<Container>(
-        find.byKey(const Key('currentMonthFixtures.fixture.f-1')),
+        find
+            .descendant(
+              of: find.byKey(const Key('currentMonthFixtures.fixture.f-1')),
+              matching: find.byType(Container),
+            )
+            .first,
       );
       expect((card.decoration! as BoxDecoration).color, _dark.surface);
     },

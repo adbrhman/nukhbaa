@@ -976,3 +976,4 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - [22:01] 172_orphan_fixture_relink: مباراة مسجّلة بلا ربط بموسم (يتيمة) تُعاد بدل رفضها كتكرار ليكمل التطبيق ربطها | ملف: packages/application/lib/src/competition/register_fixture_schedule.dart | اختبار: نجح
 - [22:35] 173_share_picture_hang_fix: sharePicture لا تنتظر endOfFrame داخل runAsync (علوق CI عشر دقائق) | ملف: apps/mobile/lib/core/ui/share_picture.dart | اختبار: نجح
 - [22:59] 174_share_picture_font_scale: حجم خط تعليق المشاركة من سلّم الخطوط بدل رقم عارٍ (فشل font_size_scale_test في CI) | ملف: apps/mobile/lib/core/ui/share_picture.dart | اختبار: نجح
+- [23:03] 175_ui08_test_inner_card: اختبار UI-08 يقرأ لون البطاقة من الحاوية الداخلية لا من غلاف الهامش (null check في CI) | ملف: apps/mobile/test/audit/ui_known_defects_test.dart | اختبار: نجح
