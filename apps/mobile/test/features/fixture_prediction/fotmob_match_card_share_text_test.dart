@@ -6,6 +6,8 @@
 /// Predictions, which only opens once the scoreline was right.
 library;
 
+import 'dart:io' as io;
+
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,9 @@ import '../../support/current_month_fixtures_harness.dart';
 /// The channel share_plus sends the text through in a test run.
 const MethodChannel _shareChannel = MethodChannel(
   'dev.fluttercommunity.plus/share',
+);
+const MethodChannel _pathProviderChannel = MethodChannel(
+  'plugins.flutter.io/path_provider',
 );
 
 Map<String, Object?> _item() => CurrentMonthFixtureItemDto(
@@ -69,6 +74,21 @@ void main() {
         null,
       ),
     );
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _pathProviderChannel,
+      (MethodCall call) async {
+        if (call.method == 'getTemporaryDirectory') {
+          return io.Directory.systemTemp.path;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        _pathProviderChannel,
+        null,
+      ),
+    );
 
     tester.view.physicalSize = const Size(1080, 4800);
     tester.view.devicePixelRatio = 3.0;
@@ -108,11 +128,18 @@ void main() {
     await tester.ensureVisible(share);
     await tester.pump();
     await tester.tap(share);
-    for (var i = 0; i < 4; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
+    for (var i = 0; i < 20 && sent.isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
     }
 
-    expect(sent, hasLength(1), reason: 'one tap hands one text to the sheet');
+    expect(
+      sent,
+      hasLength(1),
+      reason: 'one tap hands an image and caption to the sheet',
+    );
     final Map<Object?, Object?> args =
         sent.single.arguments as Map<Object?, Object?>;
     final String text = args['text']! as String;
@@ -125,5 +152,21 @@ void main() {
     expect(text, '$call\n${ar.shareHitJoin('https://nukhbaa.app')}');
     expect(text, startsWith('توقعت '));
     expect(text, isNot(contains('أصبت')));
+    final List<dynamic> imagePaths = args['paths']! as List<dynamic>;
+    expect(imagePaths, hasLength(1));
+    expect(imagePaths.single, endsWith('nukhba-prediction.png'));
+    expect(args['mimeTypes'], <String>['image/png']);
+    final io.File sharedImage = io.File(imagePaths.single as String);
+    expect(sharedImage.existsSync(), isTrue);
+    expect(sharedImage.readAsBytesSync().take(8).toList(), <int>[
+      137,
+      80,
+      78,
+      71,
+      13,
+      10,
+      26,
+      10,
+    ]);
   });
 }

@@ -27,6 +27,7 @@ Future<bool> sharePicture({
   ShareSheet? share,
 }) async {
   try {
+    await WidgetsBinding.instance.endOfFrame;
     final RenderObject? object = boundaryKey.currentContext?.findRenderObject();
     if (object is! RenderRepaintBoundary) return false;
     final ui.Image image = await object.toImage(pixelRatio: 3);

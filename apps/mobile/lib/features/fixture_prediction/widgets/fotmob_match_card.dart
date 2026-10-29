@@ -61,7 +61,6 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/design/app_typography.dart';
 import '../../../core/design/app_motion.dart';
@@ -77,6 +76,7 @@ import '../../../core/time/riyadh_day_turnover.dart';
 import '../../../core/ui/app_badge.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/ui/score_pill.dart';
+import '../../../core/ui/share_picture.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../competition/competition_logo_assets.dart';
@@ -131,6 +131,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
   // _MiddleSlot subtree (steppers + confirm badge), not the whole card.
   final ValueNotifier<int?> _homeGoals = ValueNotifier<int?>(null);
   final ValueNotifier<int?> _awayGoals = ValueNotifier<int?>(null);
+  final GlobalKey _shareCardKey = GlobalKey();
   bool _isDouble = false;
   bool _prefilledFromPrediction = false;
   Timer? _autoSaveTimer;
@@ -357,11 +358,18 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       '$homeGoals-$awayGoals',
       teamDisplayName(_fixture.awayTeam),
     );
-    await SharePlus.instance.share(
-      ShareParams(
-        text: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
-      ),
+    final bool shared = await sharePicture(
+      boundaryKey: _shareCardKey,
+      text: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
+      fileName: 'nukhba-prediction.png',
     );
+    if (mounted && !shared) {
+      AppSnackbar.show(
+        context,
+        sharePictureFailedText,
+        tone: AppSnackTone.error,
+      );
+    }
   }
 
   @override
@@ -559,276 +567,286 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     return Container(
       key: Key('currentMonthFixtures.fixture.$fixtureId'),
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.brCardLarge,
-        border: Border.all(color: tokens.border, width: AppStroke.hairline),
-        color: cardBase,
-      ),
-      child: Stack(
-        children: <Widget>[
-          Padding(
-            // script 132: card padding -- before kickoff the header's 48px
-            // ranking button already carries its own air above and the
-            // footer's 48px touch below, so the card adds less of its own.
-            padding: locked
-                ? const EdgeInsets.all(AppSpacing.md)
-                : const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.xs,
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                  ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // A test fixture reaches admins only (migration 0098);
-                // the label keeps it from passing for a real match.
-                if (_fixture.isTest) ...<Widget>[
-                  const Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: AppBadge(
-                      key: Key('currentMonthFixtures.testBadge'),
-                      label: 'مباراة تجريبية',
-                      tone: AppBadgeTone.gold,
-                      icon: Icons.science_outlined,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                ],
-                // After kickoff the card turns into the match itself
-                // (design of 2026-10-07): status and minute in the header,
-                // the score in a box between the sides, the player's call
-                // under it, the split of everyone's calls, and the button
-                // to everyone's predictions.
-                if (locked)
-                  _StartedBody(
-                    item: widget.item,
-                    home: home,
-                    away: away,
-                    myPrediction: myPrediction,
-                    isGraded: isGraded,
-                    grade: myGrade,
-                    points: myPoints,
-                    onOpenPredictions: () => unawaited(
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => FixturePredictionsBoardPage(
-                            kickoffAt: _fixture.kickoffAt,
-                          ),
+      child: RepaintBoundary(
+        key: _shareCardKey,
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.brCardLarge,
+            border: Border.all(color: tokens.border, width: AppStroke.hairline),
+            color: cardBase,
+          ),
+          child: Stack(
+            children: <Widget>[
+              Padding(
+                // script 132: card padding -- before kickoff the header's 48px
+                // ranking button already carries its own air above and the
+                // footer's 48px touch below, so the card adds less of its own.
+                padding: locked
+                    ? const EdgeInsets.all(AppSpacing.md)
+                    : const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    // A test fixture reaches admins only (migration 0098);
+                    // the label keeps it from passing for a real match.
+                    if (_fixture.isTest) ...<Widget>[
+                      const Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: AppBadge(
+                          key: Key('currentMonthFixtures.testBadge'),
+                          label: 'مباراة تجريبية',
+                          tone: AppBadgeTone.gold,
+                          icon: Icons.science_outlined,
                         ),
                       ),
-                    ),
-                    // The match's story once it is over (script 118).
-                    onOpenDetails: () => unawaited(
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => MatchDetailsPage(
-                            item: widget.item,
-                            home: home,
-                            away: away,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else ...<Widget>[
-                  _CardHeader(
-                    // The league the match was played in when known, falling
-                    // back to the contest's own name ("شهر 9") only while a
-                    // fixture still carries no league. The reference design
-                    // shows the league here, never the contest.
-                    competitionId: widget.item.competitionId,
-                    competitionName:
-                        _fixture.leagueName ?? widget.item.competitionName,
-                    leagueLogoUrl: _fixture.leagueLogoUrl,
-                    kickoffAt: _fixture.kickoffAt,
-                    onOpenLeaderboard: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => SeasonLeaderboardScreen(
-                          seasonId: _fixture.seasonId,
-                          seasonLabel: widget.item.seasonLabel,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // script 132: header gap -- the ranking button's own air.
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Expanded(
-                        child: _TeamColumn(
-                          displayName: home.displayName,
-                          crestUrl: home.crestUrl,
-                          assetPath: home.assetPath,
-                          brandColor: home.brandColor,
-                        ),
-                      ),
-                      ListenableBuilder(
-                        listenable: Listenable.merge(<Listenable>[
-                          _homeGoals,
-                          _awayGoals,
-                        ]),
-                        builder: (context, _) {
-                          final int? homeGoals = _homeGoals.value;
-                          final int? awayGoals = _awayGoals.value;
-                          return _MiddleSlot(
-                            homeName: home.displayName,
-                            awayName: away.displayName,
-                            homeGoals: homeGoals,
-                            awayGoals: awayGoals,
-                            enabled: enabled,
-                            isConfirmed: isConfirmedFor(homeGoals, awayGoals),
-                            fixtureId: fixtureId,
-                            onIncrementHome: _incrementHome,
-                            onDecrementHome: _decrementHome,
-                            onIncrementAway: _incrementAway,
-                            onDecrementAway: _decrementAway,
-                          );
-                        },
-                      ),
-                      Expanded(
-                        child: _TeamColumn(
-                          displayName: away.displayName,
-                          crestUrl: away.crestUrl,
-                          assetPath: away.assetPath,
-                          brandColor: away.brandColor,
-                        ),
-                      ),
+                      const SizedBox(height: AppSpacing.xs),
                     ],
-                  ),
-                  // The double sits in the last row, beside the share
-                  // (script 128); everyone's calls come first.
-                  Padding(
-                    // script 132: shares gap.
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    // Under minShareSample calls the card says when the
-                    // split will show: zeros read as real figures
-                    // (2026-10-19).
-                    child: !showShares
-                        ? _SharesPending(
-                            key: Key(
-                              'currentMonthFixtures.sharesPending.$fixtureId',
+                    // After kickoff the card turns into the match itself
+                    // (design of 2026-10-07): status and minute in the header,
+                    // the score in a box between the sides, the player's call
+                    // under it, the split of everyone's calls, and the button
+                    // to everyone's predictions.
+                    if (locked)
+                      _StartedBody(
+                        item: widget.item,
+                        home: home,
+                        away: away,
+                        myPrediction: myPrediction,
+                        isGraded: isGraded,
+                        grade: myGrade,
+                        points: myPoints,
+                        onOpenPredictions: () => unawaited(
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => FixturePredictionsBoardPage(
+                                kickoffAt: _fixture.kickoffAt,
+                              ),
                             ),
-                          )
-                        : _OutcomeShares(
-                            key: Key(
-                              'currentMonthFixtures.outcomeShares.$fixtureId',
-                            ),
-                            home: homeShare,
-                            draw: drawShare,
-                            away: awayShare,
-                            homeName: home.displayName,
-                            awayName: away.displayName,
-                          ),
-                  ),
-                ],
-                // The double and the share in one row under everyone's
-                // calls (script 128): the share's own row cost every saved
-                // card 60px (CARD_HEIGHT, script 127). Both are Flexible:
-                // a button's icon row cannot sit unbounded in a Row.
-                if (showEditableControls)
-                  Padding(
-                    key: Key('currentMonthFixtures.footer.$fixtureId'),
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Flexible(
-                          flex: 3,
-                          child: _DoubleGlowButton(
-                            selected: _isDouble,
-                            enabled: enabled && !doubleTakenElsewhere,
-                            takenElsewhere: doubleTakenElsewhere,
-                            onTap: _toggleDouble,
-                            fixtureId: fixtureId,
-                            matchLabel: matchSpoken,
                           ),
                         ),
-                        if (myPrediction != null) ...<Widget>[
-                          const SizedBox(width: AppSpacing.sm),
-                          Flexible(
-                            flex: 2,
-                            child: ListenableBuilder(
-                              listenable: Listenable.merge(<Listenable>[
-                                _homeGoals,
-                                _awayGoals,
-                              ]),
-                              builder: (context, _) {
-                                final int? shareHome = _homeGoals.value;
-                                final int? shareAway = _awayGoals.value;
-                                final bool canShare =
-                                    shareHome != null &&
-                                    shareAway != null &&
-                                    isConfirmedFor(shareHome, shareAway);
-                                return TextButton.icon(
-                                  key: Key(
-                                    'currentMonthFixtures.sharePrediction.$fixtureId',
-                                  ),
-                                  onPressed: canShare
-                                      ? () => unawaited(
-                                          _sharePrediction(
-                                            homeGoals: shareHome,
-                                            awayGoals: shareAway,
-                                          ),
-                                        )
-                                      : null,
-                                  icon: const Icon(Icons.ios_share_rounded),
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).shareHitShareButton,
-                                    // Which call it shares: every saved
-                                    // card had one "share" (Accessibility
-                                    // Scanner, 2026-10-28).
-                                    semanticsLabel:
-                                        '${AppLocalizations.of(context).shareHitShareButton} $matchSpoken',
-                                  ),
-                                );
-                              },
+                        // The match's story once it is over (script 118).
+                        onOpenDetails: () => unawaited(
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => MatchDetailsPage(
+                                item: widget.item,
+                                home: home,
+                                away: away,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else ...<Widget>[
+                      _CardHeader(
+                        // The league the match was played in when known, falling
+                        // back to the contest's own name ("شهر 9") only while a
+                        // fixture still carries no league. The reference design
+                        // shows the league here, never the contest.
+                        competitionId: widget.item.competitionId,
+                        competitionName:
+                            _fixture.leagueName ?? widget.item.competitionName,
+                        leagueLogoUrl: _fixture.leagueLogoUrl,
+                        kickoffAt: _fixture.kickoffAt,
+                        onOpenLeaderboard: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SeasonLeaderboardScreen(
+                              seasonId: _fixture.seasonId,
+                              seasonLabel: widget.item.seasonLabel,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // script 132: header gap -- the ranking button's own air.
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Expanded(
+                            child: _TeamColumn(
+                              displayName: home.displayName,
+                              crestUrl: home.crestUrl,
+                              assetPath: home.assetPath,
+                              brandColor: home.brandColor,
+                            ),
+                          ),
+                          ListenableBuilder(
+                            listenable: Listenable.merge(<Listenable>[
+                              _homeGoals,
+                              _awayGoals,
+                            ]),
+                            builder: (context, _) {
+                              final int? homeGoals = _homeGoals.value;
+                              final int? awayGoals = _awayGoals.value;
+                              return _MiddleSlot(
+                                homeName: home.displayName,
+                                awayName: away.displayName,
+                                homeGoals: homeGoals,
+                                awayGoals: awayGoals,
+                                enabled: enabled,
+                                isConfirmed: isConfirmedFor(
+                                  homeGoals,
+                                  awayGoals,
+                                ),
+                                fixtureId: fixtureId,
+                                onIncrementHome: _incrementHome,
+                                onDecrementHome: _decrementHome,
+                                onIncrementAway: _incrementAway,
+                                onDecrementAway: _decrementAway,
+                              );
+                            },
+                          ),
+                          Expanded(
+                            child: _TeamColumn(
+                              displayName: away.displayName,
+                              crestUrl: away.crestUrl,
+                              assetPath: away.assetPath,
+                              brandColor: away.brandColor,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                if (submission is FixtureSubmissionFailed)
-                  Padding(
-                    key: Key('currentMonthFixtures.failure.$fixtureId'),
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            ErrorPresenter.message(submission.error),
-                            key: Key(
-                              'currentMonthFixtures.failure.message.$fixtureId',
+                      ),
+                      // The double sits in the last row, beside the share
+                      // (script 128); everyone's calls come first.
+                      Padding(
+                        // script 132: shares gap.
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        // Under minShareSample calls the card says when the
+                        // split will show: zeros read as real figures
+                        // (2026-10-19).
+                        child: !showShares
+                            ? _SharesPending(
+                                key: Key(
+                                  'currentMonthFixtures.sharesPending.$fixtureId',
+                                ),
+                              )
+                            : _OutcomeShares(
+                                key: Key(
+                                  'currentMonthFixtures.outcomeShares.$fixtureId',
+                                ),
+                                home: homeShare,
+                                draw: drawShare,
+                                away: awayShare,
+                                homeName: home.displayName,
+                                awayName: away.displayName,
+                              ),
+                      ),
+                    ],
+                    // The double and the share in one row under everyone's
+                    // calls (script 128): the share's own row cost every saved
+                    // card 60px (CARD_HEIGHT, script 127). Both are Flexible:
+                    // a button's icon row cannot sit unbounded in a Row.
+                    if (showEditableControls)
+                      Padding(
+                        key: Key('currentMonthFixtures.footer.$fixtureId'),
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Flexible(
+                              flex: 3,
+                              child: _DoubleGlowButton(
+                                selected: _isDouble,
+                                enabled: enabled && !doubleTakenElsewhere,
+                                takenElsewhere: doubleTakenElsewhere,
+                                onTap: _toggleDouble,
+                                fixtureId: fixtureId,
+                                matchLabel: matchSpoken,
+                              ),
                             ),
-                            style: TextStyle(
-                              color: tokens.errorText,
-                              fontSize: AppFontSize.s12,
-                            ),
-                          ),
+                            if (myPrediction != null) ...<Widget>[
+                              const SizedBox(width: AppSpacing.sm),
+                              Flexible(
+                                flex: 2,
+                                child: ListenableBuilder(
+                                  listenable: Listenable.merge(<Listenable>[
+                                    _homeGoals,
+                                    _awayGoals,
+                                  ]),
+                                  builder: (context, _) {
+                                    final int? shareHome = _homeGoals.value;
+                                    final int? shareAway = _awayGoals.value;
+                                    final bool canShare =
+                                        shareHome != null &&
+                                        shareAway != null &&
+                                        isConfirmedFor(shareHome, shareAway);
+                                    return TextButton.icon(
+                                      key: Key(
+                                        'currentMonthFixtures.sharePrediction.$fixtureId',
+                                      ),
+                                      onPressed: canShare
+                                          ? () => unawaited(
+                                              _sharePrediction(
+                                                homeGoals: shareHome,
+                                                awayGoals: shareAway,
+                                              ),
+                                            )
+                                          : null,
+                                      icon: const Icon(Icons.ios_share_rounded),
+                                      label: Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        ).shareHitShareButton,
+                                        // Which call it shares: every saved
+                                        // card had one "share" (Accessibility
+                                        // Scanner, 2026-10-28).
+                                        semanticsLabel:
+                                            '${AppLocalizations.of(context).shareHitShareButton} $matchSpoken',
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        // A dropped connection left the pick unsaved until
-                        // the player happened to tap a stepper again.
-                        if (!locked &&
-                            ErrorPresenter.isRetryable(submission.error))
-                          TextButton(
-                            key: Key('currentMonthFixtures.retry.$fixtureId'),
-                            onPressed: _scheduleAutoSave,
-                            child: Text(AppLocalizations.of(context).retry),
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+                      ),
+                    if (submission is FixtureSubmissionFailed)
+                      Padding(
+                        key: Key('currentMonthFixtures.failure.$fixtureId'),
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                ErrorPresenter.message(submission.error),
+                                key: Key(
+                                  'currentMonthFixtures.failure.message.$fixtureId',
+                                ),
+                                style: TextStyle(
+                                  color: tokens.errorText,
+                                  fontSize: AppFontSize.s12,
+                                ),
+                              ),
+                            ),
+                            // A dropped connection left the pick unsaved until
+                            // the player happened to tap a stepper again.
+                            if (!locked &&
+                                ErrorPresenter.isRetryable(submission.error))
+                              TextButton(
+                                key: Key(
+                                  'currentMonthFixtures.retry.$fixtureId',
+                                ),
+                                onPressed: _scheduleAutoSave,
+                                child: Text(AppLocalizations.of(context).retry),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    );
+    ); // RepaintBoundary captures the card without its list spacing.
   }
 }
 
