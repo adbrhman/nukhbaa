@@ -185,7 +185,7 @@ FROM gamification.h2h_round_locks
 WHERE round_id = $1::uuid;
 
 -- activeOrderSql
-PREPARE draw_active_order(date, integer) AS
+PREPARE draw_active_order(date, integer, integer) AS
 
 WITH fx AS (
   SELECT DISTINCT sf.season_id, fs.fixture_id,
@@ -201,6 +201,9 @@ WITH fx AS (
 per AS (
   SELECT p.user_id,
          count(DISTINCT fx.d) FILTER (WHERE fp.id IS NOT NULL) AS active_days,
+         count(DISTINCT fx.fixture_id)
+           - count(DISTINCT fx.fixture_id) FILTER (WHERE fp.id IS NOT NULL)
+                                                              AS missed,
          COALESCE(sum(s.points), 0)                           AS points,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
@@ -215,7 +218,8 @@ per AS (
 SELECT user_id::text AS user_id
 FROM per
 WHERE active_days >= $2::integer
-ORDER BY points DESC, exact DESC, user_id;
+ORDER BY (missed <= $3::integer) DESC,
+         points DESC, exact DESC, user_id;
 
 -- carriedSql
 PREPARE draw_carried(text) AS
@@ -609,8 +613,8 @@ end $$;
 -- Activity, carry-over and the pilot
 -- ---------------------------------------------------------------------------
 create temp table active_out as execute sheet_active_days('2099-11-01');
-create temp table order1_out as execute draw_active_order('2099-11-01', 1);
-create temp table order2_out as execute draw_active_order('2099-11-01', 2);
+create temp table order1_out as execute draw_active_order('2099-11-01', 1, 99);
+create temp table order2_out as execute draw_active_order('2099-11-01', 2, 99);
 do $$
 begin
   perform pg_temp.check(
@@ -631,6 +635,33 @@ begin
     (select array_agg(user_id) from order2_out)
       = array['00000000-0101-4000-8101-000000000001'],
     'the activity threshold applies');
+end $$;
+
+-- Committed first (script 171): with f2 also predicted, q2 missed 2 of the
+-- 4 matches and q4 missed 3; q1 missed 1. Allowing 2 misses seats q1 and q2
+-- (committed) before q4, who has the better points; allowing 99 keeps the
+-- plain points order.
+insert into prediction.fixture_predictions
+  (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at) values
+  ('c1010000-0000-4000-8000-00000000b022', 'c1010000-0000-4000-8000-0000000000f2', 'c1010000-0000-4000-8000-0000000000a2', 1, 1, false, now());
+create temp table order3_out as execute draw_active_order('2099-11-01', 1, 2);
+create temp table order4_out as execute draw_active_order('2099-11-01', 1, 99);
+delete from prediction.fixture_predictions
+ where id = 'c1010000-0000-4000-8000-00000000b022';
+do $$
+begin
+  perform pg_temp.check(
+    (select array_agg(user_id order by ctid) from order3_out)
+      = array['00000000-0101-4000-8101-000000000001',
+              '00000000-0101-4000-8101-000000000002',
+              '00000000-0101-4000-8101-000000000004'],
+    'the committed come first, then the rest, each by points');
+  perform pg_temp.check(
+    (select array_agg(user_id order by ctid) from order4_out)
+      = array['00000000-0101-4000-8101-000000000001',
+              '00000000-0101-4000-8101-000000000004',
+              '00000000-0101-4000-8101-000000000002'],
+    'with every miss allowed the order is by points alone');
 end $$;
 
 insert into gamification.events (id, user_id, event_type, dedupe_key, occurred_at, payload, ref_type, ref_id) values

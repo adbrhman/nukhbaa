@@ -417,6 +417,12 @@ final class H2hLeaguePolicy {
   /// Days with a prediction a player needs in a month to be drawn the next.
   static const int minActiveDays = 5;
 
+  /// Matches a player may have left without a prediction in the month and
+  /// still count as committed. The first draw seats the committed first, by
+  /// points, then the rest, so a group is not a mix of a player who
+  /// predicted everything and one who dropped in for five days (script 171).
+  static const int committedMissedMatches = 5;
+
   /// How long before a regular day's first kickoff the system approves it
   /// when no admin did.
   static const Duration autoApproveLead = Duration(hours: 24);

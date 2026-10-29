@@ -7128,6 +7128,30 @@ were the classes script 169 measured and left.
   nodes naming player and match, rows 48 dp). All three fail on the code
   before this batch.
 
+### The first public draw seats the committed first (script 171, 2026-10-28)
+
+October's data (303 matches over 26 days): 39 players predicted every
+match or missed at most five; by points alone only 37 of the top 60 were
+committed, so a group of 20 mixed a player who predicted everything with
+one who dropped in for five days.
+
+- **Order, fixed.** `PostgresH2hDrawSource.activeOrderSql` now sorts
+  those who missed at most `H2hLeaguePolicy.committedMissedMatches` (5)
+  matches of the month first, then by points, exact scorelines and id as
+  before. `missed` is the month's visible, non-test fixtures of the
+  player's seasons minus those with a prediction.
+- **Unchanged.** The 20/20/20/rest cut, `minActiveDays`, the carried
+  months (they carry the finished league's result, not this order), the
+  group-extension query and the player rules text.
+- **Trade-off, owner decided.** A strong player who missed more than five
+  matches seats below every committed player, then moves by the normal
+  promotion and relegation of the month.
+- Tests: `0100_h2h_queries_test.sql` (the statement is regenerated from the
+  adapter, text for text; a committed player with fewer points seats
+  before one with more, and with every miss allowed the old order stays;
+  fails on the old ORDER BY) and `postgres_h2h_adapters_test.dart` (the
+  bound `committed_missed`).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

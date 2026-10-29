@@ -286,13 +286,14 @@ void main() {
 
   group('PostgresH2hDrawSource', () {
     test('maps the active order and the carried members', () async {
+      final drawConnection = _answers([
+        [
+          {'user_id': _userB},
+          {'user_id': _userA},
+        ],
+      ]);
       final order = await PostgresH2hDrawSource(
-        _answers([
-          [
-            {'user_id': _userB},
-            {'user_id': _userA},
-          ],
-        ]),
+        drawConnection,
       ).activeOrder(monthStart: DateTime.utc(2026, 10), minActiveDays: 5);
       final carried = await PostgresH2hDrawSource(
         _answers([
@@ -306,6 +307,12 @@ void main() {
         UserId(_userB),
         UserId(_userA),
       ]);
+      // The committed come first: the draw binds how many misses count.
+      expect(drawConnection.parameters.single, {
+        'month': '2026-10-01',
+        'min_days': 5,
+        'committed_missed': H2hLeaguePolicy.committedMissedMatches,
+      });
       final carry = (carried as Ok<List<H2hCarry>>).value.single;
       expect(carry.nextDivision, H2hDivision.first);
       expect(carry.division, H2hDivision.second);

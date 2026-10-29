@@ -34,6 +34,9 @@ WITH fx AS (
 per AS (
   SELECT p.user_id,
          count(DISTINCT fx.d) FILTER (WHERE fp.id IS NOT NULL) AS active_days,
+         count(DISTINCT fx.fixture_id)
+           - count(DISTINCT fx.fixture_id) FILTER (WHERE fp.id IS NOT NULL)
+                                                              AS missed,
          COALESCE(sum(s.points), 0)                           AS points,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
@@ -48,7 +51,8 @@ per AS (
 SELECT user_id::text AS user_id
 FROM per
 WHERE active_days >= @min_days::integer
-ORDER BY points DESC, exact DESC, user_id
+ORDER BY (missed <= @committed_missed::integer) DESC,
+         points DESC, exact DESC, user_id
 ''';
 
   static const String carriedSql = '''
@@ -106,7 +110,11 @@ ORDER BY COALESCE(per.points, 0) DESC, COALESCE(per.exact, 0) DESC, pl.user_id
   }) async {
     final result = await _connection.query(
       activeOrderSql,
-      parameters: {'month': _isoDay(monthStart), 'min_days': minActiveDays},
+      parameters: {
+        'month': _isoDay(monthStart),
+        'min_days': minActiveDays,
+        'committed_missed': H2hLeaguePolicy.committedMissedMatches,
+      },
     );
     return _users(result);
   }
