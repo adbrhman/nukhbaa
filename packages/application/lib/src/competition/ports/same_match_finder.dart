@@ -10,6 +10,7 @@ final class SameMatch {
     required this.awayTeam,
     required this.kickoffAt,
     this.bothSides = true,
+    this.linked = true,
   });
 
   /// The fixture already on the schedule.
@@ -28,6 +29,12 @@ final class SameMatch {
   /// club is in both, which is refused all the same: a club plays one match
   /// in 12 hours (script 93, migration 0175).
   final bool bothSides;
+
+  /// Whether the fixture is linked to a season. `false` is an orphan: it was
+  /// registered (by an admin or the sync) but its link to the month never
+  /// landed, so it shows in no feed. Defaults to `true`: a finder that
+  /// cannot tell keeps the refusal.
+  final bool linked;
 }
 
 /// Finds the fixture already on the schedule that is the same match as a

@@ -95,7 +95,11 @@ SELECT j.fixture_id::text AS fixture_id,
        j.home_team,
        j.away_team,
        j.kickoff_at,
-       j.both_sides
+       j.both_sides,
+       EXISTS (
+         SELECT 1 FROM competition.season_fixtures sf
+         WHERE sf.fixture_id = j.fixture_id
+       ) AS linked
 FROM judged j
 WHERE j.both_sides OR j.one_club
 -- The same match first, then the nearest kickoff to the middle.
@@ -155,6 +159,7 @@ LIMIT 1
         awayTeam: away,
         kickoffAt: kickoffAt.toUtc(),
         bothSides: row['both_sides'] != false,
+        linked: row['linked'] != false,
       ),
     );
   }

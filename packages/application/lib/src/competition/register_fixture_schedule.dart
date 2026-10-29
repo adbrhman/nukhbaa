@@ -140,6 +140,22 @@ final class RegisterFixtureSchedule {
       }
       final same = (found as Ok<SameMatch?>).value;
       if (same != null) {
+        // The same match, registered but linked to no season: nothing is
+        // written, the stored match is handed back so the caller links it
+        // (an orphan could not be linked before: it was refused as a copy).
+        if (same.bothSides && !same.linked) {
+          final existingRef = FixtureRef.tryParse(same.fixtureId);
+          if (existingRef is Ok<FixtureRef>) {
+            final stored = await _repository.findByFixture(existingRef.value);
+            if (stored is Err<FixtureSchedule?>) {
+              return Result.err(stored.error);
+            }
+            final adopted = (stored as Ok<FixtureSchedule?>).value;
+            if (adopted != null) {
+              return Result.ok(adopted);
+            }
+          }
+        }
         return Result.err(
           same.bothSides ? duplicateOf(same) : clubBusyOf(same),
         );
