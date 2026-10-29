@@ -20,7 +20,7 @@ typedef ShareSheet = Future<Object?> Function(ShareParams params);
 /// Coordinates and font sizes use the same 3x scale as the card capture.
 Future<ui.Image> _appendCaption(ui.Image captured, String caption) async {
   const double scale = 3;
-  const double footerLogicalHeight = 176;
+  const double footerLogicalHeight = 112;
   final int footerHeight = (footerLogicalHeight * scale).round();
   final ui.PictureRecorder recorder = ui.PictureRecorder();
   final ui.Canvas canvas = ui.Canvas(
