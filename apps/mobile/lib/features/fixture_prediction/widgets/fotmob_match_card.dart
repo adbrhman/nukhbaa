@@ -358,10 +358,12 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       '$homeGoals-$awayGoals',
       teamDisplayName(_fixture.awayTeam),
     );
+    // script 177: the caption travels as the message text, beside the
+    // picture, like the day hero's card; drawn into the image it left
+    // the text empty, which share_plus refuses.
     final bool shared = await sharePicture(
       boundaryKey: _shareCardKey,
       text: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
-      captionOnImage: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
       fileName: 'nukhba-prediction.png',
     );
     if (mounted && !shared) {
