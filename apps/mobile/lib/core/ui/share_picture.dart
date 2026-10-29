@@ -84,8 +84,13 @@ Future<bool> sharePicture({
   ShareSheet? share,
 }) async {
   try {
-    // The caller invokes sharing after the card has painted. Do not await
-    // endOfFrame here: tests may run this function inside tester.runAsync.
+    // A frame already scheduled is the card's own repaint (the tap that
+    // opened the share, a pressed button inside the card): wait for it, so
+    // the picture is the card as painted and `!debugNeedsPaint` holds. With
+    // none scheduled the card is painted already, and waiting would hang a
+    // caller inside tester.runAsync, where no frame is ever pumped (173).
+    final WidgetsBinding binding = WidgetsBinding.instance;
+    if (binding.hasScheduledFrame) await binding.endOfFrame;
     final RenderObject? object = boundaryKey.currentContext?.findRenderObject();
     if (object is! RenderRepaintBoundary) return false;
     final ui.Image captured = await object.toImage(pixelRatio: 3);

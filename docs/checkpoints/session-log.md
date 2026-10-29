@@ -977,3 +977,4 @@ Supabase. لا كود. الحدّ أسبوع لا سنة.
 - [22:35] 173_share_picture_hang_fix: sharePicture لا تنتظر endOfFrame داخل runAsync (علوق CI عشر دقائق) | ملف: apps/mobile/lib/core/ui/share_picture.dart | اختبار: نجح
 - [22:59] 174_share_picture_font_scale: حجم خط تعليق المشاركة من سلّم الخطوط بدل رقم عارٍ (فشل font_size_scale_test في CI) | ملف: apps/mobile/lib/core/ui/share_picture.dart | اختبار: نجح
 - [23:03] 175_ui08_test_inner_card: اختبار UI-08 يقرأ لون البطاقة من الحاوية الداخلية لا من غلاف الهامش (null check في CI) | ملف: apps/mobile/test/audit/ui_known_defects_test.dart | اختبار: نجح
+- [23:34] 176_share_picture_pending_frame: sharePicture تنتظر الإطار المجدول فقط قبل التقاط البطاقة (فشل اختبار مشاركة التوقع بعد 173) | ملف: apps/mobile/lib/core/ui/share_picture.dart | اختبار: نجح
