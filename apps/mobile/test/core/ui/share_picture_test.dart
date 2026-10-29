@@ -18,7 +18,7 @@ Future<GlobalKey> _card(WidgetTester tester) async {
       child: RepaintBoundary(
         key: key,
         child: const SizedBox(
-          width: 20,
+          width: 80,
           height: 20,
           child: ColoredBox(color: Colors.blue),
         ),
@@ -72,6 +72,7 @@ void main() {
 
     expect(shared, isTrue);
     expect(sent, hasLength(1));
+    expect(sent.single.text, isEmpty);
     final Uint8List png = await sent.single.files!.single.readAsBytes();
     expect(png.take(8).toList(), <int>[137, 80, 78, 71, 13, 10, 26, 10]);
     final int height = ByteData.sublistView(png).getUint32(20);

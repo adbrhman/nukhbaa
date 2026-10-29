@@ -82,7 +82,8 @@ Future<bool> sharePicture({
   ShareSheet? share,
 }) async {
   try {
-    await WidgetsBinding.instance.endOfFrame;
+    // The caller invokes sharing after the card has painted. Do not await
+    // endOfFrame here: tests may run this function inside tester.runAsync.
     final RenderObject? object = boundaryKey.currentContext?.findRenderObject();
     if (object is! RenderRepaintBoundary) return false;
     final ui.Image captured = await object.toImage(pixelRatio: 3);
@@ -95,7 +96,7 @@ Future<bool> sharePicture({
     if (data == null) return false;
     await (share ?? SharePlus.instance.share)(
       ShareParams(
-        text: text,
+        text: captionOnImage == null ? text : '',
         files: <XFile>[
           XFile.fromData(
             data.buffer.asUint8List(),
