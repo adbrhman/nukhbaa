@@ -4,6 +4,8 @@
 /// can say so.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/ui/share_picture.dart';
@@ -48,6 +50,36 @@ void main() {
     expect(sent.single.text, 'hello');
     expect(sent.single.files, hasLength(1));
     expect(sent.single.fileNameOverrides, <String>['card.png']);
+  });
+
+  testWidgets('caption is rendered into the shared PNG', (tester) async {
+    final GlobalKey key = await _card(tester);
+    final List<ShareParams> sent = <ShareParams>[];
+
+    final bool? shared = await tester.runAsync(
+      () => sharePicture(
+        boundaryKey: key,
+        text: 'caption',
+        captionOnImage:
+            'توقعت مواجهة: الرياض 1-4 القادسية في نُخبة\nتوقع معي: https://nukhbaa.app',
+        fileName: 'card.png',
+        share: (ShareParams params) async {
+          sent.add(params);
+          return null;
+        },
+      ),
+    );
+
+    expect(shared, isTrue);
+    expect(sent, hasLength(1));
+    final Uint8List png = await sent.single.files!.single.readAsBytes();
+    expect(png.take(8).toList(), <int>[137, 80, 78, 71, 13, 10, 26, 10]);
+    final int height = ByteData.sublistView(png).getUint32(20);
+    expect(
+      height,
+      greaterThan(60),
+      reason: 'the caption adds a footer to the captured 20x20 card',
+    );
   });
 
   testWidgets('a sheet that refuses is false, not a throw', (tester) async {

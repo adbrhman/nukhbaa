@@ -361,6 +361,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final bool shared = await sharePicture(
       boundaryKey: _shareCardKey,
       text: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
+      captionOnImage: '$message\n${l10n.shareHitJoin('https://nukhbaa.app')}',
       fileName: 'nukhba-prediction.png',
     );
     if (mounted && !shared) {
