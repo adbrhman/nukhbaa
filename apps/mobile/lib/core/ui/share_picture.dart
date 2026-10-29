@@ -10,6 +10,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../design/app_typography.dart';
+
 /// What a share dialog says when [sharePicture] returned false.
 const String sharePictureFailedText = 'تعذّرت المشاركة. حاول مرة أخرى.';
 
@@ -47,7 +49,7 @@ Future<ui.Image> _appendCaption(ui.Image captured, String caption) async {
       text: caption,
       style: const TextStyle(
         color: Color(0xFFFFFFFF),
-        fontSize: 14 * scale,
+        fontSize: AppFontSize.s14 * scale,
         fontWeight: FontWeight.w600,
         height: 1.25,
       ),
