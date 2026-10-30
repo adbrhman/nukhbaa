@@ -189,4 +189,27 @@ void main() {
     const started = H2hPilotStartedDto(seated: 24);
     expect(H2hPilotStartedDto.fromJson(_wire(started.toJson())).seated, 24);
   });
+
+  test(
+    'the round view marks an absent opponent and old payloads default false',
+    () {
+      const round = H2hRoundViewDto(
+        round: 4,
+        day: '2026-12-03',
+        status: 'settled',
+        fixtureCount: 8,
+        opponentUserId: 'u-2',
+        opponentPoints: 2.5,
+        opponentAbsent: true,
+      );
+      final json = _wire(round.toJson());
+      expect(json['opponent_absent'], isTrue);
+      expect(H2hRoundViewDto.fromJson(json).opponentAbsent, isTrue);
+      expect(
+        H2hRoundViewDto.fromJson(const {'round': 1}).opponentAbsent,
+        isFalse,
+      );
+    },
+  );
+  // NK172_088
 }

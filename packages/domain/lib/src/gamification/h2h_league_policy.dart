@@ -431,6 +431,15 @@ final class H2hLeaguePolicy {
   /// its first day. Its draw is seeded from the month before.
   static final DateTime firstMonth = DateTime.utc(2026, 11);
 
+  // NK172 month gate
+  /// Whether [monthOrDay] belongs to December 2026 or a later month.
+  ///
+  /// A rule is selected from the month being judged, never from today's date.
+  static bool usesDecemberRules(DateTime monthOrDay) =>
+      monthOrDay.year > 2026 ||
+      (monthOrDay.year == 2026 && monthOrDay.month >= 12);
+  // NK172_000
+
   /// The first day of the Riyadh month containing [riyadhDay], as a UTC
   /// midnight -- the value of `month_start` in the 0100 tables.
   static DateTime monthStartOf(DateTime riyadhDay) =>
@@ -564,8 +573,12 @@ final class H2hLeaguePolicy {
       final day = DateTime.utc(round.day.year, round.day.month, round.day.day);
       var total = 0;
       for (final member in members) {
-        total += byKey[_key(member.userId, round.number)]?.points ?? 0;
+        final score = byKey[_key(member.userId, round.number)];
+        if (score != null && score.present) {
+          total += score.points;
+        }
       }
+      // NK172_095
       final count = members.length;
 
       for (final member in members) {
@@ -587,21 +600,29 @@ final class H2hLeaguePolicy {
           final theirs = byKey[_key(opponent.userId, round.number)];
           final theirPoints = theirs?.points ?? 0;
           final theyPlayed = theirs?.present ?? false;
+          final average = total / count;
+          final compareWithAverage =
+              usesDecemberRules(day) && present && !theyPlayed;
           match = H2hMatch(
             round: round.number,
             day: day,
             opponentId: opponent.userId,
             points: points,
-            opponentPoints: theirPoints.toDouble(),
+            opponentPoints: compareWithAverage
+                ? average
+                : theirPoints.toDouble(),
             present: present,
             opponentPresent: theyPlayed,
-            result: _versus(
-              points: points,
-              present: present,
-              opponentPoints: theirPoints,
-              opponentPresent: theyPlayed,
-            ),
+            result: compareWithAverage
+                ? _compare(points * count, total)
+                : _versus(
+                    points: points,
+                    present: present,
+                    opponentPoints: theirPoints,
+                    opponentPresent: theyPlayed,
+                  ),
           );
+          // NK172_001
         } else {
           match = H2hMatch(
             round: round.number,
@@ -684,7 +705,9 @@ final class H2hLeaguePolicy {
   static List<H2hFinish> monthEnd({
     required List<H2hGroupResult> groups,
     required Set<UserId> eligible,
+    required DateTime monthStart,
   }) {
+    // NK172_002
     const divisions = H2hDivision.values;
     final merged = <H2hDivision, List<_Ranked>>{
       for (final division in divisions) division: <_Ranked>[],
@@ -694,9 +717,13 @@ final class H2hLeaguePolicy {
         merged[group.division]!.add(_Ranked(placing, group.division));
       }
     }
+    final decemberRules = usesDecemberRules(monthStart);
     final lists = <List<_Ranked>>[
-      for (final division in divisions) merged[division]!..sort(_compareRanked),
+      for (final division in divisions)
+        merged[division]!
+          ..sort((a, b) => _compareRanked(a, b, decemberRules: decemberRules)),
     ];
+    // NK172_003
 
     // crossing[i]: how many move between division i and division i + 1.
     final crossing = <int>[
@@ -888,23 +915,44 @@ final class H2hLeaguePolicy {
     return points;
   }
 
-  static int _compareRanked(_Ranked a, _Ranked b) {
+  // NK172 cross-group comparison
+  static int _compareRanked(
+    _Ranked a,
+    _Ranked b, {
+    required bool decemberRules,
+  }) {
     final byRank = a.placing.rank.compareTo(b.placing.rank);
     if (byRank != 0) {
       return byRank;
     }
     final sa = a.placing.standing;
     final sb = b.placing.standing;
-    final byLevel = _compareLevel(sa, sb);
-    if (byLevel != 0) {
-      return byLevel;
-    }
-    final byExact = sb.exactCount.compareTo(sa.exactCount);
-    if (byExact != 0) {
-      return byExact;
+    if (decemberRules) {
+      final byPrediction = sb.pointsFor.compareTo(sa.pointsFor);
+      if (byPrediction != 0) {
+        return byPrediction;
+      }
+      final byExact = sb.exactCount.compareTo(sa.exactCount);
+      if (byExact != 0) {
+        return byExact;
+      }
+      final byLeague = sb.leaguePoints.compareTo(sa.leaguePoints);
+      if (byLeague != 0) {
+        return byLeague;
+      }
+    } else {
+      final byLevel = _compareLevel(sa, sb);
+      if (byLevel != 0) {
+        return byLevel;
+      }
+      final byExact = sb.exactCount.compareTo(sa.exactCount);
+      if (byExact != 0) {
+        return byExact;
+      }
     }
     return sa.userId.value.compareTo(sb.userId.value);
   }
+  // NK172_004
 
   static int _min(int a, int b) => a < b ? a : b;
 

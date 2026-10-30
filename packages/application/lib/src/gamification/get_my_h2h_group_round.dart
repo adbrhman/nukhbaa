@@ -41,7 +41,9 @@ final class H2hGroupPair {
     required this.homePoints,
     required this.awayPoints,
     required this.winner,
+    this.awayAbsent = false,
   });
+  // NK172_014
 
   /// The first member: the caller, when the caller plays this match.
   final UserId home;
@@ -58,6 +60,10 @@ final class H2hGroupPair {
 
   /// Who the round shows ahead; null before it starts and when void.
   final H2hPairWinner? winner;
+
+  /// True when [away] is a named member who missed this round.
+  final bool awayAbsent;
+  // NK172_015
 }
 
 /// Every match of one round of the caller's group.
@@ -234,9 +240,22 @@ final class GetMyH2hGroupRound {
       if (opponent != null) {
         paired.add(opponent.userId);
       }
-      // The caller always on the first side of their own match.
-      final flip = opponent != null && opponent.userId == reader;
-      final home = flip ? reader : member.userId;
+      // The caller is first in their own match. In other pairs, the
+      // present member is first when the new average rule applies.
+      final memberMatch = matchOf[member.userId];
+      final opponentMatch = opponent == null ? null : matchOf[opponent.userId];
+      final flipForAverage =
+          opponent != null &&
+          H2hLeaguePolicy.usesDecemberRules(view.round.day) &&
+          memberMatch != null &&
+          opponentMatch != null &&
+          !memberMatch.present &&
+          opponentMatch.present &&
+          member.userId != reader;
+      final flip =
+          (opponent != null && opponent.userId == reader) || flipForAverage;
+      final home = flip ? opponent.userId : member.userId;
+      // NK172_016
       final away = opponent == null
           ? null
           : (flip ? member.userId : opponent.userId);
@@ -281,14 +300,23 @@ final class GetMyH2hGroupRound {
       );
     }
     final awayMatch = away == null ? null : matchOf[away];
+    final awayAbsent =
+        awayMatch != null &&
+        homeMatch.present &&
+        !awayMatch.present &&
+        H2hLeaguePolicy.usesDecemberRules(homeMatch.day);
     final homePoints = homeMatch.points;
-    final awayPoints = awayMatch?.points.toDouble() ?? homeMatch.opponentPoints;
+    final awayPoints = awayAbsent
+        ? homeMatch.opponentPoints
+        : awayMatch?.points.toDouble() ?? homeMatch.opponentPoints;
 
     final H2hPairWinner winner;
     if (!settled) {
+      // NK172_017
       winner = _byPoints(homePoints.toDouble(), awayPoints);
-    } else if (awayMatch == null) {
+    } else if (awayMatch == null || awayAbsent) {
       winner = switch (homeMatch.result) {
+        // NK172_018
         H2hMatchResult.win => H2hPairWinner.home,
         H2hMatchResult.loss => H2hPairWinner.away,
         H2hMatchResult.draw => H2hPairWinner.draw,
@@ -308,7 +336,9 @@ final class GetMyH2hGroupRound {
       homePoints: homePoints,
       awayPoints: awayPoints,
       winner: winner,
+      awayAbsent: awayAbsent,
     );
+    // NK172_019
   }
 
   static H2hPairWinner _byPoints(double home, double away) {

@@ -455,6 +455,79 @@ void main() {
       expect(standings.single.matches.single.result, H2hMatchResult.loss);
       expect(standings.single.presentRounds, 0);
     });
+
+    // NK172 December policy tests
+    test('the month gate leaves November intact and begins in December', () {
+      expect(
+        H2hLeaguePolicy.usesDecemberRules(DateTime.utc(2026, 11, 30)),
+        isFalse,
+      );
+      expect(
+        H2hLeaguePolicy.usesDecemberRules(DateTime.utc(2026, 12, 1)),
+        isTrue,
+      );
+      expect(
+        H2hLeaguePolicy.usesDecemberRules(DateTime.utc(2027, 1, 1)),
+        isTrue,
+      );
+    });
+
+    test('an absent opponent is compared with the whole-group average', () {
+      final members = [
+        _member('a', 0),
+        _member('b', 1),
+        _member('c', 2),
+        _member('d', 3),
+      ];
+      final decemberRound = [
+        H2hRoundRef(number: 1, day: DateTime.utc(2026, 12, 3)),
+      ];
+      H2hMatch aMatch(List<H2hRoundScore> roundScores) => H2hLeaguePolicy.table(
+        capacity: 4,
+        members: members,
+        rounds: decemberRound,
+        scores: roundScores,
+      ).singleWhere((s) => s.userId == const UserId('a')).matches.single;
+      H2hMatch dMatch(List<H2hRoundScore> roundScores) => H2hLeaguePolicy.table(
+        capacity: 4,
+        members: members,
+        rounds: decemberRound,
+        scores: roundScores,
+      ).singleWhere((s) => s.userId == const UserId('d')).matches.single;
+
+      final above = [
+        _score('a', 1, points: 6),
+        _score('b', 1, points: 0),
+        _score('c', 1, points: 0),
+        _score('d', 1, points: 999, predicted: 0),
+      ];
+      expect(aMatch(above).opponentId, const UserId('d'));
+      expect(aMatch(above).opponentPresent, isFalse);
+      expect(aMatch(above).opponentPoints, 1.5);
+      expect(aMatch(above).result, H2hMatchResult.win);
+      expect(dMatch(above).result, H2hMatchResult.loss);
+
+      final equal = [
+        _score('a', 1, points: 3),
+        _score('b', 1, points: 4),
+        _score('c', 1, points: 5),
+        _score('d', 1, points: 999, predicted: 0),
+      ];
+      expect(aMatch(equal).opponentPoints, 3);
+      expect(aMatch(equal).result, H2hMatchResult.draw);
+      expect(dMatch(equal).result, H2hMatchResult.loss);
+
+      final below = [
+        _score('a', 1, points: 2),
+        _score('b', 1, points: 4),
+        _score('c', 1, points: 4),
+        _score('d', 1, points: 999, predicted: 0),
+      ];
+      expect(aMatch(below).opponentPoints, 2.5);
+      expect(aMatch(below).result, H2hMatchResult.loss);
+      expect(dMatch(below).result, H2hMatchResult.loss);
+    });
+    // NK172_059
   });
 
   group('H2hLeaguePolicy.order', () {
@@ -524,7 +597,10 @@ void main() {
       final finishes = H2hLeaguePolicy.monthEnd(
         groups: groups,
         eligible: _everyone(groups),
+        monthStart: DateTime.utc(2026, 11),
       );
+      // NK172_060
+
       final byUser = _byUser(finishes);
 
       expect(finishes, hasLength(70));
@@ -558,7 +634,10 @@ void main() {
       final finishes = H2hLeaguePolicy.monthEnd(
         groups: groups,
         eligible: _everyone(groups, except: {'a19', 'a20'}),
-      );
+        monthStart: DateTime.utc(2026, 11),
+      )
+      // NK172_061
+      ;
       final byUser = _byUser(finishes);
 
       expect(_countIn(finishes, null), 2);
@@ -587,7 +666,10 @@ void main() {
       final finishes = H2hLeaguePolicy.monthEnd(
         groups: groups,
         eligible: _everyone(groups, except: {'a05'}),
-      );
+        monthStart: DateTime.utc(2026, 11),
+      )
+      // NK172_062
+      ;
       final byUser = _byUser(finishes);
 
       expect(byUser['a05']!.outcome, H2hLeagueOutcome.out);
@@ -610,6 +692,7 @@ void main() {
       final finishes = H2hLeaguePolicy.monthEnd(
         groups: groups,
         eligible: _everyone(groups),
+        monthStart: DateTime.utc(2026, 11),
       );
       final byUser = _byUser(finishes);
 
@@ -622,6 +705,78 @@ void main() {
       }
       expect(_countIn(finishes, H2hDivision.fourth), 51);
     });
+
+    test(
+      'December compares group rank, prediction points, exacts, then league points',
+      () {
+        H2hGroupResult fourthGroup(
+          String prefix,
+          String leader, {
+          required int wins,
+          required int points,
+          required int exact,
+        }) => H2hGroupResult(
+          division: H2hDivision.fourth,
+          placings: [
+            H2hPlacing(
+              rank: 1,
+              standing: _standing(
+                leader,
+                won: wins,
+                pointsFor: points,
+                exact: exact,
+              ),
+            ),
+            for (var rank = 2; rank <= 16; rank++)
+              H2hPlacing(
+                rank: rank,
+                standing: _standing(
+                  '$prefix${rank.toString().padLeft(2, '0')}',
+                  won: 100 - rank,
+                ),
+              ),
+          ],
+        );
+
+        final groups = [
+          _group(H2hDivision.first, 'first', 20),
+          _group(H2hDivision.second, 'second', 20),
+          _group(H2hDivision.third, 'third', 20),
+          fourthGroup('a', 'a-leader', wins: 1, points: 100, exact: 1),
+          fourthGroup('b', 'b-leader', wins: 0, points: 100, exact: 3),
+          fourthGroup('c', 'c-leader', wins: 33, points: 90, exact: 9),
+          fourthGroup('d', 'd-leader', wins: 34, points: 90, exact: 4),
+          fourthGroup('e', 'e-leader', wins: 35, points: 80, exact: 99),
+        ];
+        final eligible = _everyone(groups);
+
+        List<String> promoted(DateTime monthStart) {
+          final finishes = H2hLeaguePolicy.monthEnd(
+            groups: groups,
+            eligible: eligible,
+            monthStart: monthStart,
+          );
+          return [
+            for (final finish in finishes)
+              if (finish.division == H2hDivision.fourth &&
+                  finish.nextDivision == H2hDivision.third)
+                finish.placing.standing.userId.value,
+          ];
+        }
+
+        expect(promoted(DateTime.utc(2026, 11)), [
+          'e-leader',
+          'd-leader',
+          'c-leader',
+        ]);
+        expect(promoted(DateTime.utc(2026, 12)), [
+          'b-leader',
+          'a-leader',
+          'c-leader',
+        ]);
+      },
+    );
+    // NK172_063
   });
 
   group('H2hLeaguePolicy.draw', () {

@@ -12,15 +12,24 @@ final _u2 = userNo(2);
 final _u3 = userNo(3);
 final _u4 = userNo(4);
 
-H2hRound _round(int number, int day, {required bool locked}) => H2hRound(
-  id: H2hRoundId('44444444-4444-4444-8444-00000000000$number'),
-  monthStart: _november,
-  number: number,
-  day: DateTime.utc(2026, 11, day),
-  fixtureCount: 6,
-  approvedBy: null,
-  lockedAt: locked ? DateTime.utc(2026, 11, day, 12) : null,
-);
+H2hRound _round(
+  int number,
+  int day, {
+  required bool locked,
+  DateTime? monthStart,
+}) {
+  final month = monthStart ?? _november;
+  return H2hRound(
+    id: H2hRoundId('44444444-4444-4444-8444-00000000000$number'),
+    monthStart: month,
+    number: number,
+    day: DateTime.utc(month.year, month.month, day),
+    fixtureCount: 6,
+    approvedBy: null,
+    lockedAt: locked ? DateTime.utc(month.year, month.month, day, 12) : null,
+  );
+}
+// NK172_077
 
 H2hRoundScore _score(UserId user, int round, int points) => H2hRoundScore(
   userId: user,
@@ -44,29 +53,37 @@ Future<Result<MyH2hGroupRound>> _read({
   bool seated = true,
   DateTime? now,
   List<int> turns = const <int>[],
+  DateTime? monthStart,
+  bool absentU4 = false,
+  bool presentU3 = false,
 }) {
+  final month = monthStart ?? _november;
   final leagues = FakeH2hLeagueStore();
+  // NK172_078
   if (seated) {
     leagues.seat(
       _me,
       H2hSeat(
         leagueId: _league,
-        monthStart: _november,
+        monthStart: month,
+        // NK172_079
         division: H2hDivision.second,
         groupIndex: 0,
         slot: mySlot,
         capacity: 4,
         divisionGroups: 1,
         isPilot: false,
-        joinedAt: _november,
+        joinedAt: month,
+        // NK172_080
       ),
     );
   }
   final rounds = FakeH2hRoundStore()
-    ..addRound(_round(1, 3, locked: true))
-    ..addRound(_round(2, 5, locked: true))
-    ..addRound(_round(3, 7, locked: true))
-    ..addRound(_round(4, 9, locked: false));
+    ..addRound(_round(1, 3, locked: true, monthStart: month))
+    ..addRound(_round(2, 5, locked: true, monthStart: month))
+    ..addRound(_round(3, 7, locked: true, monthStart: month))
+    ..addRound(_round(4, 9, locked: false, monthStart: month));
+  // NK172_081
   // The caller takes [mySlot]; the others fill the remaining seats in order.
   final others = <UserId>[_u2, _u3, if (withU4) _u4];
   final seats = <int, UserId>{mySlot: _me};
@@ -84,14 +101,17 @@ Future<Result<MyH2hGroupRound>> _read({
           H2hMember(
             userId: entry.value,
             slot: entry.key,
-            joinedAt: DateTime.utc(2026, 11, 1, 0, entry.key),
+            joinedAt: DateTime.utc(month.year, month.month, 1, 0, entry.key),
+            // NK172_082
           ),
       ],
       scores: [
         // Round 1, settled: the caller 5, u4 2, u2 and u3 played nothing.
         _score(_me, 1, 5),
-        if (withU4) _score(_u4, 1, 2),
+        if (presentU3) _score(_u3, 1, 4),
+        if (withU4 && !absentU4) _score(_u4, 1, 2),
         // Round 2, live: the caller 1, u2 4; u3 nothing yet, u4 0.
+        // NK172_083
         _score(_me, 2, 1),
         _score(_u2, 2, 4),
         if (withU4) _score(_u4, 2, 0),
@@ -99,7 +119,11 @@ Future<Result<MyH2hGroupRound>> _read({
       settledRounds: const <int>{1},
       voidRounds: const <int>{3},
       turns: turns,
-      lastKickoffs: {1: DateTime.utc(2026, 11, 3, 20), 2: _lastOfRound2},
+      lastKickoffs: {
+        1: DateTime.utc(month.year, month.month, 3, 20),
+        2: DateTime.utc(month.year, month.month, 5, 14),
+      },
+      // NK172_084
     );
   return GetMyH2hGroupRound(
     league: GetMyH2hLeague(
@@ -107,7 +131,8 @@ Future<Result<MyH2hGroupRound>> _read({
       rounds: rounds,
       sheets: sheets,
       profiles: NamingProfiles(),
-      clock: AtClock(now ?? DateTime.utc(2026, 11, 5, 15)),
+      clock: AtClock(now ?? DateTime.utc(month.year, month.month, 5, 15)),
+      // NK172_085
     ),
     sheets: sheets,
   ).call(principal: principal, round: round);
@@ -133,7 +158,37 @@ void main() {
     expect(group.profiles[_u3]!.displayName, 'name ${_u3.value}');
   });
 
+  // NK172 group round December absence test
+  test(
+    'December absent opponents use the average in every visible pair',
+    () async {
+      final group = _ok(
+        await _read(
+          round: 1,
+          monthStart: DateTime.utc(2026, 12),
+          absentU4: true,
+          presentU3: true,
+          now: DateTime.utc(2026, 12, 3, 21),
+        ),
+      );
+
+      expect(group.phase, H2hRoundPhase.settled);
+      final mine = group.pairs.first;
+      expect((mine.home, mine.away), (_me, _u4));
+      expect(mine.awayAbsent, isTrue);
+      expect(mine.awayPoints, 2.25);
+      expect(mine.winner, H2hPairWinner.home);
+
+      final others = group.pairs.last;
+      expect((others.home, others.away), (_u3, _u2));
+      expect(others.awayAbsent, isTrue);
+      expect(others.awayPoints, 2.25);
+      expect(others.winner, H2hPairWinner.home);
+    },
+  );
+
   test('a live round before its last kickoff: no pairs at all', () async {
+    // NK172_086
     final group = _ok(
       await _read(round: 2, now: DateTime.utc(2026, 11, 5, 13, 59)),
     );

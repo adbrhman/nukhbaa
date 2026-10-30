@@ -72,7 +72,11 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
             key: const Key('h2h.rulesButton'),
             tooltip: 'كيف يعمل الدوري؟',
             icon: const Icon(Icons.info_outline_rounded),
-            onPressed: () => showH2hRules(context),
+            onPressed: () => showH2hRules(
+              context,
+              monthStart: ref.read(myH2hLeagueProvider).value?.monthStart,
+            ),
+            // NK172_042
           ),
         ],
       ),
@@ -115,7 +119,11 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
   List<Widget> _waiting(MyH2hLeagueDto league) => <Widget>[
     _StateCard(league: league),
     const SizedBox(height: AppSpacing.lg),
-    const AppCard(key: Key('h2h.rules'), child: H2hRulesList(withTitle: true)),
+    AppCard(
+      key: const Key('h2h.rules'),
+      child: H2hRulesList(monthStart: league.monthStart, withTitle: true),
+    ),
+    // NK172_045
   ];
 
   /// The caller's seated month: the card, the three sections, the one
@@ -145,8 +153,9 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
 }
 
 /// Opens the rules as a sheet over the tab.
-Future<void> showH2hRules(BuildContext context) {
+Future<void> showH2hRules(BuildContext context, {String? monthStart}) {
   return showModalBottomSheet<void>(
+    // NK172_043
     context: context,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: AppBreakpoints.tablet),
@@ -155,16 +164,17 @@ Future<void> showH2hRules(BuildContext context) {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
-        child: const SingleChildScrollView(
-          key: Key('h2h.rulesSheet'),
-          padding: EdgeInsets.fromLTRB(
+        child: SingleChildScrollView(
+          key: const Key('h2h.rulesSheet'),
+          padding: const EdgeInsets.fromLTRB(
             AppSpacing.xl,
             AppSpacing.sm,
             AppSpacing.xl,
             AppSpacing.xl,
           ),
-          child: H2hRulesList(withTitle: true),
+          child: H2hRulesList(monthStart: monthStart, withTitle: true),
         ),
+        // NK172_044
       ),
     ),
   );
@@ -226,15 +236,21 @@ class _StateCard extends StatelessWidget {
 /// The rules, numbered.
 class H2hRulesList extends StatelessWidget {
   /// Creates the list, under its title when [withTitle].
-  const H2hRulesList({this.withTitle = false, super.key});
+  const H2hRulesList({this.withTitle = false, this.monthStart, super.key});
 
   /// Whether the list carries its own title.
   final bool withTitle;
 
+  /// The month whose rules are being explained.
+  final String? monthStart;
+  // NK172_046
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
+    final rules = monthStart == null ? h2hRules : h2hRulesForMonth(monthStart!);
     return Column(
+      // NK172_047
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -246,7 +262,8 @@ class H2hRulesList extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-        for (int i = 0; i < h2hRules.length; i++) ...<Widget>[
+        for (int i = 0; i < rules.length; i++) ...<Widget>[
+          // NK172_048
           const SizedBox(height: AppSpacing.sm),
           Row(
             key: Key('h2h.rule.${i + 1}'),
@@ -262,7 +279,8 @@ class H2hRulesList extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  h2hRules[i],
+                  rules[i],
+                  // NK172_049
                   style: context.text.bodyMedium?.copyWith(
                     color: t.textSecondary,
                   ),

@@ -78,7 +78,29 @@ void main() {
       );
     });
 
+    // NK172 group match absence contract test
+    test('an absent away member is explicit and old matches default false', () {
+      const match = H2hGroupMatchDto(
+        homeUserId: 'u-1',
+        homeName: 'A',
+        homePoints: 6,
+        awayUserId: 'u-2',
+        awayName: 'B',
+        awayPoints: 2.5,
+        winner: 'home',
+        awayAbsent: true,
+      );
+      final json = _wire(match.toJson());
+      expect(json['away_absent'], isTrue);
+      expect(H2hGroupMatchDto.fromJson(json).awayAbsent, isTrue);
+      expect(
+        H2hGroupMatchDto.fromJson(const {'home_user_id': 'u-1'}).awayAbsent,
+        isFalse,
+      );
+    });
+
     test('a match not started carries no points and no winner', () {
+      // NK172_090
       final back = H2hGroupMatchDto.fromJson(
         _wire(<String, Object?>{
           'home_user_id': 'u-1',

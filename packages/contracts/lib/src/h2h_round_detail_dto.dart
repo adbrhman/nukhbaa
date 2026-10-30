@@ -211,7 +211,9 @@ final class MyH2hRoundDto {
     this.theirs,
     this.opponentHidden = false,
     this.revealsAt,
+    this.opponentAbsent = false,
     this.schemaVersion = currentSchemaVersion,
+    // NK172_028
   });
 
   /// Deserializes from a JSON map, tolerating older schema versions.
@@ -237,6 +239,8 @@ final class MyH2hRoundDto {
       ],
       opponentHidden: (json['opponent_hidden'] as bool?) ?? false,
       revealsAt: json['reveals_at'] as String?,
+      opponentAbsent: (json['opponent_absent'] as bool?) ?? false,
+      // NK172_029
     );
   }
 
@@ -296,6 +300,10 @@ final class MyH2hRoundDto {
   /// kickoff), or null.
   final String? revealsAt;
 
+  /// True when the revealed opponent missed and the group average was used.
+  final bool opponentAbsent;
+  // NK172_030
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -318,5 +326,7 @@ final class MyH2hRoundDto {
     'fixtures': [for (final f in fixtures) f.toJson()],
     'opponent_hidden': opponentHidden,
     'reveals_at': revealsAt,
+    'opponent_absent': opponentAbsent,
+    // NK172_031
   };
 }

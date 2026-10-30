@@ -102,6 +102,8 @@ H2hGroupRoundDto h2hAdminGroupRoundToDto(H2hAdminGroupRound group) =>
                 : _avatarOf(pair.away!, group.profiles),
             awayPoints: pair.awayPoints,
             winner: pair.winner?.wireName,
+            awayAbsent: pair.awayAbsent,
+            // NK172_040
           ),
       ],
       matchesHidden: group.pairsHidden,

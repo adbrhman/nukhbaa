@@ -152,6 +152,14 @@ H2hRoundViewDto _roundViewToDto(MyH2hRound view, MyH2hLeague league) {
     result: h2hShownResultOf(view)?.wireName,
     opponentHidden: view.opponentHidden,
     revealsAt: view.revealsAt?.toUtc().toIso8601String(),
+    opponentAbsent:
+        !view.opponentHidden &&
+        match != null &&
+        match.present &&
+        match.opponentId != null &&
+        !match.opponentPresent &&
+        H2hLeaguePolicy.usesDecemberRules(match.day),
+    // NK172_036
   );
 }
 
@@ -204,6 +212,8 @@ MyH2hLeagueDto myH2hMonthToDto(MyH2hMonth month) {
               .toIso8601String(),
           opponentHidden: round.opponentHidden,
           revealsAt: round.revealsAt,
+          opponentAbsent: round.opponentAbsent,
+          // NK172_037
         ),
     ],
   );
@@ -238,6 +248,8 @@ MyH2hRoundDto myH2hRoundToDto(MyH2hRoundDetail detail) {
     ],
     opponentHidden: detail.opponentHidden,
     revealsAt: detail.revealsAt?.toUtc().toIso8601String(),
+    opponentAbsent: detail.opponentAbsent,
+    // NK172_038
   );
 }
 
@@ -300,5 +312,7 @@ H2hGroupMatchDto _groupMatchToDto(H2hGroupPair pair, MyH2hGroupRound group) {
     awayIsMe: away != null && away == group.readerId,
     awayPoints: pair.awayPoints,
     winner: pair.winner?.wireName,
+    awayAbsent: pair.awayAbsent,
+    // NK172_039
   );
 }

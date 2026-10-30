@@ -14,15 +14,24 @@ final _u2 = userNo(2);
 final _u3 = userNo(3);
 final _u4 = userNo(4);
 
-H2hRound _round(int number, int day, {required bool locked}) => H2hRound(
-  id: H2hRoundId('44444444-4444-4444-8444-00000000000$number'),
-  monthStart: _november,
-  number: number,
-  day: DateTime.utc(2026, 11, day),
-  fixtureCount: 4,
-  approvedBy: null,
-  lockedAt: locked ? DateTime.utc(2026, 11, day, 12) : null,
-);
+H2hRound _round(
+  int number,
+  int day, {
+  required bool locked,
+  DateTime? monthStart,
+}) {
+  final month = monthStart ?? _november;
+  return H2hRound(
+    id: H2hRoundId('44444444-4444-4444-8444-00000000000$number'),
+    monthStart: month,
+    number: number,
+    day: DateTime.utc(month.year, month.month, day),
+    fixtureCount: 4,
+    approvedBy: null,
+    lockedAt: locked ? DateTime.utc(month.year, month.month, day, 12) : null,
+  );
+}
+// NK172_064
 
 H2hFixturePick _pick(
   int home,
@@ -64,8 +73,14 @@ H2hRoundFixture _fixture(
 /// fixture, kicked off or not, as a broken adapter would: the use-case alone
 /// must keep the not-started ones secret.
 final class _LeakyReader implements H2hRoundFixtureReader {
+  _LeakyReader([DateTime? monthStart]) : monthStart = monthStart ?? _november;
+
+  final DateTime monthStart;
+
   final List<({H2hRound round, UserId reader, UserId? opponent, DateTime now})>
-  calls = [];
+      // NK172_065
+      calls =
+      [];
 
   @override
   Future<Result<List<H2hRoundFixture>>> fixturesOf({
@@ -85,13 +100,17 @@ final class _LeakyReader implements H2hRoundFixtureReader {
       ),
       _fixture(
         'f2',
-        DateTime.utc(2026, 11, 3, 15),
+        DateTime.utc(monthStart.year, monthStart.month, 3, 15),
+
+        // NK172_066
         mine: _pick(1, 0),
         theirs: _pick(2, 2, isDouble: true),
       ),
       _fixture(
         'f1',
-        DateTime.utc(2026, 11, 3, 12),
+        DateTime.utc(monthStart.year, monthStart.month, 3, 12),
+
+        // NK172_067
         homeGoals: 2,
         awayGoals: 1,
         mine: _pick(2, 1, isDouble: true, points: 10, exact: true),
@@ -99,7 +118,9 @@ final class _LeakyReader implements H2hRoundFixtureReader {
       ),
       _fixture(
         'f4',
-        DateTime.utc(2026, 11, 3, 13),
+        DateTime.utc(monthStart.year, monthStart.month, 3, 13),
+
+        // NK172_068
         counted: false,
         mine: _pick(1, 1, exact: true),
         theirs: _pick(1, 1, isDouble: true, exact: true),
@@ -108,27 +129,36 @@ final class _LeakyReader implements H2hRoundFixtureReader {
   }
 }
 
-FakeH2hLeagueStore _seated() => FakeH2hLeagueStore()
-  ..seat(
+FakeH2hLeagueStore _seated({DateTime? monthStart}) {
+  final month = monthStart ?? _november;
+  return FakeH2hLeagueStore()..seat(
     _me,
     H2hSeat(
       leagueId: _league,
-      monthStart: _november,
+      monthStart: month,
       division: H2hDivision.second,
       groupIndex: 0,
       slot: 0,
       capacity: 4,
       divisionGroups: 1,
       isPilot: false,
-      joinedAt: _november,
+      joinedAt: month,
     ),
   );
+}
+// NK172_069
 
 /// The last kickoff of round 1 that counts (f2): the opponent is named then.
 final _lastKickoff = DateTime.utc(2026, 11, 3, 15);
 
-FakeH2hSheetReader _sheet({required bool withOpponent, int myPoints = 10}) {
+FakeH2hSheetReader _sheet({
+  required bool withOpponent,
+  int myPoints = 10,
+  DateTime? monthStart,
+}) {
+  final month = monthStart ?? _november;
   final members = <UserId>[_me, _u2, _u3, if (withOpponent) _u4];
+  // NK172_070
   return FakeH2hSheetReader()
     ..sheets[_league] = H2hGroupSheet(
       members: [
@@ -136,7 +166,8 @@ FakeH2hSheetReader _sheet({required bool withOpponent, int myPoints = 10}) {
           H2hMember(
             userId: user,
             slot: i,
-            joinedAt: DateTime.utc(2026, 11, 1, 0, i),
+            joinedAt: DateTime.utc(month.year, month.month, 1, 0, i),
+            // NK172_071
           ),
       ],
       scores: [
@@ -150,7 +181,8 @@ FakeH2hSheetReader _sheet({required bool withOpponent, int myPoints = 10}) {
       ],
       settledRounds: const <int>{},
       voidRounds: const <int>{},
-      lastKickoffs: {1: _lastKickoff},
+      lastKickoffs: {1: DateTime.utc(month.year, month.month, 3, 15)},
+      // NK172_072
     );
 }
 
@@ -161,20 +193,29 @@ Future<Result<MyH2hRoundDetail>> _read({
   bool withOpponent = true,
   int round = 1,
   int myPoints = 10,
+  DateTime? monthStart,
 }) {
+  final month = monthStart ?? _november;
   final clock = AtClock(now);
   final rounds = FakeH2hRoundStore()
-    ..addRound(_round(1, 3, locked: true))
-    ..addRound(_round(2, 5, locked: false));
+    ..addRound(_round(1, 3, locked: true, monthStart: month))
+    ..addRound(_round(2, 5, locked: false, monthStart: month));
+  // NK172_073
   return GetMyH2hRound(
     league: GetMyH2hLeague(
-      leagues: leagues ?? _seated(),
+      leagues: leagues ?? _seated(monthStart: month),
       rounds: rounds,
-      sheets: _sheet(withOpponent: withOpponent, myPoints: myPoints),
+      sheets: _sheet(
+        withOpponent: withOpponent,
+        myPoints: myPoints,
+        monthStart: month,
+      ),
+      // NK172_074
       profiles: NamingProfiles(),
       clock: clock,
     ),
-    fixtures: reader ?? _LeakyReader(),
+    fixtures: reader ?? _LeakyReader(month),
+    // NK172_075
     clock: clock,
   ).call(principal: player, round: round);
 }
@@ -385,6 +426,32 @@ void main() {
       }
     });
 
+    // NK172 application absence test
+    test(
+      'December turns an absent named opponent into the group average',
+      () async {
+        final detail =
+            ((await _read(
+                      now: DateTime.utc(2026, 12, 3, 15),
+                      monthStart: DateTime.utc(2026, 12),
+                    ))
+                    as Ok<MyH2hRoundDetail>)
+                .value;
+
+        expect(detail.opponentHidden, isFalse);
+        expect(detail.opponentAbsent, isTrue);
+        expect(detail.opponentId, _u4);
+        expect(detail.opponentProfile, isNull);
+        expect(detail.opponentPoints, 2.5);
+        expect(detail.result, H2hMatchResult.win);
+        expect(detail.theirs, isNull);
+        for (final line in detail.fixtures) {
+          expect(line.theirs, isNull, reason: line.fixtureId);
+          expect(line.theirsHidden, isFalse, reason: line.fixtureId);
+        }
+      },
+    );
+
     test('a caller with no seat is refused', () async {
       final result = await _read(
         now: DateTime.utc(2026, 11, 3, 14, 59),
@@ -393,6 +460,7 @@ void main() {
 
       expect((result as Err<MyH2hRoundDetail>).error.code, 'h2h.not_seated');
     });
+    // NK172_076
 
     test('a round the month does not have is refused', () async {
       final result = await _read(

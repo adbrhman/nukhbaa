@@ -328,5 +328,29 @@ void main() {
       expect(pairs.first.winner, H2hPairWinner.draw);
       expect(pairs.last.winner, H2hPairWinner.home);
     });
+
+    // NK172 pure admin absent-pair test
+    test('December puts the present member first against the average', () {
+      final pairs = h2hGroupPairs(
+        members: members,
+        capacity: 4,
+        round: H2hRoundRef(number: 1, day: DateTime.utc(2026, 12, 3)),
+        status: H2hRoundStatus.settled,
+        scores: [_score(userNo(1), 1, 5), _score(userNo(3), 1, 4)],
+        first: userNo(1),
+      );
+
+      expect(pairs.map((p) => (p.home, p.away)).toList(), [
+        (userNo(1), userNo(4)),
+        (userNo(3), userNo(2)),
+      ]);
+      expect(pairs.map((p) => p.awayAbsent).toList(), [true, true]);
+      expect(pairs.map((p) => p.awayPoints).toList(), [2.25, 2.25]);
+      expect(pairs.map((p) => p.winner).toList(), [
+        H2hPairWinner.home,
+        H2hPairWinner.home,
+      ]);
+    });
+    // NK172_087
   });
 }

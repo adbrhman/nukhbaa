@@ -159,10 +159,33 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
     };
   }
 
-  /// Sends one [command], joining the season first when the server says the
-  /// caller has not joined it yet.
+  /// Retries only transport failures: one POST is idempotent for the
+  /// `(fixture, participant)` key, and a lost response must not lose a pick.
+  /// At most four retries follow the first attempt; server responses such as
+  /// 503 remain visible instead of being retried here.
   Future<Result<FixturePredictionDto>> _send(_FixtureCommand command) async {
+    for (var retry = 0; ; retry++) {
+      final result = await _sendOnce(command);
+      if (result is Ok<FixturePredictionDto>) return result;
+      final error = (result as Err<FixturePredictionDto>).error;
+      if ((error.code != apiErrorNetworkUnreachable &&
+              error.code != apiErrorTimeout) ||
+          retry >= 4 ||
+          !ref.mounted ||
+          _waiting != null) {
+        return result;
+      }
+      await Future<void>.delayed(Duration(milliseconds: 250 * (1 << retry)));
+      if (!ref.mounted || _waiting != null) return result;
+    }
+  }
+
+  /// One network attempt, including the existing one-time auto-join flow.
+  Future<Result<FixturePredictionDto>> _sendOnce(
+    _FixtureCommand command,
+  ) async {
     final seasonId = arg.seasonId;
+    // NK172_091
     final fixtureId = arg.fixtureId;
 
     Result<FixturePredictionDto> result = await _api.submitFixturePrediction(

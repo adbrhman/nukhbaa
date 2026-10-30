@@ -256,7 +256,8 @@ class H2hPairCard extends StatelessWidget {
     final AppTokens t = context.tokens;
     final H2hGroupMatchDto m = match;
     final bool mine = m.homeIsMe || m.awayIsMe;
-    final bool average = m.awayUserId == null;
+    final bool average = m.awayUserId == null || m.awayAbsent;
+    // NK172_056
     final String homeName = h2hNameOf(m.homeName);
     final String awayName = average
         ? h2hAverageOpponent
@@ -365,6 +366,22 @@ class H2hPairCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (m.awayAbsent) ...<Widget>[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  mine
+                      ? 'غاب خصمك: واجهت متوسط المجموعة '
+                            '(${h2hPointsLabel(m.awayPoints ?? 0)} نقطة).'
+                      : 'غاب أحد طرفي المواجهة؛ احتُسب متوسط المجموعة '
+                            '(${h2hPointsLabel(m.awayPoints ?? 0)} نقطة).',
+                  key: const Key('h2h.pair.opponentAbsent'),
+                  textAlign: TextAlign.center,
+                  style: context.text.bodySmall?.copyWith(
+                    color: t.textSecondary,
+                  ),
+                ),
+              ],
+              // NK172_057
             ],
           ),
         );

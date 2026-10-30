@@ -124,7 +124,9 @@ final class H2hRoundViewDto {
     this.firstKickoff,
     this.opponentHidden = false,
     this.revealsAt,
+    this.opponentAbsent = false,
   });
+  // NK172_024
 
   /// Deserializes from a JSON map, tolerating missing keys.
   factory H2hRoundViewDto.fromJson(Map<String, Object?> json) =>
@@ -142,6 +144,8 @@ final class H2hRoundViewDto {
         firstKickoff: json['first_kickoff'] as String?,
         opponentHidden: (json['opponent_hidden'] as bool?) ?? false,
         revealsAt: json['reveals_at'] as String?,
+        opponentAbsent: (json['opponent_absent'] as bool?) ?? false,
+        // NK172_025
       );
 
   /// 1-based round of the month.
@@ -188,6 +192,10 @@ final class H2hRoundViewDto {
   /// live round; null for a round not started, and when not secret.
   final String? revealsAt;
 
+  /// True when the revealed opponent missed the round and the average was used.
+  final bool opponentAbsent;
+  // NK172_026
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'round': round,
@@ -203,6 +211,8 @@ final class H2hRoundViewDto {
     'first_kickoff': firstKickoff,
     'opponent_hidden': opponentHidden,
     'reveals_at': revealsAt,
+    'opponent_absent': opponentAbsent,
+    // NK172_027
   };
 }
 

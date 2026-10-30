@@ -29,7 +29,9 @@ final class H2hGroupMatchDto {
     this.awayIsMe = false,
     this.awayPoints,
     this.winner,
+    this.awayAbsent = false,
   });
+  // NK172_032
 
   /// Deserializes from a JSON map, tolerating missing keys.
   factory H2hGroupMatchDto.fromJson(Map<String, Object?> json) =>
@@ -45,6 +47,8 @@ final class H2hGroupMatchDto {
         awayIsMe: (json['away_is_me'] as bool?) ?? false,
         awayPoints: (json['away_points'] as num?)?.toDouble(),
         winner: json['winner'] as String?,
+        awayAbsent: (json['away_absent'] as bool?) ?? false,
+        // NK172_033
       );
 
   /// The first member (the caller, when the caller plays this match).
@@ -84,6 +88,10 @@ final class H2hGroupMatchDto {
   /// round both members lost; null before it starts and when void.
   final String? winner;
 
+  /// True when the named away member missed and the group average was used.
+  final bool awayAbsent;
+  // NK172_034
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'home_user_id': homeUserId,
@@ -97,6 +105,8 @@ final class H2hGroupMatchDto {
     'away_is_me': awayIsMe,
     'away_points': awayPoints,
     'winner': winner,
+    'away_absent': awayAbsent,
+    // NK172_035
   };
 }
 

@@ -133,7 +133,9 @@ final class MyH2hRoundDetail {
     required this.theirs,
     this.opponentHidden = false,
     this.revealsAt,
+    this.opponentAbsent = false,
   });
+  // NK172_006
 
   /// The round.
   final H2hRound round;
@@ -150,6 +152,10 @@ final class MyH2hRoundDetail {
   /// null.
   final DateTime? revealsAt;
 
+  /// The named opponent did not play; the caller faced the group average.
+  /// False while the opponent is secret and for an empty seat.
+  final bool opponentAbsent;
+  // NK172_007
   /// The caller's stored points in the round; null before it starts and
   /// when it is void.
   final int? myPoints;
@@ -256,7 +262,16 @@ final class GetMyH2hRound {
     final now = _clock.nowUtc().toUtc();
     final opponent = view.opponentId;
     final secret = view.opponentHidden;
+    final match = view.match;
+    final opponentAbsent =
+        !secret &&
+        match != null &&
+        match.present &&
+        match.opponentId != null &&
+        !match.opponentPresent &&
+        H2hLeaguePolicy.usesDecemberRules(match.day);
     final readResult = await _fixtures.fixturesOf(
+      // NK172_008
       round: view.round,
       reader: league.readerId,
       opponent: opponent,
@@ -281,7 +296,8 @@ final class GetMyH2hRound {
       final kickoff = fixture.kickoffAt?.toUtc();
       final started = hasKickedOff(kickoffAt: kickoff, nowUtc: now);
       final revealed = opponent != null && started;
-      final theirs = revealed ? fixture.theirs : null;
+      final theirs = revealed && !opponentAbsent ? fixture.theirs : null;
+      // NK172_009
 
       if (fixture.counted) {
         if (kickoff != null &&
@@ -333,21 +349,26 @@ final class GetMyH2hRound {
           awayGoals: fixture.awayGoals,
           mine: fixture.mine,
           theirs: theirs,
-          theirsHidden: secret || (opponent != null && !started),
+          theirsHidden:
+              !opponentAbsent && (secret || (opponent != null && !started)),
+          // NK172_096
         ),
       );
     }
 
-    final match = view.match;
     return Result.ok(
       MyH2hRoundDetail(
+        // NK172_010
         round: view.round,
         opponentId: opponent,
         myPoints: match?.points ?? view.ownPoints,
         opponentPoints: match?.opponentPoints,
         phase: h2hRoundPhasesOf(league.rounds)[view.round.number]!,
         result: h2hShownResultOf(view),
-        opponentProfile: opponent == null ? null : league.profiles[opponent],
+        opponentProfile: opponent == null || opponentAbsent
+            ? null
+            : league.profiles[opponent],
+        // NK172_011
         firstKickoff: firstKickoff,
         fixtures: List<H2hRoundFixtureView>.unmodifiable(fixtures),
         mine: H2hSideTotals(
@@ -355,15 +376,18 @@ final class GetMyH2hRound {
           exact: myExact,
           doubles: myDoubles,
         ),
-        theirs: opponent == null
+        theirs: opponent == null || opponentAbsent
             ? null
             : H2hSideTotals(
+                // NK172_012
                 predicted: theirPredicted,
                 exact: theirExact,
                 doubles: theirDoubles,
               ),
         opponentHidden: secret,
         revealsAt: view.revealsAt,
+        opponentAbsent: opponentAbsent,
+        // NK172_013
       ),
     );
   }

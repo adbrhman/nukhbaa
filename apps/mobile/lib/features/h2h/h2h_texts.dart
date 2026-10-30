@@ -207,6 +207,42 @@ const List<String> h2hRules = <String>[
   'لتدخل القرعة: توقّع في 5 أيام مختلفة على الأقل خلال الشهر السابق.',
 ];
 
+// NK172 month-specific rules
+/// Rules effective from December 2026; earlier months retain their own rules.
+const List<String> h2hDecemberRules = <String>[
+  'تضم الأولى والثانية والثالثة 20 لاعبًا لكل درجة، وتضم الرابعة بقية '
+      'اللاعبين في مجموعات لا تتجاوز 20.',
+  'في كل جولة تواجه لاعبًا واحدًا من مجموعتك، وفي الشهر 19 جولة على الأكثر.',
+  'خصمك سري، ويُكشف عند انطلاق آخر مباراة في الجولة.',
+  'من ديسمبر 2026، إذا غاب خصمك وأنت توقّعت، تُقارَن نقاطك بمتوسط نقاط '
+      'كل أعضاء المجموعة في الجولة؛ الغائب بصفر وأنت ضمن المتوسط. الأعلى '
+      'يفوز بـ3 نقاط، والمساوي يتعادل بنقطة، والأقل يخسر. غيابك أنت يبقى خسارة.',
+  'من لم يتوقّع في الجولة يخسرها، وإذا غاب الطرفان يخسران معًا.',
+  'المباراة المؤجلة أو الخارجة من يوم الجولة، أو التي لا تُسجَّل نتيجتها '
+      'حتى نهاية اليوم التالي، لا تُحتسب لأي طرف.',
+  'بين مجموعات الدرجة الواحدة: المركز في المجموعة أولًا، ثم نقاط التوقع، '
+      'ثم الإصابات الدقيقة، ثم نقاط الدوري.',
+  'يصعد أو يهبط حتى 3 لاعبين عبر كل حدّ، ولا يزيد العدد على نصف الدرجة. '
+      'لا إعفاء ولا تصفيات إقصائية.',
+  'بطل الدوري هو متصدر الدرجة الأولى. ومتصدّر كل مجموعة بطل مجموعته '
+      'ويحصل على شارة بطل المواجهات.',
+  'يُحتسب تصحيح النتائج حتى إغلاق الشهر: بعد 3 ساعات من نهايته مع اكتمال '
+      'النتائج، أو بعد 3 أيام على الأكثر. والنتيجة المتأخرة بعد نهاية اليوم '
+      'التالي للجولة لا تُحتسب لها.',
+  'لدخول القرعة التالية: التوقع في 5 أيام مختلفة على الأقل خلال الشهر السابق.',
+];
+
+/// Selects the rule set by the player's month, not by the device's current date.
+bool h2hUsesDecemberRules(String monthStart) {
+  final date = DateTime.tryParse(monthStart);
+  return date != null &&
+      (date.year > 2026 || (date.year == 2026 && date.month >= 12));
+}
+
+/// The rules displayed for [monthStart].
+List<String> h2hRulesForMonth(String monthStart) =>
+    h2hUsesDecemberRules(monthStart) ? h2hDecemberRules : h2hRules;
+// NK172_041
 /// The state of a month without a seat for the caller: a title and a line.
 ({String title, String body}) h2hStateMessage(String state, String startsOn) =>
     switch (state) {

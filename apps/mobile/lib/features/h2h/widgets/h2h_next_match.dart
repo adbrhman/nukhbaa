@@ -133,15 +133,33 @@ class H2hNextMatch extends StatelessWidget {
               ),
               Expanded(
                 child: H2hSide(
-                  name: h2hOpponentOf(round),
-                  avatarUrl: round.opponentAvatarUrl,
-                  average: !secret && round.opponentUserId == null,
+                  name: round.opponentAbsent
+                      ? h2hAverageOpponent
+                      : h2hOpponentOf(round),
+                  avatarUrl: round.opponentAbsent
+                      ? null
+                      : round.opponentAvatarUrl,
+                  average:
+                      !secret &&
+                      (round.opponentUserId == null || round.opponentAbsent),
+                  // NK172_050
                   secret: secret,
                 ),
               ),
             ],
           ),
+          if (round.opponentAbsent) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'غاب خصمك: واجهت متوسط المجموعة '
+              '(${h2hPointsLabel(round.opponentPoints ?? 0)} نقطة).',
+              key: const Key('h2h.featured.opponentAbsent'),
+              textAlign: TextAlign.center,
+              style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+            ),
+          ],
           if (secret) ...<Widget>[
+            // NK172_051
             const SizedBox(height: AppSpacing.sm),
             H2hRevealLine(
               key: const Key('h2h.featured.reveal'),

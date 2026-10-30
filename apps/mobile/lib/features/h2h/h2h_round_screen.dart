@@ -127,7 +127,11 @@ class H2hRoundScreen extends ConsumerWidget {
                   MergeSemantics(
                     child: _FixtureTile(
                       fixture: f,
-                      average: !secret && detail.opponentUserId == null,
+                      average:
+                          !secret &&
+                          (detail.opponentUserId == null ||
+                              detail.opponentAbsent),
+                      // NK172_052
                       secret: secret,
                     ),
                   ),
@@ -164,7 +168,9 @@ class _MatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final bool secret = detail.opponentHidden;
-    final bool average = !secret && detail.opponentUserId == null;
+    final bool average =
+        !secret && (detail.opponentUserId == null || detail.opponentAbsent);
+    // NK172_053
     final TextStyle? scoreStyle = context.text.headlineSmall?.copyWith(
       color: t.textPrimary,
       fontWeight: FontWeight.w800,
@@ -252,9 +258,20 @@ class _MatchCard extends StatelessWidget {
               ),
             ],
           ),
+          if (detail.opponentAbsent) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'غاب خصمك: واجهت متوسط المجموعة '
+              '(${h2hPointsLabel(detail.opponentPoints ?? 0)} نقطة).',
+              key: const Key('h2h.detail.opponentAbsent'),
+              textAlign: TextAlign.center,
+              style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+            ),
+          ],
           if (secret) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
             H2hRevealLine(
+              // NK172_054
               key: const Key('h2h.detail.reveal'),
               revealsAt: detail.revealsAt,
             ),
@@ -333,8 +350,10 @@ class _Totals extends StatelessWidget {
                   Text(
                     detail.opponentHidden
                         ? h2hSecretOpponent
-                        : detail.opponentUserId == null
+                        : (detail.opponentUserId == null ||
+                              detail.opponentAbsent)
                         ? h2hAverageOpponent
+                        // NK172_055
                         : h2hNameOf(detail.opponentName),
                     textAlign: TextAlign.center,
                     maxLines: 2,

@@ -135,7 +135,33 @@ void main() {
       expect(MyH2hRoundDto.fromJson(const {}).opponentHidden, isFalse);
     });
 
+    // NK172 detailed round absence contract test
+    test(
+      'an absent opponent flag round-trips and older payloads default false',
+      () {
+        const detail = MyH2hRoundDto(
+          round: 4,
+          day: '2026-12-03',
+          status: 'settled',
+          fixtureCount: 8,
+          mine: H2hSideTotalsDto(predicted: 3, exact: 1, doubles: 0),
+          fixtures: [],
+          opponentUserId: 'u-2',
+          opponentPoints: 2.5,
+          opponentAbsent: true,
+        );
+        final json = _wire(detail.toJson());
+        expect(json['opponent_absent'], isTrue);
+        expect(MyH2hRoundDto.fromJson(json).opponentAbsent, isTrue);
+        expect(
+          MyH2hRoundDto.fromJson(const {'round': 1}).opponentAbsent,
+          isFalse,
+        );
+      },
+    );
+
     test('the month carries the days left; old payloads read 0', () {
+      // NK172_089
       final json = _wire(
         const MyH2hLeagueDto(
           state: 'open',

@@ -204,7 +204,9 @@ final class CloseH2hMonth {
     final finishes = H2hLeaguePolicy.monthEnd(
       groups: results,
       eligible: eligible,
+      monthStart: month,
     );
+    // NK172_005
     for (final finish in finishes) {
       final standing = finish.placing.standing;
       final leagueId = leagueOf[standing.userId];

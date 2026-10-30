@@ -71,13 +71,25 @@ List<H2hGroupPair> h2hGroupPairs({
     }
     final UserId home;
     final UserId? away;
-    if (opponent != null && first != null && opponent.userId == first) {
+    final memberMatch = matchOf[member.userId];
+    final opponentMatch = opponent == null ? null : matchOf[opponent.userId];
+    final flipForAverage =
+        opponent != null &&
+        H2hLeaguePolicy.usesDecemberRules(round.day) &&
+        memberMatch != null &&
+        opponentMatch != null &&
+        !memberMatch.present &&
+        opponentMatch.present &&
+        (first == null || first != member.userId);
+    if (opponent != null &&
+        ((first != null && opponent.userId == first) || flipForAverage)) {
       home = opponent.userId;
       away = member.userId;
     } else {
       home = member.userId;
       away = opponent?.userId;
     }
+    // NK172_020
     final pair = _pair(
       home: home,
       away: away,
@@ -110,17 +122,26 @@ H2hGroupPair _pair({
     );
   }
   final awayMatch = away == null ? null : matchOf[away];
+  final awayAbsent =
+      awayMatch != null &&
+      homeMatch.present &&
+      !awayMatch.present &&
+      H2hLeaguePolicy.usesDecemberRules(homeMatch.day);
   final homePoints = homeMatch.points;
-  final awayPoints = awayMatch?.points.toDouble() ?? homeMatch.opponentPoints;
+  final awayPoints = awayAbsent
+      ? homeMatch.opponentPoints
+      : awayMatch?.points.toDouble() ?? homeMatch.opponentPoints;
 
   final H2hPairWinner winner;
+  // NK172_021
   if (!settled) {
     final mine = homePoints.toDouble();
     winner = mine > awayPoints
         ? H2hPairWinner.home
         : (mine < awayPoints ? H2hPairWinner.away : H2hPairWinner.draw);
-  } else if (awayMatch == null) {
+  } else if (awayMatch == null || awayAbsent) {
     winner = switch (homeMatch.result) {
+      // NK172_022
       H2hMatchResult.win => H2hPairWinner.home,
       H2hMatchResult.loss => H2hPairWinner.away,
       H2hMatchResult.draw => H2hPairWinner.draw,
@@ -140,5 +161,7 @@ H2hGroupPair _pair({
     homePoints: homePoints,
     awayPoints: awayPoints,
     winner: winner,
+    awayAbsent: awayAbsent,
   );
+  // NK172_023
 }

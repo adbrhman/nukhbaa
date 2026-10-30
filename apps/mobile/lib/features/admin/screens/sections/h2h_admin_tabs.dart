@@ -480,8 +480,10 @@ class _GroupRound extends ConsumerWidget {
               '${m.homeName.isEmpty ? h2hUnnamed : m.homeName} '
               '${m.homePoints ?? '-'} × '
               '${m.awayPoints == null ? '-' : h2hPointsLabel(m.awayPoints!)} '
-              '${m.awayUserId == null ? h2hAverageOpponent : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
+              '${m.awayUserId == null || m.awayAbsent ? h2hAverageOpponent : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
+              '${m.awayAbsent ? ' · غاب الخصم؛ احتُسب متوسط المجموعة' : ''}'
               '${_winnerNote(m.winner)}',
+              // NK172_058
               style: context.text.bodyMedium?.copyWith(
                 color: context.tokens.textPrimary,
               ),

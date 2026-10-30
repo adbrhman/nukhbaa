@@ -2,8 +2,9 @@
 /// notifier (Axiom 4 Amendment).
 library;
 
+import 'dart:async';
 import 'dart:convert';
-
+// NK172_092
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/fixture_prediction/fixture_prediction_controller.dart';
@@ -172,7 +173,40 @@ void main() {
       expect(error.code, 'prediction.fixture_locked');
     });
 
+    // NK172 retry transport drops
+    test(
+      'a timed-out save retries the identical command up to success',
+      () async {
+        var attempts = 0;
+        final harness = buildPredictionHarness((request) async {
+          if (request.method == 'POST' &&
+              request.url.path.endsWith('/prediction')) {
+            attempts++;
+            if (attempts < 3) throw TimeoutException('connection stalled');
+            return okJsonObject(_stored.toJson());
+          }
+          return errorEnvelope(404, 'not_found', 'unexpected request');
+        });
+        addTearDown(harness.dispose);
+
+        await _controller(
+          harness,
+        ).submit(homeGoals: 2, awayGoals: 1, isDouble: true);
+
+        expect(_stateOf(harness), isA<FixtureSubmissionSucceeded>());
+        expect(attempts, 3);
+        expect(harness.captured, hasLength(3));
+        for (final captured in harness.captured) {
+          final body = FixturePredictionCommandDto.fromJson(
+            (jsonDecode(captured.request.body) as Map).cast<String, Object?>(),
+          );
+          expect((body.homeGoals, body.awayGoals, body.isDouble), (2, 1, true));
+        }
+      },
+    );
+
     test('transient/503 -> Failed(transient, retryable)', () async {
+      // NK172_094
       final harness = buildPredictionHarness(
         (_) async => errorEnvelope(503, 'server.unavailable', 'down'),
       );
@@ -185,6 +219,8 @@ void main() {
       final error = (state as FixtureSubmissionFailed).error;
       expect(error.kind, ErrorKind.transient);
       expect(error.isRetryable, isTrue);
+      expect(harness.captured, hasLength(1));
+      // NK172_093
     });
   });
 
