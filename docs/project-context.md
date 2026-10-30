@@ -4267,6 +4267,73 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   their providers; the new refusal codes read in Arabic in
   `h2hAdminErrorMessage`.
 
+### H2H rules from December 2026 (decided 2026-10-29)
+
+The owner's decisions of 2026-10-29 on the head-to-head league's open
+obstacles. They apply from December 2026; November 2026 keeps the rules
+above. In code the batch carries the marker `NK172` (`NK172 month gate`
+in `h2h_league_policy.dart`).
+
+- **No play-offs.** The league champion is the leader of division 1. The
+  leader of every group is that group's champion and gets the
+  `h2h_champion` badge (`BadgeCode.h2hChampion`): the month's
+  `h2h_league_finished` event has `rank` 1 and `league_points` above 0, in
+  any division (`postgres_badge_progress_reader.dart`).
+- **An absent opponent is an empty seat.** `H2hLeaguePolicy.table`, from
+  December 2026 only: when the player predicted and the opponent did not,
+  the player's points are compared with the group's average for the round,
+  `sum of the present players' points / number of members of the group`,
+  the player included and the absent counted as 0 in the sum. Above the
+  average wins (3), equal draws (1), below loses. The player's own absence
+  stays a loss; both absent stays a loss for both.
+
+  | Group of 16, a round | Value |
+  |---|---|
+  | Sum of the points of those who predicted | 48 |
+  | Average (48 / 16) | 3 |
+  | A player with 4 whose opponent is absent | win |
+  | A player with 3 whose opponent is absent | draw |
+  | A player with 2 whose opponent is absent | loss |
+
+- **Between groups of one division**: `_compareRanked`: the place in the
+  group, then prediction points, then exact scorelines, then league points,
+  then the id. Used by `monthEnd`, so every screen and the month's closing
+  read one order. Before December the old order (level, exact scorelines)
+  stays.
+- **A month keeps its own rules.** `H2hLeaguePolicy.usesDecemberRules` takes
+  the month or the round's day, never today's date, so closing or
+  correcting November after 1 December still uses November's rules. The
+  mobile side mirrors it: `h2hUsesDecemberRules` and `h2hRulesForMonth`
+  (`apps/mobile/lib/features/h2h/h2h_texts.dart`; 11 lines from December,
+  8 before).
+- **What the player sees.** `opponent_absent` in the round and detail
+  contracts (`h2h_league_dto.dart`, `h2h_round_detail_dto.dart`), set from
+  `get_my_h2h_round.dart` by `h2h_league_dto_mapper.dart`, and shown by the
+  round screen, the next-match card and the group's matches
+  (`h2h_round_screen.dart`, `h2h_next_match.dart`, `h2h_group_matches.dart`):
+  the player is told that the opponent was absent and that the player met
+  the group's average.
+- **Commitment** (5 missed matches or fewer) is an entry condition and the
+  order of the first public draw only (script 171, above); it is not a
+  rule of the later months.
+
+Not built yet (items 2 to 7 of the report of 2026-10-30, by priority):
+
+2. Mobile tests: the absent-opponent keys (`h2h.detail.opponentAbsent` and
+   the others) and `h2hRulesForMonth` (obstacle 24).
+3. A full-cycle test through the real use-cases: draw, rounds, close,
+   next draw, across November into December (obstacle 26).
+4. A line in the December rules for the tie-break order inside a group
+   (obstacle 16): league points, prediction points, the match between the
+   tied, exact scorelines, seat order.
+5. A SQL test of script 171's order (today only the bound
+   `committed_missed` is checked, not the result order).
+6. Draw and month-end notifications (obstacle 21): no match notification
+   kind exists in `NotificationKind`; needs the owner's approval and
+   probably a migration.
+7. The mid-month check (obstacles 4 and 29): by hand, the approved rounds
+   and the eligible days left.
+
 ### The predictions board in one request (2026-10-11)
 
 - **Batch 94 (predictions board in one request, server, 2026-10-11)**:
