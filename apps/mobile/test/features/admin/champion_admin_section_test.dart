@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/admin/screens/sections/champion_admin_section.dart';
 import 'package:mobile/features/leaderboards/leaderboards_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -130,6 +131,7 @@ Future<void> _open(
   WidgetTester tester,
   _Server server, {
   ChampionPhotoPicker? pick,
+  bool realTheme = false,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 3.0;
@@ -141,6 +143,7 @@ Future<void> _open(
       overrides: harness.overrides,
       retry: (retryCount, error) => null,
       child: MaterialApp(
+        theme: realTheme ? AppTheme.dark : null,
         locale: const Locale('ar'),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -374,6 +377,24 @@ void main() {
     );
     expect(find.byKey(const Key('champion.backdrop.photo')), findsWidgets);
     expect(server.requests.where((r) => r.method == 'POST'), isEmpty);
+  });
+
+  testWidgets('a crowned month shows its picture button under the real theme', (
+    tester,
+  ) async {
+    final server = _Server()..crowned = true;
+    await _open(tester, server, realTheme: true);
+
+    // The app's theme gives every outlined button an unbounded minimum
+    // width; inside a row that threw and drew nothing.
+    expect(tester.takeException(), isNull);
+    final Finder button = find.byKey(
+      const Key('admin.champions.replacePhoto.u-1'),
+    );
+    expect(button, findsOneWidget);
+    final Size size = tester.getSize(button);
+    expect(size.width.isFinite, isTrue);
+    expect(size.width, lessThanOrEqualTo(360));
   });
 
   test('the picture type is read from its bytes', () {

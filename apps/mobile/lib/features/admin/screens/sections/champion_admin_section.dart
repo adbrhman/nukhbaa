@@ -482,7 +482,14 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             leadingIcon: Icons.emoji_events_rounded,
             leadingColor: context.tokens.gold,
             title: c.displayName,
-            trailing: AdminSecondaryButton(
+          ),
+          // The picture button sits under the name, not beside it: the
+          // app's theme gives every outlined button an unbounded minimum
+          // width, which a row cannot lay out, so the button (and the row)
+          // drew nothing.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: AdminSecondaryButton(
               key: Key('admin.champions.replacePhoto.${c.userId}'),
               label: c.photoUrl == null ? 'إضافة صورة البطل' : 'تغيير الصورة',
               icon: Icons.add_photo_alternate_outlined,
@@ -491,6 +498,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
                   : () => unawaited(_replacePhoto(c.seasonId, c.userId)),
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
         ],
         if (champions.isNotEmpty) ...<Widget>[
           const SizedBox(height: AppSpacing.md),
