@@ -849,7 +849,7 @@ class ChampionPodiumRow extends ConsumerWidget {
                     style: const TextStyle(
                       color: _navy,
                       fontWeight: FontWeight.w900,
-                      fontSize: 13,
+                      fontSize: size * 0.2,
                     ),
                   ),
                 ),
