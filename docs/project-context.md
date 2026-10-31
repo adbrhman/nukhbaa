@@ -7352,6 +7352,51 @@ Mobile only: no server, no migration, no l10n change.
 - Not in this batch: the Elite Cup itself (script 185), the reserve days,
   the alerts and reports (186), December's carry (187).
 
+### The Elite Cup (script 185, migration 0190, 2026-10-31)
+
+Decided by the owner on 2026-10-31. Server and database only; the
+player's cup screen and the admin's schedule board are script 185b.
+
+- **When.** The cup starts only once the month (elite draw, not the pilot)
+  has its 19 rounds and every one is judged (settled or void): the day
+  number is an expectation, never a trigger. The qualifiers are the first
+  three places of the four elite groups, read from the month book (a seat
+  swap counts as the league counts it), stored in `h2h_cup_entries`.
+- **Order.** Three separate paths (place 1, then 2, then 3), each a
+  semi-final drawn at random (`Random.secure`) and a final: six stages, one
+  after the other (`H2hCupPolicy.order`), expected on days 20 to 25. A stage
+  is given the first qualifying day (six fixtures or more, today or
+  tomorrow, before its first kickoff, within the lead, not excluded, after
+  every earlier stage and round of the month) only once the stage before it
+  is decided. Days 26 to the month's end are open reserve, and the cup runs
+  on into the next month if it must; the month's close and championship
+  never wait for it.
+- **A stage** freezes its day's fixtures at its first kickoff
+  (`h2h_cup_stage_locks`/`_fixtures`) and is judged once every fixture still
+  in play is settled, with the league's result deadline (end of the next
+  Riyadh day). A stage left with no fixture to play is carried to the next
+  qualifying day with the same pairs (`attempt` 2, 3, ...).
+- **A pair** (`H2hCupPolicy.decide`): the side that predicted beats the
+  side that did not; both present, the higher points on the stage's
+  fixtures, then more exact scorelines, then the better league month
+  (league points, prediction points, exact, group number); neither present,
+  both lose. A semi-final both lost sends the other winner to the title
+  without a final (`walkover`); none left, the title is `vacant`.
+- **Tables** (all append-only, RLS on, nothing for anon/authenticated):
+  `h2h_cup_entries`, `h2h_cup_stages` (a trigger keeps them after the 19
+  rounds and in day order; one stage a day), `h2h_cup_stage_locks`,
+  `h2h_cup_stage_fixtures`, `h2h_cup_pairs`, `h2h_cup_results`,
+  `h2h_cup_titles`.
+- **Job** `RunH2hCup`, scheduler job `h2h-cup` after `h2h-absence`. Months
+  looked at: two back to now, older first. With automatic approval off no
+  stage is scheduled. Off altogether with `NUKHBA_H2H_CUP=off`.
+- Tests: domain `h2h_cup_policy_test.dart`; application `h2h_cup_test.dart`;
+  infrastructure `postgres_h2h_cup_store_test.dart`; SQL
+  `0190_h2h_elite_cup_test.sql` (the backstops and every statement).
+- **Apply 0190 in the SQL Editor before pushing the server.**
+- Not in this batch: league rounds running past the month's end and a void
+  round's pairing replayed (script 187, with December's carry).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

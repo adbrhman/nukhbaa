@@ -166,6 +166,7 @@ final class CompositionRoot {
     required this.h2hAdminDesk,
     required this.runH2hAbsence,
     required this.h2hAbsenceDesk,
+    required this.runH2hCup,
     required this.addH2hGroups,
     required this.evaluateBadges,
     required this.providerSyncMode,
@@ -381,6 +382,7 @@ final class CompositionRoot {
     H2hAdminDesk? h2hAdminDesk,
     RunH2hAbsence? runH2hAbsence,
     AdminH2hAbsence? h2hAbsenceDesk,
+    RunH2hCup? runH2hCup,
     AddH2hGroups? addH2hGroups,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
@@ -641,6 +643,7 @@ final class CompositionRoot {
        h2hAdminDesk = h2hAdminDesk ?? _absentH2hAdminDesk(),
        runH2hAbsence = runH2hAbsence ?? _absentRunH2hAbsence(),
        h2hAbsenceDesk = h2hAbsenceDesk ?? _absentH2hAbsenceDesk(),
+       runH2hCup = runH2hCup ?? _absentRunH2hCup(),
        addH2hGroups = addH2hGroups ?? _absentAddH2hGroups(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
@@ -1552,6 +1555,15 @@ final class CompositionRoot {
     sheets: _unwiredH2h,
     moves: _UnwiredH2hSeatMoves(),
     sender: const NoopPushSender(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  /// Backs the "absent" [RunH2hCup] (0190): every port throws.
+  static RunH2hCup _absentRunH2hCup() => RunH2hCup(
+    cups: _UnwiredH2hCups(),
+    rounds: _unwiredH2h,
+    leagues: _unwiredH2h,
+    sheets: _unwiredH2h,
     idGenerator: _unwiredIdGenerator,
   );
 
@@ -2470,6 +2482,12 @@ final class CompositionRoot {
   /// when the host sets `NUKHBA_H2H_ABSENCE_RELEGATION=off` (warnings
   /// still go out).
   final RunH2hAbsence runH2hAbsence;
+
+  /// The Elite Cup (NK185, migration 0190): the qualifiers once the 19
+  /// rounds are judged, the stages on the next qualifying days, the
+  /// decisions and the titles. Driven by the scheduler, never by a request.
+  /// Off when the host sets `NUKHBA_H2H_CUP=off`.
+  final RunH2hCup runH2hCup;
 
   /// The admin's desk for relegation for absence: the watch list, the next
   /// substitutes, the swaps, a relegation by hand and a round excused.
@@ -3441,6 +3459,15 @@ final class CompositionRoot {
         sender: pushSender,
         idGenerator: idGenerator,
         relegate: env['NUKHBA_H2H_ABSENCE_RELEGATION'] != 'off',
+      ),
+      runH2hCup: RunH2hCup(
+        cups: PostgresH2hCupStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        leagues: PostgresH2hLeagueStore(connection),
+        sheets: PostgresH2hSheetReader(connection),
+        idGenerator: idGenerator,
+        controls: PostgresH2hControlStore(connection),
+        enabled: env['NUKHBA_H2H_CUP'] != 'off',
       ),
       h2hAbsenceDesk: AdminH2hAbsence(
         leagues: PostgresH2hLeagueStore(connection),
@@ -5668,6 +5695,54 @@ final class _UnwiredH2hGroupExtension implements H2hGroupExtension {
 
 /// Backs every "absent" use-case of relegation for absence (0189): each
 /// port method throws if a test reaches a slice it never wired.
+final class _UnwiredH2hCups implements H2hCupStore {
+  static Never _unwired() =>
+      throw StateError('The Elite Cup was not wired into this test root');
+
+  @override
+  Future<Result<H2hCupState>> stateOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<void>> enter(DateTime monthStart, List<H2hCupEntry> entries) =>
+      _unwired();
+
+  @override
+  Future<Result<void>> schedule({
+    required H2hCupStageId id,
+    required DateTime monthStart,
+    required H2hCupStep step,
+    required int attempt,
+    required DateTime day,
+    required int fixtureCount,
+    required List<H2hCupPair> pairs,
+  }) => _unwired();
+
+  @override
+  Future<Result<int>> lock({
+    required H2hCupStageId stageId,
+    required DateTime day,
+  }) => _unwired();
+
+  @override
+  Future<Result<H2hCupStageFigures>> figuresOf(H2hCupStageId stageId) =>
+      _unwired();
+
+  @override
+  Future<Result<void>> decide({
+    required H2hCupStageId stageId,
+    required List<H2hCupResult> results,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> crown({
+    required DateTime monthStart,
+    required int place,
+    required UserId? champion,
+    required UserId? runnerUp,
+    required String how,
+  }) => _unwired();
+}
+
 final class _UnwiredH2hSeatMoves implements H2hSeatMoveStore {
   static Never _unwired() => throw StateError(
     'Relegation for absence was not wired into this test root',

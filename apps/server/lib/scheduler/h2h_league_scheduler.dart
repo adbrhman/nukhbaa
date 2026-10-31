@@ -76,6 +76,27 @@ Future<void> _runOnce(CompositionRoot root) async {
       Err<H2hAbsenceRun>(:final error) => Result<String?>.err(error),
     };
   });
+  // NK185: the Elite Cup (0190), after the rounds and the absence swaps:
+  // it waits for the 19th round to be judged, then plays its stages on the
+  // next qualifying days. Never blocks the month's close.
+  await _job(root, 'h2h-cup', () async {
+    final result = await root.runH2hCup(now: now);
+    return switch (result) {
+      Ok<H2hCupRun>(:final value) => Result<String?>.ok(
+        value.entered +
+                    value.scheduled +
+                    value.locked +
+                    value.decided +
+                    value.crowned ==
+                0
+            ? null
+            : 'entered ${value.entered}, scheduled ${value.scheduled}, '
+                  'locked ${value.locked}, decided ${value.decided}, '
+                  'crowned ${value.crowned}',
+      ),
+      Err<H2hCupRun>(:final error) => Result<String?>.err(error),
+    };
+  });
   await _job(root, 'h2h-close', () async {
     final result = await root.closeH2hMonth(now: now);
     return switch (result) {
