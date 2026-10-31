@@ -7322,6 +7322,36 @@ Decided by the owner on 2026-10-31 (after script 182). Marker `NK183`.
   swap; 0100's statement tests regenerated).
 - **Apply 0189 in the SQL Editor before pushing the server.**
 
+### The admin's absence tab and the elite words (script 184, 2026-10-31)
+
+Mobile only: no server, no migration, no l10n change.
+
+- **Tab "الصعود والهبوط"** (`h2h_admin_absence_tab.dart`, the third tab of
+  the admin's head-to-head section): the month's state and when the next
+  swap runs, the elite players absent from the latest counted rounds with a
+  manual relegation (reason required), the rounds with excusal (reason
+  required, only for a started round), the ten best substitutes, and every
+  swap made. It reads `GET /admin/h2h/absence` of the server's current
+  month and sends `POST /admin/h2h/relegations` and `/excusals`; the page
+  decides nothing. The server's refusals are read in Arabic
+  (`h2hAdminErrorMessage`).
+- **Words by month** (`h2h_texts.dart`): from November 2026
+  (`h2hUsesEliteDraw`, the mirror of the domain's `usesEliteDraw`) a group is
+  "المجموعة N": the elite groups (division 1) are 1 to 4, the extra groups
+  (division 2) go on from 5. The cup's places read "يتأهل للكأس" (pill) and
+  "يتأهل للكأس أول N" (legend); the relegation words stay for the data that
+  still carries a relegation zone. Before November every word is the
+  ladder's, as it was.
+- **Rules**: November 2026 has its own list (`h2hNovemberRules`: the draw,
+  the absence rule, the Elite Cup); December 2026 on keeps
+  `h2hDecemberRules` until the carry batch rewrites it.
+- The admin's groups, player and report tabs and the late-seat dialog name
+  groups the same way; the extra groups card no longer speaks of divisions.
+- Tests: `h2h_admin_absence_test.dart`, `h2h_elite_texts_test.dart`; the
+  dashboard, screen and rules-by-month tests updated for the new words.
+- Not in this batch: the Elite Cup itself (script 185), the reserve days,
+  the alerts and reports (186), December's carry (187).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

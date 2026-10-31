@@ -189,7 +189,9 @@ class _Zones extends StatelessWidget {
       children: <Widget>[
         if (league.promotionZone > 0)
           zone(
-            'يصعد أول ${league.promotionZone}',
+            h2hUsesEliteDraw(league.monthStart)
+                ? h2hCupLegend(league.promotionZone)
+                : 'يصعد أول ${league.promotionZone}',
             t.success,
             const Key('h2h.zone.up'),
           ),

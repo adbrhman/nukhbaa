@@ -34,9 +34,14 @@ class H2hDivisionCard extends StatelessWidget {
       _ => t.primary,
     };
     final int group = league.groupIndex ?? 0;
-    final String name = level >= 4 || group > 0
-        ? '${h2hDivisionName(level)} · ${h2hGroupName(group)}'
-        : h2hDivisionName(level);
+    // NK184: from November 2026 a player is in "المجموعة N", 1 to 4 the
+    // elite groups and 5 on the extra ones; before it, the division.
+    final bool elite = h2hUsesEliteDraw(league.monthStart);
+    final String name = elite
+        ? h2hGroupTitle(league.monthStart, level, group)
+        : (level >= 4 || group > 0
+              ? '${h2hDivisionName(level)} · ${h2hGroupName(group)}'
+              : h2hDivisionName(level));
     final bool ranked = league.myRank > 0 && h2hAnyPlayed(league);
     final H2hRoundViewDto? current = h2hCurrentRound(league);
     final int? roundNo =
@@ -175,7 +180,7 @@ class H2hDivisionCard extends StatelessWidget {
                                 : 'h2h.zone.relegation',
                           ),
                           text: promoted
-                              ? h2hInPromotionZone
+                              ? (elite ? h2hInCupZone : h2hInPromotionZone)
                               : h2hInRelegationZone,
                           fg: promoted ? t.successText : t.errorText,
                           bg: promoted ? t.successContainer : t.errorContainer,

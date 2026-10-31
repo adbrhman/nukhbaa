@@ -23,6 +23,39 @@ String h2hDivisionName(int level) => switch (level) {
 /// The 0-based group [index] of the open division, in words.
 String h2hGroupName(int index) => 'المجموعة ${index + 1}';
 
+/// Whether [monthStart] is a month of the elite draw (NK182): November 2026
+/// on. Mirrors `H2hLeaguePolicy.usesEliteDraw`; the month is the server's,
+/// never the device's clock.
+bool h2hUsesEliteDraw(String monthStart) {
+  final DateTime? date = DateTime.tryParse(monthStart);
+  return date != null &&
+      (date.year > 2026 || (date.year == 2026 && date.month >= 11));
+}
+
+/// The group's number in a month of the elite draw: the four elite groups
+/// (division 1) are groups 1 to 4, and the extra groups (division 2) go on
+/// from 5.
+int h2hGroupNumber(int division, int groupIndex) =>
+    division <= 1 ? groupIndex + 1 : groupIndex + 5;
+
+/// A group in words for [monthStart]: `المجموعة 6` from November 2026, the
+/// division and the group (`الدرجة الثانية · المجموعة 1`) before it.
+String h2hGroupTitle(String monthStart, int division, int groupIndex) =>
+    h2hUsesEliteDraw(monthStart)
+    ? 'المجموعة ${h2hGroupNumber(division, groupIndex)}'
+    : '${h2hDivisionName(division)} · ${h2hGroupName(groupIndex)}';
+
+/// What the report counts under a division key: the four elite groups and
+/// the extra ones from November 2026, the division before it.
+String h2hDivisionTally(String monthStart, int division, int groups) {
+  if (!h2hUsesEliteDraw(monthStart)) {
+    return '${h2hDivisionName(division)}: $groups';
+  }
+  return division <= 1
+      ? 'مجموعات النخبة: $groups'
+      : 'المجموعات الإضافية: $groups';
+}
+
 /// A round's result for the caller: `win`, `draw` or `loss`.
 String h2hResultLabel(String result) => switch (result) {
   'win' => 'فوز',
@@ -139,6 +172,13 @@ const String h2hInPromotionZone = 'في منطقة الصعود';
 /// The zone the caller stands in if the month ended now.
 const String h2hInRelegationZone = 'في منطقة الهبوط';
 
+/// The zone the caller stands in if the month ended now, in a month of the
+/// elite draw: the first three places of an elite group play the Elite Cup.
+const String h2hInCupZone = 'يتأهل للكأس';
+
+/// The table's legend for the cup places: `يتأهل للكأس أول 3`.
+String h2hCupLegend(int places) => 'يتأهل للكأس أول $places';
+
 /// The whole days left in the month after today, as the server counted
 /// them (Riyadh days).
 String h2hDaysLeftLabel(int days) {
@@ -234,6 +274,30 @@ const List<String> h2hDecemberRules = <String>[
   'لدخول القرعة التالية: التوقع في 5 أيام مختلفة على الأقل خلال الشهر السابق.',
 ];
 
+/// Rules of November 2026, the first month of the elite draw (NK182, NK183).
+const List<String> h2hNovemberRules = <String>[
+  'في أول الشهر يُختار 80 لاعباً: الأقل غياباً عن توقّع مباريات الشهر '
+      'الماضي أولاً، ثم الأعلى نقاطاً، ثم الأكثر إصابات دقيقة. يُقسَّمون '
+      'بالتساوي إلى 4 مجموعات من 20 هي المجموعات 1 إلى 4، والباقون في '
+      'مجموعات إضافية من 20 تبدأ بالمجموعة 5.',
+  'الجولة يوم مباريات يُعلن قبل يومه، وتواجه فيها لاعباً واحداً من '
+      'مجموعتك. في الدوري 19 جولة، تلاقي فيها كل لاعب في مجموعتك مرة واحدة.',
+  'خصمك في كل جولة سري، ويُكشف عند انطلاق آخر مباراة فيها.',
+  'من يجمع نقاط توقّع أكثر في الجولة يفوز بـ3 نقاط، والتعادل نقطة.',
+  'من لم يتوقّع في الجولة يخسرها.',
+  'المباراة التي تُؤجَّل، أو لا تُسجَّل نتيجتها حتى نهاية اليوم التالي '
+      'للجولة، لا تُحتسب لأحد، وتُحسم الجولة بما لُعب.',
+  'الغياب في المجموعات 1 إلى 4: بعد جولتين متتاليتين بلا أي توقّع يصلك '
+      'تنبيه، وبعد الثالثة يُبدَّل مقعدك قبل ساعة من الجولة التالية بأفضل '
+      'بديل نشط من المجموعة 5 فما فوق، ويحتفظ كل لاعب بنقاطه. لا يُحتسب '
+      'الغياب في يوم بلا مباريات أو عند تعطّل النظام، ولا هبوط بالغياب '
+      'بعد الجولة 19.',
+  'كأس النخبة بعد الجولة 19: أصحاب المركز الأول والثاني والثالث في '
+      'المجموعات 1 إلى 4 يلعبون ثلاث كؤوس منفصلة، كأس للأوائل وكأس '
+      'للثواني وكأس للثوالث، لكل كأس نصف نهائي بالقرعة ونهائي. لا تختلط '
+      'الكؤوس، ولا هبوط بحسب المركز في هذا الشهر.',
+];
+
 /// Selects the rule set by the player's month, not by the device's current date.
 bool h2hUsesDecemberRules(String monthStart) {
   final date = DateTime.tryParse(monthStart);
@@ -241,9 +305,15 @@ bool h2hUsesDecemberRules(String monthStart) {
       (date.year > 2026 || (date.year == 2026 && date.month >= 12));
 }
 
-/// The rules displayed for [monthStart].
-List<String> h2hRulesForMonth(String monthStart) =>
-    h2hUsesDecemberRules(monthStart) ? h2hDecemberRules : h2hRules;
+/// The rules displayed for [monthStart]: December 2026 on keep their own
+/// list until the carry batch, November 2026 has the elite draw's rules,
+/// earlier months the ladder's.
+List<String> h2hRulesForMonth(String monthStart) {
+  if (h2hUsesDecemberRules(monthStart)) return h2hDecemberRules;
+  if (h2hUsesEliteDraw(monthStart)) return h2hNovemberRules;
+  return h2hRules;
+}
+
 // NK172_041
 /// The state of a month without a seat for the caller: a title and a line.
 ({String title, String body}) h2hStateMessage(String state, String startsOn) =>

@@ -33,11 +33,24 @@ Future<void> _pumpRules(WidgetTester tester, {String? monthStart}) async {
 
 void main() {
   group('h2hRulesForMonth', () {
-    test('November keeps its own eight rules', () {
-      expect(h2hRulesForMonth('2026-11-01'), same(h2hRules));
+    test('October keeps the ladder rules, eight of them', () {
       expect(h2hRulesForMonth('2026-10-01'), same(h2hRules));
       expect(h2hRules, hasLength(8));
       expect(h2hRules.join(' '), isNot(contains('متوسط نقاط')));
+    });
+
+    test('November reads the elite draw rules: groups, absence, the cup', () {
+      expect(h2hRulesForMonth('2026-11-01'), same(h2hNovemberRules));
+      expect(h2hNovemberRules, hasLength(8));
+      final String all = h2hNovemberRules.join('\n');
+      expect(all, contains('4 مجموعات من 20'));
+      expect(all, contains('بعد الثالثة يُبدَّل مقعدك'));
+      expect(all, contains('كأس النخبة'));
+      expect(all, isNot(contains('درجة')));
+      expect(
+        h2hNovemberRules,
+        contains('خصمك في كل جولة سري، ويُكشف عند انطلاق آخر مباراة فيها.'),
+      );
     });
 
     test('December 2026 and every later month read the December rules', () {
@@ -98,7 +111,7 @@ void main() {
 
       expect(find.byKey(const Key('h2h.rule.8')), findsOneWidget);
       expect(find.byKey(const Key('h2h.rule.9')), findsNothing);
-      expect(find.text(h2hRules.first), findsOneWidget);
+      expect(find.text(h2hNovemberRules.first), findsOneWidget);
       expect(find.text(h2hDecemberRules.first), findsNothing);
     });
 

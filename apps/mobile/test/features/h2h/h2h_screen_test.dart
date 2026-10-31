@@ -285,7 +285,9 @@ void main() {
     testWidgets('division, month, place, round and days left', (tester) async {
       await _pump(tester, _open());
 
-      expect(_text(tester, 'h2h.division'), 'الدرجة الثانية');
+      // NK184: November 2026 is a month of the elite draw; division 2 is
+      // the extra groups, which start at group 5.
+      expect(_text(tester, 'h2h.division'), 'المجموعة 5');
       expect(_text(tester, 'h2h.month'), 'دوري المواجهات · نوفمبر 2026');
       expect(_text(tester, 'h2h.myRank'), '1 من 4');
       // Round 2 is being played: it is the one that matters now.
@@ -462,7 +464,7 @@ void main() {
       expect(zone('u-b'), t.success);
       expect(zone('u-c'), t.error);
       expect(zone('u-d'), t.error);
-      expect(find.text('يصعد أول 2'), findsOneWidget);
+      expect(find.text('يتأهل للكأس أول 2'), findsOneWidget);
       expect(find.text('يهبط آخر 2'), findsOneWidget);
 
       expect(_text(tester, 'h2h.standing.u-me.points'), '3');
@@ -543,7 +545,9 @@ void main() {
       findsOneWidget,
     );
     expect(
-      _inside('h2h.rulesSheet', find.textContaining('حتى 3 لاعبين')),
+      // November 2026 is a month of the elite draw: four groups of twenty,
+      // not the ladder (the first rule, always built in the sheet).
+      _inside('h2h.rulesSheet', find.textContaining('4 مجموعات من 20')),
       findsOneWidget,
     );
     expect(

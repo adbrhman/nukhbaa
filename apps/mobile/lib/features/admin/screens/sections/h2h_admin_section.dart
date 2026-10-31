@@ -3,8 +3,10 @@
 /// وزر بدء الشهر التجريبي قبل انطلاق الدوري. كل قاعدة على الخادم: هذه
 /// الصفحة تعرض ما قرّره وترسل الطلب، ولا تقرّر شيئاً.
 ///
-/// منذ الدفعة 93 هي لوحة الدوري كاملة بخمسة تبويبات: الجولات (هنا)،
-/// والمجموعات، ولاعب، والإعدادات، والتقرير والسجل (`h2h_admin_tabs.dart`).
+/// منذ الدفعة 93 هي لوحة الدوري كاملة، وفي الدفعة 184 بستة تبويبات:
+/// الجولات (هنا)، والمجموعات، والصعود والهبوط
+/// (`h2h_admin_absence_tab.dart`)، ولاعب، والإعدادات، والتقرير والسجل
+/// (`h2h_admin_tabs.dart`).
 library;
 
 import 'dart:async';
@@ -21,6 +23,7 @@ import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../../h2h/h2h_texts.dart';
 import '../../widgets/admin_ui_kit.dart';
+import 'h2h_admin_absence_tab.dart';
 import 'h2h_admin_tabs.dart';
 
 /// `GET /admin/h2h/rounds?day=`: the month containing [day], or the
@@ -65,6 +68,19 @@ String h2hAdminErrorMessage(AppError error) => switch (error.code) {
   'h2h.round_invalid' => 'رقم الجولة من 1 إلى 19.',
   'h2h.groups_out_of_range' => 'أضف من مجموعة واحدة إلى 10 في كل مرة.',
   'h2h.groups_invalid' => 'عدد المجموعات غير صالح.',
+  'h2h.reason_required' => 'اكتب السبب أولاً، فهو يُسجَّل في سجل الإجراءات.',
+  'h2h.absence_inactive' =>
+    'الهبوط بالغياب لا يعمل هذا الشهر: لا قرعة نخبة أُجريت له.',
+  'h2h.not_elite_player' => 'هذا اللاعب ليس في مجموعات النخبة 1 إلى 4.',
+  'h2h.already_relegated' => 'هذا اللاعب هبط من مقعده في هذا الشهر من قبل.',
+  'h2h.no_next_round' =>
+    'لا جولة قادمة لم تبدأ بعد يُبدَّل المقعد منها، أو انتهى وقت الهبوط.',
+  'h2h.no_substitute' =>
+    'لا بديل مستوفٍ للشروط الآن: 5 أيام نشاط في آخر 30 يوماً وحضور آخر '
+        '3 جولات.',
+  'h2h.round_not_started' => 'الجولة لم تبدأ بعد، فلا تُعفى الآن.',
+  'h2h.move_refused' =>
+    'رفضت قاعدة البيانات التبديل. حدّث الصفحة وأعد المحاولة.',
   'h2h.groups_no_players' =>
     'لا يوجد لاعبان على الأقل بلا مقعد وبأيام نشاط كافية.',
   'h2h.group_taken' =>
@@ -92,6 +108,7 @@ String? nextMonthOf(String monthStart) {
 enum _H2hAdminTab {
   rounds('الجولات'),
   groups('المجموعات'),
+  absence('الصعود والهبوط'),
   player('لاعب'),
   controls('الإعدادات'),
   report('التقرير والسجل');
@@ -228,6 +245,7 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
     return switch (_tab) {
       _H2hAdminTab.rounds => _rounds(context, header),
       _H2hAdminTab.groups => H2hAdminGroupsTab(day: _day, header: header),
+      _H2hAdminTab.absence => H2hAdminAbsenceTab(header: header),
       _H2hAdminTab.player => H2hAdminPlayerTab(header: header),
       _H2hAdminTab.controls => H2hAdminControlsTab(day: _day, header: header),
       _H2hAdminTab.report => H2hAdminReportTab(day: _day, header: header),
@@ -243,8 +261,8 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
       const AdminSectionHeader(
         title: h2hLeagueName,
         subtitle:
-            'لوحة الدوري: الجولات، والمجموعات، واللاعبون، والإعدادات، '
-            'والتقرير والسجل.',
+            'لوحة الدوري: الجولات، والمجموعات، والصعود والهبوط، واللاعبون، '
+            'والإعدادات، والتقرير والسجل.',
       ),
       Wrap(
         spacing: AppSpacing.sm,
@@ -259,7 +277,8 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
             ),
         ],
       ),
-      if (_tab != _H2hAdminTab.player) ...<Widget>[
+      if (_tab != _H2hAdminTab.player &&
+          _tab != _H2hAdminTab.absence) ...<Widget>[
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,

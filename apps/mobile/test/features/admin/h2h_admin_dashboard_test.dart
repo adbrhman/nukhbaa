@@ -305,12 +305,13 @@ void main() {
     expect(h2hAdminStateLabel('not_in_draw'), 'ليس في قرعة هذا الشهر');
   });
 
-  testWidgets('five tabs; the rounds open first', (tester) async {
+  testWidgets('six tabs; the rounds open first', (tester) async {
     await _open(tester, _Server());
 
     for (final String name in <String>[
       'rounds',
       'groups',
+      'absence',
       'player',
       'controls',
       'report',
@@ -329,7 +330,7 @@ void main() {
     await _tab(tester, 'groups');
 
     expect(find.byKey(const Key('admin.h2h.group.g-1')), findsOneWidget);
-    expect(find.text('الدرجة الثانية · المجموعة 1'), findsOneWidget);
+    expect(find.text('المجموعة 5'), findsOneWidget);
     expect(find.textContaining('1 مقاعد شاغرة'), findsWidgets);
     expect(find.text('1. سامي'), findsOneWidget);
     expect(find.text('3. علي'), findsOneWidget);
@@ -512,7 +513,7 @@ void main() {
     await _tab(tester, 'report');
 
     expect(find.text('مقاعد القرعة: 3 · المقاعد الآن: 4'), findsOneWidget);
-    expect(find.text('المجموعات: الدرجة الثانية: 1'), findsOneWidget);
+    expect(find.text('المجموعات الإضافية: 1'), findsOneWidget);
     expect(find.text('الإغلاق: لم يُغلق الشهر بعد'), findsOneWidget);
     expect(find.text('إضافة لاعب متأخر'), findsOneWidget);
     expect(find.text('10 نوفمبر · المقعد 4'), findsOneWidget);

@@ -236,11 +236,14 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
 
   void _reload() => ref.invalidate(adminH2hGroupsProvider(widget.day));
 
-  Future<void> _seat(H2hAdminGroupDto group) async {
+  Future<void> _seat(H2hAdminGroupDto group, String monthStart) async {
     final String? message = await showDialog<String>(
       context: context,
-      builder: (BuildContext dialogContext) =>
-          _LateSeatDialog(group: group, day: widget.day),
+      builder: (BuildContext dialogContext) => _LateSeatDialog(
+        group: group,
+        day: widget.day,
+        monthStart: monthStart,
+      ),
     );
     if (message == null || !mounted) return;
     _snack(context, message);
@@ -320,14 +323,16 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            '${h2hDivisionName(group.division)} · '
-            '${h2hGroupName(group.groupIndex)}',
+            h2hGroupTitle(data.monthStart, group.division, group.groupIndex),
             style: _heading(context),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            '$size لاعباً · ${group.freeSlots.length} مقاعد شاغرة · '
-            'يصعد ${group.promotionZone} · يهبط ${group.relegationZone}',
+            h2hUsesEliteDraw(data.monthStart)
+                ? '$size لاعباً · ${group.freeSlots.length} مقاعد شاغرة · '
+                      '${group.promotionZone > 0 ? h2hCupLegend(group.promotionZone) : 'بلا كأس'}'
+                : '$size لاعباً · ${group.freeSlots.length} مقاعد شاغرة · '
+                      'يصعد ${group.promotionZone} · يهبط ${group.relegationZone}',
             style: _muted(context),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -393,7 +398,7 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
                   key: Key('admin.h2h.group.${group.leagueId}.seat'),
                   label: 'إضافة لاعب متأخر',
                   icon: Icons.person_add_alt_1_rounded,
-                  onPressed: () => unawaited(_seat(group)),
+                  onPressed: () => unawaited(_seat(group, data.monthStart)),
                 ),
             ],
           ),
@@ -512,10 +517,17 @@ class _GroupRound extends ConsumerWidget {
 /// Finds a player by name or email and seats them in an empty place of
 /// [group]. Pops with the message to show, or null when cancelled.
 class _LateSeatDialog extends ConsumerStatefulWidget {
-  const _LateSeatDialog({required this.group, required this.day});
+  const _LateSeatDialog({
+    required this.group,
+    required this.day,
+    required this.monthStart,
+  });
 
   final H2hAdminGroupDto group;
   final String? day;
+
+  /// The month of the group, to name it as the players do.
+  final String monthStart;
 
   @override
   ConsumerState<_LateSeatDialog> createState() => _LateSeatDialogState();
@@ -595,8 +607,7 @@ class _LateSeatDialogState extends ConsumerState<_LateSeatDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        'لاعب متأخر في ${h2hGroupName(widget.group.groupIndex)} · '
-        '${h2hDivisionName(widget.group.division)}',
+        'لاعب متأخر في ${h2hGroupTitle(widget.monthStart, widget.group.division, widget.group.groupIndex)}',
       ),
       content: SizedBox(
         width: 420,
@@ -853,8 +864,7 @@ class _PlayerMonth extends ConsumerWidget {
       ),
       if (open) ...<Widget>[
         Text(
-          '${h2hDivisionName(month.division ?? 4)} · '
-          '${h2hGroupName(month.groupIndex ?? 0)}'
+          '${h2hGroupTitle(month.monthStart, month.division ?? 4, month.groupIndex ?? 0)}'
           '${month.isPilot ? ' · شهر تجريبي' : ''}',
           style: _muted(context),
         ),
@@ -1207,8 +1217,9 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
             Text(
               'تُضاف إلى الشهر الجاري من اللاعبين الذين ليس لهم مقعد وتوقّعوا '
               'في ${s.minActiveDays} أيام منه على الأقل، الأكثر أياماً أولاً، '
-              '20 لاعباً في كل مجموعة، في الدرجات التالية للمجموعات الموجودة. '
-              'تلعب المجموعة الجديدة كل جولات الشهر بتوقعات أعضائها.',
+              '20 لاعباً في كل مجموعة، بأرقام تتبع آخر مجموعة في الشهر. '
+              'تلعب المجموعة الجديدة كل جولات الشهر بتوقعات أعضائها، '
+              'ولا تدخل مجموعات الكأس.',
               style: _muted(context),
             ),
             _Stepper(
@@ -1377,7 +1388,7 @@ class H2hAdminReportTab extends ConsumerWidget {
   Widget _reportCard(BuildContext context, H2hMonthReportDto r) {
     final List<String> divisions = <String>[
       for (final MapEntry<String, int> e in r.groupsByDivision.entries)
-        '${h2hDivisionName(int.tryParse(e.key) ?? 4)}: ${e.value}',
+        h2hDivisionTally(r.monthStart, int.tryParse(e.key) ?? 4, e.value),
     ];
     final List<String> outcomes = <String>[
       for (final MapEntry<String, int> e in r.outcomes.entries)
@@ -1409,7 +1420,8 @@ class H2hAdminReportTab extends ConsumerWidget {
             ),
             if (divisions.isNotEmpty)
               Text(
-                'المجموعات: ${divisions.join(' · ')}',
+                '${h2hUsesEliteDraw(r.monthStart) ? '' : 'المجموعات: '}'
+                '${divisions.join(' · ')}',
                 style: _muted(context),
               ),
           ],
