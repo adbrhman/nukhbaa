@@ -35,6 +35,7 @@ import '../../../core/ui/avatar_bytes_provider.dart';
 import '../../../core/ui/share_picture.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/sign_in_screen.dart' show kBrandLogoAsset;
+import '../champions_providers.dart';
 import 'champion_crown.dart';
 
 // The hero is a picture that can leave the app (the champion shares it), so
@@ -279,6 +280,15 @@ class _ChampionSpotlightState extends ConsumerState<ChampionSpotlight>
     final bool expanded = _expanded ?? true;
     final String title = championTitle(l10n, champions, locale);
     final String p = widget.keyPrefix;
+    // The second and third places of the same month (0191), once the admin
+    // fixed them; nothing before.
+    final List<MonthPodiumDto> podium = champions.isEmpty
+        ? const <MonthPodiumDto>[]
+        : (ref
+                  .watch(monthChampionsProvider)
+                  .value
+                  ?.podiumOf(champions.first.seasonId) ??
+              const <MonthPodiumDto>[]);
 
     final Widget controls = Row(
       children: <Widget>[
@@ -403,6 +413,18 @@ class _ChampionSpotlightState extends ConsumerState<ChampionSpotlight>
                               : null,
                         ),
                       ),
+                  if (expanded && podium.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        end: AppSpacing.sm,
+                        bottom: AppSpacing.md,
+                      ),
+                      child: ChampionPodiumRow(
+                        podium: podium,
+                        keyPrefix: p,
+                        previewPhotos: widget.previewPhotos,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -712,6 +734,155 @@ class _Medallion extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The month's second and third places under the champion (0191): a
+/// smaller picture each, framed in silver and bronze, the place, the name,
+/// the points and the accuracy. The prize stays the champion's alone.
+class ChampionPodiumRow extends ConsumerWidget {
+  /// Creates the row for [podium] (the places of one month).
+  const ChampionPodiumRow({
+    required this.podium,
+    required this.keyPrefix,
+    this.previewPhotos = const <String, Uint8List>{},
+    super.key,
+  });
+
+  /// The places, by place.
+  final List<MonthPodiumDto> podium;
+
+  /// The widget-test key namespace.
+  final String keyPrefix;
+
+  /// Pictures still on the admin's device, by user id.
+  final Map<String, Uint8List> previewPhotos;
+
+  static const Color _silver = Color(0xFFC9D1DC);
+  static const Color _silverDeep = Color(0xFF8E99A8);
+  static const Color _bronze = Color(0xFFD9955B);
+  static const Color _bronzeDeep = Color(0xFF9A5B2E);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      key: Key('$keyPrefix.podium'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        for (final MonthPodiumDto place in podium)
+          Expanded(child: _place(context, ref, place)),
+      ],
+    );
+  }
+
+  Widget _place(BuildContext context, WidgetRef ref, MonthPodiumDto place) {
+    final bool second = place.place == 2;
+    final Color light = second ? _silver : _bronze;
+    final Color deep = second ? _silverDeep : _bronzeDeep;
+    final Uint8List? local = previewPhotos[place.userId];
+    final String? path = place.photoUrl ?? place.avatarUrl;
+    final Uint8List? bytes =
+        local ??
+        (path == null ? null : ref.watch(avatarBytesProvider(path)).value);
+    final String trimmed = place.displayName.trim();
+    final int? accuracy = place.accuracyPercent;
+    const double size = 64;
+    return Column(
+      key: Key('$keyPrefix.podium.${place.place}'),
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        SizedBox(
+          width: size,
+          height: size + 12,
+          child: Stack(
+            alignment: Alignment.topCenter,
+            children: <Widget>[
+              Container(
+                width: size,
+                height: size,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[light, deep, light],
+                  ),
+                ),
+                child: ClipOval(
+                  child: bytes == null
+                      ? Container(
+                          color: _navyRaised,
+                          alignment: Alignment.center,
+                          child: Text(
+                            trimmed.isEmpty ? '?' : trimmed.substring(0, 1),
+                            style: TextStyle(
+                              color: light,
+                              fontWeight: FontWeight.w800,
+                              fontSize: size * 0.36,
+                            ),
+                          ),
+                        )
+                      : Image.memory(
+                          bytes,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                          errorBuilder: (_, _, _) =>
+                              Container(color: _navyRaised),
+                        ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: light,
+                    border: Border.all(color: _navy, width: 2),
+                  ),
+                  child: Text(
+                    '${place.place}',
+                    style: const TextStyle(
+                      color: _navy,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          second ? 'المركز الثاني' : 'المركز الثالث',
+          style: context.text.labelSmall?.copyWith(
+            color: light,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          place.displayName,
+          key: Key('$keyPrefix.podium.${place.place}.name'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: context.text.bodyMedium?.copyWith(
+            color: _white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          accuracy == null
+              ? '${place.points} نقطة'
+              : '${place.points} نقطة · دقة $accuracy%',
+          style: context.text.labelSmall?.copyWith(color: _muted),
+        ),
+      ],
     );
   }
 }

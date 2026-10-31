@@ -95,11 +95,88 @@ final class MonthChampionDto {
   };
 }
 
-/// `GET /champions`: every crowned champion, newest crowning first.
+/// One place of a crowned month's podium (migration 0191): the second or
+/// the third, as `GET /champions` lists them beside the champions.
+final class MonthPodiumDto {
+  /// Creates the row.
+  const MonthPodiumDto({
+    required this.seasonId,
+    required this.place,
+    required this.userId,
+    required this.displayName,
+    required this.points,
+    required this.exactCount,
+    required this.decidedCount,
+    this.photoUrl,
+    this.avatarUrl,
+  });
+
+  /// Deserializes from a JSON map, tolerating missing keys.
+  factory MonthPodiumDto.fromJson(Map<String, Object?> json) => MonthPodiumDto(
+    seasonId: (json['season_id'] as String?) ?? '',
+    place: (json['place'] as int?) ?? 0,
+    userId: (json['user_id'] as String?) ?? '',
+    displayName: (json['display_name'] as String?) ?? '',
+    points: (json['points'] as int?) ?? 0,
+    exactCount: (json['exact_count'] as int?) ?? 0,
+    decidedCount: (json['decided_count'] as int?) ?? 0,
+    photoUrl: json['photo_url'] as String?,
+    avatarUrl: json['avatar_url'] as String?,
+  );
+
+  /// The month.
+  final String seasonId;
+
+  /// 2 or 3.
+  final int place;
+
+  /// The player.
+  final String userId;
+
+  /// The player's display name.
+  final String displayName;
+
+  /// Prediction points on the final board.
+  final int points;
+
+  /// Exact scorelines.
+  final int exactCount;
+
+  /// Decided fixtures (the accuracy's denominator).
+  final int decidedCount;
+
+  /// The celebration picture (server-relative), or null without one.
+  final String? photoUrl;
+
+  /// The player's own profile picture (server-relative), or null.
+  final String? avatarUrl;
+
+  /// Exact scorelines over decided fixtures, rounded, or null when nothing
+  /// was decided -- the same accuracy the boards show.
+  int? get accuracyPercent =>
+      decidedCount <= 0 ? null : (exactCount * 100 / decidedCount).round();
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'season_id': seasonId,
+    'place': place,
+    'user_id': userId,
+    'display_name': displayName,
+    'points': points,
+    'exact_count': exactCount,
+    'decided_count': decidedCount,
+    if (photoUrl != null) 'photo_url': photoUrl,
+    if (avatarUrl != null) 'avatar_url': avatarUrl,
+  };
+}
+
+/// `GET /champions`: every crowned champion, newest crowning first, and the
+/// podium of the crowned months (0191).
 final class MonthChampionsDto {
   /// Creates the list.
   const MonthChampionsDto({
     required this.champions,
+    this.podium = const <MonthPodiumDto>[],
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -111,13 +188,27 @@ final class MonthChampionsDto {
           for (final Object? c in (json['champions'] as List<Object?>?) ?? [])
             if (c is Map<String, Object?>) MonthChampionDto.fromJson(c),
         ],
+        podium: [
+          for (final Object? p in (json['podium'] as List<Object?>?) ?? [])
+            if (p is Map<String, Object?>) MonthPodiumDto.fromJson(p),
+        ],
       );
+
+  /// The podium places of [seasonId], by place.
+  List<MonthPodiumDto> podiumOf(String seasonId) => [
+    for (final MonthPodiumDto p in podium)
+      if (p.seasonId == seasonId) p,
+  ]..sort((a, b) => a.place.compareTo(b.place));
 
   /// The current schema version for this DTO.
   static const int currentSchemaVersion = 1;
 
   /// The champions, newest crowning first.
   final List<MonthChampionDto> champions;
+
+  /// The podium places of the crowned months (second and third), newest
+  /// month first; empty from a server before 0191.
+  final List<MonthPodiumDto> podium;
 
   /// The schema version of this payload.
   final int schemaVersion;
@@ -126,6 +217,7 @@ final class MonthChampionsDto {
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'champions': [for (final MonthChampionDto c in champions) c.toJson()],
+    'podium': [for (final MonthPodiumDto p in podium) p.toJson()],
   };
 }
 

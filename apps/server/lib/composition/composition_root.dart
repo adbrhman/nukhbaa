@@ -148,6 +148,8 @@ final class CompositionRoot {
     required this.adminCrownMonthChampions,
     required this.adminSetChampionPhoto,
     required this.listMonthChampions,
+    required this.adminSetMonthPodium,
+    required this.listMonthPodium,
     required this.readChampionPhoto,
     required this.flushNotificationQueue,
     required this.ensureUpcomingMonthlySeasons,
@@ -364,6 +366,8 @@ final class CompositionRoot {
     AdminCrownMonthChampions? adminCrownMonthChampions,
     AdminSetChampionPhoto? adminSetChampionPhoto,
     ListMonthChampions? listMonthChampions,
+    AdminSetMonthPodium? adminSetMonthPodium,
+    ListMonthPodium? listMonthPodium,
     ReadChampionPhoto? readChampionPhoto,
     FlushNotificationQueue? flushNotificationQueue,
     EnsureUpcomingMonthlySeasons? ensureUpcomingMonthlySeasons,
@@ -622,6 +626,9 @@ final class CompositionRoot {
        adminSetChampionPhoto =
            adminSetChampionPhoto ?? _absentAdminSetChampionPhoto(),
        listMonthChampions = listMonthChampions ?? _absentListMonthChampions(),
+       adminSetMonthPodium =
+           adminSetMonthPodium ?? _absentAdminSetMonthPodium(),
+       listMonthPodium = listMonthPodium ?? _absentListMonthPodium(),
        readChampionPhoto = readChampionPhoto ?? _absentReadChampionPhoto(),
        flushNotificationQueue =
            flushNotificationQueue ?? _absentFlushNotificationQueue(),
@@ -1703,6 +1710,21 @@ final class CompositionRoot {
   static ListMonthChampions _absentListMonthChampions() =>
       ListMonthChampions(champions: _UnwiredMonthChampionRepository());
 
+  /// Builds an "absent" [AdminSetMonthPodium] (0191): loud if a test
+  /// reaches it without wiring it.
+  static AdminSetMonthPodium _absentAdminSetMonthPodium() =>
+      AdminSetMonthPodium(
+        champions: _UnwiredMonthChampionRepository(),
+        podium: _UnwiredMonthPodiumRepository(),
+        board: _unwiredChampionBoard(),
+        clock: _unwiredClock,
+      );
+
+  /// Builds an "absent" [ListMonthPodium] (0191): it reads an empty
+  /// podium, so `GET /champions` keeps working in a test root.
+  static ListMonthPodium _absentListMonthPodium() =>
+      ListMonthPodium(podium: _UnwiredMonthPodiumRepository());
+
   /// Builds an "absent" [ReadChampionPhoto]: loud if a test reaches it
   /// without wiring it.
   static ReadChampionPhoto _absentReadChampionPhoto() =>
@@ -2405,6 +2427,13 @@ final class CompositionRoot {
 
   /// Every crowned champion (backs `GET /champions`).
   final ListMonthChampions listMonthChampions;
+
+  /// Fixes a crowned month's podium, its second and third places (0191;
+  /// backs `POST /admin/champions/{id}/podium`).
+  final AdminSetMonthPodium adminSetMonthPodium;
+
+  /// Every crowned month's podium (0191; read by `GET /champions`).
+  final ListMonthPodium listMonthPodium;
 
   /// A champion's picture bytes (backs
   /// `GET /champions/{id}/photos/{userId}`).
@@ -3294,6 +3323,18 @@ final class CompositionRoot {
       ),
       listMonthChampions: ListMonthChampions(
         champions: PostgresMonthChampionRepository(connection),
+      ),
+      adminSetMonthPodium: AdminSetMonthPodium(
+        champions: PostgresMonthChampionRepository(connection),
+        podium: PostgresMonthPodiumRepository(connection),
+        board: MonthFinalBoard(
+          fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+          participantReader: participantReader,
+        ),
+        clock: clock,
+      ),
+      listMonthPodium: ListMonthPodium(
+        podium: PostgresMonthPodiumRepository(connection),
       ),
       readChampionPhoto: ReadChampionPhoto(
         champions: PostgresMonthChampionRepository(connection),
@@ -5375,6 +5416,25 @@ final class _UnwiredPredictionReactionRepository
 }
 
 /// Refuses every call: see [_absentListMonthChampions].
+/// The podium of a test root: empty for reads, loud for a write.
+final class _UnwiredMonthPodiumRepository implements MonthPodiumRepository {
+  @override
+  Future<Result<List<MonthPodiumPlace>>> list({required int limit}) async =>
+      const Result.ok(<MonthPodiumPlace>[]);
+
+  @override
+  Future<Result<List<MonthPodiumPlace>>> of(SeasonId season) async =>
+      const Result.ok(<MonthPodiumPlace>[]);
+
+  @override
+  Future<Result<void>> set({
+    required SeasonId season,
+    required List<PodiumPlaceToSet> places,
+    required UserId setBy,
+    required DateTime setAt,
+  }) => throw StateError('The month podium was not wired into this test root');
+}
+
 final class _UnwiredMonthChampionRepository implements MonthChampionRepository {
   static Never _unwired() =>
       throw StateError('the champions were not wired into this test root');

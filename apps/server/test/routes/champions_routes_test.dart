@@ -15,6 +15,8 @@ import '../../routes/admin/champions/[id]/index.dart' as crown_route;
 import '../../routes/admin/champions/[id]/photos/[userId]/index.dart'
     as set_photo_route;
 // ignore: always_use_package_imports
+import '../../routes/admin/champions/[id]/podium/index.dart' as podium_route;
+// ignore: always_use_package_imports
 import '../../routes/champions/[id]/photos/[userId]/index.dart' as photo_route;
 // ignore: always_use_package_imports
 import '../../routes/champions/index.dart' as list_route;
@@ -181,11 +183,52 @@ InMemoryParticipantReader _participants() => InMemoryParticipantReader()
     ),
   );
 
-CompositionRoot _root(_Champions champions) {
+/// In-memory podium (0191).
+final class _Podium implements MonthPodiumRepository {
+  final List<MonthPodiumPlace> rows = [];
+
+  @override
+  Future<Result<List<MonthPodiumPlace>>> list({required int limit}) async =>
+      Result.ok(List.of(rows));
+
+  @override
+  Future<Result<List<MonthPodiumPlace>>> of(SeasonId season) async =>
+      Result.ok([
+        for (final r in rows)
+          if (r.seasonId == season) r,
+      ]);
+
+  @override
+  Future<Result<void>> set({
+    required SeasonId season,
+    required List<PodiumPlaceToSet> places,
+    required UserId setBy,
+    required DateTime setAt,
+  }) async {
+    for (final p in places) {
+      rows.add(
+        MonthPodiumPlace(
+          seasonId: season,
+          place: p.place,
+          userId: p.userId,
+          displayName: 'P2',
+          points: p.points,
+          exactCount: p.exactCount,
+          decidedCount: p.decidedCount,
+          photoUpdatedAt: DateTime.utc(2026, 10, 1, 13),
+        ),
+      );
+    }
+    return const Result.ok(null);
+  }
+}
+
+CompositionRoot _root(_Champions champions, [_Podium? podium]) {
   final board = MonthFinalBoard(
     fixtureTotalsReader: _Totals(),
     participantReader: _participants(),
   );
+  final places = podium ?? _Podium();
   return CompositionRoot.forTesting(
     adminGetChampionCandidates: AdminGetChampionCandidates(
       champions: champions,
@@ -203,6 +246,13 @@ CompositionRoot _root(_Champions champions) {
     ),
     listMonthChampions: ListMonthChampions(champions: champions),
     readChampionPhoto: ReadChampionPhoto(champions: champions),
+    adminSetMonthPodium: AdminSetMonthPodium(
+      champions: champions,
+      podium: places,
+      board: board,
+      clock: const _Clock(),
+    ),
+    listMonthPodium: ListMonthPodium(podium: places),
   );
 }
 
@@ -477,5 +527,72 @@ void main() {
       );
       expect(response.statusCode, HttpStatus.methodNotAllowed);
     });
+  });
+
+  group('the podium (0191)', () {
+    test('after the crowning the next player is second, and GET /champions '
+        'carries him with his picture', () async {
+      final champions = _Champions();
+      final podium = _Podium();
+      final root = _root(champions, podium);
+      await crown_route.onRequest(
+        wireContext(
+          root: root,
+          principal: adminPrincipal(),
+          body: const {
+            'user_ids': [_u1],
+          },
+        ),
+        _season,
+      );
+
+      final set = await podium_route.onRequest(
+        wireContext(root: root, principal: adminPrincipal()),
+        _season,
+      );
+
+      expect(set.statusCode, HttpStatus.ok);
+      final places = ((await decodeBody(set))['podium']! as List<Object?>)
+          .cast<Map<String, Object?>>();
+      expect(places.single['place'], 2);
+      expect(places.single['user_id'], _u2);
+      expect(places.single['points'], 39);
+
+      final listed = await list_route.onRequest(
+        wireContext(
+          root: root,
+          principal: userPrincipal(),
+          method: HttpMethod.get,
+        ),
+      );
+      final podiumOut = ((await decodeBody(listed))['podium']! as List<Object?>)
+          .cast<Map<String, Object?>>();
+      expect(podiumOut.single['user_id'], _u2);
+      expect(
+        podiumOut.single['photo_url'],
+        startsWith('/champions/$_season/photos/$_u2?v='),
+      );
+    });
+
+    test(
+      'before the crowning it is refused; a player may not set it',
+      () async {
+        final champions = _Champions();
+        final root = _root(champions);
+
+        final early = await podium_route.onRequest(
+          wireContext(root: root, principal: adminPrincipal()),
+          _season,
+        );
+        expect(early.statusCode, HttpStatus.conflict);
+        expect((await decodeBody(early))['code'], 'champion.not_crowned');
+
+        final player = await podium_route.onRequest(
+          wireContext(root: root, principal: userPrincipal()),
+          _season,
+        );
+        expect(player.statusCode, isNot(HttpStatus.ok));
+      },
+    );
   });
 }

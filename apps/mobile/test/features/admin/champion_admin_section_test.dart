@@ -41,6 +41,17 @@ final class _Server {
   final List<http.Request> requests = <http.Request>[];
   bool crowned = false;
   bool hasPhoto = false;
+  bool podiumSet = false;
+
+  Map<String, Object?> _second() => <String, Object?>{
+    'season_id': 'm-9',
+    'place': 2,
+    'user_id': 'u-2',
+    'display_name': 'Sara',
+    'points': 40,
+    'exact_count': 5,
+    'decided_count': 30,
+  };
 
   Map<String, Object?> _champion() => <String, Object?>{
     'season_id': 'm-9',
@@ -114,6 +125,18 @@ final class _Server {
         'champions': <Object?>[_champion()],
       });
     }
+    if (path == '/admin/champions/m-9/podium' && request.method == 'POST') {
+      podiumSet = true;
+      return _json(<String, Object?>{
+        'podium': <Object?>[_second()],
+      });
+    }
+    if (path == '/admin/champions/m-9/photos/u-2') {
+      return _json(<String, Object?>{
+        'schema_version': 1,
+        'champions': <Object?>[_champion()],
+      });
+    }
     if (path == '/me/active-seasons') {
       return _json(<Object?>[]);
     }
@@ -121,6 +144,7 @@ final class _Server {
       return _json(<String, Object?>{
         'schema_version': 1,
         'champions': crowned ? <Object?>[_champion()] : <Object?>[],
+        'podium': podiumSet ? <Object?>[_second()] : <Object?>[],
       });
     }
     return http.Response('not found', 404);
@@ -395,6 +419,48 @@ void main() {
     final Size size = tester.getSize(button);
     expect(size.width.isFinite, isTrue);
     expect(size.width, lessThanOrEqualTo(360));
+  });
+
+  testWidgets('a crowned month: the podium is fixed by the server, then '
+      'its picture is added, and the preview shows it', (tester) async {
+    final server = _Server()..crowned = true;
+    await _open(tester, server);
+
+    final Finder set = find.byKey(const Key('admin.champions.podium.set'));
+    await _scrollTo(tester, set);
+    await tester.tap(set);
+    await tester.pumpAndSettle();
+
+    expect(
+      server.requests.where(
+        (r) =>
+            r.method == 'POST' && r.url.path == '/admin/champions/m-9/podium',
+      ),
+      hasLength(1),
+    );
+    expect(set, findsNothing);
+    final Finder row = find.byKey(const Key('admin.champions.podium.2'));
+    await _scrollTo(tester, row);
+    expect(find.textContaining('Sara'), findsWidgets);
+
+    final Finder photo = find.byKey(
+      const Key('admin.champions.podium.2.photo'),
+    );
+    await _scrollTo(tester, photo);
+    await tester.tap(photo);
+    await tester.pumpAndSettle();
+    expect(
+      server.requests.where(
+        (r) => r.url.path == '/admin/champions/m-9/photos/u-2',
+      ),
+      hasLength(1),
+    );
+
+    final Finder podiumName = find.byKey(
+      const Key('admin.champions.spotlight.podium.2.name'),
+    );
+    await _scrollTo(tester, podiumName);
+    expect(tester.widget<Text>(podiumName).data, 'Sara');
   });
 
   test('the picture type is read from its bytes', () {

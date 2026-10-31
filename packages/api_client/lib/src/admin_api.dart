@@ -476,6 +476,21 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/champions/{seasonId}/podium` -- fixes the podium of a
+  /// crowned month (migration 0191): the first two players of its final
+  /// board after the champion(s) become the second and third places.
+  /// Answers the podium, by place; asked again, the podium already set.
+  Future<Result<List<MonthPodiumDto>>> setMonthPodium(String seasonId) {
+    return _transport.postObject<List<MonthPodiumDto>>(
+      '/admin/champions/$seasonId/podium',
+      body: const <String, Object?>{},
+      parse: (json) => [
+        for (final Object? p in (json['podium'] as List<Object?>?) ?? [])
+          if (p is Map<String, Object?>) MonthPodiumDto.fromJson(p),
+      ],
+    );
+  }
+
   /// `GET /admin/h2h/rounds` -- a month of the head-to-head league
   /// (migration 0100): its draw, its approved rounds and the days that may
   /// be approved next. [day] (`YYYY-MM-DD`) picks the month containing it;

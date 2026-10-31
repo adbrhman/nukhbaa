@@ -51,14 +51,45 @@ MonthChampionDto monthChampionToDto(MonthChampion champion) {
   );
 }
 
-/// A month's champions on the wire.
-MonthChampionsDto monthChampionsToDto(List<MonthChampion> champions) =>
-    MonthChampionsDto(
-      champions: [
-        for (final MonthChampion champion in champions)
-          monthChampionToDto(champion),
-      ],
-    );
+/// A month's champions on the wire, with the podium when it is given.
+MonthChampionsDto monthChampionsToDto(
+  List<MonthChampion> champions, {
+  List<MonthPodiumPlace> podium = const <MonthPodiumPlace>[],
+}) => MonthChampionsDto(
+  champions: [
+    for (final MonthChampion champion in champions)
+      monthChampionToDto(champion),
+  ],
+  podium: [
+    for (final MonthPodiumPlace place in podium) monthPodiumToDto(place),
+  ],
+);
+
+/// One podium place on the wire (0191). Its celebration picture is served
+/// by the champions' picture route, which covers the podium.
+MonthPodiumDto monthPodiumToDto(MonthPodiumPlace place) {
+  final DateTime? photoAt = place.photoUpdatedAt;
+  final DateTime? avatarAt = place.avatarUpdatedAt;
+  return MonthPodiumDto(
+    seasonId: place.seasonId.value,
+    place: place.place,
+    userId: place.userId.value,
+    displayName: place.displayName,
+    points: place.points,
+    exactCount: place.exactCount,
+    decidedCount: place.decidedCount,
+    photoUrl: photoAt == null
+        ? null
+        : championPhotoUrlOf(
+            seasonId: place.seasonId,
+            userId: place.userId,
+            updatedAt: photoAt,
+          ),
+    avatarUrl: avatarAt == null
+        ? null
+        : avatarUrlOf(userId: place.userId, updatedAt: avatarAt),
+  );
+}
 
 /// The admin's crowning preview on the wire.
 ChampionCandidatesDto championCandidatesToDto(ChampionCandidates preview) =>

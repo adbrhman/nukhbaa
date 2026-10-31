@@ -85,14 +85,30 @@ ORDER BY c.crowned_at DESC, c.points DESC, c.user_id
 LIMIT @limit::int
 ''';
 
+  // The celebration picture of a champion, or of a podium place (0191):
+  // a player is never both in one month.
   static const String _setPhotoSql = '''
-UPDATE competition.month_champions
-SET photo_bytes = @bytes,
-    photo_mime = @mime,
-    photo_updated_at = @now::timestamptz
-WHERE season_id = @season_id::uuid
-  AND user_id = @user_id::uuid
-RETURNING user_id::text AS user_id
+WITH champion AS (
+  UPDATE competition.month_champions
+  SET photo_bytes = @bytes,
+      photo_mime = @mime,
+      photo_updated_at = @now::timestamptz
+  WHERE season_id = @season_id::uuid
+    AND user_id = @user_id::uuid
+  RETURNING user_id
+),
+podium AS (
+  UPDATE competition.month_podium
+  SET photo_bytes = @bytes,
+      photo_mime = @mime,
+      photo_updated_at = @now::timestamptz
+  WHERE season_id = @season_id::uuid
+    AND user_id = @user_id::uuid
+  RETURNING user_id
+)
+SELECT user_id::text AS user_id FROM champion
+UNION ALL
+SELECT user_id::text AS user_id FROM podium
 ''';
 
   static const String _photoSql = '''
@@ -100,6 +116,12 @@ SELECT photo_bytes, photo_mime, photo_updated_at
 FROM competition.month_champions
 WHERE season_id = @season_id::uuid
   AND user_id = @user_id::uuid
+UNION ALL
+SELECT photo_bytes, photo_mime, photo_updated_at
+FROM competition.month_podium
+WHERE season_id = @season_id::uuid
+  AND user_id = @user_id::uuid
+LIMIT 1
 ''';
 
   static AppError _corrupt(String what) => AppError.transient(

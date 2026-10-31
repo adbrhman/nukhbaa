@@ -53,6 +53,7 @@ export 'src/leaderboard/postgres_leaderboard_repository.dart';
 export 'src/leaderboard/cached_leaderboard_readers.dart';
 export 'src/leaderboard/postgres_fixture_totals_reader.dart';
 export 'src/leaderboard/postgres_month_champion_repository.dart';
+export 'src/leaderboard/postgres_month_podium_repository.dart';
 export 'src/leaderboard/postgres_rank_snapshot_reader.dart';
 export 'src/leaderboard/postgres_sporting_season_standings_reader.dart';
 export 'src/ledger/postgres_fixture_ledger_repository.dart';

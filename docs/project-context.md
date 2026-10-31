@@ -7397,6 +7397,35 @@ player's cup screen and the admin's schedule board are script 185b.
 - Not in this batch: league rounds running past the month's end and a void
   round's pairing replayed (script 187, with December's carry).
 
+### The podium of a crowned month (script 186, migration 0191, 2026-11-01)
+
+Decided by the owner on 2026-11-01, from October 2026 on.
+
+- **Who.** Once a month is crowned, the admin presses "تثبيت المنصة" in the
+  crowning section; `AdminSetMonthPodium` takes the first two players of the
+  month's final board after the champion(s), in the board's own order
+  (`FixtureLeaderboard.rankTotals`: prediction points, invitation points,
+  exact scorelines, right outcomes, the earlier join), as the second and
+  third places, figures frozen (`competition.month_podium`). Asked again it
+  answers the podium already set. The prize stays the champion's alone.
+- **Pictures** go through the champions' own picture routes
+  (`POST /admin/champions/{id}/photos/{userId}`,
+  `GET /champions/{id}/photos/{userId}`): the repository's picture
+  statements now cover `month_podium` too (a player is never both).
+- **Read.** `GET /champions` carries `podium` beside `champions`
+  (`MonthChampionsDto.podium`, `podiumOf(seasonId)`); a failed podium read
+  leaves it out. `POST /admin/champions/{id}/podium` sets it.
+- **Shown** under the champion in the spotlight (`ChampionPodiumRow`):
+  silver and bronze frames, the place, the name, points and accuracy; in the
+  admin's preview too.
+- Backstops (0191): a crowned month only, never its champion, a player of
+  it, places 2 and 3, set once, only the picture changes, RLS on.
+- Tests: application `month_podium_test.dart`; server
+  `champions_routes_test.dart` (podium group); contracts
+  `month_podium_dto_test.dart`; mobile `champion_admin_section_test.dart`;
+  SQL `0191_month_podium_test.sql`.
+- **Apply 0191 in the SQL Editor before pushing the server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

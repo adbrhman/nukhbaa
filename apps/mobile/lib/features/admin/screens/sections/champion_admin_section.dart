@@ -187,6 +187,37 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     return result is Ok<MonthChampionsDto>;
   }
 
+  /// Fixes the month's podium (0191): the server takes the next two players
+  /// of the final board after the champion(s).
+  Future<void> _setPodium(String seasonId) async {
+    setState(() => _busy = true);
+    final Result<List<MonthPodiumDto>> result = await ref
+        .read(adminApiProvider)
+        .setMonthPodium(seasonId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ref.invalidate(monthChampionsProvider);
+    _snack(switch (result) {
+      Ok<List<MonthPodiumDto>>(:final value) =>
+        value.isEmpty
+            ? 'لا لاعبين بعد البطل في ترتيب هذا الشهر'
+            : 'تم تثبيت المنصة: ${value.map((p) => p.displayName).join('، ')}',
+      Err<List<MonthPodiumDto>>(:final error) => ErrorPresenter.message(error),
+    });
+  }
+
+  /// Sets or replaces the picture of a podium place.
+  Future<void> _replacePodiumPhoto(String seasonId, String userId) async {
+    final ChampionPhoto? photo = await _pick();
+    if (photo == null || !mounted) return;
+    setState(() => _busy = true);
+    final bool ok = await _upload(seasonId, userId, photo);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ref.invalidate(monthChampionsProvider);
+    _snack(ok ? 'تم حفظ الصورة' : 'تعذّر رفع الصورة، أعد المحاولة');
+  }
+
   /// Replaces the picture of a champion already crowned.
   Future<void> _replacePhoto(String seasonId, String userId) async {
     final ChampionPhoto? photo = await _pick();
@@ -462,12 +493,14 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
   /// A crowned month: its champions, a picture to change, and the same
   /// preview the players see.
   Widget _crowned(BuildContext context, ChampionCandidatesDto data) {
+    final MonthChampionsDto? listed = ref.watch(monthChampionsProvider).value;
     final List<MonthChampionDto> champions = <MonthChampionDto>[
       for (final MonthChampionDto c
-          in ref.watch(monthChampionsProvider).value?.champions ??
-              const <MonthChampionDto>[])
+          in listed?.champions ?? const <MonthChampionDto>[])
         if (c.seasonId == data.seasonId) c,
     ];
+    final List<MonthPodiumDto> podium =
+        listed?.podiumOf(data.seasonId) ?? const <MonthPodiumDto>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -496,6 +529,38 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
               onPressed: _busy
                   ? null
                   : () => unawaited(_replacePhoto(c.seasonId, c.userId)),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        // The podium (0191): the second and third places, then their
+        // pictures. The server picks them from the final board.
+        if (champions.isNotEmpty && listed != null && podium.isEmpty)
+          AdminSecondaryButton(
+            key: const Key('admin.champions.podium.set'),
+            label: 'تثبيت المنصة',
+            icon: Icons.military_tech_rounded,
+            onPressed: _busy
+                ? null
+                : () => unawaited(_setPodium(data.seasonId)),
+          ),
+        for (final MonthPodiumDto p in podium) ...<Widget>[
+          AdminListRow(
+            key: Key('admin.champions.podium.${p.place}'),
+            leadingIcon: Icons.military_tech_rounded,
+            leadingColor: context.tokens.textSecondary,
+            title:
+                'المركز ${p.place == 2 ? 'الثاني' : 'الثالث'}: ${p.displayName}',
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: AdminSecondaryButton(
+              key: Key('admin.champions.podium.${p.place}.photo'),
+              label: p.photoUrl == null ? 'إضافة صورة' : 'تغيير الصورة',
+              icon: Icons.add_photo_alternate_outlined,
+              onPressed: _busy
+                  ? null
+                  : () => unawaited(_replacePodiumPhoto(p.seasonId, p.userId)),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
