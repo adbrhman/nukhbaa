@@ -53,15 +53,53 @@ void main() {
 
       expect((result as Ok<int>).value, 45);
       expect(store.months[_november]!.isPilot, isFalse);
-      expect(_seatsByDivision(store, _november), {
-        H2hDivision.first: 20,
-        H2hDivision.second: 20,
-        H2hDivision.third: 5,
-      });
+      // NK182: fewer than 80 players all go into the four elite groups.
+      expect(_seatsByDivision(store, _november), {H2hDivision.first: 45});
+      expect(store.drawn[_november], hasLength(4));
       final first = store.drawn[_november]!.first.group;
       expect(first.division, H2hDivision.first);
       expect(first.seats.first.userId, userNo(1));
       expect(source.carriedAsked, isEmpty);
+    });
+
+    test('NK182: November seats the first 80 in four even elite groups and '
+        'the rest in extra groups of twenty, in the order', () async {
+      final store = FakeH2hLeagueStore();
+      final order = _users(1, 121);
+      final source = FakeH2hDrawSource()..active[_october] = order;
+
+      final result = await _draw(store, source).call(now: _novemberNight);
+
+      expect((result as Ok<int>).value, 121);
+      final drawn = store.drawn[_november]!;
+      expect(
+        [
+          for (final g in drawn)
+            (g.group.division, g.group.groupIndex, g.group.seats.length),
+        ],
+        [
+          (H2hDivision.first, 0, 20),
+          (H2hDivision.first, 1, 20),
+          (H2hDivision.first, 2, 20),
+          (H2hDivision.first, 3, 20),
+          (H2hDivision.second, 0, 20),
+          // The 121st player is not left out: the last group holds 21.
+          (H2hDivision.second, 1, 21),
+        ],
+      );
+      // The snake: the 1st, 8th and 9th of the order share group 1; the
+      // 4th and 5th share group 4.
+      expect(
+        [for (final s in drawn[0].group.seats.take(3)) s.userId],
+        [userNo(1), userNo(8), userNo(9)],
+      );
+      expect(
+        [for (final s in drawn[3].group.seats.take(2)) s.userId],
+        [userNo(4), userNo(5)],
+      );
+      // Group 5 starts with the 81st of the order.
+      expect(drawn[4].group.seats.first.userId, userNo(81));
+      expect(drawn[5].group.capacity, 22);
     });
 
     test('draws a month once', () async {
@@ -105,8 +143,8 @@ void main() {
       expect(store.months.containsKey(_december), isFalse);
     });
 
-    test('a later month carries last month on and adds new players at the '
-        'end', () async {
+    test('a later month of the elite draw waits for the carry rules, even '
+        'once last month is judged', () async {
       final store = FakeH2hLeagueStore()
         ..months[_november] = H2hMonthInfo(
           monthStart: _november,
@@ -148,19 +186,13 @@ void main() {
 
       final result = await _draw(store, source).call(now: _decemberNight);
 
-      expect((result as Ok<int>).value, 47);
-      expect(_seatsByDivision(store, _december), {
-        H2hDivision.first: 20,
-        H2hDivision.second: 20,
-        H2hDivision.third: 7,
-      });
-      final firstGroup = store.drawn[_december]!.first.group;
-      expect(firstGroup.seats.first.userId, userNo(200));
-      final third = store.drawn[_december]!.last.group;
-      expect(third.seats.map((s) => s.userId).toList().sublist(5), [
-        userNo(900),
-        userNo(901),
-      ]);
+      // NK182: the carry of the elite groups is the next batch. A judged
+      // November leaves December undrawn, with the reason, rather than
+      // drawing it by the old ladder: a draw is never repeated.
+      expect((result as Err<int>).error.code, 'h2h.elite_carry_pending');
+      expect(store.months.containsKey(_december), isFalse);
+      expect(store.drawCalls, 0);
+      expect(source.carriedAsked, isEmpty);
     });
   });
 

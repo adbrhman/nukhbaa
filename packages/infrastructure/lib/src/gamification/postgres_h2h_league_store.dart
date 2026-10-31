@@ -159,6 +159,10 @@ ON CONFLICT (month_start) DO NOTHING
         return const Result.ok(0);
       }
       for (final drawn in groups) {
+        // NK182: a group of the elite draw may hold a 21st player in 22 seats.
+        final seatsOfGroup = drawn.group.capacity > capacity
+            ? drawn.group.capacity
+            : capacity;
         final group = await tx.query(
           insertGroupSql,
           parameters: {
@@ -166,7 +170,7 @@ ON CONFLICT (month_start) DO NOTHING
             'month': month,
             'division': drawn.group.division.level,
             'group_index': drawn.group.groupIndex,
-            'capacity': capacity,
+            'capacity': seatsOfGroup,
           },
         );
         if (group is Err<List<Map<String, dynamic>>>) {

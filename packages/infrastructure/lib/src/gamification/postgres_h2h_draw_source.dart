@@ -11,6 +11,11 @@ import 'package:shared/shared.dart';
 /// fixture scores of that month, the double included. Suspended players are
 /// left out of every list.
 ///
+/// **The drawing order** (NK182, decided 2026-10-31): commitment first --
+/// the fewest of the month's matches left without a prediction (`missed`:
+/// the month's visible, non-test fixtures of the player's seasons minus
+/// those predicted) -- then points, then exact scorelines, then the id.
+///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
 final class PostgresH2hDrawSource implements H2hDrawSource {
@@ -51,8 +56,7 @@ per AS (
 SELECT user_id::text AS user_id
 FROM per
 WHERE active_days >= @min_days::integer
-ORDER BY (missed <= @committed_missed::integer) DESC,
-         points DESC, exact DESC, user_id
+ORDER BY missed ASC, points DESC, exact DESC, user_id
 ''';
 
   static const String carriedSql = '''
@@ -110,11 +114,7 @@ ORDER BY COALESCE(per.points, 0) DESC, COALESCE(per.exact, 0) DESC, pl.user_id
   }) async {
     final result = await _connection.query(
       activeOrderSql,
-      parameters: {
-        'month': _isoDay(monthStart),
-        'min_days': minActiveDays,
-        'committed_missed': H2hLeaguePolicy.committedMissedMatches,
-      },
+      parameters: {'month': _isoDay(monthStart), 'min_days': minActiveDays},
     );
     return _users(result);
   }

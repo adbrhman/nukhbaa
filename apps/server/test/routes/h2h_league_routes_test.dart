@@ -405,8 +405,10 @@ void main() {
       expect(body['division'], 2);
       expect(body['group_index'], 0);
       expect(body['my_rank'], 1);
-      expect(body['promotion_zone'], 2);
-      expect(body['relegation_zone'], 2);
+      // NK182: November's second division holds the extra groups, which
+      // show no cup places and no relegation by place.
+      expect(body['promotion_zone'], 0);
+      expect(body['relegation_zone'], 0);
 
       final standings = _list(body['standings']);
       expect(

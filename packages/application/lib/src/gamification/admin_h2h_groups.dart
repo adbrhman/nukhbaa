@@ -217,10 +217,15 @@ final class AdminGetH2hGroups {
               turns: sheet.turns,
             ),
           ),
-          promotionZone: divisionGroups <= 1
-              ? single
-              : (certain < single ? certain : single),
-          relegationZone: H2hLeaguePolicy.relegationCount(ref.division, size),
+          // NK182: the elite draw shows the cup's places, no relegation.
+          promotionZone: H2hLeaguePolicy.usesEliteDraw(month)
+              ? H2hLeaguePolicy.cupZoneOf(ref.division, size)
+              : (divisionGroups <= 1
+                    ? single
+                    : (certain < single ? certain : single)),
+          relegationZone: H2hLeaguePolicy.usesEliteDraw(month)
+              ? 0
+              : H2hLeaguePolicy.relegationCount(ref.division, size),
         ),
       );
       everyone.addAll([for (final m in sheet.members) m.userId]);

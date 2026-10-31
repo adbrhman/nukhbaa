@@ -233,13 +233,16 @@ void main() {
     );
 
     test(
-      'carries names and the zones of a four-member second division',
+      'carries names; an extra group of the elite draw has no zone (NK182)',
       () async {
         final reading = await read();
 
         expect(reading.profiles[u2]!.displayName, 'name ${u2.value}');
-        expect(reading.promotionZone, 2);
-        expect(reading.relegationZone, 2);
+        // November 2026 is drawn by the elite draw: the second division
+        // holds the extra groups, which neither go to the cup nor go down
+        // by place.
+        expect(reading.promotionZone, 0);
+        expect(reading.relegationZone, 0);
       },
     );
   });

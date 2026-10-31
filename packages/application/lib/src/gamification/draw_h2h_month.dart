@@ -17,8 +17,13 @@ import 'package:shared/shared.dart';
 ///
 /// **Who.** The first public month (`H2hLeaguePolicy.firstMonth`), and any
 /// month that follows a month with no draw or a pilot month, is SEEDED: the
-/// players who predicted on five days of the month before, best points
-/// first, cut twenty to a division. Every other month CARRIES: the members
+/// players who predicted on five days of the month before, fewest matches
+/// missed first, then points, then exact scorelines (NK182, 2026-10-31).
+/// From November 2026 the first 80 are dealt into four even elite groups
+/// and the rest into extra groups of twenty (`H2hLeaguePolicy.eliteDraw`);
+/// before it they were cut twenty to a division. A month of the elite draw
+/// that would carry waits undrawn (`h2h.elite_carry_pending`) until the
+/// carry of the elite groups is built. Every other month CARRIES: the members
 /// last month's events sent on, in their next division, then the new
 /// players who predicted on five days, at the end. A carrying month waits
 /// until last month is judged; until then the run draws nothing.
@@ -107,6 +112,19 @@ final class DrawH2hMonth {
         // Last month is not judged yet: its standings decide this draw.
         return const Result.ok(0);
       }
+      if (H2hLeaguePolicy.usesEliteDraw(month)) {
+        // NK182: how the elite groups carry from one month to the next
+        // (the absence relegation decided 2026-10-31) is the next batch.
+        // Until it is built the month waits undrawn -- a draw is never
+        // repeated, so a wrong one could not be taken back -- and the
+        // scheduler reports why on every run.
+        return const Result.err(
+          AppError.invariant(
+            'h2h.elite_carry_pending',
+            'The carry of the elite groups into this month is not built yet',
+          ),
+        );
+      }
       final carriedResult = await _source.carriedFrom(previous);
       if (carriedResult is Err<List<H2hCarry>>) {
         return Result.err(carriedResult.error);
@@ -140,7 +158,11 @@ final class DrawH2hMonth {
     required bool isPilot,
     required List<UserId> order,
   }) async {
-    final groups = H2hLeaguePolicy.draw(H2hLeaguePolicy.cut(order));
+    // NK182: from November 2026, four even elite groups of the first 80,
+    // then extra groups of twenty (`H2hLeaguePolicy.eliteDraw`).
+    final groups = H2hLeaguePolicy.usesEliteDraw(monthStart)
+        ? H2hLeaguePolicy.eliteDraw(order)
+        : H2hLeaguePolicy.draw(H2hLeaguePolicy.cut(order));
     final drawn = <H2hDrawnGroup>[];
     for (final group in groups) {
       final idResult = H2hLeagueId.tryParse(ids.newUuid());

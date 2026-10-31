@@ -356,8 +356,14 @@ final class GetMyH2hLeague {
             .value,
         myRank: myRank,
         rounds: views,
-        promotionZone: _promotionZone(seat, size),
-        relegationZone: H2hLeaguePolicy.relegationCount(seat.division, size),
+        // NK182: a month of the elite draw shows the Elite Cup's three
+        // places in an elite group and no relegation by place.
+        promotionZone: H2hLeaguePolicy.usesEliteDraw(month)
+            ? H2hLeaguePolicy.cupZoneOf(seat.division, size)
+            : _promotionZone(seat, size),
+        relegationZone: H2hLeaguePolicy.usesEliteDraw(month)
+            ? 0
+            : H2hLeaguePolicy.relegationCount(seat.division, size),
       ),
     );
   }

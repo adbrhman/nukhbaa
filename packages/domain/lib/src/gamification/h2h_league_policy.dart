@@ -336,6 +336,7 @@ final class H2hDrawGroup {
     required this.division,
     required this.groupIndex,
     required this.seats,
+    this.capacity = H2hLeaguePolicy.groupCapacity,
   });
 
   /// The division.
@@ -346,6 +347,11 @@ final class H2hDrawGroup {
 
   /// The players, each with the slot they hold.
   final List<H2hDrawSeat> seats;
+
+  /// Seats of the group's round-robin: [H2hLeaguePolicy.groupCapacity],
+  /// or 22 for the one group of the elite draw that takes a last single
+  /// player as its 21st member (`H2hLeaguePolicy.eliteDraw`). Always even.
+  final int capacity;
 }
 
 /// One seat handed out by the draw.
@@ -421,6 +427,9 @@ final class H2hLeaguePolicy {
   /// still count as committed. The first draw seats the committed first, by
   /// points, then the rest, so a group is not a mix of a player who
   /// predicted everything and one who dropped in for five days (script 171).
+  ///
+  /// No longer read by the draw: from NK182 (2026-10-31) the order is the
+  /// matches missed themselves, fewest first, then points.
   static const int committedMissedMatches = 5;
 
   /// How long before a regular day's first kickoff the system approves it
@@ -439,6 +448,126 @@ final class H2hLeaguePolicy {
       monthOrDay.year > 2026 ||
       (monthOrDay.year == 2026 && monthOrDay.month >= 12);
   // NK172_000
+
+  // NK182 elite draw (decided 2026-10-31)
+  /// The groups of the elite draw: the first [eliteSeats] players of the
+  /// order, dealt evenly into this many groups of [eliteDivision].
+  static const int eliteGroups = 4;
+
+  /// Players of the elite groups: 20 a group.
+  static const int eliteSeats = eliteGroups * groupCapacity;
+
+  /// The division the four elite groups are stored under
+  /// (`h2h_leagues.division`). Shown as المجموعة 1 .. 4.
+  static const H2hDivision eliteDivision = H2hDivision.first;
+
+  /// The division the extra groups are stored under, `group_index` 0, 1,
+  /// ... in the order of the draw. Shown as المجموعة 5, 6, ...
+  static const H2hDivision extraDivision = H2hDivision.second;
+
+  /// Places of each elite group that go to the Elite Cup after the 19
+  /// rounds: the first, second and third places play three separate cups.
+  static const int cupQualifiers = 3;
+
+  /// Whether [monthOrDay] is drawn by [eliteDraw]: November 2026 and every
+  /// month after it. Selected from the month itself, never today's date.
+  static bool usesEliteDraw(DateTime monthOrDay) =>
+      monthOrDay.year > 2026 ||
+      (monthOrDay.year == 2026 && monthOrDay.month >= 11);
+
+  /// The 1-based group number players see: المجموعة 1 .. 4 for the elite
+  /// groups, 5 and up for the extra groups, in the draw's order.
+  static int groupNumberOf({
+    required H2hDivision division,
+    required int groupIndex,
+  }) =>
+      division == eliteDivision ? groupIndex + 1 : eliteGroups + groupIndex + 1;
+
+  /// The top places of a group shown as the Elite Cup's places: three in an
+  /// elite group, none in an extra group.
+  static int cupZoneOf(H2hDivision division, int size) {
+    if (division != eliteDivision) {
+      return 0;
+    }
+    return size < cupQualifiers ? size : cupQualifiers;
+  }
+
+  /// The groups of a month drawn from [ordered], the drawing order (fewest
+  /// matches missed first, then points, then exact scorelines).
+  ///
+  /// **The four elite groups.** The first [eliteSeats] are dealt like a
+  /// snake: 1 2 3 4, then 4 3 2 1, then 1 2 3 4 ..., so every group gets
+  /// one player of each band of four and the groups are as even in strength
+  /// as the order allows. A player's slot is the band they came from.
+  /// Fewer than eight players open as many groups as there are pairs.
+  ///
+  /// **The extra groups.** The rest, in the same order, twenty at a time:
+  /// the 81st to the 100th is the first extra group (المجموعة 5), the 101st
+  /// to the 120th the next, and the last group takes what is left. A single
+  /// player left at the end is not left out: he joins the last full group as
+  /// its 21st member, in a group of 22 seats (one seat stays empty and plays
+  /// the group average). Alone, with no extra group to join, he plays in a
+  /// group of his own.
+  static List<H2hDrawGroup> eliteDraw(List<UserId> ordered) {
+    final eliteCount = ordered.length < eliteSeats
+        ? ordered.length
+        : eliteSeats;
+    // Fewer than eight players (never the case in a real month) open fewer
+    // groups, so that no elite group is a player alone.
+    final pairs = eliteCount ~/ 2;
+    final count = pairs >= eliteGroups ? eliteGroups : (pairs < 1 ? 1 : pairs);
+    final elite = <List<H2hDrawSeat>>[
+      for (var g = 0; g < count; g++) <H2hDrawSeat>[],
+    ];
+    for (var k = 0; k < eliteCount; k++) {
+      final band = k ~/ count;
+      final position = k % count;
+      final group = band.isEven ? position : count - 1 - position;
+      elite[group].add(H2hDrawSeat(userId: ordered[k], slot: band));
+    }
+
+    final groups = <H2hDrawGroup>[
+      for (var g = 0; g < count; g++)
+        if (elite[g].isNotEmpty)
+          H2hDrawGroup(
+            division: eliteDivision,
+            groupIndex: g,
+            seats: List<H2hDrawSeat>.unmodifiable(elite[g]),
+          ),
+    ];
+
+    final rest = ordered.sublist(eliteCount);
+    final chunks = <List<UserId>>[];
+    for (var start = 0; start < rest.length; start += groupCapacity) {
+      final end = start + groupCapacity < rest.length
+          ? start + groupCapacity
+          : rest.length;
+      chunks.add(rest.sublist(start, end));
+    }
+    if (chunks.length > 1 && chunks.last.length == 1) {
+      final single = chunks.removeLast();
+      chunks[chunks.length - 1] = <UserId>[...chunks.last, ...single];
+    }
+    for (var i = 0; i < chunks.length; i++) {
+      final players = chunks[i];
+      final capacity = players.length <= groupCapacity
+          ? groupCapacity
+          : players.length + players.length % 2;
+      groups.add(
+        H2hDrawGroup(
+          division: extraDivision,
+          groupIndex: i,
+          capacity: capacity,
+          seats: List<H2hDrawSeat>.unmodifiable([
+            for (var k = 0; k < players.length; k++)
+              H2hDrawSeat(userId: players[k], slot: k),
+          ]),
+        ),
+      );
+    }
+    return List<H2hDrawGroup>.unmodifiable(groups);
+  }
+  // NK182_000
 
   /// The first day of the Riyadh month containing [riyadhDay], as a UTC
   /// midnight -- the value of `month_start` in the 0100 tables.
@@ -807,10 +936,14 @@ final class H2hLeaguePolicy {
   /// left at the end waits. Slots follow the order within each group, and
   /// the schedule is the slot's, so a group added late meets the same
   /// opponents in every round of the month as one drawn on its first night.
+  ///
+  /// In a month of the elite draw ([elite], `usesEliteDraw`) every added
+  /// group is an extra group: [extraDivision], after its last group.
   static List<H2hDrawGroup> extend({
     required List<({H2hDivision division, int groupIndex})> existing,
     required List<UserId> order,
     required int groups,
+    bool elite = false,
   }) {
     final nextIndex = <H2hDivision, int>{};
     for (final group in existing) {
@@ -823,11 +956,13 @@ final class H2hLeaguePolicy {
     final added = <H2hDrawGroup>[];
     var start = 0;
     while (added.length < groups && order.length - start >= 2) {
-      var division = open;
-      for (final candidate in H2hDivision.values) {
-        if (candidate != open && !nextIndex.containsKey(candidate)) {
-          division = candidate;
-          break;
+      var division = elite ? extraDivision : open;
+      if (!elite) {
+        for (final candidate in H2hDivision.values) {
+          if (candidate != open && !nextIndex.containsKey(candidate)) {
+            division = candidate;
+            break;
+          }
         }
       }
       final end = start + groupCapacity < order.length

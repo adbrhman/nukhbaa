@@ -141,6 +141,8 @@ final class AddH2hGroups {
       ],
       order: waiting,
       groups: groups,
+      // NK182: from November 2026 an added group is an extra group.
+      elite: H2hLeaguePolicy.usesEliteDraw(month),
     );
     if (planned.isEmpty) {
       return const Result.err(

@@ -123,10 +123,11 @@ void main() {
       final first = month.groups.first;
       expect(first.members, hasLength(4));
       expect(first.placings.first.standing.played, 1);
-      // The open division: nobody goes down; with two groups only
-      // 3 ~/ 2 = 1 place up is certain in each.
+      // November 2026 is drawn by the elite draw (NK182): a group outside
+      // the elite division shows no cup places and nobody goes down by
+      // place.
       expect(first.relegationZone, 0);
-      expect(first.promotionZone, 1);
+      expect(first.promotionZone, 0);
       expect(month.profiles[userNo(8)]!.displayName, 'name ${userNo(8).value}');
     });
 

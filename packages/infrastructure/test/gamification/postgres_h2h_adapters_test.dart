@@ -126,6 +126,42 @@ void main() {
       expect(connection.parameters[1]['division'], 1);
       expect(connection.parameters[3]['user_id'], _userB);
       expect(connection.parameters[3]['slot'], 1);
+      expect(connection.parameters[1]['capacity'], 20);
+    });
+
+    test('NK182: a group of the elite draw with 22 seats keeps them', () async {
+      final connection = _answers([
+        [
+          {'inserted': 1},
+        ],
+        <Map<String, dynamic>>[],
+      ]);
+      final groups = [
+        const H2hDrawnGroup(
+          leagueId: H2hLeagueId(_league),
+          group: H2hDrawGroup(
+            division: H2hDivision.second,
+            groupIndex: 0,
+            capacity: 22,
+            seats: [
+              H2hDrawSeat(userId: UserId(_userA), slot: 0),
+              H2hDrawSeat(userId: UserId(_userB), slot: 20),
+            ],
+          ),
+        ),
+      ];
+
+      final result = await PostgresH2hLeagueStore(connection).draw(
+        monthStart: DateTime.utc(2026, 11),
+        isPilot: false,
+        groups: groups,
+        capacity: 20,
+      );
+
+      expect((result as Ok<int>).value, 2);
+      expect(connection.parameters[1]['capacity'], 22);
+      expect(connection.parameters[1]['division'], 2);
+      expect(connection.parameters[3]['slot'], 20);
     });
 
     test('maps a seat', () async {
@@ -307,12 +343,16 @@ void main() {
         UserId(_userB),
         UserId(_userA),
       ]);
-      // The committed come first: the draw binds how many misses count.
+      // NK182: the order is the misses themselves, fewest first, so no
+      // bound on them is sent.
       expect(drawConnection.parameters.single, {
         'month': '2026-10-01',
         'min_days': 5,
-        'committed_missed': H2hLeaguePolicy.committedMissedMatches,
       });
+      expect(
+        PostgresH2hDrawSource.activeOrderSql,
+        contains('ORDER BY missed ASC, points DESC, exact DESC, user_id'),
+      );
       final carry = (carried as Ok<List<H2hCarry>>).value.single;
       expect(carry.nextDivision, H2hDivision.first);
       expect(carry.division, H2hDivision.second);

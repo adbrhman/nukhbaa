@@ -7219,6 +7219,52 @@ one who dropped in for five days.
   fails on the old ORDER BY) and `postgres_h2h_adapters_test.dart` (the
   bound `committed_missed`).
 
+### The elite draw from November 2026 (script 182, 2026-10-31)
+
+Decided by the owner on 2026-10-31, hours before November's draw (which
+runs once, at the scheduler's first tick after 00:00 Riyadh on the 1st,
+and is never repeated). Marker `NK182` in the code.
+
+- **Order.** `PostgresH2hDrawSource.activeOrderSql`: commitment first --
+  `missed` (the month's visible, non-test fixtures of the player's seasons
+  minus those predicted) ASC -- then points DESC, exact scorelines DESC, user
+  id. Replaces script 171's "missed <= 5 first" bound
+  (`H2hLeaguePolicy.committedMissedMatches` is no longer read).
+  `min_active_days` (5) still decides who enters.
+- **Groups.** `H2hLeaguePolicy.eliteDraw` (months from November 2026,
+  `usesEliteDraw`): the first 80 dealt like a snake (1 2 3 4, 4 3 2 1, ...)
+  into four even groups, stored as division 1, `group_index` 0..3, slot =
+  the band; the rest in the same order twenty a group, division 2,
+  `group_index` 0, 1, ... (shown as groups 5, 6, ...:
+  `groupNumberOf`). The last group takes what is left; a single player left
+  at the end joins the group before him as its 21st member, in a group of
+  22 seats (`H2hDrawGroup.capacity`; the store writes the larger of it and
+  the draw's capacity). Fewer than eight players open a group per pair.
+  `AddH2hGroups` in such a month adds extra groups (division 2) only.
+- **Zones.** In an elite month the table shows the Elite Cup's three places
+  in an elite group (`cupZoneOf`, through `promotion_zone`) and no
+  relegation by place, in `GetMyH2hLeague` and `AdminGetH2hGroups`.
+- **December waits.** How the elite groups carry into the next month (the
+  owner's absence relegation: three consecutive qualifying days without a
+  prediction, replaced from group 5 and up by commitment, then points,
+  then exact scorelines; with an admin log and an admin control) is the
+  next batch. Until then a judged month whose successor uses the elite draw
+  is not drawn: `DrawH2hMonth` answers `h2h.elite_carry_pending` on every
+  run. It must ship before November is judged (1 December, 03:00 Riyadh),
+  together with a month end that does not move players by the old ladder.
+- **Not built yet:** the Elite Cup (days 20-25: three separate cups of the
+  first, second and third places of the four elite groups, a semi-final by
+  draw and a final each), the reserve days 26-28 and the schedule's
+  extension; the mobile wording (group numbers, rules, the cup zone).
+- **Preview before the draw:** `supabase/queries/h2h_elite_draw_preview.sql`
+  (one SELECT, read only): every player of the month with fixtures,
+  predicted, missed, days, points, exact, place and group, and each group's
+  size and sums. Tested by `supabase/tests/h2h_elite_draw_preview_test.sql`
+  against the same order and dealing.
+- Tests: `h2h_elite_draw_test.dart` (domain), `h2h_draw_test.dart`,
+  `h2h_full_cycle_test.dart`, the zone tests, `postgres_h2h_adapters_test.dart`,
+  `0100_h2h_queries_test.sql` (the new order, text for text).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
