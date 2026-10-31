@@ -16,15 +16,18 @@ const Duration h2hLeagueTick = Duration(minutes: 5);
 /// startup probe or the first requests.
 const Duration h2hLeagueFirstRunDelay = Duration(minutes: 3);
 
-/// Runs the monthly head-to-head league (migration 0100), three jobs in
+/// Runs the monthly head-to-head league (migration 0100), four jobs in
 /// order on each tick:
 ///
 /// 1. `RunH2hRounds`: approves a regular day 24 hours before its first
 ///    kickoff when no admin did, and locks each round once its first match
 ///    has started.
-/// 2. `CloseH2hMonth`: judges a month once it has ended and its results are
+/// 2. `RunH2hAbsence` (NK183, 0189): warns an elite player after a second
+///    consecutive absence, and swaps the seats of those with three, an hour
+///    before the next round.
+/// 3. `CloseH2hMonth`: judges a month once it has ended and its results are
 ///    in (a pilot month closes without a single event).
-/// 3. `DrawH2hMonth`: draws the month once it opened, after the previous
+/// 4. `DrawH2hMonth`: draws the month once it opened, after the previous
 ///    month was judged.
 ///
 /// Closing comes before drawing so a new month is drawn on the tick its
@@ -57,6 +60,20 @@ Future<void> _runOnce(CompositionRoot root) async {
             : 'approved ${value.approved}, locked ${value.locked}',
       ),
       Err<H2hRoundsRun>(:final error) => Result<String?>.err(error),
+    };
+  });
+  // NK183: relegation for absence (0189), after the rounds so a round
+  // approved this tick is the next round it swaps before.
+  await _job(root, 'h2h-absence', () async {
+    final result = await root.runH2hAbsence(now: now);
+    return switch (result) {
+      Ok<H2hAbsenceRun>(:final value) => Result<String?>.ok(
+        value.warned + value.moved + value.unfilled == 0
+            ? null
+            : 'warned ${value.warned}, moved ${value.moved}, '
+                  'no substitute ${value.unfilled}',
+      ),
+      Err<H2hAbsenceRun>(:final error) => Result<String?>.err(error),
     };
   });
   await _job(root, 'h2h-close', () async {

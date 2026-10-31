@@ -164,6 +164,8 @@ final class CompositionRoot {
     required this.closeH2hMonth,
     required this.drawH2hMonth,
     required this.h2hAdminDesk,
+    required this.runH2hAbsence,
+    required this.h2hAbsenceDesk,
     required this.addH2hGroups,
     required this.evaluateBadges,
     required this.providerSyncMode,
@@ -377,6 +379,8 @@ final class CompositionRoot {
     CloseH2hMonth? closeH2hMonth,
     DrawH2hMonth? drawH2hMonth,
     H2hAdminDesk? h2hAdminDesk,
+    RunH2hAbsence? runH2hAbsence,
+    AdminH2hAbsence? h2hAbsenceDesk,
     AddH2hGroups? addH2hGroups,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
@@ -635,6 +639,8 @@ final class CompositionRoot {
        closeH2hMonth = closeH2hMonth ?? _absentCloseH2hMonth(),
        drawH2hMonth = drawH2hMonth ?? _absentDrawH2hMonth(),
        h2hAdminDesk = h2hAdminDesk ?? _absentH2hAdminDesk(),
+       runH2hAbsence = runH2hAbsence ?? _absentRunH2hAbsence(),
+       h2hAbsenceDesk = h2hAbsenceDesk ?? _absentH2hAbsenceDesk(),
        addH2hGroups = addH2hGroups ?? _absentAddH2hGroups(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
@@ -1539,6 +1545,28 @@ final class CompositionRoot {
     ),
   );
 
+  /// Backs the "absent" [RunH2hAbsence] (0189): every port throws.
+  static RunH2hAbsence _absentRunH2hAbsence() => RunH2hAbsence(
+    leagues: _unwiredH2h,
+    rounds: _unwiredH2h,
+    sheets: _unwiredH2h,
+    moves: _UnwiredH2hSeatMoves(),
+    sender: const NoopPushSender(),
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  /// Backs the "absent" [AdminH2hAbsence] (0189): every port throws.
+  static AdminH2hAbsence _absentH2hAbsenceDesk() => AdminH2hAbsence(
+    leagues: _unwiredH2h,
+    rounds: _unwiredH2h,
+    sheets: _unwiredH2h,
+    moves: _UnwiredH2hSeatMoves(),
+    profiles: _UnwiredWeeklyLeagueProfileReader(),
+    sender: const NoopPushSender(),
+    idGenerator: _unwiredIdGenerator,
+    clock: _unwiredClock,
+  );
+
   /// Backs the "absent" [AddH2hGroups]: every port throws, so a test
   /// that reaches it without wiring it fails loudly.
   static AddH2hGroups _absentAddH2hGroups() => AddH2hGroups(
@@ -2435,6 +2463,19 @@ final class CompositionRoot {
   /// `/settings`, `/exclusions`, `/seats`, `/report` and `/jobs`. Admin
   /// only.
   final H2hAdminDesk h2hAdminDesk;
+
+  /// Relegation for absence (NK183, migration 0189): the warning after a
+  /// second consecutive absence and the seat swaps an hour before the next
+  /// round. Driven by the scheduler, never by a request. The swaps are off
+  /// when the host sets `NUKHBA_H2H_ABSENCE_RELEGATION=off` (warnings
+  /// still go out).
+  final RunH2hAbsence runH2hAbsence;
+
+  /// The admin's desk for relegation for absence: the watch list, the next
+  /// substitutes, the swaps, a relegation by hand and a round excused.
+  /// Backs `/admin/h2h/absence`, `/admin/h2h/relegations` and
+  /// `/admin/h2h/excusals`. Admin only.
+  final AdminH2hAbsence h2hAbsenceDesk;
 
   /// Adds groups to the head-to-head month open now: the players
   /// waiting for a seat, most days of predictions first, twenty to a
@@ -3391,6 +3432,25 @@ final class CompositionRoot {
           idGenerator: idGenerator,
           clock: clock,
         ),
+      ),
+      runH2hAbsence: RunH2hAbsence(
+        leagues: PostgresH2hLeagueStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        sheets: PostgresH2hSheetReader(connection),
+        moves: PostgresH2hSeatMoveStore(connection),
+        sender: pushSender,
+        idGenerator: idGenerator,
+        relegate: env['NUKHBA_H2H_ABSENCE_RELEGATION'] != 'off',
+      ),
+      h2hAbsenceDesk: AdminH2hAbsence(
+        leagues: PostgresH2hLeagueStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        sheets: PostgresH2hSheetReader(connection),
+        moves: PostgresH2hSeatMoveStore(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
+        sender: pushSender,
+        idGenerator: idGenerator,
+        clock: clock,
       ),
       addH2hGroups: AddH2hGroups(
         leagues: PostgresH2hLeagueStore(connection),
@@ -5604,6 +5664,59 @@ final class _UnwiredH2hGroupExtension implements H2hGroupExtension {
     required List<H2hDrawnGroup> groups,
     required int capacity,
   }) => _unwired();
+}
+
+/// Backs every "absent" use-case of relegation for absence (0189): each
+/// port method throws if a test reaches a slice it never wired.
+final class _UnwiredH2hSeatMoves implements H2hSeatMoveStore {
+  static Never _unwired() => throw StateError(
+    'Relegation for absence was not wired into this test root',
+  );
+
+  @override
+  Future<Result<List<H2hSeatMove>>> movesOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<List<H2hRoundAttendance>>> attendance(List<H2hRound> rounds) =>
+      _unwired();
+
+  @override
+  Future<Result<Map<H2hRoundId, H2hRoundExcusal>>> excusals(
+    List<H2hRound> rounds,
+  ) => _unwired();
+
+  @override
+  Future<Result<List<H2hCandidateFacts>>> candidateFacts({
+    required DateTime lastDay,
+    required List<UserId> users,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> recordMove({
+    required H2hSeatMove move,
+    required String logId,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> excuse({
+    required H2hRoundId roundId,
+    required String reason,
+    required UserId by,
+    required String logId,
+  }) => _unwired();
+
+  @override
+  Future<Result<bool>> recordWarning({
+    required H2hRoundId roundId,
+    required UserId userId,
+  }) => _unwired();
+
+  @override
+  Future<Result<List<({H2hRoundId roundId, UserId userId, DateTime at})>>>
+  warningsOf(List<H2hRound> rounds) => _unwired();
+
+  @override
+  Future<Result<List<String>>> pushTokensOf(UserId userId) => _unwired();
 }
 
 /// Backs the "absent" [H2hAdminDesk]'s controls and report (0101):

@@ -4,6 +4,7 @@ library;
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
@@ -260,15 +261,34 @@ final class GetMyH2hLeague {
       }
     }
 
-    final placings = H2hLeaguePolicy.order(
-      H2hLeaguePolicy.table(
-        capacity: seat.capacity,
-        members: sheet.members,
-        rounds: settled,
-        scores: sheet.scores,
-        turns: sheet.turns,
-      ),
-    );
+    // NK183: a group with a seat swap is read with the whole month, since a
+    // player who moved keeps his own month (h2h_month_book.dart).
+    H2hMonthBook? book;
+    if (h2hSheetHasSwaps(sheet)) {
+      final bookResult = await H2hMonthBook.load(
+        leagues: _leagues,
+        reader: _sheets,
+        monthStart: month,
+        rounds: rounds,
+        known: {seat.leagueId: sheet},
+      );
+      if (bookResult is Err<H2hMonthBook>) {
+        return Result.err(bookResult.error);
+      }
+      book = (bookResult as Ok<H2hMonthBook>).value;
+    }
+
+    final placings = book != null
+        ? book.placingsOf(seat.leagueId, settled)
+        : H2hLeaguePolicy.order(
+            H2hLeaguePolicy.table(
+              capacity: seat.capacity,
+              members: sheet.members,
+              rounds: settled,
+              scores: sheet.scores,
+              turns: sheet.turns,
+            ),
+          );
     var myRank = 0;
     for (final placing in placings) {
       if (placing.standing.userId == reader) {
@@ -279,13 +299,16 @@ final class GetMyH2hLeague {
 
     // The caller's matches over every started round, live ones included.
     final myMatches = <int, H2hMatch>{};
-    for (final standing in H2hLeaguePolicy.table(
-      capacity: seat.capacity,
-      members: sheet.members,
-      rounds: started,
-      scores: sheet.scores,
-      turns: sheet.turns,
-    )) {
+    final myStandings = book != null
+        ? [?book.standings(started)[reader]]
+        : H2hLeaguePolicy.table(
+            capacity: seat.capacity,
+            members: sheet.members,
+            rounds: started,
+            scores: sheet.scores,
+            turns: sheet.turns,
+          );
+    for (final standing in myStandings) {
       if (standing.userId == reader) {
         for (final match in standing.matches) {
           myMatches[match.round] = match;
@@ -293,9 +316,30 @@ final class GetMyH2hLeague {
       }
     }
 
-    final bySlot = <int, UserId>{
-      for (final member in sheet.members) member.slot: member.userId,
-    };
+    // A round's opponent: the match's, once played (in whichever group the
+    // caller held a seat then); before it, the holder of the opposite seat
+    // of the caller's group in that round.
+    UserId? opponentIn(H2hRound round) {
+      final played = myMatches[round.number];
+      if (played != null) {
+        return played.opponentId;
+      }
+      final bySlot = <int, UserId>{
+        for (final member in h2hMembersIn(sheet, round.number))
+          member.slot: member.userId,
+      };
+      final opponent =
+          bySlot[H2hLeaguePolicy.opponentSlot(
+            slot: seat.slot,
+            round: H2hLeaguePolicy.turnOf(
+              round: round.number,
+              turns: sheet.turns,
+            ),
+            capacity: seat.capacity,
+          )];
+      return opponent == reader ? null : opponent;
+    }
+
     final views = <MyH2hRound>[];
     for (final round in rounds) {
       final status = _statusOf(round, sheet);
@@ -323,28 +367,23 @@ final class GetMyH2hLeague {
         MyH2hRound(
           round: round,
           status: status,
-          opponentId:
-              bySlot[H2hLeaguePolicy.opponentSlot(
-                slot: seat.slot,
-                round: H2hLeaguePolicy.turnOf(
-                  round: round.number,
-                  turns: sheet.turns,
-                ),
-                capacity: seat.capacity,
-              )],
+          opponentId: opponentIn(round),
           match: match,
         ),
       );
     }
 
     final profilesResult = await _profiles.profilesOf([
-      for (final member in sheet.members) member.userId,
+      ...{
+        for (final member in sheet.members) member.userId,
+        for (final match in myMatches.values) ?match.opponentId,
+      },
     ]);
     if (profilesResult is Err<Map<UserId, WeeklyLeagueMemberProfile>>) {
       return Result.err(profilesResult.error);
     }
 
-    final size = sheet.members.length;
+    final size = h2hCurrentMembers(sheet).length;
     return Result.ok(
       MyH2hLeague(
         state: H2hLeagueState.open,

@@ -11,6 +11,8 @@ void main() {
       expect(shellTabForLink(PushLinks.support), 4);
       // A player wrote: the admins' inbox over the account tab (167).
       expect(shellTabForLink(PushLinks.supportInbox), 4);
+      // An absence warning, a relegation or a promotion: the league's tab.
+      expect(shellTabForLink(PushLinks.h2h), 2);
     });
 
     test('an unknown link opens nothing in particular', () {
@@ -27,6 +29,7 @@ void main() {
       expect(PushLinks.inbox, 'inbox');
       expect(PushLinks.support, 'support');
       expect(PushLinks.supportInbox, 'support_inbox');
+      expect(PushLinks.h2h, 'h2h');
     });
   });
 }

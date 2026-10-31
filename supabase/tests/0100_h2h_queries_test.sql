@@ -56,22 +56,39 @@ VALUES ($1::uuid, $2::date, $3::uuid, $4::smallint);
 -- seatSql
 PREPARE league_seat(uuid, date) AS
 
-SELECT m.league_id::text AS league_id,
+WITH held AS (
+  SELECT m.league_id, m.slot, m.joined_at, 1 AS from_round
+  FROM gamification.h2h_league_members m
+  WHERE m.user_id = $1::uuid
+    AND m.month_start = $2::date
+  UNION ALL
+  SELECT mv.elite_league_id, mv.elite_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.in_user = $1::uuid
+    AND mv.month_start = $2::date
+  UNION ALL
+  SELECT mv.extra_league_id, mv.extra_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.out_user = $1::uuid
+    AND mv.month_start = $2::date
+),
+seat AS (
+  SELECT * FROM held ORDER BY from_round DESC LIMIT 1
+)
+SELECT s.league_id::text AS league_id,
        l.division        AS division,
        l.group_index     AS group_index,
-       m.slot            AS slot,
+       s.slot            AS slot,
        l.capacity        AS capacity,
-       m.joined_at       AS joined_at,
+       s.joined_at       AS joined_at,
        mo.is_pilot       AS is_pilot,
        (SELECT count(*)
           FROM gamification.h2h_leagues l2
          WHERE l2.month_start = l.month_start
            AND l2.division = l.division)::integer AS division_groups
-FROM gamification.h2h_league_members m
-JOIN gamification.h2h_leagues l ON l.id = m.league_id
-JOIN gamification.h2h_months mo ON mo.month_start = m.month_start
-WHERE m.user_id = $1::uuid
-  AND m.month_start = $2::date;
+FROM seat s
+JOIN gamification.h2h_leagues l ON l.id = s.league_id
+JOIN gamification.h2h_months mo ON mo.month_start = l.month_start;
 
 -- groupsSql
 PREPARE league_groups(date) AS
@@ -273,22 +290,53 @@ ORDER BY COALESCE(per.points, 0) DESC, COALESCE(per.exact, 0) DESC, pl.user_id;
 -- membersSql
 PREPARE sheet_members(uuid) AS
 
-SELECT m.user_id::text AS user_id,
-       m.slot          AS slot,
-       m.joined_at     AS joined_at
-FROM gamification.h2h_league_members m
-JOIN identity.users u ON u.id = m.user_id AND u.status <> 'suspended'
-WHERE m.league_id = $1::uuid
-ORDER BY m.slot;
+WITH seats AS (
+  SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
+  FROM gamification.h2h_league_members m
+  WHERE m.league_id = $1::uuid
+  UNION ALL
+  SELECT mv.in_user, mv.elite_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.elite_league_id = $1::uuid
+  UNION ALL
+  SELECT mv.out_user, mv.extra_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.extra_league_id = $1::uuid
+),
+held AS (
+  SELECT s.user_id, s.slot, s.joined_at, s.from_round,
+         lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
+           - 1 AS until_round
+  FROM seats s
+)
+SELECT h.user_id::text AS user_id,
+       h.slot          AS slot,
+       h.joined_at     AS joined_at,
+       h.from_round    AS from_round,
+       h.until_round   AS until_round
+FROM held h
+JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended'
+ORDER BY h.slot, h.from_round;
 
 -- scoresSql
 PREPARE sheet_scores(uuid) AS
 
 WITH members AS (
-  SELECT m.user_id
-  FROM gamification.h2h_league_members m
-  JOIN identity.users u ON u.id = m.user_id AND u.status <> 'suspended'
-  WHERE m.league_id = $1::uuid
+  SELECT x.user_id
+  FROM (
+    SELECT m.user_id
+    FROM gamification.h2h_league_members m
+    WHERE m.league_id = $1::uuid
+    UNION
+    SELECT mv.in_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.elite_league_id = $1::uuid
+    UNION
+    SELECT mv.out_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.extra_league_id = $1::uuid
+  ) x
+  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended'
 ),
 rounds AS (
   SELECT r.id, r.round_no, r.day

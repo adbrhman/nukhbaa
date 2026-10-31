@@ -713,4 +713,41 @@ final class AdminApi {
       parse: H2hGroupsAddedDto.fromJson,
     );
   }
+
+  /// `GET /admin/h2h/absence` -- relegation for absence this month (NK183,
+  /// migration 0189): the rounds and which count, the elite players absent
+  /// from the latest counted rounds, the next substitutes, and every swap.
+  Future<Result<H2hAbsenceViewDto>> h2hAbsence() {
+    return _transport.getObject<H2hAbsenceViewDto>(
+      '/admin/h2h/absence',
+      parse: H2hAbsenceViewDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/h2h/relegations` -- relegates the elite player [userId]
+  /// by hand for [reason], from the next round not started, with the
+  /// substitute the rules take. Answers the round the swap starts from.
+  Future<Result<int>> relegateH2hPlayer({
+    required String userId,
+    required String reason,
+  }) {
+    return _transport.postObject<int>(
+      '/admin/h2h/relegations',
+      body: H2hRelegationRequestDto(userId: userId, reason: reason).toJson(),
+      parse: (json) => (json['from_round'] as int?) ?? 0,
+    );
+  }
+
+  /// `POST /admin/h2h/excusals` -- takes the round [roundId] out of the
+  /// absence count for [reason]. Answers whether anything changed.
+  Future<Result<bool>> excuseH2hRound({
+    required String roundId,
+    required String reason,
+  }) {
+    return _transport.postObject<bool>(
+      '/admin/h2h/excusals',
+      body: H2hExcusalRequestDto(roundId: roundId, reason: reason).toJson(),
+      parse: (json) => json['changed'] == true,
+    );
+  }
 }

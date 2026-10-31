@@ -77,6 +77,7 @@ export 'src/gamification/postgres_h2h_league_store.dart';
 export 'src/gamification/postgres_h2h_month_report_reader.dart';
 export 'src/gamification/postgres_h2h_round_fixture_reader.dart';
 export 'src/gamification/postgres_h2h_round_store.dart';
+export 'src/gamification/postgres_h2h_seat_move_store.dart';
 export 'src/gamification/postgres_h2h_sheet_reader.dart';
 export 'src/gamification/postgres_h2h_turn_keeper.dart';
 export 'src/gamification/postgres_match_day_settlement_store.dart';

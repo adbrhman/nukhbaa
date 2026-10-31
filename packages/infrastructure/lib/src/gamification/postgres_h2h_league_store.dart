@@ -53,23 +53,42 @@ INSERT INTO gamification.h2h_league_members
 VALUES (@league_id::uuid, @month::date, @user_id::uuid, @slot::smallint)
 ''';
 
+  /// The seat a player holds now (NK183, migration 0189): his draw seat,
+  /// or the seat of the latest swap that moved him.
   static const String seatSql = '''
-SELECT m.league_id::text AS league_id,
+WITH held AS (
+  SELECT m.league_id, m.slot, m.joined_at, 1 AS from_round
+  FROM gamification.h2h_league_members m
+  WHERE m.user_id = @user_id::uuid
+    AND m.month_start = @month::date
+  UNION ALL
+  SELECT mv.elite_league_id, mv.elite_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.in_user = @user_id::uuid
+    AND mv.month_start = @month::date
+  UNION ALL
+  SELECT mv.extra_league_id, mv.extra_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.out_user = @user_id::uuid
+    AND mv.month_start = @month::date
+),
+seat AS (
+  SELECT * FROM held ORDER BY from_round DESC LIMIT 1
+)
+SELECT s.league_id::text AS league_id,
        l.division        AS division,
        l.group_index     AS group_index,
-       m.slot            AS slot,
+       s.slot            AS slot,
        l.capacity        AS capacity,
-       m.joined_at       AS joined_at,
+       s.joined_at       AS joined_at,
        mo.is_pilot       AS is_pilot,
        (SELECT count(*)
           FROM gamification.h2h_leagues l2
          WHERE l2.month_start = l.month_start
            AND l2.division = l.division)::integer AS division_groups
-FROM gamification.h2h_league_members m
-JOIN gamification.h2h_leagues l ON l.id = m.league_id
-JOIN gamification.h2h_months mo ON mo.month_start = m.month_start
-WHERE m.user_id = @user_id::uuid
-  AND m.month_start = @month::date
+FROM seat s
+JOIN gamification.h2h_leagues l ON l.id = s.league_id
+JOIN gamification.h2h_months mo ON mo.month_start = l.month_start
 ''';
 
   static const String groupsSql = '''

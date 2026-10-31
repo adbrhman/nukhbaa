@@ -4,6 +4,7 @@
 library;
 
 import 'package:application/src/gamification/get_my_h2h_league.dart';
+import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/h2h_round_phase.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
@@ -194,7 +195,9 @@ final class GetMyH2hGroupRound {
     }
     final sheet = (sheetResult as Ok<H2hGroupSheet>).value;
 
-    final members = List<H2hMember>.of(sheet.members)
+    // NK183: the seats' holders in that round (a seat swap of 0189 changes
+    // the holder from its round on).
+    final members = List<H2hMember>.of(h2hMembersIn(sheet, round))
       ..sort((a, b) => a.slot.compareTo(b.slot));
     final bySlot = <int, H2hMember>{for (final m in members) m.slot: m};
 

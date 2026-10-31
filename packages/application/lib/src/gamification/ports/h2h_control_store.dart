@@ -130,7 +130,14 @@ enum H2hAdminActionKind {
   pilotStarted('pilot_started'),
 
   /// Added groups to a month already drawn (migration 0102).
-  groupsAdded('groups_added');
+  groupsAdded('groups_added'),
+
+  /// Swapped an elite seat for an extra seat: relegation for absence (the
+  /// system, no actor) or by hand (migration 0189).
+  seatMoved('seat_moved'),
+
+  /// Took a round out of the absence count (migration 0189).
+  roundExcused('round_excused');
 
   const H2hAdminActionKind(this.wireName);
 

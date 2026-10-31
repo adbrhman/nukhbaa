@@ -1,4 +1,5 @@
 import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
@@ -133,6 +134,8 @@ final class CloseH2hMonth {
     final results = <H2hGroupResult>[];
     final leagueOf = <UserId, H2hLeagueId>{};
     var members = 0;
+    final sheets = <H2hLeagueId, H2hGroupSheet>{};
+    final playedOf = <H2hLeagueId, List<H2hRoundRef>>{};
     for (final group in groups) {
       final sheetResult = await _sheets.sheetOf(
         leagueId: group.leagueId,
@@ -152,23 +155,34 @@ final class CloseH2hMonth {
         }
         played.add(round.ref);
       }
-      final standings = H2hLeaguePolicy.table(
-        capacity: group.capacity,
-        members: sheet.members,
-        rounds: played,
-        scores: sheet.scores,
-        turns: sheet.turns,
-      );
-      results.add(
-        H2hGroupResult(
-          division: group.division,
-          placings: H2hLeaguePolicy.order(standings),
-        ),
-      );
-      for (final member in sheet.members) {
+      sheets[group.leagueId] = sheet;
+      playedOf[group.leagueId] = played;
+    }
+    // NK183: with a seat swap in the month, a group is judged on the
+    // players who hold its seats at the end, each with his whole month.
+    final book = sheets.values.any(h2hSheetHasSwaps)
+        ? H2hMonthBook.of(groups: groups, sheets: sheets)
+        : null;
+    for (final group in groups) {
+      final sheet = sheets[group.leagueId]!;
+      final played = playedOf[group.leagueId]!;
+      final placings = book != null
+          ? book.placingsOf(group.leagueId, played)
+          : H2hLeaguePolicy.order(
+              H2hLeaguePolicy.table(
+                capacity: group.capacity,
+                members: sheet.members,
+                rounds: played,
+                scores: sheet.scores,
+                turns: sheet.turns,
+              ),
+            );
+      results.add(H2hGroupResult(division: group.division, placings: placings));
+      final current = book != null ? h2hCurrentMembers(sheet) : sheet.members;
+      for (final member in current) {
         leagueOf[member.userId] = group.leagueId;
       }
-      members += sheet.members.length;
+      members += current.length;
     }
 
     if (info == null || info.isPilot) {

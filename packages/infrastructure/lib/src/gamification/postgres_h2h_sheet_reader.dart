@@ -30,6 +30,10 @@ import 'package:shared/shared.dart';
 /// are named. **The group's order of the turns** is its 0184 row
 /// (`h2h_league_turns`); a group without one reads an empty order.
 ///
+/// **A seat swap** (migration 0189) changes a seat's holder from its round
+/// on: [membersSql] reads every holder with his rounds, and [scoresSql]
+/// reads every player who held a seat of the group.
+///
 /// Four statements, each one round trip; suspended members are left out,
 /// so their seat plays the group average.
 ///
@@ -41,22 +45,57 @@ final class PostgresH2hSheetReader implements H2hSheetReader {
 
   final PostgresConnection _connection;
 
+  /// Each seat's holders (NK183, migration 0189): the draw's member from
+  /// round 1, then whoever a seat swap put in it from the swap's round; a
+  /// holder's last round is the round before the next one's. A suspended
+  /// holder is left out, so his seat plays the group average in his rounds.
   static const String membersSql = '''
-SELECT m.user_id::text AS user_id,
-       m.slot          AS slot,
-       m.joined_at     AS joined_at
-FROM gamification.h2h_league_members m
-JOIN identity.users u ON u.id = m.user_id AND u.status <> 'suspended'
-WHERE m.league_id = @league_id::uuid
-ORDER BY m.slot
+WITH seats AS (
+  SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
+  FROM gamification.h2h_league_members m
+  WHERE m.league_id = @league_id::uuid
+  UNION ALL
+  SELECT mv.in_user, mv.elite_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.elite_league_id = @league_id::uuid
+  UNION ALL
+  SELECT mv.out_user, mv.extra_slot, mv.created_at, mv.from_round
+  FROM gamification.h2h_seat_moves mv
+  WHERE mv.extra_league_id = @league_id::uuid
+),
+held AS (
+  SELECT s.user_id, s.slot, s.joined_at, s.from_round,
+         lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
+           - 1 AS until_round
+  FROM seats s
+)
+SELECT h.user_id::text AS user_id,
+       h.slot          AS slot,
+       h.joined_at     AS joined_at,
+       h.from_round    AS from_round,
+       h.until_round   AS until_round
+FROM held h
+JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended'
+ORDER BY h.slot, h.from_round
 ''';
 
   static const String scoresSql = '''
 WITH members AS (
-  SELECT m.user_id
-  FROM gamification.h2h_league_members m
-  JOIN identity.users u ON u.id = m.user_id AND u.status <> 'suspended'
-  WHERE m.league_id = @league_id::uuid
+  SELECT x.user_id
+  FROM (
+    SELECT m.user_id
+    FROM gamification.h2h_league_members m
+    WHERE m.league_id = @league_id::uuid
+    UNION
+    SELECT mv.in_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.elite_league_id = @league_id::uuid
+    UNION
+    SELECT mv.out_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.extra_league_id = @league_id::uuid
+  ) x
+  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended'
 ),
 rounds AS (
   SELECT r.id, r.round_no, r.day
@@ -181,7 +220,14 @@ GROUP BY p.user_id
       final user = UserId.tryParse(row['user_id']?.toString());
       final slot = _int(row['slot']);
       final joinedAt = _timestamp(row['joined_at']);
-      if (user is Err<UserId> || slot == null || joinedAt == null) {
+      final fromRound = row['from_round'] == null ? 1 : _int(row['from_round']);
+      final untilRaw = row['until_round'];
+      final untilRound = untilRaw == null ? null : _int(untilRaw);
+      if (user is Err<UserId> ||
+          slot == null ||
+          joinedAt == null ||
+          fromRound == null ||
+          (untilRaw != null && untilRound == null)) {
         return Result.err(_corrupt('member'));
       }
       members.add(
@@ -189,6 +235,8 @@ GROUP BY p.user_id
           userId: (user as Ok<UserId>).value,
           slot: slot,
           joinedAt: joinedAt,
+          fromRound: fromRound,
+          untilRound: untilRound,
         ),
       );
     }

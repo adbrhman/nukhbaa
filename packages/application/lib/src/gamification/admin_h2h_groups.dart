@@ -11,6 +11,7 @@ import 'package:application/src/gamification/get_my_h2h_group_round.dart';
 import 'package:application/src/gamification/get_my_h2h_league.dart';
 import 'package:application/src/gamification/get_my_h2h_month.dart';
 import 'package:application/src/gamification/h2h_group_pairs.dart';
+import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/h2h_round_phase.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
@@ -185,8 +186,7 @@ final class AdminGetH2hGroups {
           (groupsPerDivision[ref.division] ?? 0) + 1;
     }
 
-    final groups = <H2hAdminGroup>[];
-    final everyone = <UserId>[];
+    final sheets = <H2hLeagueId, H2hGroupSheet>{};
     for (final ref in refs) {
       final sheetResult = await _sheets.sheetOf(
         leagueId: ref.leagueId,
@@ -195,28 +195,46 @@ final class AdminGetH2hGroups {
       if (sheetResult is Err<H2hGroupSheet>) {
         return Result.err(sheetResult.error);
       }
-      final sheet = (sheetResult as Ok<H2hGroupSheet>).value;
+      sheets[ref.leagueId] = (sheetResult as Ok<H2hGroupSheet>).value;
+    }
+    // NK183: with a seat swap anywhere in the month, every group is read
+    // with the whole month (a player who moved keeps his own month).
+    final book = sheets.values.any(h2hSheetHasSwaps)
+        ? H2hMonthBook.of(groups: refs, sheets: sheets)
+        : null;
+    Map<UserId, H2hStanding>? merged;
+
+    final groups = <H2hAdminGroup>[];
+    final everyone = <UserId>[];
+    for (final ref in refs) {
+      final sheet = sheets[ref.leagueId]!;
       final settled = <H2hRoundRef>[
         for (final round in rounds)
           if (_statusOf(round, sheet) == H2hRoundStatus.settled) round.ref,
       ];
-      final size = sheet.members.length;
+      final size = h2hCurrentMembers(sheet).length;
       final single = H2hLeaguePolicy.promotionCount(ref.division, size);
       final divisionGroups = groupsPerDivision[ref.division] ?? 1;
       final certain = H2hLeaguePolicy.maxMovement ~/ divisionGroups;
       groups.add(
         H2hAdminGroup(
           ref: ref,
-          members: sheet.members,
-          placings: H2hLeaguePolicy.order(
-            H2hLeaguePolicy.table(
-              capacity: ref.capacity,
-              members: sheet.members,
-              rounds: settled,
-              scores: sheet.scores,
-              turns: sheet.turns,
-            ),
-          ),
+          members: h2hCurrentMembers(sheet),
+          placings: book != null
+              ? book.placingsOf(
+                  ref.leagueId,
+                  settled,
+                  merged: merged ??= book.standings(settled),
+                )
+              : H2hLeaguePolicy.order(
+                  H2hLeaguePolicy.table(
+                    capacity: ref.capacity,
+                    members: sheet.members,
+                    rounds: settled,
+                    scores: sheet.scores,
+                    turns: sheet.turns,
+                  ),
+                ),
           // NK182: the elite draw shows the cup's places, no relegation.
           promotionZone: H2hLeaguePolicy.usesEliteDraw(month)
               ? H2hLeaguePolicy.cupZoneOf(ref.division, size)
@@ -228,7 +246,7 @@ final class AdminGetH2hGroups {
               : H2hLeaguePolicy.relegationCount(ref.division, size),
         ),
       );
-      everyone.addAll([for (final m in sheet.members) m.userId]);
+      everyone.addAll([for (final m in h2hCurrentMembers(sheet)) m.userId]);
     }
 
     final profilesResult = await _profiles.profilesOf(everyone);
@@ -365,7 +383,8 @@ final class AdminGetH2hGroupRound {
         pairs: secret
             ? const <H2hGroupPair>[]
             : h2hGroupPairs(
-                members: sheet.members,
+                // NK183: the seats' holders in that round.
+                members: h2hMembersIn(sheet, target.number),
                 capacity: ref.capacity,
                 round: target.ref,
                 status: status,

@@ -7265,6 +7265,63 @@ and is never repeated). Marker `NK182` in the code.
   `h2h_full_cycle_test.dart`, the zone tests, `postgres_h2h_adapters_test.dart`,
   `0100_h2h_queries_test.sql` (the new order, text for text).
 
+### Relegation for absence (script 183, migration 0189, 2026-10-31)
+
+Decided by the owner on 2026-10-31 (after script 182). Marker `NK183`.
+
+- **The count.** A counted round is an approved, locked round of a month of
+  the elite draw (November 2026 on; a pilot month never counts) whose last
+  kickoff has passed, that still holds a fixture still on its day, and that
+  no admin excused (`h2h_round_excusals`). A player is absent from it when
+  he predicted none of those fixtures; results are never read, so a late or
+  missing result never makes an absence. A day without a round neither
+  counts nor breaks the run, and the run goes on across months
+  (`loadH2hAbsenceState` reads the month before too).
+- **Warning and relegation** (`H2hAbsencePolicy`, `RunH2hAbsence`, the
+  scheduler's `h2h-absence` job after `h2h-rounds`): an elite player
+  (division 1) whose run reaches 2 is warned once by push
+  (`h2h_absence_warnings`, link `h2h`); at 3 he swaps seats, inside the
+  hour before the next round's first kickoff (`relegationLead`), so an
+  admin has until then to excuse a round in which the app failed. No swap
+  takes effect after round 19 (DB check too). `NUKHBA_H2H_ABSENCE_RELEGATION=off`
+  on the host stops the swaps and keeps the warnings.
+- **The substitute**: a holder of an extra seat (division 2), not relegated
+  this month, with 5 days of predictions in the last 30 days and present in
+  each of the last 3 counted rounds; fewest matches missed in the 30 days,
+  then points, exact scorelines, user id (`candidateFactsSql`). A
+  substitute whose seat would make the relegated player meet an opponent he
+  already met this month is passed over. With none, the swap waits for the
+  next round (`unfilled`).
+- **The swap** (`h2h_seat_moves`, append-only): the substitute takes the
+  elite seat and the relegated player the extra seat, from the next round;
+  each keeps his own month (the owner's choice over the alternatives on
+  2026-10-31). `membersSql` reads each seat's holders with their rounds
+  (`H2hMember.fromRound/untilRound`), `scoresSql` every player who held a
+  seat of the group, `seatSql` the seat a player holds now. `table` plays a
+  round with the members holding a seat in it; `H2hMonthBook` (loaded only
+  when a group read has a swap) adds a player's parts from every group
+  (`mergeStandings`) and ranks a group by its current holders --
+  `GetMyH2hLeague`, `AdminGetH2hGroups`, `CloseH2hMonth`; a round's pairs
+  read the round's holders (`h2hMembersIn`). A relegated player never comes
+  back in the same month; a player is promoted at most once a month; a
+  round that started is never touched (DB backstops, `h2h.move_refused`).
+- **The admin's desk** (`AdminH2hAbsence`; `GET /admin/h2h/absence`,
+  `POST /admin/h2h/relegations {user_id, reason}`,
+  `POST /admin/h2h/excusals {round_id, reason}`): the rounds and which
+  count, the watch list, the next ten substitutes in order, every swap with
+  its facts; a relegation by hand with a reason (cheating: kind `admin`,
+  the substitute the rules take); a round excused with a reason. Both are
+  in the admin log (`seat_moved`, `round_excused`). The mobile tab is
+  script 184.
+- Tests: domain `h2h_absence_policy_test.dart`; application
+  `h2h_absence_test.dart` (the job, the window, idempotence, excusals, the
+  tables after a swap, the desk); infrastructure
+  `postgres_h2h_seat_move_store_test.dart`; server
+  `h2h_absence_routes_test.dart`; contracts `h2h_absence_dto_test.dart`;
+  SQL `0189_h2h_seat_moves_test.sql` (the backstops and the readers with a
+  swap; 0100's statement tests regenerated).
+- **Apply 0189 in the SQL Editor before pushing the server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

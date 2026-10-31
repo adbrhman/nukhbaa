@@ -84,10 +84,21 @@ ON CONFLICT (round_id) DO NOTHING;
 PREPARE sheet_scores(uuid) AS
 
 WITH members AS (
-  SELECT m.user_id
-  FROM gamification.h2h_league_members m
-  JOIN identity.users u ON u.id = m.user_id AND u.status <> 'suspended'
-  WHERE m.league_id = $1::uuid
+  SELECT x.user_id
+  FROM (
+    SELECT m.user_id
+    FROM gamification.h2h_league_members m
+    WHERE m.league_id = $1::uuid
+    UNION
+    SELECT mv.in_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.elite_league_id = $1::uuid
+    UNION
+    SELECT mv.out_user
+    FROM gamification.h2h_seat_moves mv
+    WHERE mv.extra_league_id = $1::uuid
+  ) x
+  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended'
 ),
 rounds AS (
   SELECT r.id, r.round_no, r.day

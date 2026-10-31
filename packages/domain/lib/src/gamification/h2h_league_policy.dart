@@ -112,12 +112,19 @@ enum H2hRoundKind {
 }
 
 /// One seat of a group, as the table needs to see it.
+///
+/// A seat is held for a run of rounds (NK183, migration 0189): the draw's
+/// member from round 1, a player who came in by a seat swap from the swap's
+/// round, and a player who left up to the round before it. Without a swap
+/// the member holds the seat for the whole month.
 final class H2hMember {
   /// Creates a member.
   const H2hMember({
     required this.userId,
     required this.slot,
     required this.joinedAt,
+    this.fromRound = 1,
+    this.untilRound,
   });
 
   /// The platform user who holds the seat.
@@ -129,6 +136,20 @@ final class H2hMember {
 
   /// When the seat was taken. The last tie-break of the table.
   final DateTime joinedAt;
+
+  /// The first round the member plays in this seat.
+  final int fromRound;
+
+  /// The last round the member plays in this seat, or null when he holds
+  /// it to the end of the month.
+  final int? untilRound;
+
+  /// Whether the member holds the seat in round [round].
+  bool activeIn(int round) =>
+      round >= fromRound && (untilRound == null || round <= untilRound!);
+
+  /// Whether the member still holds the seat: no swap took it from him.
+  bool get current => untilRound == null;
 }
 
 /// One round of the month: its number and its Riyadh day.
@@ -678,6 +699,12 @@ final class H2hLeaguePolicy {
   /// [scores] holds what members did in those rounds; a member missing from
   /// a round did not play it. [turns] is the group's secret order of the
   /// round-robin's turns (`turnOf`); empty, the rounds take them in order.
+  ///
+  /// A round is played by the members who hold a seat in it
+  /// (`H2hMember.activeIn`, NK183): after a seat swap the seat's new holder
+  /// meets that seat's opponents, and the group average of a round is over
+  /// the members who held a seat in it. Without a swap every member plays
+  /// every round, as before.
   static List<H2hStanding> table({
     required int capacity,
     required List<H2hMember> members,
@@ -685,9 +712,6 @@ final class H2hLeaguePolicy {
     required List<H2hRoundScore> scores,
     List<int> turns = const <int>[],
   }) {
-    final bySlot = <int, H2hMember>{
-      for (final member in members) member.slot: member,
-    };
     final byKey = <String, H2hRoundScore>{
       for (final score in scores) _key(score.userId, score.round): score,
     };
@@ -696,21 +720,30 @@ final class H2hLeaguePolicy {
     };
 
     for (final round in rounds) {
-      if (members.isEmpty) {
-        break;
+      // NK183: the members who hold a seat in this round (a seat swap of
+      // 0189 changes the holder from its round on).
+      final active = <H2hMember>[
+        for (final member in members)
+          if (member.activeIn(round.number)) member,
+      ];
+      if (active.isEmpty) {
+        continue;
       }
+      final bySlot = <int, H2hMember>{
+        for (final member in active) member.slot: member,
+      };
       final day = DateTime.utc(round.day.year, round.day.month, round.day.day);
       var total = 0;
-      for (final member in members) {
+      for (final member in active) {
         final score = byKey[_key(member.userId, round.number)];
         if (score != null && score.present) {
           total += score.points;
         }
       }
       // NK172_095
-      final count = members.length;
+      final count = active.length;
 
-      for (final member in members) {
+      for (final member in active) {
         final mine = byKey[_key(member.userId, round.number)];
         final points = mine?.points ?? 0;
         final present = mine?.present ?? false;
@@ -770,9 +803,60 @@ final class H2hLeaguePolicy {
       }
     }
 
+    // One standing per player: a player who held two seats of the group
+    // (never in practice) is read at his last one.
+    final lastSeat = <UserId, H2hMember>{};
+    for (final member in members) {
+      final seen = lastSeat[member.userId];
+      if (seen == null || member.fromRound >= seen.fromRound) {
+        lastSeat[member.userId] = member;
+      }
+    }
+    final written = <UserId>{};
     return List<H2hStanding>.unmodifiable([
-      for (final member in members) tallies[member.userId]!.toStanding(member),
+      for (final member in members)
+        if (written.add(member.userId))
+          tallies[member.userId]!.toStanding(lastSeat[member.userId]!),
     ]);
+  }
+
+  /// One player's month put together from the parts he played in several
+  /// groups (NK183: a seat swap moves a player to another group, and he
+  /// keeps his own month). [parts] are his standings in each group over the
+  /// rounds he held a seat there; [seat] is the seat he holds now.
+  static H2hStanding mergeStandings({
+    required List<H2hStanding> parts,
+    required H2hMember seat,
+  }) {
+    var won = 0;
+    var drawn = 0;
+    var lost = 0;
+    var pointsFor = 0;
+    var exact = 0;
+    var present = 0;
+    final matches = <H2hMatch>[];
+    for (final part in parts) {
+      won += part.won;
+      drawn += part.drawn;
+      lost += part.lost;
+      pointsFor += part.pointsFor;
+      exact += part.exactCount;
+      present += part.presentRounds;
+      matches.addAll(part.matches);
+    }
+    matches.sort((a, b) => a.round.compareTo(b.round));
+    return H2hStanding(
+      userId: seat.userId,
+      slot: seat.slot,
+      joinedAt: seat.joinedAt,
+      won: won,
+      drawn: drawn,
+      lost: lost,
+      pointsFor: pointsFor,
+      exactCount: exact,
+      presentRounds: present,
+      matches: List<H2hMatch>.unmodifiable(matches),
+    );
   }
 
   /// [standings] best first, each with its distinct rank.

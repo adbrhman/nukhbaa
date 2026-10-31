@@ -86,6 +86,8 @@ String h2hAdminActionLabel(String action) => switch (action) {
   'jobs_run' => 'تشغيل مهام الدوري',
   'pilot_started' => 'بدء الشهر التجريبي',
   'groups_added' => 'إضافة مجموعات',
+  'seat_moved' => 'تبديل مقعد (هبوط وصعود)',
+  'round_excused' => 'إعفاء جولة من حساب الغياب',
   _ => action,
 };
 
