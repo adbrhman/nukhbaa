@@ -37,6 +37,77 @@ final class SupabaseSession {
   final bool emailConfirmationRequired;
 }
 
+/// The sign-in methods GoTrue itself counts as a recovery
+/// (`AuthenticationMethod.IsRecovery` in supabase/auth): the code of a reset
+/// e-mail verifies as `otp` (POST /verify), its link as `recovery`.
+const Set<String> recoveryAuthMethods = <String>{
+  'otp',
+  'magiclink',
+  'recovery',
+};
+
+/// How long after a recovery was proven its session may set a password: the
+/// life of the reset e-mail's code.
+const Duration recoveryWindow = Duration(hours: 1);
+
+/// Refuses [token] as the proof of a password reset unless its `amr` claim
+/// carries one of [recoveryAuthMethods] stamped within [recoveryWindow] of
+/// [nowUtc] (a minute of clock skew allowed); null when it does.
+///
+/// GoTrue's `PUT /user` takes any signed-in player's access token, so
+/// without this a token seen once (a shared phone, a copied log) set a new
+/// password and kept the account for good. A password, Google or refreshed
+/// session never carries a recovery method.
+///
+/// The claims are read without checking the signature on purpose: the same
+/// token goes to `PUT /user` next, and GoTrue refuses a forged or expired
+/// one there, so a claim that passes here and there is one GoTrue signed.
+AppError? recoveryProofRefusal(String token, {required DateTime nowUtc}) {
+  final Object? amr = _unverifiedClaims(token)?['amr'];
+  if (amr is List) {
+    for (final Object? entry in amr) {
+      if (entry is! Map) {
+        continue;
+      }
+      final Object? method = entry['method'];
+      final Object? stamp = entry['timestamp'];
+      if (method is! String ||
+          !recoveryAuthMethods.contains(method) ||
+          stamp is! num) {
+        continue;
+      }
+      final DateTime proven = DateTime.fromMillisecondsSinceEpoch(
+        (stamp * 1000).round(),
+        isUtc: true,
+      );
+      final Duration age = nowUtc.toUtc().difference(proven);
+      if (age <= recoveryWindow && age >= const Duration(minutes: -1)) {
+        return null;
+      }
+    }
+  }
+  return const AppError.validation(
+    'auth.recovery_required',
+    'انتهت صلاحية رمز الاستعادة أو أنه غير صالح. اطلب رمزاً جديداً من «نسيت كلمة المرور؟».',
+  );
+}
+
+/// The payload of a JWT, or null when [token] is not one.
+Map<String, Object?>? _unverifiedClaims(String token) {
+  final List<String> parts = token.split('.');
+  if (parts.length != 3) {
+    return null;
+  }
+  try {
+    final Object? decoded = jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+    );
+    return decoded is Map<String, Object?> ? decoded : null;
+  } on FormatException {
+    return null;
+  }
+}
+
 /// Talks to a Supabase project's GoTrue (Auth) REST API to exchange an
 /// email/password for a Supabase session. This is the ONLY component that
 /// issues HTTP to Supabase Auth (Infrastructure ADR: external connections live
@@ -50,18 +121,22 @@ final class SupabaseAuthClient {
   /// Creates a client for the project described by [config], using
   /// [httpClient] for I/O. [timeout] bounds every individual GoTrue call
   /// (default 15s; pass null in tests that intentionally leave a call
-  /// unresolved).
+  /// unresolved). [clock] dates a password reset's recovery proof
+  /// ([recoveryProofRefusal]); the system clock by default.
   SupabaseAuthClient({
     required AuthConfig config,
     required http.Client httpClient,
     Duration? timeout = const Duration(seconds: 15),
+    DateTime Function()? clock,
   }) : _config = config,
        _httpClient = httpClient,
-       _timeout = timeout;
+       _timeout = timeout,
+       _clock = clock ?? DateTime.now;
 
   final AuthConfig _config;
   final http.Client _httpClient;
   final Duration? _timeout;
+  final DateTime Function() _clock;
 
   /// Exchanges [email] + [password] for a session via
   /// POST /token?grant_type=password.
@@ -159,6 +234,13 @@ final class SupabaseAuthClient {
           ),
         ),
       );
+    }
+
+    // Only a session that proved a recovery may set a password; GoTrue
+    // alone would take any player's token (see recoveryProofRefusal).
+    final AppError? notRecovery = recoveryProofRefusal(token, nowUtc: _clock());
+    if (notRecovery != null) {
+      return Future.value(Result.err(notRecovery));
     }
 
     return _actionRequest(

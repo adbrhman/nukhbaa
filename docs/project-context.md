@@ -7579,6 +7579,31 @@ migration. Statistics were reset on 2026-11-01 19:19 UTC.
 - To measure: reset `pg_stat_statements` right after the deploy, and
   batch the day's scripts into one deploy where possible.
 
+### A password is set only by a proven recovery (script 192, 2026-11-01)
+
+Found in the 2026-11-01 review: `POST /auth/password-reset/update` forwarded
+any bearer token to GoTrue's `PUT /user`, which accepts every signed-in
+session. A player's access token seen once (a shared phone, a copied log, the
+web build's storage) set a new password without the old one, and with no
+server-side revoke on sign-out (decision 2026-10-02) the account stayed
+taken: points, prize, deletion.
+
+- `SupabaseAuthClient.updatePassword` now asks `recoveryProofRefusal` first:
+  the token's `amr` claim must carry a method GoTrue itself counts as a
+  recovery (`otp` for the e-mail's code through POST /verify, `recovery` for
+  its link, `magiclink`), stamped within the last hour (one minute of clock
+  skew allowed). Otherwise `400 auth.recovery_required` with an Arabic line
+  telling the player to ask for a new code, and nothing reaches GoTrue.
+- The claims are read unverified on purpose: the same token goes to
+  `PUT /user`, where GoTrue checks its signature and expiry.
+- Both reset flows (the code and the link) are recovery sessions, so nothing
+  changes for a player who forgot his password; there is no in-app
+  "change password" for a signed-in player.
+- Tests: server `auth_password_reset_update_test.dart` (the route through
+  the real `UpdatePassword`, `SupabaseAuthGateway` and `SupabaseAuthClient`,
+  GoTrue mocked).
+- No migration, no app update; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
