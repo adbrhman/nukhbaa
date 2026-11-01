@@ -7,6 +7,7 @@ import 'package:application/src/leaderboard/ports/fixture_totals_reader.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
+import 'package:application/src/scoring/ports/suspended_predictors_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -112,13 +113,15 @@ final class GetLiveStanding {
     required RulesetProvider rulesets,
     required LiveScoreBoard? liveScores,
     FixtureScheduleRepository? schedules,
+    SuspendedPredictorsReader? suspendedPredictors,
   }) : _competition = competition,
        _fixturePredictions = fixturePredictions,
        _totals = totals,
        _results = results,
        _rulesets = rulesets,
        _liveScores = liveScores,
-       _schedules = schedules;
+       _schedules = schedules,
+       _suspended = suspendedPredictors;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
@@ -127,6 +130,11 @@ final class GetLiveStanding {
   final RulesetProvider _rulesets;
   final LiveScoreBoard? _liveScores;
   final FixtureScheduleRepository? _schedules;
+
+  /// Optional: without it every prediction counts, as before
+  /// 2026-11-01. With it a suspended account's call is left out: it is on
+  /// no board, gains nothing, and takes no sole exact bonus.
+  final SuspendedPredictorsReader? _suspended;
 
   /// The viewer's live standing in [seasonId].
   Future<Result<LiveStanding>> call({
@@ -217,8 +225,22 @@ final class GetLiveStanding {
       if (predictions is Err<List<FixturePredictionView>>) {
         return Result.err(predictions.error);
       }
-      final List<FixturePredictionView> views =
-          (predictions as Ok<List<FixturePredictionView>>).value;
+      // A suspended account is on no board (2026-10-02) and earns no
+      // reward (2026-11-01): its call is not counted at all.
+      final SuspendedPredictorsReader? suspendedReader = _suspended;
+      Set<ParticipantId> suspended = const <ParticipantId>{};
+      if (suspendedReader != null) {
+        final read = await suspendedReader.suspendedOn(fixture);
+        if (read is Err<Set<ParticipantId>>) {
+          return Result.err(read.error);
+        }
+        suspended = (read as Ok<Set<ParticipantId>>).value;
+      }
+      final List<FixturePredictionView> views = <FixturePredictionView>[
+        for (final FixturePredictionView view
+            in (predictions as Ok<List<FixturePredictionView>>).value)
+          if (!suspended.contains(view.prediction.participantId)) view,
+      ];
       final List<FixtureScoreResult> grades = <FixtureScoreResult>[
         for (final FixturePredictionView view in views)
           _grade(

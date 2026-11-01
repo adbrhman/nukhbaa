@@ -2828,6 +2828,10 @@ final class CompositionRoot {
     // One schedule cache for every reader (the feed, the boards and a
     // player's history): each fixture held on its own until a write drops
     // it (script 155; the history kept a copy of its own until then).
+    // Read fresh at every scoring: a suspended account takes no sole
+    // exact bonus and is left out of the live view (2026-11-01).
+    final suspendedPredictors = PostgresSuspendedPredictorsReader(connection);
+
     final fixtureScheduleRepository = CachedFixtureScheduleRepository(
       PostgresFixtureScheduleRepository(connection),
       ttl: holdUntilWritten,
@@ -3756,6 +3760,8 @@ final class CompositionRoot {
         rulesetProvider: rulesetProvider,
         // Hidden and test fixtures are not scored (migration 0098).
         fixtureScheduleRepository: fixtureScheduleRepository,
+        // A suspended account takes no sole exact bonus (2026-11-01).
+        suspendedPredictors: suspendedPredictors,
         // The exact-hit announcement rides the same proven transport as the
         // daily reminder: same FCM sender, same device_tokens table. With no
         // service account configured `pushSender` is the no-op, so scoring
@@ -3854,6 +3860,8 @@ final class CompositionRoot {
         liveScores: liveScoreBoard,
         // The kickoff decides the sole exact bonus (script 159).
         schedules: fixtureScheduleRepository,
+        // A suspended account is not counted live (2026-11-01).
+        suspendedPredictors: suspendedPredictors,
       ),
       adminGetFixtureScores: AdminGetFixtureScores(
         fixtureScoreRepository: fixtureScoreRepository,

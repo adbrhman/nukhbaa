@@ -7604,6 +7604,33 @@ taken: points, prize, deletion.
   GoTrue mocked).
 - No migration, no app update; the server on push.
 
+### A suspended account takes no points and no reward (script 193, 2026-11-01)
+
+Decided by the owner on 2026-11-01: "a suspended account gets no points and
+no reward". Since 2026-10-02 a suspended account is on no board and its
+points are out of every standing (0085), reinstatement bringing both back;
+but the sole exact call (script 159, from 1 November) still counted every
+prediction of the match, so a suspended account's exact call took the
+bonus from the real sole caller (3 instead of 6, or 6 instead of 9), or
+took it itself.
+
+- `SuspendedPredictorsReader` (application port, scoring) /
+  `PostgresSuspendedPredictorsReader`: the predictors of one fixture whose
+  account is `suspended` (deleted accounts are suspended for good, 0178).
+- `ScoreFixture` reads it when the result is in and the fixture has an exact
+  call: a suspended exact call is left out of the count
+  (`Scoring.soloExactIndex` / `applySoloExactBonus` take `ignoring`), so it
+  neither takes the bonus nor shares it, and its owner gets no winner push.
+  Its stored grade and points stay as they were (hidden while suspended,
+  back on reinstatement, as decided 2026-10-02): nothing is deleted.
+- `GetLiveStanding` leaves a suspended account's call out of the live view:
+  no sole exact for it, and no live line for a rival who is on no board.
+- A fixture already scored keeps its bonus until it is scored again (a
+  corrected result); the next scoring follows the rule.
+- Tests: application `score_fixture_suspended_test.dart`, the live standing
+  test's sole exact group.
+- No migration, no app update; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

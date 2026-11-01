@@ -7,6 +7,7 @@ import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/scoring/ports/fixture_result_repository.dart';
 import 'package:application/src/scoring/ports/fixture_score_repository.dart';
+import 'package:application/src/scoring/ports/suspended_predictors_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -41,7 +42,10 @@ import 'package:shared/shared.dart';
 ///    [ScoringRuleset.soloExactBonusPoints] more (3 + 3 = 6, a double
 ///    6 + 3 = 9), on a fixture that kicked off at or after
 ///    [ScoringRuleset.soloExactSince] -- read from the stored kickoff, so an
-///    unknown kickoff (no schedule repository) pays no bonus;
+///    unknown kickoff (no schedule repository) pays no bonus. A suspended
+///    account's exact call is left out of that count, and neither takes
+///    the bonus nor shares it ([SuspendedPredictorsReader], decided by
+///    the owner 2026-11-01); nor is it told of its hit;
 /// 7. persists all [ParticipantFixtureScore]s atomically
 ///    ([FixtureScoreRepository.saveFixtureScores]).
 ///
@@ -71,12 +75,14 @@ final class ScoreFixture {
     required RulesetProvider rulesetProvider,
     NotifyFixtureWinners? winnerNotifier,
     FixtureScheduleRepository? fixtureScheduleRepository,
+    SuspendedPredictorsReader? suspendedPredictors,
   }) : _fixturePredictions = fixturePredictionRepository,
        _results = resultRepository,
        _scores = scoreRepository,
        _rulesetProvider = rulesetProvider,
        _winnerNotifier = winnerNotifier,
-       _schedules = fixtureScheduleRepository;
+       _schedules = fixtureScheduleRepository,
+       _suspended = suspendedPredictors;
 
   final FixturePredictionRepository _fixturePredictions;
   final FixtureResultRepository _results;
@@ -89,6 +95,10 @@ final class ScoreFixture {
 
   /// Optional: without it every fixture is scored, as before 0098.
   final FixtureScheduleRepository? _schedules;
+
+  /// Optional: without it every prediction counts for the sole exact
+  /// call, as before 2026-11-01.
+  final SuspendedPredictorsReader? _suspended;
 
   /// Scores fixture [fixtureId] on behalf of admin [principal].
   Future<Result<List<ParticipantFixtureScore>>> call({
@@ -182,6 +192,27 @@ final class ScoreFixture {
       fixtureScores.add((scored as Ok<ParticipantFixtureScore>).value);
     }
 
+    // A suspended account earns nothing on any board (2026-10-02) and no
+    // reward (2026-11-01): its exact call is not counted for the sole
+    // exact call. Read only when there is an exact call to weigh.
+    Set<ParticipantId> suspended = const <ParticipantId>{};
+    final SuspendedPredictorsReader? suspendedReader = _suspended;
+    if (result != null &&
+        suspendedReader != null &&
+        fixtureScores.any(
+          (score) => score.result.grade == FixtureScoreGrade.exactScoreline,
+        )) {
+      final read = await suspendedReader.suspendedOn(fixture);
+      if (read is Err<Set<ParticipantId>>) {
+        return Result.err(read.error);
+      }
+      suspended = (read as Ok<Set<ParticipantId>>).value;
+    }
+    final Set<int> ignoring = <int>{
+      for (var i = 0; i < fixtureScores.length; i++)
+        if (suspended.contains(fixtureScores[i].participantId)) i,
+    };
+
     // The sole exact call, among every prediction of the fixture: graded
     // here, where all of them are, and stored in its points.
     final int? soloIndex = result == null
@@ -192,6 +223,7 @@ final class ScoreFixture {
             ],
             ruleset: ruleset,
             kickoffAt: kickoffAt,
+            ignoring: ignoring,
           );
     final List<ParticipantFixtureScore> finalScores = result == null
         ? fixtureScores
@@ -199,6 +231,7 @@ final class ScoreFixture {
             scores: fixtureScores,
             ruleset: ruleset,
             kickoffAt: kickoffAt,
+            ignoring: ignoring,
           );
 
     final saved = await _scores.saveFixtureScores(finalScores);
@@ -213,7 +246,10 @@ final class ScoreFixture {
     if (notifier != null) {
       await notifier(
         fixture: fixture,
-        scores: finalScores,
+        scores: <ParticipantFixtureScore>[
+          for (final score in finalScores)
+            if (!suspended.contains(score.participantId)) score,
+        ],
         doubled: <ParticipantId>{
           for (final view in predictions)
             if (view.prediction.isDouble) view.prediction.participantId,

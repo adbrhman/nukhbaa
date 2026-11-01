@@ -287,6 +287,7 @@ export 'src/scoring/ports/fixture_score_counter.dart';
 export 'src/scoring/ports/fixture_score_repository.dart';
 export 'src/scoring/ports/my_fixture_score_reader.dart';
 export 'src/scoring/ports/score_repository.dart';
+export 'src/scoring/ports/suspended_predictors_reader.dart';
 export 'src/scoring/ports/unscored_result_finder.dart';
 export 'src/scoring/record_fixture_result.dart';
 export 'src/scoring/rescore_earlier_kickoff.dart';

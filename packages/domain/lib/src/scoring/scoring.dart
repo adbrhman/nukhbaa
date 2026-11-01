@@ -183,11 +183,13 @@ abstract final class Scoring {
     required List<ParticipantFixtureScore> scores,
     required ScoringRuleset ruleset,
     required DateTime? kickoffAt,
+    Set<int> ignoring = const <int>{},
   }) {
     final solo = soloExactIndex(
       grades: <FixtureScoreGrade>[for (final s in scores) s.result.grade],
       ruleset: ruleset,
       kickoffAt: kickoffAt,
+      ignoring: ignoring,
     );
     if (solo == null) {
       return scores;
@@ -214,17 +216,22 @@ abstract final class Scoring {
   /// The place in [grades] (every prediction of one fixture) of its only
   /// exact call, when the sole exact bonus pays on a kickoff at
   /// [kickoffAt]; null when there is none, more than one, or no bonus.
+  /// The places in [ignoring] are not counted at all: a suspended
+  /// account's exact call neither takes the bonus nor shares it
+  /// (decided by the owner 2026-11-01).
   static int? soloExactIndex({
     required List<FixtureScoreGrade> grades,
     required ScoringRuleset ruleset,
     required DateTime? kickoffAt,
+    Set<int> ignoring = const <int>{},
   }) {
     if (!ruleset.soloExactBonusAppliesTo(kickoffAt)) {
       return null;
     }
     int? found;
     for (var i = 0; i < grades.length; i++) {
-      if (grades[i] != FixtureScoreGrade.exactScoreline) {
+      if (grades[i] != FixtureScoreGrade.exactScoreline ||
+          ignoring.contains(i)) {
         continue;
       }
       if (found != null) {

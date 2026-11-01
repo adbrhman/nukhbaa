@@ -106,6 +106,17 @@ final class _Totals implements FixtureTotalsReader {
   }
 }
 
+/// The suspended accounts among a fixture's predictors.
+final class _Suspended implements SuspendedPredictorsReader {
+  _Suspended(this.ids);
+
+  final Set<ParticipantId> ids;
+
+  @override
+  Future<Result<Set<ParticipantId>>> suspendedOn(FixtureRef fixture) async =>
+      Result.ok(ids);
+}
+
 LiveScore _score(int home, int away) => LiveScore(
   homeGoals: home,
   awayGoals: away,
@@ -126,6 +137,7 @@ _Harness _harness({
   RulesetSnapshot? rules,
   DateTime? kickoff,
   bool rivalExactToo = false,
+  Set<String>? suspended,
 }) {
   final competition = FakeCompetitionRepository()
     ..seedParticipant(
@@ -184,6 +196,11 @@ _Harness _harness({
       results: results,
       rulesets: FakeRulesetProvider(Result.ok(rules ?? _rules)),
       liveScores: board == null ? null : live,
+      suspendedPredictors: suspended == null
+          ? null
+          : _Suspended(<ParticipantId>{
+              for (final String id in suspended) ParticipantId(id),
+            }),
       schedules: kickoff == null
           ? null
           : (FakeFixtureScheduleRepository()..seed(
@@ -241,6 +258,22 @@ void main() {
 
       expect(standing.fixtures.single.myPoints, 9);
       expect(standing.pointsIfEnded, 12);
+    });
+
+    test('a suspended rival on the running score takes nothing: 9', () async {
+      final h = _harness(
+        board: _Board({_live: _score(1, 0)}),
+        rules: _soloRules,
+        kickoff: november,
+        rivalExactToo: true,
+        suspended: {_rival},
+      );
+
+      final LiveStanding standing = await _read(h);
+
+      expect(standing.fixtures.single.myPoints, 9);
+      expect(standing.pointsIfEnded, 12);
+      expect(standing.rankIfEnded, 1);
     });
 
     test('two on the running score share no bonus', () async {
