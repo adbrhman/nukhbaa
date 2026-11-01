@@ -7537,6 +7537,48 @@ sends the matches exactly as before; the selection only scores and logs.
   day of decision); the third day is noted `not every league was read`.
 - Tests: server `fixtures_anchor_test.dart`.
 
+### Every read held until written (script 192, 2026-11-01)
+
+Supabase: the cycle of 28 October - 28 November stood at 0.65 GB after
+five days (about 130 MB a day; 232 MB on 31 October, the month's turn and
+four deploys, each of which empties every in-process cache); the Free
+Plan allows about 161 MB a day, and the restriction starts on 22 November
+if the organization stays over. `pg_stat_statements` (since 2026-10-25
+21:58 UTC, before script 155) still put first reads with no cache or a
+cache of seconds: a fixture's predictions (10185 reads, about 103 rows,
+20 s), the players' names (10114, about 111, none), a season's fixtures
+(4536, about 286, 60 s), a player's own points (1826, about 364, none)
+and a player's history (3611, about 362, 30 minutes). The owner asked for
+a root fix: each row is read from the database once and read again only
+when this server writes it. Server only: no APK, no contract, no
+migration. Statistics were reset on 2026-11-01 19:19 UTC.
+
+- One bound for every held read, `holdUntilWritten` (6 hours) in the
+  composition root; it only bounds an edit made outside the server (the
+  SQL Editor). A restart of the server drops every cache.
+- `CachedParticipantReader` (new): the names, per participant, a
+  deleted account's absence too. `CachedUserDirectory.onNameChanged`
+  (a rename, an admin's rename, `forget` on a deletion) drops them.
+- `CachedMyFixtureScoreReader` (new): `GET /me/fixture-scores` per
+  player. `CachedFixtureResultReads.onWritten` and
+  `CachedFixtureScoreRepository.onWritten` drop every player's rows; a
+  prediction adds no row (it has neither a result nor a score).
+- `CachedFixturePredictionReads`: `forgetFixture` (called by
+  `CachedPredictionHistory.onFixtureWritten` with the split's), `forget`
+  (a merge); its keys in lower case. `LinkFixtureToSeason`,
+  `RemoveFixtureFromSeason`, the provider sync and
+  `GetFixturePredictionDistribution` are handed it, so the links and
+  the season's fixture list are held until a link or unlink.
+- The history, schedules, results, scores and win-share split keep their
+  writers and take the same bound (30 minutes before).
+- Tests: `hold_until_written_test.dart` (the board, the split, my points
+  and the feed through their use-cases; the writes through
+  `SubmitFixturePrediction`, `UpdateDisplayName`, `RecordFixtureResult`,
+  `ScoreFixture` and `LinkFixtureToSeason`, wired as the composition root
+  wires them).
+- To measure: reset `pg_stat_statements` right after the deploy, and
+  batch the day's scripts into one deploy where possible.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

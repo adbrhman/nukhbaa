@@ -31,13 +31,19 @@ final class CachedFixtureResultReads implements FixtureResultRepository {
     Duration ttl = const Duration(minutes: 30),
     int maxEntries = 4096,
     DateTime Function() now = DateTime.now,
-  }) : _held = TtlCache<String, _Found>(
+    void Function()? onWritten,
+  }) : _onWritten = onWritten,
+       _held = TtlCache<String, _Found>(
          ttl: ttl,
          maxEntries: maxEntries,
          now: now,
        );
 
   final FixtureResultRepository _inner;
+
+  /// Called after every result write, failed ones too, so a cache built on
+  /// the results elsewhere (a player's own points, script 192) drops them.
+  final void Function()? _onWritten;
 
   /// One entry per fixture id, in lower case (the database's form).
   final TtlCache<String, _Found> _held;
@@ -51,6 +57,7 @@ final class CachedFixtureResultReads implements FixtureResultRepository {
     final Result<void> written = await _inner.upsert(result, recordedAt);
     // Dropped on failure too: a write that errored may still have landed.
     _held.remove(result.fixture.value.toLowerCase());
+    _onWritten?.call();
     return written;
   }
 

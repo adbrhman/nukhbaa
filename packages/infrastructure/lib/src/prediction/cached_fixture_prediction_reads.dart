@@ -18,11 +18,16 @@ import 'package:shared/shared.dart';
 /// ([ReadCoalescer]); a successful answer serves every request for its ttl.
 /// Failures are never cached.
 ///
-/// Wired into the read use-cases only (the scores, predictions and board
-/// routes); submitting a prediction and the admin's season links keep the
-/// plain repository. A link changed elsewhere therefore takes up to
-/// [linkTtl] to show here, in the season's fixture list as well. The writes are still passed through, and drop
-/// what they touch, should a writer ever be handed this decorator.
+/// Held until written (script 192): the season links are written through
+/// this decorator (`LinkFixtureToSeason`, `RemoveFixtureFromSeason` and the
+/// provider sync are handed it), which drops the links and the fixture
+/// lists; a prediction is written through `CachedPredictionHistory`, whose
+/// `onFixtureWritten` calls [forgetFixture]; a merge calls [forget]. The
+/// ttls then only bound an edit made outside this server (the SQL Editor).
+/// Between 25 October and 1 November 2026, with ttls of 20 and 60 seconds,
+/// a fixture's predictions were read 10185 times (about 103 rows each) and
+/// a season's fixtures 4536 times (about 286) while the Supabase egress
+/// quota was exceeded.
 final class CachedFixturePredictionReads
     implements FixturePredictionRepository {
   /// Wraps [inner]; [now] is injectable for tests.
@@ -60,6 +65,19 @@ final class CachedFixturePredictionReads
   _predictionLoads =
       ReadCoalescer<String, Result<List<FixturePredictionView>>>();
 
+  /// Drops [fixture]'s predictions: a prediction on it was written through
+  /// another decorator (`CachedPredictionHistory.onFixtureWritten`).
+  void forgetFixture(FixtureRef fixture) =>
+      _predictions.remove(fixture.value.toLowerCase());
+
+  /// Drops every held answer: predictions or links moved without passing
+  /// through here (a merge of two copies of a match).
+  void forget() {
+    _predictions.clear();
+    _links.clear();
+    _seasonFixtures.clear();
+  }
+
   @override
   Future<Result<SeasonFixture?>> findSeasonFixture(
     SeasonId seasonId,
@@ -89,20 +107,19 @@ final class CachedFixturePredictionReads
   Future<Result<List<FixturePredictionView>>> listByFixture(
     FixtureRef fixture,
   ) {
-    final List<FixturePredictionView>? cached = _predictions.read(
-      fixture.value,
-    );
+    final String id = fixture.value.toLowerCase();
+    final List<FixturePredictionView>? cached = _predictions.read(id);
     if (cached != null) {
       return Future<Result<List<FixturePredictionView>>>.value(
         Result<List<FixturePredictionView>>.ok(cached),
       );
     }
     final int startedAt = _predictions.generation;
-    return _predictionLoads.run('$startedAt|${fixture.value}', () async {
+    return _predictionLoads.run('$startedAt|$id', () async {
       final Result<List<FixturePredictionView>> found = await _inner
           .listByFixture(fixture);
       if (found case Ok<List<FixturePredictionView>>(:final value)) {
-        _predictions.write(fixture.value, value, startedAt: startedAt);
+        _predictions.write(id, value, startedAt: startedAt);
       }
       return found;
     });

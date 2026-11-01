@@ -23,13 +23,19 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
     Duration ttl = const Duration(minutes: 30),
     int maxEntries = 512,
     DateTime Function() now = DateTime.now,
-  }) : _byFixture = TtlCache<String, List<ParticipantFixtureScore>>(
+    void Function()? onWritten,
+  }) : _onWritten = onWritten,
+       _byFixture = TtlCache<String, List<ParticipantFixtureScore>>(
          ttl: ttl,
          maxEntries: maxEntries,
          now: now,
        );
 
   final FixtureScoreRepository _inner;
+
+  /// Called after every score write, failed ones too, so a cache built on
+  /// the scores elsewhere (a player's own points, script 192) drops them.
+  final void Function()? _onWritten;
   final TtlCache<String, List<ParticipantFixtureScore>> _byFixture;
   final ReadCoalescer<String, Result<List<ParticipantFixtureScore>>> _loads =
       ReadCoalescer<String, Result<List<ParticipantFixtureScore>>>();
@@ -45,6 +51,7 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
     }) {
       _byFixture.remove(fixtureId);
     }
+    _onWritten?.call();
     return result;
   }
 

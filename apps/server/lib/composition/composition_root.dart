@@ -2742,7 +2742,22 @@ final class CompositionRoot {
     final verifier = CachedTokenVerifier(
       SupabaseJwtVerifier(authConfig, jwksClient),
     );
-    final directory = CachedUserDirectory(PostgresUserDirectory(connection));
+    // Script 192: every cache below is held until written -- each row is
+    // read once and read again only when this server writes it (or after
+    // this bound, for an edit made outside the server, the SQL Editor). A
+    // restart of the server drops them all.
+    const holdUntilWritten = Duration(hours: 6);
+
+    // The players' names on every board, held until a rename (script 192):
+    // the directory below is how every rename and deletion is written.
+    final participantReader = CachedParticipantReader(
+      PostgresParticipantReader(connection),
+      ttl: holdUntilWritten,
+    );
+    final directory = CachedUserDirectory(
+      PostgresUserDirectory(connection),
+      onNameChanged: participantReader.forgetNames,
+    );
 
     // Identity slice (continued): email/password auth proxy, backed by
     // the existing SupabaseAuthClient adapted to the AuthGateway port.
@@ -2785,6 +2800,7 @@ final class CompositionRoot {
     // FixturePredictionTallyReader for why.
     final fixturePredictionTallyReader = CachedFixturePredictionTallyReader(
       PostgresFixturePredictionTallyReader(connection),
+      ttl: holdUntilWritten,
     );
 
     // Scoring slice: its own Postgres-backed adapters over the scoring.* tables
@@ -2797,8 +2813,16 @@ final class CompositionRoot {
 
     // Axiom 4 Amendment: the per-fixture Scoring context, its own
     // Postgres-backed repository.
+    // A player's own points (GET /me/fixture-scores), held until a result
+    // or a score is written (script 192).
+    final myFixtureScoreReader = CachedMyFixtureScoreReader(
+      PostgresMyFixtureScoreReader(connection),
+      ttl: holdUntilWritten,
+    );
     final fixtureScoreRepository = CachedFixtureScoreRepository(
       PostgresFixtureScoreRepository(connection),
+      ttl: holdUntilWritten,
+      onWritten: myFixtureScoreReader.forget,
     );
 
     // One schedule cache for every reader (the feed, the boards and a
@@ -2806,6 +2830,7 @@ final class CompositionRoot {
     // it (script 155; the history kept a copy of its own until then).
     final fixtureScheduleRepository = CachedFixtureScheduleRepository(
       PostgresFixtureScheduleRepository(connection),
+      ttl: holdUntilWritten,
       maxEntries: 8192,
     );
 
@@ -2819,9 +2844,13 @@ final class CompositionRoot {
     // that fixture, so the result reads are held until then (script 155).
     final fixturePredictionReads = CachedFixturePredictionReads(
       fixturePredictionRepository,
+      linkTtl: holdUntilWritten,
+      predictionsTtl: holdUntilWritten,
     );
     final fixtureResultReads = CachedFixtureResultReads(
       fixtureResultRepository,
+      ttl: holdUntilWritten,
+      onWritten: myFixtureScoreReader.forget,
     );
 
     // A player's own history (GET /me/fixture-predictions): every
@@ -2833,7 +2862,11 @@ final class CompositionRoot {
     // or merging copies drops the schedules (forgetSchedules).
     final predictionHistory = CachedPredictionHistory(
       fixturePredictionRepository,
-      onFixtureWritten: fixturePredictionTallyReader.forgetFixture,
+      ttl: holdUntilWritten,
+      onFixtureWritten: (FixtureRef fixture) {
+        fixturePredictionTallyReader.forgetFixture(fixture);
+        fixturePredictionReads.forgetFixture(fixture);
+      },
     );
     void forgetSchedules() {
       fixtureScheduleRepository.forget();
@@ -2856,7 +2889,7 @@ final class CompositionRoot {
     // ParticipantReader port, over competition.participants) to gate the read
     // to a self-owned participant, then projects the balance / lists the stream.
     final ledgerRepository = PostgresLedgerRepository(connection);
-    final participantReader = PostgresParticipantReader(connection);
+    // participantReader: built with the directory above (script 192).
 
     // Leaderboards slice: a read-only Postgres-backed adapter over the
     // season-scoped projection VIEW leaderboard.season_standings (a SUM(amount)
@@ -3092,7 +3125,8 @@ final class CompositionRoot {
         teamRepository: teamRepository,
         competitionRepository: competitionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        // Its links drop the season's cached fixture list (script 192).
+        fixturePredictionRepository: fixturePredictionReads,
         idGenerator: idGenerator,
         rules: phaseOneRules,
         // Highlightly allows 100 requests a day and they are wanted for
@@ -3652,13 +3686,15 @@ final class CompositionRoot {
         fixturePredictionRepository: fixturePredictionRepository,
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
+      // Through the read caches, so a link or unlink drops the season's
+      // cached fixture list at once (script 192).
       linkFixtureToSeason: LinkFixtureToSeason(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
       ),
       removeFixtureFromSeason: RemoveFixtureFromSeason(
         competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
         fixtureResultRepository: fixtureResultRepository,
       ),
       // Read again every 2 minutes per open feed while a match is on: the
@@ -3768,7 +3804,7 @@ final class CompositionRoot {
       ),
       getFixtureResult: GetFixtureResult(results: fixtureResultReads),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
-        fixturePredictionRepository: fixturePredictionRepository,
+        fixturePredictionRepository: fixturePredictionReads,
       ),
       listFixturePredictions: ListFixturePredictions(
         competitionRepository: competitionRepository,
@@ -4086,6 +4122,8 @@ final class CompositionRoot {
             forgetSchedules();
             predictionHistory.forget();
             fixturePredictionTallyReader.forget();
+            fixturePredictionReads.forget();
+            myFixtureScoreReader.forget();
           },
         ),
         rescore: rescoreFixture,
@@ -4116,9 +4154,7 @@ final class CompositionRoot {
       ),
       // One query for every card and history row (migration 0171), in
       // place of a scores request per match (script 75).
-      listMyFixtureScores: ListMyFixtureScores(
-        reader: PostgresMyFixtureScoreReader(connection),
-      ),
+      listMyFixtureScores: ListMyFixtureScores(reader: myFixtureScoreReader),
       listMyFixturePredictions: ListMyFixturePredictions(
         fixturePredictionRepository: predictionHistory,
         // A hidden fixture's prediction waits out of sight (migration 0098).

@@ -30,7 +30,9 @@ final class CachedUserDirectory implements UserDirectory {
     Duration offsetTtl = const Duration(hours: 12),
     int maxOffsets = 4096,
     DateTime Function() now = DateTime.now,
-  }) : _users = TtlCache<String, User>(
+    void Function()? onNameChanged,
+  }) : _onNameChanged = onNameChanged,
+       _users = TtlCache<String, User>(
          ttl: userTtl,
          maxEntries: maxUsers,
          now: now,
@@ -47,12 +49,20 @@ final class CachedUserDirectory implements UserDirectory {
        );
 
   final UserDirectory _inner;
+
+  /// Called after a rename (failed ones too) and on [forget] (an admin's
+  /// change, a deleted account), so the names held for the boards
+  /// (`CachedParticipantReader`, script 192) are read again.
+  final void Function()? _onNameChanged;
   final TtlCache<String, User> _users;
   final TtlCache<String, StoredAvatar> _avatars;
   final TtlCache<String, int> _offsets;
 
   /// Drops [id]'s cached user so the next read comes from the database.
-  void forget(UserId id) => _users.remove(id.value);
+  void forget(UserId id) {
+    _users.remove(id.value);
+    _onNameChanged?.call();
+  }
 
   @override
   Future<Result<User?>> findUser(UserId id) async {
@@ -76,7 +86,14 @@ final class CachedUserDirectory implements UserDirectory {
   Future<Result<User>> updateDisplayName(
     UserId userId,
     String displayName,
-  ) async => _remember(await _inner.updateDisplayName(userId, displayName));
+  ) async {
+    final Result<User> result = await _inner.updateDisplayName(
+      userId,
+      displayName,
+    );
+    _onNameChanged?.call();
+    return _remember(result);
+  }
 
   /// The app reports its offset on every start (script 101): an offset this
   /// directory wrote for the same player within `offsetTtl` is not written
