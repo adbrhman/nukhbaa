@@ -246,6 +246,16 @@ void main() {
       await directory.readAvatar(const UserId(_u1));
       expect(inner.avatarReads, 2);
     });
+
+    test('a deleted account\'s picture is read again, never served '
+        'from memory', () async {
+      await directory.readAvatar(const UserId(_u1));
+      expect(inner.avatarReads, 1);
+      // What PostgresAccountDeletion calls once the account is erased.
+      directory.forget(const UserId(_u1));
+      await directory.readAvatar(const UserId(_u1));
+      expect(inner.avatarReads, 2);
+    });
   });
 
   group('CachedFixtureScoreRepository', () {

@@ -164,7 +164,9 @@ LEFT JOIN scoring.fixture_results res ON res.fixture_id = v.fixture_id
 ''';
 
   /// Each paired player's points, exact scorelines and predictions on the
-  /// stage's fixtures still in play.
+  /// stage's fixtures still in play. A suspended account counts none of
+  /// them, so it is absent and its opponent goes through on a walkover
+  /// (decided by the owner 2026-11-01: no reward while suspended).
   static const String sidesSql = '''
 WITH st AS (
   SELECT s.id, s.day FROM gamification.h2h_cup_stages s
@@ -196,12 +198,15 @@ SELECT pl.user_id::text                                    AS user_id,
        count(fp.id)::integer                               AS predicted_count
 FROM players pl
 JOIN competition.participants p ON p.user_id = pl.user_id
+JOIN identity.users u ON u.id = pl.user_id
 JOIN competition.season_fixtures sf ON sf.season_id = p.season_id
 JOIN valid v ON v.fixture_id = sf.fixture_id
 LEFT JOIN prediction.fixture_predictions fp
   ON fp.fixture_id = v.fixture_id AND fp.participant_id = p.id
+  AND u.status <> 'suspended'
 LEFT JOIN scoring.fixture_scores s
   ON s.fixture_id = v.fixture_id AND s.participant_id = p.id
+  AND u.status <> 'suspended'
 GROUP BY pl.user_id
 ''';
 

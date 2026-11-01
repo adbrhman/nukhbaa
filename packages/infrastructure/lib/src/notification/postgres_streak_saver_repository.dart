@@ -47,7 +47,7 @@ SELECT fo.user_id::text AS user_id,
        COALESCE(np.streak_saver, true) AS streak_saver
 FROM first_open fo
 JOIN notification.device_tokens dt ON dt.user_id = fo.user_id
-JOIN identity.users u ON u.id = fo.user_id
+JOIN identity.users u ON u.id = fo.user_id AND u.status = 'active'
 LEFT JOIN notification.notification_preferences np
   ON np.user_id = fo.user_id
 WHERE fo.kickoff_at > @from

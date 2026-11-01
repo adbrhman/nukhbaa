@@ -59,7 +59,7 @@ SELECT pu.user_id::text AS user_id,
        COALESCE(np.prediction_reminder, true) AS prediction_reminder
 FROM per_user pu
 JOIN notification.device_tokens dt ON dt.user_id = pu.user_id
-JOIN identity.users u ON u.id = pu.user_id
+JOIN identity.users u ON u.id = pu.user_id AND u.status = 'active'
 LEFT JOIN notification.notification_preferences np
   ON np.user_id = pu.user_id
 WHERE pu.predicted_any

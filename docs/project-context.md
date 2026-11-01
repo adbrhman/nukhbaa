@@ -7660,6 +7660,29 @@ From the 2026-11-01 review (M-2, M-3, M-4).
   caches pass `shareMinimum: 1`.
 - No migration, no app update; the server on push.
 
+### A suspended account: no reminders, no cup; a deleted picture (script 195, 2026-11-01)
+
+From the 2026-11-01 review (L-6, L-8, L-9, L-4), after the owner's
+decision that a suspended account gets no points and no reward.
+
+- **L-6, reminders.** The prediction reminder, the pre-match reminder, the
+  incomplete-day reminder and the streak saver checked the participant's
+  status only, so an account an admin had suspended still got them; each
+  now joins `identity.users` on `status = 'active'` (announcements already
+  did).
+- **L-8, the Elite Cup.** A player suspended after qualifying could still
+  win his pair and the title: the cup's side query now counts no point,
+  exact call or prediction for a suspended account, so it is absent and its
+  opponent goes through on a walkover (both absent: no winner, as before).
+  A pair already decided stays decided.
+- **L-9, a deleted account's picture.** `CachedUserDirectory.forget` (what
+  the account deletion calls) now drops the cached picture too, which was
+  served for up to an hour after the erasure.
+- **L-4.** An unused import in `h2h_absence_routes_test.dart`.
+- Tests: infrastructure `read_caches_test.dart`; SQL
+  `h2h_cup_suspended_side_test.sql` (the cup's side query on Postgres).
+- No migration, no app update; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

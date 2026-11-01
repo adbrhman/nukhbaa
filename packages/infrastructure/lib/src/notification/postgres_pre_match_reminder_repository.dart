@@ -63,7 +63,7 @@ SELECT due.user_id::text AS user_id,
        COALESCE(np.pre_match, true) AS pre_match
 FROM due
 JOIN notification.device_tokens dt ON dt.user_id = due.user_id
-JOIN identity.users u ON u.id = due.user_id
+JOIN identity.users u ON u.id = due.user_id AND u.status = 'active'
 LEFT JOIN notification.notification_preferences np
   ON np.user_id = due.user_id
 ORDER BY due.user_id, due.fixture_id

@@ -61,6 +61,8 @@ final class CachedUserDirectory implements UserDirectory {
   /// Drops [id]'s cached user so the next read comes from the database.
   void forget(UserId id) {
     _users.remove(id.value);
+    // A deleted account's picture is erased: never serve it from here.
+    _avatars.remove(id.value);
     _onNameChanged?.call();
   }
 

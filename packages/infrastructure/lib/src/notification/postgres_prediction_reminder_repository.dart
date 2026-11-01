@@ -62,7 +62,7 @@ due AS (
 SELECT due.user_id AS user_id, dt.token AS token, u.utc_offset_minutes AS utc_offset_minutes
 FROM due
 JOIN notification.device_tokens dt ON dt.user_id = due.user_id
-JOIN identity.users u ON u.id = due.user_id
+JOIN identity.users u ON u.id = due.user_id AND u.status = 'active'
 ORDER BY due.user_id
 ''';
 
