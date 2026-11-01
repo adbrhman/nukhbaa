@@ -25,12 +25,14 @@ import 'package:shared/shared.dart';
 ///   time; a shoot-out is reported separately and is never part of it.
 ///
 /// Never throws.
-final class HighlightlyFootballDataProvider implements FootballDataProvider {
+final class HighlightlyFootballDataProvider
+    implements FootballDataProvider, LeagueStandingsSource {
   /// Creates the adapter.
   HighlightlyFootballDataProvider({
     required String apiKey,
     http.Client? httpClient,
     this.quotaReserve = 25,
+    this.standingsReserve = 50,
     this.quotaRecheck = const Duration(hours: 1),
     Uri? baseUri,
     DateTime Function()? clock,
@@ -45,6 +47,11 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
 
   /// Requests kept in hand before this adapter stops calling.
   final int quotaReserve;
+
+  /// Requests kept in hand before a league table is asked for (script
+  /// 189). A table is worth less than a result, so the tables stop well
+  /// before the schedule calls do.
+  final int standingsReserve;
 
   /// How long a stop at [quotaReserve] holds before one request is tried.
   final Duration quotaRecheck;
@@ -62,6 +69,167 @@ final class HighlightlyFootballDataProvider implements FootballDataProvider {
   static const String _userAgent =
       'Nukhbaa/1.0 (+https://adbrhman.github.io/nukhbaa/)';
   static const Duration _timeout = Duration(seconds: 20);
+
+  /// The table of league [leagueRef] in the season starting [season]
+  /// (script 189), from `/standings`: every group's rows, leader first.
+  /// Nothing is asked once [standingsReserve] requests or fewer are left.
+  @override
+  Future<Result<List<LeagueStandingRow>>> standingsOf({
+    required String leagueRef,
+    required int season,
+  }) async {
+    final left = _remaining;
+    final seenAt = _remainingAt;
+    if (left != null &&
+        left <= standingsReserve &&
+        seenAt != null &&
+        _clock().difference(seenAt) < quotaRecheck) {
+      return Result.err(
+        AppError.transient(
+          providerQuotaErrorCode,
+          'Keeping the last $left provider requests for results',
+        ),
+      );
+    }
+
+    final uri = _base.replace(
+      path: '/standings',
+      queryParameters: {'leagueId': leagueRef, 'season': '$season'},
+    );
+    final http.Response response;
+    try {
+      response = await _http
+          .get(
+            uri,
+            headers: {
+              'x-rapidapi-key': _apiKey,
+              'User-Agent': _userAgent,
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(_timeout);
+    } on Object catch (error) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_unreachable',
+          'Highlightly request failed',
+          error,
+        ),
+      );
+    }
+    final reported = int.tryParse(
+      response.headers['x-ratelimit-requests-remaining'] ?? '',
+    );
+    if (reported != null) {
+      _remaining = reported;
+      _remainingAt = _clock();
+    }
+    if (response.statusCode == 429) {
+      _remaining = 0;
+      _remainingAt = _clock();
+      return const Result.err(
+        AppError.transient(
+          providerQuotaErrorCode,
+          'Highlightly daily quota exhausted',
+        ),
+      );
+    }
+    if (response.statusCode != 200) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_http_${response.statusCode}',
+          'Highlightly answered ${response.statusCode}',
+        ),
+      );
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    } on FormatException catch (error) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_malformed',
+          'Highlightly returned invalid JSON',
+          error,
+        ),
+      );
+    }
+    final rows = parseStandings(decoded);
+    if (rows == null) {
+      return const Result.err(
+        AppError.transient(
+          'football_data.provider_malformed',
+          'Highlightly response has no standings groups',
+        ),
+      );
+    }
+    return Result.ok(rows);
+  }
+
+  /// The rows of a `/standings` response, leader first: `groups` at the
+  /// top or under `data`, each with its `standings`. Null when there are no
+  /// groups.
+  static List<LeagueStandingRow>? parseStandings(Object? decoded) {
+    Object? groups;
+    if (decoded is Map<String, Object?>) {
+      groups = decoded['groups'];
+      final data = decoded['data'];
+      if (groups == null && data is Map<String, Object?>) {
+        groups = data['groups'];
+      }
+      if (groups == null && data is List<Object?>) {
+        groups = data;
+      }
+    }
+    if (groups is! List<Object?>) {
+      return null;
+    }
+    final rows = <LeagueStandingRow>[];
+    final seen = <String>{};
+    for (final group in groups) {
+      if (group is! Map<String, Object?>) {
+        continue;
+      }
+      final standings = group['standings'];
+      if (standings is! List<Object?>) {
+        continue;
+      }
+      for (final raw in standings) {
+        if (raw is! Map<String, Object?>) {
+          continue;
+        }
+        final team = raw['team'];
+        final position = _standingNumber(raw['position']);
+        if (team is! Map<String, Object?> ||
+            team['id'] == null ||
+            position == null) {
+          continue;
+        }
+        final id = team['id'].toString();
+        if (!seen.add(id)) {
+          continue;
+        }
+        rows.add(
+          LeagueStandingRow(
+            teamExternalId: id,
+            position: position,
+            points: _standingNumber(raw['points']),
+            played: _standingNumber(raw['played']),
+          ),
+        );
+      }
+    }
+    rows.sort((a, b) => a.position.compareTo(b.position));
+    return rows;
+  }
+
+  static int? _standingNumber(Object? raw) => raw is int
+      ? raw
+      : raw is num
+      ? raw.toInt()
+      : raw is String
+      ? int.tryParse(raw.trim())
+      : null;
 
   @override
   Future<Result<List<ProviderMatch>>> matchesOn({

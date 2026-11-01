@@ -28,6 +28,7 @@ export 'src/football_data/in_memory_live_score_board.dart';
 export 'src/football_data/in_memory_live_score_corrections.dart';
 export 'src/football_data/postgres_league_catalog_writer.dart';
 export 'src/football_data/postgres_league_repository.dart';
+export 'src/football_data/postgres_league_standings_store.dart';
 export 'src/football_data/postgres_match_details_store.dart';
 export 'src/football_data/postgres_provider_sync_store.dart';
 export 'src/football_data/postgres_team_repository.dart';

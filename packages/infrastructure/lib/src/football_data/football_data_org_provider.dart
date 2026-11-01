@@ -23,7 +23,8 @@ import 'package:shared/shared.dart';
 ///   when neither can be derived the match is not given a result.
 ///
 /// Never throws.
-final class FootballDataOrgProvider implements FootballDataProvider {
+final class FootballDataOrgProvider
+    implements FootballDataProvider, LeagueStandingsSource {
   /// Creates the adapter.
   FootballDataOrgProvider({
     required String apiKey,
@@ -66,6 +67,155 @@ final class FootballDataOrgProvider implements FootballDataProvider {
     });
     return completer.future;
   }
+
+  /// The current table of competition [leagueRef] (script 189), from
+  /// `/v4/competitions/{code}/standings`: the `TOTAL` table, leader first.
+  /// [season] is not sent, since the free tier serves the current season.
+  /// Spaced and serialised with the match calls.
+  @override
+  Future<Result<List<LeagueStandingRow>>> standingsOf({
+    required String leagueRef,
+    required int season,
+  }) {
+    final completer = Completer<Result<List<LeagueStandingRow>>>();
+    _queue = _queue.then((_) async {
+      completer.complete(await _fetchStandings(leagueRef));
+    });
+    return completer.future;
+  }
+
+  Future<Result<List<LeagueStandingRow>>> _fetchStandings(String code) async {
+    final last = _lastCall;
+    if (last != null) {
+      final wait = minimumGap - _now().difference(last);
+      if (wait > Duration.zero) {
+        await _sleep(wait);
+      }
+    }
+    _lastCall = _now();
+
+    final uri = _base.replace(path: '/v4/competitions/$code/standings');
+    final http.Response response;
+    try {
+      response = await _http
+          .get(
+            uri,
+            headers: {
+              'X-Auth-Token': _apiKey,
+              'User-Agent': _userAgent,
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(_timeout);
+    } on Object catch (error) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_unreachable',
+          'football-data.org request failed',
+          error,
+        ),
+      );
+    }
+    if (response.statusCode == 429) {
+      return const Result.err(
+        AppError.transient(
+          providerQuotaErrorCode,
+          'football-data.org rate limit reached',
+        ),
+      );
+    }
+    if (response.statusCode != 200) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_http_${response.statusCode}',
+          'football-data.org answered ${response.statusCode}',
+        ),
+      );
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    } on FormatException catch (error) {
+      return Result.err(
+        AppError.transient(
+          'football_data.provider_malformed',
+          'football-data.org returned invalid JSON',
+          error,
+        ),
+      );
+    }
+    final rows = parseStandings(decoded);
+    if (rows == null) {
+      return const Result.err(
+        AppError.transient(
+          'football_data.provider_malformed',
+          'football-data.org response has no standings list',
+        ),
+      );
+    }
+    return Result.ok(rows);
+  }
+
+  /// The `TOTAL` table of a standings response, leader first; null when
+  /// the response has no standings list.
+  static List<LeagueStandingRow>? parseStandings(Object? decoded) {
+    if (decoded is! Map<String, Object?>) {
+      return null;
+    }
+    final standings = decoded['standings'];
+    if (standings is! List<Object?>) {
+      return null;
+    }
+    final rows = <LeagueStandingRow>[];
+    final seen = <String>{};
+    for (final entry in standings) {
+      if (entry is! Map<String, Object?>) {
+        continue;
+      }
+      final type = entry['type'];
+      if (type is String && type != 'TOTAL') {
+        continue;
+      }
+      final table = entry['table'];
+      if (table is! List<Object?>) {
+        continue;
+      }
+      for (final raw in table) {
+        if (raw is! Map<String, Object?>) {
+          continue;
+        }
+        final team = raw['team'];
+        final position = _standingNumber(raw['position']);
+        if (team is! Map<String, Object?> ||
+            team['id'] == null ||
+            position == null) {
+          continue;
+        }
+        final id = team['id'].toString();
+        if (!seen.add(id)) {
+          continue;
+        }
+        rows.add(
+          LeagueStandingRow(
+            teamExternalId: id,
+            position: position,
+            points: _standingNumber(raw['points']),
+            played: _standingNumber(raw['playedGames']),
+          ),
+        );
+      }
+    }
+    rows.sort((a, b) => a.position.compareTo(b.position));
+    return rows;
+  }
+
+  static int? _standingNumber(Object? raw) => raw is int
+      ? raw
+      : raw is num
+      ? raw.toInt()
+      : raw is String
+      ? int.tryParse(raw.trim())
+      : null;
 
   Future<Result<List<ProviderMatch>>> _fetch(
     String code,

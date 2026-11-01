@@ -7426,6 +7426,42 @@ Decided by the owner on 2026-11-01, from October 2026 on.
   SQL `0191_month_podium_test.sql`.
 - **Apply 0191 in the SQL Editor before pushing the server.**
 
+### League tables for the daily selection (script 189, migration 0192, 2026-11-01)
+
+Decided by the owner on 2026-11-01: the matches of the seven leagues besides
+the Premier League and the Champions League are chosen each day by their
+strength (script 190). This batch reads and keeps the tables and scores a
+match; nothing it adds changes what the sync does.
+
+- **Port** `LeagueStandingsSource.standingsOf(leagueRef, season)`, rows
+  `LeagueStandingRow` (provider team id, place, points, played).
+  `FootballDataOrgProvider` reads `/v4/competitions/{code}/standings` (the
+  `TOTAL` table; same queue and 6.5 s spacing as its match calls);
+  `HighlightlyFootballDataProvider` reads `/standings?leagueId=&season=`
+  (every group's rows) and asks nothing once 50 requests or fewer are left
+  (`standingsReserve`; the schedule calls stop at 25, the results at 0).
+- **Kept** in `football_data.league_standings` (0192, one row per club of the
+  last table of each provider league) by `PostgresLeagueStandingsStore`: a
+  save upserts the new rows with their read time, then deletes the older
+  ones; a read takes only the latest read time.
+- `LeagueTables.tableOf`: a table kept less than 20 h ago is used as it is
+  (so each table is asked for about once a day, and only when a day has a
+  match of that league to score); an older one is asked for again and kept;
+  a failed read uses the last table kept however old; with none at all the
+  match is scored without places. The provider's team ids become catalog
+  clubs through `external_identity_map`, so Roma is the same club in Serie A
+  (football-data.org) and in the Europa League (Highlightly).
+- **Score** (`scoreMatch`, weights `MatchStrengthWeights`, the owner's start,
+  to be tuned after the trial week): each club's place up to 25 (the leader
+  25, the last 0, no table 12, a club outside the table 0); a big club +10,
+  at most +15 a match; a derby +25; closeness `10 - gap` when both are in the
+  table. Examples on 20 clubs: 2nd v 3rd 55, 1st v 6th 48, 1st v 8th 44, a
+  derby 9th v 12th 57. Every part is kept as a reason line.
+- Tests: application `match_strength_test.dart`, `league_tables_test.dart`;
+  infrastructure `league_standings_test.dart`; SQL
+  `0192_league_standings_test.sql`.
+- **Apply 0192 in the SQL Editor before pushing the server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
