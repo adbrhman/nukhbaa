@@ -2,8 +2,9 @@
 /// made a started match his double of the day and earned points from it,
 /// by the server's grade, the same ⚡🔥 the board marks.
 ///
-/// Admins only: the predictions board names each match's doubles above the
-/// table, and the line opens a card to share, with the players' names and
+/// The predictions board names each match's doubles above the table for an
+/// admin, and a player's own for him (2026-11-02, unless he is that match's
+/// hero); the line opens a card to share, with the players' names and
 /// points or only their count. The card is drawn on screen, captured
 /// exactly as seen and handed to the system share sheet (`share_plus`),
 /// with the admin's invitation link in the text, like the hero card
@@ -161,14 +162,22 @@ Future<void> showDoubleHitsCard(BuildContext context, DoubleHits doubles) =>
       builder: (_) => DoubleHitsShareDialog(doubles: doubles),
     );
 
-/// An admin's line above the board: how many players' doubles of a match
-/// paid, and a way to the card.
+/// The line above the board: for an admin, how many players' doubles of a
+/// match paid; for a player ([isMine]), that his own did. Either opens the
+/// card.
 class DoubleHitsBanner extends StatelessWidget {
-  /// Creates the line for [doubles].
-  const DoubleHitsBanner({required this.doubles, super.key});
+  /// Creates the line for [doubles]; [isMine] when they are the viewer's.
+  const DoubleHitsBanner({
+    required this.doubles,
+    this.isMine = false,
+    super.key,
+  });
 
   /// The match's doubles.
   final DoubleHits doubles;
+
+  /// Whether [doubles] holds only the viewer's own double.
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -202,8 +211,11 @@ class DoubleHitsBanner extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    'مضاعفة ناجحة: ${playersText(doubles.hits.length)} · '
-                    '${doubles.home.displayName} × ${doubles.away.displayName}',
+                    isMine
+                        ? 'مضاعفتك ناجحة · '
+                              '${doubles.home.displayName} × ${doubles.away.displayName}'
+                        : 'مضاعفة ناجحة: ${playersText(doubles.hits.length)} · '
+                              '${doubles.home.displayName} × ${doubles.away.displayName}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

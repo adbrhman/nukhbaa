@@ -7683,6 +7683,31 @@ decision that a suspended account gets no points and no reward.
   `h2h_cup_suspended_side_test.sql` (the cup's side query on Postgres).
 - No migration, no app update; the server on push.
 
+### A player shares his own double that paid (script 194, 2026-11-02)
+
+Reported by the owner on 2026-11-02: a player whose double paid saw no
+share button, while the admin saw the match's «مضاعفة ناجحة» line. Since
+script 140 that line was for admins only, and a player got a card only as
+the match's hero (the one exact call).
+
+- The predictions board now gives a player the line for his own double
+  that paid (his participant id among `/me/fixture-predictions`, the
+  server's points above zero): «مضاعفتك ناجحة · الفريق × الفريق»
+  (`DoubleHitsBanner(isMine: true)`, same key
+  `fixturePredictions.doubles.<id>`), opening the same
+  `DoubleHitsShareDialog` with only his own line and points.
+- No line when he is that match's hero: the hero's card (the special hero
+  on a double) already carries the double, so he gets one card, not two.
+- He never sees another player's double. Admins are unchanged: every
+  match's doubles, every player.
+- Tests: `day_hero_test.dart` (a player's own double shared when he is
+  not the hero; no line for another player's double; no line beside the
+  hero's own card); `double_hits_test.dart` (the viewer whose double
+  paid gets his line and a card of himself alone; one whose double
+  earned nothing gets none).
+- No migration, no server change, no l10n key; Android with the next APK,
+  the web on deploy.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

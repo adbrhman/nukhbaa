@@ -3,7 +3,7 @@
 /// match whose doubles earned points, and the card names each player with
 /// his points, or only their count with the names switched off. A double
 /// that earned nothing and a plain exact call are left out, and a player
-/// sees none of it.
+/// sees only his own double that paid (2026-11-02).
 library;
 
 import 'package:contracts/contracts.dart';
@@ -46,9 +46,12 @@ Map<String, Object?> _prediction(_Call c) => FixturePredictionDto(
 ).toJson();
 
 final class _Server {
-  _Server({required this.role});
+  _Server({required this.role, this.viewer = 'p-ali'});
 
   final String role;
+
+  /// The viewer's participant: Ali by default, whose double paid.
+  final String viewer;
   final String kickoffAt = _hoursAgo(3);
 
   Future<http.Response> handle(http.Request request) async {
@@ -80,7 +83,9 @@ final class _Server {
           ).toJson(),
         ]);
       case '/me/fixture-predictions':
-        return okJsonList([_prediction(_calls.first)]);
+        return okJsonList([
+          _prediction(_calls.firstWhere((c) => c.$1 == viewer)),
+        ]);
       case '/seasons/s-1/fixtures/f-1/predictions':
         return okJsonList([for (final _Call c in _calls) _prediction(c)]);
       case '/seasons/s-1/fixtures/f-1/scores':
@@ -239,8 +244,29 @@ void main() {
     );
   });
 
-  testWidgets('a player sees no doubles line', (tester) async {
+  testWidgets('a player sees his own double that paid, alone', (tester) async {
     await _pump(tester, _Server(role: 'user'));
+
+    expect(
+      find.descendant(
+        of: find.byKey(_banner),
+        matching: find.textContaining('مضاعفتك ناجحة'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(_banner));
+    await _frames(tester);
+    expect(find.byKey(_card), findsOneWidget);
+    expect(find.byKey(const Key('doubleHits.player.p-ali')), findsOneWidget);
+    expect(find.byKey(const Key('doubleHits.player.p-huda')), findsNothing);
+    expect(find.byKey(const Key('doubleHits.player.p-omar')), findsNothing);
+    expect(find.byKey(const Key('doubleHits.share')), findsOneWidget);
+  });
+
+  testWidgets('a player whose double did not pay sees no doubles line', (
+    tester,
+  ) async {
+    await _pump(tester, _Server(role: 'user', viewer: 'p-zaid'));
 
     expect(
       find.byKey(const Key('fixturePredictions.cell.f-1.p-ali')),

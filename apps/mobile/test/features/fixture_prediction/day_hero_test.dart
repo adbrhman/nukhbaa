@@ -318,7 +318,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    // A player never sees the admins' doubles line, even his own.
+    // The hero's card carries his double: no doubles line besides it.
     expect(
       find.byKey(const Key('fixturePredictions.doubles.f-1')),
       findsNothing,
@@ -364,5 +364,39 @@ void main() {
     );
     expect(find.byKey(_banner), findsNothing);
     expect(find.byKey(_mark), findsNothing);
+  });
+
+  testWidgets('a player whose double paid, not the hero, shares his own', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _Server(role: 'user', saraViews: true, saraDouble: true, twoExact: true),
+    );
+
+    const Key doubles = Key('fixturePredictions.doubles.f-1');
+    expect(find.byKey(_banner), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(doubles),
+        matching: find.textContaining('مضاعفتك ناجحة'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(doubles));
+    await _frames(tester);
+    expect(find.byKey(const Key('doubleHits.share')), findsOneWidget);
+  });
+
+  testWidgets('a player sees only his own double', (tester) async {
+    await _pump(
+      tester,
+      _Server(role: 'user', saraDouble: true, twoExact: true),
+    );
+
+    expect(
+      find.byKey(const Key('fixturePredictions.doubles.f-1')),
+      findsNothing,
+    );
   });
 }

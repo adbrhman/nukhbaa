@@ -25,7 +25,9 @@
 /// marked in the cell, with a card to share from that prediction. The hero
 /// himself sees his own, and on a double it is the special hero of the day
 /// (2026-10-24). Admins also see each match's doubles that paid, with a card
-/// to share (`double_hits_card.dart`), and the day's three most points, with
+/// to share (`double_hits_card.dart`); a player sees his own double that
+/// paid, unless he is that match's hero (2026-11-02). Admins also see the
+/// day's three most points, with
 /// a card to share (`day_top_three_card.dart`, 2026-10-25).
 ///
 /// The hint and those cards scroll away with the table, whose match headers
@@ -334,10 +336,14 @@ class _FixturePredictionsBoardPageState
           points: column.scores[call.participantId]?.points,
         );
       }
-      // Admins only: the match's doubles that paid.
-      if (!isAdmin) continue;
+      // The match's doubles that paid: every one for an admin, a player
+      // only his own (2026-11-02), unless he is already that match's hero,
+      // whose card carries the double.
+      if (!isAdmin && heroes.containsKey(column.fixture.fixtureId)) continue;
       final List<DoubleHit> hits = doubleHitsOf(
-        predictions: column.predictions.values,
+        predictions: column.predictions.values.where(
+          (p) => isAdmin || myParticipantIds.contains(p.participantId),
+        ),
         scores: column.scores,
         unnamed: l10n.fixturePredictionsUnnamed,
       );
@@ -404,7 +410,7 @@ class _FixturePredictionsBoardPageState
           isMine: myParticipantIds.contains(hero.participantId),
         ),
       for (final DoubleHits match in paidMostFirst)
-        DoubleHitsBanner(doubles: match),
+        DoubleHitsBanner(doubles: match, isMine: !isAdmin),
     ];
     final String cardsSummary = <String>[
       if (topThree != null) 'الأكثر نقاطاً',
