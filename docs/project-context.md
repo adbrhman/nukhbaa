@@ -7462,6 +7462,67 @@ match; nothing it adds changes what the sync does.
   `0192_league_standings_test.sql`.
 - **Apply 0192 in the SQL Editor before pushing the server.**
 
+### The daily selection (script 190, migration 0193, 2026-11-01)
+
+Decided by the owner on 2026-11-01 (his proposal of the same day, the
+choices of his three questions).
+
+- **Mandatory:** every Premier League and Champions League match, by its own
+  rule, counted in the day, never removed, even past 20.
+- **Chosen** (`DailyFixtureSelection`, inside `SyncProviderFixtures`): La
+  Liga, Bundesliga, Serie A, the Europa League, Ligue 1, the League Cup and
+  the Roshan League, in that order of preference
+  (`dailySelectionLeagues`, `phase_one_rules.dart`), compete in one list by
+  `scoreMatch` (script 189); the League Cup is scored by the Premier League
+  table, a club from below it last. A match loses 8 for every match of its
+  league already on the day (variety without quotas); equal scores go to the
+  league order, then to a kickoff from 15:00 Riyadh.
+- **How many** (`dailySelectionPolicy`): the day's count is the rounds' own
+  (`H2hRoundStore.dayFixtures`: visible, non-test fixtures, the admins' own
+  included). Below 10, the best matches are taken whatever their score;
+  from 10, only matches of 35 or more, up to 15, or 20 on a busy day (La
+  Liga, Bundesliga, Serie A and Ligue 1 all play). One at a time: it stops as
+  soon as it gets there.
+- **The Roshan League:** on a day it plays with none of its matches yet, its
+  best match is taken first when it scores 35 or the day is short.
+- **Never** on a day whose first match kicked off (its round is frozen), a
+  match within 30 minutes, an unmapped or blocked club, or a match outside
+  every monthly contest; a copy already on the schedule is linked, not added
+  twice; nothing is removed. A day is chosen only once every league was read
+  for it, so Highlightly is asked about the third day too (6 requests a day
+  more; its schedule calls still stop with 25 left for the results).
+- **Big clubs** (`dailySelectionBigClubs`, by hand, reviewed by the owner):
+  Real Madrid, Barcelona, Atletico, Bayern, Dortmund, Leverkusen, Inter,
+  Milan, Juventus, Napoli, Roma, Paris, Marseille, Al Hilal, Al Nassr, Al
+  Ittihad, Al Ahli. **Derbies:** the eleven of `matchDetailsScope`.
+- **When:** the fixtures sync now runs at 00:05 and 12:05 Riyadh time
+  (`untilNextFixturesRun`), plus 3 minutes after a boot. In the first run of
+  the day before a day, a day still under 10 is told to the owner once
+  (`OwnerShortDayAlert`): an in-app notification to the active admin
+  account of `adbrhmanm@gmail.com` alone (never every admin), kept as an
+  announcement addressed to him, no push: the count, what is missing, and to
+  add matches of other competitions before the day's first kickoff. A day
+  not read for every league is told in the 12:05 run.
+- **Modes** (`NUKHBA_DAILY_MINIMUM`): unset or `shadow` is the trial week:
+  the club rules add as before, and every day is chosen as if the selection
+  had chosen from the start and only kept in the log; `on` adds (and the
+  seven leagues' club rules add nothing more); `off` is the club rules
+  alone.
+- **The log** (0193): `football_data.daily_selection_days` (count before and
+  after, target, busy, alert note) and `football_data.daily_selection_candidates`
+  (every match looked at: league, clubs, kickoff, score, reasons, decision),
+  replaced by every run of the day. To read the trial:
+  `select d.riyadh_day, d.base_count, d.final_count, d.target, c.league_name,
+  c.home_team || ' - ' || c.away_team, c.score, c.decision, c.reasons from
+  football_data.daily_selection_days d join
+  football_data.daily_selection_candidates c using (riyadh_day) where
+  d.riyadh_day >= current_date - 7 order by d.riyadh_day, c.score desc nulls
+  last;`
+- Tests: application `daily_fixture_selection_test.dart`,
+  `owner_short_day_alert_test.dart`; server `daily_selection_rules_test.dart`,
+  `fixtures_anchor_test.dart`; SQL `0193_daily_selection_log_test.sql`.
+- **Apply 0193 in the SQL Editor before pushing the server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -153,3 +153,82 @@ const Set<String> _hilal = {'$highlightlySource:2495916'};
 const Set<String> _nassr = {'$highlightlySource:2501873'};
 const Set<String> _ittihad = {'$highlightlySource:2501022'};
 const Set<String> _ahli = {'$highlightlySource:2493363'};
+const Set<String> _leverkusen = {'$footballDataSource:3'};
+const Set<String> _napoli = {'$footballDataSource:113'};
+
+/// The seven leagues the daily selection chooses from (decided by the owner
+/// on 2026-11-01, scripts 189-190), in his order of preference: the
+/// Premier League and the Champions League keep every match by their own
+/// rule. Each league is scored by its own table; the League Cup by the
+/// Premier League's, a club from below it placed last. The Roshan League's
+/// best match is taken first on a day it plays.
+const List<DailySelectionLeague> dailySelectionLeagues = [
+  DailySelectionLeague(
+    leagueName: 'الدوري الإسباني',
+    standings: StandingsRef(source: footballDataSource, leagueRef: 'PD'),
+  ),
+  DailySelectionLeague(
+    leagueName: 'الدوري الألماني',
+    standings: StandingsRef(source: footballDataSource, leagueRef: 'BL1'),
+  ),
+  DailySelectionLeague(
+    leagueName: 'الدوري الإيطالي',
+    standings: StandingsRef(source: footballDataSource, leagueRef: 'SA'),
+  ),
+  DailySelectionLeague(
+    leagueName: 'الدوري الأوروبي',
+    standings: StandingsRef(source: highlightlySource, leagueRef: '3337'),
+  ),
+  DailySelectionLeague(
+    leagueName: 'الدوري الفرنسي',
+    standings: StandingsRef(source: footballDataSource, leagueRef: 'FL1'),
+  ),
+  DailySelectionLeague(
+    leagueName: 'كأس الرابطة الإنجليزية',
+    standings: StandingsRef(source: footballDataSource, leagueRef: 'PL'),
+    outsideTableIsLast: true,
+  ),
+  DailySelectionLeague(
+    leagueName: 'دوري روشن السعودي',
+    standings: StandingsRef(source: highlightlySource, leagueRef: '262041'),
+    guaranteed: true,
+  ),
+];
+
+/// The day's numbers (decided by the owner on 2026-11-01): at least 10,
+/// up to 15, up to 20 on a day all four of these leagues play.
+const DailySelectionPolicy dailySelectionPolicy = DailySelectionPolicy(
+  busyLeagues: {
+    'الدوري الإسباني',
+    'الدوري الألماني',
+    'الدوري الإيطالي',
+    'الدوري الفرنسي',
+  },
+);
+
+/// The big clubs (script 190): each adds to a match's score whatever its
+/// place, so a strong club having a poor season still counts. Kept by hand,
+/// reviewed by the owner once a season or when needed.
+const Set<String> dailySelectionBigClubs = {
+  ..._realMadrid,
+  ..._barcelona,
+  ..._atletico,
+  ..._bayern,
+  ..._dortmund,
+  ..._leverkusen,
+  ..._inter,
+  ..._milan,
+  ..._juventus,
+  ..._napoli,
+  ..._roma,
+  ..._paris,
+  ..._marseille,
+  ..._hilal,
+  ..._nassr,
+  ..._ittihad,
+  ..._ahli,
+};
+
+/// The only account told about a day short of matches (decided by the
+/// owner on 2026-11-01): his own, never every admin.
+const String dailyShortfallRecipient = 'adbrhmanm@gmail.com';

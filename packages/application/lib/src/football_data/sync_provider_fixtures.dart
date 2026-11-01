@@ -1,6 +1,7 @@
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
+import 'package:application/src/football_data/daily_fixture_selection.dart';
 import 'package:application/src/football_data/follow_provider_kickoff.dart';
 import 'package:application/src/football_data/ports/football_data_provider.dart';
 import 'package:application/src/football_data/ports/league_repository.dart';
@@ -47,6 +48,7 @@ final class SyncProviderFixtures {
     this.minimumInterval = const Duration(hours: 1),
     this.daysBySource = const <String, int>{},
     this.kickoffTolerance = const Duration(minutes: 1),
+    this.dailySelection,
     RescoreEarlierKickoff? rescoreEarlierKickoff,
   }) : _providers = providers,
        _store = store,
@@ -97,6 +99,11 @@ final class SyncProviderFixtures {
   /// A known fixture whose provider kickoff differs from the stored one by
   /// less than this is left as it is.
   final Duration kickoffTolerance;
+
+  /// The daily selection (script 190): it reads every match of its
+  /// leagues and, when on, adds the strongest of each day in place of
+  /// their club rules. Null leaves every league to its rule.
+  final DailyFixtureSelection? dailySelection;
 
   /// Runs every rule over [riyadhDays] at [now]; writes only when [apply].
   Future<Result<ProviderSyncReport>> call({
@@ -160,12 +167,28 @@ final class SyncProviderFixtures {
     var known = 0;
     var skipped = 0;
 
+    final selection = dailySelection;
+    final pool = <DailyPoolFetch>[];
+    final expected = <String>{};
+
     final exhausted = <String>{};
     for (final rule in _rules) {
       final provider = _providers[rule.source];
       if (provider == null) {
         notes.add('no provider configured for ${rule.source}');
         continue;
+      }
+      // The daily selection (script 190) reads every match of its leagues,
+      // whatever their club rule admits; when on, it adds them, not the
+      // rule. A league it expects but could not read keeps its day unchosen.
+      final pooled =
+          selection != null &&
+          selection.covers(rule.leagueName) &&
+          leagueByName[rule.leagueName] != null;
+      // `pooled` holds only with a selection, so it is known non-null here.
+      final owned = pooled && selection.owns(rule.leagueName);
+      if (pooled) {
+        expected.add(rule.leagueName.trim());
       }
       if (exhausted.contains(rule.source)) {
         continue;
@@ -207,6 +230,11 @@ final class SyncProviderFixtures {
         }
 
         final fetchedMatches = (fetched as Ok<List<ProviderMatch>>).value;
+        if (pooled) {
+          pool.add(
+            DailyPoolFetch(rule: rule, day: day, matches: fetchedMatches),
+          );
+        }
 
         // Three categories are handled:
         // 1. future scheduled matches may be added normally (outside
@@ -219,7 +247,7 @@ final class SyncProviderFixtures {
         final candidates = fetchedMatches
             .where(
               (match) =>
-                  rule.admits(match) &&
+                  (owned || rule.admits(match)) &&
                   (match.status == ProviderMatchStatus.scheduled ||
                       match.kickoffAt.isBefore(nowUtc)),
             )
@@ -276,6 +304,12 @@ final class SyncProviderFixtures {
                 notes.add(moved);
               }
             }
+            continue;
+          }
+          if (owned && !rule.admits(match)) {
+            // Not its club rule's, and not on the schedule: the daily
+            // selection decides (script 190). A match it chose is known,
+            // so its kickoff is still followed above.
             continue;
           }
           if (match.status == ProviderMatchStatus.scheduled &&
@@ -376,6 +410,11 @@ final class SyncProviderFixtures {
             continue;
           }
 
+          if (owned) {
+            // Chosen, or not, by the daily selection below (script 190).
+            continue;
+          }
+
           if (!apply) {
             applied++;
             notes.add('would add: $label');
@@ -401,6 +440,36 @@ final class SyncProviderFixtures {
       }
     }
 
+    if (selection != null) {
+      final chosen = await selection.run(
+        nowUtc: nowUtc,
+        apply: apply,
+        riyadhDays: riyadhDays,
+        expectedLeagues: expected,
+        pool: pool,
+        teamById: teamById,
+        months: months,
+        add:
+            ({
+              required ProviderLeagueRule rule,
+              required ProviderMatch match,
+              required Team home,
+              required Team away,
+              required CompetitionSeason month,
+            }) => _addChosen(
+              rule: rule,
+              match: match,
+              home: home,
+              away: away,
+              month: month,
+              leagueByName: leagueByName,
+              nextOrder: nextOrder,
+            ),
+      );
+      applied += chosen.added;
+      notes.addAll(chosen.notes);
+    }
+
     if (apply) {
       await _store.markSyncAt(fixturesSyncJob, nowUtc);
     }
@@ -415,6 +484,64 @@ final class SyncProviderFixtures {
         attention: attention,
       ),
     );
+  }
+
+  /// Adds a match the daily selection chose (script 190): a copy already on
+  /// the schedule is linked instead (false), else it is added as an admin
+  /// would (true).
+  Future<Result<bool>> _addChosen({
+    required ProviderLeagueRule rule,
+    required ProviderMatch match,
+    required Team home,
+    required Team away,
+    required CompetitionSeason month,
+    required Map<String, League> leagueByName,
+    required Map<String, int> nextOrder,
+  }) async {
+    final league = leagueByName[rule.leagueName];
+    if (league == null) {
+      return Result.err(
+        AppError.invariant(
+          'provider_sync.league_missing',
+          'League not in catalog: ${rule.leagueName}',
+        ),
+      );
+    }
+    final kickoff = match.kickoffAt.toUtc();
+    final existing = await _store.findExistingFixture(
+      homeTeamId: home.id.value,
+      awayTeamId: away.id.value,
+      homeTeamName: home.name,
+      awayTeamName: away.name,
+      kickoffAt: kickoff,
+      from: kickoff.subtract(duplicateWindow),
+      to: kickoff.add(duplicateWindow),
+    );
+    if (existing is Err<String?>) {
+      return Result.err(existing.error);
+    }
+    final found = (existing as Ok<String?>).value;
+    if (found != null) {
+      final linked = await _store.link(
+        source: rule.source,
+        table: 'fixture',
+        externalId: match.externalId,
+        canonicalId: found,
+      );
+      return linked is Err<void>
+          ? Result.err(linked.error)
+          : const Result.ok(false);
+    }
+    final added = await _add(
+      source: rule.source,
+      match: match,
+      home: home,
+      away: away,
+      league: league,
+      month: month,
+      nextOrder: nextOrder,
+    );
+    return added is Err<void> ? Result.err(added.error) : const Result.ok(true);
   }
 
   Future<Result<void>> _add({

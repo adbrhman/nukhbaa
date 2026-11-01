@@ -14,6 +14,35 @@ const Duration providerFixturesFirstRunDelay = Duration(minutes: 3);
 /// (C-03); Highlightly, capped at two days, then sees today and tomorrow.
 const Duration providerFixturesTick = Duration(hours: 12);
 
+/// The Riyadh clock times of the fixtures syncs after the first (script
+/// 190): 00:05 and 12:05, no longer 12 hours from each boot. The run at
+/// 00:05 is the first of the day before a day, so the daily selection's
+/// check of that day, and the owner's alert, come 24 hours ahead of it.
+const List<Duration> providerFixturesAnchors = <Duration>[
+  Duration(minutes: 5),
+  Duration(hours: 12, minutes: 5),
+];
+
+/// How long from [nowUtc] until the next [providerFixturesAnchors] time on
+/// the Riyadh clock (UTC+3, no daylight saving).
+Duration untilNextFixturesRun(DateTime nowUtc) {
+  final riyadh = nowUtc.toUtc().add(const Duration(hours: 3));
+  final midnight = DateTime.utc(riyadh.year, riyadh.month, riyadh.day);
+  for (var days = 0; days < 2; days++) {
+    for (final anchor in providerFixturesAnchors) {
+      final at = DateTime.utc(
+        midnight.year,
+        midnight.month,
+        midnight.day + days,
+      ).add(anchor);
+      if (at.isAfter(riyadh)) {
+        return at.difference(riyadh);
+      }
+    }
+  }
+  return providerFixturesTick;
+}
+
 /// Results checks. Each run only calls the provider when a synced fixture is
 /// due, so most runs cost nothing.
 const Duration providerResultsTick = Duration(minutes: 10);
@@ -210,9 +239,17 @@ void startProviderSyncScheduler(CompositionRoot root) {
   Timer(providerFixturesFirstRunDelay, () {
     unawaited(runFixtures(includeToday: true));
   });
-  phasedPeriodic(providerFixturesPhase, providerFixturesTick, (_) {
-    unawaited(runFixtures(includeToday: true));
-  });
+  // At fixed Riyadh times (script 190), each run setting the next.
+  void scheduleFixtures() {
+    final wait =
+        untilNextFixturesRun(DateTime.now().toUtc()) + providerFixturesPhase;
+    Timer(wait, () {
+      unawaited(runFixtures(includeToday: true));
+      scheduleFixtures();
+    });
+  }
+
+  scheduleFixtures();
   phasedPeriodic(providerResultsPhase, providerResultsTick, (_) {
     unawaited(runResults());
   });

@@ -3044,6 +3044,47 @@ final class CompositionRoot {
         userId: UserId(_providerSyncUserId),
         role: PlatformRole.service,
       );
+      // The daily selection (scripts 189-190): the strongest matches of the
+      // seven leagues besides the Premier League and the Champions League,
+      // day by day. NUKHBA_DAILY_MINIMUM: unset or `shadow` is the trial
+      // (scored and logged, nothing added), `on` adds, `off` is the club
+      // rules alone. The tables are read through the same adapters as the
+      // schedules, so football-data.org keeps its spacing and Highlightly
+      // its count of what is left.
+      final dailyMode = DailySelectionMode.parse(env['NUKHBA_DAILY_MINIMUM']);
+      final dailySelection = dailyMode == DailySelectionMode.off
+          ? null
+          : DailyFixtureSelection(
+              mode: dailyMode,
+              leagues: dailySelectionLeagues,
+              bigClubRefs: dailySelectionBigClubs,
+              derbies: matchDetailsScope.derbies,
+              policy: dailySelectionPolicy,
+              tables: LeagueTables(
+                sources: <String, LeagueStandingsSource>{
+                  for (final entry in providers.entries)
+                    if (entry.value case final LeagueStandingsSource source)
+                      entry.key: source,
+                },
+                store: PostgresLeagueStandingsStore(connection),
+                identities: syncStore,
+              ),
+              identities: syncStore,
+              dayFixtures: PostgresH2hRoundStore(connection).dayFixtures,
+              log: PostgresDailySelectionLog(connection),
+              alert: OwnerShortDayAlert(
+                email: dailyShortfallRecipient,
+                users: userAdminRepository,
+                announcements: announcementRepository,
+                notify: CreateNotification(
+                  notifications: notificationRepository,
+                  idGenerator: idGenerator,
+                  clock: clock,
+                ),
+                idGenerator: idGenerator,
+                clock: clock,
+              ),
+            );
       syncProviderFixtures = SyncProviderFixtures(
         providers: providers,
         store: syncStore,
@@ -3055,8 +3096,14 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         rules: phaseOneRules,
         // Highlightly allows 100 requests a day and they are wanted for
-        // results; two days of schedules still sees every day twice.
-        daysBySource: const <String, int>{highlightlySource: 2},
+        // results; two days of schedules still sees every day twice. The
+        // daily selection compares the leagues on the same days, so with it
+        // Highlightly is asked about the third day too (6 more a day; the
+        // schedule calls still stop with 25 left for the results).
+        daysBySource: dailySelection == null
+            ? const <String, int>{highlightlySource: 2}
+            : const <String, int>{},
+        dailySelection: dailySelection,
         rescoreEarlierKickoff: rescoreEarlierKickoff,
       );
       refreshLiveScores = RefreshLiveScores(
