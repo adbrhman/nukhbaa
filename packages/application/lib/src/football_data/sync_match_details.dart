@@ -1,3 +1,4 @@
+import 'package:application/src/football_data/match_details_scope.dart';
 import 'package:application/src/football_data/ports/football_data_provider.dart';
 import 'package:application/src/football_data/ports/match_details.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart';
@@ -12,6 +13,7 @@ final class MatchDetailsReport {
     required this.notFound,
     required this.notes,
     this.pending = 0,
+    this.outOfScope = 0,
   });
 
   /// Nothing to do.
@@ -36,6 +38,9 @@ final class MatchDetailsReport {
 
   /// Finished fixtures still without details that the run looked at.
   final int pending;
+
+  /// Fixtures outside the scope, closed without a request (script 188).
+  final int outOfScope;
 }
 
 /// System use-case: read the story of each finished match -- its goals with
@@ -54,6 +59,9 @@ final class MatchDetailsReport {
 /// found. A fixture with no candidate is stored as not found and not asked
 /// about again; one the provider has not finished yet is asked again on a
 /// later run. At most [maxCallsPerRun] requests a run. Never throws.
+///
+/// With a [scope] (script 188), a fixture it does not cover is stored as
+/// not found at once, without a request, and is not looked at again.
 final class SyncMatchDetails {
   /// Creates the use-case. [lister] lists the provider's matches of a
   /// league and day; [leagueIds] maps an app league name to the provider's
@@ -63,6 +71,7 @@ final class SyncMatchDetails {
     required MatchDetailsSource source,
     required FootballDataProvider lister,
     required Map<String, String> leagueIds,
+    this.scope,
     this.settleTime = const Duration(hours: 2, minutes: 15),
     this.lookback = const Duration(days: 3),
     this.kickoffTolerance = const Duration(minutes: 10),
@@ -76,6 +85,9 @@ final class SyncMatchDetails {
   final MatchDetailsSource _source;
   final FootballDataProvider _lister;
   final Map<String, String> _leagueIds;
+
+  /// The matches read; null reads every one (script 188).
+  final MatchDetailsScope? scope;
 
   /// How long after kickoff a match is first looked up.
   final Duration settleTime;
@@ -108,10 +120,27 @@ final class SyncMatchDetails {
     var calls = 0;
     var saved = 0;
     var notFound = 0;
+    var outOfScope = 0;
     final notes = <String>[];
     final lists = <String, List<ProviderMatch>>{};
 
     for (final fixture in pending) {
+      final covering = scope;
+      if (covering != null && !covering.covers(fixture)) {
+        final closed = await _store.save(
+          MatchDetails.notFound(
+            fixtureId: fixture.fixtureId,
+            source: _source.source,
+            fetchedAt: nowUtc,
+          ),
+        );
+        if (closed is Ok<void>) {
+          outOfScope++;
+        } else {
+          notes.add('close of ${fixture.fixtureId} failed');
+        }
+        continue;
+      }
       if (calls >= maxCallsPerRun) {
         notes.add('call budget reached; the rest waits');
         break;
@@ -208,6 +237,7 @@ final class SyncMatchDetails {
         notFound: notFound,
         notes: notes,
         pending: pending.length,
+        outOfScope: outOfScope,
       ),
     );
   }

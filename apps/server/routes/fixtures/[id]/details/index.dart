@@ -12,7 +12,8 @@ import 'package:shared/shared.dart';
 /// details page (script 118): the events with their minutes, the half-time
 /// score, the ground, as `SyncMatchDetails` read them from Highlightly once
 /// the result was recorded. `available: false` while they have not been
-/// read, or when the provider has no such match. Any signed-in user
+/// read; `closed: true` too when none will come (the provider has no such
+/// match, or it is outside what is read, script 188). Any signed-in user
 /// (`GetMatchDetails`; the `/fixtures` subtree is behind `bearerAuth`).
 /// Any other method is `405`.
 Future<Response> onRequest(RequestContext context, String id) async {
@@ -41,8 +42,11 @@ Future<Response> onRequest(RequestContext context, String id) async {
 /// The wire shape of [details] for the fixture [id]; nothing to show when
 /// none were read or the provider had no such match.
 MatchDetailsDto matchDetailsToDto(String id, MatchDetails? details) {
-  if (details == null || !details.found) {
+  if (details == null) {
     return MatchDetailsDto(fixtureId: id, available: false);
+  }
+  if (!details.found) {
+    return MatchDetailsDto(fixtureId: id, available: false, closed: true);
   }
   return MatchDetailsDto(
     fixtureId: id,

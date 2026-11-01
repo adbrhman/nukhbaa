@@ -208,6 +208,8 @@ final class PendingMatchDetails {
     required this.homeGoals,
     required this.awayGoals,
     this.externalMatchId,
+    this.homeTeamRefs = const <String>{},
+    this.awayTeamRefs = const <String>{},
   });
 
   /// The app's fixture id.
@@ -228,6 +230,13 @@ final class PendingMatchDetails {
   /// The details provider's own match id when the fixture came from it
   /// (the Roshan League, the Europa League); null otherwise.
   final String? externalMatchId;
+
+  /// The home club's provider team refs, `'<source>:<team id>'` (script
+  /// 188); empty when it has none.
+  final Set<String> homeTeamRefs;
+
+  /// The away club's provider team refs, as [homeTeamRefs].
+  final Set<String> awayTeamRefs;
 }
 
 /// Where match details are kept.

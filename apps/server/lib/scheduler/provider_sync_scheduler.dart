@@ -172,7 +172,8 @@ void startProviderSyncScheduler(CompositionRoot root) {
               tag,
               'match details: pending=${value.pending} '
               'requests=${value.requests} '
-              'saved=${value.saved} not_found=${value.notFound}',
+              'saved=${value.saved} not_found=${value.notFound} '
+              'out_of_scope=${value.outOfScope}',
             );
             for (final note in value.notes) {
               _log(tag, '  $note');

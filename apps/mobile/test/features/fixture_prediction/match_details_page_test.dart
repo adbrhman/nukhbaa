@@ -257,6 +257,25 @@ void main() {
     expect(find.text('3 - 4'), findsOneWidget);
   });
 
+  testWidgets('a match whose story will not come says so, not later', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _json(
+        const MatchDetailsDto(
+          fixtureId: 'f-paris',
+          available: false,
+          closed: true,
+        ).toJson(),
+      ),
+    );
+
+    expect(find.byKey(const Key('matchDetails.none')), findsOneWidget);
+    expect(find.byKey(const Key('matchDetails.notYet')), findsNothing);
+    expect(find.text('3 - 4'), findsOneWidget);
+  });
+
   testWidgets('a failure says so with a retry', (tester) async {
     await _pump(tester, errorEnvelope(503, 'db.query_timeout', 'timed out'));
 

@@ -107,3 +107,49 @@ const Map<String, String> matchDetailsLeagueIds = <String, String>{
   'الدوري الأوروبي': '3337',
   'كأس الرابطة الإنجليزية': '41632',
 };
+
+/// What the match details page is read for (decided by the owner on
+/// 2026-11-01, script 188): every Premier League match, and elsewhere the
+/// derbies only, in whatever competition they meet (league, Champions
+/// League, Europa League). Clubs are named by their football-data.org ids
+/// (`supabase/seed/football_data_team_map_2026_27.sql`,
+/// `supabase/seed/ligue1_2026_27.sql`), the Roshan clubs by their
+/// Highlightly ids (`supabase/seed/highlightly_team_map_2026_27.sql`); a
+/// club's catalog team carries both refs where both exist. Any other match
+/// is closed without a request.
+const MatchDetailsScope matchDetailsScope = MatchDetailsScope(
+  fullLeagues: {'الدوري الإنجليزي الممتاز'},
+  derbies: [
+    MatchDetailsDerby('الكلاسيكو', _realMadrid, _barcelona),
+    MatchDetailsDerby('ديربي مدريد', _realMadrid, _atletico),
+    MatchDetailsDerby('ديربي برشلونة', _barcelona, _espanyol),
+    MatchDetailsDerby('ديربي إشبيلية', _sevilla, _betis),
+    MatchDetailsDerby('ديربي ميلانو', _inter, _milan),
+    MatchDetailsDerby('ديربي روما', _roma, _lazio),
+    MatchDetailsDerby('ديربي إيطاليا', _juventus, _inter),
+    MatchDetailsDerby('الكلاسيكر', _bayern, _dortmund),
+    MatchDetailsDerby('الكلاسيكو الفرنسي', _paris, _marseille),
+    MatchDetailsDerby('ديربي الرياض', _hilal, _nassr),
+    MatchDetailsDerby('ديربي جدة', _ittihad, _ahli),
+  ],
+);
+
+const Set<String> _realMadrid = {'$footballDataSource:86'};
+const Set<String> _barcelona = {'$footballDataSource:81'};
+const Set<String> _atletico = {'$footballDataSource:78'};
+const Set<String> _espanyol = {'$footballDataSource:80'};
+const Set<String> _sevilla = {'$footballDataSource:559'};
+const Set<String> _betis = {'$footballDataSource:90'};
+const Set<String> _inter = {'$footballDataSource:108'};
+const Set<String> _milan = {'$footballDataSource:98'};
+const Set<String> _juventus = {'$footballDataSource:109'};
+const Set<String> _roma = {'$footballDataSource:100'};
+const Set<String> _lazio = {'$footballDataSource:110'};
+const Set<String> _bayern = {'$footballDataSource:5'};
+const Set<String> _dortmund = {'$footballDataSource:4'};
+const Set<String> _paris = {'$footballDataSource:524'};
+const Set<String> _marseille = {'$footballDataSource:516'};
+const Set<String> _hilal = {'$highlightlySource:2495916'};
+const Set<String> _nassr = {'$highlightlySource:2501873'};
+const Set<String> _ittihad = {'$highlightlySource:2501022'};
+const Set<String> _ahli = {'$highlightlySource:2493363'};

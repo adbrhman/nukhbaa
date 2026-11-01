@@ -3140,6 +3140,7 @@ final class CompositionRoot {
             quotaReserve: 40,
           ),
           leagueIds: matchDetailsLeagueIds,
+          scope: matchDetailsScope,
         );
       }
     }

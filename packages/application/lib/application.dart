@@ -63,6 +63,7 @@ export 'src/football_data/follow_provider_kickoff.dart';
 export 'src/football_data/get_match_details.dart';
 export 'src/football_data/list_leagues.dart';
 export 'src/football_data/list_teams.dart';
+export 'src/football_data/match_details_scope.dart';
 export 'src/football_data/ports/football_data_provider.dart';
 export 'src/football_data/ports/league_catalog_writer.dart';
 export 'src/football_data/ports/league_repository.dart';

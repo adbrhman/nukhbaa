@@ -57,6 +57,7 @@ final class MatchDetailsDto {
   const MatchDetailsDto({
     required this.fixtureId,
     required this.available,
+    this.closed = false,
     this.events = const <MatchEventDto>[],
     this.halfTimeHome,
     this.halfTimeAway,
@@ -73,6 +74,7 @@ final class MatchDetailsDto {
       schemaVersion: (json['schema_version'] as int?) ?? 1,
       fixtureId: json['fixture_id']! as String,
       available: json['available'] == true,
+      closed: json['closed'] == true,
       events: <MatchEventDto>[
         if (rawEvents is List<Object?>)
           for (final Object? raw in rawEvents)
@@ -94,6 +96,11 @@ final class MatchDetailsDto {
 
   /// Whether there is anything to show.
   final bool available;
+
+  /// Whether none will come: the provider has no such match, or it is not
+  /// one whose details are read (script 188). False while they may still
+  /// arrive; an older server never sends it.
+  final bool closed;
 
   /// The events, in the provider's order.
   final List<MatchEventDto> events;
@@ -121,6 +128,7 @@ final class MatchDetailsDto {
     'schema_version': schemaVersion,
     'fixture_id': fixtureId,
     'available': available,
+    'closed': closed,
     'events': [for (final MatchEventDto event in events) event.toJson()],
     'half_time_home': halfTimeHome,
     'half_time_away': halfTimeAway,

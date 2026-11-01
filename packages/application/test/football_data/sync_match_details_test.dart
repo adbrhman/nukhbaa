@@ -89,6 +89,8 @@ PendingMatchDetails _pending(
   int home = 4,
   int away = 3,
   String? externalId,
+  Set<String> homeRefs = const <String>{},
+  Set<String> awayRefs = const <String>{},
 }) => PendingMatchDetails(
   fixtureId: id,
   kickoffAt: kickoff ?? _kickoff,
@@ -96,6 +98,24 @@ PendingMatchDetails _pending(
   homeGoals: home,
   awayGoals: away,
   externalMatchId: externalId,
+  homeTeamRefs: homeRefs,
+  awayTeamRefs: awayRefs,
+);
+
+const _scope = MatchDetailsScope(
+  fullLeagues: {'الدوري الإنجليزي الممتاز'},
+  derbies: [
+    MatchDetailsDerby(
+      'الكلاسيكو الفرنسي',
+      {'football-data:524'},
+      {'football-data:516'},
+    ),
+    MatchDetailsDerby(
+      'ديربي الرياض',
+      {'highlightly:2495916'},
+      {'highlightly:2501873'},
+    ),
+  ],
 );
 
 void main() {
@@ -103,14 +123,16 @@ void main() {
   late _Source source;
   late FakeFootballDataProvider lister;
 
-  SyncMatchDetails sync() => SyncMatchDetails(
+  SyncMatchDetails sync({MatchDetailsScope? scope}) => SyncMatchDetails(
     store: store,
     source: source,
     lister: lister,
     leagueIds: const <String, String>{
       'الدوري الفرنسي': '52695',
       'دوري روشن السعودي': '262041',
+      'الدوري الإنجليزي الممتاز': '33973',
     },
+    scope: scope,
   );
 
   void ligue1(List<ProviderMatch> matches) =>
@@ -286,6 +308,114 @@ void main() {
       expect(report.notes.last, contains('1321424223'));
     },
   );
+
+  group('the scope of what is read (script 188)', () {
+    test('a match outside it is closed with no request and never looked '
+        'at again', () async {
+      store.fixtures = <PendingMatchDetails>[
+        _pending(
+          _paris,
+          homeRefs: {'football-data:524'},
+          awayRefs: {'football-data:525'},
+        ),
+      ];
+
+      final report =
+          ((await sync(scope: _scope).call(now: _now))
+                  as Ok<MatchDetailsReport>)
+              .value;
+      await sync(scope: _scope).call(now: _now.add(const Duration(hours: 1)));
+
+      expect(lister.calls, isEmpty);
+      expect(source.asked, isEmpty);
+      expect(store.saved[_paris]!.found, isFalse);
+      expect(report.outOfScope, 1);
+      expect(report.requests, 0);
+    });
+
+    test('a derby is read in either order of the sides', () async {
+      store.fixtures = <PendingMatchDetails>[
+        _pending(
+          _paris,
+          homeRefs: {'football-data:516', 'highlightly:1'},
+          awayRefs: {'football-data:524'},
+        ),
+        _pending(
+          _nassr,
+          league: 'دوري روشن السعودي',
+          externalId: '777',
+          homeRefs: {'highlightly:2501873'},
+          awayRefs: {'highlightly:2495916'},
+        ),
+      ];
+      ligue1(<ProviderMatch>[match('1321424223', home: 4, away: 3)]);
+
+      final report =
+          ((await sync(scope: _scope).call(now: _now))
+                  as Ok<MatchDetailsReport>)
+              .value;
+
+      expect(source.asked, <String>['1321424223', '777']);
+      expect(report.outOfScope, 0);
+      expect(store.saved[_paris]!.found, isTrue);
+    });
+
+    test('every match of a full league is read, whoever plays', () async {
+      store.fixtures = <PendingMatchDetails>[
+        _pending(
+          _lorient,
+          league: 'الدوري الإنجليزي الممتاز',
+          externalId: '555',
+        ),
+      ];
+
+      await sync(scope: _scope).call(now: _now);
+
+      expect(source.asked, <String>['555']);
+    });
+
+    test(
+      'a match closed out of scope spends none of the call budget',
+      () async {
+        store.fixtures = <PendingMatchDetails>[
+          for (var i = 0; i < 12; i++)
+            _pending('f2000000-0000-0000-0000-0000000000${10 + i}'),
+          _pending(
+            _lorient,
+            league: 'الدوري الإنجليزي الممتاز',
+            externalId: '555',
+          ),
+        ];
+
+        final report =
+            ((await sync(scope: _scope).call(now: _now))
+                    as Ok<MatchDetailsReport>)
+                .value;
+
+        expect(report.outOfScope, 12);
+        expect(source.asked, <String>['555']);
+      },
+    );
+
+    test('a club with no refs is in no derby', () {
+      expect(
+        _scope.covers(_pending(_elsewhere, awayRefs: {'football-data:516'})),
+        isFalse,
+      );
+      expect(
+        _scope
+            .derbyOf(
+              _pending(
+                _elsewhere,
+                homeRefs: {'highlightly:2495916'},
+                awayRefs: {'highlightly:2501873'},
+              ),
+            )
+            ?.name,
+        'ديربي الرياض',
+      );
+    });
+  });
 
   test('the half-time score comes from the goals up to 45+', () {
     const events = <MatchEvent>[

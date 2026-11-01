@@ -126,7 +126,14 @@ class MatchDetailsPage extends ConsumerWidget {
             ),
             switch (details) {
               AsyncData<MatchDetailsDto>(:final value) =>
-                !value.available
+                !value.available && value.closed
+                    ? const _Notice(
+                        key: Key('matchDetails.none'),
+                        message:
+                            'لا تتوفر أحداث لهذه المباراة. تُعرض الأحداث '
+                            'لمباريات الدوري الإنجليزي والديربيات الكبرى.',
+                      )
+                    : !value.available
                     ? const _Notice(
                         key: Key('matchDetails.notYet'),
                         message:

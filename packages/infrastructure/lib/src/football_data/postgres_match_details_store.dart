@@ -17,14 +17,27 @@ final class PostgresMatchDetailsStore implements MatchDetailsStore {
 
   // A finished match: its result is recorded. Hidden fixtures are left out,
   // as by every sync (0098). The provider's own match id comes along when
-  // the fixture came from it.
+  // the fixture came from it, and each club's provider team refs, for the
+  // scope of what is read (script 188).
   static const String _pendingSql = '''
 SELECT s.fixture_id::text  AS fixture_id,
        s.kickoff_at        AS kickoff_at,
        l.name              AS league_name,
        r.home_goals        AS home_goals,
        r.away_goals        AS away_goals,
-       m.external_id       AS external_id
+       m.external_id       AS external_id,
+       (SELECT coalesce(string_agg(t.external_source || ':' || t.external_id,
+                                   ',' ORDER BY t.external_source,
+                                   t.external_id), '')
+          FROM football_data.external_identity_map t
+         WHERE t.canonical_table = 'team'
+           AND t.canonical_id = s.home_team_id) AS home_team_refs,
+       (SELECT coalesce(string_agg(t.external_source || ':' || t.external_id,
+                                   ',' ORDER BY t.external_source,
+                                   t.external_id), '')
+          FROM football_data.external_identity_map t
+         WHERE t.canonical_table = 'team'
+           AND t.canonical_id = s.away_team_id) AS away_team_refs
 FROM competition.fixture_schedules s
 JOIN scoring.fixture_results r
   ON r.fixture_id = s.fixture_id
@@ -115,6 +128,8 @@ WHERE fixture_id = @fixture_id::uuid
               homeGoals: home,
               awayGoals: away,
               externalMatchId: row['external_id']?.toString(),
+              homeTeamRefs: _refs(row['home_team_refs']),
+              awayTeamRefs: _refs(row['away_team_refs']),
             ),
           );
         }
@@ -216,6 +231,12 @@ WHERE fixture_id = @fixture_id::uuid
     assist: raw['assist']?.toString(),
     detail: raw['detail']?.toString(),
   );
+
+  /// The comma-separated `'<source>:<team id>'` refs of a club.
+  static Set<String> _refs(Object? raw) => <String>{
+    for (final ref in (raw?.toString() ?? '').split(','))
+      if (ref.trim().isNotEmpty) ref.trim(),
+  };
 
   static AppError _corrupt(String what) => AppError.transient(
     'football_data.row_corrupt',
