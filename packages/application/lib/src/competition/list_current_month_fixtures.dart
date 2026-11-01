@@ -163,12 +163,14 @@ final class ListCurrentMonthFixtures {
     required Clock clock,
     FixturePredictionTallyReader? predictionTallyReader,
     FixtureResultRepository? resultRepository,
+    int shareMinimum = crowdShareMinimum,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _schedules = fixtureScheduleRepository,
        _clock = clock,
        _tallies = predictionTallyReader,
-       _results = resultRepository;
+       _results = resultRepository,
+       _shareMinimum = shareMinimum;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
@@ -182,6 +184,9 @@ final class ListCurrentMonthFixtures {
   /// Optional like [_tallies]: the recorded results, so a finished card
   /// shows its final score without a request of its own.
   final FixtureResultRepository? _results;
+
+  /// The fewest calls a split is sent from ([crowdShareMinimum]).
+  final int _shareMinimum;
 
   /// Builds the current-month feed, visible to [principal].
   Future<Result<List<CurrentMonthFixtureEntry>>> call({
@@ -277,6 +282,13 @@ final class ListCurrentMonthFixtures {
       }
     }
 
+    // The shares only from crowdShareMinimum calls (review M-2): under it
+    // a share would tell each pick. The counts stay real.
+    final shown = <String, FixtureOutcomeTally>{
+      for (final entry in tallies.entries)
+        if (entry.value.total >= _shareMinimum) entry.key: entry.value,
+    };
+
     // Step 6: the recorded results of the same fixtures, in ONE batched
     // read. Display only: a failed read leaves them out rather than the
     // whole feed.
@@ -304,23 +316,23 @@ final class ListCurrentMonthFixtures {
               // the reader is wired, and as null only when it is not.
               homeWinPercentage: tallyReader == null
                   ? null
-                  : (tallies[fixture.value]?.homeWinPercentage ?? 0),
+                  : (shown[fixture.value]?.homeWinPercentage ?? 0),
               awayWinPercentage: tallyReader == null
                   ? null
-                  : (tallies[fixture.value]?.awayWinPercentage ?? 0),
+                  : (shown[fixture.value]?.awayWinPercentage ?? 0),
               decisivePredictions: tallyReader == null
                   ? null
                   : (tallies[fixture.value]?.homeWins ?? 0) +
                         (tallies[fixture.value]?.awayWins ?? 0),
               homeOutcomeShare: tallyReader == null
                   ? null
-                  : (tallies[fixture.value]?.outcomeShares.home ?? 0),
+                  : (shown[fixture.value]?.outcomeShares.home ?? 0),
               drawOutcomeShare: tallyReader == null
                   ? null
-                  : (tallies[fixture.value]?.outcomeShares.draw ?? 0),
+                  : (shown[fixture.value]?.outcomeShares.draw ?? 0),
               awayOutcomeShare: tallyReader == null
                   ? null
-                  : (tallies[fixture.value]?.outcomeShares.away ?? 0),
+                  : (shown[fixture.value]?.outcomeShares.away ?? 0),
               totalPredictions: tallyReader == null
                   ? null
                   : (tallies[fixture.value]?.total ?? 0),

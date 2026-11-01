@@ -90,6 +90,13 @@ final class FixtureOutcomeTally {
   }
 }
 
+/// The fewest predictions a fixture's crowd split is shown from, before
+/// kickoff and after (review M-2, 2026-11-01). Under it the server sends
+/// the count and zero shares: with one, two or four calls a share would
+/// tell each caller's pick. The app hides the split under the same number
+/// (`minShareSample`), so the server and the app agree.
+const int crowdShareMinimum = 5;
+
 /// Reads the decisive outcome split for MANY fixtures in a single query.
 ///
 /// An implementation MUST NOT issue one query per fixture, and MUST simply

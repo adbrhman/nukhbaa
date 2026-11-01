@@ -3811,6 +3811,8 @@ final class CompositionRoot {
       getFixtureResult: GetFixtureResult(results: fixtureResultReads),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
         fixturePredictionRepository: fixturePredictionReads,
+        // Hidden and test fixtures are refused, as in the feed (M-3).
+        fixtureScheduleRepository: fixtureScheduleRepository,
       ),
       listFixturePredictions: ListFixturePredictions(
         competitionRepository: competitionRepository,

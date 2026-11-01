@@ -68,6 +68,8 @@ void main() {
       root: CompositionRoot.forTesting(
         getFixturePredictionDistribution: GetFixturePredictionDistribution(
           fixturePredictionRepository: repo,
+          // Three calls: the route's shape, not the minimum (M-2).
+          shareMinimum: 1,
         ),
       ),
     );

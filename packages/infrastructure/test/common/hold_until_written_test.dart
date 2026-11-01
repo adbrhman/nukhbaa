@@ -512,6 +512,8 @@ void main() {
     );
     split = GetFixturePredictionDistribution(
       fixturePredictionRepository: reads,
+      // One call shows its split here: this tests the cache (M-2).
+      shareMinimum: 1,
     );
     submit = SubmitFixturePrediction(
       fixturePredictionRepository: history,

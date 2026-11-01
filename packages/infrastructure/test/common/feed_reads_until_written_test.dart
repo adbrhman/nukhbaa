@@ -356,6 +356,8 @@ void main() {
       clock: clock,
       predictionTallyReader: tallies,
       resultRepository: resultReads,
+      // Two calls show their split here: this tests the cache (M-2).
+      shareMinimum: 1,
     );
     recordResult = RecordFixtureResult(
       resultRepository: resultReads,

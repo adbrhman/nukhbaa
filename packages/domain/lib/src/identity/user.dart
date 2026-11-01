@@ -148,7 +148,7 @@ final class User {
   /// input. Shared by registration (initial name) and [renameDisplayName]
   /// (later changes) so both paths enforce the same invariant.
   static Result<String> validateDisplayName(String raw) {
-    final trimmed = raw.trim();
+    final trimmed = raw.replaceAll(_invisible, '').trim();
     if (trimmed.isEmpty) {
       return const Result.err(
         AppError.validation('identity.display_name_empty', 'الاسم مطلوب'),
@@ -162,8 +162,68 @@ final class User {
         ),
       );
     }
+    if (isReservedDisplayName(trimmed)) {
+      return const Result.err(
+        AppError.validation(
+          'identity.display_name_reserved',
+          'هذا الاسم محجوز لحسابات نُخبة الرسمية. اختر اسماً آخر.',
+        ),
+      );
+    }
     return Result.ok(trimmed);
   }
+
+  /// Characters a name never keeps: controls, the bidirectional overrides
+  /// and isolates, the Arabic letter mark and the invisible spaces. They let
+  /// a name pass for another or look empty; the zero-width joiner (U+200D)
+  /// stays, for emoji. Removed before the name is checked and stored.
+  static final RegExp _invisible = RegExp(
+    '[\u0000-\u001F\u007F-\u009F\u061C\u180E\u200B\u200C\u200E'
+    '\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]',
+  );
+
+  /// The names of Nukhbaa's own accounts, compared through [_nameKey].
+  static const Set<String> _reservedNames = <String>{
+    'نخبه',
+    'دعم',
+    'الدعم',
+    'nukhba',
+    'nukhbaa',
+    'support',
+    'admin',
+  };
+
+  /// Words that, beside the brand, make a name read as an official account.
+  static const List<String> _officialWords = <String>[
+    'دعم',
+    'اداره',
+    'مشرف',
+    'رسمي',
+    'support',
+    'admin',
+    'official',
+  ];
+
+  /// Whether [name] would pass for one of Nukhbaa's own accounts (decided
+  /// 2026-11-01, review M-4): the brand alone, "support" or "admin" alone,
+  /// or the brand with an official word ("دعم نُخبة", "Nukhbaa Support").
+  /// Diacritics, tatweel, hamza forms, spaces and punctuation do not count.
+  static bool isReservedDisplayName(String name) {
+    final String key = _nameKey(name);
+    if (_reservedNames.contains(key)) {
+      return true;
+    }
+    final bool brand = key.contains('نخبه') || key.contains('nukhba');
+    return brand && _officialWords.any(key.contains);
+  }
+
+  static String _nameKey(String name) => name
+      .toLowerCase()
+      .replaceAll(RegExp('[\u064B-\u0652\u0670\u0640]'), '')
+      .replaceAll(RegExp('[أإآٱ]'), 'ا')
+      .replaceAll('ة', 'ه')
+      .replaceAll('ى', 'ي')
+      .replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
 
   /// Validates a candidate avatar upload before it reaches
   /// [UserDirectory.setAvatar]: rejects an empty payload, one over

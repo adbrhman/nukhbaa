@@ -1,6 +1,9 @@
+import 'package:application/src/competition/fixture_visibility.dart';
+import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/prediction/ports/fixture_prediction_tally_reader.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -25,9 +28,21 @@ final class GetFixturePredictionDistribution {
   /// Creates the use-case over the existing prediction read port.
   const GetFixturePredictionDistribution({
     required FixturePredictionRepository fixturePredictionRepository,
-  }) : _fixturePredictions = fixturePredictionRepository;
+    FixtureScheduleRepository? fixtureScheduleRepository,
+    int shareMinimum = crowdShareMinimum,
+  }) : _fixturePredictions = fixturePredictionRepository,
+       _schedules = fixtureScheduleRepository,
+       _shareMinimum = shareMinimum;
 
   final FixturePredictionRepository _fixturePredictions;
+
+  /// Optional: with it a hidden fixture, or a test fixture asked by a
+  /// player, is refused as the feed leaves it out (review M-3).
+  final FixtureScheduleRepository? _schedules;
+
+  /// The fewest calls the split is shown from ([crowdShareMinimum]):
+  /// under it both shares are 0 (review M-2).
+  final int _shareMinimum;
 
   /// Returns the home/away win percentages for [fixtureId]. Draw predictions
   /// are ignored so the two visible percentages describe the team split.
@@ -69,15 +84,39 @@ final class GetFixturePredictionDistribution {
       );
     }
 
+    final FixtureScheduleRepository? schedules = _schedules;
+    if (schedules != null) {
+      final found = await schedules.findByFixture(fixture);
+      if (found is Err<FixtureSchedule?>) {
+        return Result.err(found.error);
+      }
+      if (!FixtureVisibility.playable(
+        principal,
+        (found as Ok<FixtureSchedule?>).value,
+      )) {
+        return const Result.err(FixtureVisibility.unavailable);
+      }
+    }
+
     final predictionsResult = await _fixturePredictions.listByFixture(fixture);
     if (predictionsResult is Err<List<FixturePredictionView>>) {
       return Result.err(predictionsResult.error);
     }
 
+    final List<FixturePredictionView> views =
+        (predictionsResult as Ok<List<FixturePredictionView>>).value;
+    if (views.length < _shareMinimum) {
+      return const Result.ok(
+        FixturePredictionDistribution(
+          homeWinPercentage: 0,
+          awayWinPercentage: 0,
+        ),
+      );
+    }
+
     var homeWins = 0;
     var awayWins = 0;
-    for (final view
-        in (predictionsResult as Ok<List<FixturePredictionView>>).value) {
+    for (final view in views) {
       final prediction = view.prediction;
       if (prediction.homeGoals > prediction.awayGoals) {
         homeWins++;

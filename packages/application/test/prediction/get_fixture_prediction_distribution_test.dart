@@ -81,8 +81,10 @@ void main() {
         submitted,
       );
 
+    // The share math on three calls; the minimum has its own test.
     final result = await GetFixturePredictionDistribution(
       fixturePredictionRepository: repo,
+      shareMinimum: 1,
     ).call(principal: _userPrincipal(), seasonId: _season, fixtureId: _fixture);
 
     final value = (result as Ok<FixturePredictionDistribution>).value;
@@ -104,6 +106,7 @@ void main() {
 
     final result = await GetFixturePredictionDistribution(
       fixturePredictionRepository: repo,
+      shareMinimum: 1,
     ).call(principal: _userPrincipal(), seasonId: _season, fixtureId: _fixture);
 
     final value = (result as Ok<FixturePredictionDistribution>).value;

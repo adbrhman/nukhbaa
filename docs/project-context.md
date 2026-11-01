@@ -7631,6 +7631,35 @@ took it itself.
   test's sole exact group.
 - No migration, no app update; the server on push.
 
+### Crowd shares from five calls, the old split guarded, reserved names (script 194, 2026-11-01)
+
+From the 2026-11-01 review (M-2, M-3, M-4).
+
+- **M-2, crowd shares on the server.** The feed sent every fixture's split
+  before kickoff whatever its size, and only the app hid it under 5 calls:
+  with one caller the split was his pick. `crowdShareMinimum = 5`
+  (application, beside `FixturePredictionTallyReader`): under it
+  `ListCurrentMonthFixtures` sends the counts and zero shares, the same rule
+  as the app's `minShareSample`, so nothing changes on screen.
+- **M-3, the old `GET .../prediction-distribution`.** No current screen
+  reads it, but it answered for any fixture: it now takes the fixture
+  schedule (a hidden fixture, or a test fixture asked by a player, is
+  `409 prediction.fixture_unavailable`, as the feed leaves it out) and the
+  same minimum (zero shares under 5 calls).
+- **M-4, names.** `User.validateDisplayName` (registration, the first
+  chosen name, an admin's rename) now removes controls, bidirectional
+  overrides and isolates, the Arabic letter mark and invisible spaces before
+  checking (U+200D stays, for emoji), and refuses
+  `identity.display_name_reserved` for a name that passes for Nukhbaa's own
+  accounts: the brand, "دعم"/"الدعم", support or admin alone, or the brand
+  with an official word (دعم، إدارة، مشرف، رسمي، support، admin، official),
+  diacritics, tatweel, hamza forms, spaces and punctuation ignored. Names
+  already stored are not changed.
+- Tests: application `crowd_share_minimum_test.dart`,
+  `display_name_rules_test.dart`; the tests of the share math and of the
+  caches pass `shareMinimum: 1`.
+- No migration, no app update; the server on push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
