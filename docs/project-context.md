@@ -7523,6 +7523,20 @@ choices of his three questions).
   `fixtures_anchor_test.dart`; SQL `0193_daily_selection_log_test.sql`.
 - **Apply 0193 in the SQL Editor before pushing the server.**
 
+### The trial changes nothing the players get (script 191, 2026-11-01)
+
+Asked by the owner on 2026-11-01: during the trial week the current system
+sends the matches exactly as before; the selection only scores and logs.
+
+- Two parts of script 190 now wait for `NUKHBA_DAILY_MINIMUM=on`: the
+  fixtures syncs at 00:05 and 12:05 Riyadh time (`fixturesAtFixedTimes`;
+  the trial and `off` keep a sync every 12 hours from boot), and asking
+  Highlightly about the third day (the trial keeps two days, so its
+  leagues' matches appear when they did and no request is added).
+- In the trial the selection therefore chooses today and tomorrow (the
+  day of decision); the third day is noted `not every league was read`.
+- Tests: server `fixtures_anchor_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

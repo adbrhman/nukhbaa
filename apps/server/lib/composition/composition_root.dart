@@ -3096,13 +3096,15 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         rules: phaseOneRules,
         // Highlightly allows 100 requests a day and they are wanted for
-        // results; two days of schedules still sees every day twice. The
-        // daily selection compares the leagues on the same days, so with it
-        // Highlightly is asked about the third day too (6 more a day; the
-        // schedule calls still stop with 25 left for the results).
-        daysBySource: dailySelection == null
-            ? const <String, int>{highlightlySource: 2}
-            : const <String, int>{},
+        // results; two days of schedules still sees every day twice. Once
+        // the daily selection adds matches (`on`) it compares the leagues on
+        // the same days, so Highlightly is asked about the third day too (6
+        // more a day; the schedule calls still stop with 25 left for the
+        // results). The trial keeps the two days, so nothing it does changes
+        // what the players get (script 191): it chooses today and tomorrow.
+        daysBySource: dailyMode == DailySelectionMode.on
+            ? const <String, int>{}
+            : const <String, int>{highlightlySource: 2},
         dailySelection: dailySelection,
         rescoreEarlierKickoff: rescoreEarlierKickoff,
       );

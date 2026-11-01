@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:application/application.dart';
 import 'package:server/composition/composition_root.dart';
@@ -42,6 +43,14 @@ Duration untilNextFixturesRun(DateTime nowUtc) {
   }
   return providerFixturesTick;
 }
+
+/// Whether the fixtures syncs run at [providerFixturesAnchors] (script 191):
+/// only once the daily selection adds matches (`NUKHBA_DAILY_MINIMUM=on`).
+/// The trial and `off` keep a sync every 12 hours from boot, as before, so
+/// the trial changes nothing the players get.
+bool fixturesAtFixedTimes(Map<String, String> env) =>
+    DailySelectionMode.parse(env['NUKHBA_DAILY_MINIMUM']) ==
+    DailySelectionMode.on;
 
 /// Results checks. Each run only calls the provider when a synced fixture is
 /// due, so most runs cost nothing.
@@ -249,7 +258,14 @@ void startProviderSyncScheduler(CompositionRoot root) {
     });
   }
 
-  scheduleFixtures();
+  if (fixturesAtFixedTimes(Platform.environment)) {
+    scheduleFixtures();
+  } else {
+    // The trial or off (script 191): every 12 hours from boot, as before.
+    phasedPeriodic(providerFixturesPhase, providerFixturesTick, (_) {
+      unawaited(runFixtures(includeToday: true));
+    });
+  }
   phasedPeriodic(providerResultsPhase, providerResultsTick, (_) {
     unawaited(runResults());
   });

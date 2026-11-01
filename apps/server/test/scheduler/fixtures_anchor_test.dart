@@ -24,6 +24,15 @@ void main() {
     );
   });
 
+  test('fixed times only once the selection adds matches (script 191)', () {
+    expect(fixturesAtFixedTimes(const <String, String>{}), isFalse);
+    expect(
+      fixturesAtFixedTimes(const {'NUKHBA_DAILY_MINIMUM': 'shadow'}),
+      isFalse,
+    );
+    expect(fixturesAtFixedTimes(const {'NUKHBA_DAILY_MINIMUM': 'on'}), isTrue);
+  });
+
   test('the last day of a month runs into the first of the next', () {
     expect(
       untilNextFixturesRun(DateTime.utc(2026, 11, 30, 10)),
