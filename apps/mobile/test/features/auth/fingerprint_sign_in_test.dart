@@ -150,6 +150,9 @@ void main() {
     addTearDown(harness.dispose);
 
     await _open(tester, harness);
+    // Below the fold since the «تذكرني» box (2026-11-03).
+    await tester.ensureVisible(find.byKey(const Key('signIn.fingerprint')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('signIn.fingerprint')));
     await tester.pumpAndSettle();
 
@@ -189,6 +192,9 @@ void main() {
     addTearDown(harness.dispose);
 
     await _open(tester, harness);
+    // Below the fold since the «تذكرني» box (2026-11-03).
+    await tester.ensureVisible(find.byKey(const Key('signIn.fingerprint')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('signIn.fingerprint')));
     await tester.pumpAndSettle();
 

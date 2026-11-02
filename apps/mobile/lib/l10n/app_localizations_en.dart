@@ -64,13 +64,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get displayName => 'Name';
 
   @override
-  String get displayNameHint => 'Your first and family name, e.g. Mohammed Ali';
+  String get displayNameHint =>
+      'Your first name and your father\'s name or surname, e.g. Mohammed Ali';
 
   @override
   String get displayNameRequired => 'Please enter your name.';
 
   @override
-  String get displayNameTwoPart => 'Enter your first and family name.';
+  String get displayNameTwoPart =>
+      'Enter your first name and your father\'s name or surname, not one name.';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get rememberShowPassword =>
+      'Tap «Remember me» to show the saved password';
+
+  @override
+  String rememberedPassword(String password) {
+    return 'Saved password: $password';
+  }
 
   @override
   String get changeDisplayName => 'Change name';

@@ -91,13 +91,6 @@ void main() {
 
     expect(server.puts, ['Ali Hassan']);
     expect(find.byKey(const Key('nameSetup.screen')), findsNothing);
-    // A new account reads the terms first (2026-11-02).
-    expect(find.byKey(const Key('rules.accept')), findsOneWidget);
-    expect(find.byType(NukhbaaShell), findsNothing);
-
-    await tester.tap(find.byKey(const Key('rules.accept')));
-    await tester.pumpAndSettle();
-
     expect(find.byType(NukhbaaShell), findsOneWidget);
   });
 
@@ -113,7 +106,7 @@ void main() {
 
     expect(server.puts, isEmpty);
     expect(find.byKey(const Key('nameSetup.screen')), findsOneWidget);
-    expect(find.textContaining('اسمك الثنائي'), findsWidgets);
+    expect(find.textContaining('اسمك الأول'), findsWidgets);
   });
 
   _gateTest('the automatic name itself is refused without a request', (

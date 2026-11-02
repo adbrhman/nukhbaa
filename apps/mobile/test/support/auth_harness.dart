@@ -28,6 +28,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/core/auth/biometric_unlock.dart';
 import 'package:mobile/core/auth/google_id_token_source.dart';
+import 'package:mobile/core/auth/remembered_password.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/providers.dart';
 
@@ -77,6 +78,7 @@ AuthHarness buildAuthHarness(
   GoogleIdTokenSource? googleIdTokenSource,
   BiometricPreferenceStore? biometricStore,
   BiometricAuthenticator? biometricAuthenticator,
+  RememberedPasswordStore? rememberedPasswords,
 }) {
   final captured = <CapturedRequest>[];
   final store = InMemoryTokenStore(seedToken);
@@ -95,6 +97,9 @@ AuthHarness buildAuthHarness(
     ),
     if (biometricAuthenticator != null)
       biometricAuthenticatorProvider.overrideWithValue(biometricAuthenticator),
+    rememberedPasswordStoreProvider.overrideWithValue(
+      rememberedPasswords ?? InMemoryRememberedPasswordStore(),
+    ),
     apiTransportProvider.overrideWith(
       (ref) => ApiTransport(
         baseUri: Uri.parse('https://api.test.example/'),

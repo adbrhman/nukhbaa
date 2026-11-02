@@ -1,11 +1,14 @@
 library;
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
+import '../../core/auth/biometric_unlock.dart';
 import '../../core/auth/google_id_token_source.dart';
+import '../../core/auth/remembered_password.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -41,8 +44,73 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isRegister = false;
 
+  /// "تذكرني": keep the password on this phone after signing in.
+  bool _remember = false;
+
+  /// The password this phone keeps for the typed e-mail, if any.
+  String? _savedPassword;
+
+  /// Whether that kept password is shown under the field.
+  bool _showSaved = false;
+
+  /// The e-mail [_savedPassword] was looked up for.
+  String _lookedUp = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_onEmailChanged);
+  }
+
+  /// Looks up the password this phone keeps for the typed e-mail; one kept
+  /// ticks "تذكرني", as it was left.
+  Future<void> _onEmailChanged() async {
+    final String email = rememberedEmailKey(_emailController.text);
+    if (email == _lookedUp) return;
+    _lookedUp = email;
+    final String? saved = email.isEmpty || kIsWeb
+        ? null
+        : await ref.read(rememberedPasswordStoreProvider).passwordFor(email);
+    if (!mounted || _lookedUp != email) return;
+    setState(() {
+      _savedPassword = saved;
+      _remember = saved != null;
+      _showSaved = false;
+    });
+  }
+
+  /// The "تذكرني" box: on the sign-in tab, with a password kept for this
+  /// e-mail, the first tap shows it (after the fingerprint, when the phone
+  /// has one) and fills the field; otherwise it ticks or unticks the box.
+  Future<void> _onRememberTap() async {
+    final String? saved = _savedPassword;
+    if (!_isRegister && saved != null && !_showSaved) {
+      final BiometricAuthenticator fingerprint = ref.read(
+        biometricAuthenticatorProvider,
+      );
+      if (await fingerprint.isAvailable() &&
+          !await fingerprint.authenticate(
+            reason: 'ضع بصمتك لإظهار كلمة المرور',
+          )) {
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _passwordController.text = saved;
+        _showSaved = true;
+        _remember = true;
+      });
+      return;
+    }
+    setState(() {
+      _remember = !_remember;
+      if (!_remember) _showSaved = false;
+    });
+  }
+
   @override
   void dispose() {
+    _emailController.removeListener(_onEmailChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -61,12 +129,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   displayName: _nameController.text.trim(),
                   email: _emailController.text.trim(),
                   password: _passwordController.text,
+                  remember: _remember && !kIsWeb,
                 )
           : ref
                 .read(sessionControllerProvider.notifier)
                 .signInWithCredentials(
                   email: _emailController.text.trim(),
                   password: _passwordController.text,
+                  remember: _remember && !kIsWeb,
                 ),
     );
   }
@@ -76,7 +146,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     ref.read(sessionControllerProvider.notifier).clearFailure();
     _confirmPasswordController.clear();
     _nameController.clear();
-    setState(() => _isRegister = toRegister);
+    setState(() {
+      _isRegister = toRegister;
+      _showSaved = false;
+    });
   }
 
   @override
@@ -265,7 +338,33 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   ? l10n.passwordTooShort
                                   : null,
                             ),
+                            if (!kIsWeb)
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: _RememberBox(
+                                  checked: _remember,
+                                  enabled: !inFlight,
+                                  label: l10n.rememberMe,
+                                  onTap: () => unawaited(_onRememberTap()),
+                                ),
+                              ),
                             if (!_isRegister) ...[
+                              if (_savedPassword != null && !_showSaved)
+                                Text(
+                                  l10n.rememberShowPassword,
+                                  key: const Key('signIn.rememberHint'),
+                                  style: text.bodySmall?.copyWith(
+                                    color: tokens.textMuted,
+                                  ),
+                                ),
+                              if (_showSaved && _savedPassword != null)
+                                Text(
+                                  l10n.rememberedPassword(_savedPassword!),
+                                  key: const Key('signIn.savedPassword'),
+                                  style: text.bodySmall?.copyWith(
+                                    color: tokens.textSecondary,
+                                  ),
+                                ),
                               Align(
                                 alignment: AlignmentDirectional.centerEnd,
                                 child: TextButton(
@@ -483,6 +582,62 @@ class _AuthModeTab extends StatelessWidget {
               color: selected ? tokens.onPrimary : tokens.textSecondary,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The small "تذكرني" box at the lower corner of the password field.
+class _RememberBox extends StatelessWidget {
+  const _RememberBox({
+    required this.checked,
+    required this.enabled,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool checked;
+  final bool enabled;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    // One target, at least 48 px high, that says whether it is ticked.
+    return Semantics(
+      checked: checked,
+      child: InkWell(
+        key: const Key('signIn.remember'),
+        onTap: enabled ? onTap : null,
+        borderRadius: AppRadius.brButton,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.minTouchTarget,
+            minWidth: AppSizes.minTouchTarget,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                checked
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
+                size: AppSizes.iconMd,
+                color: checked ? tokens.primary : tokens.textMuted,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text(
+                  label,
+                  style: context.text.bodySmall?.copyWith(
+                    color: tokens.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

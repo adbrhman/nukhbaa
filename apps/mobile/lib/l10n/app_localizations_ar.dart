@@ -64,14 +64,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get displayName => 'الاسم';
 
   @override
-  String get displayNameHint => 'اسمك الثنائي، مثل: محمد علي';
+  String get displayNameHint =>
+      'اسمك الأول واسم أبيك أو لقبك، مثل: محمد العماري';
 
   @override
   String get displayNameRequired => 'الرجاء إدخال اسمك.';
 
   @override
   String get displayNameTwoPart =>
-      'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك.';
+      'اكتب اسمك الأول واسم أبيك أو لقبك، لا اسماً واحداً.';
+
+  @override
+  String get rememberMe => 'تذكرني';
+
+  @override
+  String get rememberShowPassword =>
+      'اضغط على «تذكرني» لإظهار كلمة المرور المحفوظة';
+
+  @override
+  String rememberedPassword(String password) {
+    return 'كلمة المرور المحفوظة: $password';
+  }
 
   @override
   String get changeDisplayName => 'تغيير الاسم';

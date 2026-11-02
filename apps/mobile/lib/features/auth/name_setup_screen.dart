@@ -51,7 +51,8 @@ bool isTwoPartDisplayName(String name) {
 }
 
 /// The line under the name field when the name is a single word.
-const String twoPartNameMessage = 'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك';
+const String twoPartNameMessage =
+    'اكتب اسمك الأول واسم أبيك أو لقبك، مثل: محمد العماري';
 
 /// Asks a user who never chose a display name to choose it, once.
 class NameSetupScreen extends ConsumerStatefulWidget {
@@ -138,7 +139,8 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'اكتب اسمك الثنائي، مثل: محمد علي. '
+                  'اكتب اسمك الحقيقي: اسمك الأول واسم أبيك أو لقبك، '
+                  'مثل: محمد العماري. '
                   'هذا الاسم يظهر للاعبين الآخرين في الترتيب والمجموعات، '
                   'ولا يمكن تغييره بعد الحفظ.',
                   textAlign: TextAlign.center,

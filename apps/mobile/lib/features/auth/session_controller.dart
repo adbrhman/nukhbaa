@@ -41,10 +41,10 @@ import 'package:shared/shared.dart';
 
 import '../../core/auth/biometric_unlock.dart';
 import '../../core/auth/google_id_token_source.dart';
+import '../../core/auth/remembered_password.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
 import 'session_state.dart';
-import 'welcome_terms.dart';
 
 part 'session_controller.g.dart';
 
@@ -178,22 +178,30 @@ class SessionController extends _$SessionController {
     state = AsyncData(resolved);
   }
 
-  /// Signs in with [email] + [password] via `POST /auth/login`.
+  /// Signs in with [email] + [password] via `POST /auth/login`. Once
+  /// signed in, the password is kept on this phone when [remember] is on
+  /// ("تذكرني") and forgotten when it is off.
   Future<void> signInWithCredentials({
     required String email,
     required String password,
+    bool remember = false,
   }) async {
     state = const AsyncData(SessionAuthenticating());
     final result = await _authApi.login(email: email, password: password);
-    state = AsyncData(await _onAuthResponse(result));
+    final SessionState next = await _onAuthResponse(result);
+    if (next is SessionAuthenticated) {
+      await _rememberPassword(email, password, remember: remember);
+    }
+    state = AsyncData(next);
   }
 
   /// Registers a new account with [displayName] + [email] + [password] via
-  /// `POST /auth/register`.
+  /// `POST /auth/register`; [remember] as in [signInWithCredentials].
   Future<void> register({
     required String displayName,
     required String email,
     required String password,
+    bool remember = false,
   }) async {
     state = const AsyncData(SessionAuthenticating());
     final result = await _authApi.register(
@@ -202,11 +210,31 @@ class SessionController extends _$SessionController {
       password: password,
     );
     final SessionState next = await _onAuthResponse(result);
-    // A new account reads the terms before the app opens (2026-11-02).
     if (next is SessionAuthenticated) {
-      ref.read(welcomeTermsProvider.notifier).show();
+      await _rememberPassword(email, password, remember: remember);
     }
     state = AsyncData(next);
+  }
+
+  /// Keeps [password] for [email] on this phone, or forgets it, after a
+  /// successful sign-in (2026-11-03). Never blocks the sign-in.
+  Future<void> _rememberPassword(
+    String email,
+    String password, {
+    required bool remember,
+  }) async {
+    try {
+      final RememberedPasswordStore store = ref.read(
+        rememberedPasswordStoreProvider,
+      );
+      if (remember) {
+        await store.remember(email: email, password: password);
+      } else {
+        await store.forget(email);
+      }
+    } on Object {
+      // Remembering is a convenience.
+    }
   }
 
   /// Signs in with Google: the device's account picker supplies an ID
@@ -313,14 +341,7 @@ class SessionController extends _$SessionController {
     if (result is Err<MeResponseDto>) {
       return Result.err(result.error);
     }
-    final SessionState next = await _validateHeldToken(
-      clearOnAuthFailure: false,
-    );
-    // The name of a first Google sign-in: a new account, so the terms.
-    if (next is SessionAuthenticated) {
-      ref.read(welcomeTermsProvider.notifier).show();
-    }
-    state = AsyncData(next);
+    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
     return const Result.ok(null);
   }
 
@@ -361,9 +382,17 @@ class SessionController extends _$SessionController {
   /// calls are made, and the fingerprint slot is emptied: its refresh token
   /// is dead. On a refusal nothing changes here.
   Future<Result<void>> deleteAccount() async {
+    final String? email = switch (state.value) {
+      SessionAuthenticated(:final user) => user.email,
+      _ => null,
+    };
     final Result<bool> result = await _authApi.deleteAccount();
     if (result case Err<bool>(:final error)) {
       return Result.err(error);
+    }
+    // A deleted account's password is not kept on the phone.
+    if (email != null) {
+      await _rememberPassword(email, '', remember: false);
     }
     try {
       final BiometricPreferenceStore prefs = ref.read(

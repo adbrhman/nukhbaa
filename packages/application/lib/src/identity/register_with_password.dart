@@ -14,8 +14,9 @@ final class RegisterWithPassword {
   final AuthGateway _gateway;
 
   /// Executes the registration with a required [displayName], validated as
-  /// a new account's name ([User.validateNewAccountName]: a two-part name,
-  /// decided 2026-11-02). Never throws; returns a typed [Result].
+  /// a new account's name ([User.validateNewAccountName]: a real first name
+  /// and a father's name or surname). Never throws; returns a typed
+  /// [Result].
   Future<Result<IssuedSession>> call({
     required String email,
     required String password,

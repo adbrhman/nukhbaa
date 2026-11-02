@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @displayNameHint.
   ///
   /// In en, this message translates to:
-  /// **'Your first and family name, e.g. Mohammed Ali'**
+  /// **'Your first name and your father\'s name or surname, e.g. Mohammed Ali'**
   String get displayNameHint;
 
   /// No description provided for @displayNameRequired.
@@ -221,8 +221,26 @@ abstract class AppLocalizations {
   /// No description provided for @displayNameTwoPart.
   ///
   /// In en, this message translates to:
-  /// **'Enter your first and family name.'**
+  /// **'Enter your first name and your father\'s name or surname, not one name.'**
   String get displayNameTwoPart;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me'**
+  String get rememberMe;
+
+  /// No description provided for @rememberShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap «Remember me» to show the saved password'**
+  String get rememberShowPassword;
+
+  /// No description provided for @rememberedPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved password: {password}'**
+  String rememberedPassword(String password);
 
   /// No description provided for @changeDisplayName.
   ///

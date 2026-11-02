@@ -135,7 +135,6 @@ void main() {
       'خالد',
       'Ali',
       '  عبدالرحمن   ',
-      'محمد 10',
       'سالم \u{1F468}\u200D\u{1F4BB}',
       'م ع',
       'محمد ـــ',
@@ -154,7 +153,7 @@ void main() {
     test('two words of two letters or more are kept', () async {
       for (final String name in <String>[
         'محمد علي',
-        'أبو محمد',
+        'أبو بكر العمري',
         ' عبدالرحمن   المغربي ',
         'Mohammed Ali',
         'مُحَمَّد عَلِي',
@@ -164,4 +163,22 @@ void main() {
       }
     });
   });
+
+  // Refined by the owner 2026-11-03: never a surname first, never an alias.
+  test(
+    'a first Google sign-in cannot choose a surname alone or an alias',
+    () async {
+      for (final (String name, String code) in <(String, String)>[
+        ('المغربي الرفاعي', 'identity.display_name_surname_first'),
+        ('الطاهري الطاهري', 'identity.display_name_surname_first'),
+        ('ملك التوقع', 'identity.display_name_alias'),
+        ('ساهر الليل', 'identity.display_name_alias'),
+        ('محمد 10', 'identity.display_name_alias'),
+      ]) {
+        final (Result<User> result, _Directory directory) = await _choose(name);
+        expect((result as Err<User>).error.code, code, reason: name);
+        expect(directory.renames, isEmpty, reason: name);
+      }
+    },
+  );
 }

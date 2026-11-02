@@ -242,6 +242,39 @@ void main() {
       expect(sender.tokens, isEmpty);
     });
 
+    // Refined by the owner 2026-11-03.
+    test('a surname alone or an alias is refused before the account is '
+        'made', () async {
+      var n = 0;
+      for (final (String name, String code) in <(String, String)>[
+        ('المغربي الرفاعي', 'identity.display_name_surname_first'),
+        ('ملك الجمال', 'identity.display_name_alias'),
+      ]) {
+        final gateway = _FakeGateway(
+          Result.ok(_session(confirmationRequired: false)),
+        );
+        final context = _wire(
+          gateway,
+          _FakeSender(),
+          _FakeTargets(const <String>['admin-device']),
+          body: jsonEncode({
+            'email': 'alias${n++}@example.com',
+            'password': 'password-123',
+            'display_name': name,
+          }),
+        );
+
+        final response = await route.onRequest(context);
+        final body = (await response.json() as Map<Object?, Object?>)
+            .cast<String, Object?>();
+
+        expect(response.statusCode, HttpStatus.badRequest, reason: name);
+        expect(body['code'], code, reason: name);
+        expect(body['message'], contains('محمد العماري'), reason: name);
+        expect(gateway.signUps, 0, reason: name);
+      }
+    });
+
     test('rejected registration never triggers the admin push', () async {
       final sender = _FakeSender();
       final context = _wire(

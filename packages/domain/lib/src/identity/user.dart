@@ -173,43 +173,195 @@ final class User {
     return Result.ok(trimmed);
   }
 
-  /// The refusal of a one-word name for a new account ([isTwoPartName]).
+  /// The refusal of a single name for a new account ([isTwoPartName]).
   static const AppError notTwoPartName = AppError.validation(
     'identity.display_name_not_two_part',
-    'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك، مثل: محمد علي',
+    'اكتب اسمك الأول واسم أبيك أو لقبك، مثل: محمد طاهر أو محمد العماري',
   );
 
-  /// Validates the name a new account chooses (decided 2026-11-02): every
-  /// [validateDisplayName] rule, and a two-part name ([isTwoPartName]).
+  /// The refusal of a name that starts with a surname ("المغربي الرفاعي").
+  static const AppError surnameFirstName = AppError.validation(
+    'identity.display_name_surname_first',
+    'ابدأ باسمك الأول ثم اسم أبيك أو لقبك، مثل: محمد العماري. '
+        'لا يُقبل اللقب وحده',
+  );
+
+  /// The refusal of an alias ("ملك الجمال", "ساهر الليل").
+  static const AppError aliasName = AppError.validation(
+    'identity.display_name_alias',
+    'اكتب اسمك الحقيقي لا اسماً مستعاراً، مثل: محمد العماري',
+  );
+
+  /// Validates the name a new account chooses: every [validateDisplayName]
+  /// rule, then the real-name rules of [newAccountNameError] (asked by the
+  /// backup admin 2026-11-02, refined by the owner 2026-11-03).
   /// Registration uses it, and `UpdateDisplayName` (the one choice of a
-  /// first Google sign-in) checks the same rule; an admin rename and the
+  /// first Google sign-in) checks the same rules; an admin rename and the
   /// names already chosen are not touched.
   static Result<String> validateNewAccountName(String raw) {
     final Result<String> validated = validateDisplayName(raw);
-    if (validated case Ok<String>(
-      :final String value,
-    ) when !isTwoPartName(value)) {
-      return const Result.err(notTwoPartName);
+    if (validated case Ok<String>(:final String value)) {
+      final AppError? refused = newAccountNameError(value);
+      if (refused != null) {
+        return Result.err(refused);
+      }
     }
     return validated;
   }
 
-  /// Whether [name] holds at least two words of two letters or more
-  /// (a first name and a father's or family name). Digits, emoji,
-  /// punctuation and the tatweel are not letters, so a single name with a
-  /// number or an emoji beside it is still one name.
-  static bool isTwoPartName(String name) {
-    final int words = name
-        .split(RegExp(r'\s+'))
-        .where(
-          (String word) =>
-              _letter.allMatches(word.replaceAll('\u0640', '')).length >= 2,
-        )
-        .length;
-    return words >= 2;
+  /// Why [name] is not a new account's real name, or null when it is. In
+  /// order: an alias -- a digit, or a word players use as a title
+  /// ([_aliasWords]) -- is [aliasName]; a name that starts with a surname
+  /// (a first word with the article, unless it is a given name such as
+  /// "الحسن") is [surnameFirstName]; fewer than two parts is
+  /// [notTwoPartName]. Diacritics, tatweel and hamza forms do not count.
+  static AppError? newAccountNameError(String name) {
+    final List<String> keys = _wordKeys(name);
+    if (RegExp(r'\p{Nd}', unicode: true).hasMatch(name) ||
+        keys.any(_aliasWords.contains)) {
+      return aliasName;
+    }
+    if (keys.isNotEmpty &&
+        keys.first.startsWith('ال') &&
+        !_givenNamesWithArticle.contains(keys.first)) {
+      return surnameFirstName;
+    }
+    if (!isTwoPartName(name)) {
+      return notTwoPartName;
+    }
+    return null;
   }
 
-  static final RegExp _letter = RegExp(r'\p{L}', unicode: true);
+  /// Whether [name] holds two parts: a first name and a father's name or a
+  /// surname, each of two letters or more. "عبد", "أبو" and "أم" join the
+  /// next word into one name ("عبد الرحمن" is one name), and the particles
+  /// "بن", "ابن", "بنت" and "آل" are not a part ("محمد بن" is one name).
+  static bool isTwoPartName(String name) {
+    int parts = 0;
+    bool joinNext = false;
+    for (final String key in _wordKeys(name)) {
+      if (key.length < 2 || _particles.contains(key)) {
+        continue;
+      }
+      if (joinNext) {
+        joinNext = false;
+        continue;
+      }
+      parts++;
+      joinNext = _compoundPrefixes.contains(key);
+    }
+    return parts >= 2;
+  }
+
+  /// Each word of [name] through [_nameKey], letters only.
+  static List<String> _wordKeys(String name) => name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .map(
+        (String word) =>
+            _nameKey(word).replaceAll(RegExp(r'\p{N}', unicode: true), ''),
+      )
+      .where((String key) => key.isNotEmpty)
+      .toList();
+
+  /// Words that make one name with the word after them.
+  static const Set<String> _compoundPrefixes = <String>{'عبد', 'ابو', 'ام'};
+
+  /// Words that are not a part of a name on their own.
+  static const Set<String> _particles = <String>{'بن', 'ابن', 'بنت', 'ال'};
+
+  /// Given names that carry the article, so may come first.
+  static const Set<String> _givenNamesWithArticle = <String>{
+    'الحسن',
+    'الحسين',
+    'العباس',
+    'الخضر',
+    'الهادي',
+    'المهدي',
+    'الطيب',
+    'المختار',
+    'الامين',
+    'الفاتح',
+    'المعتصم',
+    'الوليد',
+    'الصادق',
+    'المنصور',
+    'الحارث',
+    'البراء',
+    'الزبير',
+    'الفضل',
+    'المقداد',
+    'المثني',
+    'النعمان',
+    'الحكم',
+  };
+
+  /// Words of the aliases players chose (the titles flagged in the new
+  /// players' list, script 202, and the owner's examples), through
+  /// [_nameKey]. Kept to words that are never a given name or a surname,
+  /// so a real name is not refused; what slips through is renamed by an
+  /// admin.
+  static const Set<String> _aliasWords = <String>{
+    'ملك',
+    'الملك',
+    'ملكه',
+    'الملكه',
+    'بطل',
+    'البطل',
+    'زعيم',
+    'الزعيم',
+    'قناص',
+    'القناص',
+    'اسطوره',
+    'الاسطوره',
+    'عاشق',
+    'العاشق',
+    'عاشقه',
+    'مايسترو',
+    'المايسترو',
+    'عقيد',
+    'العقيد',
+    'دكتور',
+    'الدكتور',
+    'كابتن',
+    'الكابتن',
+    'امبراطور',
+    'الامبراطور',
+    'هداف',
+    'الهداف',
+    'محترف',
+    'المحترف',
+    'متوقع',
+    'المتوقع',
+    'جوكر',
+    'الجوكر',
+    'شبح',
+    'الشبح',
+    'التوقع',
+    'التوقعات',
+    'توقعات',
+    'الليل',
+    'الحب',
+    'القلب',
+    'الاحساس',
+    'الشوق',
+    'الغلا',
+    'الحزن',
+    'الصمت',
+    'الظلام',
+    'القمر',
+    'النجوم',
+    'الكوره',
+    'الكره',
+    'king',
+    'legend',
+    'captain',
+    'boss',
+    'joker',
+    'sniper',
+    'doctor',
+    'dr',
+  };
 
   /// Characters a name never keeps: controls, the bidirectional overrides
   /// and isolates, the Arabic letter mark and the invisible spaces. They let

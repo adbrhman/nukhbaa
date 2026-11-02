@@ -8039,6 +8039,54 @@ words).
   installed apps show its message); the form check and the terms page
   come with the next APK (the web at once).
 
+### Real names; "تذكرني"; the terms page dropped (script 204, 2026-11-03)
+
+Asked by the owner on 2026-11-03, refining script 203: a new account
+registers with its first name and its father's name, or its first name
+and its surname -- never one name ("علي", "طارق"), never a surname alone
+or first ("المغربي الرفاعي", "الطاهري الطاهري"), never an alias ("ملك
+الجمال", "ملك التوقع", "ساهر الليل"). The terms-and-prizes page of 203 is
+not wanted and is removed. And a "تذكرني" box at the lower corner of the
+password field keeps the password on the phone, so a player who signs in
+again on the same phone and forgot it taps the box to see it.
+
+- Domain: `User.newAccountNameError` decides, in order: an alias (a digit,
+  or a word of `_aliasWords`: the titles flagged in the new players' list
+  of 202 and the owner's examples, kept to words that are never a given
+  name or a surname) -> `identity.display_name_alias`; a first word with
+  the article, unless a given name that carries it (`_givenNamesWithArticle`:
+  الحسن، العباس...) -> `identity.display_name_surname_first`; fewer than two
+  parts (`isTwoPartName`: "عبد"/"أبو"/"أم" join the next word, so "عبد
+  الرحمن" and "أبو محمد" are one name; بن/ابن/بنت/آل are not a part) ->
+  `identity.display_name_not_two_part`. Each message is Arabic and gives
+  the example "محمد العماري". Diacritics, tatweel and hamza forms do not
+  count (`_nameKey`).
+- `RegisterWithPassword` (via `validateNewAccountName`) and
+  `UpdateDisplayName` (last, after "immutable") apply it; admin renames
+  and names already chosen are untouched. What the list misses, an admin
+  renames from the new players' list.
+- App: the form keeps its loose two-word check; the server's refusal
+  shows as it is (an Arabic message). `RulesScreen(onAccept:)`,
+  `welcomeTermsProvider` and `welcome_terms.dart` are gone; the gate goes
+  straight to the app again.
+- "تذكرني": `RememberedPasswordStore` (`core/auth/remembered_password.dart`)
+  keeps one password per e-mail in the secure storage (Android keystore),
+  never sent anywhere; nothing on the web. `SessionController`
+  `signInWithCredentials`/`register` take `remember`: after a successful
+  sign-in the password is kept when ticked, forgotten when not; deleting
+  the account forgets it. On the sign-in tab, an e-mail with a kept
+  password ticks the box and says "اضغط على «تذكرني» لإظهار كلمة المرور
+  المحفوظة"; the tap fills the field and shows it -- after the fingerprint
+  when the phone has one enrolled, since several accounts may share a
+  phone.
+- Tests: domain `two_part_name_test.dart`; application
+  `display_name_rules_test.dart`; server `auth_register_route_test.dart`;
+  mobile `remember_password_test.dart` (new), `name_setup_test.dart`, and
+  `google_sign_in_test.dart`/`fingerprint_sign_in_test.dart` scroll to
+  their buttons (the box adds a line to the form).
+- No migration. The name rules apply once the server is deployed; the box
+  comes with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

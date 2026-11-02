@@ -3,11 +3,6 @@
 /// Predict Six rule, adopted 2026-09-17). Only the exact score earns points
 /// (3, or 6 on the day's one double); the right outcome alone earns 0, and
 /// the page says so in those words (audit M-07).
-///
-/// With [RulesScreen.onAccept] it is the terms page a new account reads
-/// once before the app opens (asked by the backup admin, 2026-11-02): the
-/// competition for the prizes, without naming them, the conditions of
-/// taking part, then the same rules, and an acceptance button.
 library;
 
 import 'package:flutter/material.dart';
@@ -24,45 +19,19 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
   @override
   String get screenName => ScreenNames.rules;
 
-  /// Creates the page; with [onAccept], the terms page of a new account.
-  const RulesScreen({super.key, this.onAccept});
-
-  /// Called when a new account accepts the terms; null on the rules page
-  /// opened from the settings.
-  final VoidCallback? onAccept;
+  /// Creates the page.
+  const RulesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
-    final VoidCallback? accept = onAccept;
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
         centerTitle: true,
-        automaticallyImplyLeading: accept == null,
-        title: Text(
-          accept == null ? l10n.rulesTitle : 'الشروط والجوائز',
-          key: const Key('rules.title'),
-        ),
+        title: Text(l10n.rulesTitle, key: const Key('rules.title')),
       ),
-      bottomNavigationBar: accept == null
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                ),
-                child: FilledButton(
-                  key: const Key('rules.accept'),
-                  onPressed: accept,
-                  child: const Text('قرأت الشروط وأوافق'),
-                ),
-              ),
-            ),
       body: SafeArea(
         top: false,
         child: Center(
@@ -74,56 +43,13 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: <Widget>[
                 Text(
-                  accept == null
-                      ? l10n.rulesTagline
-                      : 'توقّع، نافس، تصدّر النخبة '
-                            'للمنافسة على الجوائز',
-                  key: const Key('rules.tagline'),
+                  l10n.rulesTagline,
                   textAlign: TextAlign.center,
                   style: context.text.bodyMedium?.copyWith(
                     color: tokens.textMuted,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                if (accept != null) ...<Widget>[
-                  _RulesCard(
-                    children: <Widget>[
-                      _RuleRow(
-                        key: const Key('rules.terms.champion'),
-                        icon: Icons.emoji_events_rounded,
-                        color: tokens.goldAccent,
-                        label:
-                            'صاحب المركز الأول في ترتيب الشهر '
-                            'يُتوَّج بطلاً للشهر',
-                      ),
-                      _RuleRow(
-                        key: const Key('rules.terms.name'),
-                        icon: Icons.badge_outlined,
-                        color: tokens.primary,
-                        label:
-                            'اسمك ثنائي، يظهر للاعبين في الترتيب، '
-                            'ولا تستطيع تغييره بعد الحفظ',
-                      ),
-                      _RuleRow(
-                        key: const Key('rules.terms.phone'),
-                        icon: Icons.phone_android_rounded,
-                        color: tokens.textSecondary,
-                        label:
-                            'حسابان من الهاتف نفسه لا '
-                            'يتوقعان المباراة نفسها',
-                      ),
-                      _RuleRow(
-                        key: const Key('rules.terms.suspended'),
-                        icon: Icons.block_rounded,
-                        color: tokens.textSecondary,
-                        label:
-                            'الحساب الموقوف لا ينال '
-                            'نقاطاً ولا جوائز',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
                 _RulesCard(
                   children: <Widget>[
                     _RuleRow(

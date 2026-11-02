@@ -142,6 +142,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Below the fold since the «تذكرني» box (2026-11-03).
+    await tester.ensureVisible(find.byKey(const Key('signIn.google')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('signIn.google')));
     await tester.pumpAndSettle();
 
