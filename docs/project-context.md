@@ -7770,6 +7770,25 @@ not kicked off, and his prediction of the moved match stays an ordinary one.
 - Tests: SQL `0195_postponed_double_test.sql`.
 - **Apply 0195 in the SQL Editor (after 0194) before pushing.**
 
+### Old patch scripts out of the repository root (script 198, 2026-11-02)
+
+Asked by the owner on 2026-11-02 (review M-36). Each file was read first:
+none is named by the code, the build (`Dockerfile`, `.dockerignore`), CI
+(`.github/workflows`), the README or the protocol; their work is long in the
+tree.
+
+- `install_elite_preview.sh` and `lib/elite_preview/elite_preview.dart`: a
+  2026-08 purple UI preview, outside every workspace package (the root has
+  no Flutter dependency), excluded from analysis; the exclusion goes too.
+- `nk_kickoff_audit.sh`: the script that added migration 0044 and
+  `CorrectFixtureSchedule` (both in the tree).
+- `ota_update.sh`: the 2026-08 OTA update installer (the update feature is
+  in `apps/mobile/lib/features/update/`).
+- `setup_android_sdk.sh`, `verify_termux.sh`: phone setup helpers of
+  August; the protocol's script and Build Verification do their checks now.
+- Each file is checked against its SHA-256 before it is removed; any other
+  content stops the script. Git keeps them in history.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
