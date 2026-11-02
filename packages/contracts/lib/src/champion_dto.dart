@@ -289,6 +289,7 @@ final class ChampionCandidatesDto {
     required this.unscoredFixtures,
     required this.crowned,
     required this.candidates,
+    this.plannedPrize,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -308,6 +309,7 @@ final class ChampionCandidatesDto {
           for (final Object? c in (json['candidates'] as List<Object?>?) ?? [])
             if (c is Map<String, Object?>) ChampionCandidateDto.fromJson(c),
         ],
+        plannedPrize: json['planned_prize'] as String?,
       );
 
   /// The current schema version for this DTO.
@@ -328,8 +330,15 @@ final class ChampionCandidatesDto {
   /// The players already crowned (empty until the month is crowned).
   final List<String> crowned;
 
-  /// The top of the final board; everyone ranked first is included.
+  /// The top of the final board; everyone level with the first for the
+  /// crown (points, exact scorelines, right outcomes) is included, ranked
+  /// first.
   final List<ChampionCandidateDto> candidates;
+
+  /// The prize the month will be crowned with (script 204): the one set
+  /// ahead for it, else the previous month's; null when there is none, once
+  /// the month is crowned, or from a server before 0199.
+  final String? plannedPrize;
 
   /// The schema version of this payload.
   final int schemaVersion;
@@ -343,6 +352,7 @@ final class ChampionCandidatesDto {
     'unscored_fixtures': unscoredFixtures,
     'crowned': crowned,
     'candidates': [for (final ChampionCandidateDto c in candidates) c.toJson()],
+    if (plannedPrize != null) 'planned_prize': plannedPrize,
   };
 }
 

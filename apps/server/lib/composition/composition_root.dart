@@ -188,6 +188,8 @@ final class CompositionRoot {
     this.recordDeviceSighting,
     this.adminListSharedDevices,
     this.adminListNewPlayers,
+    this.autoCrownMonths,
+    this.adminSetMonthPrize,
     this.adminMessagePlayer,
     required this.registerDeviceToken,
     this.deleteMyAccount,
@@ -412,6 +414,8 @@ final class CompositionRoot {
     this.recordDeviceSighting,
     this.adminListSharedDevices,
     this.adminListNewPlayers,
+    this.autoCrownMonths,
+    this.adminSetMonthPrize,
     this.adminMessagePlayer,
     this.deleteMyAccount,
     RegisterDeviceToken? registerDeviceToken,
@@ -2598,6 +2602,15 @@ final class CompositionRoot {
   /// 202), admin-only. Null in tests that do not provide one.
   final AdminListNewPlayers? adminListNewPlayers;
 
+  /// Crowns each month by itself once its last match is over (script 204,
+  /// migration 0199); null in tests that do not provide one.
+  final AutoCrownMonths? autoCrownMonths;
+
+  /// Sets the prize a month will be crowned with
+  /// (`PUT /admin/champions/{id}/prize`, script 204), admin-only. Null in
+  /// tests that do not provide one.
+  final AdminSetMonthPrize? adminSetMonthPrize;
+
   /// Support writes first to a player
   /// (`POST /admin/support/players/{id}/messages`, script 202), admin-only.
   /// Null in tests that do not provide one.
@@ -3468,6 +3481,53 @@ final class CompositionRoot {
       adminListNewPlayers: AdminListNewPlayers(
         players: PostgresNewPlayerReader(connection),
       ),
+      // The month crowns itself once its last match is over, as the owner,
+      // through the admin's own crowning and podium (script 204, migration
+      // 0199); the owner alone is told, in his inbox. The board is read
+      // uncached, as for a crowning by hand.
+      autoCrownMonths: AutoCrownMonths(
+        store: PostgresMonthCrownStore(connection),
+        champions: PostgresMonthChampionRepository(connection),
+        board: MonthFinalBoard(
+          fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+          participantReader: participantReader,
+        ),
+        crown: AdminCrownMonthChampions(
+          champions: PostgresMonthChampionRepository(connection),
+          board: MonthFinalBoard(
+            fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+            participantReader: participantReader,
+          ),
+          clock: clock,
+        ),
+        setPodium: AdminSetMonthPodium(
+          champions: PostgresMonthChampionRepository(connection),
+          podium: PostgresMonthPodiumRepository(connection),
+          board: MonthFinalBoard(
+            fixtureTotalsReader: PostgresFixtureTotalsReader(connection),
+            participantReader: participantReader,
+          ),
+          clock: clock,
+        ),
+        rescore: rescoreFixture,
+        owner: OwnerInbox(
+          email: dailyShortfallRecipient,
+          users: userAdminRepository,
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
+      adminSetMonthPrize: AdminSetMonthPrize(
+        champions: PostgresMonthChampionRepository(connection),
+        store: PostgresMonthCrownStore(connection),
+        clock: clock,
+      ),
       adminMessagePlayer: AdminMessagePlayer(
         opener: PostgresSupportConversationOpener(connection),
         reply: AdminReplySupport(chats: supportChats, clock: clock),
@@ -3497,6 +3557,7 @@ final class CompositionRoot {
           participantReader: participantReader,
         ),
         clock: clock,
+        crownStore: PostgresMonthCrownStore(connection),
       ),
       adminCrownMonthChampions: AdminCrownMonthChampions(
         champions: PostgresMonthChampionRepository(connection),

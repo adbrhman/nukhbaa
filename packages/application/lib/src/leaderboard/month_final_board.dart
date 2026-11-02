@@ -35,8 +35,21 @@ final class MonthFinalBoard {
   final FixtureTotalsReader _totals;
   final ParticipantReader _participants;
 
+  /// Whether [a] and [b] are level for the crown: the same prediction
+  /// points, exact scorelines and right outcomes. The join time, the
+  /// board's last tie-break, never decides a crown: such a tie waits for
+  /// the owner (L-29, decided 2026-11-02).
+  static bool levelForCrown(
+    FixtureLeaderboardEntry a,
+    FixtureLeaderboardEntry b,
+  ) =>
+      a.totalPoints == b.totalPoints &&
+      a.exactCount == b.exactCount &&
+      a.outcomeCount == b.outcomeCount;
+
   /// The first [limit] lines of [month]'s board, never cutting a tie for
-  /// first place: every player ranked first is always included.
+  /// first place: every player level for the crown with the first
+  /// ([levelForCrown]) is always included.
   Future<Result<List<ChampionCandidate>>> top(
     ChampionMonth month, {
     required int limit,
@@ -81,7 +94,9 @@ final class MonthFinalBoard {
     }
     final entries = (boardResult as Ok<FixtureLeaderboard>).value.entries;
 
-    final int leaders = entries.takeWhile((entry) => entry.rank == 1).length;
+    final int leaders = entries
+        .takeWhile((entry) => levelForCrown(entry, entries.first))
+        .length;
     final int take = leaders > limit ? leaders : limit;
     final out = <ChampionCandidate>[];
     for (final entry in entries.take(take)) {

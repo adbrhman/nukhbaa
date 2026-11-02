@@ -7,6 +7,7 @@ import 'package:server/scheduler/cache_epoch_scheduler.dart';
 import 'package:server/scheduler/h2h_league_scheduler.dart';
 import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
+import 'package:server/scheduler/month_crown_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
@@ -63,6 +64,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Finishes the scoring of results whose scoring failed after they
     // were recorded (see rescore_scheduler.dart).
     startRescoreScheduler(root);
+    // Crowns each month by itself once its last match is over, and tells
+    // the owner (see month_crown_scheduler.dart, script 204).
+    startMonthCrownScheduler(root);
     // Approves and locks the head-to-head rounds, judges each month and
     // draws the next (see h2h_league_scheduler.dart).
     startH2hLeagueScheduler(root);

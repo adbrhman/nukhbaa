@@ -60,6 +60,9 @@ const Duration matchDetailsPhase = Duration(seconds: 52);
 /// See [providerLivePhase].
 const Duration monthlySeasonPhase = Duration(seconds: 56);
 
+/// See [providerLivePhase]. The month's own crowning (script 204).
+const Duration monthCrownPhase = Duration(seconds: 6);
+
 /// Makes a one-shot timer; [Timer.new] in production.
 typedef OneShotTimerFactory =
     Timer Function(Duration duration, void Function() callback);

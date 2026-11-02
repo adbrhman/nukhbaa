@@ -4,6 +4,7 @@ import 'package:server/scheduler/badge_evaluation_scheduler.dart';
 import 'package:server/scheduler/h2h_league_scheduler.dart';
 import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
+import 'package:server/scheduler/month_crown_scheduler.dart';
 import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
 import 'package:server/scheduler/phased_timer.dart';
@@ -131,6 +132,7 @@ void main() {
       'match-day settlement': (matchDaySettlementPhase, matchDaySettlementTick),
       'monthly season': (monthlySeasonPhase, monthlySeasonTick),
       'match details': (matchDetailsPhase, matchDetailsTick),
+      'month crown': (monthCrownPhase, monthCrownTick),
     };
     int gcd(int a, int b) => b == 0 ? a : gcd(b, a % b);
     final names = jobs.keys.toList();

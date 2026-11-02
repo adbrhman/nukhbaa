@@ -7937,6 +7937,62 @@ let support ask him for his real name instead of a borrowed one.
 - **Apply 0198 in the SQL Editor before pushing.** The push names the
   player at once; the list opens from it with the next APK (the web too).
 
+### The month crowns itself (script 204, migration 0199, 2026-11-02)
+
+The points audit of 2026-11-02 (every stored score of October and November
+recomputed: no difference) found one thing wrong with the crowning, not the
+points: October was crowned at 00:19 on 1 November and its podium set at
+01:27, while an Aston Villa - Fulham result was recorded at 00:58 and
+corrected at 01:38, which then moved the third place. Decided by the owner
+on 2026-11-02:
+
+- **The month crowns itself** (`AutoCrownMonths`, `month_crown_scheduler`,
+  every 2 minutes, phase 6 s): once the last match of the month is over and
+  its result settled, it waits 5 minutes after the latest result write of
+  the month, scores again and posts every result whose points are not all in
+  (a prediction without a score, a pending score, a score older than its
+  result, a ledger total off its score; one still not right after three
+  tries is reported in the error log, `champion.rescore_stuck`, and the
+  month waits), and only then crowns, on a later
+  run, the first of the final board -- through the admin's own
+  `AdminCrownMonthChampions` and `AdminSetMonthPodium`, as the owner (the
+  active admin with the alert e-mail); the podium is set with it.
+- **A match without a result does not count** (postponed or cancelled):
+  one kicked off inside the month is waited for 6 hours after its kickoff,
+  then left out, as if it never was, on the last day as on any other; one
+  moved past the month is left out at once. A late result after the
+  crowning is caught below.
+- **A tie for first is not decided by the clock (L-29).** Level on points,
+  exact scorelines and right outcomes (`MonthFinalBoard.levelForCrown`),
+  whatever the join times, the month is not crowned by itself: the owner is
+  told once and crowns by hand. The preview now ranks every such player
+  first and `AdminCrownMonthChampions` accepts any of them (it took rank 1
+  only, which the join time made one player). The board's own order, the
+  join time last, is unchanged.
+- **The prize is set ahead** (`PUT /admin/champions/{id}/prize`,
+  `AdminSetMonthPrize`, `competition.month_prizes`): the crowning takes it,
+  else the previous month's (its champion's prize first); refused once the
+  month is crowned. `GET /admin/champions/{id}` carries it as
+  `planned_prize`.
+- **The owner alone is told**, in his inbox (`OwnerInbox`, an admin
+  announcement to him, no push, as the short-day alert of script 190), each
+  thing once (`competition.month_crown_notices`): the crowning (champion,
+  prize, podium, the matches left out), a tie for first, a month with
+  nobody on its board, and a result written after the crowning that changes
+  its first three (once per new order). The crowning itself is never
+  changed by the server.
+- Admins play and are crowned like everyone else (owner, 2026-11-02;
+  Suleiman's gift of October's third place stays as set).
+- Months crowned by hand before 0199 (September, October) are left alone.
+- **Migration 0199**: the two tables and five read-only functions
+  (`month_crown_due`, `month_crown_state`, `month_crown_rescore`,
+  `month_prize_for`, `month_results_after`), server only.
+- Tests: application `auto_crown_months_test.dart` (with the crown rule and
+  the prize); server `month_prize_route_test.dart`, the phase in
+  `phased_timer_test.dart`; SQL `0199_month_auto_crown_test.sql` (29
+  checks).
+- **Apply 0199 in the SQL Editor before pushing.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

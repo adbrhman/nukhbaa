@@ -15,9 +15,13 @@ import 'package:shared/shared.dart';
 /// (`champion.month_not_over`); it is already crowned
 /// (`champion.already_crowned`); some fixture has no result yet and the admin
 /// did not confirm crowning anyway (`champion.fixtures_unscored`); a chosen
-/// player is not ranked first on the final board (`champion.not_first`).
-/// The admin decides between one and two champions when two players share
-/// first place; a player not ranked first can never be chosen.
+/// player is not level with the first on the final board
+/// (`champion.not_first`).
+/// The admin decides between one and two champions when two players are
+/// level for the crown -- the same points, exact scorelines and right
+/// outcomes, whatever their join times (`MonthFinalBoard.levelForCrown`,
+/// L-29, decided 2026-11-02); a player not level with the first can never
+/// be chosen.
 ///
 /// The final figures are frozen into the record as they stood. Never throws;
 /// returns a typed [Result] carrying the month's champions.
@@ -112,9 +116,11 @@ final class AdminCrownMonthChampions {
     if (boardResult is Err<List<ChampionCandidate>>) {
       return Result.err(boardResult.error);
     }
+    final lines = (boardResult as Ok<List<ChampionCandidate>>).value;
     final leaders = <String, ChampionCandidate>{
-      for (final line in (boardResult as Ok<List<ChampionCandidate>>).value)
-        if (line.entry.rank == 1) line.userId.value: line,
+      for (final line in lines)
+        if (MonthFinalBoard.levelForCrown(line.entry, lines.first.entry))
+          line.userId.value: line,
     };
     final toCrown = <ChampionToCrown>[];
     for (final userId in chosen) {

@@ -103,6 +103,7 @@ ChampionCandidatesDto championCandidatesToDto(ChampionCandidates preview) =>
         for (final ChampionCandidate line in preview.candidates)
           _candidateToDto(line),
       ],
+      plannedPrize: preview.plannedPrize,
     );
 
 ChampionCandidateDto _candidateToDto(ChampionCandidate line) {
