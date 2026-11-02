@@ -524,6 +524,21 @@ final class AdminApi {
     );
   }
 
+  /// `PUT /admin/champions/{seasonId}/prize` -- sets the prize the month
+  /// will be crowned with (script 204): the automatic crowning takes it, and
+  /// a month left without one takes the previous month's. Answers the prize
+  /// as the server stored it (trimmed).
+  Future<Result<String>> setMonthPrize({
+    required String seasonId,
+    required String prize,
+  }) {
+    return _transport.putObject<String>(
+      '/admin/champions/$seasonId/prize',
+      body: <String, Object?>{'prize': prize},
+      parse: (json) => (json['prize'] as String?) ?? '',
+    );
+  }
+
   /// `GET /admin/h2h/rounds` -- a month of the head-to-head league
   /// (migration 0100): its draw, its approved rounds and the days that may
   /// be approved next. [day] (`YYYY-MM-DD`) picks the month containing it;

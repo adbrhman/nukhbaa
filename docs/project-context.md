@@ -7993,6 +7993,15 @@ on 2026-11-02:
   checks).
 - **Apply 0199 in the SQL Editor before pushing.**
 
+### The month's prize in the crowning section (script 205, 2026-11-02)
+
+The app side of script 204: the crowning section ends with a card saying
+what the server now does by itself, the prize the month will be crowned
+with («جائزة التتويج»), and a field to set it (`AdminApi.setMonthPrize`).
+A crowning by hand (a tie for first) carries the prize set ahead unless
+the admin types another. Test: mobile `champion_auto_crown_test.dart`.
+Needs 204's server; the next APK (the web too).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
