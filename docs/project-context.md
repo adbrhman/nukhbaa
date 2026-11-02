@@ -7708,6 +7708,38 @@ the match's hero (the one exact call).
 - No migration, no server change, no l10n key; Android with the next APK,
   the web on deploy.
 
+### An edit in the SQL Editor reaches the players within a minute (script 196, 2026-11-02)
+
+Review L-11. Since script 192 (`ebb5ffbf`) the server holds most reads for
+up to 6 hours and drops them when it writes itself; an edit made in the SQL
+Editor (a kickoff, a name, a result) could therefore stay unseen for hours.
+Options weighed: a shorter hold (brings the egress back), a restart after
+every edit or an admin button (by hand, easy to forget), LISTEN/NOTIFY (a
+held connection the pooler and the free plan make fragile), and a cache
+epoch. Chosen: the epoch.
+
+- **Migration 0194**: `ops.cache_epoch` (one row) and
+  `ops.bump_cache_epoch(text)`; a statement trigger on the tables the server
+  holds (`competition.fixture_schedules`, `season_fixtures`, `participants`,
+  `seasons`, `prediction.fixture_predictions`, `scoring.fixture_results`,
+  `fixture_scores`, `identity.users`, `football_data.teams`, `leagues`)
+  moves it for any session not named `nukhbaa-server`.
+- **The server** names its sessions `nukhbaa-server`
+  (`serverApplicationName`, the pool's `applicationName`), so its own writes
+  never move the epoch and its caches keep their hours.
+- **`CacheEpochWatcher`** (`cache_epoch_scheduler.dart`, every minute, with
+  the schedulers on or off): the first read is the baseline; a moved epoch
+  drops every read cache at once and prints `cache epoch N: <table> by
+  <session>` in the server log. One row a minute: no egress to speak of.
+- **To check after the deploy** (SQL Editor):
+  `select application_name, count(*) from pg_stat_activity group by 1;`
+  must list `nukhbaa-server`. If the pooler did not pass the name on, the
+  server's own writes would move the epoch and the caches would be dropped
+  each minute (as before script 192): the log line says which.
+- Tests: infrastructure `cache_epoch_watcher_test.dart`; SQL
+  `0194_cache_epoch_test.sql`.
+- **Apply 0194 in the SQL Editor before pushing the server.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

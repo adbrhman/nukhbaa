@@ -33,6 +33,10 @@ final class CachedFixtureScoreRepository implements FixtureScoreRepository {
 
   final FixtureScoreRepository _inner;
 
+  /// Drops every held fixture: a write made outside this server
+  /// (CacheEpochWatcher, migration 0194).
+  void forget() => _byFixture.clear();
+
   /// Called after every score write, failed ones too, so a cache built on
   /// the scores elsewhere (a player's own points, script 192) drops them.
   final void Function()? _onWritten;

@@ -181,6 +181,7 @@ final class CompositionRoot {
     this.getMatchDetails,
     this.rescoreUnscoredResults,
     this.recordError,
+    this.cacheEpochWatcher,
     this.adminErrorLog,
     this.adminErrorReleases,
     required this.registerDeviceToken,
@@ -399,6 +400,7 @@ final class CompositionRoot {
     this.getMatchDetails,
     this.rescoreUnscoredResults,
     this.recordError,
+    this.cacheEpochWatcher,
     this.adminErrorLog,
     this.adminErrorReleases,
     this.deleteMyAccount,
@@ -2573,6 +2575,11 @@ final class CompositionRoot {
   /// in tests that do not provide one, so nothing is recorded there.
   final RecordError? recordError;
 
+  /// Drops the read caches when a write made outside this server (the
+  /// SQL Editor) moved the cache epoch (migration 0194). Null in test
+  /// roots, where nothing is held for hours.
+  final CacheEpochWatcher? cacheEpochWatcher;
+
   /// The admin dashboard's error log (backs `/admin/errors`, migrations
   /// 0087 and 0088); null in tests that do not provide one.
   final AdminErrorLog? adminErrorLog;
@@ -3361,6 +3368,23 @@ final class CompositionRoot {
       // Every kept error may alert the admins (migration 0089): a new
       // critical error, a new error in a fresh release, more than 20 an
       // hour, a fixed error that came back -- at most once an hour each.
+      // Every read cache below is held for hours (script 192); a write
+      // made in the SQL Editor drops them all within a minute (0194).
+      cacheEpochWatcher: CacheEpochWatcher(
+        reader: PostgresCacheEpochReader(connection),
+        flush: () {
+          directory.forgetAll();
+          participantReader.forgetNames();
+          fixtureScheduleRepository.forget();
+          fixturePredictionReads.forget();
+          predictionHistory.forget();
+          fixturePredictionTallyReader.forget();
+          fixtureResultReads.forget();
+          fixtureScoreRepository.forget();
+          myFixtureScoreReader.forget();
+          teamRepository.invalidate();
+        },
+      ),
       recordError: RecordError(
         errors: PostgresErrorLogRepository(connection),
         clock: clock,

@@ -9,6 +9,7 @@ export 'src/admin/postgres_duplicate_name_reader.dart';
 export 'src/admin/postgres_player_points_reader.dart';
 export 'src/admin/postgres_user_admin_repository.dart';
 export 'src/admin/user_cache_evicting_admin_repository.dart';
+export 'src/common/cache_epoch.dart';
 export 'src/common/system_clock.dart';
 export 'src/common/uuid_id_generator.dart';
 export 'src/common/uuid_invite_code_generator.dart';

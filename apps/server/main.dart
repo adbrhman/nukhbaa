@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/badge_evaluation_scheduler.dart';
+import 'package:server/scheduler/cache_epoch_scheduler.dart';
 import 'package:server/scheduler/h2h_league_scheduler.dart';
 import 'package:server/scheduler/incomplete_day_scheduler.dart';
 import 'package:server/scheduler/match_day_settlement_scheduler.dart';
@@ -23,6 +24,11 @@ import 'package:server/scheduler/streak_saver_scheduler.dart';
 /// as a 500 on whichever request happens to arrive first.
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final root = await CompositionRoot.instance();
+
+  // Reads the cache epoch every minute and drops the read caches when a
+  // write made outside this server moved it (migration 0194). Read
+  // only, so it runs with the schedulers off too.
+  startCacheEpochScheduler(root);
 
   // In-process schedulers are ON by default. NUKHBA_SCHEDULERS=off skips
   // all of them: a local server on a shared database must not race the

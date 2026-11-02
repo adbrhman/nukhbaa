@@ -58,6 +58,14 @@ final class CachedUserDirectory implements UserDirectory {
   final TtlCache<String, StoredAvatar> _avatars;
   final TtlCache<String, int> _offsets;
 
+  /// Drops every held user and picture: a write made outside this
+  /// server (CacheEpochWatcher, migration 0194).
+  void forgetAll() {
+    _users.clear();
+    _avatars.clear();
+    _onNameChanged?.call();
+  }
+
   /// Drops [id]'s cached user so the next read comes from the database.
   void forget(UserId id) {
     _users.remove(id.value);

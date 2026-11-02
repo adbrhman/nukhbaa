@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:infrastructure/src/common/cache_epoch.dart';
 import 'package:infrastructure/src/db/postgres_config.dart';
 import 'package:infrastructure/src/db/supabase_root_ca.dart';
 // `postgres` exports its own `Result` (the query result-row list), which
@@ -109,6 +110,9 @@ class PostgresConnection implements DbExecutor {
               ? supabaseSecurityContext()
               : null,
           maxConnectionCount: config.poolSize,
+          // Names this server's sessions, so a write made anywhere else
+          // (the SQL Editor) moves the cache epoch (0194).
+          applicationName: serverApplicationName,
         ),
       );
       // Eagerly verify connectivity so startup fails fast on misconfig.
