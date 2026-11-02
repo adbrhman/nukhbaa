@@ -59,12 +59,15 @@ void main() {
     final directory = _Directory(_user('n72914939'));
     final useCase = UpdateDisplayName(userDirectory: directory);
 
-    final first = await useCase(principal: _principal, displayName: ' Ali ');
+    final first = await useCase(
+      principal: _principal,
+      displayName: ' Ali Hassan ',
+    );
     final second = await useCase(principal: _principal, displayName: 'Omar');
 
-    expect((first as Ok<User>).value.displayName, 'Ali');
+    expect((first as Ok<User>).value.displayName, 'Ali Hassan');
     expect((second as Err<User>).error.code, 'identity.display_name_immutable');
-    expect(directory.renames, ['Ali']);
+    expect(directory.renames, ['Ali Hassan']);
   });
 
   test('a registered name stays immutable', () async {

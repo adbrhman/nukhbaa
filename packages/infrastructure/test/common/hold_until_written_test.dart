@@ -611,12 +611,12 @@ void main() {
     await readBoard();
     final Result<User> renamed = await rename(
       principal: _player,
-      displayName: 'Khalid',
+      displayName: 'Khalid Omar',
     );
     expect(renamed, isA<Ok<User>>());
 
     final FixturePredictionReveal after = await readBoard();
-    expect(after.displayNames[_participant], 'Khalid');
+    expect(after.displayNames[_participant], 'Khalid Omar');
     expect(after.displayNames[_other], 'Sara');
     expect(names.asked, 2);
     expect(predictions.byFixtureAsked, <String>[_f1], reason: 'unchanged');

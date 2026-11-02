@@ -92,7 +92,7 @@ void main() {
 
   test('ordinary names, the word elite among them, are kept', () async {
     for (final String name in <String>[
-      'خالد',
+      'خالد سالم',
       'نخبة الهلال',
       'Mohammed Elite',
       'مشرف القحطاني',
@@ -105,10 +105,10 @@ void main() {
   test('bidirectional overrides and invisible spaces are removed before the '
       'name is checked and stored', () async {
     final (Result<User> result, _Directory directory) = await _choose(
-      '\u202Eخالد\u200B\u200F',
+      '\u202Eخالد سالم\u200B\u200F',
     );
-    expect((result as Ok<User>).value.displayName, 'خالد');
-    expect(directory.renames, <String>['خالد']);
+    expect((result as Ok<User>).value.displayName, 'خالد سالم');
+    expect(directory.renames, <String>['خالد سالم']);
 
     final (Result<User> empty, _Directory _) = await _choose(
       '\u200B\u2060\uFEFF',
@@ -121,11 +121,47 @@ void main() {
 
   test('an emoji joined by U+200D stays whole', () async {
     final (Result<User> result, _Directory _) = await _choose(
-      'سالم \u{1F468}\u200D\u{1F4BB}',
+      'سالم علي \u{1F468}\u200D\u{1F4BB}',
     );
     expect(
       (result as Ok<User>).value.displayName,
-      'سالم \u{1F468}\u200D\u{1F4BB}',
+      'سالم علي \u{1F468}\u200D\u{1F4BB}',
     );
+  });
+
+  // Decided 2026-11-02: a new account's name is two-part.
+  group('a new account chooses a two-part name', () {
+    for (final String name in <String>[
+      'خالد',
+      'Ali',
+      '  عبدالرحمن   ',
+      'محمد 10',
+      'سالم \u{1F468}\u200D\u{1F4BB}',
+      'م ع',
+      'محمد ـــ',
+      'محمد.علي',
+    ]) {
+      test('"$name" is one name', () async {
+        final (Result<User> result, _Directory directory) = await _choose(name);
+        expect(
+          (result as Err<User>).error.code,
+          'identity.display_name_not_two_part',
+        );
+        expect(directory.renames, isEmpty);
+      });
+    }
+
+    test('two words of two letters or more are kept', () async {
+      for (final String name in <String>[
+        'محمد علي',
+        'أبو محمد',
+        ' عبدالرحمن   المغربي ',
+        'Mohammed Ali',
+        'مُحَمَّد عَلِي',
+      ]) {
+        final (Result<User> result, _Directory _) = await _choose(name);
+        expect(result, isA<Ok<User>>(), reason: name);
+      }
+    });
   });
 }

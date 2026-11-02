@@ -82,13 +82,38 @@ void main() {
     expect(find.byKey(const Key('nameSetup.screen')), findsOneWidget);
     expect(find.byType(NukhbaaShell), findsNothing);
 
+    await tester.enterText(
+      find.byKey(const Key('nameSetup.field')),
+      'Ali Hassan',
+    );
+    await tester.tap(find.byKey(const Key('nameSetup.save')));
+    await tester.pumpAndSettle();
+
+    expect(server.puts, ['Ali Hassan']);
+    expect(find.byKey(const Key('nameSetup.screen')), findsNothing);
+    // A new account reads the terms first (2026-11-02).
+    expect(find.byKey(const Key('rules.accept')), findsOneWidget);
+    expect(find.byType(NukhbaaShell), findsNothing);
+
+    await tester.tap(find.byKey(const Key('rules.accept')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NukhbaaShell), findsOneWidget);
+  });
+
+  _gateTest('a one-word name is refused without a request', (tester) async {
+    final server = _Server('n72914939');
+    final harness = buildAuthHarness(server.handle, seedToken: 'saved-jwt');
+    addTearDown(harness.dispose);
+
+    await _open(tester, harness);
     await tester.enterText(find.byKey(const Key('nameSetup.field')), 'Ali');
     await tester.tap(find.byKey(const Key('nameSetup.save')));
     await tester.pumpAndSettle();
 
-    expect(server.puts, ['Ali']);
-    expect(find.byKey(const Key('nameSetup.screen')), findsNothing);
-    expect(find.byType(NukhbaaShell), findsOneWidget);
+    expect(server.puts, isEmpty);
+    expect(find.byKey(const Key('nameSetup.screen')), findsOneWidget);
+    expect(find.textContaining('اسمك الثنائي'), findsWidgets);
   });
 
   _gateTest('the automatic name itself is refused without a request', (

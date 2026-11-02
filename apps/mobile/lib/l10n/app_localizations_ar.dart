@@ -64,10 +64,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get displayName => 'الاسم';
 
   @override
-  String get displayNameHint => 'اسمك الظاهر للآخرين';
+  String get displayNameHint => 'اسمك الثنائي، مثل: محمد علي';
 
   @override
   String get displayNameRequired => 'الرجاء إدخال اسمك.';
+
+  @override
+  String get displayNameTwoPart =>
+      'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك.';
 
   @override
   String get changeDisplayName => 'تغيير الاسم';

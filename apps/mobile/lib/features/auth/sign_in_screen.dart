@@ -17,6 +17,7 @@ import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import '../update/update_gate.dart';
 import 'app_lock.dart';
+import 'name_setup_screen.dart' show isTwoPartDisplayName;
 import 'session_controller.dart';
 import 'password_reset_screen.dart';
 import 'session_state.dart';
@@ -214,6 +215,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 validator: (String? value) =>
                                     (value == null || value.trim().isEmpty)
                                     ? l10n.displayNameRequired
+                                    : !isTwoPartDisplayName(value)
+                                    ? l10n.displayNameTwoPart
                                     : null,
                               ),
                               const SizedBox(height: AppSpacing.lg),

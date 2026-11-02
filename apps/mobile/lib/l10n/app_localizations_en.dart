@@ -64,10 +64,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get displayName => 'Name';
 
   @override
-  String get displayNameHint => 'Your name, shown to others';
+  String get displayNameHint => 'Your first and family name, e.g. Mohammed Ali';
 
   @override
   String get displayNameRequired => 'Please enter your name.';
+
+  @override
+  String get displayNameTwoPart => 'Enter your first and family name.';
 
   @override
   String get changeDisplayName => 'Change name';

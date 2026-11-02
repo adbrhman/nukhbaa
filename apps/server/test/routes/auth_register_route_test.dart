@@ -18,6 +18,7 @@ final class _FakeGateway implements AuthGateway {
   _FakeGateway(this._response);
 
   final Result<IssuedSession> _response;
+  int signUps = 0;
 
   @override
   Future<Result<IssuedSession>> signInWithIdToken({
@@ -41,7 +42,10 @@ final class _FakeGateway implements AuthGateway {
     required String email,
     required String password,
     required String displayName,
-  }) async => _response;
+  }) async {
+    signUps++;
+    return _response;
+  }
 
   @override
   Future<Result<void>> requestPasswordReset({required String email}) =>
@@ -208,6 +212,33 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(response.statusCode, HttpStatus.ok);
+      expect(sender.tokens, isEmpty);
+    });
+
+    // Decided 2026-11-02: a new account's name is two-part.
+    test('a one-word name is refused before the account is made', () async {
+      final sender = _FakeSender();
+      final gateway = _FakeGateway(
+        Result.ok(_session(confirmationRequired: false)),
+      );
+      final context = _wire(
+        gateway,
+        sender,
+        _FakeTargets(const <String>['admin-device']),
+        body: jsonEncode({
+          'email': 'single@example.com',
+          'password': 'password-123',
+          'display_name': 'خالد',
+        }),
+      );
+
+      final response = await route.onRequest(context);
+      final body = (await response.json() as Map<Object?, Object?>)
+          .cast<String, Object?>();
+
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect(body['code'], 'identity.display_name_not_two_part');
+      expect(gateway.signUps, 0);
       expect(sender.tokens, isEmpty);
     });
 

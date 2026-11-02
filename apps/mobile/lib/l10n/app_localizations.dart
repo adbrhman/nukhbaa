@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @displayNameHint.
   ///
   /// In en, this message translates to:
-  /// **'Your name, shown to others'**
+  /// **'Your first and family name, e.g. Mohammed Ali'**
   String get displayNameHint;
 
   /// No description provided for @displayNameRequired.
@@ -217,6 +217,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter your name.'**
   String get displayNameRequired;
+
+  /// No description provided for @displayNameTwoPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your first and family name.'**
+  String get displayNameTwoPart;
 
   /// No description provided for @changeDisplayName.
   ///

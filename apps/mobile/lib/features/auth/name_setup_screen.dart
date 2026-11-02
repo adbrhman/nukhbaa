@@ -33,6 +33,26 @@ String automaticDisplayNameOf(AuthenticatedUserDto user) {
 bool hasAutomaticDisplayName(AuthenticatedUserDto user) =>
     user.displayName == automaticDisplayNameOf(user);
 
+/// Whether [name] is a two-part name: at least two words of two letters or
+/// more. The rule of `User.isTwoPartName` in the domain, which the server
+/// applies to every new account (decided 2026-11-02); checked here first so
+/// a one-word name is refused without a request.
+bool isTwoPartDisplayName(String name) {
+  final RegExp letter = RegExp(r'\p{L}', unicode: true);
+  final int words = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where(
+        (String word) =>
+            letter.allMatches(word.replaceAll('\u0640', '')).length >= 2,
+      )
+      .length;
+  return words >= 2;
+}
+
+/// The line under the name field when the name is a single word.
+const String twoPartNameMessage = 'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك';
+
 /// Asks a user who never chose a display name to choose it, once.
 class NameSetupScreen extends ConsumerStatefulWidget {
   /// Creates the screen for [user].
@@ -67,6 +87,10 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
         () =>
             _error = 'اختر اسماً يعرفك به الآخرون، غير بداية بريدك الإلكتروني',
       );
+      return;
+    }
+    if (!isTwoPartDisplayName(name)) {
+      setState(() => _error = twoPartNameMessage);
       return;
     }
     setState(() {
@@ -114,6 +138,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
+                  'اكتب اسمك الثنائي، مثل: محمد علي. '
                   'هذا الاسم يظهر للاعبين الآخرين في الترتيب والمجموعات، '
                   'ولا يمكن تغييره بعد الحفظ.',
                   textAlign: TextAlign.center,
@@ -130,7 +155,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => unawaited(_save()),
                   decoration: InputDecoration(
-                    labelText: 'الاسم',
+                    labelText: 'الاسم الثنائي',
                     errorText: _error,
                   ),
                 ),

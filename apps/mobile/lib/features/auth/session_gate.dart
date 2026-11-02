@@ -29,9 +29,11 @@ import '../../core/session/session_scope.dart';
 import 'app_lock.dart';
 import 'name_setup_screen.dart';
 import 'nukhbaa_shell.dart';
+import 'rules_screen.dart';
 import 'session_controller.dart';
 import 'session_state.dart';
 import 'sign_in_screen.dart';
+import 'welcome_terms.dart';
 
 /// Chooses the top-level screen from the current authentication session.
 class SessionGate extends ConsumerWidget {
@@ -41,6 +43,7 @@ class SessionGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncSession = ref.watch(sessionControllerProvider);
+    final bool welcome = ref.watch(welcomeTermsProvider);
     // A session that ends while the user is deep inside a pushed route (a
     // leaderboard, the admin panel, an open dialog) used to leave them
     // exactly there: only `home:` swapped underneath, while every request on
@@ -90,6 +93,11 @@ class SessionGate extends ConsumerWidget {
       SessionAuthenticated(:final user) =>
         hasAutomaticDisplayName(user)
             ? NameSetupScreen(user: user)
+            // A new account reads the terms and prizes first (2026-11-02).
+            : welcome
+            ? RulesScreen(
+                onAccept: ref.read(welcomeTermsProvider.notifier).accept,
+              )
             : NukhbaaShell(user: user),
       // Still holding a token the server never rejected: offline, not signed
       // out. Dropping such a user onto the password form was the bug.

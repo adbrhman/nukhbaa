@@ -8002,6 +8002,43 @@ A crowning by hand (a tie for first) carries the prize set ahead unless
 the admin types another. Test: mobile `champion_auto_crown_test.dart`.
 Needs 204's server; the next APK (the web too).
 
+### Two-part names; the terms and prizes on first entry (script 203, 2026-11-02)
+
+Asked by the backup admin on 2026-11-02: a new account must have a
+two-part name, never a single one, and a new player must see all the
+terms and the prizes as soon as he registers. The prizes are not named:
+"توقّع، نافس، تصدّر النخبة للمنافسة على الجوائز" (the owner's
+words).
+
+- Domain: `User.isTwoPartName` (at least two words of two letters or
+  more; digits, emoji, punctuation and the tatweel are not letters),
+  `User.validateNewAccountName` (every `validateDisplayName` rule, then
+  that) and the refusal `identity.display_name_not_two_part` (400).
+- `RegisterWithPassword` validates with `validateNewAccountName`;
+  `UpdateDisplayName` (a first Google sign-in's one choice) checks
+  `isTwoPartName` last, after "immutable" and "the automatic name".
+  `AdminRenameUser` and every name already chosen are untouched: the old
+  one-word names stay until an admin renames them.
+- App: the register form and `NameSetupScreen` refuse a one-word name
+  before any request (`isTwoPartDisplayName`, the same rule); the hint
+  reads "اسمك الثنائي، مثل: محمد علي".
+- Terms: `welcomeTermsProvider` is set by `SessionController.register`
+  and `chooseDisplayName` when they open a session; the `SessionGate`
+  then shows `RulesScreen(onAccept:)` -- "الشروط والجوائز": the prize line,
+  the conditions (the month's first is crowned, the two-part name chosen
+  once, two accounts of one phone never predict one match, a suspended
+  account wins nothing), the rules, and "قرأت الشروط وأوافق". Held for
+  the session only; a returning player never sees it again.
+- Tests: domain `two_part_name_test.dart`; application
+  `display_name_rules_test.dart`, `update_display_name_test.dart`;
+  server `auth_register_route_test.dart`, `display_name_route_test.dart`;
+  infrastructure `hold_until_written_test.dart`; mobile
+  `welcome_terms_test.dart` (new), `name_setup_test.dart`,
+  `auth_messages_test.dart`.
+- No migration. The server refuses one-word names once deployed (the
+  installed apps show its message); the form check and the terms page
+  come with the next APK (the web at once).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

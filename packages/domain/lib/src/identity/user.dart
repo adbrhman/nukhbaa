@@ -173,6 +173,44 @@ final class User {
     return Result.ok(trimmed);
   }
 
+  /// The refusal of a one-word name for a new account ([isTwoPartName]).
+  static const AppError notTwoPartName = AppError.validation(
+    'identity.display_name_not_two_part',
+    'اكتب اسمك الثنائي: اسمك واسم أبيك أو عائلتك، مثل: محمد علي',
+  );
+
+  /// Validates the name a new account chooses (decided 2026-11-02): every
+  /// [validateDisplayName] rule, and a two-part name ([isTwoPartName]).
+  /// Registration uses it, and `UpdateDisplayName` (the one choice of a
+  /// first Google sign-in) checks the same rule; an admin rename and the
+  /// names already chosen are not touched.
+  static Result<String> validateNewAccountName(String raw) {
+    final Result<String> validated = validateDisplayName(raw);
+    if (validated case Ok<String>(
+      :final String value,
+    ) when !isTwoPartName(value)) {
+      return const Result.err(notTwoPartName);
+    }
+    return validated;
+  }
+
+  /// Whether [name] holds at least two words of two letters or more
+  /// (a first name and a father's or family name). Digits, emoji,
+  /// punctuation and the tatweel are not letters, so a single name with a
+  /// number or an emoji beside it is still one name.
+  static bool isTwoPartName(String name) {
+    final int words = name
+        .split(RegExp(r'\s+'))
+        .where(
+          (String word) =>
+              _letter.allMatches(word.replaceAll('\u0640', '')).length >= 2,
+        )
+        .length;
+    return words >= 2;
+  }
+
+  static final RegExp _letter = RegExp(r'\p{L}', unicode: true);
+
   /// Characters a name never keeps: controls, the bidirectional overrides
   /// and isolates, the Arabic letter mark and the invisible spaces. They let
   /// a name pass for another or look empty; the zero-width joiner (U+200D)

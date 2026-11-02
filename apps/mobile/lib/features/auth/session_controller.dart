@@ -44,6 +44,7 @@ import '../../core/auth/google_id_token_source.dart';
 import '../../core/auth/token_store.dart';
 import '../../core/providers.dart';
 import 'session_state.dart';
+import 'welcome_terms.dart';
 
 part 'session_controller.g.dart';
 
@@ -200,7 +201,12 @@ class SessionController extends _$SessionController {
       email: email,
       password: password,
     );
-    state = AsyncData(await _onAuthResponse(result));
+    final SessionState next = await _onAuthResponse(result);
+    // A new account reads the terms before the app opens (2026-11-02).
+    if (next is SessionAuthenticated) {
+      ref.read(welcomeTermsProvider.notifier).show();
+    }
+    state = AsyncData(next);
   }
 
   /// Signs in with Google: the device's account picker supplies an ID
@@ -307,7 +313,14 @@ class SessionController extends _$SessionController {
     if (result is Err<MeResponseDto>) {
       return Result.err(result.error);
     }
-    state = AsyncData(await _validateHeldToken(clearOnAuthFailure: false));
+    final SessionState next = await _validateHeldToken(
+      clearOnAuthFailure: false,
+    );
+    // The name of a first Google sign-in: a new account, so the terms.
+    if (next is SessionAuthenticated) {
+      ref.read(welcomeTermsProvider.notifier).show();
+    }
+    state = AsyncData(next);
     return const Result.ok(null);
   }
 

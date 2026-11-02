@@ -101,14 +101,32 @@ void main() {
       final directory = _Directory(_user('n72914939'));
       final context = _wire(
         directory,
-        body: jsonEncode({'display_name': 'Ali'}),
+        body: jsonEncode({'display_name': 'Ali Hassan'}),
       );
 
       final response = await route.onRequest(context);
 
       expect(response.statusCode, HttpStatus.ok);
       final user = (await _decode(response))['user']! as Map<Object?, Object?>;
-      expect(user['display_name'], 'Ali');
+      expect(user['display_name'], 'Ali Hassan');
+    });
+
+    // Decided 2026-11-02: a new account's name is two-part.
+    test('a one-word name is refused and the automatic name stays', () async {
+      final directory = _Directory(_user('n72914939'));
+      final context = _wire(
+        directory,
+        body: jsonEncode({'display_name': 'Ali'}),
+      );
+
+      final response = await route.onRequest(context);
+
+      expect(response.statusCode, HttpStatus.badRequest);
+      expect(
+        (await _decode(response))['code'],
+        'identity.display_name_not_two_part',
+      );
+      expect(directory.current.displayName, 'n72914939');
     });
 
     test('a chosen name cannot be changed', () async {

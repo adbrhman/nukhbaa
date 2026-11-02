@@ -16,8 +16,8 @@ import 'package:shared/shared.dart';
 /// choice is made. A name that was already chosen is refused.
 ///
 /// Only the caller's own name (Layer 1 authority); validation lives on the
-/// domain ([User.validateDisplayName]). Never throws; returns a typed
-/// [Result].
+/// domain ([User.validateDisplayName], then [User.isTwoPartName]: a new
+/// account's name is two-part). Never throws; returns a typed [Result].
 final class UpdateDisplayName {
   /// Creates the use-case over its [UserDirectory] port.
   const UpdateDisplayName({required UserDirectory userDirectory})
@@ -72,6 +72,12 @@ final class UpdateDisplayName {
           'اختر اسماً يعرفك به الآخرون، غير بداية بريدك الإلكتروني',
         ),
       );
+    }
+
+    // A new account's name is a two-part name (decided 2026-11-02). Checked
+    // last, so a name already chosen still answers that it is immutable.
+    if (!User.isTwoPartName(chosen)) {
+      return const Result.err(User.notTwoPartName);
     }
 
     return _userDirectory.updateDisplayName(principal.userId, chosen);
