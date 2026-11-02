@@ -101,6 +101,9 @@ abstract final class ErrorPresenter {
         return 'هذه المباراة غير متاحة الآن.';
       case 'prediction.daily_double_exceeded':
         return 'يمكنك مضاعفة النقاط في مباراة واحدة فقط كل يوم.';
+      case 'prediction.shared_device':
+        return 'توقّع حساب آخر هذه المباراة من هذا الهاتف. '
+            'لا يتوقع حسابان من هاتف واحد المباراة نفسها.';
       case 'prediction.fixture_not_scheduled':
         return 'لم يُحدَّد موعد هذه المباراة بعد، لذلك لا يمكن توقعها.';
       case 'prediction.fixture_not_in_season':

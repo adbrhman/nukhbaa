@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:application/application.dart';
+import 'package:contracts/contracts.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/infrastructure.dart';
 import 'package:server/composition/composition_root.dart';
@@ -237,6 +238,100 @@ void main() {
       );
 
       expect(response.statusCode, HttpStatus.methodNotAllowed);
+    });
+  });
+
+  // Script 200: the route passes the phone's install id to the use-case;
+  // a second account on the same phone is refused the match (409).
+  group('one account per match on one phone', () {
+    const phone = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
+    ({CompositionRoot root, _InMemoryFixturePredictionRepository preds})
+    sharedPhoneRoot(_SharedPhoneClaims claims) {
+      final compRepo = InMemoryCompetitionRepository();
+      compRepo.participants.add(participant());
+      final predRepo = _InMemoryFixturePredictionRepository();
+      predRepo.links.add(link());
+      final schedRepo = InMemoryFixtureScheduleRepository()
+        ..seed(
+          FixtureSchedule.fromStored(
+            fixture: (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+            homeTeam: 'Home FC',
+            awayTeam: 'Away FC',
+            kickoffAt: DateTime.utc(2026, 7, 20, 21),
+          ),
+        );
+      final root = CompositionRoot.forTesting(
+        submitFixturePrediction: SubmitFixturePrediction(
+          fixturePredictionRepository: predRepo,
+          competitionRepository: compRepo,
+          fixtureScheduleRepository: schedRepo,
+          idGenerator: ScriptedIdGenerator(const [
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          ]),
+          clock: FixedClock(DateTime.utc(2026, 7, 20, 9, 30)),
+          installFixtureClaims: claims,
+        ),
+      );
+      return (root: root, preds: predRepo);
+    }
+
+    test('another account holding the match is 409 shared_device', () async {
+      final claims = _SharedPhoneClaims(holder: kAdminId);
+      final setup = sharedPhoneRoot(claims);
+
+      final response = await prediction_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          body: const {'home_goals': 2, 'away_goals': 1},
+          headers: const {appInstallHeader: phone},
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      expect(response.statusCode, HttpStatus.conflict);
+      expect((await decodeBody(response))['code'], 'prediction.shared_device');
+      expect(claims.installs, [phone]);
+      expect(setup.preds.count, 0);
+    });
+
+    test('the account that holds it on the phone is stored', () async {
+      final claims = _SharedPhoneClaims(holder: kUserId);
+      final setup = sharedPhoneRoot(claims);
+
+      final response = await prediction_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          body: const {'home_goals': 2, 'away_goals': 1},
+          headers: const {appInstallHeader: phone},
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(setup.preds.count, 1);
+    });
+
+    test('a request without the header is not checked', () async {
+      final claims = _SharedPhoneClaims(holder: kAdminId);
+      final setup = sharedPhoneRoot(claims);
+
+      final response = await prediction_route.onRequest(
+        wireContext(
+          root: setup.root,
+          principal: userPrincipal(),
+          body: const {'home_goals': 2, 'away_goals': 1},
+        ),
+        kSeasonId,
+        kFixtureId,
+      );
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(claims.installs, isEmpty);
     });
   });
 
@@ -610,6 +705,25 @@ final class _InMemoryFixturePredictionRepository
 
 /// A minimal in-memory [FixtureScoreRepository] for these route tests only.
 /// Never throws.
+/// The claims of migration 0197 with one account already holding the
+/// match on the phone (script 200).
+final class _SharedPhoneClaims implements InstallFixtureClaims {
+  _SharedPhoneClaims({required this.holder});
+
+  final String holder;
+  final List<String> installs = <String>[];
+
+  @override
+  Future<Result<UserId>> claim({
+    required String installId,
+    required FixtureRef fixture,
+    required UserId userId,
+  }) async {
+    installs.add(installId);
+    return Result.ok(UserId(holder));
+  }
+}
+
 final class _InMemoryFixtureScoreRepository implements FixtureScoreRepository {
   final Map<String, ParticipantFixtureScore> _byKey = {};
 

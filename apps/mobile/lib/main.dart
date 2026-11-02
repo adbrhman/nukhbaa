@@ -83,7 +83,7 @@ Future<void> _startApp() async {
       ).reportError,
       build: const String.fromEnvironment('NUKHBA_BUILD_SHA'),
       store: const SecurePendingErrorStore(),
-      installId: kIsWeb ? null : SecureInstallIdStore().read,
+      installId: kIsWeb ? null : appInstallIds.read,
     ),
   );
   // SessionScope hosts the root ProviderScope and replaces it on sign-out,

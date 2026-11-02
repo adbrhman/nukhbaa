@@ -41,6 +41,17 @@ Future<Response> onRequest(RequestContext context) async {
     now: DateTime.now().toUtc(),
   );
 
+  // The phone this account is played from (script 200), for the admin's
+  // shared-phones list. Unchecked, as the join above: `/me` answers
+  // whether or not the sighting could be written.
+  final sighting = root.recordDeviceSighting;
+  if (sighting != null && result is Ok<User>) {
+    await sighting(
+      principal: principal,
+      installId: context.request.headers[appInstallHeader],
+    );
+  }
+
   return switch (result) {
     Ok<User>(:final value) => Response.json(
       body: MeResponseDto(

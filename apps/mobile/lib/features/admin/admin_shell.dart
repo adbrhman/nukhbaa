@@ -23,6 +23,7 @@ import 'screens/sections/fixtures_admin_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/results_scoring_section.dart';
+import 'screens/sections/shared_devices_section.dart';
 import 'screens/sections/user_names_section.dart';
 import 'screens/sections/user_sanction_section.dart';
 
@@ -239,6 +240,8 @@ class AdminShell extends StatelessWidget {
         tabs: <(String, Widget)>[
           ('الحسابات', UserSanctionSection()),
           ('الأسماء', UserNamesSection()),
+          // script 200: the phones played with several accounts.
+          ('الأجهزة', SharedDevicesSection()),
         ],
       ),
       AdminSection.announcements => const AnnouncementSection(),

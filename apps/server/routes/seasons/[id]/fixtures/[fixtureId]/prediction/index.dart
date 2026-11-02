@@ -59,6 +59,9 @@ Future<Response> onRequest(
     return errorResponse(isDoubleResult.error);
   }
 
+  // The phone it comes from (script 200): one account per match on it.
+  final String? install = context.request.headers[appInstallHeader];
+
   Future<Result<FixturePredictionView>> submit() =>
       root.submitFixturePrediction(
         principal: principal,
@@ -67,6 +70,7 @@ Future<Response> onRequest(
         homeGoals: (homeResult as Ok<int>).value,
         awayGoals: (awayResult as Ok<int>).value,
         isDouble: (isDoubleResult as Ok<bool>).value,
+        installId: install,
       );
 
   var result = await submit();

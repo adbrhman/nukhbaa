@@ -8,9 +8,20 @@
 /// §2.8) — this is dependency injection of a transport, not networking logic.
 library;
 
+import 'dart:async';
+
 import 'package:api_client/api_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+
+import '../auth/install_id.dart';
+
+/// This install's id once the secure store answered (script 200). A
+/// request never waits for the store: until it answers, requests go
+/// without the header.
+String? _installId;
+
+String? _knownInstallId() => _installId;
 
 /// Creates the platform-default [http.Client].
 ///
@@ -20,7 +31,9 @@ import 'package:http/http.dart' as http;
 /// provider is disposed).
 ///
 /// Off the web it names this build on every request ([BuildHeaderClient],
-/// script 142), so the server can refuse a release too old to be served.
+/// script 142), so the server can refuse a release too old to be served,
+/// and this install (script 200), so one phone never predicts a match
+/// with two accounts and the admin sees the accounts that share it.
 /// The web build sends no such header (a custom header would need a CORS
 /// change): it reloads to the newest release by itself, and the server lets
 /// a browser request through.
@@ -29,8 +42,14 @@ http.Client createHttpClient() {
   if (kIsWeb) {
     return client;
   }
+  unawaited(
+    appInstallIds.read().then((String? id) {
+      _installId = id;
+    }),
+  );
   return BuildHeaderClient(
     client,
     build: const int.fromEnvironment('NUKHBA_BUILD_NUMBER'),
+    installId: _knownInstallId,
   );
 }

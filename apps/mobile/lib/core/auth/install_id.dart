@@ -1,7 +1,8 @@
 /// A random id for this app install, kept in the secure store (migration
-/// 0073). It travels with the crash reports only, so the server can limit
-/// how often one device reports (the invitations it was made for were
-/// removed on 2026-10-26). Clearing the app's data makes a new one.
+/// 0073). It travels with the crash reports, so the server can limit how
+/// often one device reports, and with every request (script 200), so one
+/// phone never predicts a match with two accounts. Clearing the app's
+/// data makes a new one.
 library;
 
 import 'dart:math';
@@ -27,12 +28,22 @@ final class SecureInstallIdStore implements InstallIdStore {
   /// The secure-store key.
   static const String key = 'nukhba.install_id';
 
+  Future<String?>? _loading;
+
   @override
-  Future<String?> read() async {
+  Future<String?> read() {
     final String? cached = _cached;
     if (cached != null) {
-      return cached;
+      return Future<String?>.value(cached);
     }
+    // One load at a time (script 200): two first reads at once must not
+    // make two ids.
+    return _loading ??= _load().whenComplete(() {
+      _loading = null;
+    });
+  }
+
+  Future<String?> _load() async {
     try {
       final String? stored = await _storage.read(key: key);
       if (stored != null && stored.isNotEmpty) {
@@ -62,6 +73,10 @@ final class FixedInstallIdStore implements InstallIdStore {
   @override
   Future<String?> read() async => id;
 }
+
+/// The app's one install-id store (script 200): the error reporter and
+/// every request read the same id.
+final SecureInstallIdStore appInstallIds = SecureInstallIdStore();
 
 /// A new install id: 32 random hex digits in the 8-4-4-4-12 shape.
 String newInstallId(Random random) {

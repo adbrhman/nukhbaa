@@ -186,6 +186,15 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/shared-devices` -- every phone more than one account was
+  /// seen on, with its accounts (script 200).
+  Future<Result<SharedDevicesDto>> sharedDevices() {
+    return _transport.getObject<SharedDevicesDto>(
+      '/admin/shared-devices',
+      parse: SharedDevicesDto.fromJson,
+    );
+  }
+
   /// `GET /admin/errors` -- the error log (migration 0087): the counts of
   /// every list, the errors of [list] (`all`, `new`, `recurring`,
   /// `critical`), and the admins an error can be assigned to. A [code] a

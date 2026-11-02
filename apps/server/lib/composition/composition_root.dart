@@ -185,6 +185,8 @@ final class CompositionRoot {
     this.moveSupportImages,
     this.adminErrorLog,
     this.adminErrorReleases,
+    this.recordDeviceSighting,
+    this.adminListSharedDevices,
     required this.registerDeviceToken,
     this.deleteMyAccount,
     required this.suspendUser,
@@ -405,6 +407,8 @@ final class CompositionRoot {
     this.moveSupportImages,
     this.adminErrorLog,
     this.adminErrorReleases,
+    this.recordDeviceSighting,
+    this.adminListSharedDevices,
     this.deleteMyAccount,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
@@ -2577,6 +2581,15 @@ final class CompositionRoot {
   /// in tests that do not provide one, so nothing is recorded there.
   final RecordError? recordError;
 
+  /// Records the phone an account opens the app on (`GET /me`, migration
+  /// 0197, script 200). Null in tests that do not provide one.
+  final RecordDeviceSighting? recordDeviceSighting;
+
+  /// The phones more than one account was seen on
+  /// (`GET /admin/shared-devices`, script 200), admin-only. Null in tests
+  /// that do not provide one.
+  final AdminListSharedDevices? adminListSharedDevices;
+
   /// Drops the read caches when a write made outside this server (the
   /// SQL Editor) moved the cache epoch (migration 0194). Null in test
   /// roots, where nothing is held for hours.
@@ -3268,6 +3281,8 @@ final class CompositionRoot {
     final submitFixturePrediction = SubmitFixturePrediction(
       // Its writes drop the player's cached history (script 138).
       fixturePredictionRepository: predictionHistory,
+      // One account per match on one phone (script 200).
+      installFixtureClaims: PostgresInstallFixtureClaims(connection),
       competitionRepository: competitionRepository,
       fixtureScheduleRepository: fixtureScheduleRepository,
       idGenerator: idGenerator,
@@ -3410,6 +3425,13 @@ final class CompositionRoot {
           sender: pushSender,
           clock: clock,
         ),
+      ),
+      // The phones the accounts are played from (script 200).
+      recordDeviceSighting: RecordDeviceSighting(
+        sightings: PostgresDeviceSightings(connection),
+      ),
+      adminListSharedDevices: AdminListSharedDevices(
+        devices: PostgresDeviceSightings(connection),
       ),
       adminErrorReleases: AdminErrorReleases(
         reader: PostgresErrorReleaseReader(connection),

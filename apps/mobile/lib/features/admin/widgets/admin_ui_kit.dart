@@ -146,7 +146,8 @@ class AdminPrimaryButton extends StatelessWidget {
                   Icon(icon, size: AppSizes.iconSm),
                   const SizedBox(width: AppSpacing.sm),
                 ],
-                Text(label),
+                // A long label wraps at large text (script 200, primary).
+                Flexible(child: Text(label, textAlign: TextAlign.center)),
               ],
             ),
     );
@@ -195,7 +196,8 @@ class AdminSecondaryButton extends StatelessWidget {
                   Icon(icon, size: AppSizes.iconSm),
                   const SizedBox(width: AppSpacing.sm),
                 ],
-                Text(label),
+                // A long label wraps at large text (script 200, secondary).
+                Flexible(child: Text(label, textAlign: TextAlign.center)),
               ],
             ),
     );

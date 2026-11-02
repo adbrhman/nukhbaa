@@ -9,8 +9,10 @@ import 'package:application/src/gamification/award_streak_bonus.dart';
 import 'package:application/src/gamification/ports/daily_challenge_repository.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/identity/install_id.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/prediction/ports/install_fixture_claims.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -46,6 +48,12 @@ import 'package:shared/shared.dart';
 ///    predicts a hidden fixture, and only an admin predicts a test fixture
 ///    (`prediction.fixture_unavailable`). A test prediction feeds no
 ///    gamification: no placement, no daily challenge, no streak bonus.
+/// 6. **One account per match on one phone** (decided by the owner on
+///    2026-11-02, script 200): the first account that predicts a match
+///    from an install holds it there ([InstallFixtureClaims]); another
+///    account on that install is refused (`prediction.shared_device`).
+///    Not checked without an install id (the web, a build before script
+///    200) or for a test fixture.
 ///
 /// **Idempotent**: a first call for `(fixture, participant)` inserts; a
 /// repeat call amends the existing prediction in place — one row per
@@ -63,6 +71,7 @@ final class SubmitFixturePrediction {
     GamificationEventSink? gamificationEventSink,
     DailyChallengeRepository? dailyChallengeRepository,
     AwardStreakBonus? awardStreakBonus,
+    InstallFixtureClaims? installFixtureClaims,
   }) : _fixturePredictions = fixturePredictionRepository,
        _competition = competitionRepository,
        _fixtureSchedules = fixtureScheduleRepository,
@@ -70,7 +79,8 @@ final class SubmitFixturePrediction {
        _clock = clock,
        _gamificationEvents = gamificationEventSink,
        _dailyChallenges = dailyChallengeRepository,
-       _streakBonus = awardStreakBonus;
+       _streakBonus = awardStreakBonus,
+       _installClaims = installFixtureClaims;
 
   final FixturePredictionRepository _fixturePredictions;
   final CompetitionRepository _competition;
@@ -92,6 +102,16 @@ final class SubmitFixturePrediction {
   /// [AwardStreakBonus].
   final AwardStreakBonus? _streakBonus;
 
+  /// Optional: without it any number of accounts on one phone predict
+  /// every match, as before script 200.
+  final InstallFixtureClaims? _installClaims;
+
+  /// The refusal of a match another account on the same phone predicted.
+  static const AppError sharedDeviceRefusal = AppError.invariant(
+    'prediction.shared_device',
+    'Another account already predicted this match from this phone',
+  );
+
   /// Submits (or amends) [homeGoals]-[awayGoals] as [principal]'s prediction
   /// for fixture [fixtureId] under season [seasonId].
   Future<Result<FixturePredictionView>> call({
@@ -101,6 +121,7 @@ final class SubmitFixturePrediction {
     required int homeGoals,
     required int awayGoals,
     bool isDouble = false,
+    String? installId,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
@@ -217,6 +238,25 @@ final class SubmitFixturePrediction {
             'Only one fixture may be marked as your double per day',
           ),
         );
+      }
+    }
+
+    // Rule 6: one account per match on one phone (script 200). The first
+    // account to predict the match from this install holds it; the same
+    // account amends freely. Checked before anything is stored.
+    final InstallFixtureClaims? claims = _installClaims;
+    final String? install = InstallId.parse(installId);
+    if (claims != null && install != null && !schedule.isTest) {
+      final claimed = await claims.claim(
+        installId: install,
+        fixture: fixture,
+        userId: principal.userId,
+      );
+      if (claimed is Err<UserId>) {
+        return Result.err(claimed.error);
+      }
+      if ((claimed as Ok<UserId>).value.value != principal.userId.value) {
+        return const Result.err(sharedDeviceRefusal);
       }
     }
 

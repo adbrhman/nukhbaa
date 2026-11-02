@@ -1208,9 +1208,11 @@ MockRequestContext wireContext({
   Object? body,
   HttpMethod method = HttpMethod.post,
   Map<String, String> queryParameters = const {},
+  Map<String, String> headers = const {},
 }) {
   final request = MockRequest();
   when(() => request.method).thenReturn(method);
+  when(() => request.headers).thenReturn(headers);
   final encoded = body == null ? '' : jsonEncode(body);
   when(request.body).thenAnswer((_) async => encoded);
   when(

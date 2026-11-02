@@ -7817,6 +7817,53 @@ fills.
   `NUKHBA_SUPABASE_SERVICE_KEY` on Northflank; until then the pictures stay
   in the database as before.
 
+### One phone, several accounts (script 200, 2026-11-02)
+
+Decided by the owner on 2026-11-02: a phone may hold several accounts
+(a shared family phone), but two accounts never predict the same match
+from one phone; and the admin sees every phone with more than one
+account, with their number, and can suspend them.
+
+- **The phone** is the app's install id (`nukhba.install_id`, a random
+  id in the secure store since 0073). The Android app now sends it with
+  every request in `x-nukhba-install` (`appInstallHeader`, through
+  `BuildHeaderClient`); the web sends none. Clearing the app's data or
+  reinstalling makes a new one: this stops casual play with two accounts,
+  not a determined cheat.
+- **Migration 0197**: `identity.install_accounts` (every account seen on
+  an install: `GET /me` and every prediction) and
+  `prediction.install_claims` (the first account that predicted a match
+  from an install). The id is kept as md5 only; RLS on, no client grant.
+- **`SubmitFixturePrediction` rule 6** (`InstallFixtureClaims`,
+  `PostgresInstallFixtureClaims`): another account on the same install is
+  refused the match with 409 `prediction.shared_device` before anything
+  is stored; the holder amends freely. Not checked without the header
+  (the web, builds before this one) or for a test fixture. Predictions
+  made before this release hold no claim.
+- **`GET /admin/shared-devices`** (`AdminListSharedDevices`,
+  `PostgresDeviceSightings`): the phones with more than one account, the
+  most crowded first, read from the install sightings and from
+  `notification.device_token_owners` (0177), so phones seen before this
+  release are listed through their push token. Two keys with the same
+  accounts are one phone; a phone whose accounts are all on a larger
+  one's list is left out.
+- **Admin panel**: users -> a third tab "الأجهزة" (`SharedDevicesSection`):
+  each phone with "هاتف N · 3 حسابات", the last day seen, its accounts
+  with their status; tapping one opens the reason field and the suspend
+  (or reinstate) button -- the existing `SuspendUser`/`ReinstateUser`.
+- Tests: application `submit_fixture_prediction_shared_device_test.dart`,
+  `device_sightings_test.dart`; infrastructure
+  `postgres_device_sightings_test.dart`,
+  `postgres_install_fixture_claims_test.dart`; contracts
+  `admin_shared_devices_dto_test.dart`; api_client
+  `shared_devices_api_test.dart`; server
+  `admin_shared_devices_route_test.dart`, `me_device_sighting_test.dart`,
+  the shared-phone group of `fixture_prediction_scoring_test.dart`;
+  mobile `shared_devices_section_test.dart`; SQL
+  `0197_shared_devices_test.sql`.
+- **Apply 0197 in the SQL Editor before pushing.** The rule reaches the
+  players with the next APK.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
