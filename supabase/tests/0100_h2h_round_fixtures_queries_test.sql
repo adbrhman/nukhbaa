@@ -256,7 +256,8 @@ begin
     (select array_agg(fixture_id || ':' || is_double order by ctid) from p_after
       where user_id = '00000000-0102-4000-8102-000000000002')
       = array['c1020000-0000-4000-8000-0000000000f1:false',
-              'c1020000-0000-4000-8000-0000000000f2:true'],
+              'c1020000-0000-4000-8000-0000000000f2:false'],
+    -- f2 moved to another day: its double is released (0195).
     'once both kicked off, both of the opponent''s picks are read');
   perform pg_temp.check(
     not exists (select 1 from p_after

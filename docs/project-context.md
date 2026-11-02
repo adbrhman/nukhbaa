@@ -7740,6 +7740,36 @@ epoch. Chosen: the epoch.
   `0194_cache_epoch_test.sql`.
 - **Apply 0194 in the SQL Editor before pushing the server.**
 
+### A match moved to another day loses its doubles (script 197, 2026-11-02)
+
+Review L-7. "One double a day" was checked only when a prediction was
+written, so a match put back (or brought forward) to another Riyadh day
+carried its doubles with it: two doubles on one day. Decided by the owner
+on 2026-11-02: the double of a match moved to another day is cancelled for
+every player who chose it; he may double another match of that day that has
+not kicked off, and his prediction of the moved match stays an ordinary one.
+
+- **Migration 0195**, in the database so every path is covered (the
+  provider sync, an admin's correction, the SQL Editor):
+  `prediction.release_moved_double()` after `kickoff_at` moves to another
+  Riyadh day, before the new kickoff, with no recorded result and the
+  fixture shown, clears `is_double` on its predictions and moves the cache
+  epoch (0194), so the server drops its held reads within a minute;
+  `prediction.release_postponed_copy_double()` makes a prediction merged
+  onto a copy put back 12 hours or more to another day (0182) arrive
+  without its double (a merge of two copies of one kickoff, 0176, is
+  unchanged).
+- Nothing else of a prediction changes (scoreline, stamp, id). A new time
+  on the same day keeps the double; a decided match, or one moved into the
+  past, keeps it too.
+- The merge preview (`doubles_moved`) still counts a double the move then
+  drops for a copy put back to another day.
+- No push tells the player; the double is simply free again on the app.
+- The H2H round-fixtures query test now expects the moved fixture's double
+  cleared.
+- Tests: SQL `0195_postponed_double_test.sql`.
+- **Apply 0195 in the SQL Editor (after 0194) before pushing.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
