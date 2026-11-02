@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:contracts/contracts.dart';
@@ -40,6 +41,12 @@ Future<Response> onRequest(RequestContext context) async {
     displayName: (name as Ok<String>).value,
   );
 
+  // A first Google sign-in chooses its name here: the admins learn of the
+  // new player now, by his name (script 202). Never awaited.
+  if (result case Ok<User>(:final value)) {
+    unawaited(_alertAdmins(root, value));
+  }
+
   return switch (result) {
     Ok<User>(:final value) => Response.json(
       body: MeResponseDto(
@@ -55,4 +62,22 @@ Future<Response> onRequest(RequestContext context) async {
     ),
     Err<User>(:final error) => errorResponse(error),
   };
+}
+
+/// Best-effort admin alert: the name is already saved, so a failure here
+/// is logged and never reaches the caller or the zone.
+Future<void> _alertAdmins(CompositionRoot root, User user) async {
+  try {
+    final result = await root.notifyNewUserRegistered(
+      displayName: user.displayName,
+      email: user.email,
+    );
+    if (result is Err<void>) {
+      // ignore: avoid_print
+      print('admin new-player push failed: ${result.error.code}');
+    }
+  } on Object catch (error) {
+    // ignore: avoid_print
+    print('admin new-player push threw: $error');
+  }
 }

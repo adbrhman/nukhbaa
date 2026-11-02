@@ -195,6 +195,30 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/new-players?days=` -- the players who joined in the last
+  /// [days] days, newest first (script 202).
+  Future<Result<NewPlayersDto>> newPlayers({int days = 7}) {
+    return _transport.getObject<NewPlayersDto>(
+      '/admin/new-players',
+      query: {'days': '$days'},
+      parse: NewPlayersDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/support/players/{id}/messages` -- support writes first
+  /// to the player [playerId], opening his conversation when he never
+  /// wrote (script 202).
+  Future<Result<SupportMessageDto>> messagePlayer(
+    String playerId,
+    String body,
+  ) {
+    return _transport.postObject<SupportMessageDto>(
+      '/admin/support/players/${Uri.encodeComponent(playerId)}/messages',
+      body: SupportSendDto(body: body).toJson(),
+      parse: SupportMessageDto.fromJson,
+    );
+  }
+
   /// `GET /admin/errors` -- the error log (migration 0087): the counts of
   /// every list, the errors of [list] (`all`, `new`, `recurring`,
   /// `critical`), and the admins an error can be assigned to. A [code] a

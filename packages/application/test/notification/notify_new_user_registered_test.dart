@@ -38,6 +38,21 @@ final class _FakeSender implements PushSender {
 
 void main() {
   group('NotifyNewUserRegistered', () {
+    test('the push names the player (script 202)', () {
+      expect(
+        NotifyNewUserRegistered.bodyFor(
+          displayName: ' ملك التوقعات ',
+          email: 'a@t.io',
+        ),
+        '«ملك التوقعات» · a@t.io',
+      );
+      expect(NotifyNewUserRegistered.bodyFor(displayName: 'Ali'), '«Ali»');
+      expect(
+        NotifyNewUserRegistered.bodyFor(email: 'a@t.io'),
+        NotifyNewUserRegistered.body,
+      );
+    });
+
     test('pushes only to the tokens returned for active admins', () async {
       final targets = _FakeTargets(
         const Result.ok(<String>['admin-a', 'admin-b']),

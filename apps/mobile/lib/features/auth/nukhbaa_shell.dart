@@ -20,6 +20,7 @@ import '../history/prediction_history_providers.dart';
 import '../leaderboards/champions_providers.dart';
 import '../admin/admin_hub_screen.dart';
 import '../admin/admin_sections.dart';
+import '../admin/screens/sections/new_players_section.dart';
 import '../groups/groups_providers.dart';
 import '../groups/join_group_screen.dart';
 import '../h2h/h2h_screen.dart';
@@ -119,6 +120,22 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
           MaterialPageRoute<void>(
             builder: (_) =>
                 const AdminHubScreen(initialSection: AdminSection.support),
+          ),
+        ),
+      );
+    }
+    // A player registered (script 202): the admins' list of new players.
+    if (link == PushLinks.newPlayers && widget.user.role == 'admin') {
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('اللاعبون الجدد')),
+              body: const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: NewPlayersSection(),
+              ),
+            ),
           ),
         ),
       );

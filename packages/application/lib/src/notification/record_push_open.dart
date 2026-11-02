@@ -33,6 +33,7 @@ final class RecordPushOpen {
     PushLink.support,
     PushLink.supportInbox,
     PushLink.h2h,
+    PushLink.newPlayers,
   };
 
   /// Records [principal]'s tap on a push carrying [link].

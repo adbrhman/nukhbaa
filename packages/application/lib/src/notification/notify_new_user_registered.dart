@@ -1,5 +1,6 @@
 import 'package:application/src/notification/ports/admin_push_target_reader.dart';
 import 'package:application/src/notification/ports/push_sender.dart';
+import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
 /// Tier-3 post-registration effect: alert active platform administrators that
@@ -23,7 +24,21 @@ final class NotifyNewUserRegistered {
   static const String body =
       '\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0645\u0633\u062a\u062e\u062f\u0645 \u062c\u062f\u064a\u062f \u0641\u064a \u062a\u0637\u0628\u064a\u0642 \u0646\u062e\u0628\u0629.';
 
-  Future<Result<void>> call() async {
+  /// The push of script 202: the player's name and e-mail, so an admin
+  /// knows who joined before opening anything; without a name, the line
+  /// [body].
+  static String bodyFor({String? displayName, String? email}) {
+    final String name = (displayName ?? '').trim();
+    if (name.isEmpty) {
+      return body;
+    }
+    final String mail = (email ?? '').trim();
+    return mail.isEmpty ? '«$name»' : '«$name» · $mail';
+  }
+
+  /// Alerts the admins that [displayName] ([email]) registered; a tap
+  /// opens the list of new players ([PushLink.newPlayers]).
+  Future<Result<void>> call({String? displayName, String? email}) async {
     final targetsResult = await _targets.tokensForActiveAdmins();
     if (targetsResult is Err<List<String>>) {
       return Result.err(targetsResult.error);
@@ -33,7 +48,12 @@ final class NotifyNewUserRegistered {
       return const Result.ok(null);
     }
 
-    final sent = await _sender.send(tokens: tokens, title: title, body: body);
+    final sent = await _sender.send(
+      tokens: tokens,
+      title: title,
+      body: bodyFor(displayName: displayName, email: email),
+      link: PushLink.newPlayers,
+    );
     return switch (sent) {
       Ok<List<String>>() => const Result.ok(null),
       Err<List<String>>(:final error) => Result.err(error),

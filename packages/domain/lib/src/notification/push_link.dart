@@ -23,6 +23,10 @@ abstract final class PushLink {
   /// The admins' support inbox: a player wrote (migration 0187).
   static const String supportInbox = 'support_inbox';
 
+  /// The admins' list of new players: a player registered (script 202,
+  /// migration 0198).
+  static const String newPlayers = 'new_players';
+
   /// The head-to-head league's tab: an absence warning, a relegation or a
   /// promotion (migration 0189).
   static const String h2h = 'h2h';

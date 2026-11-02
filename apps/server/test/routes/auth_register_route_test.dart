@@ -84,6 +84,8 @@ final class _ThrowingTargets implements AdminPushTargetReader {
 
 final class _FakeSender implements PushSender {
   final List<List<String>> tokens = <List<String>>[];
+  final List<String> bodies = <String>[];
+  final List<String?> links = <String?>[];
   final Completer<void> called = Completer<void>();
 
   @override
@@ -94,6 +96,8 @@ final class _FakeSender implements PushSender {
     String? link,
   }) async {
     this.tokens.add(List<String>.from(tokens));
+    bodies.add(body);
+    links.add(link);
     if (!called.isCompleted) {
       called.complete();
     }
@@ -160,6 +164,9 @@ void main() {
 
       expect(response.statusCode, HttpStatus.ok);
       expect(sender.tokens.single, ['admin-device']);
+      // Script 202: the push names the player and opens the new players.
+      expect(sender.bodies.single, '«New User» · new@example.com');
+      expect(sender.links.single, 'new_players');
     });
 
     test('email-confirmation registrations still alert the admin', () async {

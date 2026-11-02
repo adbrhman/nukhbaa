@@ -7900,6 +7900,43 @@ reads). Server only: no APK, no contract, no migration.
   (`select pg_stat_statements_reset();`) and read the egress per day in
   Usage after a day.
 
+### The new-player push names him; the new players (script 202, 2026-11-02)
+
+Asked by the owner on 2026-11-02: the admins' push said only that a new
+user registered; it should name him, and a tap should show who he is and
+let support ask him for his real name instead of a borrowed one.
+
+- `NotifyNewUserRegistered(displayName:, email:)`: the body is
+  "«name» · e-mail"; the push carries the new link `new_players`
+  (`PushLink.newPlayers`; migration 0198 adds it to the check of
+  `notification.push_opens`). `POST /auth/register` sends it with the
+  name registered; `PUT /me/display-name` sends it when a first Google
+  sign-in chooses its name (it alerted nobody before).
+- `GET /admin/new-players?days=` (`AdminListNewPlayers`,
+  `PostgresNewPlayerReader`): the plain players who joined in the last
+  `days` days (default 7, at most 30, at most 200), newest first, each
+  with the most accounts seen on any of his phones (0177, 0197), his
+  predictions and a name hint (`automatic`, `digits`, `one_word`,
+  `title`, `latin`) -- a hint for the admin, never a verdict.
+- `POST /admin/support/players/{id}/messages` (`AdminMessagePlayer`,
+  `SupportConversationOpener`, `PostgresSupportConversationOpener`):
+  support writes first; the player's conversation is opened when he never
+  wrote (one per player, 0187), then the message is stored and pushed as
+  any support answer. An empty text opens nothing.
+- App: the push opens "اللاعبون الجدد" for an admin
+  (`NewPlayersSection`, also a tab "الجدد" in users); a tap on a
+  player opens a ready message asking for his first and family name,
+  editable, sent to his support chat. His name is still changed by the
+  admin ("الأسماء"), never by the player once chosen.
+- Tests: application `new_players_test.dart`, the push body in
+  `notify_new_user_registered_test.dart`; infrastructure
+  `postgres_new_player_reader_test.dart`; api_client
+  `new_players_api_test.dart`; server `admin_new_players_route_test.dart`,
+  the push in `auth_register_route_test.dart`; mobile
+  `new_players_section_test.dart`; SQL `0198_new_players_test.sql`.
+- **Apply 0198 in the SQL Editor before pushing.** The push names the
+  player at once; the list opens from it with the next APK (the web too).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

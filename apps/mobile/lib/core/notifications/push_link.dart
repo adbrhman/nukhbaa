@@ -21,6 +21,9 @@ abstract final class PushLinks {
   /// The head-to-head league's tab: an absence warning, a relegation or a
   /// promotion (migration 0189).
   static const String h2h = 'h2h';
+
+  /// The admins' list of new players: a player registered (script 202).
+  static const String newPlayers = 'new_players';
 }
 
 /// The shell tab a push [link] opens, or null for a link this build does
@@ -35,5 +38,8 @@ int? shellTabForLink(String link) => switch (link) {
   PushLinks.supportInbox => 4,
   // The head-to-head league's tab (migration 0189).
   PushLinks.h2h => 2,
+  // A player registered: the admins' new players over the account tab
+  // (script 202).
+  PushLinks.newPlayers => 4,
   _ => null,
 };

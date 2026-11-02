@@ -60,7 +60,10 @@ Future<Response> _handle(
   );
 
   if (result is Ok<IssuedSession>) {
-    unawaited(_alertAdmins(root));
+    // The push names the new player (script 202).
+    unawaited(
+      _alertAdmins(root, displayName: displayNameResult.value, email: email),
+    );
   }
 
   return switch (result) {
@@ -71,9 +74,16 @@ Future<Response> _handle(
 
 /// Best-effort admin alert: the signup already succeeded, so a failure here
 /// is logged and never reaches the caller or the zone.
-Future<void> _alertAdmins(CompositionRoot root) async {
+Future<void> _alertAdmins(
+  CompositionRoot root, {
+  required String displayName,
+  required String email,
+}) async {
   try {
-    final result = await root.notifyNewUserRegistered();
+    final result = await root.notifyNewUserRegistered(
+      displayName: displayName,
+      email: email,
+    );
     if (result is Err<void>) {
       // ignore: avoid_print
       print('admin new-user push failed: ${result.error.code}');

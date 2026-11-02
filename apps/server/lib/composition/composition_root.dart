@@ -187,6 +187,8 @@ final class CompositionRoot {
     this.adminErrorReleases,
     this.recordDeviceSighting,
     this.adminListSharedDevices,
+    this.adminListNewPlayers,
+    this.adminMessagePlayer,
     required this.registerDeviceToken,
     this.deleteMyAccount,
     required this.suspendUser,
@@ -409,6 +411,8 @@ final class CompositionRoot {
     this.adminErrorReleases,
     this.recordDeviceSighting,
     this.adminListSharedDevices,
+    this.adminListNewPlayers,
+    this.adminMessagePlayer,
     this.deleteMyAccount,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
@@ -2590,6 +2594,15 @@ final class CompositionRoot {
   /// that do not provide one.
   final AdminListSharedDevices? adminListSharedDevices;
 
+  /// The players who joined recently (`GET /admin/new-players`, script
+  /// 202), admin-only. Null in tests that do not provide one.
+  final AdminListNewPlayers? adminListNewPlayers;
+
+  /// Support writes first to a player
+  /// (`POST /admin/support/players/{id}/messages`, script 202), admin-only.
+  /// Null in tests that do not provide one.
+  final AdminMessagePlayer? adminMessagePlayer;
+
   /// Drops the read caches when a write made outside this server (the
   /// SQL Editor) moved the cache epoch (migration 0194). Null in test
   /// roots, where nothing is held for hours.
@@ -3449,6 +3462,15 @@ final class CompositionRoot {
       ),
       adminListSharedDevices: AdminListSharedDevices(
         devices: PostgresDeviceSightings(connection),
+      ),
+      // The new-player push opens this list; support writes first from it
+      // (script 202).
+      adminListNewPlayers: AdminListNewPlayers(
+        players: PostgresNewPlayerReader(connection),
+      ),
+      adminMessagePlayer: AdminMessagePlayer(
+        opener: PostgresSupportConversationOpener(connection),
+        reply: AdminReplySupport(chats: supportChats, clock: clock),
       ),
       adminErrorReleases: AdminErrorReleases(
         reader: PostgresErrorReleaseReader(connection),
