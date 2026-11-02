@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
+import 'package:infrastructure/src/support/supabase_image_store.dart';
 import 'package:shared/shared.dart';
 
 /// Postgres-backed [SupportChatRepository] (migration 0187).
@@ -13,10 +15,18 @@ import 'package:shared/shared.dart';
 /// messages at once never lose a count.
 final class PostgresSupportChatRepository
     implements SupportChatRepository, SupportImageRepository {
-  /// Creates the repository over an open [PostgresConnection].
-  const PostgresSupportChatRepository(this._connection);
+  /// Creates the repository over an open [PostgresConnection]; with
+  /// [images] new pictures go to Storage (script 199).
+  const PostgresSupportChatRepository(
+    this._connection, {
+    SupportImageStore? images,
+  }) : _images = images;
 
   final PostgresConnection _connection;
+
+  /// Where pictures go (Supabase Storage, migration 0196); null keeps
+  /// them in the row, as before.
+  final SupportImageStore? _images;
 
   // The player's one conversation, created by his first message.
   static const String ensureSql = '''
@@ -37,10 +47,11 @@ WITH conv AS (
 ), msg AS (
   INSERT INTO support.messages (
     conversation_id, sender_id, sender_role, body,
-    image_bytes, image_mime, created_at
+    image_bytes, image_path, image_mime, created_at
   )
   SELECT conv.id, @player_id::uuid, 'player', @body::text,
-         @image_bytes::bytea, @image_mime::text, @at::timestamptz
+         @image_bytes::bytea, @image_path::text, @image_mime::text,
+         @at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -76,10 +87,11 @@ WITH conv AS (
 ), msg AS (
   INSERT INTO support.messages (
     conversation_id, sender_id, sender_role, body,
-    image_bytes, image_mime, created_at
+    image_bytes, image_path, image_mime, created_at
   )
   SELECT conv.id, @admin_id::uuid, 'support', @body::text,
-         @image_bytes::bytea, @image_mime::text, @at::timestamptz
+         @image_bytes::bytea, @image_path::text, @image_mime::text,
+         @at::timestamptz
   FROM conv
   RETURNING id, conversation_id, created_at
 ), touched AS (
@@ -113,7 +125,8 @@ WHERE c.player_id = @player_id::uuid
   // are left.
   static const String messagesSql = '''
 SELECT m.id, m.sender_role, m.body, m.created_at, m.read_at,
-       m.image_bytes IS NOT NULL AS has_image
+       (m.image_bytes IS NOT NULL OR m.image_path IS NOT NULL)
+         AS has_image
 FROM support.messages m
 WHERE m.conversation_id = @conversation_id::uuid
   AND (@before::bigint IS NULL OR m.id < @before::bigint)
@@ -231,20 +244,20 @@ RETURNING c.id::text AS id
 
   // A picture of the player's own conversation only (0188).
   static const String playerImageSql = '''
-SELECT m.image_bytes, m.image_mime
+SELECT m.image_bytes, m.image_path, m.image_mime
 FROM support.messages m
 JOIN support.conversations c ON c.id = m.conversation_id
 WHERE m.id = @message_id::bigint
   AND c.player_id = @player_id::uuid
-  AND m.image_bytes IS NOT NULL
+  AND (m.image_bytes IS NOT NULL OR m.image_path IS NOT NULL)
 ''';
 
   static const String conversationImageSql = '''
-SELECT m.image_bytes, m.image_mime
+SELECT m.image_bytes, m.image_path, m.image_mime
 FROM support.messages m
 WHERE m.id = @message_id::bigint
   AND m.conversation_id = @conversation_id::uuid
-  AND m.image_bytes IS NOT NULL
+  AND (m.image_bytes IS NOT NULL OR m.image_path IS NOT NULL)
 ''';
 
   // Only an active account's phones: a suspended or deleted player is not
@@ -291,27 +304,37 @@ ORDER BY dt.token
     required String preview,
     required SupportImage? image,
     required DateTime at,
-  }) => _connection.runInTransaction<SupportMessageStored>((tx) async {
-    final ensured = await tx.query(
-      ensureSql,
-      parameters: {'player_id': playerId.value, 'at': at.toUtc()},
-    );
-    if (ensured is Err<List<Map<String, dynamic>>>) {
-      return Result.err(ensured.error);
+  }) async {
+    final Result<String?> placed = await _place(image, 'p/${playerId.value}');
+    if (placed is Err<String?>) {
+      return Result.err(placed.error);
     }
-    final stored = await tx.query(
-      playerMessageSql,
-      parameters: {
-        'player_id': playerId.value,
-        'body': body,
-        'preview': preview,
-        'image_bytes': image == null ? null : Uint8List.fromList(image.bytes),
-        'image_mime': image?.mime,
-        'at': at.toUtc(),
-      },
-    );
-    return _stored(stored, body, SupportSenderRole.player, image != null);
-  });
+    final String? stored = (placed as Ok<String?>).value;
+    return _connection.runInTransaction<SupportMessageStored>((tx) async {
+      final ensured = await tx.query(
+        ensureSql,
+        parameters: {'player_id': playerId.value, 'at': at.toUtc()},
+      );
+      if (ensured is Err<List<Map<String, dynamic>>>) {
+        return Result.err(ensured.error);
+      }
+      final saved = await tx.query(
+        playerMessageSql,
+        parameters: {
+          'player_id': playerId.value,
+          'body': body,
+          'preview': preview,
+          'image_bytes': image == null || stored != null
+              ? null
+              : Uint8List.fromList(image.bytes),
+          'image_path': stored,
+          'image_mime': image?.mime,
+          'at': at.toUtc(),
+        },
+      );
+      return _stored(saved, body, SupportSenderRole.player, image != null);
+    });
+  }
 
   @override
   Future<Result<SupportMessageStored>> addSupportReply({
@@ -351,6 +374,14 @@ ORDER BY dt.token
     required SupportImage? image,
     required DateTime at,
   }) async {
+    final Result<String?> placed = await _place(
+      image,
+      'c/${conversationId.value}',
+    );
+    if (placed is Err<String?>) {
+      return Result.err(placed.error);
+    }
+    final String? path = (placed as Ok<String?>).value;
     final stored = await _connection.query(
       supportReplySql,
       parameters: {
@@ -358,7 +389,10 @@ ORDER BY dt.token
         'admin_id': adminId.value,
         'body': body,
         'preview': preview,
-        'image_bytes': image == null ? null : Uint8List.fromList(image.bytes),
+        'image_bytes': image == null || path != null
+            ? null
+            : Uint8List.fromList(image.bytes),
+        'image_path': path,
         'image_mime': image?.mime,
         'at': at.toUtc(),
       },
@@ -391,15 +425,25 @@ ORDER BY dt.token
     ),
   );
 
-  static Result<SupportImage?> _image(
+  Future<Result<SupportImage?>> _image(
     Result<List<Map<String, dynamic>>> result,
-  ) {
+  ) async {
     if (result is Err<List<Map<String, dynamic>>>) {
       return Result.err(result.error);
     }
     final rows = (result as Ok<List<Map<String, dynamic>>>).value;
     if (rows.isEmpty) return const Result.ok(null);
-    final Object? bytes = rows.first['image_bytes'];
+    Object? bytes = rows.first['image_bytes'];
+    final Object? stored = rows.first['image_path'];
+    final SupportImageStore? images = _images;
+    // A picture moved to Storage (0196) is read from there.
+    if (bytes is! List<int> && stored is String && images != null) {
+      final Result<List<int>> fetched = await images.get(stored);
+      if (fetched is Err<List<int>>) {
+        return Result.err(fetched.error);
+      }
+      bytes = (fetched as Ok<List<int>>).value;
+    }
     if (bytes is! List<int>) {
       return Result.err(_corrupt('image', 'no bytes'));
     }
@@ -739,6 +783,91 @@ ORDER BY dt.token
   }
 
   static int _int(Object? value) => value is int ? value : 0;
+
+  /// The rows of pictures still kept in the database (0188), oldest first.
+  static const String unmovedImagesSql = '''
+SELECT m.id, m.conversation_id::text AS conversation_id, m.image_bytes,
+       m.image_mime
+FROM support.messages m
+WHERE m.image_bytes IS NOT NULL
+ORDER BY m.id
+LIMIT @limit::int
+''';
+
+  /// A picture now in Storage: its path replaces its bytes (0196).
+  static const String movedImageSql = '''
+UPDATE support.messages
+SET image_path = @path::text, image_bytes = NULL
+WHERE id = @id::bigint AND image_bytes IS NOT NULL
+''';
+
+  static final Random _random = Random.secure();
+
+  /// Puts [image] in Storage under [folder] and answers its path; null when
+  /// there is no picture or no Storage (the bytes then stay in the row).
+  Future<Result<String?>> _place(SupportImage? image, String folder) async {
+    final SupportImageStore? images = _images;
+    if (image == null || images == null) {
+      return const Result.ok(null);
+    }
+    final String name = <String>[
+      for (var i = 0; i < 16; i++)
+        _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ].join();
+    final String at = '$folder/$name.${_extension(image.mime)}';
+    final Result<void> put = await images.put(at, image.bytes, image.mime);
+    return switch (put) {
+      Ok<void>() => Result.ok(at),
+      Err<void>(:final error) => Result.err(error),
+    };
+  }
+
+  /// Moves up to [limit] pictures still kept in the database to Storage
+  /// (script 199): each is put first, and its bytes are cleared only once
+  /// Storage has it. Answers how many moved; 0 without Storage.
+  Future<Result<int>> moveStoredImages({int limit = 20}) async {
+    final SupportImageStore? images = _images;
+    if (images == null) {
+      return const Result.ok(0);
+    }
+    final rows = await _connection.query(
+      unmovedImagesSql,
+      parameters: {'limit': limit},
+    );
+    if (rows is Err<List<Map<String, dynamic>>>) {
+      return Result.err(rows.error);
+    }
+    var moved = 0;
+    for (final row in (rows as Ok<List<Map<String, dynamic>>>).value) {
+      final Object? id = row['id'];
+      final Object? bytes = row['image_bytes'];
+      final String mime = row['image_mime']?.toString() ?? '';
+      if (id is! int || bytes is! List<int>) {
+        continue;
+      }
+      final String at =
+          'legacy/${row['conversation_id']}/$id.${_extension(mime)}';
+      final Result<void> put = await images.put(at, bytes, mime);
+      if (put is Err<void>) {
+        return moved == 0 ? Result.err(put.error) : Result.ok(moved);
+      }
+      final cleared = await _connection.query(
+        movedImageSql,
+        parameters: {'id': id, 'path': at},
+      );
+      if (cleared is Err<List<Map<String, dynamic>>>) {
+        return Result.err(cleared.error);
+      }
+      moved++;
+    }
+    return Result.ok(moved);
+  }
+
+  static String _extension(String mime) => switch (mime) {
+    'image/png' => 'png',
+    'image/webp' => 'webp',
+    _ => 'jpg',
+  };
 
   static AppError _corrupt(String field, String detail) => AppError.transient(
     'support.row_corrupt',

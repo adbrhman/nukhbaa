@@ -2,6 +2,7 @@ import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:infrastructure/src/support/postgres_support_chat_repository.dart';
+import 'package:infrastructure/src/support/supabase_image_store.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
@@ -41,6 +42,29 @@ final class _FakeConnection implements PostgresConnection {
 
   @override
   Future<void> close() async {}
+}
+
+/// Storage, in memory.
+final class _Store implements SupportImageStore {
+  final Map<String, List<int>> objects = <String, List<int>>{};
+  bool refuse = false;
+
+  @override
+  Future<Result<void>> put(String path, List<int> bytes, String mime) async {
+    if (refuse) {
+      return const Result.err(AppError.transient('storage.down', 'down'));
+    }
+    objects[path] = bytes;
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<int>>> get(String path) async {
+    final List<int>? bytes = objects[path];
+    return bytes == null
+        ? const Result.err(AppError.transient('storage.missing', 'missing'))
+        : Result.ok(bytes);
+  }
 }
 
 SupportMessageBody _body(String text) =>
@@ -86,6 +110,7 @@ void main() {
       'body': 'سطر\nثان',
       'preview': 'سطر ثان',
       'image_bytes': null,
+      'image_path': null,
       'image_mime': null,
       'at': at,
     });
@@ -330,6 +355,119 @@ void main() {
       expect((mine as Ok<SupportImage?>).value!.bytes, jpeg);
       expect(connection.params.first, {'message_id': 8, 'player_id': _player});
       expect((none as Ok<SupportImage?>).value, isNull);
+    });
+
+    test('with Storage a picture is put there first and the row keeps '
+        'its path, not its bytes', () async {
+      final store = _Store();
+      final connection = _FakeConnection([
+        const Result.ok([]),
+        Result.ok([
+          {
+            'id': 8,
+            'conversation_id': _conv,
+            'created_at': at,
+            'unread_before': 1,
+            'player_name': 'p',
+          },
+        ]),
+      ]);
+      final SupportImage image =
+          (SupportImage.parse(jpeg, 'image/jpeg') as Ok<SupportImage>).value;
+
+      final result = await PostgresSupportChatRepository(
+        connection,
+        images: store,
+      ).addPlayerImage(playerId: const UserId(_player), image: image, at: at);
+
+      expect(result, isA<Ok<SupportMessageStored>>());
+      final String put = store.objects.keys.single;
+      expect(put, startsWith('p/$_player/'));
+      expect(put, endsWith('.jpg'));
+      expect(store.objects[put], jpeg);
+      final Map<String, Object?> bound = connection.params.last;
+      expect(bound['image_bytes'], isNull);
+      expect(bound['image_path'], put);
+      expect(bound['image_mime'], 'image/jpeg');
+    });
+
+    test('a picture Storage refused stores no message', () async {
+      final connection = _FakeConnection([]);
+      final SupportImage image =
+          (SupportImage.parse(jpeg, 'image/jpeg') as Ok<SupportImage>).value;
+
+      final result = await PostgresSupportChatRepository(
+        connection,
+        images: _Store()..refuse = true,
+      ).addPlayerImage(playerId: const UserId(_player), image: image, at: at);
+
+      expect((result as Err<SupportMessageStored>).error.code, 'storage.down');
+      expect(connection.sqls, isEmpty);
+    });
+
+    test('a picture moved to Storage is read from there', () async {
+      final store = _Store()..objects['legacy/c/8.jpg'] = jpeg;
+      final connection = _FakeConnection([
+        const Result.ok([
+          {
+            'image_bytes': null,
+            'image_path': 'legacy/c/8.jpg',
+            'image_mime': 'image/jpeg',
+          },
+        ]),
+      ]);
+
+      final mine = await PostgresSupportChatRepository(
+        connection,
+        images: store,
+      ).playerImage(playerId: const UserId(_player), messageId: 8);
+
+      expect((mine as Ok<SupportImage?>).value!.bytes, jpeg);
+    });
+
+    test('the pictures kept in the database move to Storage, each '
+        'cleared only once Storage has it', () async {
+      final store = _Store();
+      final connection = _FakeConnection([
+        Result.ok([
+          {
+            'id': 3,
+            'conversation_id': _conv,
+            'image_bytes': jpeg,
+            'image_mime': 'image/jpeg',
+          },
+          {
+            'id': 4,
+            'conversation_id': _conv,
+            'image_bytes': jpeg,
+            'image_mime': 'image/png',
+          },
+        ]),
+      ]);
+
+      final moved = await PostgresSupportChatRepository(
+        connection,
+        images: store,
+      ).moveStoredImages();
+
+      expect((moved as Ok<int>).value, 2);
+      expect(store.objects.keys, <String>[
+        'legacy/$_conv/3.jpg',
+        'legacy/$_conv/4.png',
+      ]);
+      expect(connection.params.skip(1).toList(), <Map<String, Object?>>[
+        {'id': 3, 'path': 'legacy/$_conv/3.jpg'},
+        {'id': 4, 'path': 'legacy/$_conv/4.png'},
+      ]);
+    });
+
+    test('without Storage nothing moves and nothing is read', () async {
+      final connection = _FakeConnection([]);
+      final moved = await PostgresSupportChatRepository(
+        connection,
+      ).moveStoredImages();
+      expect((moved as Ok<int>).value, 0);
+      expect(connection.sqls, isEmpty);
     });
 
     test('a page says which messages carry a picture', () async {

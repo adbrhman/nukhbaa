@@ -132,3 +132,4 @@ export 'src/social/postgres_fixture_reaction_repository.dart';
 export 'src/social/postgres_prediction_reaction_repository.dart';
 export 'src/social/postgres_reaction_repository.dart';
 export 'src/support/postgres_support_chat_repository.dart';
+export 'src/support/supabase_image_store.dart';

@@ -7789,6 +7789,34 @@ tree.
 - Each file is checked against its SHA-256 before it is removed; any other
   content stops the script. Git keeps them in history.
 
+### Support pictures in Storage, not in the database (script 199, 2026-11-02)
+
+Asked by the owner on 2026-11-02 (review L-5): move the support chat's
+pictures out of the database (500 MB on the free plan) now, not when it
+fills.
+
+- **Migration 0196**: the private bucket `support-images` (512 KB,
+  JPEG/PNG/WEBP); `support.messages.image_path`; the picture check takes
+  either the bytes (as before) or a path, never both.
+- **`SupabaseStorageImageStore`** (`NUKHBA_SUPABASE_SERVICE_KEY`, the
+  project's secret key, with `NUKHBA_SUPABASE_PROJECT_REF`): puts and reads
+  `storage/v1/object/support-images/<path>`. Without the key it is not built
+  and nothing changes.
+- **`PostgresSupportChatRepository`**: with the store, a new picture is put
+  in Storage first (`p/<player>/<random>.jpg`, `c/<conversation>/...`), and
+  the row keeps its path; a picture Storage refuses stores no message.
+  Reading takes the bytes from the row, or from Storage by the path.
+  `moveStoredImages` moves the pictures still in the database, 20 every 10
+  minutes (`support_image_scheduler.dart`): each is put first, and its bytes
+  are cleared only once Storage has it (`legacy/<conversation>/<id>.jpg`).
+- The routes, the app and the players see nothing change: the server still
+  answers every picture itself, checking whose it is.
+- Tests: infrastructure `supabase_image_store_test.dart`, the support
+  repository's picture tests; SQL `0196_support_images_storage_test.sql`.
+- **Apply 0196 in the SQL Editor before pushing.** Then add
+  `NUKHBA_SUPABASE_SERVICE_KEY` on Northflank; until then the pictures stay
+  in the database as before.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

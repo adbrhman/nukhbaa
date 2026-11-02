@@ -46,6 +46,9 @@ const Duration badgeEvaluationPhase = Duration(seconds: 32);
 const Duration rescorePhase = Duration(seconds: 36);
 
 /// See [providerLivePhase].
+const Duration supportImagePhase = Duration(seconds: 40);
+
+/// See [providerLivePhase].
 const Duration cacheEpochPhase = Duration(seconds: 44);
 
 /// See [providerLivePhase].

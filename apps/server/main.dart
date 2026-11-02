@@ -16,6 +16,7 @@ import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
 import 'package:server/scheduler/single_flight.dart';
 import 'package:server/scheduler/streak_saver_scheduler.dart';
+import 'package:server/scheduler/support_image_scheduler.dart';
 
 /// Fail-fast startup (matches [CompositionRoot.bootstrap]'s documented
 /// intent): build the process-wide composition root — opening the Postgres
@@ -55,6 +56,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Keeps the next monthly contest in place without an admin (see
     // monthly_season_scheduler.dart).
     startMonthlySeasonScheduler(root);
+    // Moves the support pictures still kept in the database to
+    // Storage, 20 every 10 minutes (see support_image_scheduler.dart).
+    startSupportImageScheduler(root);
     startMatchDaySettlementScheduler(root);
     // Finishes the scoring of results whose scoring failed after they
     // were recorded (see rescore_scheduler.dart).

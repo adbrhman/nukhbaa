@@ -182,6 +182,7 @@ final class CompositionRoot {
     this.rescoreUnscoredResults,
     this.recordError,
     this.cacheEpochWatcher,
+    this.moveSupportImages,
     this.adminErrorLog,
     this.adminErrorReleases,
     required this.registerDeviceToken,
@@ -401,6 +402,7 @@ final class CompositionRoot {
     this.rescoreUnscoredResults,
     this.recordError,
     this.cacheEpochWatcher,
+    this.moveSupportImages,
     this.adminErrorLog,
     this.adminErrorReleases,
     this.deleteMyAccount,
@@ -2580,6 +2582,11 @@ final class CompositionRoot {
   /// roots, where nothing is held for hours.
   final CacheEpochWatcher? cacheEpochWatcher;
 
+  /// Moves up to 20 support pictures from the database to Storage
+  /// (script 199). Null without NUKHBA_SUPABASE_SERVICE_KEY and in
+  /// test roots: the pictures then stay where they are.
+  final Future<Result<int>> Function()? moveSupportImages;
+
   /// The admin dashboard's error log (backs `/admin/errors`, migrations
   /// 0087 and 0088); null in tests that do not provide one.
   final AdminErrorLog? adminErrorLog;
@@ -2982,8 +2989,14 @@ final class CompositionRoot {
       targets: PostgresAdminPushTargetReader(connection),
       sender: pushSender,
     );
-    // The support chat (script 165, migration 0187).
-    final supportChats = PostgresSupportChatRepository(connection);
+    // The support chat (script 165, migration 0187). With the secret
+    // key its pictures go to Storage (script 199, migration 0196).
+    final SupabaseStorageImageStore? supportImages =
+        SupabaseStorageImageStore.fromEnv(env, http.Client());
+    final supportChats = PostgresSupportChatRepository(
+      connection,
+      images: supportImages,
+    );
     // The one deferred-push queue: the exact-hit announcement and the admin
     // broadcast fill it in quiet hours, the flush sweep empties it.
     final notificationQueue = PostgresNotificationQueue(connection);
@@ -3370,6 +3383,9 @@ final class CompositionRoot {
       // hour, a fixed error that came back -- at most once an hour each.
       // Every read cache below is held for hours (script 192); a write
       // made in the SQL Editor drops them all within a minute (0194).
+      moveSupportImages: supportImages == null
+          ? null
+          : supportChats.moveStoredImages,
       cacheEpochWatcher: CacheEpochWatcher(
         reader: PostgresCacheEpochReader(connection),
         flush: () {
