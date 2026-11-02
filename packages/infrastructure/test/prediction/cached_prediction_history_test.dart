@@ -298,6 +298,73 @@ void main() {
     expect(store.historyReads, 4);
   });
 
+  test('with the participant looked up, a first prediction in a new month '
+      'drops that player\'s history alone (script 201)', () async {
+    final List<String> lookedUp = <String>[];
+    history = CachedPredictionHistory(
+      store,
+      now: () => clock,
+      userOfParticipant: (ParticipantId participant) async {
+        lookedUp.add(participant.value);
+        return store.userOf[participant.value];
+      },
+    );
+    listMine = ListMyFixturePredictions(
+      fixturePredictionRepository: history,
+      fixtureScheduleRepository: CachedFixtureScheduleRepository(
+        schedules,
+        maxEntries: 8192,
+        now: () => clock,
+      ),
+    );
+    await mine(_userA);
+    await mine(_userB);
+    await history.save(
+      _prediction('cccccccc-0000-4000-8000-000000000004', _f3, _novA),
+      clock,
+    );
+    expect(await mine(_userA), unorderedEquals(<String>[_f1, _f3]));
+    await mine(_userB);
+    expect(store.historyReads, 3);
+    expect(lookedUp, <String>[_novA]);
+
+    // Known from now on: a second prediction under it is written in place.
+    await history.save(
+      _prediction('cccccccc-0000-4000-8000-000000000005', _f2, _novA),
+      clock,
+    );
+    expect(await mine(_userA), unorderedEquals(<String>[_f1, _f2, _f3]));
+    expect(store.historyReads, 3);
+    expect(lookedUp, <String>[_novA]);
+  });
+
+  test('a lookup that finds nobody, or fails, drops every history as '
+      'before', () async {
+    history = CachedPredictionHistory(
+      store,
+      now: () => clock,
+      userOfParticipant: (ParticipantId participant) async =>
+          throw StateError('down'),
+    );
+    listMine = ListMyFixturePredictions(
+      fixturePredictionRepository: history,
+      fixtureScheduleRepository: CachedFixtureScheduleRepository(
+        schedules,
+        maxEntries: 8192,
+        now: () => clock,
+      ),
+    );
+    await mine(_userA);
+    await mine(_userB);
+    await history.save(
+      _prediction('cccccccc-0000-4000-8000-000000000004', _f3, _novA),
+      clock,
+    );
+    await mine(_userA);
+    await mine(_userB);
+    expect(store.historyReads, 4);
+  });
+
   test('a merge (forget) drops every history', () async {
     await mine(_userA);
     history.forget();

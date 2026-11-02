@@ -2894,6 +2894,12 @@ final class CompositionRoot {
     final predictionHistory = CachedPredictionHistory(
       fixturePredictionRepository,
       ttl: holdUntilWritten,
+      // A player's first prediction in a new month: whose participant it
+      // is, so only that player's history is dropped (script 201).
+      userOfParticipant: (ParticipantId participant) async {
+        final found = await participantReader.findParticipantById(participant);
+        return found is Ok<Participant?> ? found.value?.userId.value : null;
+      },
       onFixtureWritten: (FixtureRef fixture) {
         fixturePredictionTallyReader.forgetFixture(fixture);
         fixturePredictionReads.forgetFixture(fixture);
@@ -2907,8 +2913,12 @@ final class CompositionRoot {
     // (previously unwired schema — `football_data.teams`, migration
     // `0013_football_data.sql`), so a client can resolve a fixture's team ids
     // into a display name + crest without hardcoding either client-side.
+    // Held until an admin adds a club (CacheClearingTeamCatalogWriter) or
+    // a write outside the server moves the cache epoch (script 196): the
+    // whole catalog was read every 10 minutes, 405 rows (script 201).
     final teamRepository = CachedTeamRepository(
       PostgresTeamRepository(connection),
+      ttl: holdUntilWritten,
     );
 
     // Ledger slice: its own Postgres-backed adapters over the ledger.* tables
@@ -3276,6 +3286,13 @@ final class CompositionRoot {
     );
     final predictionReactions = PostgresPredictionReactionRepository(
       connection,
+    );
+
+    // One cache of the board sums for the month board, the live standing
+    // and the groups: three copies read the same sums three times
+    // (audit L-43, script 201).
+    final fixtureTotals = CachedFixtureTotalsReader(
+      PostgresFixtureTotalsReader(connection),
     );
 
     final submitFixturePrediction = SubmitFixturePrediction(
@@ -3858,9 +3875,7 @@ final class CompositionRoot {
       getSeasonFixtureLeaderboard: GetSeasonFixtureLeaderboard(
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionReads,
-        fixtureTotalsReader: CachedFixtureTotalsReader(
-          PostgresFixtureTotalsReader(connection),
-        ),
+        fixtureTotalsReader: fixtureTotals,
         fixtureScheduleRepository: fixtureScheduleRepository,
         participantReader: participantReader, // already built (Ledger slice)
         rankSnapshotReader: PostgresRankSnapshotReader(connection),
@@ -3916,9 +3931,7 @@ final class CompositionRoot {
       getLiveStanding: GetLiveStanding(
         competition: competitionRepository,
         fixturePredictions: fixturePredictionReads,
-        totals: CachedFixtureTotalsReader(
-          PostgresFixtureTotalsReader(connection),
-        ),
+        totals: fixtureTotals,
         results: fixtureResultRepository,
         rulesets: rulesetProvider,
         liveScores: liveScoreBoard,
@@ -4059,9 +4072,7 @@ final class CompositionRoot {
         groups: groupRepository,
         competition: competitionRepository,
         fixturePredictions: fixturePredictionReads,
-        totals: CachedFixtureTotalsReader(
-          PostgresFixtureTotalsReader(connection),
-        ),
+        totals: fixtureTotals,
         participants: participantReader,
         // One read for the members' participants (audit L-40).
         roster: groupRepository,

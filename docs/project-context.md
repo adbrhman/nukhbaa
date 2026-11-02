@@ -7864,6 +7864,42 @@ account, with their number, and can suspend them.
 - **Apply 0197 in the SQL Editor before pushing.** The rule reaches the
   players with the next APK.
 
+### Supabase egress: the caches' holes (script 201, 2026-11-02)
+
+Supabase Usage on 2026-11-02: the Free Plan's 5 GB egress went over in
+the cycle of 28 September - 28 October; the projects are restricted from
+22 November if the organization stays over. The current cycle stood at
+0.85 GB after five days, about 230 MB a day on 31 October and 1 November
+against the 167 MB a day a 5 GB cycle allows. `pg_stat_statements`
+(reset 2026-11-01 19:19 UTC, about 21 hours) put first a player's whole
+history (`listByUser`, 882 reads of about 310 rows), the batched
+schedules (1251 reads of about 124 of the widest rows), the team catalog
+(228 whole reads of 405 rows, the slowest read) and the board sums (637
+reads). Server only: no APK, no contract, no migration.
+
+- `CachedFixtureScheduleRepository.upsert` drops the fixture written,
+  not every schedule held: each kickoff the provider moved
+  (`FollowProviderKickoff`), each fixture the sync registered and each
+  admin correction read the month and every history again. Hiding a
+  fixture and merging copies still call `forget`.
+- `CachedPredictionHistory(userOfParticipant:)`: a participant not seen
+  yet (a player's first prediction in a new month, or a new player) is
+  looked up through the participant reader, so only that player's
+  history is dropped; it used to drop every player's history. Without
+  the lookup, or when it fails or finds nobody, every history is dropped
+  as before.
+- `CachedTeamRepository`: held 6 hours (`holdUntilWritten`) instead of
+  10 minutes. A club an admin adds still drops it at once, and an edit in
+  the SQL Editor moves the cache epoch (script 196).
+- One `CachedFixtureTotalsReader` for the month board, the live standing
+  and the groups instead of three (audit L-43): the same sums are read
+  once per 30 seconds, not three times.
+- Tests: infrastructure `cached_schedule_write_test.dart` (new), two new
+  tests in `cached_prediction_history_test.dart`.
+- To measure: reset `pg_stat_statements` after the deploy
+  (`select pg_stat_statements_reset();`) and read the egress per day in
+  Usage after a day.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

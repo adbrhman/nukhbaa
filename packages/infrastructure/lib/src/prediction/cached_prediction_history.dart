@@ -25,9 +25,13 @@ import 'package:shared/shared.dart';
 /// from the participant ids of the history already held. The history is
 /// dropped instead, and read again on the next request, when the write
 /// failed (it may still have landed), when no history is held for that
-/// player, when the participant is not known yet (a first prediction in a
-/// new month drops every history) and when an id is not in the lower-case
-/// form the database returns. A merge by an admin calls [forget]; a change
+/// player, when the participant is not known yet and when an id is not in
+/// the lower-case form the database returns. A participant not known yet
+/// (a player's first prediction in a new month) is looked up with
+/// [userOfParticipant], so only that player's history is dropped (script
+/// 201: on 1 November every player's first prediction dropped every
+/// history, about 310 rows each); without it, or when it finds nobody,
+/// every history is dropped as before. A merge by an admin calls [forget]; a change
 /// made outside this server shows within [ttl] at most.
 ///
 /// Every write also calls [onFixtureWritten] with its fixture, failed ones
@@ -44,7 +48,9 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     int maxEntries = 512,
     DateTime Function() now = DateTime.now,
     void Function(FixtureRef fixture)? onFixtureWritten,
+    Future<String?> Function(ParticipantId participant)? userOfParticipant,
   }) : _onFixtureWritten = onFixtureWritten,
+       _userOfParticipant = userOfParticipant,
        _histories = TtlCache<String, List<FixturePredictionView>>(
          ttl: ttl,
          maxEntries: maxEntries,
@@ -53,6 +59,9 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
 
   final FixturePredictionRepository _inner;
   final void Function(FixtureRef fixture)? _onFixtureWritten;
+
+  /// The player a participant id belongs to, or null when unknown.
+  final Future<String?> Function(ParticipantId participant)? _userOfParticipant;
   final TtlCache<String, List<FixturePredictionView>> _histories;
   final ReadCoalescer<String, Result<List<FixturePredictionView>>> _loads =
       ReadCoalescer<String, Result<List<FixturePredictionView>>>();
@@ -109,12 +118,15 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
   /// Writes [prediction], just stored at [submittedAt], into the history held
   /// for its player, or drops that history when it cannot (see the class
   /// comment).
-  void _afterWrite(
+  Future<void> _afterWrite(
     FixturePrediction prediction,
     DateTime submittedAt,
     Result<void> result,
-  ) {
+  ) async {
     _onFixtureWritten?.call(prediction.fixture);
+    if (!_userOf.containsKey(prediction.participantId.value)) {
+      await _learnPlayer(prediction.participantId);
+    }
     final List<FixturePredictionView>? updated = result is Ok<void>
         ? _withWrite(prediction, submittedAt.toUtc())
         : null;
@@ -125,6 +137,25 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
       return;
     }
     _histories.replace(user, List<FixturePredictionView>.unmodifiable(updated));
+  }
+
+  /// Learns whose [participantId] is (script 201), so a write under it drops
+  /// that player's history alone. Learns nothing without
+  /// [_userOfParticipant], or when it fails or finds nobody.
+  Future<void> _learnPlayer(ParticipantId participantId) async {
+    final Future<String?> Function(ParticipantId participant)? resolve =
+        _userOfParticipant;
+    if (resolve == null) {
+      return;
+    }
+    try {
+      final String? user = await resolve(participantId);
+      if (user != null && user.isNotEmpty) {
+        _userOf[participantId.value] = user;
+      }
+    } on Object {
+      return;
+    }
   }
 
   /// The history held for the player of [prediction] with [prediction] in
@@ -185,7 +216,7 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     DateTime submittedAt,
   ) async {
     final Result<void> result = await _inner.save(prediction, submittedAt);
-    _afterWrite(prediction, submittedAt, result);
+    await _afterWrite(prediction, submittedAt, result);
     return result;
   }
 
@@ -195,7 +226,7 @@ final class CachedPredictionHistory implements FixturePredictionRepository {
     DateTime submittedAt,
   ) async {
     final Result<void> result = await _inner.update(prediction, submittedAt);
-    _afterWrite(prediction, submittedAt, result);
+    await _afterWrite(prediction, submittedAt, result);
     return result;
   }
 

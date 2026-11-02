@@ -17,7 +17,9 @@ import 'package:shared/shared.dart';
 /// schedule of the history again: 5320 reads, 748 thousand of the widest
 /// rows, in the day and a half after script 138). Each schedule write
 /// (register, correct, provider sync) goes through [upsert] here and drops
-/// the whole cache, so a changed kickoff shows on the next read; hiding a
+/// that fixture alone (script 201: it used to drop the whole cache, so
+/// every kickoff the provider moved read the month and every history
+/// again), so a changed kickoff shows on the next read; hiding a
 /// fixture and merging copies call [forget]. [ttl] only bounds an edit made
 /// outside this server (script 155: at 60 seconds the feed read the month's
 /// schedules again every minute, 2888 reads of the widest rows in the day
@@ -48,8 +50,9 @@ final class CachedFixtureScheduleRepository
   @override
   Future<Result<void>> upsert(FixtureSchedule schedule) async {
     final Result<void> result = await _inner.upsert(schedule);
-    // Cleared on failure too: a write that errored may still have landed.
-    _held.clear();
+    // Only this fixture changed (script 201). Dropped on failure too: a
+    // write that errored may still have landed.
+    _held.remove(schedule.fixture.value.toLowerCase());
     return result;
   }
 
