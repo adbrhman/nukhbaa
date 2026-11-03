@@ -137,8 +137,11 @@ final class ClientErrorReporter {
   static const int maxStack = 16000;
 
   /// How long after the app comes back a timeout is still not news: the
-  /// transport's request timeout (15 s) with room to spare.
-  static const Duration awayWindow = Duration(seconds: 20);
+  /// transport's request timeout (35 s, `buildSessionTransport`) with room
+  /// to spare. A request sent just before the app left runs out that
+  /// timeout up to 35 s after its return (audit 7: the window was 20 s,
+  /// shorter than the timeout).
+  static const Duration awayWindow = Duration(seconds: 40);
 
   final DateTime Function() _now;
   AppLifecycleListener? _lifecycle;

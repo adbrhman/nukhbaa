@@ -250,8 +250,13 @@ void main() {
       now = now.add(const Duration(seconds: 3));
       reporter.reportApiFailure(_failure(timeout));
 
-      // Half a minute in the foreground: a timeout now is the server's.
+      // Half a minute after the return: a request sent while away still
+      // runs out its 35 s timeout, so this is not news either (audit 7).
       now = now.add(const Duration(seconds: 30));
+      reporter.reportApiFailure(_failure(timeout));
+
+      // Past the window, in the foreground: a timeout now is the server's.
+      now = now.add(const Duration(seconds: 10));
       reporter.reportApiFailure(_failure(timeout));
       await reporter.drain();
 
