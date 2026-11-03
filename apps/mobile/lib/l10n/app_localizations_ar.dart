@@ -39,6 +39,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get createAccount => 'إنشاء حساب';
 
   @override
+  String get registerTitle => 'إنشاء حساب في نُخبة';
+
+  @override
+  String get firstName => 'الاسم الأول الحقيقي';
+
+  @override
+  String get firstNameHint => 'مثال: محمد';
+
+  @override
+  String get firstNameRequired => 'اكتب اسمك الأول.';
+
+  @override
+  String get familyName => 'اسم العائلة الحقيقي';
+
+  @override
+  String get familyNameHint => 'مثال: أحمد';
+
+  @override
+  String get familyNameRequired => 'اكتب اسم عائلتك أو اسم أبيك.';
+
+  @override
+  String get realNameNote => 'يجب إدخال الاسم الذي يعرفك به الآخرون في حياتك.';
+
+  @override
   String get signInSubtitle =>
       'سجّل الدخول بالبريد الإلكتروني وكلمة المرور للمتابعة.';
 

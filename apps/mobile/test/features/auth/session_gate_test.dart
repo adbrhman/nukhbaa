@@ -194,6 +194,9 @@ void main() {
       findsOneWidget,
       reason: 'Registration must expose the display-name input exactly once.',
     );
+    // The real first name and the real family name, two fields (2026-11-03).
+    expect(find.byKey(const Key('signIn.familyNameField')), findsOneWidget);
+    expect(find.byKey(const Key('signIn.realNameNote')), findsOneWidget);
   });
 
   _authTest('sign-out from the account screen returns to the sign-in form', (

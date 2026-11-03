@@ -68,21 +68,27 @@ class NameSetupScreen extends ConsumerStatefulWidget {
 
 class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
   final TextEditingController _name = TextEditingController();
+
+  /// The real family name, or the father's name (2026-11-03).
+  final TextEditingController _family = TextEditingController();
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
     _name.dispose();
+    _family.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final String name = _name.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = 'اكتب الاسم الذي سيظهر للآخرين');
+    final String first = _name.text.trim();
+    final String family = _family.text.trim();
+    if (first.isEmpty || family.isEmpty) {
+      setState(() => _error = 'اكتب اسمك الأول واسم عائلتك الحقيقيين');
       return;
     }
+    final String name = '$first $family';
     if (name == automaticDisplayNameOf(widget.user)) {
       setState(
         () =>
@@ -139,8 +145,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'اكتب اسمك الحقيقي: اسمك الأول واسم أبيك أو لقبك، '
-                  'مثل: محمد العماري. '
+                  'يجب إدخال الاسم الذي يعرفك به الآخرون في حياتك. '
                   'هذا الاسم يظهر للاعبين الآخرين في الترتيب والمجموعات، '
                   'ولا يمكن تغييره بعد الحفظ.',
                   textAlign: TextAlign.center,
@@ -153,11 +158,24 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                   key: const Key('nameSetup.field'),
                   controller: _name,
                   enabled: !_busy,
-                  maxLength: _maxDisplayNameLength,
+                  maxLength: _maxDisplayNameLength ~/ 2,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'الاسم الأول الحقيقي',
+                    hintText: 'مثال: محمد',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  key: const Key('nameSetup.familyField'),
+                  controller: _family,
+                  enabled: !_busy,
+                  maxLength: _maxDisplayNameLength ~/ 2,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => unawaited(_save()),
                   decoration: InputDecoration(
-                    labelText: 'الاسم الثنائي',
+                    labelText: 'اسم العائلة الحقيقي',
+                    hintText: 'مثال: أحمد',
                     errorText: _error,
                   ),
                 ),

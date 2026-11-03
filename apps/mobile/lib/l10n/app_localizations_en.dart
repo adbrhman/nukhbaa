@@ -39,6 +39,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccount => 'Create account';
 
   @override
+  String get registerTitle => 'Create a Nukhbaa account';
+
+  @override
+  String get firstName => 'Real first name';
+
+  @override
+  String get firstNameHint => 'e.g. Mohammed';
+
+  @override
+  String get firstNameRequired => 'Enter your first name.';
+
+  @override
+  String get familyName => 'Real family name';
+
+  @override
+  String get familyNameHint => 'e.g. Ahmed';
+
+  @override
+  String get familyNameRequired =>
+      'Enter your family name or your father\'s name.';
+
+  @override
+  String get realNameNote => 'Enter the name people know you by in your life.';
+
+  @override
   String get signInSubtitle =>
       'Sign in with your email and password to continue.';
 

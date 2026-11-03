@@ -29,6 +29,9 @@ void main() {
       'الحسن علي',
       'مُحَمَّد عَلِي',
       'Mohammed Ali',
+      'محمد باشا',
+      'محارب العتيبي',
+      'محمد شيخ',
     ]) {
       expect(_refusal(name), isNull, reason: name);
     }
@@ -82,6 +85,10 @@ void main() {
       'قناص التوقعات',
       'محمد 10',
       'King Ali',
+      'قاهر الاعداء',
+      'قاهر الأعداء',
+      'محمد الأسطوري',
+      'فلان المجهول',
     ]) {
       expect(_refusal(name), 'identity.display_name_alias', reason: name);
     }

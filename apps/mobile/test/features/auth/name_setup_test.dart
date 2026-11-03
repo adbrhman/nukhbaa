@@ -82,9 +82,10 @@ void main() {
     expect(find.byKey(const Key('nameSetup.screen')), findsOneWidget);
     expect(find.byType(NukhbaaShell), findsNothing);
 
+    await tester.enterText(find.byKey(const Key('nameSetup.field')), 'Ali');
     await tester.enterText(
-      find.byKey(const Key('nameSetup.field')),
-      'Ali Hassan',
+      find.byKey(const Key('nameSetup.familyField')),
+      'Hassan',
     );
     await tester.tap(find.byKey(const Key('nameSetup.save')));
     await tester.pumpAndSettle();

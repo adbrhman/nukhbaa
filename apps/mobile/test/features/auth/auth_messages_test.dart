@@ -56,9 +56,10 @@ Future<List<http.Request>> _openRegister(WidgetTester tester) async {
 }
 
 Future<void> _fill(WidgetTester tester, String password) async {
+  await tester.enterText(find.byKey(const Key('signIn.nameField')), 'Khaled');
   await tester.enterText(
-    find.byKey(const Key('signIn.nameField')),
-    'Khaled Saleh',
+    find.byKey(const Key('signIn.familyNameField')),
+    'Saleh',
   );
   await tester.enterText(
     find.byKey(const Key('signIn.emailField')),

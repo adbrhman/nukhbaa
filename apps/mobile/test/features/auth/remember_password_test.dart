@@ -236,9 +236,10 @@ void main() {
     await tester.tap(find.byKey(const Key('signIn.tabRegister')));
     await tester.pumpAndSettle();
 
+    await tester.enterText(find.byKey(const Key('signIn.nameField')), 'Khaled');
     await tester.enterText(
-      find.byKey(const Key('signIn.nameField')),
-      'Khaled Saleh',
+      find.byKey(const Key('signIn.familyNameField')),
+      'Saleh',
     );
     await _typeEmail(tester);
     await tester.enterText(
@@ -277,9 +278,10 @@ void main() {
     await tester.tap(find.byKey(const Key('signIn.tabRegister')));
     await tester.pumpAndSettle();
 
+    await tester.enterText(find.byKey(const Key('signIn.nameField')), 'ملك');
     await tester.enterText(
-      find.byKey(const Key('signIn.nameField')),
-      'ملك الجمال',
+      find.byKey(const Key('signIn.familyNameField')),
+      'الجمال',
     );
     await _typeEmail(tester);
     await tester.enterText(

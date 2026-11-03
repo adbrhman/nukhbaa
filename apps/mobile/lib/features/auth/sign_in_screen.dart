@@ -37,6 +37,10 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _nameController = TextEditingController();
+
+  /// The second of the two name fields (2026-11-03): the real family
+  /// name, or the father's name.
+  final TextEditingController _familyController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -112,6 +116,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void dispose() {
     _emailController.removeListener(_onEmailChanged);
     _nameController.dispose();
+    _familyController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -126,7 +131,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ? ref
                 .read(sessionControllerProvider.notifier)
                 .register(
-                  displayName: _nameController.text.trim(),
+                  displayName:
+                      '${_nameController.text.trim()} '
+                      '${_familyController.text.trim()}',
                   email: _emailController.text.trim(),
                   password: _passwordController.text,
                   remember: _remember && !kIsWeb,
@@ -146,6 +153,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     ref.read(sessionControllerProvider.notifier).clearFailure();
     _confirmPasswordController.clear();
     _nameController.clear();
+    _familyController.clear();
     setState(() {
       _isRegister = toRegister;
       _showSaved = false;
@@ -240,7 +248,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             ),
                             const SizedBox(height: AppSpacing.xl),
                             Text(
-                              _isRegister ? l10n.createAccount : l10n.signIn,
+                              _isRegister ? l10n.registerTitle : l10n.signIn,
                               key: const Key('signIn.title'),
                               textAlign: TextAlign.center,
                               style: text.headlineSmall?.copyWith(
@@ -276,21 +284,50 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               const SizedBox(height: AppSpacing.lg),
                             ],
                             if (_isRegister) ...[
+                              // Two fields, the real first name and the real
+                              // family name (2026-11-03); the server checks
+                              // the joined name.
                               AppTextField(
                                 fieldKey: const Key('signIn.nameField'),
                                 controller: _nameController,
                                 enabled: !inFlight,
-                                label: l10n.displayName,
-                                hint: l10n.displayNameHint,
+                                label: l10n.firstName,
+                                hint: l10n.firstNameHint,
                                 prefixIcon: Icons.person_outline,
                                 textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.name],
+                                autofillHints: const [AutofillHints.givenName],
                                 validator: (String? value) =>
                                     (value == null || value.trim().isEmpty)
-                                    ? l10n.displayNameRequired
-                                    : !isTwoPartDisplayName(value)
+                                    ? l10n.firstNameRequired
+                                    : null,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              AppTextField(
+                                fieldKey: const Key('signIn.familyNameField'),
+                                controller: _familyController,
+                                enabled: !inFlight,
+                                label: l10n.familyName,
+                                hint: l10n.familyNameHint,
+                                prefixIcon: Icons.badge_outlined,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.familyName],
+                                validator: (String? value) =>
+                                    (value == null || value.trim().isEmpty)
+                                    ? l10n.familyNameRequired
+                                    : !isTwoPartDisplayName(
+                                        '${_nameController.text} $value',
+                                      )
                                     ? l10n.displayNameTwoPart
                                     : null,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                l10n.realNameNote,
+                                key: const Key('signIn.realNameNote'),
+                                style: text.bodySmall?.copyWith(
+                                  color: tokens.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               const SizedBox(height: AppSpacing.lg),
                             ],

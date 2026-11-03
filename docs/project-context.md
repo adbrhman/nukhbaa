@@ -8087,6 +8087,30 @@ again on the same phone and forgot it taps the box to see it.
 - No migration. The name rules apply once the server is deployed; the box
   comes with the next APK.
 
+### Two name fields; more aliases refused (script 206, 2026-11-03)
+
+The owner registered as "قاهر الأعداء" and it passed: none of its words
+was in `_aliasWords`. Asked on 2026-11-03: the form takes the real first
+name and the real family name in two fields, under "إنشاء حساب في نُخبة",
+with "يجب إدخال الاسم الذي يعرفك به الآخرون في حياتك".
+
+- App: `signIn.nameField` is now "الاسم الأول الحقيقي" (مثال: محمد) and
+  `signIn.familyNameField` "اسم العائلة الحقيقي" (مثال: أحمد), each
+  required; they are sent joined (`display_name`), so the server's rules
+  and contract are unchanged. `NameSetupScreen` (a first Google sign-in)
+  has the same two fields (`nameSetup.field`, `nameSetup.familyField`).
+- Domain: `_aliasWords` grows by about a hundred alias words (قاهر،
+  الأعداء، رعب، الموت، الأسطوري، المجهول، عبقري، فرعون...). Words that are also real names or surnames (باشا، شيخ،
+  محارب، مقاتل، العالم، الجلاد، البيك) stay out, so real players are not
+  refused. A word list cannot catch every alias; what passes is renamed
+  by an admin from the new players' list.
+- Tests: domain `two_part_name_test.dart`; mobile
+  `register_name_fields_test.dart` (new), `session_gate_test.dart`,
+  `name_setup_test.dart`, `auth_messages_test.dart`,
+  `remember_password_test.dart`.
+- No migration. The longer list applies once the server is deployed; the
+  two fields come with the next APK (the web at once).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

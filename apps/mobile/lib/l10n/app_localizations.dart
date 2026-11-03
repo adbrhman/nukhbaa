@@ -158,6 +158,54 @@ abstract class AppLocalizations {
   /// **'Create account'**
   String get createAccount;
 
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Nukhbaa account'**
+  String get registerTitle;
+
+  /// No description provided for @firstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Real first name'**
+  String get firstName;
+
+  /// No description provided for @firstNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mohammed'**
+  String get firstNameHint;
+
+  /// No description provided for @firstNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your first name.'**
+  String get firstNameRequired;
+
+  /// No description provided for @familyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Real family name'**
+  String get familyName;
+
+  /// No description provided for @familyNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Ahmed'**
+  String get familyNameHint;
+
+  /// No description provided for @familyNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your family name or your father\'s name.'**
+  String get familyNameRequired;
+
+  /// No description provided for @realNameNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the name people know you by in your life.'**
+  String get realNameNote;
+
   /// No description provided for @signInSubtitle.
   ///
   /// In en, this message translates to:
