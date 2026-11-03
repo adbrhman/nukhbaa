@@ -5,11 +5,14 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
 /// POST /auth/password-reset/update.
 ///
-/// The recovery access token is accepted only through Authorization.
+/// The recovery access token is accepted only through Authorization. One
+/// network address may set 30 passwords in 15 minutes (audit 20,
+/// `AuthCall.passwordUpdate`); over that it is `429`.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -65,6 +68,16 @@ Future<Response> _handle(
         'Password must be at least 8 characters.',
       ),
     );
+  }
+
+  // Every call that passes the checks above reaches GoTrue's `PUT /user`
+  // and spends this server's one GoTrue quota (audit 20).
+  final limited = limitAuthCall(
+    AuthCall.passwordUpdate,
+    address: clientAddress(context.request.headers),
+  );
+  if (limited != null) {
+    return limited;
   }
 
   final root = await context.read<Future<CompositionRoot>>();

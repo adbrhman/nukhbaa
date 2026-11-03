@@ -17,19 +17,22 @@ import '../../routes/auth/login/index.dart' as login_route;
 // ignore: always_use_package_imports
 import '../../routes/auth/password-reset/request/index.dart' as reset_route;
 // ignore: always_use_package_imports
+import '../../routes/auth/password-reset/update/index.dart' as update_route;
+// ignore: always_use_package_imports
 import '../../routes/auth/password-reset/verify/index.dart' as code_route;
 // ignore: always_use_package_imports
 import '../../routes/auth/refresh/index.dart' as refresh_route;
 
 /// An [AuthGateway] that refuses every password but [_rightPassword] and
-/// accepts every reset request, renewal and Google sign-in, refuses every
-/// reset code, and counts how many calls reached it.
+/// accepts every reset request, renewal, Google sign-in and new password,
+/// refuses every reset code, and counts how many calls reached it.
 final class _CountingGateway implements AuthGateway {
   int signIns = 0;
   int resets = 0;
   int renewals = 0;
   int googleSignIns = 0;
   int codes = 0;
+  int passwords = 0;
 
   @override
   Future<Result<IssuedSession>> signInWithPassword({
@@ -85,7 +88,10 @@ final class _CountingGateway implements AuthGateway {
   Future<Result<void>> updatePassword({
     required String recoveryToken,
     required String password,
-  }) => throw UnimplementedError();
+  }) async {
+    passwords++;
+    return const Result.ok(null);
+  }
 
   @override
   Future<Result<String>> verifyRecoveryCode({
@@ -115,6 +121,7 @@ _MockRequestContext _wire(
   _CountingGateway gateway,
   Map<String, Object?> body, {
   String? address,
+  String? bearer,
 }) {
   final root = Future<CompositionRoot>.value(
     CompositionRoot.forTesting(
@@ -123,6 +130,7 @@ _MockRequestContext _wire(
       refreshSession: RefreshSession(gateway),
       signInWithGoogle: SignInWithGoogle(gateway),
       verifyRecoveryCode: VerifyRecoveryCode(gateway),
+      updatePassword: UpdatePassword(gateway),
     ),
   );
   final encoded = jsonEncode(body);
@@ -130,6 +138,7 @@ _MockRequestContext _wire(
   when(() => request.method).thenReturn(HttpMethod.post);
   when(() => request.headers).thenReturn(<String, String>{
     if (address != null) 'x-forwarded-for': '10.0.0.1, $address',
+    if (bearer != null) 'authorization': 'Bearer $bearer',
   });
   when(request.body).thenAnswer((_) async => encoded);
   when(
@@ -329,6 +338,35 @@ void main() {
       expect(await _codeOf(refused), 'request.rate_limited');
       expect(gateway.googleSignIns, 30);
       expect((await google('198.51.100.41')).statusCode, HttpStatus.ok);
+    });
+
+    // Audit 20: a recovery token is checked by GoTrue, so a made-up one
+    // spent the quota with no limit at all.
+    test('the 31st new password from one address within 15 minutes is '
+        'refused before it reaches Supabase', () async {
+      final gateway = _CountingGateway();
+      Future<Response> update(String address) => update_route.onRequest(
+        _wire(
+          gateway,
+          {'password': 'a-new-password-1'},
+          address: address,
+          bearer: 'made-up',
+        ),
+      );
+
+      for (var i = 0; i < 30; i++) {
+        expect((await update('203.0.113.42')).statusCode, HttpStatus.ok);
+      }
+      final refused = await update('203.0.113.42');
+
+      expect(refused.statusCode, HttpStatus.tooManyRequests);
+      expect(refused.headers[HttpHeaders.retryAfterHeader], isNotNull);
+      expect(await _codeOf(refused), 'request.rate_limited');
+      expect(gateway.passwords, 30);
+
+      // Another network sets its password as before.
+      expect((await update('198.51.100.42')).statusCode, HttpStatus.ok);
+      expect(gateway.passwords, 31);
     });
 
     test('a request with no address is not counted', () async {

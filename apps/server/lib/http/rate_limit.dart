@@ -378,6 +378,13 @@ enum AuthCall {
   /// `POST /auth/google`: 30 per address in 10 minutes, the allowance of a
   /// sign-up (a first Google sign-in creates the account).
   google,
+
+  /// `POST /auth/password-reset/update`: 30 per address in 15 minutes, the
+  /// allowance of a reset code (audit 20). Its recovery token names no
+  /// account the server can trust before GoTrue reads it, and every call
+  /// that passes the token's own checks spends this server's one GoTrue
+  /// quota (`PUT /user`).
+  passwordUpdate,
 }
 
 final RateLimiter _refreshAddressLimiter = RateLimiter(
@@ -390,6 +397,11 @@ final RateLimiter _googleAddressLimiter = RateLimiter(
   window: const Duration(minutes: 10),
 );
 
+final RateLimiter _passwordUpdateAddressLimiter = RateLimiter(
+  limit: 30,
+  window: const Duration(minutes: 15),
+);
+
 /// The `429` for a [call] from [address] over its share, or `null`. Without
 /// an address nothing is counted.
 Response? limitAuthCall(AuthCall call, {String? address}) {
@@ -399,6 +411,7 @@ Response? limitAuthCall(AuthCall call, {String? address}) {
   final limiter = switch (call) {
     AuthCall.refresh => _refreshAddressLimiter,
     AuthCall.google => _googleAddressLimiter,
+    AuthCall.passwordUpdate => _passwordUpdateAddressLimiter,
   };
   final wait = limiter.hit(address);
   return wait == null ? null : tooManyRequests(wait);
