@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -29,8 +30,36 @@ final class _Directory implements UserDirectory {
 
   User current;
 
+  /// Set by a test: every read waits until this many reads have
+  /// arrived, so concurrent requests all read the name before either
+  /// writes (audit 33).
+  int readersToWaitFor = 0;
+  int _reads = 0;
+  final Completer<void> _allRead = Completer<void>();
+
   @override
-  Future<Result<User?>> findUser(UserId id) async => Result.ok(current);
+  Future<Result<User?>> findUser(UserId id) async {
+    final User seen = current;
+    _reads++;
+    if (_reads >= readersToWaitFor && !_allRead.isCompleted) {
+      _allRead.complete();
+    }
+    await _allRead.future;
+    return Result.ok(seen);
+  }
+
+  @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async {
+    // As the conditional UPDATE: no row once the stored name moved on.
+    if (current.displayName != expected) {
+      return const Result.ok(null);
+    }
+    return updateDisplayName(userId, displayName);
+  }
 
   @override
   Future<Result<User>> updateDisplayName(
@@ -145,6 +174,40 @@ void main() {
       );
       expect(directory.current.displayName, 'Ali');
     });
+
+    // Audit 33: two requests that both read the automatic name. Only the
+    // first choice is kept; the second is refused as immutable.
+    test(
+      'two choices at once: the first is kept, the second refused',
+      () async {
+        final directory = _Directory(_user('n72914939'))..readersToWaitFor = 2;
+
+        final List<Response> responses = await Future.wait(<Future<Response>>[
+          route.onRequest(
+            _wire(directory, body: jsonEncode({'display_name': 'Ali Hassan'})),
+          ),
+          route.onRequest(
+            _wire(directory, body: jsonEncode({'display_name': 'Omar Saleh'})),
+          ),
+        ]);
+
+        final List<Response> kept = responses
+            .where((Response r) => r.statusCode == HttpStatus.ok)
+            .toList();
+        final List<Response> refused = responses
+            .where((Response r) => r.statusCode != HttpStatus.ok)
+            .toList();
+        expect(kept, hasLength(1));
+        expect(refused, hasLength(1));
+        expect(
+          (await _decode(refused.single))['code'],
+          'identity.display_name_immutable',
+        );
+        final user =
+            (await _decode(kept.single))['user']! as Map<Object?, Object?>;
+        expect(directory.current.displayName, user['display_name']);
+      },
+    );
 
     test('rejects non-PUT methods with 405', () async {
       final directory = _Directory(_user('n72914939'));

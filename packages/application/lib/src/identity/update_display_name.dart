@@ -58,12 +58,7 @@ final class UpdateDisplayName {
     }
 
     if (!user.hasAutomaticDisplayName) {
-      return const Result.err(
-        AppError.invariant(
-          'identity.display_name_immutable',
-          'اخترت اسمك مسبقاً، ولا يمكن تغييره',
-        ),
-      );
+      return const Result.err(_immutable);
     }
     if (chosen == user.automaticDisplayName) {
       return const Result.err(
@@ -81,6 +76,26 @@ final class UpdateDisplayName {
       return Result.err(refused);
     }
 
-    return _userDirectory.updateDisplayName(principal.userId, chosen);
+    // Written only while the name read above is still the stored one
+    // (audit 33): of two requests that both read the automatic name, the
+    // second matches nothing and is refused instead of overwriting the
+    // first's choice.
+    final Result<User?> saved = await _userDirectory.replaceDisplayName(
+      principal.userId,
+      expected: user.displayName,
+      displayName: chosen,
+    );
+    return switch (saved) {
+      Ok<User?>(value: final User written) => Result.ok(written),
+      Ok<User?>() => const Result.err(_immutable),
+      Err<User?>(:final error) => Result.err(error),
+    };
   }
 }
+
+/// A name already chosen: found so on reading, or written by another
+/// request between the read and the write.
+const AppError _immutable = AppError.invariant(
+  'identity.display_name_immutable',
+  'اخترت اسمك مسبقاً، ولا يمكن تغييره',
+);

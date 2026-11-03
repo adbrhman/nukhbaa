@@ -105,6 +105,29 @@ final class CachedUserDirectory implements UserDirectory {
     return _remember(result);
   }
 
+  /// A matched write is held like any other. No row matched (another
+  /// request chose the name first, audit 33) or a failed write drops the
+  /// held user, so the next read shows the stored name.
+  @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async {
+    final Result<User?> result = await _inner.replaceDisplayName(
+      userId,
+      expected: expected,
+      displayName: displayName,
+    );
+    _onNameChanged?.call();
+    if (result case Ok<User?>(value: final User user)) {
+      _users.replace(user.id.value, user);
+    } else {
+      _users.remove(userId.value);
+    }
+    return result;
+  }
+
   /// The app reports its offset on every start (script 101): an offset this
   /// directory wrote for the same player within `offsetTtl` is not written
   /// again. Only this method writes `utc_offset_minutes`, and a failed write

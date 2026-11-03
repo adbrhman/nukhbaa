@@ -41,6 +41,13 @@ final class _CountingDirectory implements UserDirectory {
       const Result.ok(_active);
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async => const Result.ok(_active);
+
+  @override
   Future<Result<User>> updateDisplayName(
     UserId userId,
     String displayName,

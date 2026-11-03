@@ -32,6 +32,20 @@ final class PostgresUserDirectory implements UserDirectory {
               avatar_mime, avatar_updated_at
   ''';
 
+  // The one-time choice (audit 33): written only while the stored name is
+  // still the one the caller read. Of two requests that both read the
+  // automatic name, the second waits on the row lock, sees the first
+  // one's name and matches nothing instead of overwriting it.
+  static const String _replaceDisplayNameSql = '''
+    UPDATE identity.users
+    SET display_name = @displayName,
+        updated_at = now()
+    WHERE id = @id
+      AND display_name = @expected
+    RETURNING id, email, role::text, status::text, display_name,
+              avatar_mime, avatar_updated_at
+  ''';
+
   // RETURNING id, not the whole projection: the caller wants no User back,
   // but an UPDATE that matched nothing must still be distinguishable from one
   // that matched a row.
@@ -185,8 +199,8 @@ final class PostgresUserDirectory implements UserDirectory {
   }
 
   /// Persists a new, already-validated [displayName] for [userId]
-  /// (`UpdateDisplayName` use-case). Unlike [ensureUser], this ALWAYS writes
-  /// the column — it is the one path allowed to change a name after signup.
+  /// (`AdminRenameUser`). Unlike [ensureUser] and [replaceDisplayName], this
+  /// ALWAYS writes the column.
   @override
   Future<Result<User>> updateDisplayName(
     UserId userId,
@@ -206,6 +220,34 @@ final class PostgresUserDirectory implements UserDirectory {
                 ),
               )
             : _mapSingleRow(value),
+      Err<List<Map<String, dynamic>>>(:final error) => Result.err(
+        _reclassifyNameWrite(error),
+      ),
+    };
+  }
+
+  @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async {
+    final queryResult = await _connection.query(
+      _replaceDisplayNameSql,
+      parameters: {
+        'id': userId.value,
+        'expected': expected,
+        'displayName': displayName,
+      },
+    );
+    return switch (queryResult) {
+      Ok<List<Map<String, dynamic>>>(:final value) =>
+        value.isEmpty
+            ? const Result.ok(null)
+            : switch (_mapSingleRow(value)) {
+                Ok<User>(:final value) => Result.ok(value),
+                Err<User>(:final error) => Result.err(error),
+              },
       Err<List<Map<String, dynamic>>>(:final error) => Result.err(
         _reclassifyNameWrite(error),
       ),

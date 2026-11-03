@@ -31,9 +31,21 @@ abstract interface class UserDirectory {
   Future<Result<User>> ensureUser(AuthenticatedUser principal);
 
   /// Persists a new [displayName] (already validated by the caller) for
-  /// [userId] — the sole path, besides registration seeding, allowed to
-  /// change a user's display name (`UpdateDisplayName` use-case).
+  /// [userId], whatever the stored name is: an admin's rename
+  /// (`AdminRenameUser`). A player's own one-time choice goes through
+  /// [replaceDisplayName].
   Future<Result<User>> updateDisplayName(UserId userId, String displayName);
+
+  /// Persists [displayName] (already validated by the caller) for [userId]
+  /// only while the stored name is still [expected], the name the caller
+  /// read (`UpdateDisplayName`, audit 33). `Ok(null)` when it no longer
+  /// is: another request chose a name in between, and this one must not
+  /// overwrite it.
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  });
 
   /// Records [minutes] as [userId]'s current offset from UTC (already
   /// validated by the caller — `UpdateTimeZoneOffset` use-case, migration

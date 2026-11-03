@@ -25,6 +25,19 @@ final class _Directory implements UserDirectory {
   Future<Result<User?>> findUser(UserId id) async => Result.ok(current);
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async {
+    // As the conditional UPDATE: no row once the stored name moved on.
+    if (current.displayName != expected) {
+      return const Result.ok(null);
+    }
+    return updateDisplayName(userId, displayName);
+  }
+
+  @override
   Future<Result<User>> updateDisplayName(
     UserId userId,
     String displayName,
@@ -68,6 +81,26 @@ void main() {
     expect((first as Ok<User>).value.displayName, 'Ali Hassan');
     expect((second as Err<User>).error.code, 'identity.display_name_immutable');
     expect(directory.renames, ['Ali Hassan']);
+  });
+
+  // Audit 33: two requests that both read the automatic name before
+  // either wrote. The second used to overwrite the first; it is refused.
+  test('two choices at once: the first is kept, the second refused', () async {
+    final directory = _Directory(_user('n72914939'));
+    final useCase = UpdateDisplayName(userDirectory: directory);
+
+    final List<Result<User>> results = await Future.wait(<Future<Result<User>>>[
+      useCase(principal: _principal, displayName: 'Ali Hassan'),
+      useCase(principal: _principal, displayName: 'Omar Saleh'),
+    ]);
+
+    expect((results.first as Ok<User>).value.displayName, 'Ali Hassan');
+    expect(
+      (results.last as Err<User>).error.code,
+      'identity.display_name_immutable',
+    );
+    expect(directory.renames, <String>['Ali Hassan']);
+    expect(directory.current.displayName, 'Ali Hassan');
   });
 
   test('a registered name stays immutable', () async {

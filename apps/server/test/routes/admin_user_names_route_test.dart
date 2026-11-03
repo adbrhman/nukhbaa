@@ -27,6 +27,13 @@ final class _Directory implements UserDirectory {
       Result.ok(id == current.id ? current : null);
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) => throw UnimplementedError();
+
+  @override
   Future<Result<User>> updateDisplayName(
     UserId userId,
     String displayName,

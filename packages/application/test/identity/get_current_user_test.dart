@@ -20,6 +20,13 @@ final class _FakeUserDirectory implements UserDirectory {
   }
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) => throw UnimplementedError();
+
+  @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw UnimplementedError();
 

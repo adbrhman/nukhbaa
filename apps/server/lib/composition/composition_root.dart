@@ -4816,6 +4816,12 @@ final class _UnwiredUserDirectory implements UserDirectory {
       throw StateError('GetCurrentUser was not wired into this test root');
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) => throw StateError('UpdateDisplayName was not wired into this test root');
+
   @override
   Future<Result<User>> updateDisplayName(UserId userId, String displayName) =>
       throw StateError('UpdateDisplayName was not wired into this test root');

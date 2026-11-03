@@ -386,6 +386,19 @@ final class _Users implements UserDirectory {
   Future<Result<User?>> findUser(UserId id) async => Result.ok(user);
 
   @override
+  Future<Result<User?>> replaceDisplayName(
+    UserId userId, {
+    required String expected,
+    required String displayName,
+  }) async {
+    // As the conditional UPDATE: no row once the stored name moved on.
+    if (user.displayName != expected) {
+      return const Result.ok(null);
+    }
+    return updateDisplayName(userId, displayName);
+  }
+
+  @override
   Future<Result<User>> updateDisplayName(
     UserId userId,
     String displayName,
