@@ -19,14 +19,16 @@ import 'package:shared/shared.dart';
 ///
 /// Realization (Axiom 5 — a single protected truth for points): the use-case
 /// reads the unranked per-member projection via
-/// [GroupStandingsReader.groupSeasonStandings] (the ratified
-/// `leaderboard.season_standings` VIEW intersected with the group's membership),
-/// ranks the underlying [LeaderboardEntry]s with the pure domain
-/// [SeasonLeaderboard.rank] (points desc, joinedAt asc, participant-id asc;
-/// standard-competition "1224" ranks), then re-attaches each member's [UserId]
-/// to its ranked entry (the group roster is user-keyed, the projection is
-/// participant-keyed). It never computes a total or a rank of its own — those
-/// come verbatim from the ledger projection and the domain ranking.
+/// [GroupStandingsReader.groupSeasonStandings] (the monthly board's own
+/// store, `leaderboard.season_fixture_standings` over
+/// `scoring.fixture_scores`, intersected with the group's membership; audit
+/// C-01), ranks the underlying [LeaderboardEntry]s with the pure domain
+/// [SeasonLeaderboard.rank] (points, exact scorelines and right outcomes
+/// desc, then joinedAt asc, participant-id asc; standard-competition "1224"
+/// ranks), then re-attaches each member's [UserId] to its ranked entry (the
+/// group roster is user-keyed, the projection is participant-keyed). It
+/// never computes a total or a rank of its own — those come verbatim from
+/// the stored scores and the domain ranking.
 ///
 /// An empty board is legitimate (a group whose members are not participants of
 /// the season, or a group with members who have never been credited).

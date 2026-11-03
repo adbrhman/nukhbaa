@@ -3271,10 +3271,11 @@ final class CompositionRoot {
                 return Result.err(scored.error);
               }
               // Third step, the one the admin flow also runs:
-              // ScoreFixture only fills scoring.fixture_scores, and a
-              // leaderboard reads the ledger. Without this the sync
-              // recorded results that stood at zero points for
-              // everyone. PostFixtureToLedger is idempotent.
+              // ScoreFixture fills scoring.fixture_scores, which the
+              // boards sum (PostgresFixtureTotalsReader); the ledger
+              // keeps each point movement, which an admin's view of
+              // a player's points reads (PostgresPlayerPointsReader).
+              // PostFixtureToLedger is idempotent.
               final posted = await root.postFixtureToLedger(
                 principal: systemPrincipal,
                 fixtureId: fixtureId,

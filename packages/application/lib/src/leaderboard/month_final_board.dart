@@ -19,9 +19,10 @@ final class ChampionCandidate {
 /// Builds a month's final board the way the live monthly board is built
 /// (`GetSeasonFixtureLeaderboard`): the stored totals of every fixture linked
 /// to the month, ranked by `FixtureLeaderboard.rankTotals` -- prediction
-/// points, then the month's invitation points, exact scorelines, right
-/// outcomes and the earlier join (batch 129), level on all five sharing a
-/// rank. No movement arrows: the board is final.
+/// points, then exact scorelines, right outcomes and the earlier join
+/// (batch 129), level on all four sharing a rank (the invitation points
+/// went with the invitations, 2026-10-26). No movement arrows: the board
+/// is final.
 ///
 /// Never throws; returns a typed [Result].
 final class MonthFinalBoard {
