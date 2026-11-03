@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:application/application.dart';
+import 'package:meta/meta.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/scheduler/job_failure.dart';
 import 'package:server/scheduler/phased_timer.dart';
+import 'package:server/scheduler/single_flight.dart';
 import 'package:shared/shared.dart';
 
 /// First fixtures sync after boot: also covers today.
@@ -73,7 +75,22 @@ const Duration matchDetailsFirstRunDelay = Duration(minutes: 5);
 /// reminder sweep: in-process timers, never awaited, failures logged and
 /// retried on the next tick. Does nothing when the mode is `off` or no
 /// provider key is configured.
-void startProviderSyncScheduler(CompositionRoot root) {
+///
+/// Each of the four syncs runs through [singleFlight], like every other
+/// sweep, so the [drainSweeps] a SIGTERM awaits waits for a sync in
+/// progress and starts none after it (audit 13: M-28 had left these
+/// out). Their times are unchanged.
+void startProviderSyncScheduler(CompositionRoot root) =>
+    scheduleProviderSync(root);
+
+/// [startProviderSyncScheduler] with its timers made by [once] and
+/// [every], as [phasedPeriodic]'s are, so a test can fire a tick itself.
+@visibleForTesting
+void scheduleProviderSync(
+  CompositionRoot root, {
+  OneShotTimerFactory once = Timer.new,
+  PeriodicTimerFactory every = Timer.periodic,
+}) {
   final mode = root.providerSyncMode;
   final fixtures = root.syncProviderFixtures;
   final results = root.syncProviderResults;
@@ -83,12 +100,10 @@ void startProviderSyncScheduler(CompositionRoot root) {
   }
   final apply = mode == ProviderSyncMode.on;
   final tag = mode.name;
-  var fixturesRunning = false;
-  var resultsRunning = false;
 
-  Future<void> runFixtures({required bool includeToday}) async {
-    if (fixturesRunning) return;
-    fixturesRunning = true;
+  // Every sync below runs through singleFlight (audit 13): a tick that
+  // finds its sync still running is skipped, and drainSweeps waits for it.
+  final fixturesFlight = singleFlight<bool>((includeToday) async {
     try {
       final now = DateTime.now().toUtc();
       final today = riyadhDayOf(now);
@@ -117,14 +132,12 @@ void startProviderSyncScheduler(CompositionRoot root) {
         error: error,
         stackTrace: stackTrace,
       );
-    } finally {
-      fixturesRunning = false;
     }
-  }
+  });
+  Future<void> runFixtures({required bool includeToday}) =>
+      fixturesFlight(includeToday);
 
-  Future<void> runResults() async {
-    if (resultsRunning) return;
-    resultsRunning = true;
+  final resultsFlight = singleFlight<CompositionRoot>((_) async {
     try {
       final report = await results(now: DateTime.now().toUtc(), apply: apply);
       _report(tag, 'results', report);
@@ -148,16 +161,13 @@ void startProviderSyncScheduler(CompositionRoot root) {
         stackTrace: stackTrace,
         critical: true,
       );
-    } finally {
-      resultsRunning = false;
     }
-  }
+  });
+  Future<void> runResults() => resultsFlight(root);
 
   final live = root.refreshLiveScores;
-  var liveRunning = false;
-  Future<void> runLive() async {
-    if (live == null || liveRunning) return;
-    liveRunning = true;
+  final liveFlight = singleFlight<CompositionRoot>((_) async {
+    if (live == null) return;
     try {
       final result = await live(now: DateTime.now().toUtc());
       switch (result) {
@@ -182,18 +192,15 @@ void startProviderSyncScheduler(CompositionRoot root) {
         error: error,
         stackTrace: stackTrace,
       );
-    } finally {
-      liveRunning = false;
     }
-  }
+  });
+  Future<void> runLive() => liveFlight(root);
 
   // The story of each finished match (script 118). Shadow mode writes
   // nothing, so it reads nothing either.
   final details = apply ? root.syncMatchDetails : null;
-  var detailsRunning = false;
-  Future<void> runDetails() async {
-    if (details == null || detailsRunning) return;
-    detailsRunning = true;
+  final detailsFlight = singleFlight<CompositionRoot>((_) async {
+    if (details == null) return;
     try {
       final result = await details(now: DateTime.now().toUtc());
       switch (result) {
@@ -226,33 +233,44 @@ void startProviderSyncScheduler(CompositionRoot root) {
         error: error,
         stackTrace: stackTrace,
       );
-    } finally {
-      detailsRunning = false;
     }
-  }
+  });
+  Future<void> runDetails() => detailsFlight(root);
 
   _log(tag, 'provider sync started');
   if (details != null) {
-    Timer(matchDetailsFirstRunDelay, () {
+    once(matchDetailsFirstRunDelay, () {
       unawaited(runDetails());
     });
-    phasedPeriodic(matchDetailsPhase, matchDetailsTick, (_) {
-      unawaited(runDetails());
-    });
+    phasedPeriodic(
+      matchDetailsPhase,
+      matchDetailsTick,
+      (_) {
+        unawaited(runDetails());
+      },
+      once: once,
+      every: every,
+    );
   }
   if (live != null) {
-    phasedPeriodic(providerLivePhase, providerLiveTick, (_) {
-      unawaited(runLive());
-    });
+    phasedPeriodic(
+      providerLivePhase,
+      providerLiveTick,
+      (_) {
+        unawaited(runLive());
+      },
+      once: once,
+      every: every,
+    );
   }
-  Timer(providerFixturesFirstRunDelay, () {
+  once(providerFixturesFirstRunDelay, () {
     unawaited(runFixtures(includeToday: true));
   });
   // At fixed Riyadh times (script 190), each run setting the next.
   void scheduleFixtures() {
     final wait =
         untilNextFixturesRun(DateTime.now().toUtc()) + providerFixturesPhase;
-    Timer(wait, () {
+    once(wait, () {
       unawaited(runFixtures(includeToday: true));
       scheduleFixtures();
     });
@@ -262,13 +280,25 @@ void startProviderSyncScheduler(CompositionRoot root) {
     scheduleFixtures();
   } else {
     // The trial or off (script 191): every 12 hours from boot, as before.
-    phasedPeriodic(providerFixturesPhase, providerFixturesTick, (_) {
-      unawaited(runFixtures(includeToday: true));
-    });
+    phasedPeriodic(
+      providerFixturesPhase,
+      providerFixturesTick,
+      (_) {
+        unawaited(runFixtures(includeToday: true));
+      },
+      once: once,
+      every: every,
+    );
   }
-  phasedPeriodic(providerResultsPhase, providerResultsTick, (_) {
-    unawaited(runResults());
-  });
+  phasedPeriodic(
+    providerResultsPhase,
+    providerResultsTick,
+    (_) {
+      unawaited(runResults());
+    },
+    once: once,
+    every: every,
+  );
 }
 
 /// Keeps every match a run left for an admin in the error log, which tells
