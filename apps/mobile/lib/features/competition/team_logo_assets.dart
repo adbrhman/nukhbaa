@@ -437,6 +437,12 @@ final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   'فيكتوريا بلزن': 'viktoria-plzen',
   'فايكينغ': 'viking',
   'فايكينج': 'viking',
+  // Spellings the Highlightly seed stores (migration-free seed
+  // highlightly_team_map_2026_27.sql) that differ from the ucl crest seed.
+  'صباح': 'sabah',
+  'فايكنغ': 'viking',
+  'ياغيلونيا': 'jagiellonia',
+  'ريد بول سالزبورغ': 'salzburg',
   'الهلال': 'al-hilal',
   'الفيصلي': 'al-faisaly',
   'أبها': 'abha',
