@@ -45,7 +45,9 @@ abstract interface class ScoreAnnouncementRepository {
   /// Removes [fixture]'s "you called it exactly" notification from the inbox
   /// of every user who is not one of [keep] (audit L-27): a corrected result
   /// that took the exact hit away must not leave "+3" in the inbox while the
-  /// points are 0. Answers how many were removed.
+  /// points are 0. A push still queued for that user under the removed
+  /// row's id (`NotifyFixtureWinners`, audit 37) is withdrawn with it:
+  /// marked claimed, it never goes out. Answers how many were removed.
   Future<Result<int>> withdrawExactNotices({
     required FixtureRef fixture,
     required List<ParticipantId> keep,

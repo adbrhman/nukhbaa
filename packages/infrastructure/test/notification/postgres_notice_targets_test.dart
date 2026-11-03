@@ -105,6 +105,17 @@ void main() {
         contains('DELETE FROM notification.notifications'),
       );
       expect(connection.sqls.single, contains("n.kind = 'fixture_scored'"));
+      // A push still queued under a withdrawn row's id never goes out
+      // (audit 37); run against the schema by
+      // score_notice_withdraw_query_test.sql.
+      expect(
+        connection.sqls.single,
+        contains('UPDATE notification.notification_queue q'),
+      );
+      expect(
+        connection.sqls.single,
+        contains('WHERE q.id IN (SELECT id FROM gone)'),
+      );
     });
   });
 

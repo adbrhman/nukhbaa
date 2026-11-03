@@ -45,19 +45,23 @@ final class CreateNotification {
   /// idempotently. The [subject]'s kind must match [kind] (enforced by
   /// [Notification.create]); a mismatch is a caller bug surfaced as a typed
   /// validation error, never persisted.
+  ///
+  /// [id] is the row's id when the caller must know it (a push queued under
+  /// the same id, audit 37); without it one is generated.
   Future<Result<bool>> call({
     required UserId recipientId,
     required NotificationKind kind,
     required NotificationSubject subject,
+    String? id,
   }) async {
-    final idResult = NotificationId.tryParse(_idGenerator.newUuid());
+    final idResult = NotificationId.tryParse(id ?? _idGenerator.newUuid());
     if (idResult is Err<NotificationId>) {
       return Result.err(idResult.error);
     }
-    final id = (idResult as Ok<NotificationId>).value;
+    final notificationId = (idResult as Ok<NotificationId>).value;
 
     final built = Notification.create(
-      id: id,
+      id: notificationId,
       recipientId: recipientId,
       kind: kind,
       subject: subject,

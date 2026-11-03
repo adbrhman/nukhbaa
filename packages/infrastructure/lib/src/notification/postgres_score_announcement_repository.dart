@@ -35,7 +35,10 @@ ORDER BY p.id
 
   // Every "you called it" notification of the fixture whose recipient is
   // not the user of a participant still calling it exactly (audit L-27).
-  // An empty keep list is an empty array, so every such row goes.
+  // An empty keep list is an empty array, so every such row goes. A push
+  // still waiting in the queue under a withdrawn row's id (audit 37) is
+  // marked claimed in the same statement, so it never goes out: the queue
+  // refuses DELETE and lets an UPDATE only set a NULL sent_at (0064).
   static const String _withdrawSql = '''
 WITH gone AS (
   DELETE FROM notification.notifications n
@@ -47,6 +50,13 @@ WITH gone AS (
       WHERE p.id::text = ANY(string_to_array(@keep_ids, ','))
         AND p.user_id = n.recipient_id
     )
+  RETURNING n.id
+),
+held AS (
+  UPDATE notification.notification_queue q
+  SET sent_at = now()
+  WHERE q.id IN (SELECT id FROM gone)
+    AND q.sent_at IS NULL
   RETURNING 1
 )
 SELECT count(*)::int AS withdrawn FROM gone

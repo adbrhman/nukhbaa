@@ -38,7 +38,9 @@ import 'package:shared/shared.dart';
 /// **A correction withdraws (audit L-27):** before anything is announced,
 /// the notification of everyone who is no longer an exact caller of this
 /// fixture is removed from their inbox. The push already rang; the inbox no
-/// longer says "+3" while the points are 0.
+/// longer says "+3" while the points are 0. A push still queued for the end
+/// of their quiet hours carries its inbox row's id and is withdrawn with it
+/// (audit 37): it never rings.
 ///
 /// Returns the number of users pushed to, or queued to be pushed to.
 final class NotifyFixtureWinners {
@@ -126,10 +128,15 @@ final class NotifyFixtureWinners {
         continue;
       }
 
+      // One id for the inbox row and for its push if the push is queued,
+      // so a correction that withdraws the row also withdraws the push
+      // still waiting for 08:00 (audit 37).
+      final String noticeId = _idGenerator.newUuid();
       final created = await _create(
         recipientId: target.userId,
         kind: NotificationKind.fixtureScored,
         subject: NotificationSubject.fixtureScored(fixture: fixture),
+        id: noticeId,
       );
       if (created is Err<bool>) {
         continue;
@@ -154,7 +161,7 @@ final class NotifyFixtureWinners {
       if (QuietHours.covers(now, utcOffsetMinutes: target.utcOffsetMinutes)) {
         deferred.add(
           PushToQueue(
-            id: _idGenerator.newUuid(),
+            id: noticeId,
             userId: target.userId,
             title: title,
             body: body,

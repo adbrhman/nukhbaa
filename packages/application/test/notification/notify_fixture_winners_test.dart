@@ -501,6 +501,23 @@ void main() {
       expect(queue.queued.single.deliverAfter, DateTime.utc(2026, 9, 13));
     });
 
+    test('a queued push carries the id of its inbox row, so a correction '
+        'withdraws both (audit 37)', () async {
+      await useCaseAt(DateTime.utc(2026, 9, 12, 21))(
+        fixture: fixture(),
+        scores: exactHit,
+      );
+
+      final push = queue.queued.single;
+      final row = notifications.rowOf(push.id);
+      expect(
+        row?.recipientId.value,
+        uuidD,
+        reason: 'no inbox row of the winner under the push id',
+      );
+      expect(row?.kind, NotificationKind.fixtureScored);
+    });
+
     test('a winner who is awake is pushed at once, not queued', () async {
       final r = await useCaseAt(DateTime.utc(2026, 9, 12, 12))(
         fixture: fixture(),
