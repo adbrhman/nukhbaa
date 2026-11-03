@@ -8,6 +8,8 @@ on:
     workflows: ["Build Verification"]
     types: [completed]
     branches: [main]
+  # By hand: only a commit of main on which Build Verification passed
+  # (dispatch_gate below, audit 21).
   workflow_dispatch: {}
 
 permissions:
@@ -55,14 +57,73 @@ jobs:
           echo "play=$play" >> "$GITHUB_OUTPUT"
           echo "Play bundle run: $play"
 
+  # A run by hand (workflow_dispatch) used to skip Build Verification: it
+  # went on with whatever commit it was started on, from any branch, red or
+  # never checked (audit 21). It now goes on only for a commit of main on
+  # which Build Verification passed: a push run, or a run by hand that was
+  # not a Play bundle (the runs the workflow_run path takes). It fails
+  # closed: a lookup that fails stops the run. A workflow_run start passes
+  # here; its own conditions are on the job below.
+  dispatch_gate:
+    name: Build Verification passed on this commit?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      passed: ${{ steps.check.outputs.passed }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != "workflow_dispatch" ]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::run by hand from $REF: only main goes out"
+            exit 1
+          fi
+          runs=$(gh run list -R "$GITHUB_REPOSITORY" --workflow build-verification.yml \
+            --branch main --commit "$SHA" --status success --limit 20 \
+            --json databaseId,event --jq '.[] | "\(.databaseId) \(.event)"')
+          passed=false
+          while read -r id kind; do
+            [ -n "$id" ] || continue
+            case "$kind" in
+              push)
+                passed=true ;;
+              workflow_dispatch)
+                names=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts" --jq '.artifacts[].name')
+                if ! printf '%s\n' "$names" | grep -qx 'nukhba-play-bundle'; then
+                  passed=true
+                fi ;;
+            esac
+            if [ "$passed" = true ]; then
+              echo "Build Verification run $id ($kind) passed on ${SHA:0:7}"
+              break
+            fi
+          done <<< "$runs"
+          if [ "$passed" != true ]; then
+            echo "::error::Build Verification has not passed on ${SHA:0:7}: nothing goes out. Wait for it (or run it by hand), then run this workflow again."
+            exit 1
+          fi
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
   build_and_deploy:
     # A green Build Verification on main -- a push or a run by hand, the very
     # runs that publish the APK release (decided 2026-10-03) -- reaches the
     # site, so the web build and the newest release stay the same commit. A
     # pull request never does.
-    needs: play_gate
+    needs: [play_gate, dispatch_gate]
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' &&
+       needs.dispatch_gate.outputs.passed == 'true') ||
       (github.event.workflow_run.conclusion == 'success' &&
        needs.play_gate.outputs.play != 'true' &&
        (github.event.workflow_run.event == 'push' ||
@@ -72,9 +133,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # github.sha, the commit dispatch_gate checked, not github.ref: a push
+      # landing during the run would move the branch past it.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       # The check Release Server runs before it moves the server (batch 124),
       # here too (audit M-37, batch 137): a web build published while the
