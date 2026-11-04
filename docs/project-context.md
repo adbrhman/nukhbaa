@@ -2498,6 +2498,24 @@ machine, and the DB-gated integration test in CI against ephemeral Postgres with
 migrations 0001–0010 applied. Six-way review GREEN. **Admin Panel phase COMPLETE
 & RATIFIED.**
 
+**Amendment (audit 43, decided 2026-11-04): what `admin.audit_log` covers
+today.** "ALL admin verbs" above held when the phase closed (2026-07-13);
+admin actions added since were not all routed through `AuditRecorder`. The
+log covers exactly the closed `AuditAction` set
+(`packages/domain/lib/src/admin/audit_action.dart`): the sanctions, the
+audited cross-user reads, recording a result, the competition-authoring
+commands, schedule corrections, renames, the error log, hiding and showing
+fixtures, the team and league catalogs, and fixture merges (written by
+`competition.merge_fixture_copies` itself). Other admin actions keep their
+trace in their own tables, not in `admin.audit_log`:
+`gamification.h2h_admin_actions` for the head-to-head controls (0101),
+`crowned_by`/`crowned_at` on a month's champions (0077), and `set_by`/`set_at`
+on `competition.month_prizes` (0199; the latest setter only, a replaced prize
+leaves no row). An admin's correction of a running score
+(`AdminCorrectLiveScore`) is held in memory only: the result it leads to
+appears in the provider sync's run notes as "admin correction of the
+provider X-Y", without the admin's name.
+
 **Milestone (Flutter App) — COMPLETE & RATIFIED (green, 2026-07-14).**
 Full Milestone-0 rigor. The final roadmap phase (ADR 0008, phase 12/12).
 Delivered end-to-end across the ratified **Core scope** — Auth + Competition
