@@ -23,6 +23,8 @@ enum AdminSection {
   announcements(icon: Icons.campaign_rounded),
   // The support chat's inbox (script 167, migration 0187).
   support(icon: Icons.support_agent_rounded),
+  // «النشر الرياضي الذكي» (script 209, migration 0200).
+  publisher(icon: Icons.auto_awesome_rounded),
   ledger(icon: Icons.account_balance_wallet_rounded),
   analytics(icon: Icons.insights_rounded),
   audit(icon: Icons.receipt_long_rounded),

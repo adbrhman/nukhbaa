@@ -8204,7 +8204,47 @@ SHA-256) and the Dart package `image` (MIT, PNG to JPEG for Instagram).
   server `publisher_dto_mapper_test.dart`; SQL `0200_publisher_test.sql`
   (every statement of `PostgresPublisherStore`, prepared as written).
 - **Apply 0200 in the SQL Editor before pushing.** The admin panel's
-  section is the next script.
+  section came with script 209 (below).
+
+### The publisher's admin section (script 209, 2026-11-04)
+
+«النشر الرياضي الذكي», a section of the admin hub (`AdminSection.publisher`,
+under «اللاعبون والتواصل»), over the routes of script 208. Its texts are
+the first of the admin panel in the ARB files (`publisher*`, Arabic and
+English).
+
+- **api_client** (`AdminApi`): `publisherOverview`, `savePublisherSetting`,
+  `setPublisherCoverage`, `setPublisherBadge`, `actOnPublisherPost`
+  (`retry`, `cancel`, `shared`), `publisherCard` (JPEG bytes, null on 404)
+  and `publisherAccounts`; the DTOs are those of
+  `contracts/src/publisher_dto.dart`, unchanged.
+- **App** (`admin_publisher_providers.dart`,
+  `screens/sections/publisher_admin_section.dart`, `publisher_admin_tabs.dart`):
+  one read of `GET /admin/publisher` (no automatic retry) feeds six tabs
+  chosen by chips: المباريات (a switch per match of the coming three days,
+  a «المختارة» filter), الإعدادات (per platform: on, goals all/key/none,
+  the final result, the hold 1-30 minutes, the gap 0-60, the daily cap
+  0-50, each card saved by its own button; turning Facebook or Instagram on
+  while the server is `on` asks first), الحسابات (linked or not, the
+  variables a missing one needs, and a check naming the account),
+  ألوان الأندية (a club from the catalog, the clubs of the picked matches
+  first, a colour typed or tapped, the words on the disc, a preview drawn
+  with the server's ink rule), السجل (state, error, attempts, a preview of
+  the picture, copy, retry, cancel; an X post ready to share opens the
+  phone's share sheet with its words and picture, then «تمت المشاركة»;
+  an uncertain post shows a warning on its card and asks again before a
+  retry) and الأداء (reach, reactions, comments and shares summed per
+  platform from the latest posts, the most engaging first, X counted as
+  shared by hand). The server's mode stays in sight above the tabs; while
+  `NUKHBA_PUBLISHER` is off the section says what to set instead of an
+  error.
+- Tests: api_client `admin_publisher_api_test.dart`; mobile
+  `publisher_admin_section_test.dart` (the real section, `AdminApi` and
+  transport over a fake of the routes, the dark theme, Arabic; every tab
+  on a 360px phone at text x2), `admin_nav_list_test.dart` (15 entries).
+- No migration, no new dependency (`share_plus` was already there). Next:
+  `NUKHBA_PUBLISHER=dry_run` on Northflank, then the pictures and words
+  reviewed with the owner before `on`.
 
 ## 3. Version-Verification Log
 

@@ -3131,6 +3131,714 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get accountTitle;
+
+  /// The admin section of the sports publisher (script 209).
+  ///
+  /// In en, this message translates to:
+  /// **'Smart sports publisher'**
+  String get publisherSectionTitle;
+
+  /// No description provided for @publisherSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals and final results of the matches you pick: Facebook and Instagram are posted to automatically, X is prepared for you to share.'**
+  String get publisherSectionSubtitle;
+
+  /// No description provided for @publisherTabMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get publisherTabMatches;
+
+  /// No description provided for @publisherTabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get publisherTabSettings;
+
+  /// No description provided for @publisherTabAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get publisherTabAccounts;
+
+  /// No description provided for @publisherTabBadges.
+  ///
+  /// In en, this message translates to:
+  /// **'Club colours'**
+  String get publisherTabBadges;
+
+  /// No description provided for @publisherTabLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get publisherTabLog;
+
+  /// No description provided for @publisherTabPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get publisherTabPerformance;
+
+  /// No description provided for @publisherModeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not publish (NUKHBA_PUBLISHER=off).'**
+  String get publisherModeOff;
+
+  /// No description provided for @publisherModeDryRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry run: every post is prepared and kept for review, nothing is sent (NUKHBA_PUBLISHER=dry_run).'**
+  String get publisherModeDryRun;
+
+  /// No description provided for @publisherModeOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Live: the platforms switched on post for real (NUKHBA_PUBLISHER=on).'**
+  String get publisherModeOn;
+
+  /// No description provided for @publisherUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The sports publisher is off on the server. Set NUKHBA_PUBLISHER to dry_run to try it, then to on to publish.'**
+  String get publisherUnavailable;
+
+  /// No description provided for @publisherLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the sports publisher.'**
+  String get publisherLoadFailed;
+
+  /// No description provided for @publisherReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get publisherReload;
+
+  /// No description provided for @publisherPlatformFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook'**
+  String get publisherPlatformFacebook;
+
+  /// No description provided for @publisherPlatformInstagram.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram'**
+  String get publisherPlatformInstagram;
+
+  /// No description provided for @publisherPlatformX.
+  ///
+  /// In en, this message translates to:
+  /// **'X'**
+  String get publisherPlatformX;
+
+  /// No description provided for @publisherCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get publisherCancel;
+
+  /// No description provided for @publisherClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get publisherClose;
+
+  /// No description provided for @publisherMatchesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the matches you pick are posted about. A match picked after kickoff starts from its score at that moment.'**
+  String get publisherMatchesHint;
+
+  /// No description provided for @publisherMatchesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{covered} of {total} picked'**
+  String publisherMatchesCount(int covered, int total);
+
+  /// No description provided for @publisherMatchesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches in the next three days.'**
+  String get publisherMatchesEmpty;
+
+  /// No description provided for @publisherMatchesNoneCovered.
+  ///
+  /// In en, this message translates to:
+  /// **'No match picked yet.'**
+  String get publisherMatchesNoneCovered;
+
+  /// No description provided for @publisherFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get publisherFilterAll;
+
+  /// No description provided for @publisherFilterCovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Picked'**
+  String get publisherFilterCovered;
+
+  /// No description provided for @publisherFilterAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get publisherFilterAttention;
+
+  /// No description provided for @publisherCoverOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Covering {match}'**
+  String publisherCoverOn(String match);
+
+  /// No description provided for @publisherCoverOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped covering {match}'**
+  String publisherCoverOff(String match);
+
+  /// No description provided for @publisherSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Every platform stays off until you switch it on. Each card is saved by its own button.'**
+  String get publisherSettingsHint;
+
+  /// No description provided for @publisherFacebookNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted to the Facebook page by the server.'**
+  String get publisherFacebookNote;
+
+  /// No description provided for @publisherInstagramNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted by the server. A post cannot be corrected once out, so a goal waits longer for the VAR.'**
+  String get publisherInstagramNote;
+
+  /// No description provided for @publisherXNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Not posted automatically: the post (picture and words) is prepared, and you share it from the log.'**
+  String get publisherXNote;
+
+  /// No description provided for @publisherNotLinkedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'No account is linked on the server: nothing will be sent here.'**
+  String get publisherNotLinkedWarning;
+
+  /// No description provided for @publisherGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get publisherGoals;
+
+  /// No description provided for @publisherGoalsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Every goal'**
+  String get publisherGoalsAll;
+
+  /// No description provided for @publisherGoalsKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key goals only'**
+  String get publisherGoalsKey;
+
+  /// No description provided for @publisherGoalsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals'**
+  String get publisherGoalsNone;
+
+  /// No description provided for @publisherFinalResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Final result'**
+  String get publisherFinalResult;
+
+  /// No description provided for @publisherHold.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait before posting a goal'**
+  String get publisherHold;
+
+  /// No description provided for @publisherGap.
+  ///
+  /// In en, this message translates to:
+  /// **'Least time between two goal posts'**
+  String get publisherGap;
+
+  /// No description provided for @publisherDailyCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal posts a day, at most'**
+  String get publisherDailyCap;
+
+  /// No description provided for @publisherMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String publisherMinutes(int minutes);
+
+  /// No description provided for @publisherCapValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} a day'**
+  String publisherCapValue(int count);
+
+  /// No description provided for @publisherSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get publisherSave;
+
+  /// No description provided for @publisherSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{platform} settings saved'**
+  String publisherSaved(String platform);
+
+  /// No description provided for @publisherEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch {platform} on?'**
+  String publisherEnableTitle(String platform);
+
+  /// No description provided for @publisherEnableLiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is publishing for real: the goals and results of the picked matches will go out on {platform} at once.'**
+  String publisherEnableLiveBody(String platform);
+
+  /// No description provided for @publisherEnableConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch on'**
+  String get publisherEnableConfirm;
+
+  /// No description provided for @publisherAccountsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The tokens stay on the server; only whether each account is linked, and its name, show here.'**
+  String get publisherAccountsHint;
+
+  /// No description provided for @publisherLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get publisherLinked;
+
+  /// No description provided for @publisherNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not linked'**
+  String get publisherNotLinked;
+
+  /// No description provided for @publisherNeedsVars.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs on the server: {vars}'**
+  String publisherNeedsVars(String vars);
+
+  /// No description provided for @publisherXAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by hand from your phone; no account on the server.'**
+  String get publisherXAccount;
+
+  /// No description provided for @publisherTestAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Test the accounts'**
+  String get publisherTestAccounts;
+
+  /// No description provided for @publisherAccountOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Works: {name}'**
+  String publisherAccountOk(String name);
+
+  /// No description provided for @publisherAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not work: {reason}'**
+  String publisherAccountFailed(String reason);
+
+  /// No description provided for @publisherAccountsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'The server holds no token for any platform.'**
+  String get publisherAccountsNone;
+
+  /// No description provided for @publisherBadgesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No club crests: each club is a disc of its colour with its name. A club with no colour set is drawn in navy.'**
+  String get publisherBadgesHint;
+
+  /// No description provided for @publisherBadgeTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Club'**
+  String get publisherBadgeTeam;
+
+  /// No description provided for @publisherBadgeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a club'**
+  String get publisherBadgeSearch;
+
+  /// No description provided for @publisherBadgeSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Clubs of the picked matches with no colour yet:'**
+  String get publisherBadgeSuggested;
+
+  /// No description provided for @publisherBadgeNoTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'No club by that name.'**
+  String get publisherBadgeNoTeam;
+
+  /// No description provided for @publisherBadgeColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour (#RRGGBB)'**
+  String get publisherBadgeColour;
+
+  /// No description provided for @publisherBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Words on the disc (optional)'**
+  String get publisherBadgeLabel;
+
+  /// No description provided for @publisherBadgeSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the badge'**
+  String get publisherBadgeSave;
+
+  /// No description provided for @publisherBadgeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{team} badge saved'**
+  String publisherBadgeSaved(String team);
+
+  /// No description provided for @publisherBadgePickTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the club first.'**
+  String get publisherBadgePickTeam;
+
+  /// No description provided for @publisherBadgeColourInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the colour like this: #1978D1'**
+  String get publisherBadgeColourInvalid;
+
+  /// No description provided for @publisherBadgeLabelInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The words on the disc are 24 letters at most.'**
+  String get publisherBadgeLabelInvalid;
+
+  /// No description provided for @publisherBadgesSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Clubs set'**
+  String get publisherBadgesSet;
+
+  /// No description provided for @publisherBadgesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No club colour set yet.'**
+  String get publisherBadgesEmpty;
+
+  /// No description provided for @publisherBadgeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get publisherBadgeEdit;
+
+  /// No description provided for @publisherLogEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet.'**
+  String get publisherLogEmpty;
+
+  /// No description provided for @publisherKindGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get publisherKindGoal;
+
+  /// No description provided for @publisherKindFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Final result'**
+  String get publisherKindFinal;
+
+  /// No description provided for @publisherKindCorrection.
+  ///
+  /// In en, this message translates to:
+  /// **'Correction'**
+  String get publisherKindCorrection;
+
+  /// No description provided for @publisherStateQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get publisherStateQueued;
+
+  /// No description provided for @publisherStatePublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get publisherStatePublished;
+
+  /// No description provided for @publisherStateDryRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry run (not sent)'**
+  String get publisherStateDryRun;
+
+  /// No description provided for @publisherStateReadyToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to share'**
+  String get publisherStateReadyToShare;
+
+  /// No description provided for @publisherStateShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get publisherStateShared;
+
+  /// No description provided for @publisherStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get publisherStateFailed;
+
+  /// No description provided for @publisherStateUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncertain'**
+  String get publisherStateUncertain;
+
+  /// No description provided for @publisherStateSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped (daily cap)'**
+  String get publisherStateSkipped;
+
+  /// No description provided for @publisherStateCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get publisherStateCancelled;
+
+  /// No description provided for @publisherCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared {time}'**
+  String publisherCreatedAt(String time);
+
+  /// No description provided for @publisherPublishedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Out {time}'**
+  String publisherPublishedAt(String time);
+
+  /// No description provided for @publisherAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempts: {count}'**
+  String publisherAttempts(int count);
+
+  /// No description provided for @publisherError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String publisherError(String error);
+
+  /// No description provided for @publisherUncertainNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection broke after the request reached the platform: this post may already be out. Check the page before trying again.'**
+  String get publisherUncertainNote;
+
+  /// No description provided for @publisherPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the picture'**
+  String get publisherPreview;
+
+  /// No description provided for @publisherCardMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This post has no picture.'**
+  String get publisherCardMissing;
+
+  /// No description provided for @publisherCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the words'**
+  String get publisherCopyText;
+
+  /// No description provided for @publisherCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Words copied'**
+  String get publisherCopied;
+
+  /// No description provided for @publisherShareX.
+  ///
+  /// In en, this message translates to:
+  /// **'Share on X'**
+  String get publisherShareX;
+
+  /// No description provided for @publisherMarkShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get publisherMarkShared;
+
+  /// No description provided for @publisherShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open sharing. Try again.'**
+  String get publisherShareFailed;
+
+  /// No description provided for @publisherRetryPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get publisherRetryPost;
+
+  /// No description provided for @publisherCancelPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the post'**
+  String get publisherCancelPost;
+
+  /// No description provided for @publisherUncertainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'It may already be out'**
+  String get publisherUncertainTitle;
+
+  /// No description provided for @publisherUncertainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection broke after the request reached {platform}, so the post may already be there. Open the page and check first, or it may go out twice.'**
+  String publisherUncertainBody(String platform);
+
+  /// No description provided for @publisherUncertainConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked, try again'**
+  String get publisherUncertainConfirm;
+
+  /// No description provided for @publisherCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the post?'**
+  String get publisherCancelTitle;
+
+  /// No description provided for @publisherCancelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This post will never be sent.'**
+  String get publisherCancelBody;
+
+  /// No description provided for @publisherCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel it'**
+  String get publisherCancelConfirm;
+
+  /// No description provided for @publisherRetried.
+  ///
+  /// In en, this message translates to:
+  /// **'The post is back in the queue'**
+  String get publisherRetried;
+
+  /// No description provided for @publisherCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The post is cancelled'**
+  String get publisherCancelled;
+
+  /// No description provided for @publisherMarkedShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as shared'**
+  String get publisherMarkedShared;
+
+  /// No description provided for @publisherPerformanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Each post is read once, a day after it went out (Facebook and Instagram), among the latest posts of the log.'**
+  String get publisherPerformanceHint;
+
+  /// No description provided for @publisherPublishedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Published: {count}'**
+  String publisherPublishedCount(int count);
+
+  /// No description provided for @publisherMetricsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Not read yet: {count}'**
+  String publisherMetricsWaiting(int count);
+
+  /// No description provided for @publisherSharedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by hand: {count}. X numbers are not read.'**
+  String publisherSharedCount(int count);
+
+  /// No description provided for @publisherReach.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach'**
+  String get publisherReach;
+
+  /// No description provided for @publisherReactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions'**
+  String get publisherReactions;
+
+  /// No description provided for @publisherComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get publisherComments;
+
+  /// No description provided for @publisherShares.
+  ///
+  /// In en, this message translates to:
+  /// **'Shares'**
+  String get publisherShares;
+
+  /// No description provided for @publisherTopPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Most engaging'**
+  String get publisherTopPosts;
+
+  /// No description provided for @publisherPerformanceEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No post has been read yet.'**
+  String get publisherPerformanceEmpty;
 }
 
 class _AppLocalizationsDelegate

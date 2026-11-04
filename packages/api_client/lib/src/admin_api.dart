@@ -813,4 +813,87 @@ final class AdminApi {
       parse: (json) => json['changed'] == true,
     );
   }
+
+  /// `GET /admin/publisher` -- the sports publisher's panel (script 208,
+  /// migration 0200): the server's mode, each platform's setting, the
+  /// matches to pick, the latest posts, the club colours and the linked
+  /// accounts. `publisher.unavailable` while `NUKHBA_PUBLISHER` is off.
+  Future<Result<PublisherOverviewDto>> publisherOverview() {
+    return _transport.getObject<PublisherOverviewDto>(
+      '/admin/publisher',
+      parse: PublisherOverviewDto.fromJson,
+    );
+  }
+
+  /// `PUT /admin/publisher` -- saves one platform's [setting]; answers it
+  /// as stored. A value out of bounds is
+  /// `publisher.setting_out_of_bounds`.
+  Future<Result<PublisherSettingDto>> savePublisherSetting(
+    PublisherSettingDto setting,
+  ) {
+    return _transport.putObject<PublisherSettingDto>(
+      '/admin/publisher',
+      body: setting.toJson(),
+      parse: PublisherSettingDto.fromJson,
+    );
+  }
+
+  /// `PUT /admin/publisher/matches` -- covers the match [fixtureId]
+  /// ([covered] true) or stops covering it; answers whether it is covered.
+  Future<Result<bool>> setPublisherCoverage({
+    required String fixtureId,
+    required bool covered,
+  }) {
+    return _transport.putObject<bool>(
+      '/admin/publisher/matches',
+      body: <String, Object?>{'fixture_id': fixtureId, 'covered': covered},
+      parse: (json) => json['covered'] == true,
+    );
+  }
+
+  /// `PUT /admin/publisher/badges` -- the disc of club [teamId] on the
+  /// publisher's pictures: [fill] `#RRGGBB` and [label] (the club's name
+  /// when null). Answers the badge.
+  Future<Result<PublisherBadgeDto>> setPublisherBadge({
+    required String teamId,
+    required String fill,
+    String? label,
+  }) {
+    return _transport.putObject<PublisherBadgeDto>(
+      '/admin/publisher/badges',
+      body: <String, Object?>{'team_id': teamId, 'fill': fill, 'label': label},
+      parse: PublisherBadgeDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/publisher/posts/{id}` -- [action] `retry`, `cancel` or
+  /// `shared` on post [postId]; answers the action applied. A post not in
+  /// a state the action applies to is `publisher.post_state`.
+  Future<Result<String>> actOnPublisherPost(String postId, String action) {
+    return _transport.postObject<String>(
+      '/admin/publisher/posts/${Uri.encodeComponent(postId)}',
+      body: <String, Object?>{'action': action},
+      parse: (json) => (json['action'] as String?) ?? '',
+    );
+  }
+
+  /// `GET /admin/publisher/posts/{id}/card` -- the post's picture (JPEG);
+  /// `Ok(null)` when the server has none.
+  Future<Result<Uint8List?>> publisherCard(String postId) => _transport
+      .getBytes('/admin/publisher/posts/${Uri.encodeComponent(postId)}/card');
+
+  /// `GET /admin/publisher/accounts` -- whose account each token on the
+  /// server opens (Facebook, Instagram); a platform with no token is not
+  /// listed.
+  Future<Result<List<PublisherAccountDto>>> publisherAccounts() {
+    return _transport.getObject<List<PublisherAccountDto>>(
+      '/admin/publisher/accounts',
+      parse: (json) => <PublisherAccountDto>[
+        if (json['accounts'] case final List<Object?> accounts)
+          for (final Object? account in accounts)
+            if (account is Map<String, Object?>)
+              PublisherAccountDto.fromJson(account),
+      ],
+    );
+  }
 }

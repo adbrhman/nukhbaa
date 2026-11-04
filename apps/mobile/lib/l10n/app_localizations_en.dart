@@ -1781,4 +1781,418 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountTitle => 'Account';
+
+  @override
+  String get publisherSectionTitle => 'Smart sports publisher';
+
+  @override
+  String get publisherSectionSubtitle =>
+      'Goals and final results of the matches you pick: Facebook and Instagram are posted to automatically, X is prepared for you to share.';
+
+  @override
+  String get publisherTabMatches => 'Matches';
+
+  @override
+  String get publisherTabSettings => 'Settings';
+
+  @override
+  String get publisherTabAccounts => 'Accounts';
+
+  @override
+  String get publisherTabBadges => 'Club colours';
+
+  @override
+  String get publisherTabLog => 'Log';
+
+  @override
+  String get publisherTabPerformance => 'Performance';
+
+  @override
+  String get publisherModeOff =>
+      'The server does not publish (NUKHBA_PUBLISHER=off).';
+
+  @override
+  String get publisherModeDryRun =>
+      'Dry run: every post is prepared and kept for review, nothing is sent (NUKHBA_PUBLISHER=dry_run).';
+
+  @override
+  String get publisherModeOn =>
+      'Live: the platforms switched on post for real (NUKHBA_PUBLISHER=on).';
+
+  @override
+  String get publisherUnavailable =>
+      'The sports publisher is off on the server. Set NUKHBA_PUBLISHER to dry_run to try it, then to on to publish.';
+
+  @override
+  String get publisherLoadFailed => 'Couldn\'t load the sports publisher.';
+
+  @override
+  String get publisherReload => 'Try again';
+
+  @override
+  String get publisherPlatformFacebook => 'Facebook';
+
+  @override
+  String get publisherPlatformInstagram => 'Instagram';
+
+  @override
+  String get publisherPlatformX => 'X';
+
+  @override
+  String get publisherCancel => 'Cancel';
+
+  @override
+  String get publisherClose => 'Close';
+
+  @override
+  String get publisherMatchesHint =>
+      'Only the matches you pick are posted about. A match picked after kickoff starts from its score at that moment.';
+
+  @override
+  String publisherMatchesCount(int covered, int total) {
+    return '$covered of $total picked';
+  }
+
+  @override
+  String get publisherMatchesEmpty => 'No matches in the next three days.';
+
+  @override
+  String get publisherMatchesNoneCovered => 'No match picked yet.';
+
+  @override
+  String get publisherFilterAll => 'All';
+
+  @override
+  String get publisherFilterCovered => 'Picked';
+
+  @override
+  String get publisherFilterAttention => 'Needs you';
+
+  @override
+  String publisherCoverOn(String match) {
+    return 'Covering $match';
+  }
+
+  @override
+  String publisherCoverOff(String match) {
+    return 'Stopped covering $match';
+  }
+
+  @override
+  String get publisherSettingsHint =>
+      'Every platform stays off until you switch it on. Each card is saved by its own button.';
+
+  @override
+  String get publisherFacebookNote =>
+      'Posted to the Facebook page by the server.';
+
+  @override
+  String get publisherInstagramNote =>
+      'Posted by the server. A post cannot be corrected once out, so a goal waits longer for the VAR.';
+
+  @override
+  String get publisherXNote =>
+      'Not posted automatically: the post (picture and words) is prepared, and you share it from the log.';
+
+  @override
+  String get publisherNotLinkedWarning =>
+      'No account is linked on the server: nothing will be sent here.';
+
+  @override
+  String get publisherGoals => 'Goals';
+
+  @override
+  String get publisherGoalsAll => 'Every goal';
+
+  @override
+  String get publisherGoalsKey => 'Key goals only';
+
+  @override
+  String get publisherGoalsNone => 'No goals';
+
+  @override
+  String get publisherFinalResult => 'Final result';
+
+  @override
+  String get publisherHold => 'Wait before posting a goal';
+
+  @override
+  String get publisherGap => 'Least time between two goal posts';
+
+  @override
+  String get publisherDailyCap => 'Goal posts a day, at most';
+
+  @override
+  String publisherMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String publisherCapValue(int count) {
+    return '$count a day';
+  }
+
+  @override
+  String get publisherSave => 'Save';
+
+  @override
+  String publisherSaved(String platform) {
+    return '$platform settings saved';
+  }
+
+  @override
+  String publisherEnableTitle(String platform) {
+    return 'Switch $platform on?';
+  }
+
+  @override
+  String publisherEnableLiveBody(String platform) {
+    return 'The server is publishing for real: the goals and results of the picked matches will go out on $platform at once.';
+  }
+
+  @override
+  String get publisherEnableConfirm => 'Switch on';
+
+  @override
+  String get publisherAccountsHint =>
+      'The tokens stay on the server; only whether each account is linked, and its name, show here.';
+
+  @override
+  String get publisherLinked => 'Linked';
+
+  @override
+  String get publisherNotLinked => 'Not linked';
+
+  @override
+  String publisherNeedsVars(String vars) {
+    return 'Needs on the server: $vars';
+  }
+
+  @override
+  String get publisherXAccount =>
+      'Shared by hand from your phone; no account on the server.';
+
+  @override
+  String get publisherTestAccounts => 'Test the accounts';
+
+  @override
+  String publisherAccountOk(String name) {
+    return 'Works: $name';
+  }
+
+  @override
+  String publisherAccountFailed(String reason) {
+    return 'Does not work: $reason';
+  }
+
+  @override
+  String get publisherAccountsNone =>
+      'The server holds no token for any platform.';
+
+  @override
+  String get publisherBadgesHint =>
+      'No club crests: each club is a disc of its colour with its name. A club with no colour set is drawn in navy.';
+
+  @override
+  String get publisherBadgeTeam => 'Club';
+
+  @override
+  String get publisherBadgeSearch => 'Search for a club';
+
+  @override
+  String get publisherBadgeSuggested =>
+      'Clubs of the picked matches with no colour yet:';
+
+  @override
+  String get publisherBadgeNoTeam => 'No club by that name.';
+
+  @override
+  String get publisherBadgeColour => 'Colour (#RRGGBB)';
+
+  @override
+  String get publisherBadgeLabel => 'Words on the disc (optional)';
+
+  @override
+  String get publisherBadgeSave => 'Save the badge';
+
+  @override
+  String publisherBadgeSaved(String team) {
+    return '$team badge saved';
+  }
+
+  @override
+  String get publisherBadgePickTeam => 'Pick the club first.';
+
+  @override
+  String get publisherBadgeColourInvalid =>
+      'Write the colour like this: #1978D1';
+
+  @override
+  String get publisherBadgeLabelInvalid =>
+      'The words on the disc are 24 letters at most.';
+
+  @override
+  String get publisherBadgesSet => 'Clubs set';
+
+  @override
+  String get publisherBadgesEmpty => 'No club colour set yet.';
+
+  @override
+  String get publisherBadgeEdit => 'Edit';
+
+  @override
+  String get publisherLogEmpty => 'No posts yet.';
+
+  @override
+  String get publisherKindGoal => 'Goal';
+
+  @override
+  String get publisherKindFinal => 'Final result';
+
+  @override
+  String get publisherKindCorrection => 'Correction';
+
+  @override
+  String get publisherStateQueued => 'Queued';
+
+  @override
+  String get publisherStatePublished => 'Published';
+
+  @override
+  String get publisherStateDryRun => 'Dry run (not sent)';
+
+  @override
+  String get publisherStateReadyToShare => 'Ready to share';
+
+  @override
+  String get publisherStateShared => 'Shared';
+
+  @override
+  String get publisherStateFailed => 'Failed';
+
+  @override
+  String get publisherStateUncertain => 'Uncertain';
+
+  @override
+  String get publisherStateSkipped => 'Skipped (daily cap)';
+
+  @override
+  String get publisherStateCancelled => 'Cancelled';
+
+  @override
+  String publisherCreatedAt(String time) {
+    return 'Prepared $time';
+  }
+
+  @override
+  String publisherPublishedAt(String time) {
+    return 'Out $time';
+  }
+
+  @override
+  String publisherAttempts(int count) {
+    return 'Attempts: $count';
+  }
+
+  @override
+  String publisherError(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get publisherUncertainNote =>
+      'The connection broke after the request reached the platform: this post may already be out. Check the page before trying again.';
+
+  @override
+  String get publisherPreview => 'Preview the picture';
+
+  @override
+  String get publisherCardMissing => 'This post has no picture.';
+
+  @override
+  String get publisherCopyText => 'Copy the words';
+
+  @override
+  String get publisherCopied => 'Words copied';
+
+  @override
+  String get publisherShareX => 'Share on X';
+
+  @override
+  String get publisherMarkShared => 'Shared';
+
+  @override
+  String get publisherShareFailed => 'Couldn\'t open sharing. Try again.';
+
+  @override
+  String get publisherRetryPost => 'Try again';
+
+  @override
+  String get publisherCancelPost => 'Cancel the post';
+
+  @override
+  String get publisherUncertainTitle => 'It may already be out';
+
+  @override
+  String publisherUncertainBody(String platform) {
+    return 'The connection broke after the request reached $platform, so the post may already be there. Open the page and check first, or it may go out twice.';
+  }
+
+  @override
+  String get publisherUncertainConfirm => 'Checked, try again';
+
+  @override
+  String get publisherCancelTitle => 'Cancel the post?';
+
+  @override
+  String get publisherCancelBody => 'This post will never be sent.';
+
+  @override
+  String get publisherCancelConfirm => 'Cancel it';
+
+  @override
+  String get publisherRetried => 'The post is back in the queue';
+
+  @override
+  String get publisherCancelled => 'The post is cancelled';
+
+  @override
+  String get publisherMarkedShared => 'Marked as shared';
+
+  @override
+  String get publisherPerformanceHint =>
+      'Each post is read once, a day after it went out (Facebook and Instagram), among the latest posts of the log.';
+
+  @override
+  String publisherPublishedCount(int count) {
+    return 'Published: $count';
+  }
+
+  @override
+  String publisherMetricsWaiting(int count) {
+    return 'Not read yet: $count';
+  }
+
+  @override
+  String publisherSharedCount(int count) {
+    return 'Shared by hand: $count. X numbers are not read.';
+  }
+
+  @override
+  String get publisherReach => 'Reach';
+
+  @override
+  String get publisherReactions => 'Reactions';
+
+  @override
+  String get publisherComments => 'Comments';
+
+  @override
+  String get publisherShares => 'Shares';
+
+  @override
+  String get publisherTopPosts => 'Most engaging';
+
+  @override
+  String get publisherPerformanceEmpty => 'No post has been read yet.';
 }
