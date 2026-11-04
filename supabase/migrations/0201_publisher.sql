@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 0200: the sports publisher (scripts 207-208)
+-- Migration 0201: the sports publisher (scripts 207-208)
 --
 -- ADDITIVE ONLY. A new schema `publisher` with six tables and one public
 -- Storage bucket. No row of any existing table is changed or removed, and
@@ -175,13 +175,13 @@ values ('publisher-cards', 'publisher-cards', true, 2097152,
 on conflict (id) do nothing;
 
 insert into ops.applied_migrations (version)
-values ('0200_publisher')
+values ('0201_publisher')
 on conflict (version) do nothing;
 
 commit;
 
 -- Verification (read-only):
 -- select version from ops.applied_migrations
---  where version = '0200_publisher';                               -- 1 row
+--  where version = '0201_publisher';                               -- 1 row
 -- select id, public from storage.buckets where id = 'publisher-cards';
 -- select count(*) from publisher.posts;                             -- 0
