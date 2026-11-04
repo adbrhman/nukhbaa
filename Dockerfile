@@ -1,5 +1,11 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/cirruslabs/flutter:3.44.0 AS build
+# Pinned inputs (audit C/1): a tag can be re-pushed, so one commit could
+# build a different image on another day. Each FROM keeps its tag for
+# reading, but Docker pulls the @sha256 digest. To move to a new version,
+# change the tag, then copy the new digest and dart_frog_cli version from
+# the Build Verification log:
+#   gh run view <id> --log | grep -E 'FROM .*@sha256:|Activated dart_frog_cli'
+FROM ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8 AS build
 
 WORKDIR /app
 COPY . .
@@ -7,7 +13,7 @@ COPY . .
 # Resolve the whole pub workspace once from the root.
 RUN flutter pub get
 
-RUN dart pub global activate dart_frog_cli
+RUN dart pub global activate dart_frog_cli 1.2.14
 ENV PATH="$PATH:/root/.pub-cache/bin"
 
 WORKDIR /app/apps/server
@@ -41,7 +47,7 @@ RUN sed -i '/^resolution:[[:space:]]*workspace[[:space:]]*$/d' pubspec.yaml && \
 # The previous runtime was debian:bookworm-slim (glibc 2.36): the image built
 # fine but dart compile exe output dies at startup with
 # "version `GLIBC_2.38' not found". Dart does not support cross-glibc runs.
-FROM ubuntu:24.04
+FROM ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \
     rm -rf /var/lib/apt/lists/*
