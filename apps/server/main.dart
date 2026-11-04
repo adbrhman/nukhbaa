@@ -12,6 +12,7 @@ import 'package:server/scheduler/monthly_season_scheduler.dart';
 import 'package:server/scheduler/notification_queue_scheduler.dart';
 import 'package:server/scheduler/pre_match_scheduler.dart';
 import 'package:server/scheduler/provider_sync_scheduler.dart';
+import 'package:server/scheduler/publisher_scheduler.dart';
 import 'package:server/scheduler/reminder_scheduler.dart';
 import 'package:server/scheduler/rescore_scheduler.dart';
 import 'package:server/scheduler/scheduler_switch.dart';
@@ -76,6 +77,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     // Automatic fixtures/results (off unless configured; see
     // provider_sync_scheduler.dart).
     startProviderSyncScheduler(root);
+    // Posts the goals and results of the matches an admin picked
+    // (off unless NUKHBA_PUBLISHER; see publisher_scheduler.dart).
+    startPublisherScheduler(root);
   } else {
     // ignore: avoid_print
     print('schedulers: disabled by $schedulersEnvKey=off');

@@ -10,6 +10,15 @@ FROM ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476
 WORKDIR /app
 COPY . .
 
+# The sports publisher draws its pictures with resvg (script 208,
+# approved 2026-11-04): MPL-2.0, one binary, pinned by its checksum.
+RUN curl -fsSL -o /tmp/resvg.tar.gz \
+      https://github.com/linebender/resvg/releases/download/v0.45.1/resvg-linux-x86_64.tar.gz && \
+    echo "3c1d52850a78bc4ed0e9d05605b53ad21bb5313184f14bf72515d29cb98cda10  /tmp/resvg.tar.gz" \
+      | sha256sum -c - && \
+    mkdir -p /opt/resvg && tar -xzf /tmp/resvg.tar.gz -C /opt/resvg && \
+    /opt/resvg/resvg --version
+
 # Resolve the whole pub workspace once from the root.
 RUN flutter pub get
 
@@ -57,6 +66,9 @@ RUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin nukhba
 WORKDIR /app
 COPY --from=build --chown=nukhba:nukhba /app/apps/server/build/server ./server
 COPY --from=build --chown=nukhba:nukhba /app/apps/server/build/public ./public
+# The publisher's renderer and the one font its pictures use.
+COPY --from=build --chown=nukhba:nukhba /opt/resvg/resvg ./bin/resvg
+COPY --from=build --chown=nukhba:nukhba /app/apps/mobile/assets/fonts ./fonts
 USER nukhba
 
 ENV PORT=8080

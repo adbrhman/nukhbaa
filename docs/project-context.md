@@ -8129,6 +8129,83 @@ with "يجب إدخال الاسم الذي يعرفك به الآخرون في 
 - No migration. The longer list applies once the server is deployed; the
   two fields come with the next APK (the web at once).
 
+### The sports publisher (scripts 207-208, migration 0200, 2026-11-04)
+
+Asked by the owner on 2026-11-04: goals and final results of the matches an
+admin picks, posted to Facebook, Instagram and X. Decided the same day, on
+the free plans: Facebook and Instagram are posted to by the server through
+the Meta Graph API; X has no free posting tier, so its posts are prepared
+(picture and words) and an admin shares them by hand from the panel; each
+club is a disc of its colour with its name, never its crest (the crests are
+the clubs' trademarks and none is licensed to Nukhba); the owner's mark of
+2026-11-04 (traced: 99.4% of its pixels) is drawn on every picture. New
+dependencies approved: resvg 0.45.1 (MPL-2.0, in the server image, pinned by
+SHA-256) and the Dart package `image` (MIT, PNG to JPEG for Instagram).
+
+- **Domain** (`domain/src/publisher/`, script 207): `GoalWatch` reads the
+  running score as goals (`h3` is the third home goal) and withdrawn goals;
+  `GoalMoment` (opener, equaliser, go-ahead, late winner...); `ClubBadge`
+  (white or navy words by WCAG contrast); `PlatformIntensity` and `GoalGate`
+  (every confirmed goal by default; hold 3 minutes, 8 on Instagram; daily
+  caps 12, 8 and 20; every platform off until an admin turns it on);
+  `PostCopy` (an editorial post on Facebook, a caption with tags on
+  Instagram, a short update under 280 on X; several wordings by a stable
+  seed; no link anywhere).
+- **Application** (`application/src/publisher/`): `PublisherTick` runs
+  every minute: reads the corrected live board (what the players see) for
+  each covered match; a new goal is stored pending, a goal the feed takes
+  back is withdrawn (and corrected, in words only, on Facebook and X where it was posted;
+  an admin is told for Instagram); a goal that stood its hold asks
+  Highlightly for the scorer (three times, two minutes apart, then goes out
+  without him), is drawn, kept, and queued once per platform under a unique
+  key; a covered match with a recorded result gets its final posts once;
+  due posts are sent, each platform on its own. `AdminPublisher` is the
+  panel (admin only).
+- **Reliability**: all state is in `publisher.*`, so a restart loses
+  nothing. A post is queued under `dedupe_key` (unique). A claim that runs
+  out unfinished (the server stopped while sending) is marked `uncertain`,
+  never sent again by itself. Rate limits and errors Meta marks transient
+  are retried with a growing wait (5 attempts); a server error after the
+  request arrived, or a cut, is `uncertain` and told to the admins. A match
+  picked after kickoff, or picked again after a stop, takes the score as it
+  stands: earlier goals are not posted as news. No read of the board is
+  ever taken as 0-0.
+- **Quota**: football-data.org's live scores cost nothing more; the
+  scorer comes from one Highlightly `GET /matches/{id}` per question, the
+  match found once per league and day; the publisher stops with 55
+  requests left, above the reserves of the schedules, the results, the
+  match details and the league tables. Roshan, Europa League and League Cup matches have no free
+  live score: their final result is posted, their goals are not, until a
+  provider adds them to the live board.
+- **Pictures**: `SvgCardBuilder` writes a 1080x1350 SVG; resvg draws it with
+  the bundled IBM Plex Sans Arabic only (`--skip-system-fonts`); every
+  number is a left-to-right text of its own, since resvg reorders `45+2`
+  inside an Arabic run; the PNG is written again as JPEG and kept in the
+  public bucket `publisher-cards`, which Instagram fetches by URL.
+- **Server**: `NUKHBA_PUBLISHER` = `off` (default) | `dry_run` (everything
+  but the sending: posts kept as `dry_run` for review) | `on`. Facebook:
+  `NUKHBA_META_PAGE_ID` and `NUKHBA_META_PAGE_TOKEN` (a Page token with
+  `pages_manage_posts`, `pages_read_engagement`); Instagram:
+  `NUKHBA_META_IG_USER_ID` and the same token (`instagram_basic`,
+  `instagram_content_publish`); `NUKHBA_META_GRAPH_VERSION` (default
+  v23.0). The tokens stay on the server; the panel sees only the account's
+  name. Pictures need `NUKHBA_SUPABASE_SERVICE_KEY` and the resvg binary of
+  the image (`/app/bin/resvg`, `/app/fonts`).
+- **Routes** (admin only): `GET|PUT /admin/publisher`, `PUT
+  /admin/publisher/matches`, `PUT /admin/publisher/badges`, `POST
+  /admin/publisher/posts/{id}` (retry, cancel, shared), `GET
+  /admin/publisher/posts/{id}/card`, `GET /admin/publisher/accounts`.
+- **Metrics**: a day after a post went out its reactions, comments and
+  shares (Facebook) or likes, comments and reach (Instagram) are read once
+  and kept in `publisher.post_metrics`.
+- Tests: domain `test/publisher/*` (207); application
+  `publisher_tick_test.dart`, `goal_details_match_test.dart`;
+  infrastructure `svg_card_builder_test.dart`, `meta_posters_test.dart`;
+  server `publisher_dto_mapper_test.dart`; SQL `0200_publisher_test.sql`
+  (every statement of `PostgresPublisherStore`, prepared as written).
+- **Apply 0200 in the SQL Editor before pushing.** The admin panel's
+  section is the next script.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

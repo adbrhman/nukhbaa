@@ -129,7 +129,7 @@ final class PostCopy {
     GoalPostFacts facts, {
     required int seed,
   }) {
-    final headline = _headline(facts.moment);
+    final headline = PostCopy.headline(facts.moment);
     final team = facts.teamName;
     final line = scoreLine(facts.homeName, facts.step.after, facts.awayName);
     final scorer = _scorerPhrase(facts);
@@ -205,7 +205,7 @@ final class PostCopy {
     required int seed,
   }) {
     final line = scoreLine(facts.homeName, facts.score, facts.awayName);
-    final verdict = _verdict(facts);
+    final verdict = PostCopy.verdict(facts);
     final goals = facts.scorers.isEmpty
         ? null
         : 'الأهداف: ${facts.scorers.join('، ')}';
@@ -326,7 +326,8 @@ final class PostCopy {
     return cut.toString();
   }
 
-  static String _headline(GoalMoment moment) => switch (moment) {
+  /// The big words of a goal that meant [moment]: «هدف التقدم».
+  static String headline(GoalMoment moment) => switch (moment) {
     GoalMoment.opener => 'الهدف الأول',
     GoalMoment.equaliser => 'هدف التعادل',
     GoalMoment.goAhead => 'هدف التقدم',
@@ -363,7 +364,8 @@ final class PostCopy {
     return null;
   }
 
-  static String _verdict(FinalPostFacts facts) {
+  /// «فوز الهلال», «تعادل الهلال والنصر».
+  static String verdict(FinalPostFacts facts) {
     if (facts.score.homeLeads) {
       return 'فوز ${facts.homeName}';
     }
