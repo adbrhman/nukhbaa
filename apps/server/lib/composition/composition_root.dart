@@ -1564,6 +1564,8 @@ final class CompositionRoot {
       reports: _UnwiredH2hControls(),
       profiles: _UnwiredWeeklyLeagueProfileReader(),
       runRounds: _absentRunH2hRounds(),
+      runAbsence: _absentRunH2hAbsence(),
+      runCup: _absentRunH2hCup(),
       closeMonth: _absentCloseH2hMonth(),
       drawMonth: _absentDrawH2hMonth(),
       idGenerator: _unwiredIdGenerator,
@@ -3724,6 +3726,26 @@ final class CompositionRoot {
             idGenerator: idGenerator,
             controls: PostgresH2hControlStore(connection),
             turns: PostgresH2hTurnKeeper(connection),
+          ),
+          // The same switches as runH2hAbsence and runH2hCup below: the
+          // admin's manual run does what the scheduler does (audit 38).
+          runAbsence: RunH2hAbsence(
+            leagues: PostgresH2hLeagueStore(connection),
+            rounds: PostgresH2hRoundStore(connection),
+            sheets: PostgresH2hSheetReader(connection),
+            moves: PostgresH2hSeatMoveStore(connection),
+            sender: pushSender,
+            idGenerator: idGenerator,
+            relegate: env['NUKHBA_H2H_ABSENCE_RELEGATION'] != 'off',
+          ),
+          runCup: RunH2hCup(
+            cups: PostgresH2hCupStore(connection),
+            rounds: PostgresH2hRoundStore(connection),
+            leagues: PostgresH2hLeagueStore(connection),
+            sheets: PostgresH2hSheetReader(connection),
+            idGenerator: idGenerator,
+            controls: PostgresH2hControlStore(connection),
+            enabled: env['NUKHBA_H2H_CUP'] != 'off',
           ),
           closeMonth: CloseH2hMonth(
             leagues: PostgresH2hLeagueStore(connection),

@@ -20,6 +20,8 @@ import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_month_report_reader.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
+import 'package:application/src/gamification/run_h2h_absence.dart';
+import 'package:application/src/gamification/run_h2h_cup.dart';
 import 'package:application/src/gamification/run_h2h_rounds.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
@@ -106,6 +108,8 @@ final class AdminH2hControls {
     required H2hMonthReportReader reports,
     required WeeklyLeagueProfileReader profiles,
     required RunH2hRounds runRounds,
+    required RunH2hAbsence runAbsence,
+    required RunH2hCup runCup,
     required CloseH2hMonth closeMonth,
     required DrawH2hMonth drawMonth,
     required IdGenerator idGenerator,
@@ -116,6 +120,8 @@ final class AdminH2hControls {
        _reports = reports,
        _profiles = profiles,
        _runRounds = runRounds,
+       _runAbsence = runAbsence,
+       _runCup = runCup,
        _closeMonth = closeMonth,
        _drawMonth = drawMonth,
        _ids = idGenerator,
@@ -127,6 +133,8 @@ final class AdminH2hControls {
   final H2hMonthReportReader _reports;
   final WeeklyLeagueProfileReader _profiles;
   final RunH2hRounds _runRounds;
+  final RunH2hAbsence _runAbsence;
+  final RunH2hCup _runCup;
   final CloseH2hMonth _closeMonth;
   final DrawH2hMonth _drawMonth;
   final IdGenerator _ids;
@@ -456,8 +464,10 @@ final class AdminH2hControls {
   }
 
   /// Runs the league's jobs now, as the scheduler runs them every five
-  /// minutes: rounds (approve and lock), then the month closing, then the
-  /// draw. Each is idempotent. All three run; the first failure is
+  /// minutes (`h2h_league_scheduler.dart`): rounds (approve and lock), the
+  /// absence warnings and seat swaps (0189), the Elite Cup (0190), then the
+  /// month closing, then the draw (audit 38: the absence and the cup were
+  /// missing here). Each is idempotent. All five run; the first failure is
   /// answered, and only a full run is written to the log.
   Future<Result<H2hJobsRun>> runJobs({
     required AuthenticatedUser principal,
@@ -468,10 +478,18 @@ final class AdminH2hControls {
     }
     final now = _clock.nowUtc();
     final rounds = await _runRounds(now: now);
+    final absence = await _runAbsence(now: now);
+    final cup = await _runCup(now: now);
     final closed = await _closeMonth(now: now);
     final drawn = await _drawMonth(now: now);
     if (rounds is Err<H2hRoundsRun>) {
       return Result.err(rounds.error);
+    }
+    if (absence is Err<H2hAbsenceRun>) {
+      return Result.err(absence.error);
+    }
+    if (cup is Err<H2hCupRun>) {
+      return Result.err(cup.error);
     }
     if (closed is Err<int>) {
       return Result.err(closed.error);

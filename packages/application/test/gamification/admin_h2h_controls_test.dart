@@ -156,6 +156,28 @@ final class _AskingSource implements H2hDrawSource {
       const Result.ok(<UserId>[]);
 }
 
+/// The absence rules' seat moves: a month they do not hold never reaches
+/// them.
+final class _NoMoves implements H2hSeatMoveStore {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
+/// The Elite Cup's store: a month the cup does not hold never reaches it.
+final class _NoCups implements H2hCupStore {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
+/// No push is sent in these runs.
+final class _NoPushes implements PushSender {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
 /// November drawn with one first-division group of four.
 FakeH2hLeagueStore _drawnNovember() {
   final leagues = FakeH2hLeagueStore();
@@ -201,7 +223,12 @@ FakeH2hLeagueStore _drawnNovember() {
   FakeH2hLeagueStore leagues,
   _Reports reports,
 })
-_world({FakeH2hLeagueStore? leagues, FakeH2hRoundStore? rounds}) {
+_world({
+  FakeH2hLeagueStore? leagues,
+  FakeH2hRoundStore? rounds,
+  RunH2hAbsence? absence,
+  RunH2hCup? cup,
+}) {
   final controls = _Controls();
   final roundStore = rounds ?? FakeH2hRoundStore();
   final leagueStore = leagues ?? FakeH2hLeagueStore();
@@ -220,6 +247,26 @@ _world({FakeH2hLeagueStore? leagues, FakeH2hRoundStore? rounds}) {
         idGenerator: ids,
         controls: controls,
       ),
+      runAbsence:
+          absence ??
+          RunH2hAbsence(
+            leagues: leagueStore,
+            rounds: roundStore,
+            sheets: FakeH2hSheetReader(),
+            moves: _NoMoves(),
+            sender: _NoPushes(),
+            idGenerator: ids,
+          ),
+      runCup:
+          cup ??
+          RunH2hCup(
+            cups: _NoCups(),
+            rounds: roundStore,
+            leagues: leagueStore,
+            sheets: FakeH2hSheetReader(),
+            idGenerator: ids,
+            controls: controls,
+          ),
       closeMonth: CloseH2hMonth(
         leagues: leagueStore,
         rounds: roundStore,
@@ -626,6 +673,47 @@ void main() {
 
       expect((result as Ok<H2hJobsRun>).value.approved, 0);
       expect(rounds.byMonth[_november], isNull);
+    });
+
+    test(
+      'runs the absence rules after the rounds, as the scheduler does',
+      () async {
+        final world = _world(
+          absence: RunH2hAbsence(
+            leagues: FakeH2hLeagueStore()
+              ..failWith = const AppError.transient('test.absence_ran', 'ran'),
+            rounds: FakeH2hRoundStore(),
+            sheets: FakeH2hSheetReader(),
+            moves: _NoMoves(),
+            sender: _NoPushes(),
+            idGenerator: SequenceIds(),
+          ),
+        );
+
+        final result = await world.desk.runJobs(principal: admin);
+
+        // Audit 38: the manual run skipped the absence rules and the cup.
+        expect((result as Err<H2hJobsRun>).error.code, 'test.absence_ran');
+        expect(world.controls.log, isEmpty);
+      },
+    );
+
+    test('and the Elite Cup, as the scheduler does', () async {
+      final world = _world(
+        cup: RunH2hCup(
+          cups: _NoCups(),
+          rounds: FakeH2hRoundStore(),
+          leagues: FakeH2hLeagueStore()
+            ..failWith = const AppError.transient('test.cup_ran', 'ran'),
+          sheets: FakeH2hSheetReader(),
+          idGenerator: SequenceIds(),
+        ),
+      );
+
+      final result = await world.desk.runJobs(principal: admin);
+
+      expect((result as Err<H2hJobsRun>).error.code, 'test.cup_ran');
+      expect(world.controls.log, isEmpty);
     });
   });
 

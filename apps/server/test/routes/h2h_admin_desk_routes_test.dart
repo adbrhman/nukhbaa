@@ -379,6 +379,36 @@ final class _Events implements GamificationEventSink {
       const Result.ok(null);
 }
 
+/// No month for the absence rules or the cup: their rules are tested in
+/// the application package; here the route only has to run them.
+final class _NoMonth implements H2hLeagueStore {
+  @override
+  Future<Result<H2hMonthInfo?>> monthOf(DateTime monthStart) async =>
+      const Result.ok(null);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
+final class _NoMoves implements H2hSeatMoveStore {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
+final class _NoCups implements H2hCupStore {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
+final class _NoPushes implements PushSender {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
 CompositionRoot _root(_Controls controls) {
   final leagues = _Leagues();
   final rounds = _Rounds();
@@ -428,6 +458,22 @@ CompositionRoot _root(_Controls controls) {
         runRounds: RunH2hRounds(
           rounds: rounds,
           leagues: leagues,
+          idGenerator: ids,
+          controls: controls,
+        ),
+        runAbsence: RunH2hAbsence(
+          leagues: _NoMonth(),
+          rounds: rounds,
+          sheets: sheets,
+          moves: _NoMoves(),
+          sender: _NoPushes(),
+          idGenerator: ids,
+        ),
+        runCup: RunH2hCup(
+          cups: _NoCups(),
+          rounds: rounds,
+          leagues: _NoMonth(),
+          sheets: sheets,
           idGenerator: ids,
           controls: controls,
         ),
