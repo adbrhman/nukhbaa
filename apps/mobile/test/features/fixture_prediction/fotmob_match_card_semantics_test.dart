@@ -251,8 +251,12 @@ void main() {
         mine: <Object?>[_saved('f-1')],
       );
 
-      // One page for the whole day: the same name on every card is right.
-      expect(_node(tester, 'currentMonthFixtures.reveal.f-1').label, _everyone);
+      // script 214: the same name on every card read as one button repeated
+      // (Accessibility Scanner, 2026-11-05); the match is part of it now.
+      expect(
+        _node(tester, 'currentMonthFixtures.reveal.f-1').label,
+        '$_everyone ${_match('Arsenal', 'Chelsea')}',
+      );
       expect(
         _node(tester, 'currentMonthFixtures.details.f-1').label,
         '$_details ${_match('Arsenal', 'Chelsea')}',

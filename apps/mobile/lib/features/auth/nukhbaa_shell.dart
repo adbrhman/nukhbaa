@@ -474,10 +474,17 @@ class NukhbaaBottomNav extends StatelessWidget {
     final color = active ? tokens.primaryText : tokens.textSecondary;
     return Expanded(
       // A screen reader hears which tab is the current one (UI-04).
+      // script 214: one node, named "tab X" and carrying the tap itself. The
+      // bare name read the same as the screen's own title ("Matches" on the
+      // matches page) and the inner InkWell was a second clickable node
+      // (Accessibility Scanner, 2026-11-05).
       child: Semantics(
         container: true,
         button: true,
         selected: active,
+        label: 'تبويب $label',
+        onTap: () => onChanged(destination),
+        excludeSemantics: true,
         child: InkWell(
           key: navKey,
           onTap: () => onChanged(destination),

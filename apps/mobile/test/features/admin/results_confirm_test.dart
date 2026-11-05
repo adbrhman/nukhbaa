@@ -81,6 +81,31 @@ void main() {
             'home_goals': 2,
             'away_goals': 1,
           });
+        // The rest of the one-button run (script 214): score, ledger and
+        // the report's two reads, all empty here.
+        case '/fixtures/f-wait/score':
+          return okJsonObject(
+            const FixtureScoresDto(
+              fixtureId: 'f-wait',
+              scores: <ParticipantFixtureScoreDto>[],
+            ).toJson(),
+          );
+        case '/fixtures/f-wait/ledger':
+          return okJsonObject(
+            const PostFixtureToLedgerResponseDto(
+              fixtureId: 'f-wait',
+              appendedEntries: <FixturePointEntryDto>[],
+            ).toJson(),
+          );
+        case '/admin/fixtures/f-wait/scores':
+          return okJsonObject(
+            const FixtureScoresDto(
+              fixtureId: 'f-wait',
+              scores: <ParticipantFixtureScoreDto>[],
+            ).toJson(),
+          );
+        case '/admin/fixtures/f-wait/predictions':
+          return _json(<Object?>[]);
       }
       return errorEnvelope(404, 'test.unrouted', request.url.path);
     });

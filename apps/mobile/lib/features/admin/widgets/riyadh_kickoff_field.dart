@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/time/riyadh_clock.dart';
+import '../../../core/ui/accessible_date_picker.dart';
 import 'admin_ui_kit.dart';
 
 /// The kickoff button and its zone line.
@@ -50,6 +51,7 @@ class RiyadhKickoffField extends StatelessWidget {
     final DateTime today = RiyadhClock.wallOf(DateTime.now());
     final DateTime? date = await showDatePicker(
       context: context,
+      builder: accessibleDatePickerBuilder,
       initialDate: DateTime(wall.year, wall.month, wall.day),
       firstDate: DateTime(today.year - 1),
       lastDate: DateTime(today.year + 2),

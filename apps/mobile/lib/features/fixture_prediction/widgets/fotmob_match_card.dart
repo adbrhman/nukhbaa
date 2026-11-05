@@ -657,6 +657,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                             _fixture.leagueName ?? widget.item.competitionName,
                         leagueLogoUrl: _fixture.leagueLogoUrl,
                         kickoffAt: _fixture.kickoffAt,
+                        matchSpoken: matchSpoken,
                         onOpenLeaderboard: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => SeasonLeaderboardScreen(
@@ -862,8 +863,14 @@ class _CardHeader extends StatelessWidget {
     required this.competitionName,
     required this.leagueLogoUrl,
     required this.kickoffAt,
+    required this.matchSpoken,
     required this.onOpenLeaderboard,
   });
+
+  /// The match this header's ranking button belongs to, for a screen reader:
+  /// every card repeated one "view leaderboard" (script 214, Accessibility
+  /// Scanner, 2026-11-05).
+  final String matchSpoken;
 
   final String competitionId;
   final String competitionName;
@@ -949,7 +956,7 @@ class _CardHeader extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: l10n.viewLeaderboardTooltip,
+          tooltip: '${l10n.viewLeaderboardTooltip} $matchSpoken',
           // script 123: a ranking, not a link out of the app.
           // Script 162: a way to a page, not an achievement -- secondary
           // grey, so gold on the card means a point won (was gold, 133).
@@ -1425,10 +1432,14 @@ class _RevealPredictionsButton extends StatelessWidget {
   const _RevealPredictionsButton({
     required this.fixtureId,
     required this.onTap,
+    required this.matchSpoken,
     this.fill = false,
   });
 
   final String fixtureId;
+
+  /// The match, so a screen reader hears whose predictions the button opens.
+  final String matchSpoken;
   final VoidCallback onTap;
 
   /// Fills its slot, half of a finished card's row (script 119), instead
@@ -1442,6 +1453,7 @@ class _RevealPredictionsButton extends StatelessWidget {
       actionKey: Key('currentMonthFixtures.reveal.$fixtureId'),
       icon: Icons.groups_rounded,
       label: l10n.fixturePredictionsButton,
+      spokenLabel: '${l10n.fixturePredictionsButton} $matchSpoken',
       fill: fill,
       onTap: onTap,
     );
@@ -1866,6 +1878,7 @@ class _StartedBody extends StatelessWidget {
                 child: _RevealPredictionsButton(
                   fixtureId: fixtureId,
                   onTap: onOpenPredictions,
+                  matchSpoken: matchSpoken,
                   fill: true,
                 ),
               ),
@@ -1887,6 +1900,7 @@ class _StartedBody extends StatelessWidget {
             child: _RevealPredictionsButton(
               fixtureId: fixtureId,
               onTap: onOpenPredictions,
+              matchSpoken: matchSpoken,
             ),
           ),
       ],

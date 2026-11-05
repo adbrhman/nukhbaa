@@ -6,6 +6,7 @@ import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
+import '../../../core/ui/accessible_date_picker.dart';
 
 class AdminSectionHeader extends StatelessWidget {
   const AdminSectionHeader({super.key, required this.title, this.subtitle});
@@ -388,6 +389,7 @@ class AdminDateTimeField extends StatelessWidget {
     final DateTime now = DateTime.now();
     final DateTime? date = await showDatePicker(
       context: context,
+      builder: accessibleDatePickerBuilder,
       initialDate: value ?? now,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 2),

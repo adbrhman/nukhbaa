@@ -10,6 +10,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/time/riyadh_day_turnover.dart';
+import '../../core/ui/accessible_date_picker.dart';
 import '../../core/ui/app_error_state.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/app_tab_header.dart';
@@ -330,6 +331,7 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
     final (DateTime first, DateTime last) = _dayBounds();
     final DateTime? picked = await showDatePicker(
       context: context,
+      builder: accessibleDatePickerBuilder,
       initialDate: _clamp(_day, first, last),
       firstDate: first,
       lastDate: last,

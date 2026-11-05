@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -262,44 +263,54 @@ class _SourceChips extends ConsumerWidget {
             ),
             behavior: HitTestBehavior.opaque,
             onTap: () => unawaited(_openSource(ref, link)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
+            // script 214: the drawn chip is about 30 dp tall; the tap area
+            // around it is a 48 dp one (Accessibility Scanner, 2026-11-05).
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppSizes.minTouchTarget,
               ),
-              decoration: BoxDecoration(
-                color: tokens.surfaceElevated,
-                borderRadius: AppRadius.brXl,
-                border: Border.all(color: tokens.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (_isOwnHost(link.host))
-                    ClipRRect(
-                      borderRadius: AppRadius.brXs,
-                      child: Image.asset(
-                        _brandLogoAsset,
-                        width: 16,
-                        height: 16,
-                      ),
-                    )
-                  else
-                    Icon(Icons.link, size: 16, color: tokens.textSecondary),
-                  const SizedBox(width: AppSpacing.xs),
-                  Flexible(
-                    child: Text(
-                      link.host,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textDirection: TextDirection.ltr,
-                      style: TextStyle(
-                        color: tokens.textSecondary,
-                        fontSize: AppFontSize.s12,
-                      ),
-                    ),
+              child: Center(
+                widthFactor: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
-                ],
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceElevated,
+                    borderRadius: AppRadius.brXl,
+                    border: Border.all(color: tokens.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (_isOwnHost(link.host))
+                        ClipRRect(
+                          borderRadius: AppRadius.brXs,
+                          child: Image.asset(
+                            _brandLogoAsset,
+                            width: 16,
+                            height: 16,
+                          ),
+                        )
+                      else
+                        Icon(Icons.link, size: 16, color: tokens.textSecondary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          link.host,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                            color: tokens.textSecondary,
+                            fontSize: AppFontSize.s12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

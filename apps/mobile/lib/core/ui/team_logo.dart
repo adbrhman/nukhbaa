@@ -51,9 +51,25 @@ class TeamLogo extends StatelessWidget {
   /// (بطاقة مباراة مصغّرة، رأس شاشة توقع، إلخ) بدل حجم ثابت مفروض هنا.
   final double size;
 
+  /// The least contrast (WCAG) a crest's own colour may have with the card
+  /// under it in the dark theme before it gets a plate: 3:1, what an image
+  /// needs (script 214, Accessibility Scanner, 2026-11-05: a black crest on
+  /// the dark card read 1.31:1 and a navy one 1.06:1).
+  static const double minCrestContrast = 3;
+
+  /// The soft light disc behind a dark crest in the dark theme.
+  static const Color crestPlate = Color(0xFFEAF0F8);
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    final Color? brand = brandColor;
+    // A team whose colour is lost on the dark card (Juventus black, navy
+    // clubs) sits on a plate; the other crests are drawn as before.
+    final bool plated =
+        tokens.isDark &&
+        brand != null &&
+        _contrastOf(brand, tokens.surface) < minCrestContrast;
     // Downscale the decode on native only. On web, cacheWidth/cacheHeight
     // send the image through a resizing createImageBitmap path that loses
     // the alpha channel for some PNGs, which turns a transparent crest into
@@ -100,7 +116,9 @@ class TeamLogo extends StatelessWidget {
         errorBuilder: (context, error, stackTrace) => networkOrFallback,
       );
       if (tokens.isDark) {
-        return SizedBox(width: size, height: size, child: image);
+        return plated
+            ? _CrestPlate(size: size, child: image)
+            : SizedBox(width: size, height: size, child: image);
       }
       // On a white card a flag's white field had no edge (Finland showed a
       // floating cross, England a bare red one): in the light theme every
@@ -118,7 +136,7 @@ class TeamLogo extends StatelessWidget {
       );
     }
     if (url.isEmpty) return fallback;
-    return ClipOval(
+    final Widget network = ClipOval(
       child: Image.network(
         url,
         key: ValueKey<String>('teamLogo.$url'),
@@ -129,6 +147,39 @@ class TeamLogo extends StatelessWidget {
         loadingBuilder: (context, child, progress) =>
             progress == null ? child : fallback,
       ),
+    );
+    return plated ? _CrestPlate(size: size, child: network) : network;
+  }
+}
+
+/// WCAG contrast ratio of two opaque colours.
+double _contrastOf(Color a, Color b) {
+  final double la = a.computeLuminance();
+  final double lb = b.computeLuminance();
+  final double hi = la > lb ? la : lb;
+  final double lo = la > lb ? lb : la;
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/// The light disc a dark crest sits on in the dark theme.
+class _CrestPlate extends StatelessWidget {
+  const _CrestPlate({required this.size, required this.child});
+
+  final double size;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('teamLogo.plate'),
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.1),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: TeamLogo.crestPlate,
+      ),
+      child: child,
     );
   }
 }

@@ -8,6 +8,8 @@
 /// calendar page and the filtered list can never disagree.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 // intl is a transitive dependency via flutter_localizations, the same way
 // the generated l10n files import it; the "no new dependencies" rule means
@@ -79,8 +81,23 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
   /// the calendar page jumps.
   static const int _radius = 7;
 
+  /// All the chips the window draws.
+  static const int _count = _radius * 2 + 1;
+
+  /// The narrowest chip slot at normal text size: about six days on a
+  /// phone, each still a 48 px target or more (the owner asked for smaller
+  /// chips, 2026-10-15). The slot grows with the reader's text.
+  static const double _minSlot = 64;
+
   final ScrollController _controller = ScrollController();
-  final GlobalKey _selectedKey = GlobalKey();
+
+  /// The slot width and the number of slots in view at the last layout. The
+  /// strip shows whole chips only (script 214): a chip cut by the screen's
+  /// edge was a 20 dp touch target to the Accessibility Scanner on every
+  /// matches screen, so the view is a whole number of slots wide and a
+  /// swipe comes to rest on a slot.
+  double _slot = 0;
+  int _perView = 0;
 
   /// The very first centring jumps rather than animates — animating from
   /// offset 0 on the first frame reads as the strip sliding away on its
@@ -107,16 +124,26 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
     super.dispose();
   }
 
+  /// Puts the selected chip in the middle slot of the view, on a slot edge.
   void _scheduleCentre() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final BuildContext? ctx = _selectedKey.currentContext;
-      if (ctx == null || !mounted) return;
-      Scrollable.ensureVisible(
-        ctx,
-        alignment: 0.5,
-        duration: _centredOnce ? AppMotion.fast : Duration.zero,
-        curve: AppMotion.standardCurve,
-      );
+      if (!mounted || !_controller.hasClients || _slot <= 0) return;
+      final ScrollPosition position = _controller.position;
+      final double wanted = (_radius - (_perView - 1) / 2) * _slot;
+      final double target = ((wanted / _slot).round() * _slot)
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if (_centredOnce) {
+        unawaited(
+          _controller.animateTo(
+            target,
+            duration: AppMotion.fast,
+            curve: AppMotion.standardCurve,
+          ),
+        );
+      } else {
+        _controller.jumpTo(target);
+      }
       _centredOnce = true;
     });
   }
@@ -139,44 +166,108 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
     final intl.DateFormat dateFormat = intl.DateFormat('d MMMM', locale);
     final DateTime today = RiyadhDayTurnover.dayKeyOf(DateTime.now());
     final DateTime selected = fixtureDayOnly(widget.selectedDay);
+    final double textGrowth =
+        MediaQuery.textScalerOf(context).scale(AppFontSize.s13) /
+        AppFontSize.s13;
 
     return SizedBox(
       height: FixturesDateStrip.heightFor(context),
-      child: SingleChildScrollView(
-        key: const Key('currentMonthFixtures.dayStrip'),
-        controller: _controller,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: 3,
-        ),
-        child: Row(
-          children: <Widget>[
-            for (int index = 0; index < _radius * 2 + 1; index++)
-              _DayTab(
-                key: index == _radius ? _selectedKey : null,
-                weekday: weekdayFormat.format(
-                  selected.add(Duration(days: index - _radius)),
-                ),
-                date: dateFormat.format(
-                  selected.add(Duration(days: index - _radius)),
-                ),
-                badge: _relative(
-                  context,
-                  selected.add(Duration(days: index - _radius)),
-                  today,
-                ),
-                selected: index == _radius,
-                tokens: tokens,
-                onTap: () => widget.onDaySelected(
-                  selected.add(Duration(days: index - _radius)),
-                ),
-              ),
-          ],
-        ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double room = constraints.maxWidth.isFinite
+              ? constraints.maxWidth
+              : _minSlot * 6;
+          final double minSlot = _minSlot * (textGrowth < 1 ? 1 : textGrowth);
+          final int perView = (room / minSlot).floor().clamp(2, _count).toInt();
+          final double slot = room / perView;
+          _slot = slot;
+          _perView = perView;
+          return SingleChildScrollView(
+            key: const Key('currentMonthFixtures.dayStrip'),
+            controller: _controller,
+            scrollDirection: Axis.horizontal,
+            physics: _SlotSnapPhysics(slot: slot),
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: <Widget>[
+                for (int index = 0; index < _count; index++)
+                  _DayTab(
+                    width: slot,
+                    weekday: weekdayFormat.format(
+                      selected.add(Duration(days: index - _radius)),
+                    ),
+                    date: dateFormat.format(
+                      selected.add(Duration(days: index - _radius)),
+                    ),
+                    badge: _relative(
+                      context,
+                      selected.add(Duration(days: index - _radius)),
+                      today,
+                    ),
+                    selected: index == _radius,
+                    tokens: tokens,
+                    onTap: () => widget.onDaySelected(
+                      selected.add(Duration(days: index - _radius)),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+/// Scroll physics that bring the strip to rest on a whole slot, as
+/// [PageScrollPhysics] does for pages but with the slot, not the viewport,
+/// as the step: no chip is left cut by the edge of the screen.
+class _SlotSnapPhysics extends ScrollPhysics {
+  const _SlotSnapPhysics({required this.slot, super.parent});
+
+  /// The width of one chip slot.
+  final double slot;
+
+  @override
+  _SlotSnapPhysics applyTo(ScrollPhysics? ancestor) =>
+      _SlotSnapPhysics(slot: slot, parent: buildParent(ancestor));
+
+  double _targetOf(ScrollMetrics position, Tolerance tolerance, double v) {
+    final double slots = position.pixels / slot;
+    final double target = v.abs() < tolerance.velocity
+        ? slots.roundToDouble()
+        : (v > 0 ? slots.ceilToDouble() : slots.floorToDouble());
+    return (target * slot)
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    // Out of range and not headed back in: the parent puts it back.
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    final Tolerance tolerance = toleranceFor(position);
+    final double target = _targetOf(position, tolerance, velocity);
+    if (target != position.pixels) {
+      return ScrollSpringSimulation(
+        spring,
+        position.pixels,
+        target,
+        velocity,
+        tolerance: tolerance,
+      );
+    }
+    return null;
+  }
+
+  @override
+  bool get allowImplicitScrolling => false;
 }
 
 /// One day chip: an optional relative badge, the weekday and the date. The
@@ -185,27 +276,23 @@ class _FixturesDateStripState extends State<FixturesDateStrip> {
 /// days rather than as text.
 class _DayTab extends StatelessWidget {
   const _DayTab({
+    required this.width,
     required this.weekday,
     required this.date,
     required this.badge,
     required this.selected,
     required this.tokens,
     required this.onTap,
-    super.key,
   });
 
+  /// The chip's whole slot, its margin included.
+  final double width;
   final String weekday;
   final String date;
   final String? badge;
   final bool selected;
   final AppTokens tokens;
   final VoidCallback onTap;
-
-  /// The narrowest chip; a longer weekday at large text makes it wider.
-  /// 64 rather than 80, with half the gap between chips: about six days on
-  /// a phone instead of four and a half, each still a 48 px target or more
-  /// (the owner asked for smaller chips, 2026-10-15).
-  static const double _minWidth = 64;
 
   /// The relative badge's height: 15 at normal size, and room for its
   /// 10px text, line height 1.1, once the reader's text is larger.
@@ -229,7 +316,7 @@ class _DayTab extends StatelessWidget {
           borderRadius: AppRadius.brMd,
           child: AnimatedContainer(
             duration: AppMotion.fast,
-            constraints: const BoxConstraints(minWidth: _minWidth),
+            width: width - AppSpacing.xs,
             padding: const EdgeInsets.symmetric(
               vertical: 4,
               horizontal: AppSpacing.xs,

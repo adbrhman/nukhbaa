@@ -14,6 +14,7 @@ import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/time/riyadh_day_turnover.dart';
+import '../../../../core/ui/accessible_date_picker.dart';
 import '../../../../core/ui/ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../admin_providers.dart';
@@ -61,6 +62,7 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      builder: accessibleDatePickerBuilder,
       initialDate: _selectedDate ?? now,
       firstDate: DateTime(2026),
       lastDate: now,

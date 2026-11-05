@@ -324,6 +324,9 @@ class _Totals extends StatelessWidget {
         ),
         Text(
           other == null ? '—' : '$other',
+          // script 214: three identical dashes read as one; name which
+          // figure is hidden (Accessibility Scanner, 2026-11-05).
+          semanticsLabel: other == null ? '$label: مخفي' : null,
           key: Key('h2h.detail.totals.$key.theirs'),
           textAlign: TextAlign.center,
           style: value,
