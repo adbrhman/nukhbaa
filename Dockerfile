@@ -69,6 +69,8 @@ COPY --from=build --chown=nukhba:nukhba /app/apps/server/build/public ./public
 # The publisher's renderer and the one font its pictures use.
 COPY --from=build --chown=nukhba:nukhba /opt/resvg/resvg ./bin/resvg
 COPY --from=build --chown=nukhba:nukhba /app/apps/mobile/assets/fonts ./fonts
+# The clubs' crests the publisher's pictures show (the app's own files).
+COPY --from=build --chown=nukhba:nukhba /app/apps/mobile/assets/team_logos ./team_logos
 USER nukhba
 
 ENV PORT=8080

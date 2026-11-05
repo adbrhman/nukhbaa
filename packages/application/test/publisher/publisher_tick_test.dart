@@ -92,6 +92,13 @@ final class _Poster implements PlatformPoster {
       const Result.ok(PostMetrics(reactions: 7));
 }
 
+final class _Crests implements ClubCrestSource {
+  final Map<String, List<int>> files = <String, List<int>>{};
+
+  @override
+  Future<List<int>?> crestOf(String clubName) async => files[clubName];
+}
+
 final class _Details implements LiveGoalDetails {
   List<MatchEvent>? events;
   int asked = 0;
@@ -121,6 +128,7 @@ void main() {
   PublisherTick tick({
     PublisherMode mode = PublisherMode.on,
     bool askDetails = false,
+    ClubCrestSource? crests,
   }) => PublisherTick(
     store: store,
     board: board,
@@ -132,6 +140,7 @@ void main() {
     renderer: renderer,
     host: host,
     details: askDetails ? details : null,
+    crests: crests,
   );
 
   DateTime at(int minutes) => kickoff.add(Duration(minutes: minutes));
@@ -329,6 +338,19 @@ void main() {
       expect(renderer.drawn.single.kind, CardKind.finalResult);
       expect(renderer.drawn.single.verdict, 'فوز الهلال');
       expect(facebook.sent.single, contains('الهلال 2 - 1 النصر'));
+    });
+
+    test('draws the crests of the clubs that have one on file', () async {
+      final crests = _Crests()
+        ..files['الهلال'] = const <int>[0x89, 0x50, 0x4E, 0x47, 1];
+      store.coverage[fixture]!.result = const ScoreLine(2, 1);
+
+      await tick(crests: crests)(now: at(130));
+
+      final spec = renderer.drawn.single;
+      expect(spec.homeCrest, const <int>[0x89, 0x50, 0x4E, 0x47, 1]);
+      expect(spec.awayCrest, isNull);
+      expect(spec.homeBadge.label, isNotEmpty);
     });
   });
 

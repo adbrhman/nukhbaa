@@ -30,6 +30,8 @@ final class CardSpec {
     this.verdict,
     this.homeScorers = const <String>[],
     this.awayScorers = const <String>[],
+    this.homeCrest,
+    this.awayCrest,
   });
 
   /// Which picture.
@@ -73,6 +75,42 @@ final class CardSpec {
 
   /// On a final card, the away goals, as [homeScorers].
   final List<String> awayScorers;
+
+  /// The PNG of the home club's official crest, drawn in place of its
+  /// disc; null when the club has none on file.
+  final List<int>? homeCrest;
+
+  /// The PNG of the away club's official crest, as [homeCrest].
+  final List<int>? awayCrest;
+
+  /// This spec with the crests [home] and [away] (a side left null keeps
+  /// what it had).
+  CardSpec withCrests({List<int>? home, List<int>? away}) => CardSpec(
+    kind: kind,
+    league: league,
+    headline: headline,
+    homeName: homeName,
+    awayName: awayName,
+    homeBadge: homeBadge,
+    awayBadge: awayBadge,
+    score: score,
+    scoringHome: scoringHome,
+    scorer: scorer,
+    minuteLabel: minuteLabel,
+    verdict: verdict,
+    homeScorers: homeScorers,
+    awayScorers: awayScorers,
+    homeCrest: home ?? homeCrest,
+    awayCrest: away ?? awayCrest,
+  );
+}
+
+/// Where the clubs' official crests come from (the PNG files bundled with
+/// the app, which the server image carries too).
+abstract interface class ClubCrestSource {
+  /// The PNG bytes of [clubName]'s crest; null when the club has none on
+  /// file or the file cannot be read. Never throws.
+  Future<List<int>?> crestOf(String clubName);
 }
 
 /// Draws a [CardSpec] as a JPEG picture.

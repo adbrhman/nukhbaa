@@ -8246,6 +8246,41 @@ English).
   `NUKHBA_PUBLISHER=dry_run` on Northflank, then the pictures and words
   reviewed with the owner before `on`.
 
+### The publisher's crests and Instagram (script 210, 2026-11-05)
+
+Asked by the owner on 2026-11-05: Instagram posting fixed, the picture of a
+match shows the clubs with their official crests, and the Conference League
+clubs' crests fixed. The crest decision of 2026-11-04 (a coloured disc, no
+crest) is replaced by the owner's request: the crests are the PNG files the
+app already bundles under `apps/mobile/assets/team_logos/`; a club with none
+on file stays the disc of its colour.
+
+- **Instagram**: the panel said "no account linked on the server" because
+  `NUKHBA_META_IG_USER_ID` was empty. `InstagramPoster` now takes the
+  account the Facebook page is linked to (`GET /{page-id}?fields=
+  instagram_business_account{id,username}`, once, kept) when no id is set;
+  the id still wins when set. A page with no Instagram account is refused
+  with a message the Accounts tab shows (the token needs `instagram_basic`
+  and `instagram_content_publish`). A container Instagram is still fetching
+  (`IN_PROGRESS` after five looks) and a publish refused with 9007 are tried
+  again a minute later with a new container, instead of failing for good.
+- **Crests on the picture**: domain `ClubCrests.slugFor(name)` (the Arabic
+  names and spellings of the app's `team_logo_assets.dart`, English provider
+  names, accents folded) gives the crest's slug; application port
+  `ClubCrestSource` and `CardSpec.homeCrest/awayCrest`; infrastructure
+  `BundledClubCrests` reads `/app/team_logos` (the Dockerfile copies the
+  app's folder; `NUKHBA_CLUB_CRESTS` overrides) and `SvgCardBuilder` draws
+  the PNG on a white disc as a data URI. The domain test reads the app's file
+  and fails when the two tables drift apart.
+- **Conference League**: all 36 clubs of 2026-27 already have a bundled
+  crest; what failed was the English provider names (`Kauno Žalgiris`,
+  `Mjällby AIF`, `Nordsjælland`, `Sint-Truiden`, `SC Freiburg`,
+  `Brighton & Hove Albion`...), which the app's slug turned into
+  `kauno-z-algiris` and the like. Accents are folded and the aliases added
+  in the app and in the domain.
+- No migration, no new dependency. The crest PNGs are 128 px: on the
+  1080 px picture they are enlarged about 1.5 times.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

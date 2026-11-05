@@ -3341,6 +3341,7 @@ final class CompositionRoot {
         posters: publisherPosters,
         renderer: ResvgCardRenderer.fromEnv(env),
         host: publisherCards,
+        crests: BundledClubCrests.fromEnv(env),
         details: highlightlyKey.isEmpty
             ? null
             : HighlightlyLiveGoals(

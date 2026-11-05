@@ -711,9 +711,47 @@ String teamLogoLabel(String slug) => slug
     )
     .join(' ');
 
+/// Accented Latin letters the providers write (Kauno Žalgiris,
+/// Mjällby, Nordsjælland) and the ASCII letters they fold to, so a
+/// slug is plain ASCII and matches its crest file.
+const Map<String, String> _latinFoldGroups = <String, String>{
+  'àáâãäåāăą': 'a',
+  'æ': 'ae',
+  'çćč': 'c',
+  'ďđð': 'd',
+  'èéêëěęē': 'e',
+  'ğ': 'g',
+  'ìíîïıī': 'i',
+  'ľł': 'l',
+  'ñńň': 'n',
+  'òóôõöőøō': 'o',
+  'œ': 'oe',
+  'řŕ': 'r',
+  'šşś': 's',
+  'ß': 'ss',
+  'ťţ': 't',
+  'þ': 'th',
+  'ùúûüůűū': 'u',
+  'ýÿ': 'y',
+  'žźż': 'z',
+};
+
+final Map<String, String> _latinFolds = <String, String>{
+  for (final MapEntry<String, String> group in _latinFoldGroups.entries)
+    for (final String char in group.key.split('')) char: group.value,
+};
+
+String _foldLatin(String lower) {
+  final StringBuffer out = StringBuffer();
+  for (final int rune in lower.runes) {
+    final String char = String.fromCharCode(rune);
+    out.write(_latinFolds[char] ?? char);
+  }
+  return out.toString();
+}
+
 String _slugifyTeamName(String name) {
-  final String normalized = name
-      .toLowerCase()
+  final String normalized = _foldLatin(name.toLowerCase())
       .replaceAll(RegExp("['’`]"), '')
       .replaceAll(RegExp(r'\s+'), '-')
       .replaceAll(RegExp(r'[^a-z0-9-]+'), '-');
@@ -742,6 +780,45 @@ String _slugifyTeamName(String name) {
     'zalgiris': 'kauno-zalgiris',
     'fc-midtjylland': 'midtjylland',
     'fc-twente': 'twente',
+    'sc-freiburg': 'freiburg',
+    'sint-truiden': 'sint-truidense',
+    'stvv': 'sint-truidense',
+    'brighton-hove-albion': 'brighton',
+    'brighton-and-hove-albion': 'brighton',
+    'inter-club-descaldes': 'inter-escaldes',
+    'inter-club-d-escaldes': 'inter-escaldes',
+    'iberia-1999': 'iberia',
+    'mjallby-aif': 'mjallby',
+    'fc-nordsjaelland': 'nordsjaelland',
+    'kairat-almaty': 'kairat',
+    'fc-kairat': 'kairat',
+    'ajax-amsterdam': 'ajax',
+    'afc-ajax': 'ajax',
+    'as-monaco': 'monaco',
+    'atalanta-bc': 'atalanta',
+    'fk-crvena-zvezda': 'crvena-zvezda',
+    'hnk-hajduk-split': 'hajduk-split',
+    'hajduk': 'hajduk-split',
+    'fc-lugano': 'lugano',
+    'fc-thun': 'thun',
+    'getafe-cf': 'getafe',
+    'pafos-fc': 'pafos',
+    'fc-riga': 'riga',
+    'riga-fc': 'riga',
+    'fk-jablonec': 'jablonec',
+    'kaa-gent': 'gent',
+    'kups-kuopio': 'kups',
+    'aarhus-gf': 'agf',
+    'agf-aarhus': 'agf',
+    'cs-universitatea-craiova': 'u-craiova',
+    'kf-egnatia': 'egnatia',
+    'panathinaikos-fc': 'panathinaikos',
+    'fk-borac': 'borac',
+    'fk-borac-banja-luka': 'borac',
+    'zalgiris-kaunas': 'kauno-zalgiris',
+    'fk-zalgiris': 'kauno-zalgiris',
+    'lincoln-red-imps-fc': 'lincoln-red-imps',
+    'sk-brann': 'brann',
   };
   return aliases[slug] ?? slug;
 }

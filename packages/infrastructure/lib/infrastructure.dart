@@ -121,6 +121,7 @@ export 'src/prediction/cached_fixture_prediction_reads.dart';
 export 'src/prediction/cached_prediction_history.dart';
 export 'src/prediction/cached_fixture_prediction_tally_reader.dart';
 export 'src/prediction/postgres_prediction_repository.dart';
+export 'src/publisher/bundled_club_crests.dart';
 export 'src/publisher/highlightly_live_goals.dart';
 export 'src/publisher/meta_posters.dart';
 export 'src/publisher/postgres_publisher_store.dart';

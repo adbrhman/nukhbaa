@@ -98,6 +98,7 @@ export 'src/prediction/fixture_score_prediction.dart';
 export 'src/prediction/prediction.dart';
 export 'src/prediction/prediction_id.dart';
 export 'src/publisher/club_badge.dart';
+export 'src/publisher/club_crests.dart';
 export 'src/publisher/goal_moment.dart';
 export 'src/publisher/post_copy.dart';
 export 'src/publisher/publish_intensity.dart';

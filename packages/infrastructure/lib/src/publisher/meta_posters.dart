@@ -253,19 +253,26 @@ final class FacebookPagePoster implements PlatformPoster {
 /// made from the picture's public URL (JPEG only), then published.
 ///
 /// Uses the Page token (Instagram linked to the Facebook page, with
-/// `instagram_basic` and `instagram_content_publish`) and the account's id
-/// (`NUKHBA_META_IG_USER_ID`).
+/// `instagram_basic` and `instagram_content_publish`). The account is the
+/// one `NUKHBA_META_IG_USER_ID` names; without it, the one the Facebook page
+/// (`NUKHBA_META_PAGE_ID`) is linked to, asked from Meta once and kept, so
+/// the page and its token are all the server needs.
 final class InstagramPoster implements PlatformPoster {
-  /// Posts to Instagram account [igUserId] with [token].
+  /// Posts to Instagram account [igUserId], or to the account linked to
+  /// Facebook page [pageId] when no id is given, with [token].
   InstagramPoster({
-    required String igUserId,
     required String token,
     required http.Client httpClient,
+    String igUserId = '',
+    String pageId = '',
     String version = defaultGraphVersion,
     Duration timeout = const Duration(seconds: 30),
     Duration containerWait = const Duration(seconds: 3),
-  }) : _igUserId = igUserId,
+    int containerLooks = 5,
+  }) : _configuredId = igUserId.trim(),
+       _pageId = pageId.trim(),
        _containerWait = containerWait,
+       _containerLooks = containerLooks,
        _graph = _Graph(
          token: token,
          client: httpClient,
@@ -273,12 +280,56 @@ final class InstagramPoster implements PlatformPoster {
          timeout: timeout,
        );
 
-  final String _igUserId;
+  final String _configuredId;
+  final String _pageId;
   final Duration _containerWait;
+  final int _containerLooks;
   final _Graph _graph;
+
+  /// The account the page is linked to, once Meta has said.
+  String? _foundId;
+  String? _foundName;
 
   @override
   PublishPlatform get platform => PublishPlatform.instagram;
+
+  /// The account the Facebook page is linked to: null when it is linked
+  /// to none (or no page is known), an error when Meta cannot be asked.
+  Future<Result<String?>> _linkedToPage() async {
+    final known = _foundId;
+    if (known != null) {
+      return Result.ok(known);
+    }
+    if (_pageId.isEmpty) {
+      return const Result.ok(null);
+    }
+    final read = await _graph.get(_pageId, <String, String>{
+      'fields': 'instagram_business_account{id,username}',
+    });
+    if (read is Err<Map<String, Object?>>) {
+      return Result.err(read.error);
+    }
+    final account =
+        (read as Ok<Map<String, Object?>>).value['instagram_business_account'];
+    if (account is! Map<String, Object?>) {
+      return const Result.ok(null);
+    }
+    final id = account['id']?.toString();
+    if (id == null || id.isEmpty) {
+      return const Result.ok(null);
+    }
+    _foundId = id;
+    _foundName = account['username']?.toString();
+    return Result.ok(id);
+  }
+
+  /// The account posts go to: the configured one, else the page's.
+  Future<Result<String?>> _account() async {
+    if (_configuredId.isNotEmpty) {
+      return Result.ok(_configuredId);
+    }
+    return _linkedToPage();
+  }
 
   @override
   Future<PosterOutcome> post({
@@ -290,8 +341,17 @@ final class InstagramPoster implements PlatformPoster {
       // Instagram publishes no post without a picture.
       return const PosterRejected('instagram_needs_picture');
     }
+    final account = await _account();
+    if (account is Err<String?>) {
+      // Meta could not be asked: nothing was made, try again later.
+      return PosterRetry('instagram_account: ${account.error.message}');
+    }
+    final igUserId = (account as Ok<String?>).value;
+    if (igUserId == null) {
+      return const PosterRejected('instagram_not_linked');
+    }
     final (made, madeFailure) = await _graph.post(
-      '$_igUserId/media',
+      '$igUserId/media',
       <String, String>{'image_url': imageUrl.toString(), 'caption': text},
     );
     if (made == null || !made.ok) {
@@ -304,13 +364,14 @@ final class InstagramPoster implements PlatformPoster {
       return const PosterRetry('graph_no_container');
     }
     // A picture is usually ready at once; give it a few looks.
-    for (var look = 0; look < 3; look++) {
+    var code = '';
+    for (var look = 0; look < _containerLooks; look++) {
       final status = await _graph.get(container, <String, String>{
         'fields': 'status_code',
       });
-      final code = status is Ok<Map<String, Object?>>
-          ? status.value['status_code']?.toString()
-          : null;
+      code = status is Ok<Map<String, Object?>>
+          ? (status.value['status_code']?.toString() ?? '')
+          : '';
       if (code == 'FINISHED') {
         break;
       }
@@ -319,8 +380,16 @@ final class InstagramPoster implements PlatformPoster {
       }
       await Future<void>.delayed(_containerWait);
     }
+    if (code == 'IN_PROGRESS') {
+      // Instagram is still fetching the picture: publishing now fails with
+      // 9007. Nothing was published; a new container is made later.
+      return const PosterRetry(
+        'container_in_progress',
+        after: Duration(minutes: 1),
+      );
+    }
     final (published, publishFailure) = await _graph.post(
-      '$_igUserId/media_publish',
+      '$igUserId/media_publish',
       <String, String>{'creation_id': container},
     );
     if (published != null && published.ok) {
@@ -329,15 +398,38 @@ final class InstagramPoster implements PlatformPoster {
           ? const PosterUncertain('graph_no_id')
           : PosterPublished(id.toString());
     }
+    if (published != null && published.errorCode == 9007) {
+      // "The media is not ready for publishing": nothing was published.
+      return const PosterRetry(
+        'container_not_ready',
+        after: Duration(minutes: 1),
+      );
+    }
     return _Graph.failure(published, publishFailure);
   }
 
   @override
   Future<Result<String>> verify() async {
-    final read = await _graph.get(_igUserId, <String, String>{
-      'fields': 'username',
-    });
-    return read.map((body) => body['username']?.toString() ?? _igUserId);
+    if (_configuredId.isNotEmpty) {
+      final read = await _graph.get(_configuredId, <String, String>{
+        'fields': 'username',
+      });
+      return read.map((body) => body['username']?.toString() ?? _configuredId);
+    }
+    final linked = await _linkedToPage();
+    if (linked is Err<String?>) {
+      return Result.err(linked.error);
+    }
+    final id = (linked as Ok<String?>).value;
+    if (id == null) {
+      return const Result.err(
+        AppError.validation(
+          'publisher.instagram_not_linked',
+          'لا حساب إنستغرام مهني مرتبط بصفحة فيسبوك، أو أن رمز الصفحة بلا صلاحية instagram_basic',
+        ),
+      );
+    }
+    return Result.ok(_foundName ?? id);
   }
 
   @override
@@ -380,7 +472,8 @@ final class InstagramPoster implements PlatformPoster {
 }
 
 /// The posters `NUKHBA_META_*` configures: Facebook with a page id and a
-/// token, Instagram with an Instagram user id and the same token. X is
+/// token, Instagram with the same token and either an Instagram user id
+/// or, without one, the page id (the account the page is linked to). X is
 /// prepared for an admin to share and has no poster.
 Map<PublishPlatform, PlatformPoster> metaPostersFromEnv(
   Map<String, String> env,
@@ -404,9 +497,10 @@ Map<PublishPlatform, PlatformPoster> metaPostersFromEnv(
         httpClient: httpClient,
         version: graphVersion,
       ),
-    if (igUserId.isNotEmpty)
+    if (igUserId.isNotEmpty || pageId.isNotEmpty)
       PublishPlatform.instagram: InstagramPoster(
         igUserId: igUserId,
+        pageId: pageId,
         token: token,
         httpClient: httpClient,
         version: graphVersion,

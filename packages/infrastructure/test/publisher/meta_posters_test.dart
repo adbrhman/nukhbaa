@@ -303,11 +303,16 @@ void main() {
         PublishPlatform.facebook,
         PublishPlatform.instagram,
       });
-      final facebookOnly = metaPostersFromEnv(const <String, String>{
+      // Instagram's account is the one the page is linked to, so a page
+      // and its token build both.
+      final pageOnly = metaPostersFromEnv(const <String, String>{
         'NUKHBA_META_PAGE_TOKEN': 't',
         'NUKHBA_META_PAGE_ID': '123',
       }, client);
-      expect(facebookOnly.keys, <PublishPlatform>[PublishPlatform.facebook]);
+      expect(pageOnly.keys.toSet(), <PublishPlatform>{
+        PublishPlatform.facebook,
+        PublishPlatform.instagram,
+      });
     });
   });
 }

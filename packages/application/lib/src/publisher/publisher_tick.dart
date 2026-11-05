@@ -101,6 +101,7 @@ final class PublisherTick {
     PublisherCardRenderer? renderer,
     PublisherCardHost? host,
     LiveGoalDetails? details,
+    ClubCrestSource? crests,
     this.liveWindow = const Duration(hours: 3),
     this.detailsSpacing = const Duration(minutes: 2),
     this.maxDetailsTries = 3,
@@ -115,7 +116,8 @@ final class PublisherTick {
        _posters = posters,
        _renderer = renderer,
        _host = host,
-       _details = details;
+       _details = details,
+       _crests = crests;
 
   final PublisherStore _store;
   final LiveScoreBoard _board;
@@ -124,6 +126,7 @@ final class PublisherTick {
   final PublisherCardRenderer? _renderer;
   final PublisherCardHost? _host;
   final LiveGoalDetails? _details;
+  final ClubCrestSource? _crests;
 
   /// How long after kickoff a match is watched for goals.
   final Duration liveWindow;
@@ -596,11 +599,20 @@ final class PublisherTick {
             );
     }
 
+    final crests = _crests;
+    final base = spec(
+      badgeOf(fixture.homeTeamId, fixture.homeName),
+      badgeOf(fixture.awayTeamId, fixture.awayName),
+    );
+    // The official crests when the club has them on file; a club with
+    // none stays the disc of its colour.
     final rendered = await renderer.render(
-      spec(
-        badgeOf(fixture.homeTeamId, fixture.homeName),
-        badgeOf(fixture.awayTeamId, fixture.awayName),
-      ),
+      crests == null
+          ? base
+          : base.withCrests(
+              home: await crests.crestOf(fixture.homeName),
+              away: await crests.crestOf(fixture.awayName),
+            ),
     );
     if (rendered is Err<List<int>>) {
       report.notes.add('draw $path: ${rendered.error.code}');

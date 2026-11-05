@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:application/application.dart';
 import 'package:domain/domain.dart';
 
@@ -133,8 +135,8 @@ final class SvgCardBuilder {
   /// home side on the right, as an Arabic reader reads first.
   static String _teams(CardSpec spec, int y) {
     final out = StringBuffer()
-      ..write(_badge(830, y, spec.homeBadge))
-      ..write(_badge(250, y, spec.awayBadge))
+      ..write(_badge(830, y, spec.homeBadge, spec.homeCrest))
+      ..write(_badge(250, y, spec.awayBadge, spec.awayCrest))
       ..write(
         _text(830, y + 200, clip(spec.homeName, 18), 44, _white, weight: 600),
       )
@@ -151,7 +153,25 @@ final class SvgCardBuilder {
     return out.toString();
   }
 
-  static String _badge(int cx, int cy, ClubBadge badge) {
+  /// The club's official crest (PNG bytes) on a white disc: the crests are
+  /// drawn for a light ground, and a dark one would vanish on the navy.
+  /// The picture is embedded as a data URI, so resvg reads no file.
+  static String _crestDisc(int cx, int cy, List<int> png) {
+    const box = 190;
+    final left = cx - box ~/ 2;
+    final top = cy - box ~/ 2;
+    return '<circle cx="$cx" cy="$cy" r="132" fill="$_white" '
+        'stroke="$_sky" stroke-opacity="0.9" stroke-width="8"/>'
+        '<image xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'x="$left" y="$top" width="$box" height="$box" '
+        'preserveAspectRatio="xMidYMid meet" '
+        'xlink:href="data:image/png;base64,${base64Encode(png)}"/>';
+  }
+
+  static String _badge(int cx, int cy, ClubBadge badge, [List<int>? crest]) {
+    if (crest != null && crest.isNotEmpty) {
+      return _crestDisc(cx, cy, crest);
+    }
     final label = clip(badge.label, 14);
     final size = badgeFontSize(label);
     final words = _text(cx, cy + (size * 0.36).round(), label, size, badge.ink);
