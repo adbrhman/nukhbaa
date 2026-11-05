@@ -194,6 +194,25 @@ void main() {
     expect(list.last.detail, 'انتهى الرمز');
   });
 
+  test('the Instagram check is a POST that posts nothing', () async {
+    final ctx = buildTransport(
+      (_) async => okJson(const {
+        'platform': 'instagram',
+        'ok': false,
+        'detail': 'صلاحية النشر مرفوضة',
+      }),
+    );
+
+    final result = await AdminApi(ctx.transport).probePublisherInstagram();
+
+    expect(ctx.captured.single.method, 'POST');
+    expect(ctx.captured.single.url.path, '/admin/publisher/accounts/probe');
+    final PublisherAccountDto check = (result as Ok<PublisherAccountDto>).value;
+    expect(check.platform, 'instagram');
+    expect(check.ok, isFalse);
+    expect(check.detail, 'صلاحية النشر مرفوضة');
+  });
+
   test('a refusal keeps the server code and its Arabic message', () async {
     final ctx = buildTransport(
       (_) async => errorEnvelope(

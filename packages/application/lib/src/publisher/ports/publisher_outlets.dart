@@ -201,6 +201,14 @@ abstract interface class PlatformPoster {
   Future<Result<PostMetrics?>> metrics(String externalId);
 }
 
+/// A poster that can be asked, without publishing anything, whether a post
+/// with the picture at an address would be accepted (script 211).
+abstract interface class PublishProbe {
+  /// A line saying what was checked, or the reason a post would fail.
+  /// Posts nothing: nothing reaches the platform's audience.
+  Future<Result<String>> probe(Uri imageUrl);
+}
+
 /// The events of a match in play, from a provider that names the scorers.
 abstract interface class LiveGoalDetails {
   /// The events so far of [fixture]; null when the provider has no match

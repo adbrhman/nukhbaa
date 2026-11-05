@@ -8281,6 +8281,37 @@ on file stays the disc of its colour.
 - No migration, no new dependency. The crest PNGs are 128 px: on the
   1080 px picture they are enlarged about 1.5 times.
 
+### The publisher's Instagram check (script 211, 2026-11-05)
+
+Asked by the owner on 2026-11-05: how to be sure Instagram posting works.
+Decided the same day: the match publisher is for matches only (no free posts
+from the panel), and Facebook and Instagram post the final result only (each
+platform's goals set to none in the panel; no code); X's card is a separate
+batch. The Accounts tab's check only read the linked account's name: it did
+not prove the permission to publish nor that Instagram can fetch our picture.
+
+- **Port** `PublishProbe` (`publisher_outlets.dart`): a poster that can be
+  asked, without publishing, whether a post would be accepted;
+  `InstagramPoster` implements it (`probe`): reads the publishing quota
+  (`GET /{ig-user}/content_publishing_limit`, which refuses a token without
+  `instagram_content_publish`), makes a container from the picture's URL and
+  waits for `FINISHED`; never calls `media_publish`, so nothing reaches the
+  audience and the container expires by itself.
+- **Use-case** `AdminPublisher.probeInstagram` (admin only): draws a test
+  card with the same renderer, keeps it at `probe/instagram_check.jpg` in the
+  public bucket, and hands its URL to the poster. The outer result is the
+  caller's right, the inner one the check's answer. `AdminPublisher` takes
+  the renderer (the composition root passes the tick's).
+- **Route** `POST /admin/publisher/accounts/probe` answers one
+  `PublisherAccountDto` for `instagram` (`ok` false carries the reason);
+  `AdminApi.probePublisherInstagram`; a button «فحص النشر في إنستغرام (دون
+  نشر)» in the Accounts tab, shown when Instagram is linked.
+- Needs no new variable: the page token, the page id, the resvg binary and
+  the Supabase service key already used by the publisher. Works in
+  `dry_run` too. No migration, no new dependency.
+- Tests: `instagram_poster_test.dart` (probe), `admin_publisher_probe_test.dart`
+  (new), `admin_publisher_api_test.dart`, `publisher_admin_section_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

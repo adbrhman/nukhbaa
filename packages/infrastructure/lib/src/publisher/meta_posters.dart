@@ -257,7 +257,7 @@ final class FacebookPagePoster implements PlatformPoster {
 /// one `NUKHBA_META_IG_USER_ID` names; without it, the one the Facebook page
 /// (`NUKHBA_META_PAGE_ID`) is linked to, asked from Meta once and kept, so
 /// the page and its token are all the server needs.
-final class InstagramPoster implements PlatformPoster {
+final class InstagramPoster implements PlatformPoster, PublishProbe {
   /// Posts to Instagram account [igUserId], or to the account linked to
   /// Facebook page [pageId] when no id is given, with [token].
   InstagramPoster({
@@ -406,6 +406,123 @@ final class InstagramPoster implements PlatformPoster {
       );
     }
     return _Graph.failure(published, publishFailure);
+  }
+
+  /// Checks, without publishing, that this account may post and that
+  /// Instagram can fetch [imageUrl]: asks the publishing quota (it refuses
+  /// an account whose token lacks `instagram_content_publish`), makes a
+  /// container from the picture and waits for Instagram to finish it. The
+  /// container is never published and expires by itself.
+  @override
+  Future<Result<String>> probe(Uri imageUrl) async {
+    final account = await _account();
+    if (account is Err<String?>) {
+      return Result.err(account.error);
+    }
+    final igUserId = (account as Ok<String?>).value;
+    if (igUserId == null) {
+      return const Result.err(
+        AppError.validation(
+          'publisher.instagram_not_linked',
+          'لا حساب إنستغرام مهني مرتبط بصفحة فيسبوك، أو أن رمز الصفحة بلا صلاحية instagram_basic',
+        ),
+      );
+    }
+    final quota = await _graph.get(
+      '$igUserId/content_publishing_limit',
+      <String, String>{'fields': 'quota_usage,config'},
+    );
+    if (quota is Err<Map<String, Object?>>) {
+      return Result.err(
+        AppError.validation(
+          'publisher.instagram_no_publish',
+          'صلاحية النشر مرفوضة: ${quota.error.message}',
+        ),
+      );
+    }
+    final used = _quotaLine((quota as Ok<Map<String, Object?>>).value);
+    final (made, madeFailure) = await _graph
+        .post('$igUserId/media', <String, String>{
+          'image_url': imageUrl.toString(),
+          'caption': 'Nukhba publishing check (never published)',
+        });
+    if (made == null || !made.ok) {
+      final why = made == null
+          ? (madeFailure == _NoAnswer.notSent
+                ? 'تعذّر الاتصال بـ Meta'
+                : 'انقطع الاتصال بـ Meta')
+          : made.message;
+      return Result.err(
+        AppError.validation(
+          'publisher.instagram_container',
+          'رفض إنستغرام طلب الصورة: $why',
+        ),
+      );
+    }
+    final container = made.body['id']?.toString();
+    if (container == null) {
+      return const Result.err(
+        AppError.validation(
+          'publisher.instagram_container',
+          'لم يُرجع إنستغرام رقم الحاوية.',
+        ),
+      );
+    }
+    var code = '';
+    for (var look = 0; look < _containerLooks; look++) {
+      final status = await _graph.get(container, <String, String>{
+        'fields': 'status_code,status',
+      });
+      code = status is Ok<Map<String, Object?>>
+          ? (status.value['status_code']?.toString() ?? '')
+          : '';
+      if (code == 'FINISHED') {
+        break;
+      }
+      if (code == 'ERROR' || code == 'EXPIRED') {
+        final detail = status is Ok<Map<String, Object?>>
+            ? (status.value['status']?.toString() ?? '')
+            : '';
+        return Result.err(
+          AppError.validation(
+            'publisher.instagram_picture',
+            'رفض إنستغرام الصورة ($code) $detail'.trim(),
+          ),
+        );
+      }
+      await Future<void>.delayed(_containerWait);
+    }
+    if (code != 'FINISHED') {
+      return Result.err(
+        AppError.validation(
+          'publisher.instagram_picture',
+          'لم يُكمل إنستغرام جلب الصورة في الوقت المحدد ($code).',
+        ),
+      );
+    }
+    final usage = used.isEmpty ? '' : ' (الحصة $used)';
+    return Result.ok(
+      'الصلاحية سليمة$usage وجلب إنستغرام الصورة. لم يُنشر شيء.',
+    );
+  }
+
+  /// `used/total` from the publishing-limit answer; empty when it has none.
+  static String _quotaLine(Map<String, Object?> body) {
+    final data = body['data'];
+    if (data is List<Object?> && data.isNotEmpty) {
+      final first = data.first;
+      if (first is Map<String, Object?>) {
+        final used = first['quota_usage'];
+        final config = first['config'];
+        final total = config is Map<String, Object?>
+            ? config['quota_total']
+            : null;
+        if (used is int && total is int) {
+          return '$used/$total';
+        }
+      }
+    }
+    return '';
   }
 
   @override

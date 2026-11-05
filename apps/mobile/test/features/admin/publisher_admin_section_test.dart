@@ -263,6 +263,13 @@ final class _FakePublisher {
         });
       return _json(<String, Object?>{...body, 'team_name': ''});
     }
+    if (path == '/admin/publisher/accounts/probe') {
+      return _json(<String, Object?>{
+        'platform': 'instagram',
+        'ok': true,
+        'detail': 'الحصة 3/100',
+      });
+    }
     if (path == '/admin/publisher/accounts') {
       return _json(<String, Object?>{
         'accounts': <Object?>[
@@ -505,6 +512,25 @@ void main() {
     expect(
       _text(tester, const Key('admin.publisher.account.facebook.check')),
       'يعمل: صفحة نُخبة',
+    );
+  });
+
+  testWidgets('accounts: the Instagram check posts nothing and shows why', (
+    tester,
+  ) async {
+    final _FakePublisher server = _FakePublisher()
+      ..linked = <String>['facebook', 'instagram'];
+    await _pump(tester, server, tab: PublisherTab.accounts);
+
+    await _tap(tester, const Key('admin.publisher.accounts.probe'));
+
+    expect(
+      server.sent('POST', '/admin/publisher/accounts/probe'),
+      hasLength(1),
+    );
+    expect(
+      _text(tester, const Key('admin.publisher.account.instagram.probe')),
+      'النشر جاهز: الحصة 3/100',
     );
   });
 

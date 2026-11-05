@@ -1990,6 +1990,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server holds no token for any platform.';
 
   @override
+  String get publisherProbeInstagram =>
+      'Check Instagram posting (nothing is posted)';
+
+  @override
+  String get publisherProbeHint =>
+      'Draws a test picture and has Instagram fetch and prepare it, without posting anything.';
+
+  @override
+  String publisherProbeOk(String detail) {
+    return 'Posting is ready: $detail';
+  }
+
+  @override
+  String publisherProbeFailed(String reason) {
+    return 'Posting would fail: $reason';
+  }
+
+  @override
   String get publisherBadgesHint =>
       'No club crests: each club is a disc of its colour with its name. A club with no colour set is drawn in navy.';
 

@@ -3334,12 +3334,13 @@ final class CompositionRoot {
       final publisherStore = PostgresPublisherStore(connection);
       final publisherPosters = metaPostersFromEnv(env, publisherHttp);
       final publisherCards = SupabaseCardHost.fromEnv(env, publisherHttp);
+      final publisherRenderer = ResvgCardRenderer.fromEnv(env);
       publisherTick = PublisherTick(
         store: publisherStore,
         board: liveScoreBoard,
         mode: publisherMode,
         posters: publisherPosters,
-        renderer: ResvgCardRenderer.fromEnv(env),
+        renderer: publisherRenderer,
         host: publisherCards,
         crests: BundledClubCrests.fromEnv(env),
         details: highlightlyKey.isEmpty
@@ -3359,6 +3360,7 @@ final class CompositionRoot {
         posters: publisherPosters,
         clock: clock,
         host: publisherCards,
+        renderer: publisherRenderer,
       );
     }
 

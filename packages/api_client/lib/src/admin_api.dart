@@ -896,4 +896,15 @@ final class AdminApi {
       ],
     );
   }
+
+  /// `POST /admin/publisher/accounts/probe` -- asks Instagram, without
+  /// publishing anything, whether a post would go through (its permission,
+  /// and that it can fetch the picture); `ok` false carries the reason.
+  Future<Result<PublisherAccountDto>> probePublisherInstagram() {
+    return _transport.postObject<PublisherAccountDto>(
+      '/admin/publisher/accounts/probe',
+      body: const <String, Object?>{},
+      parse: PublisherAccountDto.fromJson,
+    );
+  }
 }

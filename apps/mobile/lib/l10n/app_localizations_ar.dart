@@ -1994,6 +1994,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get publisherAccountsNone => 'لا يحمل الخادم رمزاً لأي منصة.';
 
   @override
+  String get publisherProbeInstagram => 'فحص النشر في إنستغرام (دون نشر)';
+
+  @override
+  String get publisherProbeHint =>
+      'يرسم صورة اختبار ويطلب من إنستغرام جلبها وتجهيزها دون أن ينشر شيئاً.';
+
+  @override
+  String publisherProbeOk(String detail) {
+    return 'النشر جاهز: $detail';
+  }
+
+  @override
+  String publisherProbeFailed(String reason) {
+    return 'النشر لن ينجح: $reason';
+  }
+
+  @override
   String get publisherBadgesHint =>
       'لا شعارات أندية: كل نادٍ شارة دائرية بلونه واسمه. النادي الذي لم يُضبط لونه يُرسم بالكحلي.';
 

@@ -3474,6 +3474,30 @@ abstract class AppLocalizations {
   /// **'The server holds no token for any platform.'**
   String get publisherAccountsNone;
 
+  /// No description provided for @publisherProbeInstagram.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Instagram posting (nothing is posted)'**
+  String get publisherProbeInstagram;
+
+  /// No description provided for @publisherProbeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Draws a test picture and has Instagram fetch and prepare it, without posting anything.'**
+  String get publisherProbeHint;
+
+  /// No description provided for @publisherProbeOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting is ready: {detail}'**
+  String publisherProbeOk(String detail);
+
+  /// No description provided for @publisherProbeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting would fail: {reason}'**
+  String publisherProbeFailed(String reason);
+
   /// No description provided for @publisherBadgesHint.
   ///
   /// In en, this message translates to:

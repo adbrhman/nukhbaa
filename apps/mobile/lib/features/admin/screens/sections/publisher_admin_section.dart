@@ -796,7 +796,9 @@ class PublisherAccountsTab extends ConsumerStatefulWidget {
 
 class _PublisherAccountsTabState extends ConsumerState<PublisherAccountsTab> {
   List<PublisherAccountDto>? _checked;
+  PublisherAccountDto? _probe;
   bool _busy = false;
+  bool _probing = false;
   String? _error;
 
   Future<void> _check() async {
@@ -814,6 +816,26 @@ class _PublisherAccountsTabState extends ConsumerState<PublisherAccountsTab> {
         case Ok<List<PublisherAccountDto>>(:final value):
           _checked = value;
         case Err<List<PublisherAccountDto>>(:final error):
+          _error = ErrorPresenter.message(error);
+      }
+    });
+  }
+
+  Future<void> _probeInstagram() async {
+    setState(() {
+      _probing = true;
+      _error = null;
+    });
+    final Result<PublisherAccountDto> result = await ref
+        .read(adminApiProvider)
+        .probePublisherInstagram();
+    if (!mounted) return;
+    setState(() {
+      _probing = false;
+      switch (result) {
+        case Ok<PublisherAccountDto>(:final value):
+          _probe = value;
+        case Err<PublisherAccountDto>(:final error):
           _error = ErrorPresenter.message(error);
       }
     });
@@ -856,6 +878,23 @@ class _PublisherAccountsTabState extends ConsumerState<PublisherAccountsTab> {
           loading: _busy,
           onPressed: _busy ? null : _check,
         ),
+        if (widget.overview.linked.contains('instagram')) ...<Widget>[
+          const SizedBox(height: AppSpacing.sm),
+          AdminSecondaryButton(
+            key: const Key('admin.publisher.accounts.probe'),
+            label: l10n.publisherProbeInstagram,
+            icon: Icons.fact_check_rounded,
+            loading: _probing,
+            onPressed: _probing ? null : _probeInstagram,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.publisherProbeHint,
+            style: context.text.bodySmall?.copyWith(
+              color: tokens.textSecondary,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -868,6 +907,7 @@ class _PublisherAccountsTabState extends ConsumerState<PublisherAccountsTab> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
     final bool linked = widget.overview.linked.contains(platform);
+    final PublisherAccountDto? probe = platform == 'instagram' ? _probe : null;
     PublisherAccountDto? result;
     for (final PublisherAccountDto account
         in checked ?? const <PublisherAccountDto>[]) {
@@ -916,6 +956,17 @@ class _PublisherAccountsTabState extends ConsumerState<PublisherAccountsTab> {
               key: Key('admin.publisher.account.$platform.check'),
               style: context.text.bodyMedium?.copyWith(
                 color: result.ok ? tokens.successText : tokens.errorText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          if (probe != null)
+            Text(
+              probe.ok
+                  ? l10n.publisherProbeOk(probe.detail)
+                  : l10n.publisherProbeFailed(probe.detail),
+              key: const Key('admin.publisher.account.instagram.probe'),
+              style: context.text.bodyMedium?.copyWith(
+                color: probe.ok ? tokens.successText : tokens.errorText,
                 fontWeight: FontWeight.w700,
               ),
             ),

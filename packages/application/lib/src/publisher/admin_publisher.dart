@@ -60,17 +60,23 @@ final class AdminPublisher {
     required Map<PublishPlatform, PlatformPoster> posters,
     required Clock clock,
     PublisherCardHost? host,
+    PublisherCardRenderer? renderer,
   }) : _store = store,
        _mode = mode,
        _posters = posters,
        _clock = clock,
-       _host = host;
+       _host = host,
+       _renderer = renderer;
 
   final PublisherStore _store;
   final PublisherMode _mode;
   final Map<PublishPlatform, PlatformPoster> _posters;
   final Clock _clock;
   final PublisherCardHost? _host;
+  final PublisherCardRenderer? _renderer;
+
+  /// Where the check's test picture is kept in the public bucket.
+  static const String probePath = 'probe/instagram_check.jpg';
 
   /// How far ahead the panel lists matches to pick.
   static const Duration ahead = Duration(days: 3);
@@ -311,6 +317,65 @@ final class AdminPublisher {
     }
     return Result.ok(checks);
   }
+
+  /// Asks Instagram, without publishing anything, whether a post would go
+  /// through: draws a test picture, keeps it in the public bucket, and has
+  /// the poster check its permission and that Instagram can fetch the
+  /// picture. The outer result is the caller's right; the inner one is the
+  /// check's answer (script 211).
+  Future<Result<Result<String>>> probeInstagram({
+    required AuthenticatedUser principal,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.admin);
+    if (auth is Err<AuthenticatedUser>) return Result.err(auth.error);
+    final Object? poster = _posters[PublishPlatform.instagram];
+    if (poster == null) {
+      return _probeRefused(
+        'publisher.instagram_not_linked',
+        'لا حساب إنستغرام على الخادم: يلزم NUKHBA_META_PAGE_ID '
+            'و NUKHBA_META_PAGE_TOKEN.',
+      );
+    }
+    if (poster is! PublishProbe) {
+      return _probeRefused(
+        'publisher.probe_unsupported',
+        'حساب إنستغرام على الخادم لا يدعم الفحص.',
+      );
+    }
+    final renderer = _renderer;
+    final host = _host;
+    if (renderer == null || host == null) {
+      return _probeRefused(
+        'publisher.no_card_host',
+        'الخادم بلا رسّام صور أو مخزن لها: يلزم resvg و '
+            'NUKHBA_SUPABASE_SERVICE_KEY و NUKHBA_SUPABASE_PROJECT_REF.',
+      );
+    }
+    final drawn = await renderer.render(
+      CardSpec(
+        kind: CardKind.finalResult,
+        league: 'اختبار النشر',
+        headline: 'اختبار',
+        homeName: 'نخبة',
+        awayName: 'نخبة',
+        homeBadge: ClubBadge.fallback('نخبة'),
+        awayBadge: ClubBadge.fallback('نخبة'),
+        score: ScoreLine.nil,
+        verdict: 'اختبار',
+      ),
+    );
+    if (drawn is Err<List<int>>) {
+      return Result.ok(Result<String>.err(drawn.error));
+    }
+    final kept = await host.put(probePath, (drawn as Ok<List<int>>).value);
+    if (kept is Err<void>) {
+      return Result.ok(Result<String>.err(kept.error));
+    }
+    return Result.ok(await poster.probe(host.publicUrl(probePath)));
+  }
+
+  static Result<Result<String>> _probeRefused(String code, String message) =>
+      Result.ok(Result<String>.err(AppError.validation(code, message)));
 
   static final RegExp _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
