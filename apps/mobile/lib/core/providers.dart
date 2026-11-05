@@ -60,15 +60,29 @@ ApiTransport apiTransport(Ref ref) {
     baseUri: config.apiBaseUrl,
     httpClient: client,
     store: store,
-    onSessionEnded: () async {
-      await store.clear();
-      ref.read(sessionExpiryProvider.notifier).signal();
-    },
+    onSessionEnded: () => endSessionOf(ref, store),
     // A failure the server could not answer properly goes to the error log
     // (migration 0087); the reporter is installed in main().
     onFailure: (failure) =>
         ClientErrorReporter.instance?.reportApiFailure(failure),
   );
+}
+
+/// Ends the session of the container [ref] belongs to: forgets the stored
+/// tokens and tells the session controller that the session expired.
+///
+/// A request still out when the signed-out app replaced its container
+/// (`SessionScopeState.reset`) comes back with the old session's `401`
+/// after that container is gone. There is nothing left to tell then, and
+/// the store is no longer that session's: a new account may already be
+/// signed in, and clearing it would sign it out. So the call does nothing
+/// (KTBH, 6MU5, TT7Q: "Cannot use the Ref of apiTransportProvider after
+/// it has been disposed").
+Future<void> endSessionOf(Ref ref, TokenStore store) async {
+  if (!ref.mounted) return;
+  await store.clear();
+  if (!ref.mounted) return;
+  ref.read(sessionExpiryProvider.notifier).signal();
 }
 
 @Riverpod(keepAlive: true)
