@@ -43,6 +43,19 @@ abstract interface class DbExecutor {
 /// where a user would still be waiting.
 const Duration _statementTimeout = Duration(seconds: 10);
 
+/// How long a transaction may wait for one of the pool's connections before
+/// its caller gets an error.
+///
+/// A statement is bounded ([_statementTimeout]) and so is a plain query, but
+/// the wait of `Pool.runTx` for a free connection was not: when the pool is
+/// full ("connections in use 8/8, waiting 89", 2026-10-16) a prediction save
+/// queues behind the others until the app's own 35 s timeout (96WW), and may
+/// then still run for a player who has gone. Past 20 s -- before that
+/// timeout, so the app hears an answer -- the call ends with
+/// `db.tx_connection_timeout`, and if a connection reaches the transaction
+/// later it ends without running the caller's work.
+const Duration _transactionConnectionWait = Duration(seconds: 20);
+
 /// Owns the lifecycle of the Postgres connection pool.
 ///
 /// A single instance is created at the composition root and shared across
@@ -66,18 +79,29 @@ class PostgresConnection implements DbExecutor {
     this._pool, {
     Duration timeout = _statementTimeout,
     int maxConnections = PostgresConfig.defaultPoolSize,
+    Duration connectionWait = _transactionConnectionWait,
   }) : _timeout = timeout,
-       _maxConnections = maxConnections;
+       _maxConnections = maxConnections,
+       _connectionWait = connectionWait;
 
   /// A connection over [pool] that gives up on a query after [timeout], for
   /// tests that drive a timeout without a database.
   static PostgresConnection withPoolForTest(
     Pool<void> pool, {
     Duration timeout = _statementTimeout,
-  }) => PostgresConnection._(pool, timeout: timeout);
+    Duration connectionWait = _transactionConnectionWait,
+  }) => PostgresConnection._(
+    pool,
+    timeout: timeout,
+    connectionWait: connectionWait,
+  );
 
   final Pool<void> _pool;
   final Duration _timeout;
+
+  /// How long a transaction waits for a pool connection before giving up
+  /// ([_transactionConnectionWait]).
+  final Duration _connectionWait;
 
   /// The pool's size ([PostgresConfig.poolSize]), which a timeout is
   /// reported against.
@@ -288,9 +312,23 @@ class PostgresConnection implements DbExecutor {
   ) async {
     // Counted like a query: a transaction holds its connection throughout.
     var started = false;
+    var abandoned = false;
+    final Completer<void> gaveUp = Completer<void>();
+    // Waiting for a connection is bounded; running is not (each statement
+    // already is, in [_TxExecutor]), so no write is cut in the middle. Past
+    // the wait the caller gets an error while its client still listens, and
+    // a connection that reaches the transaction later ends it at once,
+    // without running [action].
+    final Timer deadline = Timer(_connectionWait, () {
+      if (!started && !gaveUp.isCompleted) {
+        abandoned = true;
+        gaveUp.complete();
+      }
+    });
     _queued++;
     try {
-      final value = await _pool.runTx((session) async {
+      final Future<T> work = _pool.runTx<T>((session) async {
+        if (abandoned) throw const _AbandonedSignal();
         started = true;
         _queued--;
         _inUse++;
@@ -305,7 +343,27 @@ class PostgresConnection implements DbExecutor {
           _inUse--;
         }
       });
-      return Result.ok(value);
+      // An abandoned transaction ends later with a signal nobody awaits.
+      unawaited(work.then<void>((_) {}, onError: (Object _, StackTrace _) {}));
+      final Object? outcome = await Future.any<Object?>(<Future<Object?>>[
+        work,
+        gaveUp.future.then<Object?>((_) => const _GaveUp()),
+      ]);
+      if (outcome is _GaveUp) {
+        final String seconds = (_connectionWait.inMilliseconds / 1000)
+            .toStringAsFixed(1);
+        final String where =
+            'waited ${seconds}s for a connection and gave up; connections '
+            'in use $_inUse/$_maxConnections, waiting $_queued';
+        stderr.writeln('[PostgresConnection.runInTransaction] $where');
+        return Result.err(
+          AppError.transient(
+            'db.tx_connection_timeout',
+            'Database transaction timed out ($where)',
+          ),
+        );
+      }
+      return Result.ok(outcome as T);
     } on _RollbackSignal catch (signal) {
       // The transaction rolled back cleanly; return the domain error verbatim.
       return Result.err(signal.error);
@@ -315,6 +373,7 @@ class PostgresConnection implements DbExecutor {
         AppError.transient('db.tx_failed', 'Database transaction failed', e),
       );
     } finally {
+      deadline.cancel();
       if (!started) _queued--;
     }
   }
@@ -330,6 +389,18 @@ final class _RollbackSignal implements Exception {
   const _RollbackSignal(this.error);
 
   final AppError error;
+}
+
+/// What [PostgresConnection.runInTransaction] hears when its wait for a
+/// connection ran out first.
+final class _GaveUp {
+  const _GaveUp();
+}
+
+/// Thrown inside a transaction whose caller already gave up waiting, so a
+/// connection that arrives late rolls it back without running any work.
+final class _AbandonedSignal implements Exception {
+  const _AbandonedSignal();
 }
 
 /// A [DbExecutor] backed by a `postgres` [TxSession], so a repository's write
