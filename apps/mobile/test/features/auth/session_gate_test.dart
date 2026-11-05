@@ -219,7 +219,7 @@ void main() {
     await tester.tap(find.byKey(const Key('account.signOut')));
     await tester.pumpAndSettle();
 
-    // It asks first; the confirm button is the dialog's second.
+    // It asks first; the confirm is the dialog's first button (script 215).
     expect(find.byType(AlertDialog), findsOneWidget);
     await tester.tap(
       find
@@ -227,7 +227,7 @@ void main() {
             of: find.byType(AlertDialog),
             matching: find.byType(AppButton),
           )
-          .last,
+          .first,
     );
     await tester.pumpAndSettle();
 
@@ -252,13 +252,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('account.signOut')));
     await tester.pumpAndSettle();
+    // The cancel button is the dialog's last (cancel_is_last_script215).
     await tester.tap(
       find
           .descendant(
             of: find.byType(AlertDialog),
             matching: find.byType(AppButton),
           )
-          .first,
+          .last,
     );
     await tester.pumpAndSettle();
 

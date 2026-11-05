@@ -1072,24 +1072,27 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
           children: <Widget>[
             Text('الإعدادات', style: _heading(context)),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'الاعتماد التلقائي للأيام التي فيها 6 مباريات أو أكثر',
-                    style: context.text.bodyMedium?.copyWith(
-                      color: context.tokens.textPrimary,
+            // s215 auto row: the sentence and its switch are one node.
+            MergeSemantics(
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      'الاعتماد التلقائي للأيام التي فيها 6 مباريات أو أكثر',
+                      style: context.text.bodyMedium?.copyWith(
+                        color: context.tokens.textPrimary,
+                      ),
                     ),
                   ),
-                ),
-                Switch(
-                  key: const Key('admin.h2h.settings.auto'),
-                  value: auto,
-                  onChanged: _busy
-                      ? null
-                      : (bool v) => setState(() => _auto = v),
-                ),
-              ],
+                  Switch(
+                    key: const Key('admin.h2h.settings.auto'),
+                    value: auto,
+                    onChanged: _busy
+                        ? null
+                        : (bool v) => setState(() => _auto = v),
+                  ),
+                ],
+              ),
             ),
             _Stepper(
               keyPrefix: 'admin.h2h.settings.lead',
@@ -1157,27 +1160,30 @@ class _H2hAdminControlsTabState extends ConsumerState<H2hAdminControlsTab> {
               Padding(
                 key: Key('admin.h2h.day.${d.day}'),
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        '${h2hDayLabel(d.day)} · ${d.fixtureCount} مباريات'
-                        '${d.round != null ? ' · الجولة ${d.round}' : ''}'
-                        '${d.excluded ? ' · مستبعد' : ''}',
-                        style: context.text.bodyMedium?.copyWith(
-                          color: context.tokens.textPrimary,
+                // s215 day row: the day and its switch are one node.
+                child: MergeSemantics(
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${h2hDayLabel(d.day)} · ${d.fixtureCount} مباريات'
+                          '${d.round != null ? ' · الجولة ${d.round}' : ''}'
+                          '${d.excluded ? ' · مستبعد' : ''}',
+                          style: context.text.bodyMedium?.copyWith(
+                            color: context.tokens.textPrimary,
+                          ),
                         ),
                       ),
-                    ),
-                    if (d.round == null)
-                      Switch(
-                        key: Key('admin.h2h.day.${d.day}.auto'),
-                        value: !d.excluded,
-                        onChanged: _busy
-                            ? null
-                            : (_) => unawaited(_toggleDay(d)),
-                      ),
-                  ],
+                      if (d.round == null)
+                        Switch(
+                          key: Key('admin.h2h.day.${d.day}.auto'),
+                          value: !d.excluded,
+                          onChanged: _busy
+                              ? null
+                              : (_) => unawaited(_toggleDay(d)),
+                        ),
+                    ],
+                  ),
                 ),
               ),
           ],
@@ -1281,13 +1287,13 @@ class _Stepper extends StatelessWidget {
         ),
         IconButton(
           key: Key('$keyPrefix.dec'),
-          tooltip: 'إنقاص',
+          tooltip: 'إنقاص $label',
           icon: const Icon(Icons.remove_rounded),
           onPressed: enabled && value > min ? () => onChanged(value - 1) : null,
         ),
         IconButton(
           key: Key('$keyPrefix.inc'),
-          tooltip: 'زيادة',
+          tooltip: 'زيادة $label',
           icon: const Icon(Icons.add_rounded),
           onPressed: enabled && value < max ? () => onChanged(value + 1) : null,
         ),

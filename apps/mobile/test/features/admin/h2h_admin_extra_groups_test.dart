@@ -8,6 +8,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -188,4 +189,29 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'script 215: the auto-approve switch and the steppers are named',
+    (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      try {
+        await _openControls(tester, _Server());
+        expect(
+          tester
+              .getSemantics(find.byKey(const Key('admin.h2h.settings.auto')))
+              .label,
+          contains('الاعتماد التلقائي'),
+        );
+        final SemanticsNode dec = tester.getSemantics(
+          find.byKey(const Key('admin.h2h.settings.lead.dec')),
+        );
+        expect(
+          '${dec.label} ${dec.tooltip}',
+          contains('يعتمد اليوم قبل أول مباراة'),
+        );
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
 }

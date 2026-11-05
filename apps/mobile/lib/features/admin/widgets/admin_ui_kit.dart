@@ -387,9 +387,8 @@ class AdminDateTimeField extends StatelessWidget {
 
   Future<void> _pick(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime? date = await showDatePicker(
+    final DateTime? date = await showAccessibleDatePicker(
       context: context,
-      builder: accessibleDatePickerBuilder,
       initialDate: value ?? now,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 2),

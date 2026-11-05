@@ -47,6 +47,15 @@ class AppTextField extends StatefulWidget {
 class _AppTextFieldState extends State<AppTextField> {
   late bool _obscured = widget.obscure;
 
+  /// The eye button's name, with the field it acts on: two password
+  /// fields on one page read the same two words (script 215).
+  String _eyeTooltip(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String action = _obscured ? l10n.showPassword : l10n.hidePassword;
+    final String? field = widget.label;
+    return field == null ? action : '$action ($field)';
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
@@ -87,9 +96,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 : null,
             suffixIcon: widget.obscure
                 ? IconButton(
-                    tooltip: _obscured
-                        ? AppLocalizations.of(context).showPassword
-                        : AppLocalizations.of(context).hidePassword,
+                    tooltip: _eyeTooltip(context),
                     icon: Icon(
                       _obscured
                           ? Icons.visibility_outlined

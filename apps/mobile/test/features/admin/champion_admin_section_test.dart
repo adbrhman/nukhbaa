@@ -265,7 +265,9 @@ void main() {
       lessThan(server.requests.indexOf(photo)),
     );
     expect(
-      find.text('تم التتويج، والاحتفال ظاهر الآن في شاشة المتصدرين'),
+      find.text(
+        'تم التتويج، والاحتفال ظاهر الآن في شاشة المتصدرين، وتم تثبيت المنصة',
+      ),
       findsOneWidget,
     );
 
@@ -373,6 +375,55 @@ void main() {
     expect(
       (jsonDecode(crown.body) as Map<String, Object?>)['prize'],
       '150 ريال سعودي',
+    );
+  });
+
+  testWidgets('script 215: the crowning takes the unsaved monthly prize and '
+      'fixes the podium too', (tester) async {
+    final server = _Server();
+    await _open(tester, server);
+
+    await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
+    await tester.pumpAndSettle();
+    final Finder field = find.byKey(
+      const Key('admin.champions.plannedPrizeField'),
+    );
+    await _scrollTo(tester, field);
+    await tester.enterText(field, '200 ريال سعودي');
+    await tester.pumpAndSettle();
+
+    final Finder crownButton = find.byKey(const Key('admin.champions.crown'));
+    await tester.scrollUntilVisible(
+      crownButton,
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(crownButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تتويج'));
+    await tester.pumpAndSettle();
+
+    final http.Request crown = server.requests.firstWhere(
+      (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9',
+    );
+    expect(
+      (jsonDecode(crown.body) as Map<String, Object?>)['prize'],
+      '200 ريال سعودي',
+    );
+    final http.Request podium = server.requests.firstWhere(
+      (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9/podium',
+    );
+    expect(
+      server.requests.indexOf(podium),
+      greaterThan(server.requests.indexOf(crown)),
+    );
+    expect(server.podiumSet, isTrue);
+    expect(
+      find.text(
+        'تم التتويج، والاحتفال ظاهر الآن في شاشة المتصدرين، وتم تثبيت المنصة',
+      ),
+      findsOneWidget,
     );
   });
 

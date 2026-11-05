@@ -49,9 +49,8 @@ class RiyadhKickoffField extends StatelessWidget {
   Future<void> _pick(BuildContext context) async {
     final DateTime wall = RiyadhClock.wallOf(value ?? DateTime.now());
     final DateTime today = RiyadhClock.wallOf(DateTime.now());
-    final DateTime? date = await showDatePicker(
+    final DateTime? date = await showAccessibleDatePicker(
       context: context,
-      builder: accessibleDatePickerBuilder,
       initialDate: DateTime(wall.year, wall.month, wall.day),
       firstDate: DateTime(today.year - 1),
       lastDate: DateTime(today.year + 2),

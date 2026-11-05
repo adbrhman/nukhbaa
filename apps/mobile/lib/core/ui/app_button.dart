@@ -31,7 +31,7 @@ class AppButton extends StatelessWidget {
   final bool expand;
 
   double get _height => switch (size) {
-    AppButtonSize.small => AppSizes.controlSm,
+    AppButtonSize.small => AppSizes.minTouchTarget,
     AppButtonSize.medium => AppSizes.controlMd,
     AppButtonSize.large => AppSizes.controlLg,
   };

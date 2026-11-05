@@ -526,6 +526,7 @@ class _SelectionBar extends StatelessWidget {
             children: <Widget>[
               Checkbox(
                 key: const Key('admin.matches.selectAll'),
+                semanticLabel: 'تحديد الكل',
                 tristate: true,
                 value: all,
                 onChanged: enabled
@@ -678,6 +679,7 @@ class _FixtureRow extends StatelessWidget {
             children: <Widget>[
               Checkbox(
                 key: Key('admin.matches.select.$id'),
+                semanticLabel: _title(fixture),
                 value: selected,
                 onChanged: enabled
                     ? (bool? value) => onSelected(value ?? false)

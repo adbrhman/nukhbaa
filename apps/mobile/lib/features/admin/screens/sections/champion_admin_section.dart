@@ -149,6 +149,14 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     return text.isEmpty ? null : text;
   }
 
+  /// The month's prize typed in the monthly field and not saved yet: the
+  /// crowning takes it, so saving it first is not a step of its own
+  /// (script 215).
+  String? get _plannedText {
+    final String text = _planned.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
   /// The rehearsal: the real leaderboard screen, with [champions]
   /// celebrated as they will be after the crowning, and the pictures still
   /// on this device.
@@ -267,7 +275,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     final bool force = month.unscoredFixtures > 0;
     // Crowned by hand (a tie for first): the prize set ahead unless the
     // admin typed another.
-    final String? prize = _prizeText ?? month.plannedPrize;
+    final String? prize = _prizeText ?? _plannedText ?? month.plannedPrize;
     final bool? confirmed = await AppDialog.confirm(
       context,
       title: 'تتويج ${monthLabelFromStored(month.seasonLabel)}',
@@ -311,18 +319,32 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
       if (!await _upload(month.seasonId, c.userId, photo)) photosOk = false;
       if (!mounted) return;
     }
+    // The month's podium (the next two of the final board) is fixed with
+    // the crowning, not by a button of its own (script 215).
+    final Result<List<MonthPodiumDto>> podium = await ref
+        .read(adminApiProvider)
+        .setMonthPodium(month.seasonId);
+    if (!mounted) return;
+    final String podiumNote = switch (podium) {
+      Ok<List<MonthPodiumDto>>(:final value) =>
+        value.isEmpty ? '' : '، وتم تثبيت المنصة',
+      Err<List<MonthPodiumDto>>() =>
+        '، وتعذّر تثبيت المنصة: '
+            'اضغط «تثبيت المنصة»',
+    };
     setState(() {
       _busy = false;
       _chosen.clear();
       _photos.clear();
       _prize.clear();
+      _planned.clear();
     });
     ref.invalidate(monthChampionsProvider);
     ref.invalidate(adminChampionCandidatesProvider(month.seasonId));
     _snack(
       photosOk
-          ? 'تم التتويج، والاحتفال ظاهر الآن في شاشة المتصدرين'
-          : 'تم التتويج، وتعذّر رفع الصورة: أضفها من «تغيير الصورة»',
+          ? 'تم التتويج، والاحتفال ظاهر الآن في شاشة المتصدرين$podiumNote'
+          : 'تم التتويج، وتعذّر رفع الصورة: أضفها من «تغيير الصورة»$podiumNote',
     );
   }
 
@@ -715,6 +737,7 @@ class _CandidateRow extends StatelessWidget {
             children: <Widget>[
               Checkbox(
                 key: Key('admin.champions.choose.${c.userId}'),
+                semanticLabel: c.displayName,
                 value: chosen,
                 onChanged: canChoose ? (bool? v) => onChosen(v ?? false) : null,
               ),

@@ -800,6 +800,18 @@ class _PublisherLogTabState extends ConsumerState<PublisherLogTab> {
     );
   }
 
+  /// A post button's name, with the post it acts on: the same few words
+  /// repeat on every card (Accessibility Scanner, script 215).
+  Widget _postLabel(String text, PublisherPostDto post, AppLocalizations l10n) {
+    final String platform = publisherPlatformLabel(post.platform, l10n);
+    final String kind = publisherKindLabel(post.kind, l10n);
+    return Semantics(
+      label: '$text ${post.matchLabel} $platform $kind',
+      excludeSemantics: true,
+      child: Text(text),
+    );
+  }
+
   Widget _postCard(BuildContext context, PublisherPostDto post) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens tokens = context.tokens;
@@ -903,20 +915,20 @@ class _PublisherLogTabState extends ConsumerState<PublisherLogTab> {
                   key: Key('admin.publisher.post.${post.id}.preview'),
                   onPressed: () => _preview(post),
                   icon: const Icon(Icons.image_rounded),
-                  label: Text(l10n.publisherPreview),
+                  label: _postLabel(l10n.publisherPreview, post, l10n),
                 ),
               TextButton.icon(
                 key: Key('admin.publisher.post.${post.id}.copy'),
                 onPressed: () => _copy(post),
                 icon: const Icon(Icons.copy_rounded),
-                label: Text(l10n.publisherCopyText),
+                label: _postLabel(l10n.publisherCopyText, post, l10n),
               ),
               if (ready)
                 FilledButton.icon(
                   key: Key('admin.publisher.post.${post.id}.share'),
                   onPressed: busy ? null : () => _share(post),
                   icon: const Icon(Icons.share_rounded),
-                  label: Text(l10n.publisherShareX),
+                  label: _postLabel(l10n.publisherShareX, post, l10n),
                 ),
               if (ready)
                 (_opened.contains(post.id)
@@ -924,27 +936,27 @@ class _PublisherLogTabState extends ConsumerState<PublisherLogTab> {
                         key: Key('admin.publisher.post.${post.id}.shared'),
                         onPressed: busy ? null : () => _act(post, 'shared'),
                         icon: const Icon(Icons.check_rounded),
-                        label: Text(l10n.publisherMarkShared),
+                        label: _postLabel(l10n.publisherMarkShared, post, l10n),
                       )
                     : OutlinedButton.icon(
                         key: Key('admin.publisher.post.${post.id}.shared'),
                         onPressed: busy ? null : () => _act(post, 'shared'),
                         icon: const Icon(Icons.check_rounded),
-                        label: Text(l10n.publisherMarkShared),
+                        label: _postLabel(l10n.publisherMarkShared, post, l10n),
                       )),
               if (publisherRetryStates.contains(post.state))
                 OutlinedButton.icon(
                   key: Key('admin.publisher.post.${post.id}.retry'),
                   onPressed: busy ? null : () => _act(post, 'retry'),
                   icon: const Icon(Icons.replay_rounded),
-                  label: Text(l10n.publisherRetryPost),
+                  label: _postLabel(l10n.publisherRetryPost, post, l10n),
                 ),
               if (publisherCancelStates.contains(post.state))
                 TextButton.icon(
                   key: Key('admin.publisher.post.${post.id}.cancel'),
                   onPressed: busy ? null : () => _act(post, 'cancel'),
                   icon: const Icon(Icons.block_rounded),
-                  label: Text(l10n.publisherCancelPost),
+                  label: _postLabel(l10n.publisherCancelPost, post, l10n),
                 ),
             ],
           ),

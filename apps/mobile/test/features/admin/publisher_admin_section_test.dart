@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -805,5 +806,57 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('script 215: switches and steppers name what they act on', (
+    tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    try {
+      final _FakePublisher server = _FakePublisher()..mode = 'on';
+      await _pump(tester, server);
+      // A match's switch is one node with the match it covers.
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('admin.publisher.cover.$_m1')))
+            .label,
+        contains('الهلال - النصر'),
+      );
+
+      // A second pump would keep the first section's state (and its tab).
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pump(tester, server, tab: PublisherTab.settings);
+      await tester.ensureVisible(
+        find.byKey(const Key('admin.publisher.enabled.facebook')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .getSemantics(
+              find.byKey(const Key('admin.publisher.enabled.facebook')),
+            )
+            .label,
+        contains('فيسبوك'),
+      );
+      expect(
+        tester
+            .getSemantics(
+              find.byKey(const Key('admin.publisher.final.facebook')),
+            )
+            .label,
+        contains('النتيجة النهائية'),
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('admin.publisher.hold.facebook.more')),
+      );
+      await tester.pumpAndSettle();
+      // A stepper button says which value it moves.
+      final SemanticsNode more = tester.getSemantics(
+        find.byKey(const Key('admin.publisher.hold.facebook.more')),
+      );
+      expect('${more.label} ${more.tooltip}', contains('المهلة قبل نشر الهدف'));
+    } finally {
+      handle.dispose();
+    }
   });
 }

@@ -60,9 +60,8 @@ class _UserSanctionSectionState extends ConsumerState<UserSanctionSection> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showAccessibleDatePicker(
       context: context,
-      builder: accessibleDatePickerBuilder,
       initialDate: _selectedDate ?? now,
       firstDate: DateTime(2026),
       lastDate: now,

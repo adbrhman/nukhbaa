@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:shared/shared.dart';
 
+import '../../../../core/design/app_sizes.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
@@ -688,13 +689,20 @@ class _ErrorDetailState extends ConsumerState<_ErrorDetail> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                SelectableText(
-                  '${e.errorType}'
-                  '${e.errorCode == null ? '' : ' · ${e.errorCode}'}\n'
-                  '${e.message}',
-                  textDirection: _directionOf(e.message),
-                  style: context.text.bodyMedium?.copyWith(
-                    color: tokens.textPrimary,
+                // A tap target is 48 dp tall even for one line of text
+                // (Accessibility Scanner, script 215).
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: AppSizes.minTouchTarget,
+                  ),
+                  child: SelectableText(
+                    '${e.errorType}'
+                    '${e.errorCode == null ? '' : ' · ${e.errorCode}'}\n'
+                    '${e.message}',
+                    textDirection: _directionOf(e.message),
+                    style: context.text.bodyMedium?.copyWith(
+                      color: tokens.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),

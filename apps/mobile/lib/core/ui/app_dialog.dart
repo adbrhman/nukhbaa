@@ -25,27 +25,28 @@ abstract final class AppDialog {
             AppSpacing.xl,
             AppSpacing.xl,
           ),
+          // Stacked, the confirm first: side by side the two buttons were 46
+          // dp tall and a long label ("Sign out") ended in an ellipsis on a
+          // 384 dp phone (Accessibility Scanner, 2026-11-05, script 215).
           actions: [
-            Row(
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: AppButton(
-                    label: cancelLabel,
-                    variant: AppButtonVariant.secondary,
-                    size: AppButtonSize.medium,
-                    onPressed: () => Navigator.of(context).pop(false),
-                  ),
+                AppButton(
+                  label: confirmLabel,
+                  variant: destructive
+                      ? AppButtonVariant.danger
+                      : AppButtonVariant.primary,
+                  size: AppButtonSize.medium,
+                  onPressed: () => Navigator.of(context).pop(true),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: AppButton(
-                    label: confirmLabel,
-                    variant: destructive
-                        ? AppButtonVariant.danger
-                        : AppButtonVariant.primary,
-                    size: AppButtonSize.medium,
-                    onPressed: () => Navigator.of(context).pop(true),
-                  ),
+                const SizedBox(height: AppSpacing.md),
+                AppButton(
+                  label: cancelLabel,
+                  variant: AppButtonVariant.secondary,
+                  size: AppButtonSize.medium,
+                  onPressed: () => Navigator.of(context).pop(false),
                 ),
               ],
             ),

@@ -329,9 +329,8 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
 
   Future<void> _pickDay() async {
     final (DateTime first, DateTime last) = _dayBounds();
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAccessibleDatePicker(
       context: context,
-      builder: accessibleDatePickerBuilder,
       initialDate: _clamp(_day, first, last),
       firstDate: first,
       lastDate: last,

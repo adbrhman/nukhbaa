@@ -18,7 +18,7 @@ abstract final class AppSizes {
 
   // ── Control heights (buttons, inputs, rows) ───────────────────────────
   static const double controlSm = 40;
-  static const double controlMd = 46;
+  static const double controlMd = 48;
   static const double controlLg = 52;
 
   // ── Inline progress indicator ─────────────────────────────────────────

@@ -392,38 +392,41 @@ class _PublisherMatchesTabState extends ConsumerState<PublisherMatchesTab> {
     return AdminCard(
       key: Key('admin.publisher.match.${match.fixtureId}'),
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '${match.homeName} - ${match.awayName}',
-                  style: context.text.titleSmall?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (detail.isNotEmpty)
+      // s215 match row: the title and its switch are one node.
+      child: MergeSemantics(
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
                   Text(
-                    detail,
-                    style: context.text.bodySmall?.copyWith(
-                      color: tokens.textSecondary,
+                    '${match.homeName} - ${match.awayName}',
+                    style: context.text.titleSmall?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-              ],
+                  if (detail.isNotEmpty)
+                    Text(
+                      detail,
+                      style: context.text.bodySmall?.copyWith(
+                        color: tokens.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Switch(
-            key: Key('admin.publisher.cover.${match.fixtureId}'),
-            value: covered,
-            onChanged: _pending.containsKey(match.fixtureId)
-                ? null
-                : (bool value) => _set(match, value),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.sm),
+            Switch(
+              key: Key('admin.publisher.cover.${match.fixtureId}'),
+              value: covered,
+              onChanged: _pending.containsKey(match.fixtureId)
+                  ? null
+                  : (bool value) => _set(match, value),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -597,23 +600,26 @@ class _PublisherSettingCardState extends ConsumerState<PublisherSettingCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  publisherPlatformLabel(p, l10n),
-                  style: context.text.titleMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w700,
+          // s215 enable row: the platform name and its switch are one node.
+          MergeSemantics(
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    publisherPlatformLabel(p, l10n),
+                    style: context.text.titleMedium?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              Switch(
-                key: Key('admin.publisher.enabled.$p'),
-                value: _draft.enabled,
-                onChanged: _busy ? null : (bool v) => _edit(enabled: v),
-              ),
-            ],
+                Switch(
+                  key: Key('admin.publisher.enabled.$p'),
+                  value: _draft.enabled,
+                  onChanged: _busy ? null : (bool v) => _edit(enabled: v),
+                ),
+              ],
+            ),
           ),
           Text(
             note,
@@ -653,22 +659,25 @@ class _PublisherSettingCardState extends ConsumerState<PublisherSettingCard> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  l10n.publisherFinalResult,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: tokens.textPrimary,
+          // s215 final row: the label and its switch are one node.
+          MergeSemantics(
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.publisherFinalResult,
+                    style: context.text.bodyMedium?.copyWith(
+                      color: tokens.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              Switch(
-                key: Key('admin.publisher.final.$p'),
-                value: _draft.finalResult,
-                onChanged: _busy ? null : (bool v) => _edit(finalResult: v),
-              ),
-            ],
+                Switch(
+                  key: Key('admin.publisher.final.$p'),
+                  value: _draft.finalResult,
+                  onChanged: _busy ? null : (bool v) => _edit(finalResult: v),
+                ),
+              ],
+            ),
           ),
           _Stepper(
             keyName: 'admin.publisher.hold.$p',
@@ -738,6 +747,8 @@ class _Stepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    // s215 stepper: the buttons' tooltips name the value they move.
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xs),
       child: Row(
@@ -765,11 +776,13 @@ class _Stepper extends StatelessWidget {
           ),
           IconButton(
             key: Key('$keyName.less'),
+            tooltip: '${l10n.scoreStepperDecreaseTooltip} $label',
             onPressed: onLess,
             icon: const Icon(Icons.remove_circle_outline_rounded),
           ),
           IconButton(
             key: Key('$keyName.more'),
+            tooltip: '${l10n.scoreStepperIncreaseTooltip} $label',
             onPressed: onMore,
             icon: const Icon(Icons.add_circle_outline_rounded),
           ),
