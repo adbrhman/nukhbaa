@@ -92,7 +92,6 @@ export 'src/gamification/admin_h2h_absence.dart';
 export 'src/gamification/admin_h2h_controls.dart';
 export 'src/gamification/admin_h2h_groups.dart';
 export 'src/gamification/approve_h2h_round.dart';
-export 'src/gamification/award_streak_bonus.dart';
 export 'src/gamification/close_h2h_month.dart';
 export 'src/gamification/draw_h2h_month.dart';
 export 'src/gamification/evaluate_badges.dart';

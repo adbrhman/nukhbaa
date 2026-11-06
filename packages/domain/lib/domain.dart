@@ -48,7 +48,6 @@ export 'src/gamification/h2h_round_id.dart';
 export 'src/gamification/overtake_detector.dart';
 export 'src/gamification/prediction_insights.dart';
 export 'src/gamification/screen_name.dart';
-export 'src/gamification/streak_bonus_policy.dart';
 export 'src/gamification/streak_tally.dart';
 export 'src/gamification/variant_allocator.dart';
 export 'src/gamification/weekly_league_id.dart';
