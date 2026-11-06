@@ -25,11 +25,14 @@ import '../../admin_providers.dart';
 import '../../widgets/admin_pickers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
+/// The ledger kind of the retired streak bonus (decided 2026-11-07). Its old
+/// rows stay in the append-only ledger but this screen no longer shows them.
+const String _retiredStreakBonusKind = 'streak_bonus';
+
 /// A ledger entry kind in words.
 String pointEntryKindLabel(String kind) => switch (kind) {
   'fixture_score' => 'نقاط المباراة',
   'correction' => 'تصحيح',
-  'streak_bonus' => 'مكافأة سلسلة (الدوري الأسبوعي)',
   'round_score' => 'نقاط جولة',
   _ => kind,
 };
@@ -228,6 +231,9 @@ class _LedgerLookupSectionState extends ConsumerState<LedgerLookupSection> {
 
   List<Widget> _month(BuildContext context, PlayerMonthPointsDto month) {
     final AppTokens tokens = context.tokens;
+    final List<PlayerPointEntryDto> entries = month.entries
+        .where((PlayerPointEntryDto e) => e.kind != _retiredStreakBonusKind)
+        .toList();
     if (!month.played) {
       return const <Widget>[
         AdminCard(
@@ -249,13 +255,7 @@ class _LedgerLookupSectionState extends ConsumerState<LedgerLookupSection> {
               key: const Key('admin.ledger.monthPoints'),
               style: context.text.titleMedium,
             ),
-            if (month.streakBonus != 0)
-              Text(
-                'مكافآت السلسلة (للدوري الأسبوعي فقط): ${month.streakBonus}',
-                key: const Key('admin.ledger.streakBonus'),
-                style: TextStyle(color: tokens.textSecondary),
-              ),
-            if (month.entries.isEmpty)
+            if (entries.isEmpty)
               Text(
                 'لا حركة في نقاطه بعد.',
                 style: TextStyle(color: tokens.textMuted),
@@ -263,7 +263,7 @@ class _LedgerLookupSectionState extends ConsumerState<LedgerLookupSection> {
           ],
         ),
       ),
-      for (final PlayerPointEntryDto entry in month.entries) ...<Widget>[
+      for (final PlayerPointEntryDto entry in entries) ...<Widget>[
         const SizedBox(height: AppSpacing.sm),
         AdminCard(
           key: Key('admin.ledger.item.${entry.id}'),

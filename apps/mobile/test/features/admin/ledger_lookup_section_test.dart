@@ -78,6 +78,15 @@ void main() {
                 'amount': 3,
                 'occurred_at': '2026-10-10T21:00:00.000Z',
               },
+              <String, Object?>{
+                'id': 'e2',
+                'fixture_id': 'f2',
+                'home_team': 'Everton',
+                'away_team': 'Fulham',
+                'kind': 'streak_bonus',
+                'amount': 2,
+                'occurred_at': '2026-10-11T21:00:00.000Z',
+              },
             ],
           });
         case '/admin/audit':
@@ -135,13 +144,16 @@ void main() {
     expect(find.text('Arsenal × Chelsea'), findsOneWidget);
     expect(find.text('+3'), findsOneWidget);
     expect(find.text('نقاط الشهر: 3'), findsOneWidget);
-    expect(find.byKey(const Key('admin.ledger.streakBonus')), findsOneWidget);
+    // The retired streak bonus is neither summed up nor listed.
+    expect(find.byKey(const Key('admin.ledger.streakBonus')), findsNothing);
+    expect(find.byKey(const Key('admin.ledger.item.e1')), findsOneWidget);
+    expect(find.byKey(const Key('admin.ledger.item.e2')), findsNothing);
+    expect(find.text('Everton × Fulham'), findsNothing);
     expect(find.textContaining('fixture_score'), findsNothing);
   });
 
   test('every kind of movement reads in words', () {
     expect(pointEntryKindLabel('fixture_score'), 'نقاط المباراة');
     expect(pointEntryKindLabel('correction'), 'تصحيح');
-    expect(pointEntryKindLabel('streak_bonus'), startsWith('مكافأة سلسلة'));
   });
 }
