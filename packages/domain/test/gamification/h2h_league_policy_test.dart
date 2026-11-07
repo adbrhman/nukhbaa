@@ -472,62 +472,331 @@ void main() {
       );
     });
 
-    test('an absent opponent is compared with the whole-group average', () {
-      final members = [
-        _member('a', 0),
-        _member('b', 1),
-        _member('c', 2),
-        _member('d', 3),
-      ];
-      final decemberRound = [
-        H2hRoundRef(number: 1, day: DateTime.utc(2026, 12, 3)),
-      ];
-      H2hMatch aMatch(List<H2hRoundScore> roundScores) => H2hLeaguePolicy.table(
-        capacity: 4,
+    // NK216: the walkover rule replaces the December average comparison.
+    test('the walkover rule begins at round 7 of November 2026', () {
+      bool uses(int month, int round, {int year = 2026}) =>
+          H2hLeaguePolicy.usesWalkoverRule(
+            day: DateTime.utc(year, month, 8),
+            round: round,
+          );
+      expect(H2hLeaguePolicy.walkoverFirstRound, 7);
+      expect(uses(11, 6), isFalse);
+      expect(uses(11, 7), isTrue);
+      expect(uses(11, 19), isTrue);
+      expect(uses(12, 1), isTrue);
+      expect(uses(1, 1, year: 2027), isTrue);
+      expect(uses(10, 12), isFalse);
+    });
+
+    test(
+      'a walkover is won only with a correct prediction, else one point',
+      () {
+        final members = [
+          _member('a', 0),
+          _member('b', 1),
+          _member('c', 2),
+          _member('d', 3),
+        ];
+        final decemberRound = [
+          H2hRoundRef(number: 1, day: DateTime.utc(2026, 12, 3)),
+        ];
+        H2hMatch matchOf(String id, List<H2hRoundScore> roundScores) =>
+            H2hLeaguePolicy.table(
+              capacity: 4,
+              members: members,
+              rounds: decemberRound,
+              scores: roundScores,
+            ).singleWhere((s) => s.userId == UserId(id)).matches.single;
+
+        // d is a's opponent in round 1 and did not play.
+        final scored = [
+          _score('a', 1, points: 6),
+          _score('b', 1, points: 4),
+          _score('c', 1, points: 5),
+        ];
+        expect(matchOf('a', scored).opponentId, const UserId('d'));
+        expect(matchOf('a', scored).opponentPresent, isFalse);
+        expect(matchOf('a', scored).opponentPoints, 0);
+        expect(matchOf('a', scored).result, H2hMatchResult.win);
+        expect(matchOf('d', scored).result, H2hMatchResult.loss);
+
+        // a played but called nothing right: one point, a draw's worth.
+        final nothing = [
+          _score('a', 1),
+          _score('b', 1, points: 4),
+          _score('c', 1, points: 5),
+        ];
+        expect(matchOf('a', nothing).result, H2hMatchResult.draw);
+        expect(matchOf('a', nothing).result.leaguePoints, 1);
+        expect(matchOf('d', nothing).result, H2hMatchResult.loss);
+
+        // Both absent: both lose.
+        final neither = [_score('b', 1, points: 4), _score('c', 1, points: 5)];
+        expect(matchOf('a', neither).result, H2hMatchResult.loss);
+        expect(matchOf('d', neither).result, H2hMatchResult.loss);
+      },
+    );
+
+    test('before round 7 of November an absent opponent still loses', () {
+      final members = [_member('a', 0), _member('b', 1)];
+      H2hMatch aIn(int number) => H2hLeaguePolicy.table(
+        capacity: 2,
         members: members,
-        rounds: decemberRound,
-        scores: roundScores,
+        rounds: [_round(number, 10)],
+        scores: [_score('a', number)],
+        turns: const [1],
       ).singleWhere((s) => s.userId == const UserId('a')).matches.single;
-      H2hMatch dMatch(List<H2hRoundScore> roundScores) => H2hLeaguePolicy.table(
-        capacity: 4,
-        members: members,
-        rounds: decemberRound,
-        scores: roundScores,
-      ).singleWhere((s) => s.userId == const UserId('d')).matches.single;
 
-      final above = [
-        _score('a', 1, points: 6),
-        _score('b', 1, points: 0),
-        _score('c', 1, points: 0),
-        _score('d', 1, points: 999, predicted: 0),
-      ];
-      expect(aMatch(above).opponentId, const UserId('d'));
-      expect(aMatch(above).opponentPresent, isFalse);
-      expect(aMatch(above).opponentPoints, 1.5);
-      expect(aMatch(above).result, H2hMatchResult.win);
-      expect(dMatch(above).result, H2hMatchResult.loss);
-
-      final equal = [
-        _score('a', 1, points: 3),
-        _score('b', 1, points: 4),
-        _score('c', 1, points: 5),
-        _score('d', 1, points: 999, predicted: 0),
-      ];
-      expect(aMatch(equal).opponentPoints, 3);
-      expect(aMatch(equal).result, H2hMatchResult.draw);
-      expect(dMatch(equal).result, H2hMatchResult.loss);
-
-      final below = [
-        _score('a', 1, points: 2),
-        _score('b', 1, points: 4),
-        _score('c', 1, points: 4),
-        _score('d', 1, points: 999, predicted: 0),
-      ];
-      expect(aMatch(below).opponentPoints, 2.5);
-      expect(aMatch(below).result, H2hMatchResult.loss);
-      expect(dMatch(below).result, H2hMatchResult.loss);
+      // a played with no points, b did not play.
+      expect(aIn(6).result, H2hMatchResult.win);
+      expect(aIn(7).result, H2hMatchResult.draw);
     });
     // NK172_059
+  });
+
+  // NK216: a seat's record stays with the seat, from a swap at round 7.
+  group('H2hLeaguePolicy.seatRecords', () {
+    H2hMember holder(String id, int slot, {int from = 1, int? until}) =>
+        H2hMember(
+          userId: UserId(id),
+          slot: slot,
+          joinedAt: DateTime.utc(2026, 11, 1, 3, slot),
+          fromRound: from,
+          untilRound: until,
+        );
+    final november = DateTime.utc(2026, 11, 8);
+
+    test('a swap from round 7 passes the seat record to the new holder', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [holder('a', 0, until: 6), holder('b', 0, from: 7)],
+        table: [_standing('a', won: 2), _standing('b', won: 1)],
+        day: november,
+      );
+      expect(records.kept.containsKey(const UserId('a')), isFalse);
+      expect(records.given[const UserId('a')]!.single.won, 2);
+      expect(records.kept[const UserId('b')]!.single.won, 1);
+      expect(records.taken[const UserId('b')]!.single.won, 2);
+      expect(records.taken.containsKey(const UserId('a')), isFalse);
+    });
+
+    test('a swap before round 7 of November keeps each his own part', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [holder('a', 0, until: 4), holder('b', 0, from: 5)],
+        table: [_standing('a', won: 2), _standing('b', won: 1)],
+        day: november,
+      );
+      expect(records.kept[const UserId('a')]!.single.won, 2);
+      expect(records.kept[const UserId('b')]!.single.won, 1);
+      expect(records.given, isEmpty);
+      expect(records.taken, isEmpty);
+    });
+
+    test('from December every swap passes the seat record on', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [holder('a', 0, until: 1), holder('b', 0, from: 2)],
+        table: [_standing('a', won: 1), _standing('b', won: 1)],
+        day: DateTime.utc(2026, 12, 9),
+      );
+      expect(records.given.containsKey(const UserId('a')), isTrue);
+      expect(records.taken.containsKey(const UserId('b')), isTrue);
+    });
+
+    test('a seat swapped twice hands the whole chain to the last holder', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [
+          holder('a', 0, until: 6),
+          holder('b', 0, from: 7, until: 11),
+          holder('c', 0, from: 12),
+        ],
+        table: [
+          _standing('a', won: 2),
+          _standing('b', won: 3),
+          _standing('c', won: 1),
+        ],
+        day: november,
+      );
+      expect(records.kept.keys, [const UserId('c')]);
+      expect(records.given.keys, [const UserId('a'), const UserId('b')]);
+      expect(records.taken[const UserId('b')], isNull);
+      expect(records.taken[const UserId('c')]!.map((s) => s.won), [2, 3]);
+    });
+
+    test('a swap before round 7 followed by one after it', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [
+          holder('a', 0, until: 4),
+          holder('b', 0, from: 5, until: 8),
+          holder('c', 0, from: 9),
+        ],
+        table: [
+          _standing('a', won: 2),
+          _standing('b', won: 3),
+          _standing('c', won: 1),
+        ],
+        day: november,
+      );
+      // a keeps his own part; only b's rounds pass to c.
+      expect(records.kept[const UserId('a')]!.single.won, 2);
+      expect(records.given.keys, [const UserId('b')]);
+      expect(records.taken[const UserId('c')]!.single.won, 3);
+    });
+
+    test('a member with no standing breaks the chain', () {
+      final records = H2hLeaguePolicy.seatRecords(
+        members: [holder('a', 0, until: 6), holder('b', 0, from: 7)],
+        table: [_standing('b', won: 1)],
+        day: november,
+      );
+      expect(records.given, isEmpty);
+      expect(records.taken, isEmpty);
+      expect(records.kept[const UserId('b')]!.single.won, 1);
+    });
+
+    test('two seats swapped from round 7 trade their records', () {
+      // a leaves seat 0 of the elite group for seat 5 of the extra group,
+      // and b takes the opposite way.
+      final elite = H2hLeaguePolicy.seatRecords(
+        members: [holder('a', 0, until: 6), holder('b', 0, from: 7)],
+        table: [_standing('a', won: 4), _standing('b', won: 0)],
+        day: november,
+      );
+      final extra = H2hLeaguePolicy.seatRecords(
+        members: [holder('b', 5, until: 6), holder('a', 5, from: 7)],
+        table: [_standing('b', won: 1), _standing('a', won: 0)],
+        day: november,
+      );
+      final a = H2hLeaguePolicy.mergeStandings(
+        parts: [
+          ...?extra.kept[const UserId('a')],
+          ...?elite.kept[const UserId('a')],
+        ],
+        seat: holder('a', 5, from: 7),
+        given: [...?elite.given[const UserId('a')]],
+        taken: [...?extra.taken[const UserId('a')]],
+      );
+      final b = H2hLeaguePolicy.mergeStandings(
+        parts: [
+          ...?elite.kept[const UserId('b')],
+          ...?extra.kept[const UserId('b')],
+        ],
+        seat: holder('b', 0, from: 7),
+        given: [...?extra.given[const UserId('b')]],
+        taken: [...?elite.taken[const UserId('b')]],
+      );
+      // The relegated a takes the extra seat's record (1 win), the promoted
+      // b takes the elite seat's record (4 wins).
+      expect(a.won, 1);
+      expect(b.won, 4);
+    });
+  });
+
+  group('H2hLeaguePolicy.mergeStandings', () {
+    final seat = H2hMember(
+      userId: const UserId('b'),
+      slot: 0,
+      joinedAt: DateTime.utc(2026, 11, 1),
+      fromRound: 7,
+    );
+
+    test('without a swap the parts add up as before', () {
+      final merged = H2hLeaguePolicy.mergeStandings(
+        parts: [
+          _standing(
+            'b',
+            won: 1,
+            pointsFor: 5,
+            matches: [_match('x', H2hMatchResult.win)],
+          ),
+          _standing(
+            'b',
+            drawn: 1,
+            pointsFor: 2,
+            matches: [_match('y', H2hMatchResult.draw)],
+          ),
+        ],
+        seat: seat,
+      );
+      expect(merged.won, 1);
+      expect(merged.drawn, 1);
+      expect(merged.pointsFor, 7);
+      expect(merged.matches, hasLength(2));
+      expect(merged.counted, isNull);
+      expect(merged.countedMatches, same(merged.matches));
+    });
+
+    test('a taken part counts in the totals, a given one only as matches', () {
+      final merged = H2hLeaguePolicy.mergeStandings(
+        parts: [
+          _standing(
+            'b',
+            won: 1,
+            pointsFor: 4,
+            exact: 1,
+            matches: [_match('x', H2hMatchResult.win)],
+          ),
+        ],
+        seat: seat,
+        given: [
+          _standing(
+            'b',
+            won: 5,
+            pointsFor: 50,
+            matches: [_match('g', H2hMatchResult.win)],
+          ),
+        ],
+        taken: [
+          _standing(
+            'a',
+            won: 2,
+            drawn: 1,
+            lost: 1,
+            pointsFor: 30,
+            exact: 3,
+            matches: [_match('t', H2hMatchResult.loss)],
+          ),
+        ],
+      );
+      expect(merged.won, 3);
+      expect(merged.drawn, 1);
+      expect(merged.lost, 1);
+      expect(merged.pointsFor, 34);
+      expect(merged.exactCount, 4);
+      expect(merged.leaguePoints, 10);
+      // His own matches: the kept and the given ones, not the taken.
+      expect(merged.matches.map((m) => m.opponentId?.value).toSet(), {
+        'x',
+        'g',
+      });
+      // The matches behind the totals: the kept and the taken ones.
+      expect(merged.countedMatches.map((m) => m.opponentId?.value).toSet(), {
+        'x',
+        't',
+      });
+    });
+
+    test('the head-to-head reads the matches behind the totals', () {
+      // b took p's record, and p drew with a: that draw counts for b against
+      // a, who lost to b in a match of his own. Level on 4 league points and
+      // 0 prediction points, b is ahead of a although a's id comes first.
+      final b = H2hLeaguePolicy.mergeStandings(
+        parts: [
+          _standing('b', won: 1, matches: [_match('z', H2hMatchResult.win)]),
+        ],
+        seat: seat,
+        taken: [
+          _standing('p', drawn: 1, matches: [_match('a', H2hMatchResult.draw)]),
+        ],
+      );
+      final a = _standing(
+        'a',
+        won: 1,
+        drawn: 1,
+        matches: [_match('b', H2hMatchResult.loss)],
+      );
+      expect(b.leaguePoints, a.leaguePoints);
+      final placings = H2hLeaguePolicy.order([a, b]);
+      expect(placings.first.standing.userId, const UserId('b'));
+    });
   });
 
   group('H2hLeaguePolicy.order', () {

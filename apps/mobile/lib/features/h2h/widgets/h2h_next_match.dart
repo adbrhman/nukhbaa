@@ -133,15 +133,10 @@ class H2hNextMatch extends StatelessWidget {
               ),
               Expanded(
                 child: H2hSide(
-                  name: round.opponentAbsent
-                      ? h2hAverageOpponent
-                      : h2hOpponentOf(round),
-                  avatarUrl: round.opponentAbsent
-                      ? null
-                      : round.opponentAvatarUrl,
-                  average:
-                      !secret &&
-                      (round.opponentUserId == null || round.opponentAbsent),
+                  // NK216_16: an absent opponent is shown by name.
+                  name: h2hOpponentOf(round),
+                  avatarUrl: round.opponentAvatarUrl,
+                  average: !secret && round.opponentUserId == null,
                   // NK172_050
                   secret: secret,
                 ),
@@ -151,8 +146,7 @@ class H2hNextMatch extends StatelessWidget {
           if (round.opponentAbsent) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'غاب خصمك: واجهت متوسط المجموعة '
-              '(${h2hPointsLabel(round.opponentPoints ?? 0)} نقطة).',
+              h2hWalkoverNote(round.result),
               key: const Key('h2h.featured.opponentAbsent'),
               textAlign: TextAlign.center,
               style: context.text.bodySmall?.copyWith(color: t.textSecondary),

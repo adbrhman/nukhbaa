@@ -426,9 +426,9 @@ void main() {
       }
     });
 
-    // NK172 application absence test
+    // NK216: the walkover rule replaces December's group average.
     test(
-      'December turns an absent named opponent into the group average',
+      'December plays an absent named opponent as a walkover he loses',
       () async {
         final detail =
             ((await _read(
@@ -441,8 +441,8 @@ void main() {
         expect(detail.opponentHidden, isFalse);
         expect(detail.opponentAbsent, isTrue);
         expect(detail.opponentId, _u4);
-        expect(detail.opponentProfile, isNull);
-        expect(detail.opponentPoints, 2.5);
+        expect(detail.opponentProfile!.displayName, 'name ${_u4.value}');
+        expect(detail.opponentPoints, 0);
         expect(detail.result, H2hMatchResult.win);
         expect(detail.theirs, isNull);
         for (final line in detail.fixtures) {
@@ -451,6 +451,33 @@ void main() {
         }
       },
     );
+
+    // A live round shows the points alone (h2hShownResultOf), so a walkover's
+    // one point is the policy's, in the domain tests; here, who is absent.
+    test('a live walkover with no points shows the round level', () async {
+      final detail =
+          ((await _read(
+                    now: DateTime.utc(2026, 12, 3, 15),
+                    monthStart: DateTime.utc(2026, 12),
+                    myPoints: 0,
+                  ))
+                  as Ok<MyH2hRoundDetail>)
+              .value;
+
+      expect(detail.opponentAbsent, isTrue);
+      expect(detail.opponentPoints, 0);
+      expect(detail.result, H2hMatchResult.draw);
+    });
+
+    test('November round 1 is not a walkover', () async {
+      final detail =
+          ((await _read(now: DateTime.utc(2026, 11, 3, 15), myPoints: 0))
+                  as Ok<MyH2hRoundDetail>)
+              .value;
+
+      expect(detail.opponentAbsent, isFalse);
+      expect(detail.opponentId, _u4);
+    });
 
     test('a caller with no seat is refused', () async {
       final result = await _read(

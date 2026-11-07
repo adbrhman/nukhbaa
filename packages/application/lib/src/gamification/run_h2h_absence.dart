@@ -194,18 +194,29 @@ final class RunH2hAbsence {
   /// The push to a relegated player.
   static const String relegatedTitle = 'هبطت من مجموعتك';
 
-  /// Its text, for group [group] from round [round].
-  static String relegatedBody(int group, int round) =>
+  /// Its text, for group [group] from round [round]. [keepsRecord]: the
+  /// seat's record stays with the seat (NK216), so he takes the points of
+  /// the seat he moves to; else his points go with him.
+  static String relegatedBody(
+    int group,
+    int round, {
+    bool keepsRecord = false,
+  }) =>
       'غبت عن 3 جولات متتالية فانتقلت إلى المجموعة $group من الجولة '
-      '$round. نقاطك معك.';
+      '$round. ${keepsRecord ? _seatPoints : 'نقاطك معك.'}';
+
+  // NK216_20
+  static const String _seatPoints = 'تأخذ نقاط المقعد الذي انتقلت إليه.';
 
   /// The push to a promoted player.
   static String promotedTitle(int group) => 'صعدت إلى المجموعة $group 🎉';
 
-  /// Its text, from round [round].
-  static String promotedBody(int round) =>
+  /// Its text, from round [round]. [keepsRecord]: the seat's record stays
+  /// with the seat (NK216), so he takes the points of the seat he fills.
+  static String promotedBody(int round, {bool keepsRecord = false}) =>
       'لالتزامك صعدت بدلاً من لاعب غاب 3 جولات متتالية. تلعب في مجموعتك '
-      'الجديدة من الجولة $round، ونقاطك معك.';
+      'الجديدة من الجولة $round، '
+      '${keepsRecord ? 'وتأخذ نقاط المقعد الذي جلست فيه.' : 'ونقاطك معك.'}';
 
   /// One run at [now].
   Future<Result<H2hAbsenceRun>> call({required DateTime now}) async {
@@ -556,13 +567,22 @@ Future<void> tellH2hSeatMove({
     division: extra.division,
     groupIndex: extra.groupIndex,
   );
+  // NK216_21: from round 7 of November 2026 the record stays with the seat.
+  final keepsRecord = H2hLeaguePolicy.seatKeepsRecord(
+    day: state.monthStart,
+    fromRound: move.fromRound,
+  );
   final outTokens = await moves.pushTokensOf(move.outUser);
   if (outTokens is Ok<List<String>> && outTokens.value.isNotEmpty) {
     await sender.send(
       tokens: outTokens.value,
       title: RunH2hAbsence.relegatedTitle,
       body: move.kind == H2hSeatMoveKind.absence
-          ? RunH2hAbsence.relegatedBody(extraNumber, move.fromRound)
+          ? RunH2hAbsence.relegatedBody(
+              extraNumber,
+              move.fromRound,
+              keepsRecord: keepsRecord,
+            )
           : 'نُقلت إلى المجموعة $extraNumber من الجولة ${move.fromRound} '
                 'بقرار من إدارة الدوري.',
       link: PushLink.h2h,
@@ -574,9 +594,10 @@ Future<void> tellH2hSeatMove({
       tokens: inTokens.value,
       title: RunH2hAbsence.promotedTitle(eliteNumber),
       body: move.kind == H2hSeatMoveKind.absence
-          ? RunH2hAbsence.promotedBody(move.fromRound)
+          ? RunH2hAbsence.promotedBody(move.fromRound, keepsRecord: keepsRecord)
           : 'لالتزامك صعدت إلى المجموعة $eliteNumber من الجولة '
-                '${move.fromRound}، ونقاطك معك.',
+                '${move.fromRound}، '
+                '${keepsRecord ? 'وتأخذ نقاط المقعد الذي جلست فيه.' : 'ونقاطك معك.'}',
       link: PushLink.h2h,
     );
   }

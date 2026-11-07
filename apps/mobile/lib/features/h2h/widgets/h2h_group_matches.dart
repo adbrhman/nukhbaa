@@ -256,7 +256,8 @@ class H2hPairCard extends StatelessWidget {
     final AppTokens t = context.tokens;
     final H2hGroupMatchDto m = match;
     final bool mine = m.homeIsMe || m.awayIsMe;
-    final bool average = m.awayUserId == null || m.awayAbsent;
+    // NK216_17: an absent side is shown by name, not as the group average.
+    final bool average = m.awayUserId == null;
     // NK172_056
     final String homeName = h2hNameOf(m.homeName);
     final String awayName = average
@@ -275,6 +276,8 @@ class H2hPairCard extends StatelessWidget {
         'home' => 'فوز $homeName',
         'away' => average ? 'فوز المتوسط' : 'فوز $awayName',
         'draw' => 'تعادل',
+        'home_point' => 'نقطة لـ $homeName',
+        'away_point' => 'نقطة لـ $awayName',
         'none' => 'خسارة للطرفين',
         _ => 'مكتملة',
       },
@@ -366,14 +369,18 @@ class H2hPairCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (m.awayAbsent) ...<Widget>[
+              if (m.awayAbsent ||
+                  m.winner == 'home_point' ||
+                  m.winner == 'away_point') ...<Widget>[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  mine
-                      ? 'غاب خصمك: واجهت متوسط المجموعة '
-                            '(${h2hPointsLabel(m.awayPoints ?? 0)} نقطة).'
-                      : 'غاب أحد طرفي المواجهة؛ احتُسب متوسط المجموعة '
-                            '(${h2hPointsLabel(m.awayPoints ?? 0)} نقطة).',
+                  mine && m.awayAbsent
+                      ? h2hWalkoverNote(switch (m.winner) {
+                          'home' => 'win',
+                          'home_point' => 'draw',
+                          _ => null,
+                        })
+                      : h2hPairWalkoverNote(m.winner),
                   key: const Key('h2h.pair.opponentAbsent'),
                   textAlign: TextAlign.center,
                   style: context.text.bodySmall?.copyWith(

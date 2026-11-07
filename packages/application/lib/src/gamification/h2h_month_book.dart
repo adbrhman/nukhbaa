@@ -28,12 +28,15 @@ List<H2hMember> h2hCurrentMembers(H2hGroupSheet sheet) => [
 
 /// Every group of a month with its sheet.
 ///
-/// A seat swap moves a player to another group, and he keeps his own month
-/// (the owner's decision of 2026-10-31): his league points, prediction
-/// points and exact scorelines are the sum of what he did in every group he
-/// played in. A round is played in the group where the player held a seat
-/// in it ([H2hLeaguePolicy.table] with the members' rounds), so each match
-/// is counted once; this book adds the parts up per player
+/// A seat swap moves a player to another group. Until round 7 of November
+/// 2026 he keeps his own month (the owner's decision of 2026-10-31): his
+/// league points, prediction points and exact scorelines are the sum of what
+/// he did in every group he played in. From a swap at round 7 or later the
+/// record stays with the seat instead (NK216, decided 2026-11-07): the one
+/// who takes a seat takes what it had, as a reserve takes a place. A round is
+/// played in the group where the player held a seat in it
+/// ([H2hLeaguePolicy.table] with the members' rounds), so each match is
+/// counted once; this book adds the parts up per player
 /// ([H2hLeaguePolicy.mergeStandings]) and ranks a group by the players who
 /// hold its seats now.
 ///
@@ -93,22 +96,48 @@ final class H2hMonthBook {
 
   /// Every player's month over [rounds], put together from every group he
   /// held a seat in, read at the seat he holds now (else his last one).
+  ///
+  /// NK216 (owner's decision of 2026-11-07): from round 7 of November 2026 a
+  /// seat's record stays with the seat. Whoever takes a seat counts what it
+  /// had, and whoever leaves it takes the record of the seat he moves to
+  /// ([H2hLeaguePolicy.seatRecords]); his own matches stay his own.
   Map<UserId, H2hStanding> standings(List<H2hRoundRef> rounds) {
     final parts = <UserId, List<H2hStanding>>{};
+    final given = <UserId, List<H2hStanding>>{};
+    final taken = <UserId, List<H2hStanding>>{};
     final seatOf = <UserId, H2hMember>{};
     for (final group in groups) {
       final sheet = sheets[group.leagueId];
       if (sheet == null) {
         continue;
       }
-      for (final standing in H2hLeaguePolicy.table(
+      final table = H2hLeaguePolicy.table(
         capacity: group.capacity,
         members: sheet.members,
         rounds: rounds,
         scores: sheet.scores,
         turns: sheet.turns,
-      )) {
-        (parts[standing.userId] ??= <H2hStanding>[]).add(standing);
+      );
+      if (rounds.isEmpty) {
+        for (final standing in table) {
+          (parts[standing.userId] ??= <H2hStanding>[]).add(standing);
+        }
+      } else {
+        // NK216_7
+        final records = H2hLeaguePolicy.seatRecords(
+          members: sheet.members,
+          table: table,
+          day: rounds.first.day,
+        );
+        for (final entry in records.kept.entries) {
+          (parts[entry.key] ??= <H2hStanding>[]).addAll(entry.value);
+        }
+        for (final entry in records.given.entries) {
+          (given[entry.key] ??= <H2hStanding>[]).addAll(entry.value);
+        }
+        for (final entry in records.taken.entries) {
+          (taken[entry.key] ??= <H2hStanding>[]).addAll(entry.value);
+        }
       }
       for (final member in sheet.members) {
         final seen = seatOf[member.userId];
@@ -120,12 +149,16 @@ final class H2hMonthBook {
         }
       }
     }
+    final players = <UserId>{...parts.keys, ...given.keys, ...taken.keys};
     return {
-      for (final entry in parts.entries)
-        entry.key: H2hLeaguePolicy.mergeStandings(
-          parts: entry.value,
-          seat: seatOf[entry.key]!,
-        ),
+      for (final player in players)
+        if (seatOf[player] != null)
+          player: H2hLeaguePolicy.mergeStandings(
+            parts: parts[player] ?? const <H2hStanding>[],
+            seat: seatOf[player]!,
+            given: given[player] ?? const <H2hStanding>[],
+            taken: taken[player] ?? const <H2hStanding>[],
+          ),
     };
   }
 

@@ -487,8 +487,9 @@ class _GroupRound extends ConsumerWidget {
               '${m.homeName.isEmpty ? h2hUnnamed : m.homeName} '
               '${m.homePoints ?? '-'} × '
               '${m.awayPoints == null ? '-' : h2hPointsLabel(m.awayPoints!)} '
-              '${m.awayUserId == null || m.awayAbsent ? h2hAverageOpponent : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
-              '${m.awayAbsent ? ' · غاب الخصم؛ احتُسب متوسط المجموعة' : ''}'
+              '${m.awayUserId == null ? h2hAverageOpponent : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
+              // NK216_18
+              '${m.awayAbsent ? ' · غاب الخصم' : ''}'
               '${_winnerNote(m.winner)}',
               // NK172_058
               style: context.text.bodyMedium?.copyWith(
@@ -509,6 +510,8 @@ class _GroupRound extends ConsumerWidget {
     'home' => ' · يتقدم الأول',
     'away' => ' · يتقدم الثاني',
     'draw' => ' · تعادل',
+    'home_point' => ' · نقطة للأول',
+    'away_point' => ' · نقطة للثاني',
     'none' => ' · خسر الطرفان',
     _ => '',
   };

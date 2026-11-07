@@ -75,7 +75,7 @@ List<H2hGroupPair> h2hGroupPairs({
     final opponentMatch = opponent == null ? null : matchOf[opponent.userId];
     final flipForAverage =
         opponent != null &&
-        H2hLeaguePolicy.usesDecemberRules(round.day) &&
+        H2hLeaguePolicy.usesWalkoverRule(day: round.day, round: round.number) &&
         memberMatch != null &&
         opponentMatch != null &&
         !memberMatch.present &&
@@ -122,11 +122,23 @@ H2hGroupPair _pair({
     );
   }
   final awayMatch = away == null ? null : matchOf[away];
+  // NK216_10: a walkover (an absent side) from round 7 of November 2026.
   final awayAbsent =
       awayMatch != null &&
       homeMatch.present &&
       !awayMatch.present &&
-      H2hLeaguePolicy.usesDecemberRules(homeMatch.day);
+      H2hLeaguePolicy.usesWalkoverRule(
+        day: homeMatch.day,
+        round: homeMatch.round,
+      );
+  final homeAbsent =
+      awayMatch != null &&
+      !homeMatch.present &&
+      awayMatch.present &&
+      H2hLeaguePolicy.usesWalkoverRule(
+        day: homeMatch.day,
+        round: homeMatch.round,
+      );
   final homePoints = homeMatch.points;
   final awayPoints = awayAbsent
       ? homeMatch.opponentPoints
@@ -144,7 +156,14 @@ H2hGroupPair _pair({
       // NK172_022
       H2hMatchResult.win => H2hPairWinner.home,
       H2hMatchResult.loss => H2hPairWinner.away,
-      H2hMatchResult.draw => H2hPairWinner.draw,
+      H2hMatchResult.draw =>
+        awayAbsent ? H2hPairWinner.homePoint : H2hPairWinner.draw,
+    };
+  } else if (homeAbsent) {
+    winner = switch (awayMatch.result) {
+      H2hMatchResult.win => H2hPairWinner.away,
+      H2hMatchResult.draw => H2hPairWinner.awayPoint,
+      H2hMatchResult.loss => H2hPairWinner.none,
     };
   } else if (homeMatch.result == H2hMatchResult.win) {
     winner = H2hPairWinner.home;

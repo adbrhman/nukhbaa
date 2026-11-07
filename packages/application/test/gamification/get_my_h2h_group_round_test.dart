@@ -56,6 +56,10 @@ Future<Result<MyH2hGroupRound>> _read({
   DateTime? monthStart,
   bool absentU4 = false,
   bool presentU3 = false,
+  // NK216: the points of round 1 are set by the walkover tests.
+  int myPoints = 5,
+  int u4Points = 2,
+  bool meAbsent = false,
 }) {
   final month = monthStart ?? _november;
   final leagues = FakeH2hLeagueStore();
@@ -107,9 +111,9 @@ Future<Result<MyH2hGroupRound>> _read({
       ],
       scores: [
         // Round 1, settled: the caller 5, u4 2, u2 and u3 played nothing.
-        _score(_me, 1, 5),
+        if (!meAbsent) _score(_me, 1, myPoints),
         if (presentU3) _score(_u3, 1, 4),
-        if (withU4 && !absentU4) _score(_u4, 1, 2),
+        if (withU4 && !absentU4) _score(_u4, 1, u4Points),
         // Round 2, live: the caller 1, u2 4; u3 nothing yet, u4 0.
         // NK172_083
         _score(_me, 2, 1),
@@ -158,9 +162,9 @@ void main() {
     expect(group.profiles[_u3]!.displayName, 'name ${_u3.value}');
   });
 
-  // NK172 group round December absence test
+  // NK216: the walkover rule replaces December's group average.
   test(
-    'December absent opponents use the average in every visible pair',
+    'December absent opponents are a walkover in every visible pair',
     () async {
       final group = _ok(
         await _read(
@@ -176,16 +180,68 @@ void main() {
       final mine = group.pairs.first;
       expect((mine.home, mine.away), (_me, _u4));
       expect(mine.awayAbsent, isTrue);
-      expect(mine.awayPoints, 2.25);
+      expect(mine.awayPoints, 0.0);
       expect(mine.winner, H2hPairWinner.home);
 
       final others = group.pairs.last;
       expect((others.home, others.away), (_u3, _u2));
       expect(others.awayAbsent, isTrue);
-      expect(others.awayPoints, 2.25);
+      expect(others.awayPoints, 0.0);
       expect(others.winner, H2hPairWinner.home);
     },
   );
+
+  test(
+    'a walkover with no correct prediction is one point, not a win',
+    () async {
+      final group = _ok(
+        await _read(
+          round: 1,
+          monthStart: DateTime.utc(2026, 12),
+          absentU4: true,
+          myPoints: 0,
+          now: DateTime.utc(2026, 12, 3, 21),
+        ),
+      );
+
+      final mine = group.pairs.first;
+      expect((mine.home, mine.away), (_me, _u4));
+      expect(mine.awayAbsent, isTrue);
+      expect(mine.winner, H2hPairWinner.homePoint);
+    },
+  );
+
+  test(
+    'the caller absent: the present opponent wins or takes a point',
+    () async {
+      for (final (u4Points, winner) in [
+        (2, H2hPairWinner.away),
+        (0, H2hPairWinner.awayPoint),
+      ]) {
+        final group = _ok(
+          await _read(
+            round: 1,
+            monthStart: DateTime.utc(2026, 12),
+            meAbsent: true,
+            u4Points: u4Points,
+            now: DateTime.utc(2026, 12, 3, 21),
+          ),
+        );
+
+        final mine = group.pairs.first;
+        expect((mine.home, mine.away), (_me, _u4));
+        expect(mine.winner, winner, reason: 'u4 had $u4Points');
+      }
+    },
+  );
+
+  test('November before round 7 keeps the old rule', () async {
+    final group = _ok(await _read(round: 1, absentU4: true, myPoints: 0));
+
+    final mine = group.pairs.first;
+    expect(mine.awayAbsent, isFalse);
+    expect(mine.winner, H2hPairWinner.home);
+  });
 
   test('a live round before its last kickoff: no pairs at all', () async {
     // NK172_086

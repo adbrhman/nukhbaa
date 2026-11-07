@@ -269,7 +269,8 @@ final class GetMyH2hRound {
         match.present &&
         match.opponentId != null &&
         !match.opponentPresent &&
-        H2hLeaguePolicy.usesDecemberRules(match.day);
+        // NK216_11: a walkover from round 7 of November 2026.
+        H2hLeaguePolicy.usesWalkoverRule(day: match.day, round: match.round);
     final readResult = await _fixtures.fixturesOf(
       // NK172_008
       round: view.round,
@@ -365,9 +366,9 @@ final class GetMyH2hRound {
         opponentPoints: match?.opponentPoints,
         phase: h2hRoundPhasesOf(league.rounds)[view.round.number]!,
         result: h2hShownResultOf(view),
-        opponentProfile: opponent == null || opponentAbsent
-            ? null
-            : league.profiles[opponent],
+        // NK216_23: an absent opponent keeps his name, as a walkover is
+        // played against him, not against the group average.
+        opponentProfile: opponent == null ? null : league.profiles[opponent],
         // NK172_011
         firstKickoff: firstKickoff,
         fixtures: List<H2hRoundFixtureView>.unmodifiable(fixtures),

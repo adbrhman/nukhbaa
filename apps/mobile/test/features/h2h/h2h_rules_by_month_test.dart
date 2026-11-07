@@ -66,11 +66,21 @@ void main() {
 
     test('December says how an absent opponent is faced', () {
       final String all = h2hDecemberRules.join('\n');
+      // NK216_22: a walkover, not the group average.
       expect(all, contains('إذا غاب خصمك وأنت توقّعت'));
-      expect(all, contains('متوسط نقاط كل أعضاء المجموعة'));
-      expect(all, contains('الغائب بصفر وأنت ضمن المتوسط'));
+      expect(all, contains('توقّع صحيح واحد على الأقل'));
+      expect(all, contains('نقطة واحدة فقط'));
+      expect(all, isNot(contains('متوسط نقاط')));
       expect(all, contains('غيابك أنت يبقى خسارة'));
       expect(all, contains('إذا غاب الطرفان يخسران معًا'));
+    });
+
+    test('November says the walkover and the seat record from round 7', () {
+      final String all = h2hNovemberRules.join('\n');
+      expect(all, contains('ومن الجولة 7: إذا غاب خصمك وأنت توقّعت'));
+      expect(all, contains('توقّع صحيح واحد على الأقل'));
+      expect(all, contains('تبقى نقاط المقعد مع المقعد'));
+      expect(all, isNot(contains('ويحتفظ كل لاعب بنقاطه.')));
     });
 
     test('December says how groups of one division are compared', () {

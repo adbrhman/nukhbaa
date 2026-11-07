@@ -127,10 +127,8 @@ class H2hRoundScreen extends ConsumerWidget {
                   MergeSemantics(
                     child: _FixtureTile(
                       fixture: f,
-                      average:
-                          !secret &&
-                          (detail.opponentUserId == null ||
-                              detail.opponentAbsent),
+                      // NK216_15: an absent opponent is shown by name.
+                      average: !secret && detail.opponentUserId == null,
                       // NK172_052
                       secret: secret,
                     ),
@@ -168,8 +166,7 @@ class _MatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
     final bool secret = detail.opponentHidden;
-    final bool average =
-        !secret && (detail.opponentUserId == null || detail.opponentAbsent);
+    final bool average = !secret && detail.opponentUserId == null;
     // NK172_053
     final TextStyle? scoreStyle = context.text.headlineSmall?.copyWith(
       color: t.textPrimary,
@@ -261,8 +258,7 @@ class _MatchCard extends StatelessWidget {
           if (detail.opponentAbsent) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'غاب خصمك: واجهت متوسط المجموعة '
-              '(${h2hPointsLabel(detail.opponentPoints ?? 0)} نقطة).',
+              h2hWalkoverNote(detail.result),
               key: const Key('h2h.detail.opponentAbsent'),
               textAlign: TextAlign.center,
               style: context.text.bodySmall?.copyWith(color: t.textSecondary),
@@ -353,8 +349,8 @@ class _Totals extends StatelessWidget {
                   Text(
                     detail.opponentHidden
                         ? h2hSecretOpponent
-                        : (detail.opponentUserId == null ||
-                              detail.opponentAbsent)
+                        // NK216_24: an absent opponent keeps his name.
+                        : detail.opponentUserId == null
                         ? h2hAverageOpponent
                         // NK172_055
                         : h2hNameOf(detail.opponentName),

@@ -4150,8 +4150,9 @@ repository (Claude doc "دوري المواجهات الشهري — القوا�
   hidden or never scored is void for both sides. Only the last round may be
   withdrawn, and only before it locks.
 - **A round**: fixed circle-method pairing by slot. More points wins, equal
-  draws; the one who predicted beats the one who did not; both absent both
-  lose; an empty seat plays the group average.
+  draws; the one who predicted beats the one who did not (from round 7 of
+  November 2026, NK216: only with a correct prediction, else one point);
+  both absent both lose; an empty seat plays the group average.
 - **Table**: 3/1/0, prediction points, head-to-head among the tied, exact
   scorelines, seat, user id.
 - **Month end**: up to 3 cross each boundary (never more than half a
@@ -4297,7 +4298,48 @@ in `h2h_league_policy.dart`).
   `h2h_champion` badge (`BadgeCode.h2hChampion`): the month's
   `h2h_league_finished` event has `rank` 1 and `league_points` above 0, in
   any division (`postgres_badge_progress_reader.dart`).
-- **An absent opponent is an empty seat.** `H2hLeaguePolicy.table`, from
+- **A walkover, and a seat's record that stays with the seat (NK216,
+  owner's decision of 2026-11-07, from round 7 of November 2026).**
+  *The walkover* replaces the group-average comparison below, in November
+  from round 7 and in every later month (`H2hLeaguePolicy.usesWalkoverRule
+  (day:, round:)`, `walkoverFirstRound = 7`): when the player predicted and
+  the opponent did not, the player wins (3) only with a correct prediction,
+  that is points above zero; with none he takes one point (a draw's worth,
+  `H2hMatchResult.draw`) and the absent opponent loses; both absent both
+  lose. The reason: a player with no correct prediction won 3 points
+  against a withdrawn player, while a player with 4 correct predictions
+  drew for 1 (rounds 2 to 4 of November, the owner's screenshots). The
+  opponent keeps his name on every screen with his real points (0), the
+  round detail and the next-match card say whether the player won with a
+  correct prediction or took one point only (`h2hWalkoverNote`), and a
+  group pair whose present side took the one point has the winner
+  `home_point` or `away_point` (`H2hPairWinner`, `h2hPairWalkoverNote`).
+  `opponent_absent` is now sent from round 7 of November on (not only from
+  December). Rounds 1 to 6 keep the rule they were played by.
+  *The seat's record* stays with the seat for a swap whose first round is 7
+  or later of November 2026, or any swap from December
+  (`H2hLeaguePolicy.seatKeepsRecord`, `seatRecords`): the player who takes
+  a seat takes the league points, prediction points, exact scorelines and
+  the matches behind them that the seat had, the holders before him
+  included, and the one who leaves takes those of the seat he moves to, as
+  a reserve takes a place (the relegated takes the promoted one's record in
+  the extra group and the promoted the relegated one's in the elite group).
+  `H2hMonthBook.standings` splits each group's table by seat
+  (`H2hSeatRecords`: `kept`, `given`, `taken`) and
+  `mergeStandings(parts, seat, given, taken)` sums it: `given` stays in the
+  player's own `matches` (his round list and detail are his own) but not in
+  his totals; `taken` counts in the totals and in `H2hStanding.counted`,
+  which the head-to-head reads (`countedMatches`). A swap before round 7
+  keeps each player's own month. Push texts, the rules on the player's
+  screen (`h2hNovemberRules`, `h2hDecemberRules`) and the admin's relegate
+  dialog say which applies. No migration: tables are computed on read, so
+  nothing stored changes. Tests: `h2h_league_policy_test.dart` (gate,
+  walkover, `seatRecords`, `mergeStandings`),
+  `h2h_month_book_seat_record_test.dart`, the round and group-round
+  use-case tests, `h2h_opponent_absent_test.dart`,
+  `h2h_rules_by_month_test.dart`.
+- **An absent opponent is an empty seat** (**superseded by the walkover
+  above from round 7 of November 2026**). `H2hLeaguePolicy.table`, from
   December 2026 only: when the player predicted and the opponent did not,
   the player's points are compared with the group's average for the round,
   `sum of the present players' points / number of members of the group`,
@@ -7313,7 +7355,8 @@ Decided by the owner on 2026-10-31 (after script 182). Marker `NK183`.
 - **The swap** (`h2h_seat_moves`, append-only): the substitute takes the
   elite seat and the relegated player the extra seat, from the next round;
   each keeps his own month (the owner's choice over the alternatives on
-  2026-10-31). `membersSql` reads each seat's holders with their rounds
+  2026-10-31) **until round 7 of November 2026; from a swap at round 7 the
+  seat's record stays with the seat (NK216, below)**. `membersSql` reads each seat's holders with their rounds
   (`H2hMember.fromRound/untilRound`), `scoresSql` every player who held a
   seat of the group, `seatSql` the seat a player holds now. `table` plays a
   round with the members holding a seat in it; `H2hMonthBook` (loaded only

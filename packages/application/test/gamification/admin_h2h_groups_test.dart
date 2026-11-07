@@ -330,8 +330,8 @@ void main() {
       expect(pairs.last.winner, H2hPairWinner.home);
     });
 
-    // NK172 pure admin absent-pair test
-    test('December puts the present member first against the average', () {
+    // NK216: the walkover rule replaces December's group average.
+    test('December puts the present member first against an absent one', () {
       final pairs = h2hGroupPairs(
         members: members,
         capacity: 4,
@@ -346,11 +346,49 @@ void main() {
         (userNo(3), userNo(2)),
       ]);
       expect(pairs.map((p) => p.awayAbsent).toList(), [true, true]);
-      expect(pairs.map((p) => p.awayPoints).toList(), [2.25, 2.25]);
+      expect(pairs.map((p) => p.awayPoints).toList(), [0.0, 0.0]);
       expect(pairs.map((p) => p.winner).toList(), [
         H2hPairWinner.home,
         H2hPairWinner.home,
       ]);
+    });
+
+    test('a walkover with no correct prediction names the one point', () {
+      final pairs = h2hGroupPairs(
+        members: members,
+        capacity: 4,
+        round: H2hRoundRef(number: 1, day: DateTime.utc(2026, 12, 3)),
+        status: H2hRoundStatus.settled,
+        scores: [_score(userNo(1), 1, 0), _score(userNo(3), 1, 4)],
+        first: userNo(1),
+      );
+
+      expect(pairs.map((p) => (p.home, p.away)).toList(), [
+        (userNo(1), userNo(4)),
+        (userNo(3), userNo(2)),
+      ]);
+      expect(pairs.map((p) => p.winner).toList(), [
+        H2hPairWinner.homePoint,
+        H2hPairWinner.home,
+      ]);
+    });
+
+    test('round 6 of November is not a walkover, round 7 is', () {
+      H2hGroupPair first(int number) => h2hGroupPairs(
+        members: members,
+        capacity: 4,
+        round: H2hRoundRef(number: number, day: DateTime.utc(2026, 11, 20)),
+        status: H2hRoundStatus.settled,
+        scores: [_score(userNo(1), number, 0)],
+        first: userNo(1),
+        // Turn 1 meets slots 0 and 3, whatever the round.
+        turns: const [1],
+      ).first;
+
+      expect(first(6).awayAbsent, isFalse);
+      expect(first(6).winner, H2hPairWinner.home);
+      expect(first(7).awayAbsent, isTrue);
+      expect(first(7).winner, H2hPairWinner.homePoint);
     });
     // NK172_087
   });

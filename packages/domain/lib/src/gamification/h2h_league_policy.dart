@@ -250,7 +250,9 @@ final class H2hStanding {
     required this.exactCount,
     required this.presentRounds,
     required this.matches,
+    this.counted,
   });
+  // NK216_1
 
   /// The member.
   final UserId userId;
@@ -283,11 +285,45 @@ final class H2hStanding {
   /// Every round of the member, oldest first.
   final List<H2hMatch> matches;
 
+  /// The matches behind [won], [drawn], [lost], [pointsFor] and
+  /// [exactCount], when they are not the member's own [matches]: from the
+  /// round 7 swap rule on (NK216) a member takes the seat's record with
+  /// the seat, so these are the seat's matches, those of the holders before
+  /// him included, and the ones he gave away with the seat he left are
+  /// not. Null: the member's [matches] are the matches behind the totals.
+  final List<H2hMatch>? counted;
+
+  /// The matches behind the totals, for the head-to-head between members.
+  List<H2hMatch> get countedMatches => counted ?? matches;
+
   /// Rounds played.
   int get played => won + drawn + lost;
 
   /// Three for a win, one for a draw.
   int get leaguePoints => won * 3 + drawn;
+}
+
+/// Where the parts of one group's table go when a seat's record stays with
+/// the seat (NK216, [H2hLeaguePolicy.seatRecords]). Every map is keyed by
+/// the member the part is read for.
+final class H2hSeatRecords {
+  /// Creates the split.
+  const H2hSeatRecords({
+    required this.kept,
+    required this.given,
+    required this.taken,
+  });
+
+  /// The member's own parts that stay his and count in his totals.
+  final Map<UserId, List<H2hStanding>> kept;
+
+  /// The member's own parts that went to whoever took the seat after him:
+  /// his own rounds still, but not counted in his totals.
+  final Map<UserId, List<H2hStanding>> given;
+
+  /// The parts of the holders before the member that came to him with the
+  /// seat: counted in his totals.
+  final Map<UserId, List<H2hStanding>> taken;
 }
 
 /// A standing with its place in the group.
@@ -407,9 +443,16 @@ final class H2hDrawSeat {
 /// ahead of time; a group without one takes them in order.
 ///
 /// **The round.** Both played: more points wins, equal points draw. One
-/// played: that one wins, whatever the score. Neither played: both lose. An
-/// empty seat plays the group average: more than the average wins, exactly
-/// the average draws, and a member who did not play loses to it.
+/// played: that one wins, whatever the score (until round 7 of November
+/// 2026; from it, see below). Neither played: both lose. An empty seat plays
+/// the group average: more than the average wins, exactly the average
+/// draws, and a member who did not play loses to it.
+///
+/// **A walkover (NK216, owner's decision of 2026-11-07, from round 7 of
+/// November 2026).** One played, the other did not: the one who played wins
+/// only with at least one correct prediction (points above zero); with none
+/// he takes one point, as a draw does, and the one who did not play loses.
+/// It replaces the December comparison with the group average.
 ///
 /// **The table** is league points (3, 1, 0), then prediction points, then
 /// the head-to-head between the members still tied, then exact scorelines,
@@ -469,6 +512,92 @@ final class H2hLeaguePolicy {
       monthOrDay.year > 2026 ||
       (monthOrDay.year == 2026 && monthOrDay.month >= 12);
   // NK172_000
+
+  // NK216 walkover rule (owner's decision of 2026-11-07)
+  /// The first round of November 2026 played by the walkover rule and the
+  /// first one whose seat swaps pass the seat's record on. Earlier rounds
+  /// keep the rules they were played by.
+  static const int walkoverFirstRound = 7;
+
+  /// Whether round [round] of the month of [day] is played by the walkover
+  /// rule: a player who predicted wins against an absent opponent only with
+  /// a correct prediction, else he takes one point.
+  ///
+  /// Selected from the round and its day, never from today's date.
+  static bool usesWalkoverRule({required DateTime day, required int round}) =>
+      day.year > 2026 ||
+      (day.year == 2026 &&
+          (day.month > 11 || (day.month == 11 && round >= walkoverFirstRound)));
+
+  /// Whether a seat swap taking effect from round [fromRound] of the month
+  /// of [day] passes the seat's record on: the new holder takes the league
+  /// points, the prediction points and the exact scorelines the seat had,
+  /// and the one who left takes the record of the seat he moves to. Earlier
+  /// swaps keep their own rule: each player keeps his own month.
+  static bool seatKeepsRecord({
+    required DateTime day,
+    required int fromRound,
+  }) => usesWalkoverRule(day: day, round: fromRound);
+
+  /// Where each member's part of one group's table goes once the seats'
+  /// records stay with their seats (NK216).
+  ///
+  /// [members] are the group's seat holders and [table] its standings over
+  /// the rounds, one per member ([table]); [day] is any day of the month.
+  /// A holder whose successor took the seat from a round that passes the
+  /// record on ([seatKeepsRecord]) gives his part away together with what
+  /// the seat carried when he took it, and keeps none of it; the successor
+  /// counts the whole chain. A holder whose swap does not pass the record on
+  /// (a swap before round 7 of November 2026, or the last holder) keeps his
+  /// own part and counts what the seat carried to him, if anything.
+  static H2hSeatRecords seatRecords({
+    required List<H2hMember> members,
+    required List<H2hStanding> table,
+    required DateTime day,
+  }) {
+    final byUser = <UserId, H2hStanding>{
+      for (final standing in table) standing.userId: standing,
+    };
+    final bySeat = <int, List<H2hMember>>{};
+    for (final member in members) {
+      (bySeat[member.slot] ??= <H2hMember>[]).add(member);
+    }
+    final kept = <UserId, List<H2hStanding>>{};
+    final given = <UserId, List<H2hStanding>>{};
+    final taken = <UserId, List<H2hStanding>>{};
+    for (final holders in bySeat.values) {
+      holders.sort((a, b) => a.fromRound.compareTo(b.fromRound));
+      var carried = <H2hStanding>[];
+      for (var i = 0; i < holders.length; i++) {
+        final holder = holders[i];
+        final own = byUser[holder.userId];
+        if (own == null) {
+          carried = <H2hStanding>[];
+          continue;
+        }
+        final next = i + 1 < holders.length ? holders[i + 1] : null;
+        final until = holder.untilRound;
+        final passes =
+            next != null &&
+            until != null &&
+            next.fromRound == until + 1 &&
+            next.userId != holder.userId &&
+            seatKeepsRecord(day: day, fromRound: next.fromRound);
+        if (passes) {
+          (given[holder.userId] ??= <H2hStanding>[]).add(own);
+          carried = <H2hStanding>[...carried, own];
+        } else {
+          if (carried.isNotEmpty) {
+            (taken[holder.userId] ??= <H2hStanding>[]).addAll(carried);
+          }
+          (kept[holder.userId] ??= <H2hStanding>[]).add(own);
+          carried = <H2hStanding>[];
+        }
+      }
+    }
+    return H2hSeatRecords(kept: kept, given: given, taken: taken);
+  }
+  // NK216_2
 
   // NK182 elite draw (decided 2026-10-31)
   /// The groups of the elite draw: the first [eliteSeats] players of the
@@ -762,27 +891,24 @@ final class H2hLeaguePolicy {
           final theirs = byKey[_key(opponent.userId, round.number)];
           final theirPoints = theirs?.points ?? 0;
           final theyPlayed = theirs?.present ?? false;
-          final average = total / count;
-          final compareWithAverage =
-              usesDecemberRules(day) && present && !theyPlayed;
+          // NK216_3: from round 7 of November 2026 an absent opponent is a
+          // walkover (a win needs a correct prediction), not the group
+          // average of December's first draft.
           match = H2hMatch(
             round: round.number,
             day: day,
             opponentId: opponent.userId,
             points: points,
-            opponentPoints: compareWithAverage
-                ? average
-                : theirPoints.toDouble(),
+            opponentPoints: theirPoints.toDouble(),
             present: present,
             opponentPresent: theyPlayed,
-            result: compareWithAverage
-                ? _compare(points * count, total)
-                : _versus(
-                    points: points,
-                    present: present,
-                    opponentPoints: theirPoints,
-                    opponentPresent: theyPlayed,
-                  ),
+            result: _versus(
+              points: points,
+              present: present,
+              opponentPoints: theirPoints,
+              opponentPresent: theyPlayed,
+              walkover: usesWalkoverRule(day: day, round: round.number),
+            ),
           );
           // NK172_001
         } else {
@@ -824,9 +950,19 @@ final class H2hLeaguePolicy {
   /// groups (NK183: a seat swap moves a player to another group, and he
   /// keeps his own month). [parts] are his standings in each group over the
   /// rounds he held a seat there; [seat] is the seat he holds now.
+  ///
+  /// NK216 (owner's decision of 2026-11-07, swaps from round 7): a seat's
+  /// record stays with the seat. [given] are the parts of his own that went
+  /// to whoever took the seat after him: they stay in his [H2hStanding.
+  /// matches] (his own rounds) but are not counted in his totals. [taken]
+  /// are the parts the holders before him played in the seat he holds now:
+  /// they are counted in his totals and in [H2hStanding.counted] for the
+  /// head-to-head.
   static H2hStanding mergeStandings({
     required List<H2hStanding> parts,
     required H2hMember seat,
+    List<H2hStanding> given = const <H2hStanding>[],
+    List<H2hStanding> taken = const <H2hStanding>[],
   }) {
     var won = 0;
     var drawn = 0;
@@ -835,16 +971,23 @@ final class H2hLeaguePolicy {
     var exact = 0;
     var present = 0;
     final matches = <H2hMatch>[];
-    for (final part in parts) {
+    final counted = <H2hMatch>[];
+    for (final part in [...parts, ...taken]) {
       won += part.won;
       drawn += part.drawn;
       lost += part.lost;
       pointsFor += part.pointsFor;
       exact += part.exactCount;
       present += part.presentRounds;
+      counted.addAll(part.matches);
+    }
+    for (final part in [...parts, ...given]) {
       matches.addAll(part.matches);
     }
     matches.sort((a, b) => a.round.compareTo(b.round));
+    counted.sort((a, b) => a.round.compareTo(b.round));
+    final moved = given.isNotEmpty || taken.isNotEmpty;
+    // NK216_5
     return H2hStanding(
       userId: seat.userId,
       slot: seat.slot,
@@ -856,6 +999,7 @@ final class H2hLeaguePolicy {
       exactCount: exact,
       presentRounds: present,
       matches: List<H2hMatch>.unmodifiable(matches),
+      counted: moved ? List<H2hMatch>.unmodifiable(counted) : null,
     );
   }
 
@@ -1093,12 +1237,15 @@ final class H2hLeaguePolicy {
     required bool present,
     required int opponentPoints,
     required bool opponentPresent,
+    bool walkover = false,
   }) {
     if (!present) {
       return H2hMatchResult.loss;
     }
     if (!opponentPresent) {
-      return H2hMatchResult.win;
+      // NK216_4: a walkover wins only with a correct prediction; with none
+      // the player who came takes one point (a draw's worth).
+      return walkover && points <= 0 ? H2hMatchResult.draw : H2hMatchResult.win;
     }
     return _compare(points, opponentPoints);
   }
@@ -1125,7 +1272,8 @@ final class H2hLeaguePolicy {
   /// League points [standing] took from the members in [tied].
   static int _pointsAgainst(H2hStanding standing, Set<UserId> tied) {
     var points = 0;
-    for (final match in standing.matches) {
+    // NK216_6: the matches behind the totals (the seat's, after a swap).
+    for (final match in standing.countedMatches) {
       final opponent = match.opponentId;
       if (opponent != null && tied.contains(opponent)) {
         points += match.result.leaguePoints;

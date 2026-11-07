@@ -158,7 +158,8 @@ H2hRoundViewDto _roundViewToDto(MyH2hRound view, MyH2hLeague league) {
         match.present &&
         match.opponentId != null &&
         !match.opponentPresent &&
-        H2hLeaguePolicy.usesDecemberRules(match.day),
+        // NK216_12: a walkover from round 7 of November 2026.
+        H2hLeaguePolicy.usesWalkoverRule(day: match.day, round: match.round),
     // NK172_036
   );
 }

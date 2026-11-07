@@ -25,7 +25,16 @@ enum H2hPairWinner {
   draw('draw'),
 
   /// Neither: a settled round both members lost (neither predicted).
-  none('none');
+  none('none'),
+
+  // NK216_8
+  /// A walkover the first member took only one point of: the second did not
+  /// play and the first had no correct prediction.
+  homePoint('home_point'),
+
+  /// A walkover the second member took only one point of: the first did not
+  /// play and the second had no correct prediction.
+  awayPoint('away_point');
 
   const H2hPairWinner(this.wireName);
 
@@ -249,7 +258,10 @@ final class GetMyH2hGroupRound {
       final opponentMatch = opponent == null ? null : matchOf[opponent.userId];
       final flipForAverage =
           opponent != null &&
-          H2hLeaguePolicy.usesDecemberRules(view.round.day) &&
+          H2hLeaguePolicy.usesWalkoverRule(
+            day: view.round.day,
+            round: view.round.number,
+          ) &&
           memberMatch != null &&
           opponentMatch != null &&
           !memberMatch.present &&
@@ -303,11 +315,23 @@ final class GetMyH2hGroupRound {
       );
     }
     final awayMatch = away == null ? null : matchOf[away];
+    // NK216_9: a walkover (an absent side) from round 7 of November 2026.
     final awayAbsent =
         awayMatch != null &&
         homeMatch.present &&
         !awayMatch.present &&
-        H2hLeaguePolicy.usesDecemberRules(homeMatch.day);
+        H2hLeaguePolicy.usesWalkoverRule(
+          day: homeMatch.day,
+          round: homeMatch.round,
+        );
+    final homeAbsent =
+        awayMatch != null &&
+        !homeMatch.present &&
+        awayMatch.present &&
+        H2hLeaguePolicy.usesWalkoverRule(
+          day: homeMatch.day,
+          round: homeMatch.round,
+        );
     final homePoints = homeMatch.points;
     final awayPoints = awayAbsent
         ? homeMatch.opponentPoints
@@ -322,7 +346,14 @@ final class GetMyH2hGroupRound {
         // NK172_018
         H2hMatchResult.win => H2hPairWinner.home,
         H2hMatchResult.loss => H2hPairWinner.away,
-        H2hMatchResult.draw => H2hPairWinner.draw,
+        H2hMatchResult.draw =>
+          awayAbsent ? H2hPairWinner.homePoint : H2hPairWinner.draw,
+      };
+    } else if (homeAbsent) {
+      winner = switch (awayMatch.result) {
+        H2hMatchResult.win => H2hPairWinner.away,
+        H2hMatchResult.draw => H2hPairWinner.awayPoint,
+        H2hMatchResult.loss => H2hPairWinner.none,
       };
     } else if (homeMatch.result == H2hMatchResult.win) {
       winner = H2hPairWinner.home;
