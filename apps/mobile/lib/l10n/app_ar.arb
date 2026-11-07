@@ -527,6 +527,7 @@
   "hallLegendsRules": "يدخلها من يفوز بثلاثة ألقاب شهرية، أو بلقب موسم، أو يحمل رقمًا قياسيًا بعد تتويج ثلاثة أشهر. تُمنح تلقائيًا ولا يُضاف إليها أحد يدويًا.",
   "hallLegendReasonTitles": "{count, plural, few{فاز بـ{count} ألقاب شهرية} many{فاز بـ{count} لقبًا شهريًا} other{فاز بـ{count} لقب شهري}}",
   "hallLegendReasonRecord": "يملك الرقم القياسي: {record}",
+  "hallEntrySubtitle": "أبطال الأشهر والأرقام القياسية والأساطير",
   "championSpotlightCollapse": "إخفاء الاحتفال",
   "championSpotlightExpand": "إظهار الاحتفال",
   "championCongrats": "مبروك التتويج",

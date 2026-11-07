@@ -1339,6 +1339,7 @@
   "@hallLegendReasonTitles": {"placeholders": {"count": {"type": "int"}}},
   "hallLegendReasonRecord": "Holds the record: {record}",
   "@hallLegendReasonRecord": {"placeholders": {"record": {"type": "String"}}},
+  "hallEntrySubtitle": "Champions, records and legends",
   "championSpotlightCollapse": "Hide the celebration",
   "championSpotlightExpand": "Show the celebration",
   "championCongrats": "Congratulations on the crown",

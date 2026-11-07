@@ -1823,6 +1823,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get hallEntrySubtitle => 'Champions, records and legends';
+
+  @override
   String get championSpotlightCollapse => 'Hide the celebration';
 
   @override

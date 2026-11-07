@@ -1841,6 +1841,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get hallEntrySubtitle => 'أبطال الأشهر والأرقام القياسية والأساطير';
+
+  @override
   String get championSpotlightCollapse => 'إخفاء الاحتفال';
 
   @override

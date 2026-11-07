@@ -23,8 +23,10 @@ import 'hall_of_fame_screen.dart';
 import 'leaderboards_providers.dart';
 import 'widgets/champion_crown.dart';
 import 'widgets/champion_spotlight.dart';
+import 'widgets/dismiss_keyboard_on_tap.dart';
 import 'widgets/fixture_standings_board.dart';
 import 'widgets/friends_league_board.dart';
+import 'widgets/hall_entry_card.dart';
 import 'widgets/sporting_season_standings_board.dart';
 
 /// What the leaderboard tab ranks.
@@ -173,7 +175,9 @@ ActiveSeasonDto _currentOf(List<ActiveSeasonDto> seasons) {
 /// Opens the champions' record.
 void _openRecord(BuildContext context) {
   Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(builder: (_) => const HallOfFameScreen()),
+    MaterialPageRoute<void>(
+      builder: (_) => const DismissKeyboardOnTap(child: HallOfFameScreen()),
+    ),
   );
 }
 
@@ -459,7 +463,13 @@ class _ScopedLeaderboardState extends ConsumerState<_ScopedLeaderboard> {
               style: context.text.bodySmall?.copyWith(color: tokens.textMuted),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
+          // The door to the Hall of Fame: open to every player, always in view.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: HallEntryCard(onTap: () => _openRecord(context)),
+          ),
+          const SizedBox(height: AppSpacing.md),
           // What is ranked first, then which stretch of time.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),

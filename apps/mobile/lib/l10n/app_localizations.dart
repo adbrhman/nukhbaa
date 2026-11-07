@@ -3162,6 +3162,12 @@ abstract class AppLocalizations {
   /// **'Holds the record: {record}'**
   String hallLegendReasonRecord(String record);
 
+  /// No description provided for @hallEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Champions, records and legends'**
+  String get hallEntrySubtitle;
+
   /// No description provided for @championSpotlightCollapse.
   ///
   /// In en, this message translates to:
