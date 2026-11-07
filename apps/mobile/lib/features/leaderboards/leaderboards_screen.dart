@@ -19,7 +19,7 @@ import '../../l10n/app_localizations.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import 'champions_providers.dart';
-import 'champions_record_screen.dart';
+import 'hall_of_fame_screen.dart';
 import 'leaderboards_providers.dart';
 import 'widgets/champion_crown.dart';
 import 'widgets/champion_spotlight.dart';
@@ -173,7 +173,7 @@ ActiveSeasonDto _currentOf(List<ActiveSeasonDto> seasons) {
 /// Opens the champions' record.
 void _openRecord(BuildContext context) {
   Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(builder: (_) => const ChampionsRecordScreen()),
+    MaterialPageRoute<void>(builder: (_) => const HallOfFameScreen()),
   );
 }
 

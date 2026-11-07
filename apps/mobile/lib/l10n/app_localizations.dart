@@ -3060,6 +3060,108 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load the champions.'**
   String get championsLoadFailed;
 
+  /// No description provided for @hallSeasonsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Season champions'**
+  String get hallSeasonsHeading;
+
+  /// No description provided for @hallSeasonCupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{season} season cup'**
+  String hallSeasonCupTitle(String season);
+
+  /// No description provided for @hallSeasonCupWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for its champion'**
+  String get hallSeasonCupWaiting;
+
+  /// No description provided for @hallSeasonCupNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The season champion is crowned when August {year} closes.'**
+  String hallSeasonCupNote(String year);
+
+  /// No description provided for @hallMonthsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Champions of the months'**
+  String get hallMonthsHeading;
+
+  /// No description provided for @hallRecordsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get hallRecordsHeading;
+
+  /// No description provided for @hallRecordMostPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Most points in a month'**
+  String get hallRecordMostPoints;
+
+  /// No description provided for @hallRecordMostExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Most exact scores in a month'**
+  String get hallRecordMostExact;
+
+  /// No description provided for @hallRecordBiggestMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Widest lead over the runner-up'**
+  String get hallRecordBiggestMargin;
+
+  /// No description provided for @hallRecordSetIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Set in {month}'**
+  String hallRecordSetIn(String month);
+
+  /// No description provided for @hallExactResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 exact score} other{{count} exact scores}}'**
+  String hallExactResults(int count);
+
+  /// No description provided for @hallTitlesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 title} other{{count} titles}}'**
+  String hallTitlesCount(int count);
+
+  /// No description provided for @hallLegendsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Legends'**
+  String get hallLegendsHeading;
+
+  /// No description provided for @hallLegendsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No one has entered the Legends yet.'**
+  String get hallLegendsEmpty;
+
+  /// No description provided for @hallLegendsRules.
+  ///
+  /// In en, this message translates to:
+  /// **'A player enters by winning three monthly titles, a season title, or by holding a record once three months have been crowned. It is automatic: nobody is added by hand.'**
+  String get hallLegendsRules;
+
+  /// No description provided for @hallLegendReasonTitles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{Won {count} monthly titles}}'**
+  String hallLegendReasonTitles(int count);
+
+  /// No description provided for @hallLegendReasonRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Holds the record: {record}'**
+  String hallLegendReasonRecord(String record);
+
   /// No description provided for @championSpotlightCollapse.
   ///
   /// In en, this message translates to:

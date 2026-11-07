@@ -1748,6 +1748,99 @@ class AppLocalizationsAr extends AppLocalizations {
   String get championsLoadFailed => 'تعذّر تحميل الأبطال.';
 
   @override
+  String get hallSeasonsHeading => 'أبطال المواسم';
+
+  @override
+  String hallSeasonCupTitle(String season) {
+    return 'كأس موسم $season';
+  }
+
+  @override
+  String get hallSeasonCupWaiting => 'ينتظر بطله';
+
+  @override
+  String hallSeasonCupNote(String year) {
+    return 'يُتوَّج بطل الموسم عند ختام أغسطس $year.';
+  }
+
+  @override
+  String get hallMonthsHeading => 'أبطال الأشهر';
+
+  @override
+  String get hallRecordsHeading => 'الأرقام القياسية';
+
+  @override
+  String get hallRecordMostPoints => 'أعلى نقاط في شهر';
+
+  @override
+  String get hallRecordMostExact => 'أكثر نتائج دقيقة في شهر';
+
+  @override
+  String get hallRecordBiggestMargin => 'أكبر فارق عن الوصيف';
+
+  @override
+  String hallRecordSetIn(String month) {
+    return 'تحقق في $month';
+  }
+
+  @override
+  String hallExactResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نتيجة دقيقة',
+      many: '$count نتيجة دقيقة',
+      few: '$count نتائج دقيقة',
+      two: 'نتيجتان دقيقتان',
+      one: 'نتيجة دقيقة واحدة',
+      zero: 'لا نتيجة دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hallTitlesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count لقب',
+      many: '$count لقبًا',
+      few: '$count ألقاب',
+      two: 'لقبان',
+      one: 'لقب واحد',
+      zero: 'بلا ألقاب',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hallLegendsHeading => 'الأساطير';
+
+  @override
+  String get hallLegendsEmpty => 'لم يدخل أحد قاعة الأساطير بعد.';
+
+  @override
+  String get hallLegendsRules =>
+      'يدخلها من يفوز بثلاثة ألقاب شهرية، أو بلقب موسم، أو يحمل رقمًا قياسيًا بعد تتويج ثلاثة أشهر. تُمنح تلقائيًا ولا يُضاف إليها أحد يدويًا.';
+
+  @override
+  String hallLegendReasonTitles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'فاز بـ$count لقب شهري',
+      many: 'فاز بـ$count لقبًا شهريًا',
+      few: 'فاز بـ$count ألقاب شهرية',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hallLegendReasonRecord(String record) {
+    return 'يملك الرقم القياسي: $record';
+  }
+
+  @override
   String get championSpotlightCollapse => 'إخفاء الاحتفال';
 
   @override

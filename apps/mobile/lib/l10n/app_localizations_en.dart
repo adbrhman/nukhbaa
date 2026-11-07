@@ -1740,6 +1740,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get championsLoadFailed => 'Couldn\'t load the champions.';
 
   @override
+  String get hallSeasonsHeading => 'Season champions';
+
+  @override
+  String hallSeasonCupTitle(String season) {
+    return '$season season cup';
+  }
+
+  @override
+  String get hallSeasonCupWaiting => 'Waiting for its champion';
+
+  @override
+  String hallSeasonCupNote(String year) {
+    return 'The season champion is crowned when August $year closes.';
+  }
+
+  @override
+  String get hallMonthsHeading => 'Champions of the months';
+
+  @override
+  String get hallRecordsHeading => 'Records';
+
+  @override
+  String get hallRecordMostPoints => 'Most points in a month';
+
+  @override
+  String get hallRecordMostExact => 'Most exact scores in a month';
+
+  @override
+  String get hallRecordBiggestMargin => 'Widest lead over the runner-up';
+
+  @override
+  String hallRecordSetIn(String month) {
+    return 'Set in $month';
+  }
+
+  @override
+  String hallExactResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exact scores',
+      one: '1 exact score',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hallTitlesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titles',
+      one: '1 title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hallLegendsHeading => 'Legends';
+
+  @override
+  String get hallLegendsEmpty => 'No one has entered the Legends yet.';
+
+  @override
+  String get hallLegendsRules =>
+      'A player enters by winning three monthly titles, a season title, or by holding a record once three months have been crowned. It is automatic: nobody is added by hand.';
+
+  @override
+  String hallLegendReasonTitles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Won $count monthly titles',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hallLegendReasonRecord(String record) {
+    return 'Holds the record: $record';
+  }
+
+  @override
   String get championSpotlightCollapse => 'Hide the celebration';
 
   @override
