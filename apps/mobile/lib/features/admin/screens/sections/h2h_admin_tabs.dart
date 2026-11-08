@@ -18,6 +18,8 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../../h2h/h2h_texts.dart';
+import '../../../h2h/widgets/h2h_share_cards.dart';
+import '../../../h2h/widgets/h2h_standings_table.dart';
 import '../../widgets/admin_ui_kit.dart';
 import 'h2h_admin_section.dart';
 
@@ -274,6 +276,7 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
     final int free = <int>[
       for (final H2hAdminGroupDto g in data.groups) g.freeSlots.length,
     ].fold(0, (int a, int b) => a + b);
+    final List<H2hAdminGroupDto> elite = h2hEliteGroupsOf(data);
     return <Widget>[
       AdminCard(
         key: const Key('admin.h2h.groups.summary'),
@@ -289,6 +292,26 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
                   : 'لم تُجرَ قرعة هذا الشهر بعد',
               style: _muted(context),
             ),
+            if (elite.isNotEmpty) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              AdminSecondaryButton(
+                key: const Key('admin.h2h.groups.shareElite'),
+                label: 'صورة ترتيب المجموعات الأربع',
+                icon: Icons.ios_share_rounded,
+                onPressed: () => unawaited(
+                  showH2hStandingsShare(
+                    context,
+                    heading: 'ترتيب دوري المواجهات',
+                    subheading:
+                        'مجموعات النخبة الأربع · ${h2hMonthLabel(data.monthStart)}',
+                    groups: <H2hShareStandings>[
+                      for (final H2hAdminGroupDto g in elite)
+                        h2hShareStandingsOf(data.monthStart, g),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -314,7 +337,6 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
     H2hAdminGroupsDto data,
     H2hAdminGroupDto group,
   ) {
-    final AppTokens tokens = context.tokens;
     final bool open = _open == group.leagueId;
     final int size = group.standings.length;
     return AdminCard(
@@ -336,47 +358,13 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
             style: _muted(context),
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (group.standings.isEmpty)
-            Text('لا لاعبين في هذه المجموعة', style: _muted(context)),
-          for (final H2hStandingDto s in group.standings)
-            Padding(
-              key: Key('admin.h2h.group.${group.leagueId}.${s.userId}'),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    width: 4,
-                    height: 36,
-                    color: s.rank <= group.promotionZone
-                        ? tokens.success
-                        : (s.rank > size - group.relegationZone
-                              ? tokens.error
-                              : tokens.border),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          '${s.rank}. ${s.displayName.isEmpty ? h2hUnnamed : s.displayName}',
-                          style: context.text.bodyMedium?.copyWith(
-                            color: tokens.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          '${s.leaguePoints} نقطة · فوز ${s.won} · تعادل '
-                          '${s.drawn} · خسارة ${s.lost} · نقاط التوقع '
-                          '${s.pointsFor}',
-                          style: _muted(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          H2hStandingsTable(
+            standings: group.standings,
+            promotionZone: group.promotionZone,
+            relegationZone: group.relegationZone,
+            eliteDraw: h2hUsesEliteDraw(data.monthStart),
+            keyPrefix: 'admin.h2h.group.${group.leagueId}.table',
+          ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -392,6 +380,24 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
                         _open = open ? null : group.leagueId;
                         _round = data.rounds.last.round;
                       }),
+              ),
+              AdminSecondaryButton(
+                key: Key('admin.h2h.group.${group.leagueId}.shareStandings'),
+                label: 'صورة الترتيب',
+                icon: Icons.ios_share_rounded,
+                onPressed: group.standings.isEmpty
+                    ? null
+                    : () => unawaited(
+                        showH2hStandingsShare(
+                          context,
+                          heading: 'ترتيب دوري المواجهات',
+                          subheading:
+                              '${h2hGroupTitle(data.monthStart, group.division, group.groupIndex)} · ${h2hMonthLabel(data.monthStart)}',
+                          groups: <H2hShareStandings>[
+                            h2hShareStandingsOf(data.monthStart, group),
+                          ],
+                        ),
+                      ),
               ),
               if (group.freeSlots.isNotEmpty)
                 AdminSecondaryButton(
@@ -424,6 +430,11 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
                 leagueId: group.leagueId,
                 round: _round!,
                 day: widget.day,
+                groupTitle: h2hGroupTitle(
+                  data.monthStart,
+                  group.division,
+                  group.groupIndex,
+                ),
               ),
           ],
         ],
@@ -438,11 +449,15 @@ class _GroupRound extends ConsumerWidget {
     required this.leagueId,
     required this.round,
     required this.day,
+    required this.groupTitle,
   });
 
   final String leagueId;
   final int round;
   final String? day;
+
+  /// The group's name, for the picture of its matches.
+  final String groupTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -478,6 +493,29 @@ class _GroupRound extends ConsumerWidget {
             child: Text(
               '$h2hSecretPairs ${h2hRevealLabel(data.revealsAt)}',
               style: _muted(context),
+            ),
+          ),
+        if (!data.matchesHidden && data.matches.isNotEmpty)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AdminSecondaryButton(
+              key: Key('admin.h2h.group.$leagueId.shareMatches.$round'),
+              label: 'صورة مواجهات الجولة',
+              icon: Icons.ios_share_rounded,
+              onPressed: () => unawaited(
+                showH2hMatchesShare(
+                  context,
+                  heading: 'مواجهات الجولة ${data.round}',
+                  subheading: '${h2hDayLabel(data.day)} · $groupTitle',
+                  groups: <H2hShareMatches>[
+                    H2hShareMatches(
+                      title: groupTitle,
+                      status: data.status,
+                      matches: data.matches,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         for (final H2hGroupMatchDto m in data.matches)

@@ -21,7 +21,10 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
+import '../../../competition/team_catalog_index.dart';
+import '../../../fixture_prediction/current_month_fixtures_providers.dart';
 import '../../../h2h/h2h_texts.dart';
+import '../../../h2h/widgets/h2h_share_cards.dart';
 import '../../widgets/admin_ui_kit.dart';
 import 'h2h_admin_absence_tab.dart';
 import 'h2h_admin_tabs.dart';
@@ -204,6 +207,107 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
       Err<int>(:final error) => h2hAdminErrorMessage(error),
     });
     _reload();
+  }
+
+  /// The day's real matches with their scores, as one picture to share
+  /// (2026-11-08). The scores are the feed's own
+  /// (`GET /feed/current-month-fixtures`); nothing is computed here.
+  Future<void> _shareResults(H2hRoundDto round) async {
+    setState(() => _busy = true);
+    try {
+      final List<CurrentMonthFixtureItemDto> items = await ref.read(
+        currentMonthFixturesProvider.future,
+      );
+      if (!mounted) return;
+      final List<H2hShareFixture> fixtures = h2hShareFixturesOf(
+        items: items,
+        day: round.day,
+        catalogById: ref.read(teamCatalogByIdProvider),
+        timeLabel: (String iso) => formatKickoffTime(context, iso),
+      );
+      if (fixtures.isEmpty) {
+        _snack('لا مباريات في قائمة هذا اليوم.');
+        return;
+      }
+      final int done = fixtures
+          .where((H2hShareFixture f) => f.state == 'final')
+          .length;
+      await showH2hFixturesShare(
+        context,
+        heading: 'نتائج مباريات الجولة ${round.round}',
+        subheading:
+            '${h2hDayLabel(round.day)} · انتهت $done من ${fixtures.length}',
+        fixtures: fixtures,
+      );
+    } on Object catch (error) {
+      if (mounted) {
+        _snack(
+          error is AppError
+              ? h2hAdminErrorMessage(error)
+              : 'تعذّر تحميل مباريات اليوم.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// The round's player matches of the four elite groups, as one picture to
+  /// share. A group whose opponents are still secret stops it: the server
+  /// hides them from the admins too until the round's last kickoff.
+  Future<void> _shareMatchups(H2hRoundDto round) async {
+    setState(() => _busy = true);
+    try {
+      final H2hAdminGroupsDto month = await ref.read(
+        adminH2hGroupsProvider(_day).future,
+      );
+      final List<H2hShareMatches> blocks = <H2hShareMatches>[];
+      for (final H2hAdminGroupDto group in h2hEliteGroupsOf(month)) {
+        final H2hGroupRoundDto read = await ref.read(
+          adminH2hGroupRoundProvider((
+            leagueId: group.leagueId,
+            round: round.round,
+            day: _day,
+          )).future,
+        );
+        if (read.matchesHidden) {
+          if (mounted) _snack(h2hSecretPairs);
+          return;
+        }
+        blocks.add(
+          H2hShareMatches(
+            title: h2hGroupTitle(
+              month.monthStart,
+              group.division,
+              group.groupIndex,
+            ),
+            status: read.status,
+            matches: read.matches,
+          ),
+        );
+      }
+      if (!mounted) return;
+      if (blocks.isEmpty) {
+        _snack('لا مجموعات نخبة في هذا الشهر.');
+        return;
+      }
+      await showH2hMatchesShare(
+        context,
+        heading: 'مواجهات الجولة ${round.round}',
+        subheading: '${h2hDayLabel(round.day)} · مجموعات النخبة الأربع',
+        groups: blocks,
+      );
+    } on Object catch (error) {
+      if (mounted) {
+        _snack(
+          error is AppError
+              ? h2hAdminErrorMessage(error)
+              : 'تعذّر تحميل المواجهات.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<bool> _confirm({
@@ -442,6 +546,10 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
             withdrawable: r.round == lastNumber && !r.locked,
             busy: _busy,
             onWithdraw: () => unawaited(_withdraw(r)),
+            onShareResults: () => unawaited(_shareResults(r)),
+            onShareMatchups: h2hUsesEliteDraw(data.monthStart)
+                ? () => unawaited(_shareMatchups(r))
+                : null,
           ),
           const SizedBox(height: AppSpacing.sm),
         ],
@@ -483,12 +591,21 @@ class _RoundCard extends StatelessWidget {
     required this.withdrawable,
     required this.busy,
     required this.onWithdraw,
+    required this.onShareResults,
+    this.onShareMatchups,
   });
 
   final H2hRoundDto round;
   final bool withdrawable;
   final bool busy;
   final VoidCallback onWithdraw;
+
+  /// The day's real results as one picture.
+  final VoidCallback onShareResults;
+
+  /// The four elite groups' player matches as one picture; null outside a
+  /// month of the elite draw.
+  final VoidCallback? onShareMatchups;
 
   @override
   Widget build(BuildContext context) {
@@ -514,6 +631,26 @@ class _RoundCard extends StatelessWidget {
             style: context.text.bodySmall?.copyWith(
               color: tokens.textSecondary,
             ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              AdminSecondaryButton(
+                key: Key('admin.h2h.round.${round.round}.shareResults'),
+                label: 'صورة نتائج المباريات',
+                icon: Icons.ios_share_rounded,
+                onPressed: busy ? null : onShareResults,
+              ),
+              if (onShareMatchups != null)
+                AdminSecondaryButton(
+                  key: Key('admin.h2h.round.${round.round}.shareMatchups'),
+                  label: 'صورة مواجهات اللاعبين',
+                  icon: Icons.groups_rounded,
+                  onPressed: busy ? null : onShareMatchups,
+                ),
+            ],
           ),
           if (withdrawable) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),

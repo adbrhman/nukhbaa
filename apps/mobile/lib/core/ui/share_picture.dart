@@ -75,13 +75,16 @@ Future<ui.Image> _appendCaption(ui.Image captured, String caption) async {
 /// Draws the picture under [boundaryKey] (a [RepaintBoundary]) and shares
 /// it as [fileName] with [text]. True when the share sheet opened; false
 /// when the picture could not be drawn or the sheet refused, never a throw.
-/// [share] replaces the phone's sheet in a test.
+/// [share] replaces the phone's sheet in a test. [pixelRatio] is the
+/// capture's density: 3 for a card, less for a very tall one so a phone
+/// with a small texture limit still draws it.
 Future<bool> sharePicture({
   required GlobalKey boundaryKey,
   required String text,
   required String fileName,
   String? captionOnImage,
   ShareSheet? share,
+  double pixelRatio = 3,
 }) async {
   try {
     // A frame already scheduled is the card's own repaint (the tap that
@@ -93,7 +96,7 @@ Future<bool> sharePicture({
     if (binding.hasScheduledFrame) await binding.endOfFrame;
     final RenderObject? object = boundaryKey.currentContext?.findRenderObject();
     if (object is! RenderRepaintBoundary) return false;
-    final ui.Image captured = await object.toImage(pixelRatio: 3);
+    final ui.Image captured = await object.toImage(pixelRatio: pixelRatio);
     final ui.Image image = captionOnImage == null
         ? captured
         : await _appendCaption(captured, captionOnImage);

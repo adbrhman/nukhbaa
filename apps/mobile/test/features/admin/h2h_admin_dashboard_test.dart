@@ -332,8 +332,12 @@ void main() {
     expect(find.byKey(const Key('admin.h2h.group.g-1')), findsOneWidget);
     expect(find.text('المجموعة 5'), findsOneWidget);
     expect(find.textContaining('1 مقاعد شاغرة'), findsWidgets);
-    expect(find.text('1. سامي'), findsOneWidget);
-    expect(find.text('3. علي'), findsOneWidget);
+    expect(find.text('سامي'), findsOneWidget);
+    expect(find.text('علي'), findsOneWidget);
+    expect(
+      find.byKey(const Key('admin.h2h.group.g-1.table.u-1.points')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('admin.h2h.group.g-1.matches')));
     await tester.pumpAndSettle();
