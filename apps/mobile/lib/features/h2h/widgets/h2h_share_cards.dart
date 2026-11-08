@@ -810,7 +810,11 @@ class _FixtureRow extends StatelessWidget {
                         padding: EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
                           '-',
-                          style: TextStyle(color: _muted, fontSize: 14),
+                          // NK219: the type scale, not a bare 14.
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: AppFontSize.s14,
+                          ),
                         ),
                       ),
                       Text('${f.awayGoals}', style: score),
