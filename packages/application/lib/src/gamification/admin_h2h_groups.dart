@@ -18,6 +18,7 @@ import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
 import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/notification/owner_inbox.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -85,6 +86,7 @@ final class H2hAdminGroupRound {
     required this.profiles,
     this.pairsHidden = false,
     this.revealsAt,
+    this.secretToPlayers = false, // NK221_8
   });
 
   /// The round.
@@ -103,6 +105,12 @@ final class H2hAdminGroupRound {
   /// When the secret opponents are named (a live round's last kickoff), or
   /// null.
   final DateTime? revealsAt;
+
+  /// True when the opponents are still secret to the players but shown here
+  /// because the reader is the owner admin: [pairs] is then set though the
+  /// round has not reached its last kickoff.
+  // NK221_9
+  final bool secretToPlayers;
 
   /// The name and picture version of each member.
   final Map<UserId, WeeklyLeagueMemberProfile> profiles;
@@ -124,6 +132,26 @@ H2hRoundStatus _statusOf(H2hRound round, H2hGroupSheet sheet) {
     return H2hRoundStatus.settled;
   }
   return H2hRoundStatus.live;
+}
+
+/// Whether [principal] is the owner admin -- the one account the
+/// head-to-head league's secret opponents are shown to before the round's
+/// last kickoff (decided by the owner on 2026-11-08). Any other admin reads
+/// what the players read. It fails closed: no [owner], a failed lookup or
+/// another account is `false`.
+// NK221_10
+Future<bool> _isOwnerAdmin(
+  OwnerNotices? owner,
+  AuthenticatedUser principal,
+) async {
+  if (owner == null) {
+    return false;
+  }
+  final found = await owner.ownerId();
+  return switch (found) {
+    Ok<UserId?>(:final value) => value != null && value == principal.userId,
+    Err<UserId?>() => false,
+  };
 }
 
 /// Reads every group of the month containing `day` (the current Riyadh
@@ -278,6 +306,9 @@ final class AdminGetH2hGroups {
 /// does not have is `h2h.group_unknown` / `h2h.round_unknown`. Until the
 /// round's last kickoff the pairs are secret here too (`h2hOpponentSecret`):
 /// the admins play the league, and the suspicious matches are read after.
+/// Only the owner admin (`owner`) reads them before then, and the reading
+/// says so (`secretToPlayers`).
+// NK221_12
 final class AdminGetH2hGroupRound {
   /// Creates the use-case over its collaborators.
   const AdminGetH2hGroupRound({
@@ -286,17 +317,23 @@ final class AdminGetH2hGroupRound {
     required H2hSheetReader sheets,
     required WeeklyLeagueProfileReader profiles,
     required Clock clock,
+    OwnerNotices? owner,
   }) : _leagues = leagues,
        _rounds = rounds,
        _sheets = sheets,
        _profiles = profiles,
-       _clock = clock;
+       _clock = clock,
+       _owner = owner;
 
   final H2hLeagueStore _leagues;
   final H2hRoundStore _rounds;
   final H2hSheetReader _sheets;
   final WeeklyLeagueProfileReader _profiles;
   final Clock _clock;
+
+  /// Tells who the owner admin is; null, and nobody reads the secret pairs.
+  // NK221_11
+  final OwnerNotices? _owner;
 
   /// Reads the round for [principal], who must be an admin.
   Future<Result<H2hAdminGroupRound>> call({
@@ -378,11 +415,14 @@ final class AdminGetH2hGroupRound {
     ];
     final status = _statusOf(target, sheet);
     final lastKickoff = sheet.lastKickoffs[target.number];
-    final secret = h2hOpponentSecret(
+    final secretNow = h2hOpponentSecret(
       status: status,
       lastKickoff: lastKickoff,
       now: _clock.nowUtc(),
     );
+    // NK221_13: the owner admin alone reads the pairs while they are secret.
+    final ownerSees = secretNow && await _isOwnerAdmin(_owner, principal);
+    final secret = secretNow && !ownerSees;
     return Result.ok(
       H2hAdminGroupRound(
         round: target,
@@ -399,7 +439,10 @@ final class AdminGetH2hGroupRound {
                 turns: sheet.turns,
               ),
         pairsHidden: secret,
-        revealsAt: secret && status == H2hRoundStatus.live ? lastKickoff : null,
+        revealsAt: secretNow && status == H2hRoundStatus.live
+            ? lastKickoff
+            : null,
+        secretToPlayers: ownerSees, // NK221_14
         profiles: (profilesResult as Ok<Map<UserId, WeeklyLeagueMemberProfile>>)
             .value,
       ),
@@ -411,10 +454,18 @@ final class AdminGetH2hGroupRound {
 /// reading [GetMyH2hMonth] makes for them: their seat, table, rounds,
 /// opponents and points. Admin only. Never throws.
 final class AdminGetH2hPlayer {
-  /// Creates the use-case over the players' own reading.
-  const AdminGetH2hPlayer({required GetMyH2hMonth month}) : _month = month;
+  /// Creates the use-case over the players' own reading. With [owner] the
+  /// owner admin's reading names the secret opponents too.
+  const AdminGetH2hPlayer({required GetMyH2hMonth month, OwnerNotices? owner})
+    : _month = month,
+      _owner = owner;
 
   final GetMyH2hMonth _month;
+
+  /// Tells who the owner admin is; null, and nobody reads the secret
+  /// opponents.
+  // NK221_15
+  final OwnerNotices? _owner;
 
   /// Reads [userId]'s month for [principal], who must be an admin.
   Future<Result<MyH2hMonth>> call({
@@ -427,6 +478,8 @@ final class AdminGetH2hPlayer {
     }
     return _month(
       principal: AuthenticatedUser(userId: userId, role: PlatformRole.user),
+      // NK221_16: only the owner admin reads the secret opponents.
+      revealSecrets: await _isOwnerAdmin(_owner, principal),
     );
   }
 }

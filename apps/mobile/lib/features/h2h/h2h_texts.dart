@@ -245,6 +245,12 @@ String h2hRevealLabel(String? revealsAt) {
 const String h2hSecretPairs =
     'مواجهات هذه الجولة سرية حتى انطلاق آخر مباراة فيها.';
 
+/// Under a round whose opponents only the owner admin can read yet.
+const String h2hOwnerOnlyPairs = 'سرّية عن اللاعبين، وتراها أنت وحدك.';
+
+/// After a round's line in a player's month, when only the owner reads it.
+const String h2hOwnerOnlyTag = 'سرّي عن اللاعبين';
+
 /// In place of the opponent's picks while the opponent is secret.
 const String h2hSecretPick = 'مخفي حتى كشف الخصم';
 

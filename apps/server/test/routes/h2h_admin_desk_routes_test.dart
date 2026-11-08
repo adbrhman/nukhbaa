@@ -601,6 +601,8 @@ void main() {
       final body = await decodeBody(response);
       expect(body['status'], 'open');
       expect(body['matches_hidden'], isTrue);
+      // NK221_36: no owner is wired in this test, so nobody reads them early.
+      expect(body['secret_to_players'], isFalse);
       expect(_list(body['matches']), isEmpty);
     });
 

@@ -78,6 +78,7 @@ final class MyH2hRound {
     this.opponentHidden = false,
     this.revealsAt,
     this.ownPoints,
+    this.secretToPlayers = false, // NK221_1
   });
 
   /// The round.
@@ -107,6 +108,13 @@ final class MyH2hRound {
   /// The caller's own stored points in a live round whose opponent is
   /// still secret; null otherwise ([match] carries them).
   final int? ownPoints;
+
+  /// True when the opponent is still secret to the players but is shown
+  /// here because the reader is the owner admin (`revealSecrets`):
+  /// [opponentId] and [match] are then set. Never true in a player's own
+  /// reading.
+  // NK221_2
+  final bool secretToPlayers;
 }
 
 /// The caller's head-to-head month.
@@ -194,9 +202,13 @@ final class GetMyH2hLeague {
   final WeeklyLeagueProfileReader _profiles;
   final Clock _clock;
 
-  /// Reads [principal]'s month.
+  /// Reads [principal]'s month. With [revealSecrets] the secret opponents of
+  /// the rounds not started or still live are named too: only the owner
+  /// admin's reading of a player (`AdminGetH2hPlayer`) asks for it.
+  // NK221_3
   Future<Result<MyH2hLeague>> call({
     required AuthenticatedUser principal,
+    bool revealSecrets = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
@@ -345,11 +357,12 @@ final class GetMyH2hLeague {
       final status = _statusOf(round, sheet);
       final lastKickoff = sheet.lastKickoffs[round.number];
       final match = myMatches[round.number];
-      if (h2hOpponentSecret(
+      final secret = h2hOpponentSecret(
         status: status,
         lastKickoff: lastKickoff,
         now: now,
-      )) {
+      ); // NK221_4
+      if (secret && !revealSecrets) {
         views.add(
           MyH2hRound(
             round: round,
@@ -369,6 +382,7 @@ final class GetMyH2hLeague {
           status: status,
           opponentId: opponentIn(round),
           match: match,
+          secretToPlayers: secret, // NK221_5
         ),
       );
     }

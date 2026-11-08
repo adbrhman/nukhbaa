@@ -495,6 +495,15 @@ class _GroupRound extends ConsumerWidget {
               style: _muted(context),
             ),
           ),
+        if (data.secretToPlayers)
+          Padding(
+            key: Key('admin.h2h.group.$leagueId.ownerOnly.$round'),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Text(
+              '$h2hOwnerOnlyPairs ${h2hRevealLabel(data.revealsAt)}',
+              style: _muted(context),
+            ),
+          ),
         if (!data.matchesHidden && data.matches.isNotEmpty)
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -932,7 +941,8 @@ class _PlayerMonth extends ConsumerWidget {
                   ? h2hAverageOpponent
                   : ((r.opponentName ?? '').isEmpty ? h2hUnnamed : r.opponentName!)}'
               '${r.myPoints == null ? '' : ' · ${r.myPoints} - ${r.opponentPoints == null ? '-' : h2hPointsLabel(r.opponentPoints!)}'}'
-              '${r.result == null ? '' : ' · ${h2hResultLabel(r.result!)}'}',
+              '${r.result == null ? '' : ' · ${h2hResultLabel(r.result!)}'}'
+              '${r.secretToPlayers ? ' · $h2hOwnerOnlyTag' : ''}',
               style: context.text.bodyMedium?.copyWith(
                 color: context.tokens.textPrimary,
               ),

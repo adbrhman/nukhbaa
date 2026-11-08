@@ -3781,6 +3781,19 @@ final class CompositionRoot {
           sheets: PostgresH2hSheetReader(connection),
           profiles: PostgresWeeklyLeagueProfileReader(connection),
           clock: clock,
+          // NK221_28: the owner admin alone reads the secret opponents.
+          owner: OwnerInbox(
+            email: dailyShortfallRecipient,
+            users: userAdminRepository,
+            announcements: announcementRepository,
+            notify: CreateNotification(
+              notifications: notificationRepository,
+              idGenerator: idGenerator,
+              clock: clock,
+            ),
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
         ),
         player: AdminGetH2hPlayer(
           month: GetMyH2hMonth(
@@ -3792,6 +3805,19 @@ final class CompositionRoot {
               clock: clock,
             ),
             rounds: PostgresH2hRoundStore(connection),
+            clock: clock,
+          ),
+          // NK221_29: the owner admin alone reads the secret opponents.
+          owner: OwnerInbox(
+            email: dailyShortfallRecipient,
+            users: userAdminRepository,
+            announcements: announcementRepository,
+            notify: CreateNotification(
+              notifications: notificationRepository,
+              idGenerator: idGenerator,
+              clock: clock,
+            ),
+            idGenerator: idGenerator,
             clock: clock,
           ),
         ),

@@ -96,6 +96,22 @@ _world() {
   return (leagues: leagues, rounds: rounds, sheets: sheets);
 }
 
+/// The owner admin's identity: [id], or nobody when null.
+final class _Owner implements OwnerNotices {
+  const _Owner(this.id);
+
+  final UserId? id;
+
+  @override
+  Future<Result<UserId?>> ownerId() async => Result.ok(id);
+
+  @override
+  Future<Result<void>> tell({
+    required String title,
+    required String body,
+  }) async => const Result.ok(null);
+}
+
 void main() {
   group('AdminGetH2hGroups', () {
     AdminGetH2hGroups useCase() {
@@ -294,6 +310,139 @@ void main() {
       )(principal: player, userId: userNo(6));
 
       expect((result as Err<MyH2hMonth>).error.kind, ErrorKind.authorization);
+    });
+  });
+
+  group('the owner admin reads the secret opponents', () {
+    // Another admin: the admin principal below is the owner.
+    const suleiman = AuthenticatedUser(
+      userId: UserId('cccccccc-cccc-4ccc-8ccc-cccccccccccc'),
+      role: PlatformRole.admin,
+    );
+
+    AdminGetH2hGroupRound groupRound(OwnerNotices? owner) {
+      final w = _world();
+      final plain = w.sheets.sheets[_groupA]!;
+      // Round 2 plays turn 3: slots 0-2 and 1-3 meet.
+      w.sheets.sheets[_groupA] = H2hGroupSheet(
+        members: plain.members,
+        scores: plain.scores,
+        settledRounds: plain.settledRounds,
+        voidRounds: plain.voidRounds,
+        turns: [1, 3, 2, for (var t = 4; t <= 19; t++) t],
+      );
+      return AdminGetH2hGroupRound(
+        leagues: w.leagues,
+        rounds: w.rounds,
+        sheets: w.sheets,
+        profiles: NamingProfiles(),
+        clock: AtClock(_now),
+        owner: owner,
+      );
+    }
+
+    AdminGetH2hPlayer playerMonth(OwnerNotices? owner) {
+      final w = _world();
+      final clock = AtClock(_now);
+      return AdminGetH2hPlayer(
+        month: GetMyH2hMonth(
+          league: GetMyH2hLeague(
+            leagues: w.leagues,
+            rounds: w.rounds,
+            sheets: w.sheets,
+            profiles: NamingProfiles(),
+            clock: clock,
+          ),
+          rounds: w.rounds,
+          clock: clock,
+        ),
+        owner: owner,
+      );
+    }
+
+    test('the owner names every pair of a round not started', () async {
+      final result = await groupRound(_Owner(admin.userId))(
+        principal: admin,
+        leagueId: _groupA,
+        round: 2,
+      );
+
+      final group = (result as Ok<H2hAdminGroupRound>).value;
+      expect(group.phase, H2hRoundPhase.open);
+      expect(group.pairsHidden, isFalse);
+      expect(group.secretToPlayers, isTrue);
+      expect(group.pairs.map((p) => (p.home, p.away)).toList(), [
+        (userNo(1), userNo(3)),
+        (userNo(2), userNo(4)),
+      ]);
+      expect(group.pairs.every((p) => p.homePoints == null), isTrue);
+    });
+
+    test('another admin reads what the players read', () async {
+      final result = await groupRound(_Owner(admin.userId))(
+        principal: suleiman,
+        leagueId: _groupA,
+        round: 2,
+      );
+
+      final group = (result as Ok<H2hAdminGroupRound>).value;
+      expect(group.pairsHidden, isTrue);
+      expect(group.secretToPlayers, isFalse);
+      expect(group.pairs, isEmpty);
+    });
+
+    test('with no owner, or one nobody holds, nothing is shown', () async {
+      for (final owner in <OwnerNotices?>[null, const _Owner(null)]) {
+        final result = await groupRound(owner)(
+          principal: admin,
+          leagueId: _groupA,
+          round: 2,
+        );
+
+        final group = (result as Ok<H2hAdminGroupRound>).value;
+        expect(group.pairsHidden, isTrue);
+        expect(group.secretToPlayers, isFalse);
+        expect(group.pairs, isEmpty);
+      }
+    });
+
+    test('a round the players already read is not marked', () async {
+      final result = await groupRound(_Owner(admin.userId))(
+        principal: admin,
+        leagueId: _groupA,
+        round: 1,
+      );
+
+      final group = (result as Ok<H2hAdminGroupRound>).value;
+      expect(group.pairsHidden, isFalse);
+      expect(group.secretToPlayers, isFalse);
+      expect(group.pairs, isNotEmpty);
+    });
+
+    test('the owner reads the opponent of a player in a round ahead', () async {
+      final result = await playerMonth(_Owner(admin.userId))(
+        principal: admin,
+        userId: userNo(6),
+      );
+
+      final month = (result as Ok<MyH2hMonth>).value;
+      final ahead = month.league.rounds.singleWhere((r) => r.round.number == 2);
+      expect(ahead.opponentHidden, isFalse);
+      expect(ahead.secretToPlayers, isTrue);
+      expect(ahead.opponentId, isIn([userNo(5), userNo(7), userNo(8)]));
+    });
+
+    test('another admin reads a player month as the player does', () async {
+      final result = await playerMonth(_Owner(admin.userId))(
+        principal: suleiman,
+        userId: userNo(6),
+      );
+
+      final month = (result as Ok<MyH2hMonth>).value;
+      final ahead = month.league.rounds.singleWhere((r) => r.round.number == 2);
+      expect(ahead.opponentHidden, isTrue);
+      expect(ahead.secretToPlayers, isFalse);
+      expect(ahead.opponentId, isNull);
     });
   });
 

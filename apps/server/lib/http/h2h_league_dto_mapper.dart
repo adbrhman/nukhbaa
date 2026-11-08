@@ -152,6 +152,7 @@ H2hRoundViewDto _roundViewToDto(MyH2hRound view, MyH2hLeague league) {
     result: h2hShownResultOf(view)?.wireName,
     opponentHidden: view.opponentHidden,
     revealsAt: view.revealsAt?.toUtc().toIso8601String(),
+    secretToPlayers: view.secretToPlayers, // NK221_26
     opponentAbsent:
         !view.opponentHidden &&
         match != null &&
@@ -214,6 +215,7 @@ MyH2hLeagueDto myH2hMonthToDto(MyH2hMonth month) {
           opponentHidden: round.opponentHidden,
           revealsAt: round.revealsAt,
           opponentAbsent: round.opponentAbsent,
+          secretToPlayers: round.secretToPlayers, // NK221_27
           // NK172_037
         ),
     ],

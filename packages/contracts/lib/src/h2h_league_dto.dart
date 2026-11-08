@@ -125,6 +125,7 @@ final class H2hRoundViewDto {
     this.opponentHidden = false,
     this.revealsAt,
     this.opponentAbsent = false,
+    this.secretToPlayers = false, // NK221_21
   });
   // NK172_024
 
@@ -145,6 +146,8 @@ final class H2hRoundViewDto {
         opponentHidden: (json['opponent_hidden'] as bool?) ?? false,
         revealsAt: json['reveals_at'] as String?,
         opponentAbsent: (json['opponent_absent'] as bool?) ?? false,
+        secretToPlayers: (json['secret_to_players'] as bool?) ?? false,
+        // NK221_22
         // NK172_025
       );
 
@@ -194,6 +197,12 @@ final class H2hRoundViewDto {
 
   /// True when the revealed opponent missed the round and the average was used.
   final bool opponentAbsent;
+
+  /// True when the opponent is still secret to the players and is sent only
+  /// because the reader is the owner admin (`GET /admin/h2h/players/{id}`);
+  /// never true on a player's own reading.
+  // NK221_23
+  final bool secretToPlayers;
   // NK172_026
 
   /// Serializes to a JSON-encodable map.
@@ -212,6 +221,7 @@ final class H2hRoundViewDto {
     'opponent_hidden': opponentHidden,
     'reveals_at': revealsAt,
     'opponent_absent': opponentAbsent,
+    'secret_to_players': secretToPlayers, // NK221_24
     // NK172_027
   };
 }

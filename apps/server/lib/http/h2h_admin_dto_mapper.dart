@@ -116,6 +116,7 @@ H2hGroupRoundDto h2hAdminGroupRoundToDto(H2hAdminGroupRound group) =>
       ],
       matchesHidden: group.pairsHidden,
       revealsAt: group.revealsAt?.toUtc().toIso8601String(),
+      secretToPlayers: group.secretToPlayers, // NK221_25
     );
 
 /// The settings as the controls and `PUT /admin/h2h/settings` send them.

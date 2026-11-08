@@ -66,15 +66,20 @@ final class GetMyH2hMonth {
   final H2hRoundStore _rounds;
   final Clock _clock;
 
-  /// Reads [principal]'s month.
+  /// Reads [principal]'s month; [revealSecrets] is [GetMyH2hLeague]'s.
+  // NK221_6
   Future<Result<MyH2hMonth>> call({
     required AuthenticatedUser principal,
+    bool revealSecrets = false,
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.user);
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
-    final leagueResult = await _league(principal: principal);
+    final leagueResult = await _league(
+      principal: principal,
+      revealSecrets: revealSecrets, // NK221_7
+    );
     if (leagueResult is Err<MyH2hLeague>) {
       return Result.err(leagueResult.error);
     }

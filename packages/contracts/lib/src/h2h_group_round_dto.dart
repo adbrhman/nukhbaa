@@ -120,6 +120,7 @@ final class H2hGroupRoundDto {
     required this.matches,
     this.matchesHidden = false,
     this.revealsAt,
+    this.secretToPlayers = false, // NK221_17
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -135,6 +136,8 @@ final class H2hGroupRoundDto {
         ],
         matchesHidden: (json['matches_hidden'] as bool?) ?? false,
         revealsAt: json['reveals_at'] as String?,
+        secretToPlayers: (json['secret_to_players'] as bool?) ?? false,
+        // NK221_18
       );
 
   /// The current schema version for this DTO.
@@ -160,6 +163,12 @@ final class H2hGroupRoundDto {
   /// last kickoff), or null.
   final String? revealsAt;
 
+  /// True when the pairs are still secret to the players and are sent only
+  /// because the reader is the owner admin (`GET /admin/h2h/...`); never
+  /// true on a player's own reading.
+  // NK221_19
+  final bool secretToPlayers;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -172,5 +181,6 @@ final class H2hGroupRoundDto {
     'matches': [for (final m in matches) m.toJson()],
     'matches_hidden': matchesHidden,
     'reveals_at': revealsAt,
+    'secret_to_players': secretToPlayers, // NK221_20
   };
 }

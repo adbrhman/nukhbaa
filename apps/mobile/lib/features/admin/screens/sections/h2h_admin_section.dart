@@ -262,6 +262,7 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
         adminH2hGroupsProvider(_day).future,
       );
       final List<H2hShareMatches> blocks = <H2hShareMatches>[];
+      bool earlyLook = false;
       for (final H2hAdminGroupDto group in h2hEliteGroupsOf(month)) {
         final H2hGroupRoundDto read = await ref.read(
           adminH2hGroupRoundProvider((
@@ -274,6 +275,8 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
           if (mounted) _snack(h2hSecretPairs);
           return;
         }
+        // NK221_33: the owner admin can read pairs the players cannot yet.
+        if (read.secretToPlayers) earlyLook = true;
         blocks.add(
           H2hShareMatches(
             title: h2hGroupTitle(
@@ -290,6 +293,16 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
       if (blocks.isEmpty) {
         _snack('لا مجموعات نخبة في هذا الشهر.');
         return;
+      }
+      if (earlyLook) {
+        final bool sure = await _confirm(
+          title: 'مواجهات ما زالت سرية',
+          body:
+              'هذه المواجهات سرية عن اللاعبين حتى انطلاق آخر مباراة في '
+              'الجولة، وأنت وحدك تراها الآن. لا تنشر الصورة قبل ذلك.',
+          action: 'أنشئ الصورة',
+        );
+        if (!sure || !mounted) return;
       }
       await showH2hMatchesShare(
         context,

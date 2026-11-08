@@ -60,6 +60,23 @@ void main() {
       expect(back.schemaVersion, 1);
     });
 
+    test('pairs only the owner reads say so; old payloads read false', () {
+      const round = H2hGroupRoundDto(
+        round: 3,
+        day: '2026-11-07',
+        status: 'open',
+        matches: [],
+        secretToPlayers: true,
+      );
+      final json = _wire(round.toJson());
+      expect(json['secret_to_players'], isTrue);
+      expect(H2hGroupRoundDto.fromJson(json).secretToPlayers, isTrue);
+      expect(
+        H2hGroupRoundDto.fromJson(const {'round': 1}).secretToPlayers,
+        isFalse,
+      );
+    });
+
     test('secret pairs say so; old payloads read not secret', () {
       const round = H2hGroupRoundDto(
         round: 3,
