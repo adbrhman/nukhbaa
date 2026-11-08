@@ -95,6 +95,7 @@ export 'src/gamification/approve_h2h_round.dart';
 export 'src/gamification/close_h2h_month.dart';
 export 'src/gamification/draw_h2h_month.dart';
 export 'src/gamification/evaluate_badges.dart';
+export 'src/gamification/get_h2h_elite_tables.dart';
 export 'src/gamification/get_my_badges.dart';
 export 'src/gamification/get_my_daily_challenge.dart';
 export 'src/gamification/get_my_h2h_group_round.dart';

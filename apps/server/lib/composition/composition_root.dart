@@ -156,6 +156,7 @@ final class CompositionRoot {
     required this.settleMatchDays,
     required this.getMyH2hLeague,
     required this.getMyH2hMonth,
+    required this.getH2hEliteTables,
     required this.getMyH2hRound,
     required this.getMyH2hGroupRound,
     required this.listH2hRounds,
@@ -385,6 +386,7 @@ final class CompositionRoot {
     SettleMatchDays? settleMatchDays,
     GetMyH2hLeague? getMyH2hLeague,
     GetMyH2hMonth? getMyH2hMonth,
+    GetH2hEliteTables? getH2hEliteTables,
     GetMyH2hRound? getMyH2hRound,
     GetMyH2hGroupRound? getMyH2hGroupRound,
     ListH2hRounds? listH2hRounds,
@@ -660,6 +662,7 @@ final class CompositionRoot {
        settleMatchDays = settleMatchDays ?? _absentSettleMatchDays(),
        getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
        getMyH2hMonth = getMyH2hMonth ?? _absentGetMyH2hMonth(),
+       getH2hEliteTables = getH2hEliteTables ?? _absentGetH2hEliteTables(),
        getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
        getMyH2hGroupRound = getMyH2hGroupRound ?? _absentGetMyH2hGroupRound(),
        listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
@@ -1486,6 +1489,16 @@ final class CompositionRoot {
     sheets: _unwiredH2h,
     profiles: _UnwiredWeeklyLeagueProfileReader(),
     clock: _unwiredClock,
+  );
+
+  static GetH2hEliteTables _absentGetH2hEliteTables() => GetH2hEliteTables(
+    groups: AdminGetH2hGroups(
+      leagues: _unwiredH2h,
+      rounds: _unwiredH2h,
+      sheets: _unwiredH2h,
+      profiles: _UnwiredWeeklyLeagueProfileReader(),
+      clock: _unwiredClock,
+    ),
   );
 
   static GetMyH2hMonth _absentGetMyH2hMonth() => GetMyH2hMonth(
@@ -2483,6 +2496,10 @@ final class CompositionRoot {
   /// with each round's phase, first kickoff and shown result, and the days
   /// left (backs `GET /me/h2h-league`).
   final GetMyH2hMonth getMyH2hMonth;
+
+  /// The tables of the four elite groups, readable by every player (backs
+  /// `GET /me/h2h-league/elite`).
+  final GetH2hEliteTables getH2hEliteTables;
 
   /// One head-to-head round of the caller in detail; the opponent's picks
   /// only on fixtures that kicked off by the server clock (backs
@@ -3668,6 +3685,15 @@ final class CompositionRoot {
         ),
         rounds: PostgresH2hRoundStore(connection),
         clock: clock,
+      ),
+      getH2hEliteTables: GetH2hEliteTables(
+        groups: AdminGetH2hGroups(
+          leagues: PostgresH2hLeagueStore(connection),
+          rounds: PostgresH2hRoundStore(connection),
+          sheets: PostgresH2hSheetReader(connection),
+          profiles: PostgresWeeklyLeagueProfileReader(connection),
+          clock: clock,
+        ),
       ),
       getMyH2hGroupRound: GetMyH2hGroupRound(
         league: GetMyH2hLeague(

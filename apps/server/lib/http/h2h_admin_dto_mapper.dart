@@ -14,8 +14,10 @@ import 'package:domain/domain.dart';
 import 'package:server/http/avatar_url.dart';
 import 'package:server/http/h2h_league_dto_mapper.dart';
 
-/// Every group of a month as `GET /admin/h2h/groups` sends it.
-H2hAdminGroupsDto h2hAdminGroupsToDto(H2hAdminMonth month) {
+/// Every group of a month as `GET /admin/h2h/groups` sends it. With a
+/// [viewer] (a player reading the elite groups) his own line is marked and
+/// the empty seats are left out.
+H2hAdminGroupsDto h2hAdminGroupsToDto(H2hAdminMonth month, {UserId? viewer}) {
   final info = month.info;
   return H2hAdminGroupsDto(
     monthStart: isoDayOf(month.monthStart),
@@ -24,7 +26,8 @@ H2hAdminGroupsDto h2hAdminGroupsToDto(H2hAdminMonth month) {
     seatedCount: info?.seatedCount ?? 0,
     rounds: [for (final round in month.rounds) h2hRoundToDto(round)],
     groups: [
-      for (final group in month.groups) _groupToDto(group, month.profiles),
+      for (final group in month.groups)
+        _groupToDto(group, month.profiles, viewer),
     ],
   );
 }
@@ -32,6 +35,7 @@ H2hAdminGroupsDto h2hAdminGroupsToDto(H2hAdminMonth month) {
 H2hAdminGroupDto _groupToDto(
   H2hAdminGroup group,
   Map<UserId, WeeklyLeagueMemberProfile> profiles,
+  UserId? viewer,
 ) {
   final taken = <int>{for (final member in group.members) member.slot};
   return H2hAdminGroupDto(
@@ -42,11 +46,14 @@ H2hAdminGroupDto _groupToDto(
     promotionZone: group.promotionZone,
     relegationZone: group.relegationZone,
     standings: [
-      for (final placing in group.placings) _standingToDto(placing, profiles),
+      for (final placing in group.placings)
+        _standingToDto(placing, profiles, viewer),
     ],
+    // The empty seats are the admin's business, not the players'.
     freeSlots: [
-      for (var slot = 0; slot < group.ref.capacity; slot++)
-        if (!taken.contains(slot)) slot,
+      if (viewer == null)
+        for (var slot = 0; slot < group.ref.capacity; slot++)
+          if (!taken.contains(slot)) slot,
     ],
   );
 }
@@ -54,6 +61,7 @@ H2hAdminGroupDto _groupToDto(
 H2hStandingDto _standingToDto(
   H2hPlacing placing,
   Map<UserId, WeeklyLeagueMemberProfile> profiles,
+  UserId? viewer,
 ) {
   final standing = placing.standing;
   final matches = [...standing.matches]
@@ -73,7 +81,7 @@ H2hStandingDto _standingToDto(
     pointsFor: standing.pointsFor,
     exactCount: standing.exactCount,
     form: [for (final match in recent) match.result.wireName],
-    isMe: false,
+    isMe: viewer != null && standing.userId == viewer,
     avatarUrl: _avatarOf(standing.userId, profiles),
   );
 }

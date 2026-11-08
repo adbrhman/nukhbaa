@@ -158,6 +158,13 @@ final class AdminGetH2hGroups {
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
+    return readMonth(day: day);
+  }
+
+  /// Reads the month containing [day] (the current Riyadh month when null)
+  /// with no role check: the caller decides who may see it
+  /// (`GetH2hEliteTables` lets every player read the elite groups).
+  Future<Result<H2hAdminMonth>> readMonth({DateTime? day}) async {
     final month = _monthOf(day, _clock);
 
     final infoResult = await _leagues.monthOf(month);

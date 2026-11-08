@@ -44,3 +44,15 @@ final myH2hGroupRoundProvider = FutureProvider.autoDispose
         Err<H2hGroupRoundDto>(:final error) => throw error,
       };
     });
+
+/// `GET /me/h2h-league/elite` -- the tables of the four elite groups, the
+/// caller's own line marked. The server orders and counts everything.
+final h2hEliteTablesProvider = FutureProvider.autoDispose<H2hAdminGroupsDto>((
+  ref,
+) async {
+  final AuthApi api = ref.watch(authApiProvider);
+  return switch (await api.h2hEliteTables()) {
+    Ok<H2hAdminGroupsDto>(:final value) => value,
+    Err<H2hAdminGroupsDto>(:final error) => throw error,
+  };
+});

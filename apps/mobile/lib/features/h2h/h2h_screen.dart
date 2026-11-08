@@ -28,6 +28,7 @@ import '../competition/widgets/async_list_view.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
 import 'widgets/h2h_division_card.dart';
+import 'widgets/h2h_elite_tables.dart';
 import 'widgets/h2h_group_matches.dart';
 import 'widgets/h2h_next_match.dart';
 import 'widgets/h2h_rounds.dart';
@@ -60,6 +61,9 @@ class H2hScreen extends ConsumerStatefulWidget {
 
 class _H2hScreenState extends ConsumerState<H2hScreen> {
   late int _section = widget.initialSection.clamp(0, 3);
+
+  /// The standings section shows the four elite groups, not the caller's own.
+  bool _eliteView = false;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +130,28 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
     // NK172_045
   ];
 
+  /// The standings section. From the elite draw a switch picks the caller's
+  /// own group or the four elite groups (every player may read those).
+  Widget _tableSection(MyH2hLeagueDto league) {
+    if (!h2hUsesEliteDraw(league.monthStart)) {
+      return H2hTable(league: league);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SegmentedPills(
+          key: const Key('h2h.tableView'),
+          labels: const <String>['جدول مجموعتي', 'مجموعات النخبة'],
+          selectedIndex: _eliteView ? 1 : 0,
+          keyPrefix: 'h2h.tableView',
+          onSelected: (int index) => setState(() => _eliteView = index == 1),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (_eliteView) const H2hEliteTables() else H2hTable(league: league),
+      ],
+    );
+  }
+
   /// The caller's seated month: the card, the three sections, the one
   /// chosen.
   List<Widget> _openMonth(MyH2hLeagueDto league) => <Widget>[
@@ -145,7 +171,7 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
         now: widget.now ?? DateTime.now,
         onOpenMatches: widget.onOpenMatches,
       ),
-      1 => H2hTable(league: league),
+      1 => _tableSection(league),
       2 => H2hRoundsList(league: league),
       _ => H2hGroupMatches(league: league),
     },

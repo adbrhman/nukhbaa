@@ -297,6 +297,17 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/h2h-league/elite` -- the tables of the four elite groups of the
+  /// current month, readable by any player: each group's standings in the
+  /// server's order with the caller's own line marked. No match and no
+  /// prediction arrives here.
+  Future<Result<H2hAdminGroupsDto>> h2hEliteTables() {
+    return _transport.getObject<H2hAdminGroupsDto>(
+      '/me/h2h-league/elite',
+      parse: H2hAdminGroupsDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///
