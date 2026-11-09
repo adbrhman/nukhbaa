@@ -203,8 +203,9 @@ final class SportingSeasonStanding {
 
 /// The ranked sporting-season board: most points first; a points tie is
 /// broken by exact scorelines (decided 2026-09-27), then by right
-/// outcomes, then by the earlier first join (batch 129). Entries share a
-/// rank only when level on all four,
+/// outcomes, then by the most predictions made, then by the older account
+/// (decided 2026-11-10; `joinedAt` is the account's creation). Entries share
+/// a rank only when level on all five,
 /// which real players never are; the user id only makes the display order
 /// stable.
 final class SportingSeasonLeaderboard {
@@ -267,6 +268,10 @@ final class SportingSeasonLeaderboard {
     if (byOutcome != 0) {
       return byOutcome;
     }
+    final byDecided = b.decidedCount.compareTo(a.decidedCount);
+    if (byDecided != 0) {
+      return byDecided;
+    }
     final byJoined = _byJoinedAt(a.joinedAt, b.joinedAt);
     if (byJoined != 0) {
       return byJoined;
@@ -288,6 +293,7 @@ final class SportingSeasonLeaderboard {
       a.totalPoints == b.totalPoints &&
       a.exactCount == b.exactCount &&
       a.outcomeCount == b.outcomeCount &&
+      a.decidedCount == b.decidedCount &&
       a.joinedAt == b.joinedAt;
 
   /// The season this board ranks.

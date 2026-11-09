@@ -37,16 +37,17 @@ final class MonthFinalBoard {
   final ParticipantReader _participants;
 
   /// Whether [a] and [b] are level for the crown: the same prediction
-  /// points, exact scorelines and right outcomes. The join time, the
-  /// board's last tie-break, never decides a crown: such a tie waits for
-  /// the owner (L-29, decided 2026-11-02).
+  /// points, exact scorelines, right outcomes and predictions made. The
+  /// account's age, the board's last tie-break, is applied by the crowning
+  /// itself (the terms of the contest: the oldest account wins).
   static bool levelForCrown(
     FixtureLeaderboardEntry a,
     FixtureLeaderboardEntry b,
   ) =>
       a.totalPoints == b.totalPoints &&
       a.exactCount == b.exactCount &&
-      a.outcomeCount == b.outcomeCount;
+      a.outcomeCount == b.outcomeCount &&
+      a.decidedCount == b.decidedCount;
 
   /// The first [limit] lines of [month]'s board, never cutting a tie for
   /// first place: every player level for the crown with the first

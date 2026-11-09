@@ -22,12 +22,15 @@ import 'package:shared/shared.dart';
 /// 1. [LeaderboardEntry.totalPoints] descending (more points ranks higher);
 /// 2. [LeaderboardEntry.exactCount] descending;
 /// 3. [LeaderboardEntry.outcomeCount] descending;
-/// 4. [LeaderboardEntry.joinedAt] ascending (the earlier joiner first);
-/// 5. final tie-break: [ParticipantId] value ascending, for a stable display
+/// 4. [LeaderboardEntry.settledCount] descending (the most predictions
+///    made, decided 2026-11-10);
+/// 5. [LeaderboardEntry.joinedAt] ascending (the older account first: the
+///    stores read the account's creation here);
+/// 6. final tie-break: [ParticipantId] value ascending, for a stable display
 ///    order only.
 ///
 /// **Rank rule:** entries share a rank (and the next skips, "1224") only
-/// when level on keys 1-4. Real players never join at the same instant, so
+/// when level on keys 1-5. Real players never join at the same instant, so
 /// every player gets a place of his own, as on the month board -- the same
 /// month read from the match card no longer shows three players tenth.
 final class SeasonLeaderboard {
@@ -111,7 +114,11 @@ final class SeasonLeaderboard {
     if (byOutcome != 0) {
       return byOutcome;
     }
-    // joinedAt ascending (earlier joiner first).
+    final byDecided = b.settledCount.compareTo(a.settledCount);
+    if (byDecided != 0) {
+      return byDecided;
+    }
+    // joinedAt ascending (the older account first).
     final byJoined = a.joinedAt.compareTo(b.joinedAt);
     if (byJoined != 0) {
       return byJoined;
@@ -125,6 +132,7 @@ final class SeasonLeaderboard {
       a.totalPoints == b.totalPoints &&
       a.exactCount == b.exactCount &&
       a.outcomeCount == b.outcomeCount &&
+      a.settledCount == b.settledCount &&
       a.joinedAt == b.joinedAt;
 
   /// The season these standings are for.

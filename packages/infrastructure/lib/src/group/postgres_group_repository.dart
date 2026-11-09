@@ -407,7 +407,7 @@ SELECT
   u.display_name AS display_name,
   COALESCE(f.total_points, 0)::bigint    AS total_points,
   COALESCE(f.fixtures_scored, 0)::bigint AS entry_count,
-  p.joined_at  AS joined_at,
+  u.created_at AS joined_at,
   COALESCE(f.exact_count, 0)::bigint     AS exact_count,
   COALESCE(f.decided_count, 0)::bigint   AS settled_count,
   COALESCE(f.outcome_count, 0)::bigint   AS outcome_count

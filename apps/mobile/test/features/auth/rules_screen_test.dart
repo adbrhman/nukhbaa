@@ -111,8 +111,8 @@ void main() {
     for (final String step in <String>[
       'التوقعات الدقيقة الأكثر',
       'الاتجاهات الصحيحة الأكثر',
-      'الأسبق انضماماً',
-      'الحساب الأقدم',
+      'الأكثر توقعاً',
+      'الأقدم تسجيلاً',
     ]) {
       expect(
         find.descendant(of: rule, matching: find.textContaining(step)),

@@ -225,6 +225,10 @@ final class FixtureLeaderboard {
     if (byOutcome != 0) {
       return byOutcome;
     }
+    final byDecided = b.decidedCount.compareTo(a.decidedCount);
+    if (byDecided != 0) {
+      return byDecided;
+    }
     final byJoined = _byJoinedAt(a.joinedAt, b.joinedAt);
     if (byJoined != 0) {
       return byJoined;
@@ -241,11 +245,12 @@ final class FixtureLeaderboard {
   }
 
   /// Whether two neighbours share a rank: level on points, exact
-  /// scorelines, right outcomes and join time.
+  /// scorelines, right outcomes, predictions made and account age.
   static bool _level(FixtureLeaderboardEntry a, FixtureLeaderboardEntry b) =>
       a.totalPoints == b.totalPoints &&
       a.exactCount == b.exactCount &&
       a.outcomeCount == b.outcomeCount &&
+      a.decidedCount == b.decidedCount &&
       a.joinedAt == b.joinedAt;
 
   /// The season these standings are for.

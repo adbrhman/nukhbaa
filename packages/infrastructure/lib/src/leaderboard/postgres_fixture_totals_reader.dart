@@ -33,7 +33,7 @@ SELECT fs.participant_id::text AS participant_id,
        )::bigint AS decided_count,
        count(*) FILTER (WHERE fs.grade = 'correct_outcome')::bigint
          AS outcome_count,
-       min(p.joined_at) AS joined_at
+       min(u.created_at) AS joined_at
 FROM scoring.fixture_scores fs
 JOIN competition.participants p
   ON p.id = fs.participant_id

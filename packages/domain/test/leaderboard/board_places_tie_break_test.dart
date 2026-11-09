@@ -19,6 +19,7 @@ ParticipantFixtureTotals _line(
   int points = 45,
   int exact = 14,
   int outcome = 0,
+  int decided = 110,
   DateTime? joinedAt,
 }) =>
     (ParticipantFixtureTotals.of(
@@ -26,7 +27,7 @@ ParticipantFixtureTotals _line(
               totalPoints: points,
               fixturesScored: 115,
               exactCount: exact,
-              decidedCount: 110,
+              decidedCount: decided,
               outcomeCount: outcome,
               joinedAt: joinedAt,
             )
@@ -71,6 +72,30 @@ void main() {
         _line(_b, outcome: 6, joinedAt: day3),
       ]),
       [(_b, 1), (_a, 2)],
+    );
+  });
+
+  test(
+    'level on outcomes: more predictions made rank higher, whoever is older',
+    () {
+      expect(
+        _places([
+          _line(_a, outcome: 5, decided: 100, joinedAt: day1),
+          _line(_b, outcome: 5, decided: 110, joinedAt: day3),
+        ]),
+        [(_b, 1), (_a, 2)],
+      );
+    },
+  );
+
+  test('level on predictions made: the older account ranks higher', () {
+    expect(
+      _places([
+        _line(_a, outcome: 5, decided: 100, joinedAt: day3),
+        _line(_b, outcome: 5, decided: 100, joinedAt: day1),
+        _line(_c, outcome: 5, decided: 90, joinedAt: day1),
+      ]),
+      [(_b, 1), (_a, 2), (_c, 3)],
     );
   });
 

@@ -46,7 +46,7 @@ scores AS (
          )::bigint AS decided_count,
          count(*) FILTER (WHERE fs.grade = 'correct_outcome')::bigint
            AS outcome_count,
-         min(p.joined_at) AS joined_at
+         min(u.created_at) AS joined_at
   FROM months m
   JOIN competition.participants p
     ON p.season_id = m.id

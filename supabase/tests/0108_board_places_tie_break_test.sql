@@ -18,7 +18,7 @@ declare
 begin
   insert into auth.users (id, email, email_confirmed_at) values (u, 'p' || n || '@t.io', now());
   insert into identity.users (id, email, display_name, created_at)
-  values (u, 'p' || n || '@t.io', 'P' || n, '2026-09-01');
+  values (u, 'p' || n || '@t.io', 'P' || n, p_joined);
   insert into competition.participants (id, season_id, user_id, joined_at)
   values (p, 'c8100000-0000-4000-8000-000000000010', u, p_joined);
   for i in 1..3 loop

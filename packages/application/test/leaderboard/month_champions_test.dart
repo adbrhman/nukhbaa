@@ -326,7 +326,7 @@ void main() {
         final world = _World();
         world.totals
           ..add(_p1, points: 42, exact: 6, decided: 30)
-          ..add(_p2, points: 42, exact: 6, decided: 28)
+          ..add(_p2, points: 42, exact: 6, decided: 30)
           ..add(_p3, points: 20, exact: 2, decided: 25);
 
         final result = await world.crown(
@@ -347,7 +347,7 @@ void main() {
       final world = _World();
       world.totals
         ..add(_p1, points: 42, exact: 6, decided: 30)
-        ..add(_p2, points: 42, exact: 6, decided: 28);
+        ..add(_p2, points: 42, exact: 6, decided: 30);
 
       final result = await world.crown(
         principal: _adminPrincipal,
@@ -479,7 +479,7 @@ void main() {
       final world = _World(unscored: 2);
       world.totals
         ..add(_p1, points: 42, exact: 6, decided: 30)
-        ..add(_p2, points: 42, exact: 6, decided: 28)
+        ..add(_p2, points: 42, exact: 6, decided: 30)
         ..add(_p3, points: 20, exact: 2, decided: 25);
 
       final result = await world.candidates(
