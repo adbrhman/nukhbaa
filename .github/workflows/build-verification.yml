@@ -863,7 +863,12 @@ jobs:
           s = re.sub(r'\s*<receiver\s+android:name="sk\.fourq\.otaupdate\.InstallResultReceiver".*?</receiver>', '', s, flags=re.S)
           if 'xmlns:tools=' not in s:
               s = re.sub(r'<manifest\b', '<manifest xmlns:tools="http://schemas.android.com/tools"', s, count=1)
-          s = re.sub(r'(<manifest[^>]*>)', r'\1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />', s, count=1)
+          # script 249: a library adds READ/WRITE_EXTERNAL_STORAGE to the merged
+          # manifest and the guard below refuses them (run #835). The app picks a
+          # photo through the system picker and shares from its cache, so it
+          # needs neither; they leave the same way REQUEST_INSTALL_PACKAGES does.
+          for perm in ("REQUEST_INSTALL_PACKAGES", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"):
+              s = re.sub(r'(<manifest[^>]*>)', r'\1\n    <uses-permission android:name="android.permission.' + perm + r'" tools:node="remove" />', s, count=1)
           if 'sk.fourq.otaupdate' in s:
               raise SystemExit("ERROR: ota_update is still in the manifest")
           open(m, "w", encoding="utf-8").write(s)
