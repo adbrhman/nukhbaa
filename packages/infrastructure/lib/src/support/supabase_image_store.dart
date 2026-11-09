@@ -2,6 +2,8 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:shared/shared.dart';
@@ -18,9 +20,19 @@ abstract interface class SupportImageStore {
   Future<Result<List<int>>> get(String path);
 }
 
+/// Removes support pictures from the private bucket (account deletion,
+/// script 223). Supabase says deleting through SQL leaves the file
+/// orphaned in the bucket, so only the Storage API removes it.
+abstract interface class SupportImageEraser {
+  /// Deletes the objects at [paths]. Total: never throws; an empty list
+  /// sends nothing.
+  Future<Result<void>> erase(List<String> paths);
+}
+
 /// [SupportImageStore] over Supabase Storage's REST API, with the project's
 /// secret key: the bucket is private, and only this server reads it.
-final class SupabaseStorageImageStore implements SupportImageStore {
+final class SupabaseStorageImageStore
+    implements SupportImageStore, SupportImageEraser {
   /// Talks to [storageUri] (`https://<ref>.supabase.co/storage/v1/`).
   SupabaseStorageImageStore({
     required Uri storageUri,
@@ -107,6 +119,43 @@ final class SupabaseStorageImageStore implements SupportImageStore {
         return Result.ok(response.bodyBytes);
       }
       return Result.err(_refused('get', response.statusCode));
+    } on Object catch (cause) {
+      return Result.err(
+        AppError.transient(
+          'storage.unreachable',
+          'Storage is unreachable',
+          cause,
+        ),
+      );
+    }
+  }
+
+  /// The most objects one delete call carries (the API takes up to 1000).
+  static const int _eraseBatch = 100;
+
+  @override
+  Future<Result<void>> erase(List<String> paths) async {
+    try {
+      for (int i = 0; i < paths.length; i += _eraseBatch) {
+        final List<String> batch = paths.sublist(
+          i,
+          math.min(i + _eraseBatch, paths.length),
+        );
+        final response = await _http
+            .delete(
+              _storage.resolve('object/$_bucket'),
+              headers: <String, String>{
+                ..._auth,
+                'content-type': 'application/json',
+              },
+              body: jsonEncode(<String, Object>{'prefixes': batch}),
+            )
+            .timeout(_timeout);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          return Result.err(_refused('erase', response.statusCode));
+        }
+      }
+      return const Result.ok(null);
     } on Object catch (cause) {
       return Result.err(
         AppError.transient(

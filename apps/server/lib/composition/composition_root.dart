@@ -3938,6 +3938,7 @@ final class CompositionRoot {
         accounts: PostgresAccountDeletion(
           connection,
           onDeleted: directory.forget,
+          images: supportImages,
         ),
       ),
       createCompetition: CreateCompetition(

@@ -86,6 +86,54 @@ void main() {
     expect((down as Err<List<int>>).error.code, 'storage.unreachable');
   });
 
+  test('support pictures are erased through the Storage API', () async {
+    final sent = <http.Request>[];
+    final store = _store(
+      MockClient((request) async {
+        sent.add(request);
+        return http.Response('[]', 200);
+      }),
+    );
+    final paths = <String>[for (int i = 0; i < 250; i++) 'p/u/$i.jpg'];
+
+    final result = await store.erase(paths);
+
+    expect(result, isA<Ok<void>>());
+    expect(sent, hasLength(3));
+    final first = sent.first;
+    expect(first.method, 'DELETE');
+    expect(
+      first.url.toString(),
+      'https://ref123.supabase.co/storage/v1/object/support-images',
+    );
+    expect(first.headers['apikey'], 'sb_secret_abc');
+    expect(first.headers['content-type'], startsWith('application/json'));
+    expect((jsonDecode(first.body) as Map)['prefixes'], hasLength(100));
+    expect((jsonDecode(sent.last.body) as Map)['prefixes'], hasLength(50));
+  });
+
+  test('erasing nothing sends nothing; a refusal is transient', () async {
+    final sent = <http.Request>[];
+    final none = await _store(
+      MockClient((request) async {
+        sent.add(request);
+        return http.Response('[]', 200);
+      }),
+    ).erase(const <String>[]);
+    expect(none, isA<Ok<void>>());
+    expect(sent, isEmpty);
+
+    final refused = await _store(
+      MockClient((_) async => http.Response('{}', 403)),
+    ).erase(const <String>['p/u/1.jpg']);
+    expect((refused as Err<void>).error.code, 'storage.refused');
+
+    final down = await _store(
+      MockClient((_) async => throw Exception('no route')),
+    ).erase(const <String>['p/u/1.jpg']);
+    expect((down as Err<void>).error.code, 'storage.unreachable');
+  });
+
   test('without the secret key or the project there is no store', () {
     final client = MockClient((_) async => http.Response('', 200));
     expect(
