@@ -45,7 +45,14 @@ Future<void> _openDeletePage(WidgetTester tester, AuthHarness harness) async {
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('account.settings')));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.byKey(const Key('account.deleteAccount')));
+  // The settings list builds its rows lazily and the delete row is its last
+  // item, so it is scrolled to rather than asked to be made visible
+  // (script 229: the settings gained two rows).
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('account.deleteAccount')),
+    300,
+    scrollable: find.byType(Scrollable).last,
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('account.deleteAccount')));
   await tester.pumpAndSettle();
