@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/design/app_sizes.dart';
 import '../../core/design/app_tokens.dart';
 import 'player_actions.dart';
 
@@ -33,9 +34,12 @@ class PlayerMenuButton extends StatelessWidget {
       key: Key('player.menu.$participantId'),
       tooltip: 'الإبلاغ أو الحظر',
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      constraints: const BoxConstraints(
+        minWidth: AppSizes.minTouchTarget,
+        minHeight: AppSizes.minTouchTarget,
+      ),
       iconSize: size,
-      visualDensity: VisualDensity.compact,
+      visualDensity: VisualDensity.standard,
       icon: Icon(Icons.more_vert_rounded, color: context.tokens.textMuted),
       onPressed: () => unawaited(
         showPlayerActions(

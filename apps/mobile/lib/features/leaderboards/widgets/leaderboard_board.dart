@@ -851,7 +851,7 @@ class _BoardRow extends ConsumerWidget {
                 ),
               ),
               if (isMe)
-                const SizedBox(width: 32)
+                const SizedBox(width: AppSizes.minTouchTarget)
               else
                 PlayerMenuButton(
                   displayName: entry.displayName,
