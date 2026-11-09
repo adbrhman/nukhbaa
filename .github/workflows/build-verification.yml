@@ -850,6 +850,8 @@ jobs:
         working-directory: apps/mobile
         env:
           EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
           python3 - <<'PYEOF'
@@ -949,6 +951,14 @@ jobs:
           EXP=$(echo "$EXPECTED_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           ACT=$(keytool -printcert -jarfile "$AAB" | grep 'SHA256:' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
           [ "$ACT" = "$EXP" ] || { echo "::error::bundle signature mismatch: got $ACT expected $EXP"; exit 1; }
+          # script 228: Play App Signing takes an upload key of RSA 2048 bits
+          # or more (support.google.com/googleplay/android-developer/answer/9842756).
+          KEYINFO=$(keytool -list -v -keystore android/app/keystore.jks -alias "$KS_ALIAS" -storepass "$KS_PASS" 2>&1) || { echo "::error::cannot read the upload key from the keystore"; exit 1; }
+          BITS=$(printf '%s\n' "$KEYINFO" | grep -m1 'Subject Public Key Algorithm' | grep -oE '[0-9]+-bit RSA' | grep -oE '^[0-9]+' || true)
+          if [ -z "$BITS" ] || [ "$BITS" -lt 2048 ]; then
+            echo "::error::the upload key must be RSA 2048 bits or more (found: ${BITS:-not RSA})"; exit 1
+          fi
+          echo "upload key: RSA $BITS bits"
           echo "Play bundle: versionCode ${{ github.run_number }}, no REQUEST_INSTALL_PACKAGES, upload key matches"
 
       - name: Upload the Google Play bundle
