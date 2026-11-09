@@ -473,7 +473,6 @@ class ChampionHeroBody extends StatelessWidget {
     final Locale locale = Localizations.localeOf(context);
     final int? accuracy = champion.accuracyPercent;
     final String id = champion.userId;
-    final String? prize = champion.prize;
     final String month = championMonthName(
       champion.seasonLabel,
       locale,
@@ -579,16 +578,6 @@ class ChampionHeroBody extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (prize != null && prize.trim().isNotEmpty)
-          Text(
-            l10n.championPrize(prize),
-            key: Key('$keyPrefix.prize.$id'),
-            textAlign: TextAlign.center,
-            style: context.text.bodyMedium?.copyWith(
-              color: _gold,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
         if (onShare != null) ...<Widget>[
           const SizedBox(height: AppSpacing.sm),
           FilledButton.icon(
@@ -613,7 +602,6 @@ class ChampionHeroBody extends StatelessWidget {
         champion.displayName,
         l10n.boardPoints(champion.points),
         if (accuracy != null) l10n.boardAccuracyIs(accuracy),
-        if (prize != null && prize.trim().isNotEmpty) l10n.championPrize(prize),
       ].join(l10n.boardListSeparator),
       child: LayoutBuilder(
         builder: (context, constraints) {

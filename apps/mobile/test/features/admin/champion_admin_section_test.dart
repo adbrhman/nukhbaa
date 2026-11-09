@@ -1,7 +1,7 @@
 /// The admin's crowning through the real section, its real providers and the
 /// real `AdminApi` / `LeaderboardsApi`, over the auth harness's fake server:
 /// the month's final board is drawn as the server ranked it, only a player
-/// ranked first can be chosen, the picture and the prize the admin gives show
+/// ranked first can be chosen, the picture the admin gives shows
 /// in the preview -- and in the real leaderboard screen, the rehearsal --
 /// before anything is sent, and the crowning then the picture reach the
 /// server with their values.
@@ -338,7 +338,7 @@ void main() {
     expect(find.byKey(const Key('champion.backdrop.photo')), findsNothing);
   });
 
-  testWidgets('the prize shows in the preview and goes with the crowning', (
+  testWidgets('the crowning carries no prize and no prize field exists', (
     tester,
   ) async {
     final server = _Server();
@@ -346,21 +346,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
     await tester.pumpAndSettle();
-    // An empty field shows no example text inside it (it looked typed).
-    expect(find.text('150 ريال سعودي'), findsNothing);
-    await tester.enterText(
-      find.byKey(const Key('admin.champions.prize')),
-      '150 ريال سعودي',
-    );
-    await tester.pumpAndSettle();
-
+    expect(find.byKey(const Key('admin.champions.prize')), findsNothing);
     expect(
-      tester
-          .widget<Text>(
-            find.byKey(const Key('admin.champions.spotlight.prize.u-1')),
-          )
-          .data,
-      contains('150 ريال سعودي'),
+      find.byKey(const Key('admin.champions.spotlight.prize.u-1')),
+      findsNothing,
     );
 
     await _scrollTo(tester, find.byKey(const Key('admin.champions.crown')));
@@ -373,32 +362,19 @@ void main() {
       (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9',
     );
     expect(
-      (jsonDecode(crown.body) as Map<String, Object?>)['prize'],
-      '150 ريال سعودي',
+      jsonDecode(crown.body) as Map<String, Object?>,
+      isNot(contains('prize')),
     );
   });
 
-  testWidgets('script 215: the crowning takes the unsaved monthly prize and '
-      'fixes the podium too', (tester) async {
+  testWidgets('the crowning fixes the podium too', (tester) async {
     final server = _Server();
     await _open(tester, server);
 
     await tester.tap(find.byKey(const Key('admin.champions.choose.u-1')));
     await tester.pumpAndSettle();
-    final Finder field = find.byKey(
-      const Key('admin.champions.plannedPrizeField'),
-    );
-    await _scrollTo(tester, field);
-    await tester.enterText(field, '200 ريال سعودي');
-    await tester.pumpAndSettle();
-
     final Finder crownButton = find.byKey(const Key('admin.champions.crown'));
-    await tester.scrollUntilVisible(
-      crownButton,
-      -200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
+    await _scrollTo(tester, crownButton);
     await tester.tap(crownButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('تتويج'));
@@ -408,8 +384,8 @@ void main() {
       (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9',
     );
     expect(
-      (jsonDecode(crown.body) as Map<String, Object?>)['prize'],
-      '200 ريال سعودي',
+      jsonDecode(crown.body) as Map<String, Object?>,
+      isNot(contains('prize')),
     );
     final http.Request podium = server.requests.firstWhere(
       (r) => r.method == 'POST' && r.url.path == '/admin/champions/m-9/podium',

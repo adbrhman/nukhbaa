@@ -5,7 +5,8 @@
 /// The rehearsal of 00:00 on the 1st of October: the new month's board is
 /// empty (everyone at zero), and above it the September champion's hero --
 /// "بطل شهر سبتمبر 2026", the framed picture, the name, the points, the
-/// accuracy, the congratulations and the prize -- for the first 48 hours.
+/// accuracy and the congratulations -- for the first 48 hours. No prize
+/// line, even for a month crowned with one before launch.
 /// Also when October has no fixture yet; afterwards the celebration is gone,
 /// a crown opens the champions' record, and the crown sits beside the
 /// champion's name on the season board. The champion alone may share it.
@@ -184,7 +185,7 @@ void main() {
 
     // Layer 1: the faint picture behind the header.
     expect(find.byKey(const Key('champion.backdrop.photo')), findsOneWidget);
-    // The hero: title, framed picture, name, points, accuracy, prize.
+    // The hero: title, framed picture, name, points, accuracy.
     expect(_text(tester, 'leaderboards.champion.title'), 'بطل شهر سبتمبر 2026');
     expect(
       find.byKey(const Key('leaderboards.champion.photo.u-1')),
@@ -199,9 +200,10 @@ void main() {
     expect(find.text(ar.championCongrats), findsOneWidget);
     expect(find.text(ar.championCongratsLine('سبتمبر')), findsOneWidget);
     expect(
-      _text(tester, 'leaderboards.champion.prize.u-1'),
-      ar.championPrize('150 ريال سعودي'),
+      find.byKey(const Key('leaderboards.champion.prize.u-1')),
+      findsNothing,
     );
+    expect(find.text(ar.championPrize('150 ريال سعودي')), findsNothing);
     // October: nobody has a point yet, and the screen says so.
     expect(find.text(ar.leaderboardMonthStarting), findsOneWidget);
     // Only the champion may share it.

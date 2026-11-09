@@ -359,25 +359,6 @@ class _MonthCard extends ConsumerWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (c.prize != null && c.prize!.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.xs),
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.redeem, size: 16, color: t.gold),
-                              const SizedBox(width: AppSpacing.xs),
-                              Expanded(
-                                child: Text(
-                                  c.prize!,
-                                  style: context.text.labelMedium?.copyWith(
-                                    color: t.gold,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                     ],
                   ),
                 ),

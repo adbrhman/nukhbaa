@@ -1,12 +1,12 @@
 /// لوحة المشرف لتتويج بطل الشهر (migration 0077): يختار المشرف الشهر،
 /// فيرى الترتيب النهائي كما حسبه الخادم، ويحدّد البطل أو البطلين من أصحاب
-/// المركز الأول، ويضيف صورة البطل ونص الجائزة (0078)، ويعاين الاحتفال كما
+/// المركز الأول، ويضيف صورة البطل، ويعاين الاحتفال كما
 /// سيظهر في شاشة المتصدرين -- بل يفتح شاشة المتصدرين نفسها بالاحتفال قبل
 /// التتويج (تجربة) -- ثم يتوّج. الخادم وحده يقرر من يحق له التتويج.
 ///
-/// ومن السكربت 204 يُتوَّج الشهر وحده بعد آخر مباراة فيه: يحدّد المشرف هنا
-/// جائزة الشهر مسبقًا، ويتوّج بيده فقط إذا تعادل الأول والثاني في النقاط
-/// والنتائج الدقيقة والاتجاه الصحيح.
+/// ومن السكربت 204 يُتوَّج الشهر وحده بعد آخر مباراة فيه، ويتوّج المشرف بيده
+/// فقط إذا تعادل الأول والثاني في النقاط والنتائج الدقيقة والاتجاه الصحيح.
+/// ولا جوائز: التتويج لقب وصورة (قرار المالك 2026-11-09).
 library;
 
 import 'dart:async';
@@ -110,51 +110,12 @@ class ChampionAdminSection extends ConsumerStatefulWidget {
 class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
   SeasonDto? _month;
   final Set<String> _chosen = <String>{};
-  final TextEditingController _prize = TextEditingController();
-
-  /// The month's prize set ahead for the automatic crowning (script 204).
-  final TextEditingController _planned = TextEditingController();
   final Map<String, ChampionPhoto> _photos = <String, ChampionPhoto>{};
   bool _busy = false;
 
   @override
   void dispose() {
-    _prize.dispose();
-    _planned.dispose();
     super.dispose();
-  }
-
-  /// Saves the prize the month will be crowned with (script 204).
-  Future<void> _savePlanned(ChampionCandidatesDto month) async {
-    final String prize = _planned.text.trim();
-    if (prize.isEmpty) return;
-    setState(() => _busy = true);
-    final Result<String> saved = await ref
-        .read(adminApiProvider)
-        .setMonthPrize(seasonId: month.seasonId, prize: prize);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (saved is Err<String>) {
-      _snack(ErrorPresenter.message(saved.error));
-      return;
-    }
-    _planned.clear();
-    ref.invalidate(adminChampionCandidatesProvider(month.seasonId));
-    _snack('تم حفظ جائزة الشهر');
-  }
-
-  /// The prize as it will be sent: trimmed, null when blank.
-  String? get _prizeText {
-    final String text = _prize.text.trim();
-    return text.isEmpty ? null : text;
-  }
-
-  /// The month's prize typed in the monthly field and not saved yet: the
-  /// crowning takes it, so saving it first is not a step of its own
-  /// (script 215).
-  String? get _plannedText {
-    final String text = _planned.text.trim();
-    return text.isEmpty ? null : text;
   }
 
   /// The rehearsal: the real leaderboard screen, with [champions]
@@ -273,18 +234,13 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     if (chosen.isEmpty) return;
     final String names = chosen.map((c) => c.displayName).join(' و');
     final bool force = month.unscoredFixtures > 0;
-    // Crowned by hand (a tie for first): the prize set ahead unless the
-    // admin typed another.
-    final String? prize = _prizeText ?? _plannedText ?? month.plannedPrize;
     final bool? confirmed = await AppDialog.confirm(
       context,
       title: 'تتويج ${monthLabelFromStored(month.seasonLabel)}',
       message:
           'سيُتوَّج: $names.\n'
-          '${prize == null ? 'بلا نص جائزة.' : 'الجائزة: $prize.'}\n'
           'يظهر الاحتفال في شاشة المتصدرين حتى نهاية أول 48 ساعة من الشهر '
-          'الجديد، ويبقى البطل في سجل الأبطال. التتويج لا يُلغى، ولا تُعدَّل '
-          'الجائزة بعده.'
+          'الجديد، ويبقى البطل في سجل الأبطال. التتويج لا يُلغى.'
           '${force ? '\nتنبيه: ${arabicCount(month.unscoredFixtures, ArabicNoun.matches)} بلا نتيجة بعد.' : ''}',
       confirmLabel: 'تتويج',
       cancelLabel: 'إلغاء',
@@ -300,7 +256,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             for (final ChampionCandidateDto c in chosen) c.userId,
           ],
           force: force,
-          prize: prize,
         );
     if (!mounted) return;
     if (crowned is Err<MonthChampionsDto>) {
@@ -336,8 +291,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
       _busy = false;
       _chosen.clear();
       _photos.clear();
-      _prize.clear();
-      _planned.clear();
     });
     ref.invalidate(monthChampionsProvider);
     ref.invalidate(adminChampionCandidatesProvider(month.seasonId));
@@ -424,7 +377,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             crownedAt: '',
             celebrateUntil: '',
             avatarUrl: c.avatarUrl,
-            prize: _prizeText,
           ),
     ];
     final Map<String, Uint8List> photos = <String, Uint8List>{
@@ -496,22 +448,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
         ],
         if (preview.isNotEmpty) ...<Widget>[
           const SizedBox(height: AppSpacing.lg),
-          TextField(
-            key: const Key('admin.champions.prize'),
-            controller: _prize,
-            enabled: !_busy,
-            maxLength: 80,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'الجائزة (اختياري)',
-              // The example sits under the field, not inside it: a grey
-              // "150 ريال سعودي" inside the empty field read as already
-              // typed, so a crowning could go out without one.
-              helperText: 'اكتب الجائزة، مثال: 150 ريال سعودي',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
           Text(
             'المعاينة: هكذا يظهر أعلى شاشة المتصدرين أول 48 ساعة من الشهر الجديد',
             style: context.text.titleSmall?.copyWith(
@@ -543,11 +479,9 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
     );
   }
 
-  /// The automatic crowning (script 204): what the server does by itself,
-  /// and the month's prize set ahead.
+  /// The automatic crowning (script 204): what the server does by itself.
   Widget _autoCrown(BuildContext context, ChampionCandidatesDto data) {
     final AppTokens t = context.tokens;
-    final String? planned = data.plannedPrize;
     return AdminCard(
       key: const Key('admin.champions.auto'),
       child: Column(
@@ -568,38 +502,6 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             'تساوى الأول والثاني في النقاط والنتائج الدقيقة والاتجاه الصحيح '
             'تصلك رسالة لتتوِّج هنا بنفسك.',
             style: context.text.bodySmall?.copyWith(color: t.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            planned == null
-                ? 'جائزة التتويج: لم تُحدَّد'
-                : 'جائزة التتويج: $planned',
-            key: const Key('admin.champions.plannedPrize'),
-            style: context.text.bodyMedium?.copyWith(color: t.textPrimary),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            key: const Key('admin.champions.plannedPrizeField'),
-            controller: _planned,
-            enabled: !_busy,
-            maxLength: 80,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'جائزة الشهر',
-              helperText:
-                  'مثال: 150 ريال سعودي. إن لم تُحدَّد تُؤخذ جائزة الشهر '
-                  'السابق.',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AdminSecondaryButton(
-            key: const Key('admin.champions.savePrize'),
-            label: 'حفظ جائزة الشهر',
-            icon: Icons.save_outlined,
-            onPressed: _busy || _planned.text.trim().isEmpty
-                ? null
-                : () => unawaited(_savePlanned(data)),
           ),
         ],
       ),
