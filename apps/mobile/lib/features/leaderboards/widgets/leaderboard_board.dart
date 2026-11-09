@@ -9,9 +9,12 @@
 /// display values from the already-loaded board.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_sizes.dart';
@@ -19,6 +22,9 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/ui/user_avatar.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../moderation/blocked_players.dart';
+import '../../moderation/player_actions.dart';
+import '../../moderation/player_menu_button.dart';
 import 'champion_crown.dart';
 
 class BoardEntry {
@@ -444,7 +450,7 @@ class _Podium extends StatelessWidget {
 /// One place on the podium: the picture in its medal ring with the place on
 /// a diamond below it, the name, the points. No card: the pictures float,
 /// and the leader's step stands taller and wears the crown.
-class _PodiumTile extends StatelessWidget {
+class _PodiumTile extends ConsumerWidget {
   const _PodiumTile({
     required this.entry,
     required this.keyPrefix,
@@ -460,8 +466,12 @@ class _PodiumTile extends StatelessWidget {
   final bool isMe;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens t = context.tokens;
+    final bool blocked = ref
+        .watch(blockedPlayersProvider)
+        .containsKey(blockKeyOf(entry.displayName));
+    final String shownName = blocked ? blockedPlayerLabel : entry.displayName;
     final Color medal = _medal(t, entry.rank);
     final double avatar = _stepAvatars[step];
     final bool top = step == 0;
@@ -500,8 +510,8 @@ class _PodiumTile extends StatelessWidget {
                           : null,
                     ),
                     child: UserAvatar(
-                      displayName: entry.displayName,
-                      avatarUrl: entry.avatarUrl,
+                      displayName: shownName,
+                      avatarUrl: blocked ? null : entry.avatarUrl,
                       size: avatar,
                       gradient: false,
                       borderColor: isMe ? t.primaryText : medal,
@@ -518,7 +528,7 @@ class _PodiumTile extends StatelessWidget {
               children: <Widget>[
                 Flexible(
                   child: Text(
-                    entry.displayName,
+                    shownName,
                     key: Key('$keyPrefix.participant.${entry.participantId}'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -529,6 +539,12 @@ class _PodiumTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (!isMe)
+                  PlayerMenuButton(
+                    displayName: entry.displayName,
+                    participantId: entry.participantId,
+                    size: 18,
+                  ),
                 if (entry.champion) ...<Widget>[
                   const SizedBox(width: 3),
                   ChampionCrown(
@@ -656,7 +672,7 @@ class _RankDiamond extends StatelessWidget {
 /// A line below the podium, as a card of its own: the place, the picture,
 /// the name over the accuracy and the counted matches, then the move and
 /// the points.
-class _BoardRow extends StatelessWidget {
+class _BoardRow extends ConsumerWidget {
   const _BoardRow({
     required this.entry,
     required this.keyPrefix,
@@ -668,9 +684,13 @@ class _BoardRow extends StatelessWidget {
   final bool isMe;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens t = context.tokens;
+    final bool blocked = ref
+        .watch(blockedPlayersProvider)
+        .containsKey(blockKeyOf(entry.displayName));
+    final String shownName = blocked ? blockedPlayerLabel : entry.displayName;
     final int? accuracyPercent = entry.accuracyPercent;
     final String accuracy = accuracyPercent == null ? '—' : '$accuracyPercent%';
     final String matches =
@@ -686,13 +706,25 @@ class _BoardRow extends StatelessWidget {
         container: true,
         label: <String>[
           l10n.boardRankIs(entry.rank),
-          entry.displayName,
+          shownName,
           l10n.boardPoints(entry.points),
           if (accuracyPercent != null) l10n.boardAccuracyIs(accuracyPercent),
           if (entry.champion) l10n.championCrownLabel,
           if (isMe) l10n.boardYou,
         ].join(l10n.boardListSeparator),
         excludeSemantics: true,
+        customSemanticsActions: isMe
+            ? null
+            : <CustomSemanticsAction, VoidCallback>{
+                const CustomSemanticsAction(label: 'الإبلاغ أو الحظر'): () =>
+                    unawaited(
+                      showPlayerActions(
+                        context,
+                        displayName: entry.displayName,
+                        participantId: entry.participantId,
+                      ),
+                    ),
+              },
         child: Container(
           key: Key('$keyPrefix.item.${entry.participantId}'),
           padding: const EdgeInsets.symmetric(
@@ -728,8 +760,8 @@ class _BoardRow extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               UserAvatar(
-                displayName: entry.displayName,
-                avatarUrl: entry.avatarUrl,
+                displayName: shownName,
+                avatarUrl: blocked ? null : entry.avatarUrl,
                 size: 40,
                 gradient: false,
                 borderColor: isMe ? t.primaryText : t.border,
@@ -745,7 +777,7 @@ class _BoardRow extends StatelessWidget {
                       children: <Widget>[
                         Flexible(
                           child: Text(
-                            entry.displayName,
+                            shownName,
                             key: Key(
                               '$keyPrefix.participant.${entry.participantId}',
                             ),
@@ -818,6 +850,13 @@ class _BoardRow extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
+              if (isMe)
+                const SizedBox(width: 32)
+              else
+                PlayerMenuButton(
+                  displayName: entry.displayName,
+                  participantId: entry.participantId,
+                ),
             ],
           ),
         ),

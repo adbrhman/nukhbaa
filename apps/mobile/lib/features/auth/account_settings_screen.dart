@@ -15,6 +15,7 @@ import '../../l10n/app_localizations.dart';
 import '../groups/create_group_screen.dart';
 import '../groups/join_group_screen.dart';
 import '../groups/my_groups_screen.dart';
+import '../moderation/blocked_players_screen.dart';
 import '../notifications/favorite_teams_screen.dart';
 import '../notifications/notification_settings_screen.dart';
 import '../record/my_seasons_screen.dart';
@@ -86,6 +87,12 @@ class AccountSettingsScreen extends StatelessWidget implements NamedScreen {
                       icon: Icons.menu_book_outlined,
                       title: l10n.accountRules,
                       onTap: () => open(const RulesScreen()),
+                    ),
+                    AccountMenuRow(
+                      key: const Key('account.blocked'),
+                      icon: Icons.block_outlined,
+                      title: 'اللاعبون المحظورون',
+                      onTap: () => open(const BlockedPlayersScreen()),
                     ),
                     AccountMenuRow(
                       key: const Key('account.privacy'),
