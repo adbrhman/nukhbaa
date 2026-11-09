@@ -178,6 +178,6 @@ void main() {
     expect(totals.single.outcomeCount, 31);
     expect(totals.single.joinedAt, DateTime.utc(2026, 10, 1, 6, 30));
     expect(conn.sqls.single, contains("fs.grade = 'correct_outcome'"));
-    expect(conn.sqls.single, contains('min(p.joined_at)'));
+    expect(conn.sqls.single, contains('min(u.created_at)'));
   });
 }
