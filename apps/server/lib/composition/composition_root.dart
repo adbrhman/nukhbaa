@@ -3765,6 +3765,9 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
         turns: PostgresH2hTurnKeeper(connection),
+        cups: env['NUKHBA_H2H_CUP'] != 'off'
+            ? PostgresH2hCupStore(connection)
+            : null,
       ),
       closeH2hMonth: CloseH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),
@@ -3846,6 +3849,9 @@ final class CompositionRoot {
             idGenerator: idGenerator,
             controls: PostgresH2hControlStore(connection),
             turns: PostgresH2hTurnKeeper(connection),
+            cups: env['NUKHBA_H2H_CUP'] != 'off'
+                ? PostgresH2hCupStore(connection)
+                : null,
           ),
           // The same switches as runH2hAbsence and runH2hCup below: the
           // admin's manual run does what the scheduler does (audit 38).

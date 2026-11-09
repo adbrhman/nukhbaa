@@ -3,6 +3,7 @@ import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
 import 'package:application/src/gamification/approve_h2h_round.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
+import 'package:application/src/gamification/ports/h2h_cup_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_turn_keeper.dart';
@@ -30,6 +31,14 @@ final class H2hRoundsRun {
 /// days ahead. A fill day (five fixtures) is never approved here. Before the
 /// league opens, only a drawn (pilot) month gets rounds.
 ///
+/// **The Elite Cup comes first.** A month's rounds are not approved here
+/// while the Elite Cup of the month before still has a path to crown (the
+/// terms of the contest, decided 2026-11-10): the cup may take days of the
+/// new month, and the day after the last title is the first round day of the
+/// new month. Only the automatic approval waits: an admin may still approve a
+/// day by hand. Without a cup store ([cups] null: the cup is off) nothing
+/// waits.
+///
 /// **Lock.** A round whose day's first match kicked off has its fixture list
 /// frozen. A round whose day passed with no fixture left is frozen empty,
 /// which voids it.
@@ -56,17 +65,20 @@ final class RunH2hRounds {
     required IdGenerator idGenerator,
     H2hControlStore? controls,
     H2hTurnKeeper? turns,
+    H2hCupStore? cups,
   }) : _rounds = rounds,
        _leagues = leagues,
        _ids = idGenerator,
        _controls = controls,
-       _turns = turns;
+       _turns = turns,
+       _cups = cups;
 
   final H2hRoundStore _rounds;
   final H2hLeagueStore _leagues;
   final IdGenerator _ids;
   final H2hControlStore? _controls;
   final H2hTurnKeeper? _turns;
+  final H2hCupStore? _cups;
 
   /// Approves and locks what is due as of [now].
   Future<Result<H2hRoundsRun>> call({required DateTime now}) async {
@@ -128,6 +140,13 @@ final class RunH2hRounds {
       if (!(open as Ok<bool>).value) {
         continue;
       }
+      final held = await _cupHoldsBack(H2hLeaguePolicy.monthStartOf(day));
+      if (held is Err<bool>) {
+        return Result.err(held.error);
+      }
+      if ((held as Ok<bool>).value) {
+        continue;
+      }
       final due = await _dueForApproval(day, instant, lead);
       if (due is Err<bool>) {
         return Result.err(due.error);
@@ -185,6 +204,46 @@ final class RunH2hRounds {
       return Result.err(controlsError);
     }
     return Result.ok(H2hRoundsRun(approved: approved, locked: locked));
+  }
+
+  /// Whether the Elite Cup of the month before [month] is still to be
+  /// played: that month finished its 19 rounds, its cup has qualifiers, and
+  /// fewer than the three paths are crowned. A month with no cup (before the
+  /// elite draw, a pilot, an unfinished league, no qualifiers) holds nothing
+  /// back, so the league can never wait for a cup that will not come.
+  Future<Result<bool>> _cupHoldsBack(DateTime month) async {
+    final H2hCupStore? cups = _cups;
+    if (cups == null) {
+      return const Result.ok(false);
+    }
+    final DateTime before = DateTime.utc(month.year, month.month - 1);
+    if (!H2hLeaguePolicy.usesEliteDraw(before)) {
+      return const Result.ok(false);
+    }
+    final info = await _leagues.monthOf(before);
+    if (info is Err<H2hMonthInfo?>) {
+      return Result.err(info.error);
+    }
+    final H2hMonthInfo? held = (info as Ok<H2hMonthInfo?>).value;
+    if (held == null || held.isPilot) {
+      return const Result.ok(false);
+    }
+    final rounds = await _rounds.roundsOf(before);
+    if (rounds is Err<List<H2hRound>>) {
+      return Result.err(rounds.error);
+    }
+    final int count = (rounds as Ok<List<H2hRound>>).value.length;
+    if (!H2hCupPolicy.leagueFinished(roundCount: count, judgedRounds: count)) {
+      return const Result.ok(false);
+    }
+    final state = await cups.stateOf(before);
+    if (state is Err<H2hCupState>) {
+      return Result.err(state.error);
+    }
+    final H2hCupState cup = (state as Ok<H2hCupState>).value;
+    return Result.ok(
+      cup.entries.isNotEmpty && cup.titles.length < H2hCupPolicy.places.length,
+    );
   }
 
   /// A public month always takes rounds; before the league opens, only a
