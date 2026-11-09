@@ -73,6 +73,9 @@ Future<void> _fill(WidgetTester tester, String password) async {
     find.byKey(const Key('signIn.confirmPasswordField')),
     password,
   );
+  await tester.ensureVisible(find.byKey(const Key('consent.box')));
+  await tester.tap(find.byKey(const Key('consent.box')));
+  await tester.pumpAndSettle();
   await tester.ensureVisible(find.byKey(const Key('signIn.submit')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('signIn.submit')));

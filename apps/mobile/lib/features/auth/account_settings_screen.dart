@@ -2,7 +2,10 @@
 /// which the redesigned account page no longer lists at the top level.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analytics/screen_views.dart';
 import '../../core/design/app_sizes.dart';
@@ -16,6 +19,7 @@ import '../notifications/favorite_teams_screen.dart';
 import '../notifications/notification_settings_screen.dart';
 import '../record/my_seasons_screen.dart';
 import '../record/season_record_screen.dart';
+import 'consent_box.dart';
 import 'delete_account_screen.dart';
 import 'rules_screen.dart';
 import 'widgets/account_menu.dart';
@@ -82,6 +86,16 @@ class AccountSettingsScreen extends StatelessWidget implements NamedScreen {
                       icon: Icons.menu_book_outlined,
                       title: l10n.accountRules,
                       onTap: () => open(const RulesScreen()),
+                    ),
+                    AccountMenuRow(
+                      key: const Key('account.privacy'),
+                      icon: Icons.privacy_tip_outlined,
+                      title: 'سياسة الخصوصية',
+                      onTap: () => unawaited(
+                        ProviderScope.containerOf(context, listen: false).read(
+                          legalLinkOpenerProvider,
+                        )(Uri.parse(privacyPolicyUrl)),
+                      ),
                     ),
                   ],
                 ),

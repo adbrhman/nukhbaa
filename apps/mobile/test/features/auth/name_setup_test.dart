@@ -87,6 +87,9 @@ void main() {
       find.byKey(const Key('nameSetup.familyField')),
       'Hassan',
     );
+    await tester.ensureVisible(find.byKey(const Key('consent.box')));
+    await tester.tap(find.byKey(const Key('consent.box')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nameSetup.save')));
     await tester.pumpAndSettle();
 
@@ -102,6 +105,9 @@ void main() {
 
     await _open(tester, harness);
     await tester.enterText(find.byKey(const Key('nameSetup.field')), 'Ali');
+    await tester.ensureVisible(find.byKey(const Key('consent.box')));
+    await tester.tap(find.byKey(const Key('consent.box')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nameSetup.save')));
     await tester.pumpAndSettle();
 
@@ -122,6 +128,9 @@ void main() {
       find.byKey(const Key('nameSetup.field')),
       'n72914939',
     );
+    await tester.ensureVisible(find.byKey(const Key('consent.box')));
+    await tester.tap(find.byKey(const Key('consent.box')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nameSetup.save')));
     await tester.pumpAndSettle();
 

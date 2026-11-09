@@ -71,6 +71,9 @@ Future<void> _fill(
     find.byKey(const Key('signIn.confirmPasswordField')),
     'secret-123',
   );
+  await tester.ensureVisible(find.byKey(const Key('consent.box')));
+  await tester.tap(find.byKey(const Key('consent.box')));
+  await tester.pumpAndSettle();
   await tester.ensureVisible(find.byKey(const Key('signIn.submit')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('signIn.submit')));

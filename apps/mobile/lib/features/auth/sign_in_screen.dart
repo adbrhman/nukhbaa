@@ -20,6 +20,7 @@ import '../../core/ui/app_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import '../update/update_gate.dart';
 import 'app_lock.dart';
+import 'consent_box.dart';
 import 'name_setup_screen.dart' show isTwoPartDisplayName;
 import 'session_controller.dart';
 import 'password_reset_screen.dart';
@@ -47,6 +48,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isRegister = false;
+
+  /// The sign-up consent (rules, privacy, 18+); asked before an account
+  /// is created, so before any content exists (script 224).
+  bool _consent = false;
+  String? _consentError;
 
   /// "تذكرني": keep the password on this phone after signing in.
   bool _remember = false;
@@ -126,6 +132,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void _submit(SessionState current) {
     if (current is SessionAuthenticating) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_isRegister && !_consent) {
+      setState(() => _consentError = consentRequiredMessage);
+      return;
+    }
     unawaited(
       _isRegister
           ? ref
@@ -157,6 +167,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     setState(() {
       _isRegister = toRegister;
       _showSaved = false;
+      _consent = false;
+      _consentError = null;
     });
   }
 
@@ -450,6 +462,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   }
                                   return null;
                                 },
+                              ),
+                            ],
+                            if (_isRegister) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              ConsentBox(
+                                checked: _consent,
+                                enabled: !inFlight,
+                                errorText: _consentError,
+                                onChanged: (bool value) => setState(() {
+                                  _consent = value;
+                                  if (value) _consentError = null;
+                                }),
                               ),
                             ],
                             const SizedBox(height: AppSpacing.xl),

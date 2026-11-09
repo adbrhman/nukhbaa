@@ -15,6 +15,7 @@ import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
+import 'consent_box.dart';
 import 'session_controller.dart';
 
 /// The longest display name the platform accepts (`User.maxDisplayNameLength`
@@ -74,6 +75,11 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
   bool _busy = false;
   String? _error;
 
+  /// The consent (rules, privacy, 18+) of an account that never saw the
+  /// sign-up form: asked before the name, so before any content (224).
+  bool _consent = false;
+  String? _consentError;
+
   @override
   void dispose() {
     _name.dispose();
@@ -82,6 +88,10 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
   }
 
   Future<void> _save() async {
+    if (!_consent) {
+      setState(() => _consentError = consentRequiredMessage);
+      return;
+    }
     final String first = _name.text.trim();
     final String family = _family.text.trim();
     if (first.isEmpty || family.isEmpty) {
@@ -178,6 +188,16 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                     hintText: 'مثال: أحمد',
                     errorText: _error,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ConsentBox(
+                  checked: _consent,
+                  enabled: !_busy,
+                  errorText: _consentError,
+                  onChanged: (bool value) => setState(() {
+                    _consent = value;
+                    if (value) _consentError = null;
+                  }),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 FilledButton(

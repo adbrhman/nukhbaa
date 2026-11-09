@@ -250,6 +250,9 @@ void main() {
       find.byKey(const Key('signIn.confirmPasswordField')),
       'secret-123',
     );
+    await tester.ensureVisible(find.byKey(const Key('consent.box')));
+    await tester.tap(find.byKey(const Key('consent.box')));
+    await tester.pumpAndSettle();
     await _tapRemember(tester);
     await _submit(tester);
 
@@ -292,6 +295,9 @@ void main() {
       find.byKey(const Key('signIn.confirmPasswordField')),
       'secret-123',
     );
+    await tester.ensureVisible(find.byKey(const Key('consent.box')));
+    await tester.tap(find.byKey(const Key('consent.box')));
+    await tester.pumpAndSettle();
     await _submit(tester);
 
     expect(registers, hasLength(1));
