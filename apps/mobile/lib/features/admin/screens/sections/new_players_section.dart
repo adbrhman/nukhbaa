@@ -45,8 +45,8 @@ String? newPlayerHintLabel(String? hint) => switch (hint) {
 /// The message support sends, ready for the admin to edit.
 String realNameRequest(String name) =>
     'مرحباً، معك دعم نُخبة. اسمك في التطبيق «$name» لا يبدو اسماً '
-    'حقيقياً. في نُخبة حساب واحد لكل لاعب وباسمه الحقيقي، وهذا شرط '
-    'للمنافسة على الجوائز. أرسل لنا هنا اسمك الأول واسم عائلتك لنعدّله لك.';
+    'حقيقياً. في نُخبة يُشترط الاسم الحقيقي، ولا يُقبل اسم مستعار أو '
+    'منتحَل. أرسل لنا هنا اسمك الأول واسم عائلتك لنعدّله لك.';
 
 String _when(DateTime at) {
   final DateTime local = at.toLocal();
