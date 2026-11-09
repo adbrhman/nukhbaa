@@ -88,6 +88,30 @@ void main() {
   });
 
   group('SessionController.signIn', () {
+    test('a third account on the phone (409 device.account_limit): '
+        'SessionFailed, no retry and no token persisted', () async {
+      final harness = buildAuthHarness(
+        (_) async => errorEnvelope(
+          409,
+          'device.account_limit',
+          '\u062d\u0633\u0627\u0628\u0627\u0646 \u0641\u0642\u0637.',
+        ),
+      );
+      addTearDown(harness.dispose);
+      await harness.container.read(sessionControllerProvider.future);
+
+      await harness.container
+          .read(sessionControllerProvider.notifier)
+          .signIn('third-jwt');
+
+      final state = harness.container.read(sessionControllerProvider).value;
+      expect(state, isA<SessionFailed>());
+      final failed = state as SessionFailed;
+      expect(failed.error.code, deviceAccountLimitCode);
+      expect(failed.canRetryRestore, isFalse);
+      expect(await harness.store.read(), isNull);
+    });
+
     test(
       'success: persists the token and yields SessionAuthenticated',
       () async {

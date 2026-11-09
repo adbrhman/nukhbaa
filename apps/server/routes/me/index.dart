@@ -29,6 +29,20 @@ Future<Response> onRequest(RequestContext context) async {
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
 
+  // A third account on one phone (script 245): refused first, so nothing is
+  // written for it -- no account row, no enrolment, no sighting. The terms
+  // of the contest allow two accounts on a phone.
+  final sighting = root.recordDeviceSighting;
+  if (sighting != null) {
+    final admitted = await sighting.admit(
+      principal: principal,
+      installId: context.request.headers[appInstallHeader],
+    );
+    if (admitted is Err<void>) {
+      return errorResponse(admitted.error);
+    }
+  }
+
   final result = await root.getCurrentUser(principal);
 
   // Membership is not a decision this product asks anyone to make: opening the
@@ -44,7 +58,6 @@ Future<Response> onRequest(RequestContext context) async {
   // The phone this account is played from (script 200), for the admin's
   // shared-phones list. Unchecked, as the join above: `/me` answers
   // whether or not the sighting could be written.
-  final sighting = root.recordDeviceSighting;
   if (sighting != null && result is Ok<User>) {
     await sighting(
       principal: principal,

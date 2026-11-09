@@ -53,6 +53,10 @@ part 'session_controller.g.dart';
 /// The controller is async: [build] resolves the boot-time state by attempting
 /// a restore from the [TokenStore], so the initial value is a `Future` that the
 /// router awaits (showing a splash while it is [SessionUnknown]/loading).
+/// What `GET /me` answers (409) to a third account on one phone: the session
+/// ends, as for a refused token, and the player is told why.
+const String deviceAccountLimitCode = 'device.account_limit';
+
 @riverpod
 class SessionController extends _$SessionController {
   TokenStore get _store => ref.read(tokenStoreProvider);
@@ -131,7 +135,8 @@ class SessionController extends _$SessionController {
         if (!ref.mounted) return;
         state = AsyncData(SessionAuthenticated(value.user));
       case Err<MeResponseDto>(:final error)
-          when error.kind == ErrorKind.authorization:
+          when error.kind == ErrorKind.authorization ||
+              error.code == deviceAccountLimitCode:
         await _store.clear();
         if (!ref.mounted) return;
         state = AsyncData(SessionFailed(error));
@@ -488,7 +493,8 @@ class SessionController extends _$SessionController {
     AppError error, {
     required bool clearOnAuthFailure,
   }) async {
-    if (error.kind == ErrorKind.authorization) {
+    if (error.kind == ErrorKind.authorization ||
+        error.code == deviceAccountLimitCode) {
       if (clearOnAuthFailure) {
         await _store.clear();
       }

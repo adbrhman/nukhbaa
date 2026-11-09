@@ -3551,6 +3551,7 @@ final class CompositionRoot {
       // The phones the accounts are played from (script 200).
       recordDeviceSighting: RecordDeviceSighting(
         sightings: PostgresDeviceSightings(connection),
+        gate: PostgresInstallAccountGate(connection),
       ),
       adminListSharedDevices: AdminListSharedDevices(
         devices: PostgresDeviceSightings(connection),

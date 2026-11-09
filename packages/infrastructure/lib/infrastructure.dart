@@ -45,6 +45,7 @@ export 'src/identity/jwks_client.dart';
 export 'src/identity/postgres_account_deletion.dart';
 export 'src/identity/postgres_device_sightings.dart';
 export 'src/identity/postgres_favorite_team_repository.dart';
+export 'src/identity/postgres_install_account_gate.dart';
 export 'src/identity/postgres_user_directory.dart';
 export 'src/identity/cached_user_directory.dart';
 export 'src/identity/cached_token_verifier.dart';
