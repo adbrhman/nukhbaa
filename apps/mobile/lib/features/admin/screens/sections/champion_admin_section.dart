@@ -82,7 +82,8 @@ String? championPhotoMime(List<int> b) {
   return null;
 }
 
-Future<ChampionPhoto?> _pickFromGallery() async {
+/// Opens the device's gallery (also used by the Elite Cup panel).
+Future<ChampionPhoto?> pickChampionPhotoFromGallery() async {
   final XFile? picked = await ImagePicker().pickImage(
     source: ImageSource.gallery,
     maxWidth: 640,
@@ -152,7 +153,7 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
   Future<ChampionPhoto?> _pick() async {
     final ChampionPhoto? photo;
     try {
-      photo = await (widget.pickPhoto ?? _pickFromGallery)();
+      photo = await (widget.pickPhoto ?? pickChampionPhotoFromGallery)();
     } on Object {
       if (mounted) _snack('تعذّر فتح الصورة');
       return null;

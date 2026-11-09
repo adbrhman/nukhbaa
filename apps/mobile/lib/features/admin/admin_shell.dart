@@ -16,6 +16,7 @@ import 'screens/sections/announcement_section.dart';
 import 'screens/sections/admin_counted_fixtures_section.dart';
 import 'screens/sections/audit_log_section.dart';
 import 'screens/sections/champion_admin_section.dart';
+import 'screens/sections/cup_champions_admin_section.dart';
 import 'screens/sections/error_log_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/admin_support_section.dart';
@@ -264,7 +265,14 @@ class AdminShell extends StatelessWidget {
         ],
       ),
       AdminSection.predictions => const AdminPredictionsSection(),
-      AdminSection.champions => const ChampionAdminSection(),
+      // script 241: tabs -- the month's champion, then the Elite Cup's.
+      AdminSection.champions => const AdminTabbedSection(
+        name: 'champions',
+        tabs: <(String, Widget)>[
+          ('بطل الشهر', ChampionAdminSection()),
+          ('كأس النخبة', CupChampionsAdminSection()),
+        ],
+      ),
       AdminSection.h2hLeague => const H2hAdminSection(),
     };
   }
