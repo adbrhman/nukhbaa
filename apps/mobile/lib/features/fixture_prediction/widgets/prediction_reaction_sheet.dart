@@ -22,6 +22,7 @@ import '../../../core/design/app_sizes.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/design/app_typography.dart';
+import '../../moderation/player_menu_button.dart';
 import '../fixture_prediction_providers.dart';
 import '../prediction_reactions_providers.dart';
 import 'day_hero_card.dart';
@@ -115,6 +116,7 @@ Future<void> showPredictionReactionSheet({
   required String fixtureId,
   required String participantId,
   required String playerName,
+  String? reportName,
   required String homeName,
   required String awayName,
   required int homeGoals,
@@ -131,6 +133,7 @@ Future<void> showPredictionReactionSheet({
       fixtureId: fixtureId,
       participantId: participantId,
       playerName: playerName,
+      reportName: reportName,
       homeName: homeName,
       awayName: awayName,
       homeGoals: homeGoals,
@@ -153,6 +156,7 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
     required this.fixtureId,
     required this.participantId,
     required this.playerName,
+    this.reportName,
     required this.homeName,
     required this.awayName,
     required this.homeGoals,
@@ -166,6 +170,10 @@ class PredictionReactionSheet extends ConsumerStatefulWidget
   final String fixtureId;
   final String participantId;
   final String playerName;
+
+  /// The player's own name for the report / block menu, when [playerName]
+  /// is the label shown for a blocked player (script 226).
+  final String? reportName;
   final String homeName;
   final String awayName;
   final int homeGoals;
@@ -237,13 +245,25 @@ class _PredictionReactionSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              widget.isMine ? 'توقعك' : 'توقع ${widget.playerName}',
-              textAlign: TextAlign.center,
-              style: text.titleLarge?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    widget.isMine ? 'توقعك' : 'توقع ${widget.playerName}',
+                    textAlign: TextAlign.center,
+                    style: text.titleLarge?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (!widget.isMine)
+                  PlayerMenuButton(
+                    displayName: widget.reportName ?? widget.playerName,
+                    participantId: widget.participantId,
+                  ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
             // A Row follows the reading direction: home on the reading

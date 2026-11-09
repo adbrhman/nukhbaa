@@ -182,7 +182,7 @@ void main() {
     expect(server.messages, hasLength(1));
     final String body = server.messages.single['body']! as String;
     expect(body, contains('الاسم: e'));
-    expect(body, contains('رقم المشارك: e'));
+    expect(body, contains('المعرّف: e'));
     expect(body, contains(playerReportReasons.first));
     expect(find.text(reportSentMessage), findsOneWidget);
     // A report is not a block.

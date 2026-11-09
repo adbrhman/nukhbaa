@@ -17,7 +17,11 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/error/error_presenter.dart';
 import '../../core/providers.dart';
+import '../auth/session_controller.dart';
+import '../auth/session_state.dart';
 import '../competition/widgets/async_list_view.dart';
+import '../moderation/blocked_players.dart';
+import '../moderation/player_menu_button.dart';
 import 'groups_providers.dart';
 import 'league_invite_sheet.dart';
 
@@ -146,6 +150,13 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    final Map<String, String> blockedPlayers = ref.watch(
+      blockedPlayersProvider,
+    );
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final String? myId = session is SessionAuthenticated
+        ? session.user.userId
+        : null;
     final AsyncValue<GroupMembersDto> members = ref.watch(
       groupMembersProvider(widget.group.id),
     );
@@ -178,6 +189,7 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                   ref.invalidate(groupMembersProvider(widget.group.id)),
               itemBuilder: (context, member) {
                 final bool owner = member.role == 'owner';
+                final String? memberName = member.displayName;
                 return ListTile(
                   key: Key('groupMembers.item.${member.userId}'),
                   leading: Icon(
@@ -187,13 +199,24 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                     color: owner ? tokens.primary : tokens.textSecondary,
                   ),
                   title: Text(
-                    member.displayName ?? 'عضو',
+                    memberName != null &&
+                            blockedPlayers.containsKey(blockKeyOf(memberName))
+                        ? blockedPlayerLabel
+                        : (memberName ?? 'عضو'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: owner ? const Text('المالك') : null,
-                  trailing: widget.isOwner && !owner
-                      ? IconButton(
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (memberName != null && member.userId != myId)
+                        PlayerMenuButton(
+                          displayName: memberName,
+                          participantId: member.userId,
+                        ),
+                      if (widget.isOwner && !owner)
+                        IconButton(
                           key: Key('groupMembers.remove.${member.userId}'),
                           tooltip: 'أخرِجه من الدوري',
                           icon: Icon(
@@ -203,8 +226,9 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                           onPressed: _busy
                               ? null
                               : () => unawaited(_remove(member)),
-                        )
-                      : null,
+                        ),
+                    ],
+                  ),
                 );
               },
             ),

@@ -39,7 +39,7 @@ String playerReportMessage({
 }) =>
     'بلاغ عن لاعب\n'
     'الاسم: $displayName\n'
-    'رقم المشارك: $participantId\n'
+    'المعرّف: $participantId\n'
     'السبب: $reason';
 
 /// What the snackbar says once a report is sent.

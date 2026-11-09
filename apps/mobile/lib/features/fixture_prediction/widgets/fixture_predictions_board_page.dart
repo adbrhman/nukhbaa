@@ -54,6 +54,7 @@ import '../../competition/team_catalog_index.dart';
 import '../../competition/team_identity.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/leaderboards_providers.dart';
+import '../../moderation/blocked_players.dart';
 import '../current_month_fixtures_providers.dart';
 import '../prediction_reactions_providers.dart';
 import '../predictions_board_providers.dart';
@@ -138,10 +139,16 @@ final class _Column {
 
 /// One row: a player who predicted at least one of the day's started matches.
 final class _Player {
-  _Player(this.participantId, this.name);
+  _Player(this.participantId, this.name, {String? realName})
+    : realName = realName ?? name;
 
   final String participantId;
+
+  /// What is shown: the player's name, or the label of a blocked player.
   final String name;
+
+  /// The player's own name, for the report / block menu.
+  final String realName;
   bool isMine = false;
   int points = 0;
 }
@@ -266,18 +273,24 @@ class _FixturePredictionsBoardPageState
       );
     }
 
+    final Map<String, String> blockedPlayers = ref.watch(
+      blockedPlayersProvider,
+    );
     final Map<String, _Player> byId = <String, _Player>{};
     for (final _Column column in columns) {
       for (final FixturePredictionDto p in column.predictions.values) {
-        final _Player player = byId.putIfAbsent(
-          p.participantId,
-          () => _Player(
+        final _Player player = byId.putIfAbsent(p.participantId, () {
+          final String real = p.displayName.isEmpty
+              ? l10n.fixturePredictionsUnnamed
+              : p.displayName;
+          return _Player(
             p.participantId,
-            p.displayName.isEmpty
-                ? l10n.fixturePredictionsUnnamed
-                : p.displayName,
-          ),
-        );
+            blockedPlayers.containsKey(blockKeyOf(real))
+                ? blockedPlayerLabel
+                : real,
+            realName: real,
+          );
+        });
         player.isMine = myParticipantIds.contains(p.participantId);
         player.points += column.scores[p.participantId]?.points ?? 0;
       }
@@ -1081,6 +1094,7 @@ class _PredictionCell extends StatelessWidget {
               fixtureId: column.fixture.fixtureId,
               participantId: player.participantId,
               playerName: player.name,
+              reportName: player.realName,
               homeName: column.homeName,
               awayName: column.awayName,
               homeGoals: prediction.homeGoals,

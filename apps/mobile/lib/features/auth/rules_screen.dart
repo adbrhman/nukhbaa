@@ -129,6 +129,62 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'السلوك والمحتوى',
+                  key: const Key('rules.conduct.title'),
+                  style: context.text.titleMedium?.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _RulesCard(
+                  children: <Widget>[
+                    _RuleRow(
+                      key: const Key('rules.conduct.name'),
+                      icon: Icons.badge_outlined,
+                      color: tokens.primary,
+                      label:
+                          'اسمك هو اسمك الحقيقي. يُمنع الاسم المسيء أو '
+                          'المنتحل لشخصية غيرك أو الذي يحوي ألفاظاً '
+                          'نابية.',
+                    ),
+                    _RuleRow(
+                      key: const Key('rules.conduct.picture'),
+                      icon: Icons.hide_image_outlined,
+                      color: tokens.textSecondary,
+                      label:
+                          'تُمنع الصورة الشخصية الجنسية أو العنيفة أو '
+                          'المخالفة للقانون أو التي تمس الأطفال، أو التي '
+                          'ليست لك.',
+                    ),
+                    _RuleRow(
+                      key: const Key('rules.conduct.abuse'),
+                      icon: Icons.report_gmailerrorred_outlined,
+                      color: tokens.textSecondary,
+                      label:
+                          'تُمنع الإساءة والتحرش والتهديد وخطاب الكراهية '
+                          'والتمييز، ونشر ما هو مخالف للقانون.',
+                    ),
+                    _RuleRow(
+                      key: const Key('rules.conduct.action'),
+                      icon: Icons.gavel_rounded,
+                      color: tokens.goldAccent,
+                      label:
+                          'عند المخالفة يحق لفريق نُخبة تعديل الاسم أو '
+                          'إزالة الصورة أو إيقاف الحساب.',
+                    ),
+                    _RuleRow(
+                      key: const Key('rules.conduct.report'),
+                      icon: Icons.flag_outlined,
+                      color: tokens.primary,
+                      label:
+                          'يمكنك الإبلاغ عن أي لاعب أو حظره من القائمة '
+                          '⋮ بجانب اسمه، ويراجع الفريق كل بلاغ.',
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
