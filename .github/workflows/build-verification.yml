@@ -878,6 +878,73 @@ jobs:
             fi
           done
           [ "$FOUND" = 1 ] || { echo "::error::no merged release manifest found"; exit 1; }
+          # script 222: what Google Play checks, proven before the upload.
+          # (1) The bundle must not point at the placeholder API the build
+          # falls back to when NUKHBA_API_BASE_URL is unset, and must use https.
+          python3 - <<'PYEOF'
+          import json, sys
+          api = json.load(open("/tmp/dart_defines_play.json")).get("NUKHBA_API_BASE_URL", "").strip()
+          if not api.startswith("https://"):
+              raise SystemExit("ERROR: NUKHBA_API_BASE_URL is not an https URL")
+          if "nukhba.example" in api:
+              raise SystemExit("ERROR: the bundle points at the placeholder API: set NUKHBA_API_BASE_URL")
+          print("api base url: https, not the placeholder")
+          PYEOF
+          # (2) targetSdk and permissions of the merged release manifest.
+          python3 - $(find build/app/intermediates -type f -name AndroidManifest.xml -path '*merged_manifest*' -path '*/release/*') <<'PYEOF'
+          import re, sys
+          MIN_TARGET = 36
+          sensitive = [
+              "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION",
+              "READ_CONTACTS", "WRITE_CONTACTS", "GET_ACCOUNTS",
+              "READ_SMS", "RECEIVE_SMS", "SEND_SMS", "READ_CALL_LOG", "WRITE_CALL_LOG",
+              "RECORD_AUDIO", "CAMERA",
+              "READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO", "READ_MEDIA_AUDIO",
+              "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "MANAGE_EXTERNAL_STORAGE",
+              "REQUEST_INSTALL_PACKAGES", "QUERY_ALL_PACKAGES", "SYSTEM_ALERT_WINDOW",
+          ]
+          targets = set()
+          perms = set()
+          for f in sys.argv[1:]:
+              s = open(f, encoding="utf-8").read()
+              for m in re.finditer(r'android:targetSdkVersion="(\d+)"', s):
+                  targets.add(int(m.group(1)))
+              for m in re.finditer(r'<uses-permission[^>]*android:name="([^"]+)"', s):
+                  perms.add(m.group(1))
+          if not targets:
+              raise SystemExit("ERROR: no targetSdkVersion in the merged release manifest")
+          if min(targets) < MIN_TARGET:
+              raise SystemExit("ERROR: targetSdkVersion %s is below %s (Google Play requirement)" % (min(targets), MIN_TARGET))
+          print("targetSdkVersion:", sorted(targets))
+          print("permissions in the bundle:")
+          for p in sorted(perms):
+              print("  ", p)
+          bad = sorted(p for p in perms if p.rsplit(".", 1)[-1] in sensitive)
+          if bad:
+              raise SystemExit("ERROR: sensitive permission(s) in the bundle: " + ", ".join(bad))
+          if any(p.endswith("AD_ID") for p in perms):
+              print("WARNING: AD_ID is in the bundle: Play Console's advertising ID declaration must say Yes")
+          PYEOF
+          # (3) Native libraries must be 16 KB aligned (64-bit ABIs): Google
+          # Play blocks updates of apps that are not, from 2027-02-01.
+          rm -rf /tmp/aab_libs && mkdir -p /tmp/aab_libs
+          unzip -o -q "$AAB" 'base/lib/*' -d /tmp/aab_libs
+          python3 - <<'PYEOF'
+          import glob, subprocess
+          libs = glob.glob("/tmp/aab_libs/base/lib/arm64-v8a/*.so") + glob.glob("/tmp/aab_libs/base/lib/x86_64/*.so")
+          if not libs:
+              raise SystemExit("ERROR: no 64-bit native libraries found in the bundle")
+          bad = []
+          for so in sorted(libs):
+              out = subprocess.run(["readelf", "-lW", so], capture_output=True, text=True, check=True).stdout
+              for line in out.splitlines():
+                  parts = line.split()
+                  if parts and parts[0] == "LOAD" and int(parts[-1], 16) < 0x4000:
+                      bad.append("%s align %s" % (so.split("/base/lib/")[1], parts[-1]))
+          if bad:
+              raise SystemExit("ERROR: not 16 KB aligned:\n" + "\n".join(sorted(set(bad))))
+          print("16 KB alignment ok for %d native libraries" % len(libs))
+          PYEOF
           test -n "${EXPECTED_SHA256:-}" || { echo "::error::ANDROID_CERT_SHA256 secret not set"; exit 1; }
           EXP=$(echo "$EXPECTED_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           ACT=$(keytool -printcert -jarfile "$AAB" | grep 'SHA256:' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
