@@ -3132,6 +3132,42 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 title} other{{count} titles}}'**
   String hallTitlesCount(int count);
 
+  /// No description provided for @hallCupHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite Cup champions'**
+  String get hallCupHeading;
+
+  /// No description provided for @hallCupPath1.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite Cup'**
+  String get hallCupPath1;
+
+  /// No description provided for @hallCupPath2.
+  ///
+  /// In en, this message translates to:
+  /// **'Second path cup'**
+  String get hallCupPath2;
+
+  /// No description provided for @hallCupPath3.
+  ///
+  /// In en, this message translates to:
+  /// **'Third path cup'**
+  String get hallCupPath3;
+
+  /// No description provided for @hallCupWonFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Won the final'**
+  String get hallCupWonFinal;
+
+  /// No description provided for @hallCupWalkover.
+  ///
+  /// In en, this message translates to:
+  /// **'Crowned unopposed in the final'**
+  String get hallCupWalkover;
+
   /// No description provided for @hallLegendsHeading.
   ///
   /// In en, this message translates to:

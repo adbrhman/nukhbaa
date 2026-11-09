@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/leaderboards/champions_providers.dart';
+import 'package:mobile/features/leaderboards/cup_champions_providers.dart';
 import 'package:mobile/features/leaderboards/hall_of_fame_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -34,13 +35,17 @@ Future<void> _pump(
   WidgetTester tester,
   Future<MonthChampionsDto> Function() load, {
   double textScale = 1,
+  CupChampionsDto cup = const CupChampionsDto(champions: <CupChampionDto>[]),
 }) async {
   tester.view.physicalSize = const Size(360, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [monthChampionsProvider.overrideWith((ref) => load())],
+      overrides: [
+        monthChampionsProvider.overrideWith((ref) => load()),
+        cupChampionsProvider.overrideWith((ref) async => cup),
+      ],
       child: MaterialApp(
         theme: AppTheme.dark,
         locale: const Locale('ar'),
@@ -121,6 +126,66 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(
       find.byKey(const Key('hall.legends.empty')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  CupChampionsDto cupOf() => const CupChampionsDto(
+    champions: <CupChampionDto>[
+      CupChampionDto(
+        monthStart: '2026-11-01',
+        place: 1,
+        how: 'final',
+        userId: 'c1',
+        displayName: 'cup-one',
+      ),
+      CupChampionDto(
+        monthStart: '2026-11-01',
+        place: 2,
+        how: 'walkover',
+        userId: 'c2',
+        displayName: 'cup-two',
+      ),
+    ],
+  );
+
+  testWidgets('the Elite Cup champions are listed by month and path', (
+    tester,
+  ) async {
+    await _pump(tester, () async => twoMonths, cup: cupOf());
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('hall.section.cup')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('أبطال كأس النخبة'), findsOneWidget);
+    expect(find.text('نوفمبر 2026'), findsOneWidget);
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.1')),
+      findsOneWidget,
+    );
+    expect(find.text('cup-one'), findsOneWidget);
+    expect(find.text('كأس النخبة · فاز في النهائي'), findsOneWidget);
+    expect(
+      find.text('كأس المسار الثاني · تُوِّج بلا خصم في النهائي'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('no champion of the cup yet: the section takes no room', (
+    tester,
+  ) async {
+    await _pump(tester, () async => twoMonths);
+    expect(find.byKey(const Key('hall.section.cup')), findsNothing);
+  });
+
+  testWidgets('the cup fits 360 wide at double text size', (tester) async {
+    await _pump(tester, () async => twoMonths, cup: cupOf(), textScale: 2);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.2')),
       300,
       scrollable: find.byType(Scrollable).first,
     );

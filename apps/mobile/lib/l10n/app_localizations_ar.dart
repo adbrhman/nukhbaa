@@ -1814,6 +1814,24 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get hallCupHeading => 'أبطال كأس النخبة';
+
+  @override
+  String get hallCupPath1 => 'كأس النخبة';
+
+  @override
+  String get hallCupPath2 => 'كأس المسار الثاني';
+
+  @override
+  String get hallCupPath3 => 'كأس المسار الثالث';
+
+  @override
+  String get hallCupWonFinal => 'فاز في النهائي';
+
+  @override
+  String get hallCupWalkover => 'تُوِّج بلا خصم في النهائي';
+
+  @override
   String get hallLegendsHeading => 'الأساطير';
 
   @override

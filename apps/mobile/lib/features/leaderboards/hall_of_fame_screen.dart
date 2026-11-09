@@ -17,8 +17,10 @@ import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../core/ui/app_error_state.dart';
 import '../../core/ui/app_skeleton.dart';
+import '../../core/ui/avatar_bytes_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'champions_providers.dart';
+import 'cup_champions_providers.dart';
 import 'hall_of_fame_model.dart';
 import 'widgets/champion_spotlight.dart';
 import 'widgets/trophy_cup.dart';
@@ -61,6 +63,7 @@ class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
         data: (MonthChampionsDto list) => RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(monthChampionsProvider);
+            ref.invalidate(cupChampionsProvider);
             try {
               await ref.read(monthChampionsProvider.future);
             } on Object {
@@ -144,6 +147,7 @@ class _HallBody extends StatelessWidget {
             ],
           ],
         ],
+        const _CupSection(),
         _SectionHeader(
           key: const Key('hall.section.legends'),
           title: l10n.hallLegendsHeading,
@@ -365,6 +369,115 @@ class _MonthCard extends ConsumerWidget {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The champions of the Elite Cup, by month (migration 0190): one card per
+/// path, with the picture an admin added or the champion's own picture.
+/// Decoration beside the months: while the list loads, when it failed, or
+/// while nobody has been crowned, it takes no room at all.
+class _CupSection extends ConsumerWidget {
+  const _CupSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final CupChampionsDto? cup = ref.watch(cupChampionsProvider).value;
+    if (cup == null || cup.champions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final Locale locale = Localizations.localeOf(context);
+    final List<Widget> children = <Widget>[
+      _SectionHeader(
+        key: const Key('hall.section.cup'),
+        title: l10n.hallCupHeading,
+      ),
+    ];
+    String? month;
+    for (final CupChampionDto c in cup.champions) {
+      if (c.monthStart != month) {
+        month = c.monthStart;
+        children.add(
+          _SubHeader(
+            title: championMonthName(cupMonthLabel(c.monthStart), locale),
+          ),
+        );
+      }
+      children
+        ..add(_CupChampionCard(champion: c))
+        ..add(const SizedBox(height: AppSpacing.md));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+}
+
+class _CupChampionCard extends ConsumerWidget {
+  const _CupChampionCard({required this.champion});
+
+  final CupChampionDto champion;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens t = context.tokens;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final CupChampionDto c = champion;
+    final String? path = c.photoUrl ?? c.avatarUrl;
+    final String pathName = switch (c.place) {
+      1 => l10n.hallCupPath1,
+      2 => l10n.hallCupPath2,
+      _ => l10n.hallCupPath3,
+    };
+    final String how = c.how == 'walkover'
+        ? l10n.hallCupWalkover
+        : l10n.hallCupWonFinal;
+    return Container(
+      key: Key('hall.cup.champion.${c.monthStart}.${c.place}'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: AppRadius.brLg,
+        border: Border.all(color: t.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          ChampionFramedPhoto(
+            displayName: c.displayName,
+            bytes: path == null
+                ? null
+                : ref.watch(avatarBytesProvider(path)).value,
+            size: 52,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  c.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.titleMedium?.copyWith(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$pathName · $how',
+                  style: context.text.labelMedium?.copyWith(
+                    color: t.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
