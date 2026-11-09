@@ -112,6 +112,7 @@ void main() {
       'التوقعات الدقيقة الأكثر',
       'الاتجاهات الصحيحة الأكثر',
       'الأسبق انضماماً',
+      'الحساب الأقدم',
     ]) {
       expect(
         find.descendant(of: rule, matching: find.textContaining(step)),

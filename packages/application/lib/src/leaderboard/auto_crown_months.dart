@@ -5,6 +5,7 @@ library;
 import 'package:application/src/leaderboard/admin_crown_month_champions.dart';
 import 'package:application/src/leaderboard/month_final_board.dart';
 import 'package:application/src/leaderboard/month_podium.dart';
+import 'package:application/src/leaderboard/ports/account_age_reader.dart';
 import 'package:application/src/leaderboard/ports/month_champion_repository.dart';
 import 'package:application/src/leaderboard/ports/month_crown_store.dart';
 import 'package:application/src/leaderboard/ports/month_podium_repository.dart';
@@ -71,7 +72,9 @@ final class AutoCrownOutcome {
 ///    the error log) and the crowning waits for an admin;
 /// 5. two players or more level for the crown (points, exact scorelines,
 ///    right outcomes: `MonthFinalBoard.levelForCrown`) are not decided by
-///    their join times: the owner is told, once, and crowns by hand;
+///    their join times: the oldest account is crowned, as the terms of the
+///    contest say ([AccountAgeReader]); when the ages are unknown or equal,
+///    the owner is told, once, and crowns by hand;
 /// 6. otherwise the first is crowned, with no prize (the app launches
 ///    without cash prizes, decided 2026-11-09), as the owner, through the admin's own
 ///    [AdminCrownMonthChampions], and the podium is set through
@@ -95,13 +98,15 @@ final class AutoCrownMonths {
     required AdminSetMonthPodium setPodium,
     required FixtureRescorer rescore,
     required OwnerNotices owner,
+    AccountAgeReader? accountAges,
   }) : _store = store,
        _champions = champions,
        _board = board,
        _crown = crown,
        _setPodium = setPodium,
        _rescore = rescore,
-       _owner = owner;
+       _owner = owner,
+       _accountAges = accountAges;
 
   final MonthCrownStore _store;
   final MonthChampionRepository _champions;
@@ -110,6 +115,10 @@ final class AutoCrownMonths {
   final AdminSetMonthPodium _setPodium;
   final FixtureRescorer _rescore;
   final OwnerNotices _owner;
+
+  /// When each account was created, to decide a tie for first place; null
+  /// leaves every such tie to the owner.
+  final AccountAgeReader? _accountAges;
 
   /// The latest result write already compared with each crowned month's
   /// first three, so an unchanged month is not read again every run.
@@ -285,7 +294,20 @@ final class AutoCrownMonths {
       for (final line in lines)
         if (MonthFinalBoard.levelForCrown(line.entry, lines.first.entry)) line,
     ];
-    if (leaders.length > 1) {
+    // A tie for first place is won by the oldest account (the terms of the
+    // contest); only ages that are unknown or equal leave it to the owner.
+    final Result<ChampionCandidate?>? oldest = leaders.length > 1
+        ? await _oldestAccount(leaders)
+        : null;
+    if (oldest case Err<ChampionCandidate?>(:final error)) {
+      return Result.err(error);
+    }
+    final ChampionCandidate? decided = switch (oldest) {
+      Ok<ChampionCandidate?>(:final value) => value,
+      _ => null,
+    };
+    final ChampionCandidate winner = decided ?? lines.first;
+    if (leaders.length > 1 && decided == null) {
       final ids = <String>[for (final line in leaders) line.userId.value]
         ..sort();
       final first = leaders.first.entry;
@@ -317,7 +339,7 @@ final class AutoCrownMonths {
     final crowned = await _crown(
       principal: principal,
       seasonId: month.seasonId.value,
-      userIds: <String>[lines.first.userId.value],
+      userIds: <String>[winner.userId.value],
       // A match left without a result is postponed by now (step 2): it
       // does not count, so it does not hold the crown back.
       force: true,
@@ -509,6 +531,42 @@ final class AutoCrownMonths {
     return Result.ok(
       AutoCrownOutcome(label: month.label, step: AutoCrownStep.changed),
     );
+  }
+
+  /// The one of [leaders] whose account is the oldest, or null when that is
+  /// not known: the reader is absent, a date is missing, or two accounts were
+  /// created at the same instant.
+  Future<Result<ChampionCandidate?>> _oldestAccount(
+    List<ChampionCandidate> leaders,
+  ) async {
+    final AccountAgeReader? reader = _accountAges;
+    if (reader == null) {
+      return const Result.ok(null);
+    }
+    final read = await reader.createdAt([
+      for (final line in leaders) line.userId,
+    ]);
+    if (read is Err<Map<String, DateTime>>) {
+      return Result.err(read.error);
+    }
+    final dates = (read as Ok<Map<String, DateTime>>).value;
+    ChampionCandidate? oldest;
+    DateTime? oldestAt;
+    bool unique = true;
+    for (final line in leaders) {
+      final DateTime? at = dates[line.userId.value];
+      if (at == null) {
+        return const Result.ok(null);
+      }
+      if (oldestAt == null || at.isBefore(oldestAt)) {
+        oldest = line;
+        oldestAt = at;
+        unique = true;
+      } else if (at.isAtSameMomentAs(oldestAt)) {
+        unique = false;
+      }
+    }
+    return Result.ok(unique ? oldest : null);
   }
 
   /// Tells the owner [title] / [body] about [month] unless he was already

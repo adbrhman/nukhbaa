@@ -313,8 +313,20 @@ final class _Owner implements OwnerNotices {
   }
 }
 
+/// The creation date of each account, by user id.
+final class _Ages implements AccountAgeReader {
+  final Map<String, DateTime> at = {};
+
+  @override
+  Future<Result<Map<String, DateTime>>> createdAt(List<UserId> users) async =>
+      Result.ok({
+        for (final user in users)
+          if (at[user.value] != null) user.value: at[user.value]!,
+      });
+}
+
 final class _World {
-  _World() : clock = _Clock(_later) {
+  _World({this.withAges = false}) : clock = _Clock(_later) {
     store = _Store(champions);
     // P1 leads; P2, P3 and P4 follow.
     totals
@@ -332,6 +344,10 @@ final class _World {
   final _Clock clock;
   late final _Store store;
   final List<String> rescored = [];
+
+  /// Whether the crowning knows the age of the accounts.
+  final bool withAges;
+  final _Ages ages = _Ages();
 
   static DateTime _join(int hour) => DateTime.utc(2026, 10, 31, 21 + hour);
 
@@ -362,6 +378,7 @@ final class _World {
       return const Result.ok(null);
     },
     owner: owner,
+    accountAges: withAges ? ages : null,
   );
 
   Future<List<AutoCrownStep>> run([DateTime? at]) async {
@@ -549,6 +566,63 @@ void main() {
         expect(world.owner.told.last.$1, contains('تُوِّج'));
       },
     );
+
+    test('a tie for first is won by the oldest account, whoever joined first, '
+        'and nothing waits for the owner', () async {
+      final world = _World(withAges: true);
+      // P2 levels with P1, joined later, but its account is the older one.
+      world.totals.put(
+        _p2,
+        points: 30,
+        exact: 10,
+        outcome: 5,
+        joinedAt: _World._join(2),
+      );
+      world.ages.at[_u1] = DateTime.utc(2026, 5, 20);
+      world.ages.at[_u2] = DateTime.utc(2026, 3, 2);
+
+      expect(await world.run(), [AutoCrownStep.crowned]);
+
+      expect(world.champions.rows.single.userId, const UserId(_u2));
+      expect(world.champions.rows.single.prize, isNull);
+      expect(
+        [for (final place in world.podium.rows) place.userId],
+        [const UserId(_u1), const UserId(_u3)],
+      );
+      expect(
+        world.owner.told.map((n) => n.$1),
+        isNot(contains(predicate<String>((t) => t.contains('ينتظر قرارك')))),
+      );
+    });
+
+    test('accounts of the same age, or one of unknown age, still wait for the '
+        'owner', () async {
+      final level = _World(withAges: true);
+      level.totals.put(
+        _p2,
+        points: 30,
+        exact: 10,
+        outcome: 5,
+        joinedAt: _World._join(2),
+      );
+      level.ages.at[_u1] = DateTime.utc(2026, 3, 2);
+      level.ages.at[_u2] = DateTime.utc(2026, 3, 2);
+      expect(await level.run(), [AutoCrownStep.tie]);
+      expect(level.champions.rows, isEmpty);
+      expect(level.owner.told.single.$1, contains('ينتظر قرارك'));
+
+      final unknown = _World(withAges: true);
+      unknown.totals.put(
+        _p2,
+        points: 30,
+        exact: 10,
+        outcome: 5,
+        joinedAt: _World._join(2),
+      );
+      unknown.ages.at[_u1] = DateTime.utc(2026, 3, 2);
+      expect(await unknown.run(), [AutoCrownStep.tie]);
+      expect(unknown.champions.rows, isEmpty);
+    });
 
     test('a result written after the crowning that changes the first three is '
         'told once; an unchanged one is not read again', () async {

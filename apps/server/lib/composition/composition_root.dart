@@ -3565,6 +3565,7 @@ final class CompositionRoot {
       // 0199); the owner alone is told, in his inbox. The board is read
       // uncached, as for a crowning by hand.
       autoCrownMonths: AutoCrownMonths(
+        accountAges: PostgresAccountAgeReader(connection),
         store: PostgresMonthCrownStore(connection),
         champions: PostgresMonthChampionRepository(connection),
         board: MonthFinalBoard(

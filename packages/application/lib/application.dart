@@ -201,6 +201,7 @@ export 'src/leaderboard/list_month_champions.dart';
 export 'src/leaderboard/list_my_season_records.dart';
 export 'src/leaderboard/month_final_board.dart';
 export 'src/leaderboard/month_podium.dart';
+export 'src/leaderboard/ports/account_age_reader.dart';
 export 'src/leaderboard/ports/cup_champion_repository.dart';
 export 'src/leaderboard/ports/fixture_totals_reader.dart';
 export 'src/leaderboard/ports/leaderboard_repository.dart';
