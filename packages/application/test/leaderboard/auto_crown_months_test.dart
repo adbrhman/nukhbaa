@@ -463,7 +463,7 @@ void main() {
       expect(world.champions.rows, isEmpty);
     });
 
-    test('crowns the first with the prize, as the owner, a postponed match '
+    test('crowns the first without a prize, as the owner, a postponed match '
         'left out, sets the podium and tells the owner once', () async {
       final world = _World();
       world.store.prize = '200 ريال سعودي';
@@ -474,7 +474,7 @@ void main() {
       expect(champion.userId, const UserId(_u1));
       expect(champion.points, 30);
       expect(champion.exactCount, 10);
-      expect(champion.prize, '200 ريال سعودي');
+      expect(champion.prize, isNull);
       expect(world.champions.crownedBys, [const UserId(_owner)]);
       expect(
         [for (final place in world.podium.rows) (place.place, place.userId)],
@@ -484,7 +484,7 @@ void main() {
       final (title, body) = world.owner.told.single;
       expect(title, contains('11/2026'));
       expect(body, contains('البطل: P1'));
-      expect(body, contains('200 ريال سعودي'));
+      expect(body, isNot(contains('الجائزة')));
       expect(body, contains('الثاني: P2'));
       expect(body, contains('الثالث: P3'));
       expect(body, contains('A2 × B2'));
@@ -496,12 +496,16 @@ void main() {
       expect(world.podium.rows, hasLength(2));
     });
 
-    test('a month without a prize set is crowned without one', () async {
-      final world = _World();
-      expect(await world.run(), [AutoCrownStep.crowned]);
-      expect(world.champions.rows.single.prize, isNull);
-      expect(world.owner.told.single.$2, contains('بلا نص جائزة'));
-    });
+    test(
+      'a prize planned before launch is never given by the server',
+      () async {
+        final world = _World();
+        world.store.prize = '150';
+        expect(await world.run(), [AutoCrownStep.crowned]);
+        expect(world.champions.rows.single.prize, isNull);
+        expect(world.owner.told.single.$2, isNot(contains('الجائزة')));
+      },
+    );
 
     test(
       'a tie for first on points, exact scorelines and right outcomes '

@@ -56,6 +56,7 @@ export 'src/identity/supabase_auth_gateway.dart';
 export 'src/identity/supabase_jwt_verifier.dart';
 export 'src/leaderboard/postgres_leaderboard_repository.dart';
 export 'src/leaderboard/cached_leaderboard_readers.dart';
+export 'src/leaderboard/postgres_cup_champion_repository.dart';
 export 'src/leaderboard/postgres_fixture_totals_reader.dart';
 export 'src/leaderboard/postgres_month_champion_repository.dart';
 export 'src/leaderboard/postgres_month_crown_store.dart';

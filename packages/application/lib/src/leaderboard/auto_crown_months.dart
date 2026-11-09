@@ -72,8 +72,8 @@ final class AutoCrownOutcome {
 /// 5. two players or more level for the crown (points, exact scorelines,
 ///    right outcomes: `MonthFinalBoard.levelForCrown`) are not decided by
 ///    their join times: the owner is told, once, and crowns by hand;
-/// 6. otherwise the first is crowned with the month's prize
-///    (`MonthCrownStore.prizeFor`), as the owner, through the admin's own
+/// 6. otherwise the first is crowned, with no prize (the app launches
+///    without cash prizes, decided 2026-11-09), as the owner, through the admin's own
 ///    [AdminCrownMonthChampions], and the podium is set through
 ///    [AdminSetMonthPodium];
 /// 7. once crowned, the podium is set if it is not yet (a month the owner
@@ -314,10 +314,6 @@ final class AutoCrownMonths {
       );
     }
 
-    final prizeResult = await _store.prizeFor(month.seasonId);
-    if (prizeResult is Err<String?>) {
-      return Result.err(prizeResult.error);
-    }
     final crowned = await _crown(
       principal: principal,
       seasonId: month.seasonId.value,
@@ -325,7 +321,7 @@ final class AutoCrownMonths {
       // A match left without a result is postponed by now (step 2): it
       // does not count, so it does not hold the crown back.
       force: true,
-      prize: (prizeResult as Ok<String?>).value,
+      prize: null,
     );
     if (crowned is Err<List<MonthChampion>>) {
       return Result.err(crowned.error);
@@ -411,7 +407,7 @@ final class AutoCrownMonths {
       for (final champion in champions)
         'البطل: ${champion.displayName} بـ${champion.points} نقطة '
             '(${champion.exactCount} نتيجة دقيقة)'
-            '${champion.prize == null ? '، بلا نص جائزة' : '، الجائزة: ${champion.prize}'}.',
+            '${champion.prize == null ? '' : '، الجائزة: ${champion.prize}'}.',
       for (final place in podium)
         '${place.place == 2 ? 'الثاني' : 'الثالث'}: ${place.displayName} '
             'بـ${place.points} نقطة (${place.exactCount} نتيجة دقيقة).',
