@@ -509,6 +509,35 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/cup-champions/{monthStart}/{place}/photo` -- sets or
+  /// replaces the picture of the champion of one path of the Elite Cup (the
+  /// image bytes, named by [contentType]). Answers the champions of the cup.
+  Future<Result<CupChampionsDto>> setCupChampionPhoto({
+    required String monthStart,
+    required int place,
+    required List<int> bytes,
+    required String contentType,
+  }) {
+    return _transport.postBytes<CupChampionsDto>(
+      '/admin/cup-champions/$monthStart/$place/photo',
+      bytes: bytes,
+      contentType: contentType,
+      parse: CupChampionsDto.fromJson,
+    );
+  }
+
+  /// `DELETE /admin/cup-champions/{monthStart}/{place}/photo` -- removes the
+  /// picture of that champion. Answers the champions of the cup.
+  Future<Result<CupChampionsDto>> removeCupChampionPhoto({
+    required String monthStart,
+    required int place,
+  }) {
+    return _transport.deleteObject<CupChampionsDto>(
+      '/admin/cup-champions/$monthStart/$place/photo',
+      parse: CupChampionsDto.fromJson,
+    );
+  }
+
   /// `POST /admin/champions/{seasonId}/podium` -- fixes the podium of a
   /// crowned month (migration 0191): the first two players of its final
   /// board after the champion(s) become the second and third places.

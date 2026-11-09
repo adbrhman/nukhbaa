@@ -145,6 +145,16 @@ final class LeaderboardsApi {
     );
   }
 
+  /// `GET /cup-champions` -- the champions of the Elite Cup (migrations 0190
+  /// and 0204), newest month first. Their pictures are fetched with
+  /// [championPhotoBytes], from the URL each row carries.
+  Future<Result<CupChampionsDto>> cupChampions() {
+    return _transport.getObject<CupChampionsDto>(
+      '/cup-champions',
+      parse: CupChampionsDto.fromJson,
+    );
+  }
+
   /// A champion's celebration picture, from the server-relative
   /// [photoPath] the server built (`photo_url`), passed back verbatim.
   /// `Ok(null)` when there is none.

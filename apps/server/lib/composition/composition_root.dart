@@ -191,6 +191,7 @@ final class CompositionRoot {
     this.adminListNewPlayers,
     this.autoCrownMonths,
     this.adminSetMonthPrize,
+    this.cupChampions,
     this.adminMessagePlayer,
     this.publisherTick,
     this.adminPublisher,
@@ -421,6 +422,7 @@ final class CompositionRoot {
     this.adminListNewPlayers,
     this.autoCrownMonths,
     this.adminSetMonthPrize,
+    this.cupChampions,
     this.adminMessagePlayer,
     this.publisherTick,
     this.adminPublisher,
@@ -2636,6 +2638,11 @@ final class CompositionRoot {
   /// tests that do not provide one.
   final AdminSetMonthPrize? adminSetMonthPrize;
 
+  /// The champions of the Elite Cup and their pictures (`/cup-champions`,
+  /// `/admin/cup-champions`, script 240). Null in tests that do not provide
+  /// one.
+  final CupChampions? cupChampions;
+
   /// Support writes first to a player
   /// (`POST /admin/support/players/{id}/messages`, script 202), admin-only.
   /// Null in tests that do not provide one.
@@ -3598,6 +3605,10 @@ final class CompositionRoot {
       adminSetMonthPrize: AdminSetMonthPrize(
         champions: PostgresMonthChampionRepository(connection),
         store: PostgresMonthCrownStore(connection),
+        clock: clock,
+      ),
+      cupChampions: CupChampions(
+        champions: PostgresCupChampionRepository(connection),
         clock: clock,
       ),
       publisherTick: publisherTick,

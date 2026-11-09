@@ -20,6 +20,7 @@ export 'src/badge_dto.dart';
 export 'src/champion_dto.dart';
 export 'src/client_error_report_dto.dart';
 export 'src/competition_dto.dart';
+export 'src/cup_champion_dto.dart';
 export 'src/daily_challenge_dto.dart';
 export 'src/device_token_dto.dart';
 export 'src/error_dto.dart';
