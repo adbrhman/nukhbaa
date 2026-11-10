@@ -217,6 +217,28 @@ jobs:
               echo "server-release is already past $SHA: nothing to do"
               exit 0
             fi
+            # Script 255 (2026-11-10): a release restarts the server, and
+            # every cache it holds (the players' histories, the schedules,
+            # the team list, held up to 6 hours) is read again from
+            # Supabase. A push of the site, a workflow or the docs restarted
+            # it too, about half the pushes, while the Free Plan's egress
+            # was over (pg_stat_statements, 3-10 November: about 250 MB a
+            # day). When nothing the server is built from changed (the
+            # Dockerfile's inputs), server-release stays and the live server
+            # keeps running: no build, no restart.
+            server_paths='^(apps/server/|packages/|Dockerfile$|\.dockerignore$|apps/mobile/assets/fonts/|apps/mobile/assets/team_logos/)|(^|/)pubspec(_overrides)?\.(yaml|lock)$'
+            base=$(git rev-parse FETCH_HEAD)
+            changed=$(git diff --name-only "$base" "$SHA")
+            if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qE "$server_paths"; then
+              n=$(printf '%s\n' "$changed" | wc -l)
+              echo "nothing the server is built from changed between ${base:0:7} and ${SHA:0:7} ($n files): server-release stays, the server is not restarted"
+              {
+                echo "### Server not restarted"
+                echo
+                echo "None of the $n files changed since \`${base:0:7}\` is built into the server; server-release stays there."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
           fi
           git push -q --force \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
