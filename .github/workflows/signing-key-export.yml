@@ -1,0 +1,235 @@
+# Signing key export, by hand only (script 254, approved by the owner on
+# 2026-11-10). The upload and app signing key NUKHBAA exists only in the
+# repository secrets: the owner has no copy of the keystore file. This
+# workflow lets it leave GitHub in two ways, both encrypted, never in clear:
+#
+#   mode = backup  An encrypted copy for the owner (7z, AES-256, the file
+#                  names hidden too), with the alias, both passwords and the
+#                  fingerprints inside. It opens on the phone with ZArchiver
+#                  or, in Termux, `pkg install p7zip` then `7z x <file>`.
+#                  Keep two copies outside GitHub (Drive and another place).
+#   mode = pepk    The key encrypted for Google Play (Play App Signing >
+#                  Change app signing key > provide a copy of your key), by
+#                  Google's own PEPK tool and the encryption public key the
+#                  Play Console page gives; only Google can open it. Run it
+#                  only once the app exists in Play Console.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#   ANDROID_KEY_PASSWORD, ANDROID_CERT_SHA256   (the ones the APK build uses)
+#   SIGNING_BACKUP_PASSPHRASE   backup only: 20 characters or more, not the
+#                               keystore password. Without it the backup
+#                               cannot be opened: keep it outside GitHub.
+#
+# The repository is public: nothing is printed but fingerprints and sizes,
+# nothing is committed, and the artifact lives one day. Download it, check
+# its SHA-256 against the run's summary, then delete the artifact from the
+# run page.
+name: Signing key export
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "backup = encrypted copy for you; pepk = encrypted key for Google Play"
+        type: choice
+        options:
+          - backup
+          - pepk
+        default: backup
+      play_encryption_key:
+        description: "pepk only: paste the encryption public key from the Play Console page (the .pem text, or the hex key of the older command)"
+        type: string
+        required: false
+        default: ""
+      pepk_url:
+        description: "pepk only: the PEPK download link the Play Console page shows"
+        type: string
+        required: false
+        default: "https://www.gstatic.com/play-apps-publisher-rapid/signing-tool/prod/pepk.jar"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signing-key-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Export the signing key (${{ inputs.mode }})
+    # Only the owner of the repository may take the key out.
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+      BACKUP_PASS: ${{ secrets.SIGNING_BACKUP_PASSPHRASE }}
+      MODE: ${{ inputs.mode }}
+      PLAY_KEY: ${{ inputs.play_encryption_key }}
+      PEPK_URL: ${{ inputs.pepk_url }}
+    steps:
+      - name: Check the secrets and the inputs
+        run: |
+          set -euo pipefail
+          for v in KEYSTORE_B64 STORE_PASS KEY_ALIAS KEY_PASS EXPECTED_SHA256; do
+            [ -n "${!v:-}" ] || { echo "::error::secret for $v is not set"; exit 1; }
+          done
+          if [ "$MODE" = backup ]; then
+            [ -n "${BACKUP_PASS:-}" ] || { echo "::error::add the secret SIGNING_BACKUP_PASSPHRASE first (20 characters or more)"; exit 1; }
+            [ "${#BACKUP_PASS}" -ge 20 ] || { echo "::error::SIGNING_BACKUP_PASSPHRASE is shorter than 20 characters"; exit 1; }
+            [ "$BACKUP_PASS" != "$STORE_PASS" ] && [ "$BACKUP_PASS" != "$KEY_PASS" ] || { echo "::error::SIGNING_BACKUP_PASSPHRASE must differ from the keystore passwords"; exit 1; }
+          else
+            [ -n "${PLAY_KEY// /}" ] || { echo "::error::paste the encryption public key from the Play Console page into play_encryption_key"; exit 1; }
+            case "$PEPK_URL" in
+              https://www.gstatic.com/*|https://dl.google.com/*) ;;
+              *) echo "::error::pepk_url must be a Google download link (www.gstatic.com or dl.google.com)"; exit 1 ;;
+            esac
+          fi
+          echo "mode: $MODE"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Decode the keystore and check it is the APK's key
+        run: |
+          set -euo pipefail
+          umask 077
+          W="$RUNNER_TEMP/key"
+          mkdir -p "$W"
+          printf '%s' "$KEYSTORE_B64" | tr -dc 'A-Za-z0-9+/=' | base64 -d > "$W/keystore.jks"
+          test -s "$W/keystore.jks" || { echo "::error::the keystore secret does not decode"; exit 1; }
+          INFO=$(keytool -list -v -keystore "$W/keystore.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" 2>&1) || { echo "::error::the keystore password or the alias is wrong"; exit 1; }
+          # The key password too: only the private key itself proves it.
+          keytool -certreq -keystore "$W/keystore.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" -keypass:env KEY_PASS -file /dev/null >/dev/null 2>&1 || { echo "::error::the key password is wrong"; exit 1; }
+          SHA256=$(printf '%s\n' "$INFO" | grep -m1 'SHA256:' | awk '{print $NF}')
+          SHA1=$(printf '%s\n' "$INFO" | grep -m1 'SHA1:' | awk '{print $NF}')
+          BITS=$(printf '%s\n' "$INFO" | grep -m1 'Subject Public Key Algorithm' | grep -oE '[0-9]+-bit RSA' | grep -oE '^[0-9]+' || true)
+          EXP=$(printf '%s' "$EXPECTED_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')
+          ACT=$(printf '%s' "$SHA256" | tr -d ':' | tr 'A-F' 'a-f')
+          [ -n "$ACT" ] && [ "$ACT" = "$EXP" ] || { echo "::error::the keystore's SHA-256 does not match ANDROID_CERT_SHA256"; exit 1; }
+          if [ -z "$BITS" ] || [ "$BITS" -lt 2048 ]; then
+            echo "::error::Google Play takes RSA 2048 bits or more (found: ${BITS:-not RSA})"; exit 1
+          fi
+          {
+            echo "SHA256=$SHA256"
+            echo "SHA1=$SHA1"
+            echo "BITS=$BITS"
+            echo "STAMP=$(date -u +%Y%m%d-%H%M)"
+          } >> "$GITHUB_ENV"
+          echo "key: RSA $BITS bits, SHA-256 matches ANDROID_CERT_SHA256"
+
+      - name: "backup: encrypt a copy for the owner"
+        if: inputs.mode == 'backup'
+        run: |
+          set -euo pipefail
+          umask 077
+          command -v 7z >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full >/dev/null; }
+          W="$RUNNER_TEMP/key"
+          P="$RUNNER_TEMP/nukhbaa-signing-key"
+          mkdir -p "$P"
+          cp "$W/keystore.jks" "$P/nukhbaa-upload-and-app-signing.jks"
+          {
+            echo "Nukhbaa (app.nukhbaa) signing key -- KEEP SECRET"
+            echo "exported: $(date -u +%Y-%m-%dT%H:%MZ) by run ${{ github.run_number }}"
+            echo
+            echo "file:           nukhbaa-upload-and-app-signing.jks (JKS)"
+            echo "alias:          $KEY_ALIAS"
+            echo "store password: $STORE_PASS"
+            echo "key password:   $KEY_PASS"
+            echo "key:            RSA $BITS bits"
+            echo "SHA-256:        $SHA256"
+            echo "SHA-1:          $SHA1"
+            echo
+            echo "Check (Termux: pkg install openjdk-17):"
+            echo "  keytool -list -v -keystore nukhbaa-upload-and-app-signing.jks -alias <alias>"
+            echo "  the SHA256 line must be the one above."
+            echo
+            echo "Restore to GitHub if the secret is ever lost:"
+            echo "  base64 -w0 nukhbaa-upload-and-app-signing.jks  -> ANDROID_KEYSTORE_BASE64"
+          } > "$P/KEY-INFO.txt"
+          OUT="nukhbaa-signing-key-$STAMP.7z"
+          cd "$RUNNER_TEMP"
+          7z a -t7z -mhe=on -mx=9 -p"$BACKUP_PASS" "$GITHUB_WORKSPACE/$OUT" nukhbaa-signing-key >/dev/null
+          # Proof the copy opens with the passphrase and holds the same key.
+          V="$RUNNER_TEMP/verify"
+          mkdir -p "$V"
+          7z x -y -p"$BACKUP_PASS" -o"$V" "$GITHUB_WORKSPACE/$OUT" >/dev/null
+          GOT=$(keytool -list -v -keystore "$V/nukhbaa-signing-key/nukhbaa-upload-and-app-signing.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" | grep -m1 'SHA256:' | awk '{print $NF}')
+          [ "$GOT" = "$SHA256" ] || { echo "::error::the encrypted copy does not reopen to the same key"; exit 1; }
+          grep -q "$SHA256" "$V/nukhbaa-signing-key/KEY-INFO.txt"
+          # Without the passphrase not even the file names can be read.
+          if 7z l -p"wrong-passphrase-$RANDOM" "$GITHUB_WORKSPACE/$OUT" >/dev/null 2>&1; then
+            echo "::error::the archive lists without the passphrase"; exit 1
+          fi
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          echo "encrypted copy verified: reopens with the passphrase, same SHA-256"
+
+      - name: "pepk: encrypt the key for Google Play"
+        if: inputs.mode == 'pepk'
+        run: |
+          set -euo pipefail
+          umask 077
+          W="$RUNNER_TEMP/key"
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 -o pepk.jar "$PEPK_URL"
+          python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); m = z.read("META-INF/MANIFEST.MF").decode(); assert "Main-Class" in m, "not a runnable jar"' pepk.jar
+          echo "pepk.jar sha256: $(sha256sum pepk.jar | cut -d' ' -f1)"
+          OUT="nukhbaa-play-signing-key-$STAMP.zip"
+          # The key Play gives: a PEM public key (pasted, so its line breaks
+          # may be gone) or, with the older command, a hex string.
+          RAW=$(printf '%s' "$PLAY_KEY" | tr -d '\r')
+          if printf '%s' "$RAW" | grep -q 'BEGIN PUBLIC KEY'; then
+            BODY=$(printf '%s' "$RAW" | sed -e 's/-----BEGIN PUBLIC KEY-----//' -e 's/-----END PUBLIC KEY-----//' | tr -dc 'A-Za-z0-9+/=')
+            { echo '-----BEGIN PUBLIC KEY-----'; printf '%s' "$BODY" | fold -w 64; echo; echo '-----END PUBLIC KEY-----'; } | sed '/^$/d' > play_encryption_key.pem
+            openssl pkey -pubin -in play_encryption_key.pem -noout || { echo "::error::play_encryption_key is not a valid public key"; exit 1; }
+            java -jar pepk.jar --keystore="$W/keystore.jks" --alias="$KEY_ALIAS" \
+              --output="$GITHUB_WORKSPACE/$OUT" --include-cert --rsa-aes-encryption \
+              --encryption-key-path=play_encryption_key.pem \
+              --keystore-pass="pass:$STORE_PASS" --key-pass="pass:$KEY_PASS" >/dev/null
+          else
+            HEX=$(printf '%s' "$RAW" | tr -d ' \n\t')
+            printf '%s' "$HEX" | grep -qE '^[0-9a-fA-F]{64,}$' || { echo "::error::play_encryption_key is neither a PEM public key nor a hex key"; exit 1; }
+            java -jar pepk.jar --keystore="$W/keystore.jks" --alias="$KEY_ALIAS" \
+              --output="$GITHUB_WORKSPACE/$OUT" --include-cert \
+              --encryptionkey="$HEX" \
+              --keystore-pass="pass:$STORE_PASS" --key-pass="pass:$KEY_PASS" >/dev/null
+          fi
+          test -s "$GITHUB_WORKSPACE/$OUT" || { echo "::error::PEPK wrote nothing"; exit 1; }
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          echo "PEPK output written (encrypted for Google Play only)"
+
+      - name: Summary
+        run: |
+          set -euo pipefail
+          SUM=$(sha256sum "$OUT" | cut -d' ' -f1)
+          {
+            echo "### Signing key export: $MODE"
+            echo
+            echo "- file: \`$OUT\` ($(stat -c %s "$OUT") bytes), SHA-256 \`$SUM\`"
+            echo "- key: RSA $BITS bits, certificate SHA-256 \`$SHA256\` (matches ANDROID_CERT_SHA256)"
+            echo "- certificate SHA-1 \`$SHA1\` (the one Firebase lists)"
+            echo "- the artifact is kept 1 day: download it, then delete it from this page"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.OUT }}
+          path: ${{ env.OUT }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Wipe the key from the runner
+        if: always()
+        run: |
+          for d in "$RUNNER_TEMP/key" "$RUNNER_TEMP/nukhbaa-signing-key" "$RUNNER_TEMP/verify"; do
+            [ -d "$d" ] && find "$d" -type f -exec shred -u {} + 2>/dev/null || true
+            rm -rf "$d"
+          done
+          rm -f "$RUNNER_TEMP/play_encryption_key.pem" "$RUNNER_TEMP/pepk.jar"
