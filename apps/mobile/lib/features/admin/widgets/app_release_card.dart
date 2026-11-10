@@ -6,6 +6,10 @@
 /// يُحبس أحد خلف إصدار غير موجود. من كانت نسخته أقدم منه يرى عند فتح
 /// التطبيق شاشة «حدِّث نُخبة لتكمل» ولا يكمل قبل التحديث. النسخ المثبّتة قبل
 /// هذه الدفعة لا تعرف الحد الأدنى: يصلها الإعلان فقط.
+///
+/// نسخة Google Play لها حدها الخاص (السكربت 253، الهجرة 0206): يكتب المشرف
+/// رقم الإصدار (versionCode) بعد أن يتأكد أنه منشور في المتجر، لأن رقم أحدث
+/// APK لا يكون رقم حزمة Play أبدًا. لا يمس أحد الحدين الآخر.
 library;
 
 import 'package:api_client/api_client.dart';
@@ -92,6 +96,36 @@ class _AppReleaseCardState extends ConsumerState<AppReleaseCard> {
     ref.invalidate(appReleaseProvider);
   }
 
+  /// Asks for the Play minimum ([current] shown), then stores it; an empty
+  /// answer clears it. Arabic-Indic digits are read as digits.
+  Future<void> _setPlay(int? current) async {
+    final String? typed = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => _PlayMinimumDialog(current: current),
+    );
+    if (typed == null || !mounted) return;
+    final int? buildNumber = typed.isEmpty
+        ? null
+        : int.tryParse(_westernDigits(typed));
+    if (typed.isNotEmpty && (buildNumber == null || buildNumber < 1)) {
+      setState(() => _error = _playNumberInvalid);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final AdminApi api = ref.read(adminApiProvider);
+    final Result<PlayUpdatePolicyDto> result = await api
+        .setMinSupportedPlayBuild(buildNumber);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (result case Err<PlayUpdatePolicyDto>(:final error)) _error = error;
+    });
+    ref.invalidate(appReleaseProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
@@ -149,6 +183,24 @@ class _AppReleaseCardState extends ConsumerState<AppReleaseCard> {
                   onPressed: _busy ? null : () => _set(toLatest: false),
                 ),
               ],
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                value.minSupportedPlayBuild == null
+                    ? 'نسخة Google Play: لا حد أدنى'
+                    : 'نسخة Google Play: الحد الأدنى رقم '
+                          '${value.minSupportedPlayBuild}',
+                key: const Key('admin.appRelease.playMinimum'),
+                style: line,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AdminSecondaryButton(
+                key: const Key('admin.appRelease.playSet'),
+                label: 'حد نسخة Play',
+                icon: Icons.storefront_rounded,
+                onPressed: _busy
+                    ? null
+                    : () => _setPlay(value.minSupportedPlayBuild),
+              ),
             ],
             AsyncError<LatestBuildDto>() => <Widget>[
               Text(
@@ -175,6 +227,93 @@ class _AppReleaseCardState extends ConsumerState<AppReleaseCard> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// What a Play minimum that is not a whole number above zero reads.
+const AppError _playNumberInvalid = AppError.validation(
+  'app.play_build_invalid',
+  'اكتب رقم إصدار Google Play صحيحًا أكبر من صفر، أو اتركه فارغًا لإلغاء '
+      'الحد.',
+);
+
+/// [text] with Arabic-Indic and Persian digits as ASCII digits: the
+/// owner's keyboard is Arabic.
+String _westernDigits(String text) {
+  final StringBuffer out = StringBuffer();
+  for (final int unit in text.codeUnits) {
+    if (unit >= 0x0660 && unit <= 0x0669) {
+      out.writeCharCode(unit - 0x0660 + 0x30);
+    } else if (unit >= 0x06F0 && unit <= 0x06F9) {
+      out.writeCharCode(unit - 0x06F0 + 0x30);
+    } else {
+      out.writeCharCode(unit);
+    }
+  }
+  return out.toString();
+}
+
+/// The Play minimum's dialog: the versionCode typed (trimmed), empty to
+/// clear; null when cancelled.
+class _PlayMinimumDialog extends StatefulWidget {
+  const _PlayMinimumDialog({required this.current});
+
+  final int? current;
+
+  @override
+  State<_PlayMinimumDialog> createState() => _PlayMinimumDialogState();
+}
+
+class _PlayMinimumDialogState extends State<_PlayMinimumDialog> {
+  late final TextEditingController _input = TextEditingController(
+    text: widget.current?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      key: const Key('admin.appRelease.playDialog'),
+      scrollable: true,
+      title: const Text('الحد الأدنى لنسخة Google Play'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const Text(
+            'اكتب رقم الإصدار (versionCode) بعد أن تتأكد أنه منشور في '
+            'Google Play للجميع. من كانت نسخته من المتجر أقدم منه يرى شاشة '
+            'التحديث، وزرها يفتح المتجر. اتركه فارغًا لإلغاء الحد. لا يمس '
+            'هذا نسخة APK.',
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            key: const Key('admin.appRelease.playInput'),
+            controller: _input,
+            keyboardType: TextInputType.number,
+            textDirection: TextDirection.ltr,
+            decoration: const InputDecoration(hintText: 'مثل 845'),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          key: const Key('admin.appRelease.playCancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          key: const Key('admin.appRelease.playSave'),
+          onPressed: () => Navigator.of(context).pop(_input.text.trim()),
+          child: const Text('احفظ'),
+        ),
+      ],
     );
   }
 }

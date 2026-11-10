@@ -21,6 +21,7 @@ final class CompositionRoot {
     required this.checkHealth,
     required this.getLatestBuild,
     required this.setMinSupportedBuild,
+    required this.setMinSupportedPlayBuild,
     required this.refuseRetiredBuild,
     required this.authenticateRequest,
     required this.getCurrentUser,
@@ -252,6 +253,7 @@ final class CompositionRoot {
     CheckHealth? checkHealth,
     GetLatestBuild? getLatestBuild,
     SetMinSupportedBuild? setMinSupportedBuild,
+    SetMinSupportedPlayBuild? setMinSupportedPlayBuild,
     RefuseRetiredBuild? refuseRetiredBuild,
     LoginWithPassword? login,
     RegisterWithPassword? register,
@@ -454,6 +456,8 @@ final class CompositionRoot {
        getLatestBuild = getLatestBuild ?? _absentGetLatestBuild(),
        setMinSupportedBuild =
            setMinSupportedBuild ?? _absentSetMinSupportedBuild(),
+       setMinSupportedPlayBuild =
+           setMinSupportedPlayBuild ?? _absentSetMinSupportedPlayBuild(),
        refuseRetiredBuild =
            refuseRetiredBuild ??
            RefuseRetiredBuild(
@@ -766,6 +770,12 @@ final class CompositionRoot {
         policy: _UnwiredAppUpdatePolicyStore(),
         builds: _UnwiredBuildInfoRepository(),
       );
+
+  /// Backs an "absent" [SetMinSupportedPlayBuild] in
+  /// [CompositionRoot.forTesting]: throws if a test reaches the Play
+  /// update-policy slice it never wired.
+  static SetMinSupportedPlayBuild _absentSetMinSupportedPlayBuild() =>
+      SetMinSupportedPlayBuild(_UnwiredAppUpdatePolicyStore());
 
   /// Builds an [AuthenticateRequest] over a verifier that throws if invoked.
   static AuthenticateRequest _absentAuthenticateRequest() =>
@@ -1946,6 +1956,10 @@ final class CompositionRoot {
   /// `PUT /admin/app/min-build`, migration 0113).
   final SetMinSupportedBuild setMinSupportedBuild;
 
+  /// Sets or clears the oldest supported Google Play build (backs
+  /// `PUT /admin/app/min-play-build`, migration 0206, script 253).
+  final SetMinSupportedPlayBuild setMinSupportedPlayBuild;
+
   /// Whether a request naming no build comes from a player on a build older
   /// than the head-to-head tab, refused by `bearerAuth` while
   /// `NUKHBA_REFUSE_RETIRED_BUILDS` is on (scripts 149-150).
@@ -2811,11 +2825,22 @@ final class CompositionRoot {
     final appUpdatePolicy = CachedAppUpdatePolicyStore(
       PostgresAppUpdatePolicyStore(connection),
     );
-    final getLatestBuild = GetLatestBuild(buildInfo, policy: appUpdatePolicy);
+    // The Google Play build's own minimum (script 253, migration 0206),
+    // held the same way: the APK's is the newest APK, a number the Play
+    // bundle never carries.
+    final playUpdatePolicy = CachedAppUpdatePolicyStore(
+      PostgresPlayUpdatePolicyStore(connection),
+    );
+    final getLatestBuild = GetLatestBuild(
+      buildInfo,
+      policy: appUpdatePolicy,
+      playPolicy: playUpdatePolicy,
+    );
     final setMinSupportedBuild = SetMinSupportedBuild(
       policy: appUpdatePolicy,
       builds: buildInfo,
     );
+    final setMinSupportedPlayBuild = SetMinSupportedPlayBuild(playUpdatePolicy);
 
     // Identity slice: JWKS-backed ES256 verifier (+ HS256 legacy fallback) and
     // the Postgres-backed canonical user directory.
@@ -3427,6 +3452,7 @@ final class CompositionRoot {
       checkHealth: checkHealth,
       getLatestBuild: getLatestBuild,
       setMinSupportedBuild: setMinSupportedBuild,
+      setMinSupportedPlayBuild: setMinSupportedPlayBuild,
       refuseRetiredBuild: RefuseRetiredBuild(
         enabled: RefuseRetiredBuild.switchedOn(
           env['NUKHBA_REFUSE_RETIRED_BUILDS'],

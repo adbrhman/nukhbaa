@@ -21,6 +21,7 @@ import '../auth/session_controller.dart';
 import '../auth/session_state.dart';
 import '../competition/widgets/async_list_view.dart';
 import '../moderation/blocked_players.dart';
+import '../moderation/group_report.dart';
 import '../moderation/player_menu_button.dart';
 import 'groups_providers.dart';
 import 'league_invite_sheet.dart';
@@ -176,6 +177,21 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
             onPressed: () =>
                 unawaited(showLeagueInviteSheet(context, widget.group)),
           ),
+          // Google Play's user-generated-content policy (script 253, F5):
+          // a member can report the league's name; its owner chose it.
+          if (!widget.isOwner)
+            IconButton(
+              key: const Key('groupMembers.report'),
+              tooltip: 'الإبلاغ عن اسم الدوري',
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: () => unawaited(
+                showGroupReport(
+                  context,
+                  groupName: widget.group.name,
+                  groupId: widget.group.id,
+                ),
+              ),
+            ),
         ],
       ),
       body: Column(

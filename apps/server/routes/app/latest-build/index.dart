@@ -20,6 +20,8 @@ import 'package:shared/shared.dart';
 /// Since batch 147 it also carries the release's `build_number` and the
 /// oldest build the service still supports, `min_supported_build`, when an
 /// admin set one: an app older than it asks the player to update first.
+/// Since script 253 it carries `min_supported_play_build` too, the Google
+/// Play build's own minimum (migration 0206), when an admin set one.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -39,6 +41,7 @@ Future<Response> onRequest(RequestContext context) async {
             .toList(),
         buildNumber: value.buildNumber,
         minSupportedBuild: value.minSupportedBuild,
+        minSupportedPlayBuild: value.minSupportedPlayBuild,
       ).toJson(),
     ),
     Err<LatestBuild>(:final error) => errorResponse(error),

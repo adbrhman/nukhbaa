@@ -276,6 +276,7 @@ export 'src/platform/record_error.dart';
 export 'src/platform/record_frame_report.dart';
 export 'src/platform/refuse_retired_build.dart';
 export 'src/platform/set_min_supported_build.dart';
+export 'src/platform/set_min_supported_play_build.dart';
 export 'src/prediction/fixture_prediction_view.dart';
 export 'src/prediction/get_fixture_prediction_distribution.dart';
 export 'src/prediction/get_my_prediction.dart';

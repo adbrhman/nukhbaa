@@ -107,6 +107,7 @@ final class MirroredBuildInfoRepository implements BuildInfoRepository {
         assets: assets,
         buildNumber: build.buildNumber,
         minSupportedBuild: build.minSupportedBuild,
+        minSupportedPlayBuild: build.minSupportedPlayBuild,
       ),
     );
   }

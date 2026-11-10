@@ -5,6 +5,10 @@
 /// minimum shows the update screen, whose button opens the store listing,
 /// and a release waiting offers no install row and no home reminder. The
 /// same release on the site's build does offer the row.
+///
+/// Script 253: the Play build has its own minimum,
+/// `min_supported_play_build`; the APK's minimum never holds it, and the
+/// site's build never reads the Play one.
 library;
 
 import 'dart:convert';
@@ -30,11 +34,13 @@ final class _ForbiddenUpdater implements InAppUpdater {
   Future<void> cancel() async {}
 }
 
-/// Serves the newest release `bbbbbbb`, build 214, with [minimum].
+/// Serves the newest release `bbbbbbb`, build 214, with the APK [minimum]
+/// and the Play [playMinimum].
 final class _Releases {
-  _Releases(this.minimum);
+  _Releases(this.minimum, {this.playMinimum});
 
   final int? minimum;
+  final int? playMinimum;
 
   Future<http.Response> handle(http.Request request) async {
     if (request.url.path == '/app/latest-build') {
@@ -47,6 +53,7 @@ final class _Releases {
               'build-bbbbbbb/nukhbaa-arm64-v8a-bbbbbbb.apk',
           'build_number': 214,
           'min_supported_build': ?minimum,
+          'min_supported_play_build': ?playMinimum,
         }),
         200,
         headers: const {'content-type': 'application/json'},
@@ -102,11 +109,11 @@ Future<List<Uri>> _open(
 }
 
 void main() {
-  testWidgets('Play build older than the minimum: the update screen opens '
-      'the store listing', (tester) async {
+  testWidgets('Play build older than the Play minimum: the update screen '
+      'opens the store listing', (tester) async {
     final List<Uri> opened = await _open(
       tester,
-      _Releases(210),
+      _Releases(null, playMinimum: 210),
       channel: playChannel,
     );
 
@@ -124,6 +131,26 @@ void main() {
     await _open(tester, _Releases(null), channel: playChannel);
 
     expect(find.text('child nudge=false row=false'), findsOneWidget);
+  });
+
+  testWidgets('Play build older than the APK minimum only: not held, the '
+      'APK minimum is not its own', (tester) async {
+    final List<Uri> opened = await _open(
+      tester,
+      _Releases(210),
+      channel: playChannel,
+    );
+
+    expect(find.byKey(const Key('update.required')), findsNothing);
+    expect(find.text('child nudge=false row=false'), findsOneWidget);
+    expect(opened, isEmpty);
+  });
+
+  testWidgets('the site build never reads the Play minimum', (tester) async {
+    await _open(tester, _Releases(null, playMinimum: 210), channel: '');
+
+    expect(find.byKey(const Key('update.required')), findsNothing);
+    expect(find.text('child nudge=true row=true'), findsOneWidget);
   });
 
   testWidgets('the site build with the same release waiting offers both', (

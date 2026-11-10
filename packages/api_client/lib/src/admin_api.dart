@@ -461,6 +461,20 @@ final class AdminApi {
     );
   }
 
+  /// `PUT /admin/app/min-play-build` -- stores [buildNumber] as the oldest
+  /// supported Google Play build, or clears it with null (script 253,
+  /// migration 0206); answers the stored minimum. The APK minimum is not
+  /// touched.
+  Future<Result<PlayUpdatePolicyDto>> setMinSupportedPlayBuild(
+    int? buildNumber,
+  ) {
+    return _transport.putObject<PlayUpdatePolicyDto>(
+      '/admin/app/min-play-build',
+      body: PlayUpdatePolicyDto.request(buildNumber: buildNumber),
+      parse: PlayUpdatePolicyDto.fromJson,
+    );
+  }
+
   /// `GET /admin/champions/{seasonId}` -- the crowning preview of a month
   /// (migration 0077): whether it is over, its fixtures without a result,
   /// who is already crowned and the top of its final board.

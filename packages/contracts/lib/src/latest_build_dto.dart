@@ -19,6 +19,11 @@
 /// [buildNumber] (`build_number`, the CI run number) and the oldest build
 /// the service still supports, [minSupportedBuild] (`min_supported_build`).
 /// An older client ignores both; an older server sends neither.
+///
+/// Script 253 adds the oldest supported Google Play build,
+/// [minSupportedPlayBuild] (`min_supported_play_build`, migration 0206),
+/// also sent only when set. The Play build compares itself with it alone;
+/// the APK ignores it.
 final class LatestBuildDto {
   /// Creates a latest-build response DTO.
   const LatestBuildDto({
@@ -28,6 +33,7 @@ final class LatestBuildDto {
     this.assets = const <BuildAssetDto>[],
     this.buildNumber,
     this.minSupportedBuild,
+    this.minSupportedPlayBuild,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -45,6 +51,7 @@ final class LatestBuildDto {
           .toList(growable: false),
       buildNumber: json['build_number'] as int?,
       minSupportedBuild: json['min_supported_build'] as int?,
+      minSupportedPlayBuild: json['min_supported_play_build'] as int?,
     );
   }
 
@@ -69,6 +76,10 @@ final class LatestBuildDto {
   /// The oldest build number still supported; null asks nobody to update.
   final int? minSupportedBuild;
 
+  /// The oldest Google Play versionCode still supported; null asks no Play
+  /// player to update (script 253).
+  final int? minSupportedPlayBuild;
+
   /// The schema version of this payload.
   final int schemaVersion;
 
@@ -81,6 +92,8 @@ final class LatestBuildDto {
     'assets': assets.map((a) => a.toJson()).toList(),
     if (buildNumber != null) 'build_number': buildNumber,
     if (minSupportedBuild != null) 'min_supported_build': minSupportedBuild,
+    if (minSupportedPlayBuild != null)
+      'min_supported_play_build': minSupportedPlayBuild,
   };
 
   @override
@@ -91,6 +104,7 @@ final class LatestBuildDto {
       other.sha256 == sha256 &&
       other.buildNumber == buildNumber &&
       other.minSupportedBuild == minSupportedBuild &&
+      other.minSupportedPlayBuild == minSupportedPlayBuild &&
       _listEq(other.assets, assets) &&
       other.schemaVersion == schemaVersion;
 
@@ -102,6 +116,7 @@ final class LatestBuildDto {
     schemaVersion,
     buildNumber,
     minSupportedBuild,
+    minSupportedPlayBuild,
     Object.hashAll(assets),
   );
 }
@@ -153,6 +168,63 @@ final class AppUpdatePolicyDto {
 
   @override
   int get hashCode => Object.hash(latestBuild, minSupportedBuild);
+}
+
+/// What `PlayUpdatePolicyDto.buildNumberOf` reads from a request body:
+/// whether `build_number` is there as a whole number or null ([valid]),
+/// and that number ([value], null to clear).
+typedef PlayBuildNumberField = ({bool valid, int? value});
+
+/// The request and the answer of `PUT /admin/app/min-play-build` (script
+/// 253, migration 0206): the oldest Google Play versionCode the service
+/// still supports, typed by the admin, or null.
+final class PlayUpdatePolicyDto {
+  /// Creates the policy DTO.
+  const PlayUpdatePolicyDto({this.minSupportedPlayBuild});
+
+  /// Deserializes from a JSON map.
+  factory PlayUpdatePolicyDto.fromJson(Map<String, Object?> json) =>
+      PlayUpdatePolicyDto(
+        minSupportedPlayBuild: json['min_supported_play_build'] as int?,
+      );
+
+  /// The request body: [buildNumber] as the Play minimum, or null to
+  /// clear it.
+  static Map<String, Object?> request({required int? buildNumber}) => {
+    'build_number': buildNumber,
+  };
+
+  /// Reads `build_number` from a request body. Valid when the key is there
+  /// with a whole number or null; a missing key or any other value is not.
+  static PlayBuildNumberField buildNumberOf(Map<String, Object?> body) {
+    if (!body.containsKey('build_number')) {
+      return (valid: false, value: null);
+    }
+    final Object? value = body['build_number'];
+    return switch (value) {
+      null => (valid: true, value: null),
+      final int number => (valid: true, value: number),
+      _ => (valid: false, value: null),
+    };
+  }
+
+  /// The oldest supported Play versionCode; null asks no Play player to
+  /// update.
+  final int? minSupportedPlayBuild;
+
+  /// Serializes to a JSON-encodable map.
+  Map<String, Object?> toJson() => {
+    'schema_version': 1,
+    'min_supported_play_build': minSupportedPlayBuild,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlayUpdatePolicyDto &&
+      other.minSupportedPlayBuild == minSupportedPlayBuild;
+
+  @override
+  int get hashCode => minSupportedPlayBuild.hashCode;
 }
 
 /// One per-ABI APK asset within a [LatestBuildDto].

@@ -24,6 +24,7 @@ final class LatestBuild {
     this.assets = const <BuildAsset>[],
     this.buildNumber,
     this.minSupportedBuild,
+    this.minSupportedPlayBuild,
   });
 
   /// When this release was published, per the GitHub API.
@@ -44,6 +45,11 @@ final class LatestBuild {
   /// The oldest build number still supported, when an admin set one.
   final int? minSupportedBuild;
 
+  /// The oldest Google Play build (its versionCode) still supported, when
+  /// an admin set one (migration 0206, script 253). The Play build compares
+  /// itself with this one only, never with [minSupportedBuild].
+  final int? minSupportedPlayBuild;
+
   /// This release with [minimum] as the oldest supported build.
   LatestBuild withMinSupportedBuild(int? minimum) => LatestBuild(
     publishedAt: publishedAt,
@@ -52,6 +58,18 @@ final class LatestBuild {
     assets: assets,
     buildNumber: buildNumber,
     minSupportedBuild: minimum,
+    minSupportedPlayBuild: minSupportedPlayBuild,
+  );
+
+  /// This release with [minimum] as the oldest supported Play build.
+  LatestBuild withMinSupportedPlayBuild(int? minimum) => LatestBuild(
+    publishedAt: publishedAt,
+    apkUrl: apkUrl,
+    sha256: sha256,
+    assets: assets,
+    buildNumber: buildNumber,
+    minSupportedBuild: minSupportedBuild,
+    minSupportedPlayBuild: minimum,
   );
 
   @override
@@ -62,6 +80,7 @@ final class LatestBuild {
       other.sha256 == sha256 &&
       other.buildNumber == buildNumber &&
       other.minSupportedBuild == minSupportedBuild &&
+      other.minSupportedPlayBuild == minSupportedPlayBuild &&
       _listEq(other.assets, assets);
 
   @override
@@ -71,6 +90,7 @@ final class LatestBuild {
     sha256,
     buildNumber,
     minSupportedBuild,
+    minSupportedPlayBuild,
     Object.hashAll(assets),
   );
 }

@@ -116,6 +116,7 @@ export 'src/platform/postgres_error_log_repository.dart';
 export 'src/platform/postgres_error_release_reader.dart';
 export 'src/platform/postgres_frame_report_repository.dart';
 export 'src/platform/postgres_health_repository.dart';
+export 'src/platform/postgres_play_update_policy_store.dart';
 export 'src/platform/postgres_retired_build_reader.dart';
 export 'src/prediction/postgres_fixture_prediction_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_tally_reader.dart';

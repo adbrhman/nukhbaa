@@ -46,6 +46,9 @@
 /// install row or the home reminder, and its update screen opens the store
 /// listing ([playStoreListing]) instead of [installUpdate]. CI also removes
 /// REQUEST_INSTALL_PACKAGES from that bundle, so it cannot install a package.
+/// Its minimum is its own ([LatestBuildDto.minSupportedPlayBuild], script
+/// 253): the admin types the versionCode live in Play, and the APK's
+/// minimum never holds it back.
 ///
 /// Silent on any check failure (offline, transient server error, malformed
 /// response): [child] always renders immediately.
@@ -318,7 +321,12 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 
     // Older than the oldest build the service still supports: the app
     // waits behind the update screen. A local run (0) is never held back.
-    final int? minimum = dto.minSupportedBuild;
+    // The Play build has its own minimum (script 253): the APK's is the
+    // newest APK release, a number Google Play never carries, so sharing it
+    // would hold every Play player behind an update the store cannot give.
+    final int? minimum = widget.channel == playChannel
+        ? dto.minSupportedPlayBuild
+        : dto.minSupportedBuild;
     final RequiredUpdate holdBack = ref.read(requiredUpdateProvider.notifier);
     if (widget.buildNumber > 0 &&
         minimum != null &&
