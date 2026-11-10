@@ -287,8 +287,14 @@ jobs:
         with:
           path: apps/mobile/build/web
 
+      # Script 252: GitHub Pages stalled at syncing_files past the action's
+      # 10-minute cap (MAX_TIMEOUT in actions/deploy-pages, not raisable;
+      # runs #859 and #860), and the failure also stopped the step below, so
+      # nukhbaa.app (the Northflank mirror) never got the build. The mirror no
+      # longer waits on Pages; the last step still fails the run.
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true  # script 252
         uses: actions/deploy-pages@v5
 
       # github.io is blocked in Yemen; Northflank's code.run is not. A second
@@ -314,3 +320,10 @@ jobs:
           git commit -q -m "web build $SHORT_SHA"
           git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" web-dist
           echo "web-dist now holds the build of $SHORT_SHA"
+
+      # Script 252: the mirror is out; a Pages failure is still reported.
+      - name: GitHub Pages deployed?
+        if: steps.deployment.outcome != 'success'
+        run: |
+          echo "::error::GitHub Pages did not deploy (outcome: ${{ steps.deployment.outcome }}). nukhbaa.app (web-dist) was published. For github.io, start a new run (Run workflow) later: a re-run of this run fails on its duplicate github-pages artifact."
+          exit 1
