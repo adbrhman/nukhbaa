@@ -845,6 +845,8 @@ jobs:
       # and ota_update's provider and receiver; the bundle carries
       # NUKHBA_CHANNEL=play (the app opens the store listing instead) and a
       # versionCode equal to the run number, which must grow on every upload.
+      # Script 250: the bundle is built without ota_update (a stand-in with
+      # its Dart API), and a re-run of the same run is refused.
       - name: Build the Google Play bundle (manual run only)
         if: github.event_name == 'workflow_dispatch' && inputs.play_bundle
         working-directory: apps/mobile
@@ -854,6 +856,82 @@ jobs:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
+          # script 250: a re-run keeps the run number, so it would build a
+          # second bundle with the same versionCode, which Play refuses.
+          if [ "${{ github.run_attempt }}" != "1" ]; then
+            echo "::error::this is attempt ${{ github.run_attempt }} of run ${{ github.run_number }}: start a new run (Run workflow) so the versionCode grows"; exit 1
+          fi
+          # script 250: ota_update declares INSTALL_PACKAGES and ships the APK
+          # installer in the bundle (Device and Network Abuse policy). The Play
+          # build swaps it for a stand-in with the same Dart API and no Android
+          # code; the play channel never calls it (update_gate.dart). The APK
+          # above was built and uploaded before this step, so it is unchanged.
+          STUB="$RUNNER_TEMP/ota_update_play_stub"
+          python3 - "$STUB" <<'PYEOF'
+          import os, sys
+          root = sys.argv[1]
+          os.makedirs(os.path.join(root, "lib"), exist_ok=True)
+          pubspec = (
+              "name: ota_update\n"
+              "version: 7.1.0\n"
+              "description: Google Play build stand-in for ota_update, without Android code.\n"
+              "publish_to: none\n"
+              "environment:\n"
+              "  sdk: ^3.9.0\n"
+          )
+          dart = (
+              "// Google Play build stand-in for package:ota_update 7.1.0 (script 250).\n"
+              "// Same Dart API, no Android code: the bundle carries no installer.\n"
+              "class OtaUpdate {\n"
+              "  Future<String?> getAbi() async => null;\n"
+              "  Future<void> cancel() async {}\n"
+              "  Stream<OtaEvent> execute(\n"
+              "    String url, {\n"
+              "    Map<String, String> headers = const <String, String>{},\n"
+              "    String? androidProviderAuthority,\n"
+              "    String? destinationFilename,\n"
+              "    String? sha256checksum,\n"
+              "    bool usePackageInstaller = false,\n"
+              "  }) {\n"
+              "    return Stream<OtaEvent>.value(\n"
+              "      OtaEvent(OtaStatus.INTERNAL_ERROR, 'not available in the Google Play build'),\n"
+              "    );\n"
+              "  }\n"
+              "}\n"
+              "\n"
+              "class OtaEvent {\n"
+              "  OtaEvent(this.status, this.value);\n"
+              "  OtaStatus status;\n"
+              "  String? value;\n"
+              "}\n"
+              "\n"
+              "enum OtaStatus {\n"
+              "  DOWNLOADING,\n"
+              "  INSTALLING,\n"
+              "  INSTALLATION_DONE,\n"
+              "  INSTALLATION_ERROR,\n"
+              "  ALREADY_RUNNING_ERROR,\n"
+              "  PERMISSION_NOT_GRANTED_ERROR,\n"
+              "  INTERNAL_ERROR,\n"
+              "  DOWNLOAD_ERROR,\n"
+              "  CHECKSUM_ERROR,\n"
+              "  CANCELED,\n"
+              "}\n"
+              "\n"
+              "class OtaUpdateException implements Exception {\n"
+              "  OtaUpdateException(this.message);\n"
+              "  final String message;\n"
+              "  @override\n"
+              "  String toString() => 'Exception: ' + message;\n"
+              "}\n"
+          )
+          open(os.path.join(root, "pubspec.yaml"), "w", encoding="utf-8").write(pubspec)
+          open(os.path.join(root, "lib", "ota_update.dart"), "w", encoding="utf-8").write(dart)
+          print("ota_update stand-in written to", root)
+          PYEOF
+          grep -q '^dependency_overrides:' ../../pubspec.yaml && { echo "::error::the root pubspec already has dependency_overrides"; exit 1; }
+          printf '\ndependency_overrides:\n  ota_update:\n    path: %s\n' "$STUB" >> ../../pubspec.yaml
+          flutter pub get
           python3 - <<'PYEOF'
           import re
           m = "android/app/src/main/AndroidManifest.xml"
@@ -867,7 +945,9 @@ jobs:
           # manifest and the guard below refuses them (run #835). The app picks a
           # photo through the system picker and shares from its cache, so it
           # needs neither; they leave the same way REQUEST_INSTALL_PACKAGES does.
-          for perm in ("REQUEST_INSTALL_PACKAGES", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"):
+          # script 250: INSTALL_PACKAGES and ACCESS_WIFI_STATE come from ota_update;
+          # removed here too, in case any library brings them back.
+          for perm in ("REQUEST_INSTALL_PACKAGES", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "INSTALL_PACKAGES", "ACCESS_WIFI_STATE"):
               s = re.sub(r'(<manifest[^>]*>)', r'\1\n    <uses-permission android:name="android.permission.' + perm + r'" tools:node="remove" />', s, count=1)
           if 'sk.fourq.otaupdate' in s:
               raise SystemExit("ERROR: ota_update is still in the manifest")
@@ -908,7 +988,7 @@ jobs:
               "RECORD_AUDIO", "CAMERA",
               "READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO", "READ_MEDIA_AUDIO",
               "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "MANAGE_EXTERNAL_STORAGE",
-              "REQUEST_INSTALL_PACKAGES", "QUERY_ALL_PACKAGES", "SYSTEM_ALERT_WINDOW",
+              "REQUEST_INSTALL_PACKAGES", "QUERY_ALL_PACKAGES", "SYSTEM_ALERT_WINDOW", "INSTALL_PACKAGES",
           ]
           targets = set()
           perms = set()
@@ -952,6 +1032,20 @@ jobs:
               raise SystemExit("ERROR: not 16 KB aligned:\n" + "\n".join(sorted(set(bad))))
           print("16 KB alignment ok for %d native libraries" % len(libs))
           PYEOF
+          # script 250: no ota_update code may reach the bundle.
+          python3 - "$AAB" <<'PYEOF'
+          import sys, zipfile
+          z = zipfile.ZipFile(sys.argv[1])
+          dex = [n for n in z.namelist() if n.startswith("base/dex/") and n.endswith(".dex")]
+          if not dex:
+              raise SystemExit("ERROR: no dex in the bundle")
+          # R8 renames the classes, so look for the plugin's channel name
+          # (sk.fourq.ota_update/...), which survives, and the class path too.
+          hits = [n for n in dex if b"sk.fourq" in z.read(n) or b"Lsk/fourq/" in z.read(n)]
+          if hits:
+              raise SystemExit("ERROR: ota_update code is in the bundle: " + ", ".join(hits))
+          print("no ota_update code in %d dex files" % len(dex))
+          PYEOF
           test -n "${EXPECTED_SHA256:-}" || { echo "::error::ANDROID_CERT_SHA256 secret not set"; exit 1; }
           EXP=$(echo "$EXPECTED_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           ACT=$(keytool -printcert -jarfile "$AAB" | grep 'SHA256:' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
@@ -964,7 +1058,7 @@ jobs:
             echo "::error::the upload key must be RSA 2048 bits or more (found: ${BITS:-not RSA})"; exit 1
           fi
           echo "upload key: RSA $BITS bits"
-          echo "Play bundle: versionCode ${{ github.run_number }}, no REQUEST_INSTALL_PACKAGES, upload key matches"
+          echo "Play bundle: versionCode ${{ github.run_number }}, no install permissions, no ota_update code, upload key matches"
 
       - name: Upload the Google Play bundle
         if: github.event_name == 'workflow_dispatch' && inputs.play_bundle
