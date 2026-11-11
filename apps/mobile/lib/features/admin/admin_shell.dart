@@ -7,6 +7,7 @@ import '../../core/design/app_breakpoints.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../auth/session_controller.dart';
 import 'admin_nav_counts.dart';
 import 'admin_sections.dart';
 import 'screens/sections/admin_analytics_section.dart';
@@ -21,6 +22,7 @@ import 'screens/sections/error_log_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/admin_support_section.dart';
 import 'screens/sections/fixtures_admin_section.dart';
+import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/new_players_section.dart';
@@ -239,18 +241,9 @@ class AdminShell extends StatelessWidget {
       AdminSection.audit => const AuditLogSection(),
       AdminSection.errorLog => const ErrorLogSection(),
       AdminSection.analytics => const AdminAnalyticsSection(),
-      // script 124: tabs -- the accounts, then their names.
-      AdminSection.users => const AdminTabbedSection(
-        name: 'users',
-        tabs: <(String, Widget)>[
-          ('الحسابات', UserSanctionSection()),
-          ('الأسماء', UserNamesSection()),
-          // script 200: the phones played with several accounts.
-          ('الأجهزة', SharedDevicesSection()),
-          // script 202: who joined this week, and a message to each.
-          ('الجدد', NewPlayersSection()),
-        ],
-      ),
+      // script 124: tabs -- the accounts, then their names; script 259:
+      // the owner admin's hidden accounts, for him alone.
+      AdminSection.users => const AdminUsersSection(),
       AdminSection.announcements => const AnnouncementSection(),
       AdminSection.support => const AdminSupportSection(),
       AdminSection.publisher => const PublisherAdminSection(),
@@ -309,6 +302,34 @@ class AdminShell extends StatelessWidget {
         ),
         VerticalDivider(width: 1, color: t.border),
         Expanded(child: body),
+      ],
+    );
+  }
+}
+
+/// The users section's tabs: the accounts, their names, the shared phones
+/// and the new players; and for the owner admin alone, the accounts he hid
+/// (script 259). Any other admin never sees that tab, and the server
+/// refuses him anyway (`admin.owner_only`).
+class AdminUsersSection extends ConsumerWidget {
+  /// Creates the section.
+  const AdminUsersSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool owner = isOwnerAdminSession(
+      ref.watch(sessionControllerProvider).value,
+    );
+    return AdminTabbedSection(
+      name: 'users',
+      tabs: <(String, Widget)>[
+        ('الحسابات', const UserSanctionSection()),
+        ('الأسماء', const UserNamesSection()),
+        // script 200: the phones played with several accounts.
+        ('الأجهزة', const SharedDevicesSection()),
+        // script 202: who joined this week, and a message to each.
+        ('الجدد', const NewPlayersSection()),
+        if (owner) ('المخفيون', const HiddenAccountsSection()),
       ],
     );
   }

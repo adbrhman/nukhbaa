@@ -205,6 +205,30 @@ final class AdminApi {
     );
   }
 
+  /// `GET /admin/hidden-accounts` -- the accounts the owner admin hid from
+  /// every board, the most recently hidden first (script 258). The owner
+  /// admin alone: any other admin is refused (`admin.owner_only`).
+  Future<Result<HiddenAccountsDto>> hiddenAccounts() {
+    return _transport.getObject<HiddenAccountsDto>(
+      '/admin/hidden-accounts',
+      parse: HiddenAccountsDto.fromJson,
+    );
+  }
+
+  /// `POST` (hide) or `DELETE` (show again) `/admin/hidden-accounts/{id}`
+  /// (script 258): answers whether the account [userId] is now hidden.
+  Future<Result<bool>> setAccountHidden(String userId, {required bool hidden}) {
+    final String path = '/admin/hidden-accounts/${Uri.encodeComponent(userId)}';
+    bool parse(Map<String, Object?> json) => json['hidden'] == true;
+    return hidden
+        ? _transport.postObject<bool>(
+            path,
+            body: const <String, Object?>{},
+            parse: parse,
+          )
+        : _transport.deleteObject<bool>(path, parse: parse);
+  }
+
   /// `POST /admin/support/players/{id}/messages` -- support writes first
   /// to the player [playerId], opening his conversation when he never
   /// wrote (script 202).
