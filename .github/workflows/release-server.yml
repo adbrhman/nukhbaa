@@ -226,7 +226,7 @@ jobs:
             # day). When nothing the server is built from changed (the
             # Dockerfile's inputs), server-release stays and the live server
             # keeps running: no build, no restart.
-            server_paths='^(apps/server/|packages/|Dockerfile$|\.dockerignore$|apps/mobile/assets/fonts/|apps/mobile/assets/team_logos/)|(^|/)pubspec(_overrides)?\.(yaml|lock)$'
+            server_paths='^(apps/server/|packages/|Dockerfile$|\.dockerignore$)|(^|/)pubspec(_overrides)?\.(yaml|lock)$'
             base=$(git rev-parse FETCH_HEAD)
             changed=$(git diff --name-only "$base" "$SHA")
             if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qE "$server_paths"; then

@@ -194,9 +194,6 @@ final class CompositionRoot {
     this.adminSetMonthPrize,
     this.cupChampions,
     this.adminMessagePlayer,
-    this.publisherTick,
-    this.adminPublisher,
-    this.publisherMode = PublisherMode.off,
     required this.registerDeviceToken,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
@@ -427,9 +424,6 @@ final class CompositionRoot {
     this.adminSetMonthPrize,
     this.cupChampions,
     this.adminMessagePlayer,
-    this.publisherTick,
-    this.adminPublisher,
-    this.publisherMode = PublisherMode.off,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
     RegisterDeviceToken? registerDeviceToken,
@@ -2669,17 +2663,6 @@ final class CompositionRoot {
   /// Null in tests that do not provide one.
   final AdminMessagePlayer? adminMessagePlayer;
 
-  /// The sports publisher's minute (scripts 207-208, migration 0200); null
-  /// while NUKHBA_PUBLISHER is off and in tests.
-  final PublisherTick? publisherTick;
-
-  /// The publisher's panel (`/admin/publisher`), admin only; null while
-  /// NUKHBA_PUBLISHER is off and in tests.
-  final AdminPublisher? adminPublisher;
-
-  /// NUKHBA_PUBLISHER: off, dry_run or on.
-  final PublisherMode publisherMode;
-
   /// Drops the read caches when a write made outside this server (the
   /// SQL Editor) moved the cache epoch (migration 0194). Null in test
   /// roots, where nothing is held for hours.
@@ -3377,49 +3360,6 @@ final class CompositionRoot {
       }
     }
 
-    // The sports publisher (scripts 207-208, migration 0200): off unless
-    // NUKHBA_PUBLISHER is dry_run or on. Facebook and Instagram post with
-    // NUKHBA_META_* (the tokens stay here); X is prepared for an admin to
-    // share by hand. Its Highlightly reader stops with 55 requests left,
-    // above every other job's reserve.
-    final publisherMode = PublisherMode.parse(env['NUKHBA_PUBLISHER']);
-    PublisherTick? publisherTick;
-    AdminPublisher? adminPublisher;
-    if (publisherMode != PublisherMode.off) {
-      final publisherHttp = http.Client();
-      final publisherStore = PostgresPublisherStore(connection);
-      final publisherPosters = metaPostersFromEnv(env, publisherHttp);
-      final publisherCards = SupabaseCardHost.fromEnv(env, publisherHttp);
-      final publisherRenderer = ResvgCardRenderer.fromEnv(env);
-      publisherTick = PublisherTick(
-        store: publisherStore,
-        board: liveScoreBoard,
-        mode: publisherMode,
-        posters: publisherPosters,
-        renderer: publisherRenderer,
-        host: publisherCards,
-        crests: BundledClubCrests.fromEnv(env),
-        details: highlightlyKey.isEmpty
-            ? null
-            : HighlightlyLiveGoals(
-                apiKey: highlightlyKey,
-                leagueIds: matchDetailsLeagueIds,
-                lister: HighlightlyFootballDataProvider(
-                  apiKey: highlightlyKey,
-                  quotaReserve: 55,
-                ),
-              ),
-      );
-      adminPublisher = AdminPublisher(
-        store: publisherStore,
-        mode: publisherMode,
-        posters: publisherPosters,
-        clock: clock,
-        host: publisherCards,
-        renderer: publisherRenderer,
-      );
-    }
-
     // Reactions on a prediction (migration 0094) stand behind the
     // predictions' own gate: whoever may see a prediction may react to it.
     final predictionReveal = ListFixturePredictions(
@@ -3664,9 +3604,6 @@ final class CompositionRoot {
         champions: PostgresCupChampionRepository(connection),
         clock: clock,
       ),
-      publisherTick: publisherTick,
-      adminPublisher: adminPublisher,
-      publisherMode: publisherMode,
       adminMessagePlayer: AdminMessagePlayer(
         opener: PostgresSupportConversationOpener(connection),
         reply: AdminReplySupport(chats: supportChats, clock: clock),

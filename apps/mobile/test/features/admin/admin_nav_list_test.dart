@@ -58,10 +58,10 @@ void main() {
       find.byKey(const Key('admin.shell.nav.countedFixtures')),
       findsNothing,
     );
-    // 15 sections: «نظام الدعوات» left with the invitations (2026-10-26),
+    // 14 sections: «نظام الدعوات» left with the invitations (2026-10-26),
     // «رسائل الدعم» came with the support chat (script 167), «النشر
-    // الرياضي الذكي» with the publisher's panel (script 209).
-    expect(find.byType(ListTile), findsNWidgets(15));
+    // الرياضي الذكي» came with script 209 and left with script 260.
+    expect(find.byType(ListTile), findsNWidgets(14));
     await tester.tap(find.byKey(const Key('admin.shell.nav.users')));
     await tester.pumpAndSettle();
 

@@ -8172,188 +8172,34 @@ with "يجب إدخال الاسم الذي يعرفك به الآخرون في 
 - No migration. The longer list applies once the server is deployed; the
   two fields come with the next APK (the web at once).
 
-### The sports publisher (scripts 207-208, migration 0200, 2026-11-04)
+### The sports publisher removed (script 260, 2026-11-12)
 
-Asked by the owner on 2026-11-04: goals and final results of the matches an
-admin picks, posted to Facebook, Instagram and X. Decided the same day, on
-the free plans: Facebook and Instagram are posted to by the server through
-the Meta Graph API; X has no free posting tier, so its posts are prepared
-(picture and words) and an admin shares them by hand from the panel; each
-club is a disc of its colour with its name, never its crest (the crests are
-the clubs' trademarks and none is licensed to Nukhba); the owner's mark of
-2026-11-04 (traced: 99.4% of its pixels) is drawn on every picture. New
-dependencies approved: resvg 0.45.1 (MPL-2.0, in the server image, pinned by
-SHA-256) and the Dart package `image` (MIT, PNG to JPEG for Instagram).
+Scripts 207-211 (2026-11-04/05) built a sports publisher: the goals and
+final results of the matches an admin picked, drawn as pictures by resvg and
+posted to Facebook and Instagram through the Meta Graph API (X prepared to
+share by hand), run from the admin section «النشر الرياضي الذكي». The owner
+removed it on 2026-11-11, before the Google Play release: no club crest or
+league logo is to leave the app, and the app's own crests move to a list the
+owner controls (scripts 263-264).
 
-- **Domain** (`domain/src/publisher/`, script 207): `GoalWatch` reads the
-  running score as goals (`h3` is the third home goal) and withdrawn goals;
-  `GoalMoment` (opener, equaliser, go-ahead, late winner...); `ClubBadge`
-  (white or navy words by WCAG contrast); `PlatformIntensity` and `GoalGate`
-  (every confirmed goal by default; hold 3 minutes, 8 on Instagram; daily
-  caps 12, 8 and 20; every platform off until an admin turns it on);
-  `PostCopy` (an editorial post on Facebook, a caption with tags on
-  Instagram, a short update under 280 on X; several wordings by a stable
-  seed; no link anywhere).
-- **Application** (`application/src/publisher/`): `PublisherTick` runs
-  every minute: reads the corrected live board (what the players see) for
-  each covered match; a new goal is stored pending, a goal the feed takes
-  back is withdrawn (and corrected, in words only, on Facebook and X where it was posted;
-  an admin is told for Instagram); a goal that stood its hold asks
-  Highlightly for the scorer (three times, two minutes apart, then goes out
-  without him), is drawn, kept, and queued once per platform under a unique
-  key; a covered match with a recorded result gets its final posts once;
-  due posts are sent, each platform on its own. `AdminPublisher` is the
-  panel (admin only).
-- **Reliability**: all state is in `publisher.*`, so a restart loses
-  nothing. A post is queued under `dedupe_key` (unique). A claim that runs
-  out unfinished (the server stopped while sending) is marked `uncertain`,
-  never sent again by itself. Rate limits and errors Meta marks transient
-  are retried with a growing wait (5 attempts); a server error after the
-  request arrived, or a cut, is `uncertain` and told to the admins. A match
-  picked after kickoff, or picked again after a stop, takes the score as it
-  stands: earlier goals are not posted as news. No read of the board is
-  ever taken as 0-0.
-- **Quota**: football-data.org's live scores cost nothing more; the
-  scorer comes from one Highlightly `GET /matches/{id}` per question, the
-  match found once per league and day; the publisher stops with 55
-  requests left, above the reserves of the schedules, the results, the
-  match details and the league tables. Roshan, Europa League and League Cup matches have no free
-  live score: their final result is posted, their goals are not, until a
-  provider adds them to the live board.
-- **Pictures**: `SvgCardBuilder` writes a 1080x1350 SVG; resvg draws it with
-  the bundled IBM Plex Sans Arabic only (`--skip-system-fonts`); every
-  number is a left-to-right text of its own, since resvg reorders `45+2`
-  inside an Arabic run; the PNG is written again as JPEG and kept in the
-  public bucket `publisher-cards`, which Instagram fetches by URL.
-- **Server**: `NUKHBA_PUBLISHER` = `off` (default) | `dry_run` (everything
-  but the sending: posts kept as `dry_run` for review) | `on`. Facebook:
-  `NUKHBA_META_PAGE_ID` and `NUKHBA_META_PAGE_TOKEN` (a Page token with
-  `pages_manage_posts`, `pages_read_engagement`); Instagram:
-  `NUKHBA_META_IG_USER_ID` and the same token (`instagram_basic`,
-  `instagram_content_publish`); `NUKHBA_META_GRAPH_VERSION` (default
-  v23.0). The tokens stay on the server; the panel sees only the account's
-  name. Pictures need `NUKHBA_SUPABASE_SERVICE_KEY` and the resvg binary of
-  the image (`/app/bin/resvg`, `/app/fonts`).
-- **Routes** (admin only): `GET|PUT /admin/publisher`, `PUT
-  /admin/publisher/matches`, `PUT /admin/publisher/badges`, `POST
-  /admin/publisher/posts/{id}` (retry, cancel, shared), `GET
-  /admin/publisher/posts/{id}/card`, `GET /admin/publisher/accounts`.
-- **Metrics**: a day after a post went out its reactions, comments and
-  shares (Facebook) or likes, comments and reach (Instagram) are read once
-  and kept in `publisher.post_metrics`.
-- Tests: domain `test/publisher/*` (207); application
-  `publisher_tick_test.dart`, `goal_details_match_test.dart`;
-  infrastructure `svg_card_builder_test.dart`, `meta_posters_test.dart`;
-  server `publisher_dto_mapper_test.dart`; SQL `0200_publisher_test.sql`
-  (every statement of `PostgresPublisherStore`, prepared as written).
-- **Apply 0200 in the SQL Editor before pushing.** The admin panel's
-  section came with script 209 (below).
-
-### The publisher's admin section (script 209, 2026-11-04)
-
-«النشر الرياضي الذكي», a section of the admin hub (`AdminSection.publisher`,
-under «اللاعبون والتواصل»), over the routes of script 208. Its texts are
-the first of the admin panel in the ARB files (`publisher*`, Arabic and
-English).
-
-- **api_client** (`AdminApi`): `publisherOverview`, `savePublisherSetting`,
-  `setPublisherCoverage`, `setPublisherBadge`, `actOnPublisherPost`
-  (`retry`, `cancel`, `shared`), `publisherCard` (JPEG bytes, null on 404)
-  and `publisherAccounts`; the DTOs are those of
-  `contracts/src/publisher_dto.dart`, unchanged.
-- **App** (`admin_publisher_providers.dart`,
-  `screens/sections/publisher_admin_section.dart`, `publisher_admin_tabs.dart`):
-  one read of `GET /admin/publisher` (no automatic retry) feeds six tabs
-  chosen by chips: المباريات (a switch per match of the coming three days,
-  a «المختارة» filter), الإعدادات (per platform: on, goals all/key/none,
-  the final result, the hold 1-30 minutes, the gap 0-60, the daily cap
-  0-50, each card saved by its own button; turning Facebook or Instagram on
-  while the server is `on` asks first), الحسابات (linked or not, the
-  variables a missing one needs, and a check naming the account),
-  ألوان الأندية (a club from the catalog, the clubs of the picked matches
-  first, a colour typed or tapped, the words on the disc, a preview drawn
-  with the server's ink rule), السجل (state, error, attempts, a preview of
-  the picture, copy, retry, cancel; an X post ready to share opens the
-  phone's share sheet with its words and picture, then «تمت المشاركة»;
-  an uncertain post shows a warning on its card and asks again before a
-  retry) and الأداء (reach, reactions, comments and shares summed per
-  platform from the latest posts, the most engaging first, X counted as
-  shared by hand). The server's mode stays in sight above the tabs; while
-  `NUKHBA_PUBLISHER` is off the section says what to set instead of an
-  error.
-- Tests: api_client `admin_publisher_api_test.dart`; mobile
-  `publisher_admin_section_test.dart` (the real section, `AdminApi` and
-  transport over a fake of the routes, the dark theme, Arabic; every tab
-  on a 360px phone at text x2), `admin_nav_list_test.dart` (15 entries).
-- No migration, no new dependency (`share_plus` was already there). Next:
-  `NUKHBA_PUBLISHER=dry_run` on Northflank, then the pictures and words
-  reviewed with the owner before `on`.
-
-### The publisher's crests and Instagram (script 210, 2026-11-05)
-
-Asked by the owner on 2026-11-05: Instagram posting fixed, the picture of a
-match shows the clubs with their official crests, and the Conference League
-clubs' crests fixed. The crest decision of 2026-11-04 (a coloured disc, no
-crest) is replaced by the owner's request: the crests are the PNG files the
-app already bundles under `apps/mobile/assets/team_logos/`; a club with none
-on file stays the disc of its colour.
-
-- **Instagram**: the panel said "no account linked on the server" because
-  `NUKHBA_META_IG_USER_ID` was empty. `InstagramPoster` now takes the
-  account the Facebook page is linked to (`GET /{page-id}?fields=
-  instagram_business_account{id,username}`, once, kept) when no id is set;
-  the id still wins when set. A page with no Instagram account is refused
-  with a message the Accounts tab shows (the token needs `instagram_basic`
-  and `instagram_content_publish`). A container Instagram is still fetching
-  (`IN_PROGRESS` after five looks) and a publish refused with 9007 are tried
-  again a minute later with a new container, instead of failing for good.
-- **Crests on the picture**: domain `ClubCrests.slugFor(name)` (the Arabic
-  names and spellings of the app's `team_logo_assets.dart`, English provider
-  names, accents folded) gives the crest's slug; application port
-  `ClubCrestSource` and `CardSpec.homeCrest/awayCrest`; infrastructure
-  `BundledClubCrests` reads `/app/team_logos` (the Dockerfile copies the
-  app's folder; `NUKHBA_CLUB_CRESTS` overrides) and `SvgCardBuilder` draws
-  the PNG on a white disc as a data URI. The domain test reads the app's file
-  and fails when the two tables drift apart.
-- **Conference League**: all 36 clubs of 2026-27 already have a bundled
-  crest; what failed was the English provider names (`Kauno Žalgiris`,
-  `Mjällby AIF`, `Nordsjælland`, `Sint-Truiden`, `SC Freiburg`,
-  `Brighton & Hove Albion`...), which the app's slug turned into
-  `kauno-z-algiris` and the like. Accents are folded and the aliases added
-  in the app and in the domain.
-- No migration, no new dependency. The crest PNGs are 128 px: on the
-  1080 px picture they are enlarged about 1.5 times.
-
-### The publisher's Instagram check (script 211, 2026-11-05)
-
-Asked by the owner on 2026-11-05: how to be sure Instagram posting works.
-Decided the same day: the match publisher is for matches only (no free posts
-from the panel), and Facebook and Instagram post the final result only (each
-platform's goals set to none in the panel; no code); X's card is a separate
-batch. The Accounts tab's check only read the linked account's name: it did
-not prove the permission to publish nor that Instagram can fetch our picture.
-
-- **Port** `PublishProbe` (`publisher_outlets.dart`): a poster that can be
-  asked, without publishing, whether a post would be accepted;
-  `InstagramPoster` implements it (`probe`): reads the publishing quota
-  (`GET /{ig-user}/content_publishing_limit`, which refuses a token without
-  `instagram_content_publish`), makes a container from the picture's URL and
-  waits for `FINISHED`; never calls `media_publish`, so nothing reaches the
-  audience and the container expires by itself.
-- **Use-case** `AdminPublisher.probeInstagram` (admin only): draws a test
-  card with the same renderer, keeps it at `probe/instagram_check.jpg` in the
-  public bucket, and hands its URL to the poster. The outer result is the
-  caller's right, the inner one the check's answer. `AdminPublisher` takes
-  the renderer (the composition root passes the tick's).
-- **Route** `POST /admin/publisher/accounts/probe` answers one
-  `PublisherAccountDto` for `instagram` (`ok` false carries the reason);
-  `AdminApi.probePublisherInstagram`; a button «فحص النشر في إنستغرام (دون
-  نشر)» in the Accounts tab, shown when Instagram is linked.
-- Needs no new variable: the page token, the page id, the resvg binary and
-  the Supabase service key already used by the publisher. Works in
-  `dry_run` too. No migration, no new dependency.
-- Tests: `instagram_poster_test.dart` (probe), `admin_publisher_probe_test.dart`
-  (new), `admin_publisher_api_test.dart`, `publisher_admin_section_test.dart`.
+- **Removed**: `domain`, `application` and `infrastructure`
+  `src/publisher/` with their tests; `contracts/src/publisher_dto.dart`;
+  the routes `/admin/publisher/**`, `publisher_dto_mapper.dart`,
+  `publisher_scheduler.dart` and `publisherPhase`; the root's
+  `publisherTick`, `adminPublisher` and `publisherMode`; the `AdminApi`
+  publisher methods; `AdminSection.publisher` with its section, tabs,
+  providers and the `publisher*` strings of both ARB files (the admin menu
+  has 14 entries); the Dart package `image` (infrastructure); resvg, the
+  fonts and the crests from the server image, and the two asset folders
+  from Release Server's server paths; `NUKHBA_PUBLISHER` and
+  `NUKHBA_META_*` from `.env.example`; the SQL test
+  `0200_publisher_test.sql`, which ran the removed adapter's statements.
+- **Kept**: migration `0201_publisher.sql` and its `publisher.*` tables
+  (migrations are additive only); nothing reads or writes them any more.
+- **The owner's steps** after the push: delete `NUKHBA_PUBLISHER`,
+  `NUKHBA_META_PAGE_ID`, `NUKHBA_META_PAGE_TOKEN`, `NUKHBA_META_IG_USER_ID`
+  and `NUKHBA_META_GRAPH_VERSION` on Northflank; empty and delete the
+  public Storage bucket `publisher-cards` (its pictures are public URLs).
 
 ## 3. Version-Verification Log
 

@@ -56,7 +56,6 @@ export 'src/participant_fixture_score_dto.dart';
 export 'src/prediction_dto.dart';
 export 'src/prediction_reaction_dto.dart';
 export 'src/predictions_board_dto.dart';
-export 'src/publisher_dto.dart';
 export 'src/push_opened_dto.dart';
 export 'src/retention_dto.dart';
 export 'src/scoring_dto.dart';
