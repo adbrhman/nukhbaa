@@ -199,6 +199,7 @@ final class CompositionRoot {
     this.publisherMode = PublisherMode.off,
     required this.registerDeviceToken,
     this.deleteMyAccount,
+    this.ownerHiddenAccounts,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -430,6 +431,7 @@ final class CompositionRoot {
     this.adminPublisher,
     this.publisherMode = PublisherMode.off,
     this.deleteMyAccount,
+    this.ownerHiddenAccounts,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2643,6 +2645,11 @@ final class CompositionRoot {
   /// 202), admin-only. Null in tests that do not provide one.
   final AdminListNewPlayers? adminListNewPlayers;
 
+  /// The accounts the owner admin hid from every board
+  /// (`/admin/hidden-accounts`, script 258, migration 0207), the owner
+  /// admin alone. Null in tests that do not provide one.
+  final OwnerHiddenAccounts? ownerHiddenAccounts;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -3586,6 +3593,24 @@ final class CompositionRoot {
       // (script 202).
       adminListNewPlayers: AdminListNewPlayers(
         players: PostgresNewPlayerReader(connection),
+      ),
+      // The owner admin alone hides an account from every board -- first
+      // the account Google Play's reviewers sign in with (script 258,
+      // migration 0207).
+      ownerHiddenAccounts: OwnerHiddenAccounts(
+        store: PostgresHiddenAccountStore(connection),
+        owner: OwnerInbox(
+          email: dailyShortfallRecipient,
+          users: userAdminRepository,
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
       ),
       // The month crowns itself once its last match is over, as the owner,
       // through the admin's own crowning and podium (script 204, migration

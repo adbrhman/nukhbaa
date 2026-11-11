@@ -19,7 +19,7 @@ FROM prediction.fixture_predictions fp
 JOIN competition.participants p ON p.id = fp.participant_id
 JOIN identity.users u ON u.id = p.user_id
 WHERE fp.fixture_id = @fixture_id
-  AND u.status = 'suspended'
+  AND (u.status = 'suspended' OR u.hidden_at IS NOT NULL)
 ''';
 
   @override

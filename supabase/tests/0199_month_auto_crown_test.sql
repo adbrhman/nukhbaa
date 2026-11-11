@@ -147,6 +147,10 @@ update scoring.fixture_results
    set updated_at = '2026-11-20 21:00+00'
  where fixture_id = 'f1990000-0000-4000-8000-0000000000f7';
 
+-- Predictions sent before kickoff, written now: the kickoff guard reads
+-- the clock, and these November 2026 kickoffs are past (script 258).
+alter table prediction.fixture_predictions
+  disable trigger fixture_predictions_reject_write_after_kickoff;
 insert into prediction.fixture_predictions (id, fixture_id, participant_id, home_goals, away_goals, is_double, submitted_at)
 select gen_random_uuid(), f.id::uuid, ('b199000b-0000-4000-8000-00000000000' || u.n)::uuid, 1, 0, false,
        '2026-11-01 10:00+00'

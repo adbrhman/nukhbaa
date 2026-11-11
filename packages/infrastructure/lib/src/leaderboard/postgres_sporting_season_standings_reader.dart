@@ -54,7 +54,7 @@ scores AS (
     ON fs.participant_id = p.id
   JOIN identity.users u
     ON u.id = p.user_id
-   AND u.status <> 'suspended'
+   AND u.status <> 'suspended' AND u.hidden_at IS NULL
   WHERE m.month_key BETWEEN @first_key AND @last_key
     -- A hidden fixture is off every board while it stays hidden (0107,
     -- audit M-23); a test fixture never counts.

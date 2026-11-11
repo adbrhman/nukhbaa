@@ -417,7 +417,7 @@ JOIN identity.users u ON u.id = p.user_id
 LEFT JOIN leaderboard.season_fixture_standings f ON f.participant_id = p.id
 WHERE p.season_id = @season_id
   AND m.group_id = @group_id
-  AND u.status <> 'suspended'
+  AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ''';
 
   @override

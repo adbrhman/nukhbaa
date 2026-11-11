@@ -75,7 +75,7 @@ SELECT h.user_id::text AS user_id,
        h.from_round    AS from_round,
        h.until_round   AS until_round
 FROM held h
-JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended'
+JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ORDER BY h.slot, h.from_round
 ''';
 
@@ -95,7 +95,7 @@ WITH members AS (
     FROM gamification.h2h_seat_moves mv
     WHERE mv.extra_league_id = @league_id::uuid
   ) x
-  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ),
 rounds AS (
   SELECT r.id, r.round_no, r.day

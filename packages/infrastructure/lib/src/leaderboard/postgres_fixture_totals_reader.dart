@@ -41,7 +41,7 @@ JOIN competition.participants p
 -- brings its points back unchanged.
 JOIN identity.users u
   ON u.id = p.user_id
- AND u.status <> 'suspended'
+ AND u.status <> 'suspended' AND u.hidden_at IS NULL
 WHERE fs.fixture_id = ANY(@fixture_ids::uuid[])
   -- A hidden fixture is off every board while it stays hidden (0107,
   -- audit M-23); a test fixture never counts.

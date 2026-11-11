@@ -45,7 +45,7 @@ per AS (
          COALESCE(sum(s.points), 0)                           AS points,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
-  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
   JOIN fx ON fx.season_id = p.season_id
   LEFT JOIN prediction.fixture_predictions fp
     ON fp.fixture_id = fx.fixture_id AND fp.participant_id = p.id
@@ -65,7 +65,7 @@ SELECT e.user_id::text                           AS user_id,
        (e.payload ->> 'division')::integer        AS division,
        (e.payload ->> 'rank')::integer            AS rank
 FROM gamification.events e
-JOIN identity.users u ON u.id = e.user_id AND u.status <> 'suspended'
+JOIN identity.users u ON u.id = e.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 WHERE e.event_type = 'h2h_league_finished'
   AND e.payload ->> 'month' = @month::text
   AND e.payload ->> 'next_division' IS NOT NULL
@@ -76,7 +76,7 @@ ORDER BY 2, 3, 4, 1
 WITH pilot AS (
   SELECT a.user_id
   FROM gamification.experiment_assignments a
-  JOIN identity.users u ON u.id = a.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = a.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
   WHERE a.flag_key = 'h2h_pilot'
     AND a.variant = 'pilot'
 ),

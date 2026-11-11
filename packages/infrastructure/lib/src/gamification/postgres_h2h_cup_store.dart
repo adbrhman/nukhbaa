@@ -203,10 +203,10 @@ JOIN competition.season_fixtures sf ON sf.season_id = p.season_id
 JOIN valid v ON v.fixture_id = sf.fixture_id
 LEFT JOIN prediction.fixture_predictions fp
   ON fp.fixture_id = v.fixture_id AND fp.participant_id = p.id
-  AND u.status <> 'suspended'
+  AND u.status <> 'suspended' AND u.hidden_at IS NULL
 LEFT JOIN scoring.fixture_scores s
   ON s.fixture_id = v.fixture_id AND s.participant_id = p.id
-  AND u.status <> 'suspended'
+  AND u.status <> 'suspended' AND u.hidden_at IS NULL
 GROUP BY pl.user_id
 ''';
 

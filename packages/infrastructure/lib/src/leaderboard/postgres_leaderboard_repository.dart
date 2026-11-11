@@ -65,7 +65,7 @@ LEFT JOIN leaderboard.season_rank_snapshots snap
        WHERE x.season_id = p.season_id
      )
 WHERE p.season_id = @season_id
-  AND u.status <> 'suspended'
+  AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ''';
 
   // Read the all-time standings from the projection VIEW, capped by an
@@ -76,7 +76,8 @@ WHERE p.season_id = @season_id
 SELECT user_id, display_name, total_points, seasons_played
 FROM leaderboard.hall_of_fame_standings
 WHERE user_id NOT IN (
-  SELECT id FROM identity.users WHERE status = 'suspended'
+  SELECT id FROM identity.users
+  WHERE status = 'suspended' OR hidden_at IS NOT NULL
 )
 LIMIT @limit
 ''';
@@ -121,7 +122,8 @@ board AS (
   FROM competition.participants p
   JOIN identity.users u
     ON u.id = p.user_id
-   AND (u.status <> 'suspended' OR p.user_id = @user_id)
+   AND ((u.status <> 'suspended' AND u.hidden_at IS NULL)
+        OR p.user_id = @user_id)
   LEFT JOIN leaderboard.season_fixture_standings f
     ON f.participant_id = p.id
   WHERE p.season_id IN (SELECT m.season_id FROM mine m)

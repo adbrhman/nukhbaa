@@ -42,7 +42,7 @@ per AS (
          COALESCE(sum(s.points), 0)                           AS points,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
-  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
   JOIN fx ON fx.season_id = p.season_id
   LEFT JOIN prediction.fixture_predictions fp
     ON fp.fixture_id = fx.fixture_id AND fp.participant_id = p.id
