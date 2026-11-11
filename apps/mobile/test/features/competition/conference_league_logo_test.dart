@@ -75,8 +75,14 @@ void main() {
     final Image logo = tester.widget<Image>(
       find.descendant(of: plate, matching: find.byType(Image)),
     );
-    expect(logo.image, isA<AssetImage>());
-    expect((logo.image as AssetImage).assetName, _markPath);
+    // Decoded at the size drawn since script 256, so the bundled mark
+    // arrives wrapped in a ResizeImage (script 257).
+    expect(logo.image, isA<ResizeImage>());
+    final ResizeImage resized = logo.image as ResizeImage;
+    expect(resized.width, isNotNull);
+    final ImageProvider<Object> source = resized.imageProvider;
+    expect(source, isA<AssetImage>());
+    expect((source as AssetImage).assetName, _markPath);
   });
 
   test('the catalog name and its English aliases resolve to the mark', () {
