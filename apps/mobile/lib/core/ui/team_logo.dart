@@ -142,6 +142,11 @@ class TeamLogo extends StatelessWidget {
         key: ValueKey<String>('teamLogo.$url'),
         width: size,
         height: size,
+        // Script 256: a crest with no bundled copy (every national side) was
+        // decoded at the full size of its file, twice per card, while the
+        // two branches above already decode at the size drawn. Width only,
+        // so a picture that is not square keeps its shape.
+        cacheWidth: decodeSize,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => fallback,
         loadingBuilder: (context, child, progress) =>

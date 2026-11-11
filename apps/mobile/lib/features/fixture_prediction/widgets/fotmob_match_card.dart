@@ -58,6 +58,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:contracts/contracts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,13 +85,13 @@ import '../../competition/team_catalog_index.dart';
 import '../../competition/team_registry.dart';
 import '../../competition/team_identity.dart';
 import '../../history/my_fixture_scores_providers.dart';
-import '../../history/prediction_history_providers.dart';
 import '../../history/prediction_lookup_providers.dart';
 import '../../leaderboards/season_leaderboard_screen.dart';
 import '../../notifications/favorite_team_offer.dart';
 import '../feed_refresh_signal.dart';
 import '../fixture_prediction_controller.dart';
 import '../fixture_prediction_submission.dart';
+import '../prediction_save_traffic.dart';
 import 'fixture_predictions_board_page.dart';
 import 'live_matches_chip.dart';
 import 'match_details_page.dart';
@@ -404,7 +405,9 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       fixturePredictionControllerProvider(_key),
       (previous, next) {
         if (next is FixtureSubmissionSucceeded) {
-          ref.invalidate(myFixturePredictionsProvider);
+          // Coalesced (script 256): the first save of a burst reads the
+          // history at once, the others share one more read.
+          ref.read(predictionHistoryRefresherProvider).request();
           // The win shares ride along with the feed, so refreshing them after
           // your own vote used to mean refetching the entire month here --
           // once per saved prediction. Raise a flag instead; the screen's
@@ -425,12 +428,22 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
       },
     );
 
+    // This card's own stored call, and nothing else of the history (script
+    // 256). The history is read again after saves, and every card of the day
+    // used to be built again with it: twenty cards for one tap. The DTO
+    // compares by value, so a read that brings the same call back builds
+    // nothing here.
+    final String ownFixtureId = _fixture.fixtureId;
+
     // The prediction history can resolve after this card is already on
     // screen; that is the only case initState cannot cover.
-    ref.listen<AsyncValue<Map<String, FixturePredictionDto>>>(
-      myFixturePredictionsByFixtureProvider,
+    ref.listen<FixturePredictionDto?>(
+      myFixturePredictionsByFixtureProvider.select(
+        (AsyncValue<Map<String, FixturePredictionDto>> all) =>
+            all.value?[ownFixtureId],
+      ),
       (previous, next) {
-        if (_applyPrefill(next.value?[_fixture.fixtureId]) && mounted) {
+        if (_applyPrefill(next) && mounted) {
           setState(() {});
         }
       },
@@ -438,10 +451,21 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
 
     final locked = _isLocked;
 
-    final AsyncValue<Map<String, FixturePredictionDto>> myPredictionsAsync = ref
-        .watch(myFixturePredictionsByFixtureProvider);
+    final FixturePredictionDto? storedPrediction = ref.watch(
+      myFixturePredictionsByFixtureProvider.select(
+        (AsyncValue<Map<String, FixturePredictionDto>> all) =>
+            all.value?[ownFixtureId],
+      ),
+    );
+    // A save the server has just confirmed is the call at once, before the
+    // history is read again: at kickoff the started card reads it from here,
+    // and it must not say "you did not predict" for the two seconds a burst
+    // of saves waits for its read.
     final FixturePredictionDto? myPrediction =
-        myPredictionsAsync.value?[_fixture.fixtureId];
+        storedPrediction ??
+        (submission is FixtureSubmissionSucceeded
+            ? submission.prediction
+            : null);
 
     // PERF: a grade needs the recorded result, which the feed item already
     // carries, so a card watches the caller's points only once it has one.
@@ -452,12 +476,15 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     final bool resultRecorded =
         widget.item.resultHomeGoals != null &&
         widget.item.resultAwayGoals != null;
+    final FixturePredictionDto? scoredCall = myPrediction;
     final MyFixtureScoreDto? myScore =
-        myPrediction == null || !locked || !resultRecorded
+        scoredCall == null || !locked || !resultRecorded
         ? null
-        : myFixtureScoreOf(
-            ref.watch(myFixtureScoresProvider).value,
-            myPrediction,
+        : ref.watch(
+            myFixtureScoresProvider.select(
+              (AsyncValue<Map<MyFixtureScoreKey, MyFixtureScoreDto>> rows) =>
+                  myFixtureScoreOf(rows.value, scoredCall),
+            ),
           );
     final String? myGrade = myScore?.grade;
     final int? myPoints = myScore?.points;
@@ -480,16 +507,22 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
     // double (script 128): the toggle says so, instead of a tap the
     // server refuses. This card's own double, stored or just toggled,
     // is never "elsewhere".
-    final Map<DateTime, String> doublesByDay = ref.watch(
-      myDoubleFixtureByDayProvider,
-    );
     final String? kickoffRaw = _fixture.kickoffAt;
     final DateTime? kickoffInstant = kickoffRaw == null
         ? null
         : DateTime.tryParse(kickoffRaw);
-    final String? dayDouble = kickoffInstant == null
+    final DateTime? riyadhDay = kickoffInstant == null
         ? null
-        : doublesByDay[RiyadhDayTurnover.riyadhDayOf(kickoffInstant)];
+        : RiyadhDayTurnover.riyadhDayOf(kickoffInstant);
+    // Only the match that holds this card's own day (script 256): a double
+    // saved on another day's card builds nothing here.
+    final String? dayDouble = riyadhDay == null
+        ? null
+        : ref.watch(
+            myDoubleFixtureByDayProvider.select(
+              (Map<DateTime, String> byDay) => byDay[riyadhDay],
+            ),
+          );
     final bool doubleTakenElsewhere =
         !_isDouble && dayDouble != null && dayDouble != _fixture.fixtureId;
     // The win shares arrive with the feed item itself. They used to be a
@@ -1014,12 +1047,18 @@ class _CompetitionLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final String? url = logoUrl;
+    // Decoded at the size it is drawn (script 256): the league's picture was
+    // decoded whole for a 14 px mark, on every card. Width only, so a
+    // picture that is not square keeps its shape; native only, as TeamLogo.
+    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
+    final int? decodeSize = kIsWeb ? null : (_logoSize * density).ceil();
     if (url != null && url.isNotEmpty) {
       return _plate(
         Image.network(
           url,
           width: _logoSize,
           height: _logoSize,
+          cacheWidth: decodeSize,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => _fallback(tokens),
         ),
@@ -1031,6 +1070,7 @@ class _CompetitionLogo extends StatelessWidget {
           assetPath!,
           width: _logoSize,
           height: _logoSize,
+          cacheWidth: decodeSize,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => _fallback(tokens),
         ),

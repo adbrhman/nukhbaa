@@ -60,6 +60,7 @@ import 'package:shared/shared.dart';
 
 import '../../core/providers.dart';
 import 'fixture_prediction_submission.dart';
+import 'prediction_save_traffic.dart';
 
 /// The stable server code meaning "the caller has not joined this season
 /// yet". Exposed as a constant so the auto-join retry below and any test
@@ -164,8 +165,14 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
   /// At most four retries follow the first attempt; server responses such as
   /// 503 remain visible instead of being retried here.
   Future<Result<FixturePredictionDto>> _send(_FixtureCommand command) async {
+    // At most a few saves are on the wire at once, across every card
+    // (script 256): the server has eight connections, and a day of fifteen
+    // matches tapped quickly sent fifteen saves together, with the feed and
+    // the history queued behind them. A retry waits for its turn again, so
+    // the pause between tries holds no place.
+    final PredictionSaveGate gate = ref.read(predictionSaveGateProvider);
     for (var retry = 0; ; retry++) {
-      final result = await _sendOnce(command);
+      final result = await gate.run(() => _sendWhenMounted(command));
       if (result is Ok<FixturePredictionDto>) return result;
       final error = (result as Err<FixturePredictionDto>).error;
       if ((error.code != apiErrorNetworkUnreachable &&
@@ -178,6 +185,23 @@ class FixturePredictionController extends Notifier<FixtureSubmissionState> {
       await Future<void>.delayed(Duration(milliseconds: 250 * (1 << retry)));
       if (!ref.mounted || _waiting != null) return result;
     }
+  }
+
+  /// [_sendOnce], once its turn at the gate has come -- unless the
+  /// controller went away while it waited (a sign-out replaces the whole
+  /// container, and nothing may be read through a disposed `ref`).
+  Future<Result<FixturePredictionDto>> _sendWhenMounted(
+    _FixtureCommand command,
+  ) async {
+    if (!ref.mounted) {
+      return Result.err(
+        const AppError.transient(
+          'prediction.send_cancelled',
+          'The save was dropped because its screen was closed',
+        ),
+      );
+    }
+    return _sendOnce(command);
   }
 
   /// One network attempt, including the existing one-time auto-join flow.
