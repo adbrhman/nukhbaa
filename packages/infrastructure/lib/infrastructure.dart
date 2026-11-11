@@ -122,6 +122,7 @@ export 'src/platform/postgres_retired_build_reader.dart';
 export 'src/prediction/postgres_fixture_prediction_repository.dart';
 export 'src/prediction/postgres_fixture_prediction_tally_reader.dart';
 export 'src/prediction/postgres_install_fixture_claims.dart';
+export 'src/prediction/postgres_off_board_participants.dart';
 export 'src/prediction/cached_fixture_prediction_reads.dart';
 export 'src/prediction/cached_prediction_history.dart';
 export 'src/prediction/cached_fixture_prediction_tally_reader.dart';

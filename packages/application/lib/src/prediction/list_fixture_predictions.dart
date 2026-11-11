@@ -6,6 +6,7 @@ import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/ledger/ports/participant_reader.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/prediction/ports/off_board_participants.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 
@@ -47,6 +48,11 @@ final class FixturePredictionReveal {
 ///   hidden -- absence of a kickoff is not evidence that it has passed (the
 ///   same rule `SubmitFixturePrediction` applies).
 ///
+/// **Off the board** (script 261): with [offBoard], the predictions of a
+/// suspended or hidden account ([OffBoardParticipants], migration 0207)
+/// are left out, as they are of every standing -- except the caller's own,
+/// which a hidden account still sees on its own board.
+///
 /// Never throws; returns a typed [Result].
 final class ListFixturePredictions {
   /// Creates the use-case over its collaborators.
@@ -56,17 +62,22 @@ final class ListFixturePredictions {
     required FixtureScheduleRepository fixtureScheduleRepository,
     required ParticipantReader participantReader,
     required Clock clock,
+    OffBoardParticipants? offBoard,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
        _schedules = fixtureScheduleRepository,
        _participants = participantReader,
-       _clock = clock;
+       _clock = clock,
+       _offBoard = offBoard;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScheduleRepository _schedules;
   final ParticipantReader _participants;
   final Clock _clock;
+
+  /// The suspended and hidden participants; null keeps them.
+  final OffBoardParticipants? _offBoard;
 
   /// Reveals every prediction for [fixtureId] within [seasonId] to
   /// [principal], a member of that season, once the fixture has kicked off.
@@ -99,7 +110,8 @@ final class ListFixturePredictions {
     if (participantResult is Err<Participant?>) {
       return Result.err(participantResult.error);
     }
-    if ((participantResult as Ok<Participant?>).value == null) {
+    final viewer = (participantResult as Ok<Participant?>).value;
+    if (viewer == null) {
       return const Result.err(
         AppError.authorization(
           'prediction.not_a_participant',
@@ -152,8 +164,24 @@ final class ListFixturePredictions {
     if (predictionsResult is Err<List<FixturePredictionView>>) {
       return Result.err(predictionsResult.error);
     }
-    final predictions =
+    var predictions =
         (predictionsResult as Ok<List<FixturePredictionView>>).value;
+    final offBoard = _offBoard;
+    if (offBoard != null && predictions.isNotEmpty) {
+      final away = await offBoard.all();
+      if (away is Err<Set<ParticipantId>>) {
+        return Result.err(away.error);
+      }
+      final off = (away as Ok<Set<ParticipantId>>).value;
+      if (off.isNotEmpty) {
+        predictions = <FixturePredictionView>[
+          for (final view in predictions)
+            if (!off.contains(view.prediction.participantId) ||
+                view.prediction.participantId == viewer.id)
+              view,
+        ];
+      }
+    }
     if (predictions.isEmpty) {
       return const Result.ok(
         FixturePredictionReveal(

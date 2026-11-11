@@ -46,6 +46,8 @@ CompositionRoot _root({
   bool member = true,
   bool scoresDown = false,
   bool reactionsDown = false,
+  Set<String> offBoard = const <String>{},
+  bool otherScored = false,
 }) {
   final competition = InMemoryCompetitionRepository();
   final me = _participant(_myParticipant, kUserId);
@@ -107,12 +109,16 @@ CompositionRoot _root({
   }
   final scores = _Scores(down: scoresDown)
     ..seed(_started, _myParticipant, FixtureScoreGrade.exactScoreline, 3);
+  if (otherScored) {
+    scores.seed(_started, _otherParticipant, FixtureScoreGrade.incorrect, 0);
+  }
   final reveal = ListFixturePredictions(
     competitionRepository: competition,
     fixturePredictionRepository: predictions,
     fixtureScheduleRepository: schedules,
     participantReader: names,
     clock: FixedClock(_now),
+    offBoard: _OffBoard(offBoard),
   );
   return CompositionRoot.forTesting(
     getPredictionsBoard: GetPredictionsBoard(
@@ -143,6 +149,17 @@ List<Map<Object?, Object?>> _list(Object? raw) =>
     (raw! as List).cast<Map<Object?, Object?>>();
 
 Map<Object?, Object?> _map(Object? raw) => raw! as Map<Object?, Object?>;
+
+/// The participants off every board (script 261).
+final class _OffBoard implements OffBoardParticipants {
+  const _OffBoard(this.ids);
+
+  final Set<String> ids;
+
+  @override
+  Future<Result<Set<ParticipantId>>> all() async =>
+      Result.ok({for (final id in ids) ParticipantId(id)});
+}
 
 void main() {
   test('one answer: predictions, scores, result and reactions of a '
@@ -198,6 +215,33 @@ void main() {
     final started = _list((await decodeBody(response))['columns']).first;
     expect(_list(started['predictions']), hasLength(2));
     expect(started['reactions'], isNull);
+  });
+
+  test('a suspended or hidden account is off the board, its score too '
+      '(script 261)', () async {
+    final response = await _get(
+      _root(offBoard: {_otherParticipant}, otherScored: true),
+    );
+
+    final started = _list((await decodeBody(response))['columns']).first;
+    expect(
+      [for (final p in _list(started['predictions'])) p['participant_id']],
+      [_myParticipant],
+    );
+    expect(
+      [
+        for (final s in _list(_map(started['scores'])['scores']))
+          s['participant_id'],
+      ],
+      [_myParticipant],
+    );
+  });
+
+  test('with nobody off the board every score shows', () async {
+    final response = await _get(_root(otherScored: true));
+
+    final started = _list((await decodeBody(response))['columns']).first;
+    expect(_list(_map(started['scores'])['scores']), hasLength(2));
   });
 
   test('a passing failure of the scores is a 503', () async {

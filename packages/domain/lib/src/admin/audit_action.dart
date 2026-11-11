@@ -112,7 +112,13 @@ enum AuditAction {
   /// (`AdminMergeFixtureCopies`, migration 0176, script 95); the target is
   /// the copy, the reason the kept copy and what moved. Written by
   /// `competition.merge_fixture_copies` in the merge's own transaction.
-  fixturesMerged;
+  fixturesMerged,
+
+  /// Support read one player's predictions of the matches not yet started,
+  /// from his support conversation (`SupportPeekPredictions`, migration
+  /// 0208, script 261) -- the one reading of a prediction before its
+  /// kickoff, by anyone; the target is the player, the reason the admin's.
+  supportPredictionsViewed;
 
   /// The stable wire/storage token for this action (snake_case, mirroring the
   /// migration's `admin.audit_action` enum values).
@@ -139,6 +145,7 @@ enum AuditAction {
     AuditAction.teamAdded => 'team_added',
     AuditAction.leagueAdded => 'league_added',
     AuditAction.fixturesMerged => 'fixtures_merged',
+    AuditAction.supportPredictionsViewed => 'support_predictions_viewed',
   };
 
   /// Parses an [AuditAction] from an untrusted [raw] token, returning a

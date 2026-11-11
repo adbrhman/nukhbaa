@@ -26,7 +26,7 @@ final DateTime _kickoff = DateTime.utc(2026, 9, 28, 18);
   FakeFixtureScheduleRepository schedules,
   FakeParticipantReader participants,
 })
-_harness({required DateTime now}) {
+_harness({required DateTime now, OffBoardParticipants? offBoard}) {
   final competition = FakeCompetitionRepository();
   final predictions = FakeFixturePredictionRepository();
   final schedules = FakeFixtureScheduleRepository();
@@ -38,6 +38,7 @@ _harness({required DateTime now}) {
       fixtureScheduleRepository: schedules,
       participantReader: participants,
       clock: FixedClock(now),
+      offBoard: offBoard,
     ),
     competition: competition,
     predictions: predictions,
@@ -111,6 +112,19 @@ void _arrange(
   }
 }
 
+/// The participants off every board, as [OffBoardParticipants] reads them.
+final class _OffBoard implements OffBoardParticipants {
+  _OffBoard(this.ids, {this.fails = false});
+
+  final Set<String> ids;
+  final bool fails;
+
+  @override
+  Future<Result<Set<ParticipantId>>> all() async => fails
+      ? const Result.err(AppError.transient('db.down', 'down'))
+      : Result.ok({for (final id in ids) ParticipantId(id)});
+}
+
 Future<Result<FixturePredictionReveal>> _call(
   ListFixturePredictions useCase, {
   String user = _memberUser,
@@ -162,6 +176,50 @@ void main() {
         (result as Err<FixturePredictionReveal>).error.code,
         'prediction.fixture_not_started',
       );
+    });
+  });
+
+  group('ListFixturePredictions -- off the board (script 261)', () {
+    test('a suspended or hidden account is left out', () async {
+      final h = _harness(
+        now: _kickoff,
+        offBoard: _OffBoard({_otherParticipant}),
+      );
+      _arrange(h);
+
+      final result = await _call(h.useCase);
+
+      final reveal = (result as Ok<FixturePredictionReveal>).value;
+      expect(
+        [for (final v in reveal.predictions) v.prediction.participantId.value],
+        [_memberParticipant],
+      );
+      expect(reveal.displayNames.keys, {_memberParticipant});
+    });
+
+    test('a hidden account still sees its own prediction', () async {
+      final h = _harness(
+        now: _kickoff,
+        offBoard: _OffBoard({_memberParticipant}),
+      );
+      _arrange(h);
+
+      final result = await _call(h.useCase);
+
+      final reveal = (result as Ok<FixturePredictionReveal>).value;
+      expect(reveal.predictions, hasLength(2));
+    });
+
+    test('a failed read of the set is the error itself', () async {
+      final h = _harness(
+        now: _kickoff,
+        offBoard: _OffBoard(const {}, fails: true),
+      );
+      _arrange(h);
+
+      final result = await _call(h.useCase);
+
+      expect((result as Err<FixturePredictionReveal>).error.code, 'db.down');
     });
   });
 

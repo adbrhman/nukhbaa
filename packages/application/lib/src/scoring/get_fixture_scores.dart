@@ -1,6 +1,7 @@
 import 'package:application/src/competition/ports/competition_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
+import 'package:application/src/prediction/ports/off_board_participants.dart';
 import 'package:application/src/scoring/ports/fixture_score_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
@@ -23,6 +24,10 @@ import 'package:shared/shared.dart';
 /// `prediction.fixture_not_in_season` — the same code
 /// `SubmitFixturePrediction` uses for the identical condition.
 ///
+/// **Off the board** (script 261): with [offBoard], the scores of a
+/// suspended or hidden account are left out, as they are of every standing
+/// -- except the caller's own.
+///
 /// Never throws; returns a typed [Result].
 final class GetFixtureScores {
   /// Creates the use-case over its collaborators.
@@ -30,13 +35,18 @@ final class GetFixtureScores {
     required CompetitionRepository competitionRepository,
     required FixturePredictionRepository fixturePredictionRepository,
     required FixtureScoreRepository fixtureScoreRepository,
+    OffBoardParticipants? offBoard,
   }) : _competition = competitionRepository,
        _fixturePredictions = fixturePredictionRepository,
-       _fixtureScores = fixtureScoreRepository;
+       _fixtureScores = fixtureScoreRepository,
+       _offBoard = offBoard;
 
   final CompetitionRepository _competition;
   final FixturePredictionRepository _fixturePredictions;
   final FixtureScoreRepository _fixtureScores;
+
+  /// The suspended and hidden participants; null keeps them.
+  final OffBoardParticipants? _offBoard;
 
   /// Lists every participant's [ParticipantFixtureScore] for [fixtureId]
   /// within [seasonId], visible to [principal] as a member of that season.
@@ -102,6 +112,23 @@ final class GetFixtureScores {
 
     // Live/partial by construction: an empty list before scoring is a
     // legitimate result, not an error.
-    return _fixtureScores.listByFixture(fixture);
+    final scoresResult = await _fixtureScores.listByFixture(fixture);
+    final offBoard = _offBoard;
+    if (offBoard == null ||
+        scoresResult is! Ok<List<ParticipantFixtureScore>> ||
+        scoresResult.value.isEmpty) {
+      return scoresResult;
+    }
+    final away = await offBoard.all();
+    if (away is Err<Set<ParticipantId>>) {
+      return Result.err(away.error);
+    }
+    final off = (away as Ok<Set<ParticipantId>>).value;
+    return Result.ok(<ParticipantFixtureScore>[
+      for (final score in scoresResult.value)
+        if (!off.contains(score.participantId) ||
+            score.participantId == participant.id)
+          score,
+    ]);
   }
 }

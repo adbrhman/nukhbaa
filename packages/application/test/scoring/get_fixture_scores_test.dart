@@ -21,7 +21,7 @@ const _participant = '44444444-4444-4444-4444-444444444444';
   FakeFixturePredictionRepository predictions,
   FakeFixtureScoreRepository scores,
 })
-_harness() {
+_harness({OffBoardParticipants? offBoard}) {
   final competition = FakeCompetitionRepository();
   final predictions = FakeFixturePredictionRepository();
   final scores = FakeFixtureScoreRepository();
@@ -29,6 +29,7 @@ _harness() {
     competitionRepository: competition,
     fixturePredictionRepository: predictions,
     fixtureScoreRepository: scores,
+    offBoard: offBoard,
   );
   return (
     useCase: useCase,
@@ -146,4 +147,62 @@ void main() {
       );
     });
   });
+
+  group('GetFixtureScores — off the board (script 261)', () {
+    const hidden = '55555555-5555-5555-5555-555555555555';
+
+    Future<List<String>> scoredWith(Set<String> off) async {
+      final h = _harness(offBoard: _OffBoard(off));
+      _enrolMember(h.competition);
+      h.predictions.seedSeasonFixture(_link());
+      final fixtureRef =
+          (FixtureRef.tryParse(_fixture) as Ok<FixtureRef>).value;
+      await h.scores.saveFixtureScores([
+        for (final id in [_participant, hidden])
+          ParticipantFixtureScore.fromStored(
+            fixture: fixtureRef,
+            participantId:
+                (ParticipantId.tryParse(id) as Ok<ParticipantId>).value,
+            rulesetVersion: 1,
+            result: FixtureScoreResult(
+              fixture: fixtureRef,
+              grade: FixtureScoreGrade.exactScoreline,
+              points: 3,
+            ),
+          ),
+      ]);
+      final result = await h.useCase.call(
+        principal: userPrincipal(_memberUser),
+        seasonId: _season,
+        fixtureId: _fixture,
+      );
+      return [
+        for (final score in (result as Ok<List<ParticipantFixtureScore>>).value)
+          score.participantId.value,
+      ]..sort();
+    }
+
+    test('a suspended or hidden account is left out', () async {
+      expect(await scoredWith({hidden}), [_participant]);
+    });
+
+    test('the caller keeps his own score', () async {
+      expect(await scoredWith({_participant, hidden}), [_participant]);
+    });
+
+    test('with nobody off the board everyone shows', () async {
+      expect(await scoredWith(const {}), [_participant, hidden]);
+    });
+  });
+}
+
+/// The participants off every board.
+final class _OffBoard implements OffBoardParticipants {
+  _OffBoard(this.ids);
+
+  final Set<String> ids;
+
+  @override
+  Future<Result<Set<ParticipantId>>> all() async =>
+      Result.ok({for (final id in ids) ParticipantId(id)});
 }

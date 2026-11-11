@@ -17,6 +17,7 @@ AdminUserPredictionHistoryDto adminUserPredictionHistoryToDto(
     exactCount: history.exactCount,
     correctDoubleCount: history.correctDoubleCount,
     totalPoints: history.totalPoints,
+    sealedCount: history.sealedCount,
     predictions: [
       for (final row in history.predictions)
         AdminUserPredictionRowDto(

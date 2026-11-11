@@ -18,10 +18,11 @@ import '../../competition_route_harness.dart';
 /// (`context.read<Future<CompositionRoot>>()` -> `root.
 /// adminListFixturePredictions()`) over local in-memory fakes.
 ///
-/// This carries NO fixture-status gate (unlike the Round-side sibling,
-/// gated on `scored`) -- an empty array before anyone has predicted the
-/// fixture is a legitimate `200`, matching `GetFixtureScores`'s Option-3
-/// philosophy. The read is audited (`fixture_predictions_viewed`).
+/// Sealed until kickoff for the admins too (script 261): before it the
+/// answer is the players' own `409 prediction.fixture_not_started`. After
+/// it there is no fixture-status gate (unlike the Round-side sibling, gated
+/// on `scored`) -- an empty array before anyone has predicted the fixture
+/// is a legitimate `200`. The read is audited (`fixture_predictions_viewed`).
 void main() {
   const kFixtureId = '66666666-6666-6666-6666-666666666666';
   const kParticipantId = '99999999-9999-9999-9999-999999999999';
@@ -36,8 +37,11 @@ void main() {
     awayGoals: 1,
   );
 
+  final kickoff = DateTime.utc(2026, 7, 13, 11);
+
   ({CompositionRoot root, InMemoryAuditLogRepository audit}) rootFor({
     bool predicted = true,
+    DateTime? now,
   }) {
     final predictions = _InMemoryFixturePredictionRepository();
     if (predicted) {
@@ -52,7 +56,18 @@ void main() {
     final root = CompositionRoot.forTesting(
       adminListFixturePredictions: AdminListFixturePredictions(
         fixturePredictionRepository: predictions,
+        fixtureScheduleRepository: InMemoryFixtureScheduleRepository()
+          ..seed(
+            FixtureSchedule.fromStored(
+              fixture:
+                  (FixtureRef.tryParse(kFixtureId) as Ok<FixtureRef>).value,
+              homeTeam: 'Hilal',
+              awayTeam: 'Nassr',
+              kickoffAt: kickoff,
+            ),
+          ),
         auditRecorder: recorder,
+        clock: FixedClock(now ?? DateTime.utc(2026, 7, 13, 12)),
       ),
       // The route joins display names onto the payload; the absent stub
       // throws rather than returning Err, so this slice must be wired. An
@@ -98,6 +113,17 @@ void main() {
       expect(first['away_goals'], 1);
       // No points/score ever leak on the raw-prediction read (Axiom 2/5).
       expect(first.containsKey('points'), isFalse);
+    });
+
+    test('before kickoff an admin reads nothing either (script 261)', () async {
+      final setup = rootFor(now: kickoff.subtract(const Duration(minutes: 1)));
+
+      final response = await predictionsFor(setup.root, adminPrincipal());
+
+      expect(response.statusCode, HttpStatus.conflict);
+      final body = await decodeBody(response);
+      expect(body['code'], 'prediction.fixture_not_started');
+      expect(setup.audit.entries, isEmpty);
     });
 
     test('an unpredicted fixture returns an empty array, still 200', () async {

@@ -37,6 +37,26 @@ SupportConversationDto supportConversationDto(SupportConversationSummary c) =>
       playerUnread: c.playerUnread,
     );
 
+/// Support's reading of a player's open predictions (script 261).
+SupportPredictionsPeekDto supportPredictionsPeekDto(
+  SupportPredictionsPeek peek,
+) => SupportPredictionsPeekDto(
+  predictions: [
+    for (final SupportPeekedPrediction p in peek.predictions)
+      SupportPeekedPredictionDto(
+        fixtureId: p.fixture.value,
+        homeTeam: p.homeTeam,
+        awayTeam: p.awayTeam,
+        kickoffAt: p.kickoffAt.toUtc().toIso8601String(),
+        homeGoals: p.homeGoals,
+        awayGoals: p.awayGoals,
+        isDouble: p.isDouble,
+        leagueName: p.leagueName,
+      ),
+  ],
+  notice: supportMessageDto(peek.notice.message),
+);
+
 /// Rings the other side's phone for [stored], after the answer: the
 /// message is already kept, so a failure here is logged and never reaches
 /// the caller or the zone.

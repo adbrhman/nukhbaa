@@ -203,11 +203,30 @@ final class GetPredictionsBoard {
           Ok<FixturePredictionReveal>(:final value) => PredictionsBoardColumn(
             fixtureId: id,
             reveal: value,
-            scores: scoresByFixture[id] ?? const <ParticipantFixtureScore>[],
+            scores: _shown(scoresByFixture[id], value),
             result: resultByFixture[id],
             reactions: reactionsByFixture[id],
           ),
         },
     ]);
+  }
+
+  /// The [scores] of the participants [reveal] shows: a suspended or
+  /// hidden account left off the predictions is left off the scores too
+  /// (script 261).
+  static List<ParticipantFixtureScore> _shown(
+    List<ParticipantFixtureScore>? scores,
+    FixturePredictionReveal reveal,
+  ) {
+    if (scores == null || scores.isEmpty) {
+      return const <ParticipantFixtureScore>[];
+    }
+    final shown = <ParticipantId>{
+      for (final view in reveal.predictions) view.prediction.participantId,
+    };
+    return <ParticipantFixtureScore>[
+      for (final score in scores)
+        if (shown.contains(score.participantId)) score,
+    ];
   }
 }

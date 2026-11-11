@@ -107,6 +107,7 @@ void main() {
         fixtureResultRepository: results,
         fixtureScoreRepository: scores,
         auditRecorder: audit,
+        clock: FakeClock(DateTime.utc(2026, 9, 14)),
       );
 
       final result = await useCase(
@@ -132,6 +133,129 @@ void main() {
       );
       expect(auditLog.rows.single.action, AuditAction.userPredictionsViewed);
       expect(auditLog.rows.single.targetRef, targetUuid);
+      expect(history.sealedCount, 0);
     },
   );
+
+  test(
+    'a match not yet started is counted, never shown (script 261)',
+    () async {
+      final users = InMemoryUserAdminRepository();
+      final predictions = FakeFixturePredictionRepository();
+      final schedules = FakeFixtureScheduleRepository();
+      final auditLog = InMemoryAuditLogRepository();
+      final target = storedUser(id: targetUuid, email: 'target@example.com');
+      users.seed(target);
+      const participant = ParticipantId(_participant);
+      const played = FixtureRef(_fixture1);
+      const upcoming = FixtureRef(_fixture2);
+      final kickoff = DateTime.utc(2026, 9, 13, 18);
+      predictions.seedParticipantOwner(participant, target.id);
+      for (final (id, fixture, home) in [
+        (_prediction1, played, 1),
+        (_prediction2, upcoming, 4),
+      ]) {
+        predictions.seedPrediction(
+          FixturePrediction.fromStored(
+            id: PredictionId(id),
+            fixture: fixture,
+            participantId: participant,
+            homeGoals: home,
+            awayGoals: 0,
+            isDouble: fixture == upcoming,
+          ),
+          DateTime.utc(2026, 9, 13, 10),
+        );
+      }
+      schedules
+        ..seed(
+          FixtureSchedule.fromStored(
+            fixture: played,
+            homeTeam: 'روما',
+            awayTeam: 'لاتسيو',
+            kickoffAt: kickoff.subtract(const Duration(hours: 3)),
+          ),
+        )
+        ..seed(
+          FixtureSchedule.fromStored(
+            fixture: upcoming,
+            homeTeam: 'يوفنتوس',
+            awayTeam: 'ميلان',
+            kickoffAt: kickoff,
+          ),
+        );
+
+      final result =
+          await AdminGetUserFixturePredictions(
+            userAdminRepository: users,
+            fixturePredictionRepository: predictions,
+            fixtureScheduleRepository: schedules,
+            fixtureResultRepository: FakeFixtureResultRepository(),
+            fixtureScoreRepository: FakeFixtureScoreRepository(),
+            auditRecorder: auditRecorderOver(auditLog),
+            clock: FakeClock(kickoff.subtract(const Duration(minutes: 1))),
+          )(
+            principal: principal(userId: adminUuid),
+            userId: targetUuid,
+          );
+
+      final history = (result as Ok<AdminUserPredictionHistory>).value;
+      expect(history.sealedCount, 1);
+      expect(history.predictionCount, 1);
+      expect(history.predictions.single.fixtureId, played);
+      expect(
+        history.predictions.where((row) => row.fixtureId == upcoming),
+        isEmpty,
+      );
+    },
+  );
+
+  test('at its kickoff the match is shown', () async {
+    final users = InMemoryUserAdminRepository();
+    final predictions = FakeFixturePredictionRepository();
+    final schedules = FakeFixtureScheduleRepository();
+    final target = storedUser(id: targetUuid, email: 'target@example.com');
+    users.seed(target);
+    const participant = ParticipantId(_participant);
+    const fixture = FixtureRef(_fixture2);
+    final kickoff = DateTime.utc(2026, 9, 13, 18);
+    predictions
+      ..seedParticipantOwner(participant, target.id)
+      ..seedPrediction(
+        const FixturePrediction.fromStored(
+          id: PredictionId(_prediction2),
+          fixture: fixture,
+          participantId: participant,
+          homeGoals: 4,
+          awayGoals: 0,
+        ),
+        DateTime.utc(2026, 9, 13, 10),
+      );
+    schedules.seed(
+      FixtureSchedule.fromStored(
+        fixture: fixture,
+        homeTeam: 'يوفنتوس',
+        awayTeam: 'ميلان',
+        kickoffAt: kickoff,
+      ),
+    );
+
+    final result =
+        await AdminGetUserFixturePredictions(
+          userAdminRepository: users,
+          fixturePredictionRepository: predictions,
+          fixtureScheduleRepository: schedules,
+          fixtureResultRepository: FakeFixtureResultRepository(),
+          fixtureScoreRepository: FakeFixtureScoreRepository(),
+          auditRecorder: auditRecorderOver(InMemoryAuditLogRepository()),
+          clock: FakeClock(kickoff),
+        )(
+          principal: principal(userId: adminUuid),
+          userId: targetUuid,
+        );
+
+    final history = (result as Ok<AdminUserPredictionHistory>).value;
+    expect(history.sealedCount, 0);
+    expect(history.predictions.single.predictedHomeGoals, 4);
+  });
 }

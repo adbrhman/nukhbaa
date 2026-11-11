@@ -8201,6 +8201,62 @@ owner controls (scripts 263-264).
   and `NUKHBA_META_GRAPH_VERSION` on Northflank; empty and delete the
   public Storage bucket `publisher-cards` (its pictures are public URLs).
 
+### Predictions sealed until kickoff, for the admins too (script 261, migration 0208, 2026-11-12)
+
+Decided by the owner on 2026-11-11, before the Google Play release: the
+admins (the owner and Suleiman) keep playing, and the rules apply to them as
+to anyone, so nobody, an admin included, reads another player's prediction
+before its match kicks off, nor a round's head-to-head opponents before the
+players do.
+
+- **Admin reads**: `AdminListFixturePredictions`
+  (`GET /admin/fixtures/{id}/predictions`) opens at the players' own instant
+  ([FixtureLock] over the schedule and the server clock) and refuses before
+  it with their own `409 prediction.fixture_not_started`, auditing nothing.
+  `AdminGetUserFixturePredictions` leaves out the matches not yet started
+  and only counts them: `sealedCount` / `sealed_count` (absent from an older
+  server: 0). Both take the clock (and the first the schedules) as required
+  collaborators.
+- **The one exception, support**: `SupportPeekPredictions`
+  (`POST /admin/support/conversations/{id}/predictions` `{"reason"}`,
+  `AdminApi.peekSupportPredictions`): an admin reads the conversation's
+  player's predictions of the matches not yet started, by kickoff. Never
+  silent: the player must have written in the conversation (one of its last
+  50 messages, else `409 support.peek_needs_player_message`), a reason of 1
+  to 200 characters is required (`400 support.peek_reason_invalid`), the
+  reading is audited (`support_predictions_viewed`, migration 0208, the
+  player as target), and the player is told in the conversation by a
+  support answer (`SupportPeekPredictions.noticeText`, pushed as any answer).
+  The predictions are read first and returned last: a failed audit or notice
+  shows nothing.
+- **Head-to-head**: the root passes no `owner` to `AdminGetH2hGroupRound`
+  and `AdminGetH2hPlayer` any more (reversing script 221), so they fail
+  closed: the owner reads what the players read. The `secretToPlayers`
+  plumbing stays and is always false.
+- **Off the board**: `OffBoardParticipants` (port) and
+  `PostgresOffBoardParticipants` (every participant of a suspended or hidden
+  account, one query held a minute): `ListFixturePredictions` and
+  `GetFixtureScores` leave them out of each match's board (the caller keeps
+  his own), and `GetPredictionsBoard` keeps only the scores of the
+  participants it shows. Scoring still reads `SuspendedPredictorsReader`
+  fresh.
+- **Terms**: «النزاهة وسرّية التوقعات» on the rules page, and the privacy
+  page's «ما يراه اللاعبون الآخرون», both dated 12 November 2026.
+- The app side (the support button, the sealed line in a player's history,
+  the audit label, «كيف تلعب؟») is script 262.
+- Tests: application `admin_list_fixture_predictions_test.dart`,
+  `admin_get_user_fixture_predictions_test.dart`,
+  `support_peek_predictions_test.dart` (new),
+  `list_fixture_predictions_test.dart`, `get_fixture_scores_test.dart`;
+  contracts `prediction_privacy_dto_test.dart` (new); infrastructure
+  `postgres_off_board_participants_test.dart` (new); server
+  `admin_fixtures_predictions_route_test.dart`,
+  `support_predictions_peek_route_test.dart` (new),
+  `predictions_board_route_test.dart`; api_client
+  `support_predictions_peek_api_test.dart` (new); SQL
+  `0208_support_predictions_viewed_audit_test.sql` (the enum value and the
+  off-board statement).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -197,6 +197,7 @@ final class CompositionRoot {
     required this.registerDeviceToken,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
+    this.supportPeekPredictions,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -426,6 +427,7 @@ final class CompositionRoot {
     this.adminMessagePlayer,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
+    this.supportPeekPredictions,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -1906,7 +1908,9 @@ final class CompositionRoot {
   static AdminListFixturePredictions _absentAdminListFixturePredictions() =>
       AdminListFixturePredictions(
         fixturePredictionRepository: _unwiredFixturePredictionRepository,
+        fixtureScheduleRepository: _unwiredFixtureScheduleRepository,
         auditRecorder: _absentAuditRecorder(),
+        clock: _unwiredClock,
       );
 
   static AdminGetUserFixturePredictions
@@ -1917,6 +1921,7 @@ final class CompositionRoot {
     fixtureResultRepository: _unwiredFixtureResultRepository,
     fixtureScoreRepository: _unwiredFixtureScoreRepository,
     auditRecorder: _absentAuditRecorder(),
+    clock: _unwiredClock,
   );
 
   static ListMyFixtureScores _absentListMyFixtureScores() =>
@@ -2644,6 +2649,12 @@ final class CompositionRoot {
   /// admin alone. Null in tests that do not provide one.
   final OwnerHiddenAccounts? ownerHiddenAccounts;
 
+  /// Support reads one player's predictions of the matches not yet started,
+  /// from his conversation, with a reason; audited, and the player is told
+  /// (`POST /admin/support/conversations/{id}/predictions`, script 261,
+  /// migration 0208). Admin only. Null in tests that do not provide one.
+  final SupportPeekPredictions? supportPeekPredictions;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -2942,6 +2953,9 @@ final class CompositionRoot {
     // Read fresh at every scoring: a suspended account takes no sole
     // exact bonus and is left out of the live view (2026-11-01).
     final suspendedPredictors = PostgresSuspendedPredictorsReader(connection);
+    // The boards of a match leave a suspended or hidden account out, as
+    // the standings do (script 261); held a minute, never read by scoring.
+    final offBoardParticipants = PostgresOffBoardParticipants(connection);
 
     final fixtureScheduleRepository = CachedFixtureScheduleRepository(
       PostgresFixtureScheduleRepository(connection),
@@ -3368,6 +3382,7 @@ final class CompositionRoot {
       fixtureScheduleRepository: fixtureScheduleRepository,
       participantReader: participantReader,
       clock: clock,
+      offBoard: offBoardParticipants,
     );
     final predictionReactions = PostgresPredictionReactionRepository(
       connection,
@@ -3608,6 +3623,15 @@ final class CompositionRoot {
         opener: PostgresSupportConversationOpener(connection),
         reply: AdminReplySupport(chats: supportChats, clock: clock),
       ),
+      // The one reading of a prediction before kickoff (script 261).
+      supportPeekPredictions: SupportPeekPredictions(
+        chats: supportChats,
+        reply: AdminReplySupport(chats: supportChats, clock: clock),
+        predictions: fixturePredictionRepository,
+        schedules: fixtureScheduleRepository,
+        audit: auditRecorder,
+        clock: clock,
+      ),
       adminErrorReleases: AdminErrorReleases(
         reader: PostgresErrorReleaseReader(connection),
       ),
@@ -3771,6 +3795,9 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
       ),
+      // No owner for the round and player reads (script 261, reversing
+      // script 221): nobody, the owner admin included, reads a round's
+      // opponents before the players do.
       h2hAdminDesk: H2hAdminDesk(
         groups: AdminGetH2hGroups(
           leagues: PostgresH2hLeagueStore(connection),
@@ -3785,19 +3812,6 @@ final class CompositionRoot {
           sheets: PostgresH2hSheetReader(connection),
           profiles: PostgresWeeklyLeagueProfileReader(connection),
           clock: clock,
-          // NK221_28: the owner admin alone reads the secret opponents.
-          owner: OwnerInbox(
-            email: dailyShortfallRecipient,
-            users: userAdminRepository,
-            announcements: announcementRepository,
-            notify: CreateNotification(
-              notifications: notificationRepository,
-              idGenerator: idGenerator,
-              clock: clock,
-            ),
-            idGenerator: idGenerator,
-            clock: clock,
-          ),
         ),
         player: AdminGetH2hPlayer(
           month: GetMyH2hMonth(
@@ -3809,19 +3823,6 @@ final class CompositionRoot {
               clock: clock,
             ),
             rounds: PostgresH2hRoundStore(connection),
-            clock: clock,
-          ),
-          // NK221_29: the owner admin alone reads the secret opponents.
-          owner: OwnerInbox(
-            email: dailyShortfallRecipient,
-            users: userAdminRepository,
-            announcements: announcementRepository,
-            notify: CreateNotification(
-              notifications: notificationRepository,
-              idGenerator: idGenerator,
-              clock: clock,
-            ),
-            idGenerator: idGenerator,
             clock: clock,
           ),
         ),
@@ -4105,6 +4106,7 @@ final class CompositionRoot {
         competitionRepository: competitionRepository,
         fixturePredictionRepository: fixturePredictionReads,
         fixtureScoreRepository: fixtureScoreRepository,
+        offBoard: offBoardParticipants,
       ),
       getFixtureResult: GetFixtureResult(results: fixtureResultReads),
       getFixturePredictionDistribution: GetFixturePredictionDistribution(
@@ -4112,13 +4114,7 @@ final class CompositionRoot {
         // Hidden and test fixtures are refused, as in the feed (M-3).
         fixtureScheduleRepository: fixtureScheduleRepository,
       ),
-      listFixturePredictions: ListFixturePredictions(
-        competitionRepository: competitionRepository,
-        fixturePredictionRepository: fixturePredictionReads,
-        fixtureScheduleRepository: fixtureScheduleRepository,
-        participantReader: participantReader,
-        clock: clock,
-      ),
+      listFixturePredictions: predictionReveal,
       listPredictionReactions: ListPredictionReactions(
         reveal: predictionReveal,
         reactions: predictionReactions,
@@ -4443,10 +4439,13 @@ final class CompositionRoot {
         predictionRepository: predictionRepository, // already built
         auditRecorder: auditRecorder,
       ),
+      // Sealed until kickoff for the admins too (script 261).
       adminListFixturePredictions: AdminListFixturePredictions(
         fixturePredictionRepository:
             fixturePredictionRepository, // already built
+        fixtureScheduleRepository: fixtureScheduleRepository,
         auditRecorder: auditRecorder,
+        clock: clock,
       ),
       adminGetUserFixturePredictions: AdminGetUserFixturePredictions(
         userAdminRepository: userAdminRepository,
@@ -4455,6 +4454,7 @@ final class CompositionRoot {
         fixtureResultRepository: fixtureResultRepository,
         fixtureScoreRepository: fixtureScoreRepository,
         auditRecorder: auditRecorder,
+        clock: clock,
       ),
       // One query for every card and history row (migration 0171), in
       // place of a scores request per match (script 75).

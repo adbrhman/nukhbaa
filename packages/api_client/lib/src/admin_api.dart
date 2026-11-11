@@ -775,6 +775,22 @@ final class AdminApi {
     );
   }
 
+  /// `POST /admin/support/conversations/{id}/predictions` -- reads the
+  /// conversation's player's predictions of the matches not yet started,
+  /// for [reason] (script 261): the one reading of a prediction before its
+  /// kickoff. Audited, and the player is told in the conversation by the
+  /// answer's `notice`. A blank reason is `support.peek_reason_invalid`.
+  Future<Result<SupportPredictionsPeekDto>> peekSupportPredictions(
+    String id, {
+    required String reason,
+  }) {
+    return _transport.postObject<SupportPredictionsPeekDto>(
+      '/admin/support/conversations/${Uri.encodeComponent(id)}/predictions',
+      body: <String, Object?>{'reason': reason},
+      parse: SupportPredictionsPeekDto.fromJson,
+    );
+  }
+
   /// `POST /admin/support/conversations/{id}/images` -- answers with a
   /// picture (migration 0188): the raw [bytes] under [contentType].
   Future<Result<SupportMessageDto>> replySupportImage(

@@ -129,6 +129,7 @@ final class AdminUserPredictionHistoryDto {
     required this.correctDoubleCount,
     required this.totalPoints,
     required this.predictions,
+    this.sealedCount = 0,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -150,6 +151,8 @@ final class AdminUserPredictionHistoryDto {
             ),
           )
           .toList(growable: false),
+      // Absent from a server before script 261: nothing sealed.
+      sealedCount: (json['sealed_count'] as int?) ?? 0,
     );
   }
 
@@ -161,6 +164,10 @@ final class AdminUserPredictionHistoryDto {
   final int correctDoubleCount;
   final int totalPoints;
   final List<AdminUserPredictionRowDto> predictions;
+
+  /// The predictions in the range whose match has not kicked off: sealed,
+  /// so only their number comes (script 261).
+  final int sealedCount;
   final int schemaVersion;
 
   Map<String, Object?> toJson() => {
@@ -171,6 +178,7 @@ final class AdminUserPredictionHistoryDto {
     'correct_double_count': correctDoubleCount,
     'total_points': totalPoints,
     'predictions': [for (final row in predictions) row.toJson()],
+    'sealed_count': sealedCount,
   };
 
   @override
@@ -182,6 +190,7 @@ final class AdminUserPredictionHistoryDto {
       other.correctDoubleCount == correctDoubleCount &&
       other.totalPoints == totalPoints &&
       _listEquals(other.predictions, predictions) &&
+      other.sealedCount == sealedCount &&
       other.schemaVersion == schemaVersion;
 
   @override
@@ -192,6 +201,7 @@ final class AdminUserPredictionHistoryDto {
     correctDoubleCount,
     totalPoints,
     Object.hashAll(predictions),
+    sealedCount,
     schemaVersion,
   );
 

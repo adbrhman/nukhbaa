@@ -37,6 +37,7 @@ void main() {
         'team_added',
         'league_added',
         'fixtures_merged',
+        'support_predictions_viewed',
       });
     });
   });

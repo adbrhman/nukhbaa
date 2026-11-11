@@ -1,5 +1,6 @@
 import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/admin/ports/user_admin_repository.dart';
+import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
@@ -15,6 +16,14 @@ import 'package:shared/shared.dart';
 /// so the client never receives a cross-user prediction collection. Schedules,
 /// results and server-computed scores are joined on the server to build the
 /// report. No points are calculated by the client and no ledger is touched.
+///
+/// **A prediction stays sealed until its kickoff** (decided by the owner on
+/// 2026-11-11, script 261): the admins play like any player, so a match not
+/// yet started by the server [Clock] (the [FixtureLock] instant) is left out
+/// of [AdminUserPredictionHistory.predictions] and only counted in
+/// [AdminUserPredictionHistory.sealedCount]: neither its score nor its
+/// double is told. Support reads them from the player's own conversation
+/// instead (`SupportPeekPredictions`), and the player is told.
 final class AdminGetUserFixturePredictions {
   const AdminGetUserFixturePredictions({
     required UserAdminRepository userAdminRepository,
@@ -23,12 +32,14 @@ final class AdminGetUserFixturePredictions {
     required FixtureResultRepository fixtureResultRepository,
     required FixtureScoreRepository fixtureScoreRepository,
     required AuditRecorder auditRecorder,
+    required Clock clock,
   }) : _users = userAdminRepository,
        _predictions = fixturePredictionRepository,
        _schedules = fixtureScheduleRepository,
        _results = fixtureResultRepository,
        _scores = fixtureScoreRepository,
-       _audit = auditRecorder;
+       _audit = auditRecorder,
+       _clock = clock;
 
   final UserAdminRepository _users;
   final FixturePredictionRepository _predictions;
@@ -36,6 +47,7 @@ final class AdminGetUserFixturePredictions {
   final FixtureResultRepository _results;
   final FixtureScoreRepository _scores;
   final AuditRecorder _audit;
+  final Clock _clock;
 
   Future<Result<AdminUserPredictionHistory>> call({
     required AuthenticatedUser principal,
@@ -111,13 +123,28 @@ final class AdminGetUserFixturePredictions {
       }
     }
 
-    final filteredViews = views
+    final inRange = views
         .where((view) {
           final kickoff =
               scheduleByFixture[view.prediction.fixture.value]!.kickoffAt;
           return _inRange(kickoff, fromUtc, toUtc);
         })
         .toList(growable: false);
+
+    // Sealed until kickoff (script 261): counted, never shown.
+    final now = _clock.nowUtc();
+    final filteredViews = <FixturePredictionView>[];
+    var sealedCount = 0;
+    for (final view in inRange) {
+      final kickoff = scheduleByFixture[view.prediction.fixture.value]!
+          .kickoffAt
+          .toUtc();
+      if (now.isBefore(kickoff)) {
+        sealedCount++;
+      } else {
+        filteredViews.add(view);
+      }
+    }
 
     if (filteredViews.isEmpty) {
       return Result.ok(
@@ -128,6 +155,7 @@ final class AdminGetUserFixturePredictions {
           exactCount: 0,
           correctDoubleCount: 0,
           totalPoints: 0,
+          sealedCount: sealedCount,
         ),
       );
     }
@@ -207,6 +235,7 @@ final class AdminGetUserFixturePredictions {
         exactCount: exactCount,
         correctDoubleCount: correctDoubleCount,
         totalPoints: totalPoints,
+        sealedCount: sealedCount,
       ),
     );
   }
@@ -250,6 +279,7 @@ final class AdminUserPredictionHistory {
     required this.exactCount,
     required this.correctDoubleCount,
     required this.totalPoints,
+    this.sealedCount = 0,
   });
 
   final User user;
@@ -258,6 +288,10 @@ final class AdminUserPredictionHistory {
   final int exactCount;
   final int correctDoubleCount;
   final int totalPoints;
+
+  /// The player's predictions in the range whose match has not kicked off:
+  /// sealed, so only their number is told (script 261).
+  final int sealedCount;
 }
 
 final class AdminUserPrediction {
