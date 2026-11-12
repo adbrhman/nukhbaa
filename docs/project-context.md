@@ -8428,6 +8428,29 @@ the app any more; the countries' flags do.
   tests moved from bundled paths to slugs (`test/support/team_marks.dart`),
   api_client `crests_api_test.dart`.
 
+### Android developer verification: the package name's snippet (script 267, 2026-11-12)
+
+Play Console (2026) creates `app.nukhbaa` only once the package name is
+registered to the developer account, and the name already ships outside
+Play (the site's APK), so Google asks for proof: the snippet Play Console
+gives for it, inside the assets of an APK signed with the app's key, then
+that APK uploaded on «Android developer verification» › «Package names».
+
+- **The file**: `apps/mobile/android_assets/adi-registration.properties`,
+  written by script 267 from the snippet the owner pasted, byte for byte.
+  It names the developer account and is not a secret (Google advises
+  keeping it in every build).
+- **CI** (`build-verification.yml`): after `flutter create`, the step
+  "Package name registration snippet" copies it to
+  `android/app/src/main/assets/` (it fails if the file is missing or
+  empty); the apksigner step checks each APK carries it unchanged
+  (`assets/adi-registration.properties`), and the Play bundle step checks
+  the bundle (`base/assets/adi-registration.properties`).
+- **The proof**: any release APK of a run after 267 (the site's
+  `nukhbaa-arm64-v8a-<sha>.apk` or the `nukhba-android-apk` artifact),
+  uploaded on the package name's page. Then Play Console's Create app
+  accepts `app.nukhbaa`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

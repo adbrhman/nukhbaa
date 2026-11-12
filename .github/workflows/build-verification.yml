@@ -447,6 +447,23 @@ jobs:
         working-directory: apps/mobile
         run: sed -i "/<manifest /a\\    <uses-permission android:name=\"android.permission.INTERNET\" />" android/app/src/main/AndroidManifest.xml
 
+      # Android developer verification (script 267). Before Play Console lets
+      # app.nukhbaa be created, Google asks the owner to prove the name is
+      # his: the snippet Play Console gives for it, in the assets of an APK
+      # signed with the app's key. It ships in every APK and bundle from now
+      # on, as Google advises, so a later key or check finds it too. The
+      # snippet only names the developer account; it is not a secret.
+      - name: Package name registration snippet (Android developer verification)
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          src=android_assets/adi-registration.properties
+          [ -s "$src" ] || { echo "::error::$src is missing or empty (script 267)"; exit 1; }
+          mkdir -p android/app/src/main/assets
+          cp "$src" android/app/src/main/assets/adi-registration.properties
+          echo "adi-registration.properties: $(wc -c < "$src") bytes, sha256 $(sha256sum "$src" | cut -c1-12)"
+
       # `flutter create --project-name mobile` derives android:label from the
       # pub package name, so every build shipped a launcher icon captioned
       # "mobile". The package name cannot change (every
@@ -830,6 +847,9 @@ jobs:
             test -x "$BT/aapt2" || { echo "::error::aapt2 not found under $BT"; exit 1; }
             PKG=$("$BT/aapt2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
             [ "$PKG" = "app.nukhbaa" ] || { echo "::error::$apk is package '$PKG', expected app.nukhbaa"; exit 1; }
+            # script 267: the registration snippet, byte for byte.
+            unzip -p "$apk" assets/adi-registration.properties | cmp -s - android_assets/adi-registration.properties \
+              || { echo "::error::$apk lacks assets/adi-registration.properties or it differs"; exit 1; }
           done
 
       - uses: actions/upload-artifact@v7
@@ -957,6 +977,9 @@ jobs:
           flutter build appbundle --dart-define-from-file=/tmp/dart_defines_play.json --build-number="${{ github.run_number }}" --release
           AAB=build/app/outputs/bundle/release/app-release.aab
           test -s "$AAB" || { echo "::error::no $AAB"; exit 1; }
+          # script 267: the bundle carries the registration snippet too.
+          unzip -p "$AAB" base/assets/adi-registration.properties | cmp -s - android_assets/adi-registration.properties \
+            || { echo "::error::the bundle lacks base/assets/adi-registration.properties or it differs"; exit 1; }
           FOUND=0
           for f in $(find build/app/intermediates -type f -name AndroidManifest.xml -path '*merged_manifest*' -path '*/release/*'); do
             FOUND=1
