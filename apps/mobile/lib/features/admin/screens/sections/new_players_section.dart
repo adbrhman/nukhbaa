@@ -7,6 +7,10 @@
 /// يعدّلها المشرف ثم يرسلها، فتصل اللاعب في محادثة الدعم مع إشعار. الاسم
 /// لا يتغير من جهة اللاعب بعد اختياره: يعدّله المشرف من قسم «الأسماء» حين
 /// يصله الاسم الحقيقي.
+///
+/// «يشبه: …» (السكربت 264، فوق 263): حسابات أخرى تحمل الاسم الأول والأخير
+/// نفسيهما، فقد يكون شخصاً واحداً خلف عدة حسابات. تلميح للمالك يربطها من
+/// «الأشخاص» إن ثبت ذلك، لا حكم.
 library;
 
 import 'dart:async';
@@ -230,6 +234,15 @@ class _NewPlayersSectionState extends ConsumerState<NewPlayersSection> {
                         _Chip(
                           key: Key('admin.newPlayers.hint.${player.user.id}'),
                           text: hint,
+                          color: tokens.errorText,
+                        ),
+                      if (player.similarTo.isNotEmpty)
+                        _Chip(
+                          key: Key(
+                            'admin.newPlayers.similar.${player.user.id}',
+                          ),
+                          text:
+                              'يشبه: ${player.similarTo.map((String n) => '«$n»').join('، ')}',
                           color: tokens.errorText,
                         ),
                       if (player.phoneAccounts > 1)

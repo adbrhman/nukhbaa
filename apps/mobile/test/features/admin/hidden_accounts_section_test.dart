@@ -174,6 +174,8 @@ void main() {
     await _open(tester, _Server(), const AdminUsersSection());
 
     expect(find.text('المخفيون'), findsOneWidget);
+    // Script 264: the people he linked, for him alone too.
+    expect(find.text('الأشخاص'), findsOneWidget);
     expect(find.text('الجدد'), findsOneWidget);
   });
 
@@ -182,6 +184,7 @@ void main() {
 
     expect(find.text('الجدد'), findsOneWidget);
     expect(find.text('المخفيون'), findsNothing);
+    expect(find.text('الأشخاص'), findsNothing);
   });
 
   testWidgets('lists the hidden accounts and shows one again', (tester) async {

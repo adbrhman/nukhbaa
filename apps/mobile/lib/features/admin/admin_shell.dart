@@ -26,6 +26,7 @@ import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/new_players_section.dart';
+import 'screens/sections/person_links_section.dart';
 import 'screens/sections/results_scoring_section.dart';
 import 'screens/sections/shared_devices_section.dart';
 import 'screens/sections/user_names_section.dart';
@@ -305,8 +306,9 @@ class AdminShell extends StatelessWidget {
 
 /// The users section's tabs: the accounts, their names, the shared phones
 /// and the new players; and for the owner admin alone, the accounts he hid
-/// (script 259). Any other admin never sees that tab, and the server
-/// refuses him anyway (`admin.owner_only`).
+/// (script 259) and the people he linked (script 264). Any other admin
+/// never sees those tabs, and the server refuses him anyway
+/// (`admin.owner_only`).
 class AdminUsersSection extends ConsumerWidget {
   /// Creates the section.
   const AdminUsersSection({super.key});
@@ -326,6 +328,8 @@ class AdminUsersSection extends ConsumerWidget {
         // script 202: who joined this week, and a message to each.
         ('الجدد', const NewPlayersSection()),
         if (owner) ('المخفيون', const HiddenAccountsSection()),
+        // script 264: one person behind several accounts, linked by him.
+        if (owner) ('الأشخاص', const PersonLinksSection()),
       ],
     );
   }

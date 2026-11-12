@@ -61,6 +61,8 @@ final class _Server {
             'joined_at': '2026-11-01T09:00:00.000Z',
             'phone_accounts': 1,
             'predictions': 3,
+            // Script 263: an account with the same first and last name.
+            'similar_to': ['محمد بن علي'],
           },
         ],
       });
@@ -139,6 +141,21 @@ void main() {
     // A real-looking name on a phone of its own carries neither.
     expect(find.byKey(const Key('admin.newPlayers.hint.$_b')), findsNothing);
     expect(find.byKey(const Key('admin.newPlayers.phone.$_b')), findsNothing);
+  });
+
+  testWidgets('a name like another account says so (script 264)', (
+    tester,
+  ) async {
+    await _open(tester, _Server());
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('admin.newPlayers.similar.$_b')),
+        matching: find.text('يشبه: «محمد بن علي»'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('admin.newPlayers.similar.$_a')), findsNothing);
   });
 
   testWidgets('a tap opens the ready message; sending writes to his '

@@ -8324,6 +8324,22 @@ in the admins' existing new-player push.
   `admin_new_players_route_test.dart`; SQL `0209_person_links_test.sql`.
 - **Apply 0209 in the SQL Editor before pushing.**
 
+### One person's accounts in the app (script 264, 2026-11-12)
+
+The app side of script 263, no server change, no migration.
+
+- **«الأشخاص»** (`person_links_section.dart`, a tab of users for the owner
+  admin alone, as «المخفيون»): the linked people, each account with
+  «أساسي» / «ثانٍ» / «مخفي», «تعديل» (loads it into the form) and «فك الربط»
+  (asks first); a form that finds accounts by name or e-mail and gives each
+  a role with three chips (a second main or second moves the one before it
+  to the hidden ones), then «حفظ الربط» (`AdminApi.setPerson`). Without a
+  main account, or under two accounts, nothing is sent.
+- **«الجدد»**: a red chip «يشبه: «X»» on a player whose name shares its
+  first and last part with other accounts (`similar_to`).
+- Tests: mobile `person_links_section_test.dart` (new),
+  `new_players_section_test.dart`, `hidden_accounts_section_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
