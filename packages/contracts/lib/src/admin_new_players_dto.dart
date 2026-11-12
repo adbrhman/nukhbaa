@@ -9,6 +9,7 @@ final class NewPlayerDto {
     required this.phoneAccounts,
     required this.predictions,
     this.nameHint,
+    this.similarTo = const <String>[],
   });
 
   /// Deserializes from a JSON map.
@@ -19,6 +20,12 @@ final class NewPlayerDto {
       phoneAccounts: (json['phone_accounts'] as int?) ?? 0,
       predictions: (json['predictions'] as int?) ?? 0,
       nameHint: json['name_hint'] as String?,
+      // Absent from a server before script 263: nothing similar.
+      similarTo: <String>[
+        for (final Object? name
+            in (json['similar_to'] as List<Object?>?) ?? const <Object?>[])
+          if (name is String) name,
+      ],
     );
   }
 
@@ -38,6 +45,10 @@ final class NewPlayerDto {
   /// `one_word`, `title` or `latin`; null when nothing points that way.
   final String? nameHint;
 
+  /// The names of the other accounts that share his first and last name
+  /// (script 263): maybe one person behind several accounts. A hint.
+  final List<String> similarTo;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'user': user.toJson(),
@@ -45,6 +56,7 @@ final class NewPlayerDto {
     'phone_accounts': phoneAccounts,
     'predictions': predictions,
     if (nameHint != null) 'name_hint': nameHint,
+    if (similarTo.isNotEmpty) 'similar_to': similarTo,
   };
 
   @override
@@ -54,11 +66,21 @@ final class NewPlayerDto {
       other.joinedAt == joinedAt &&
       other.phoneAccounts == phoneAccounts &&
       other.predictions == predictions &&
-      other.nameHint == nameHint;
+      other.nameHint == nameHint &&
+      other.similarTo.length == similarTo.length &&
+      Iterable<int>.generate(
+        similarTo.length,
+      ).every((int i) => other.similarTo[i] == similarTo[i]);
 
   @override
-  int get hashCode =>
-      Object.hash(user, joinedAt, phoneAccounts, predictions, nameHint);
+  int get hashCode => Object.hash(
+    user,
+    joinedAt,
+    phoneAccounts,
+    predictions,
+    nameHint,
+    Object.hashAll(similarTo),
+  );
 }
 
 /// The wire shape of `GET /admin/new-players?days=`: the players who joined

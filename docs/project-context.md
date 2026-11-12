@@ -8281,6 +8281,49 @@ The app side of script 261, no server change, no migration.
   `user_sanction_by_name_test.dart` (the sealed line),
   `audit_action_labels_test.dart`, `rules_screen_test.dart`.
 
+### One person behind several accounts (script 263, migration 0209, 2026-11-12)
+
+Asked by the owner on 2026-11-11: one person registering several accounts
+(another number, another e-mail) under the same name. Decided on 2026-11-12:
+a person may play with two accounts (the rules keep the second account),
+never more; the owner admin alone links one person's accounts; the hint goes
+in the admins' existing new-player push.
+
+- **The close name**: `User.personKey(name)` -- the first and the last part
+  of the name, each through the name key (diacritics, tatweel, hamza forms
+  and spacing do not count; "عبد/أبو/أم" join the next word; بن/ابن/بنت/آل
+  are not a part); null under two parts. `accountsLike` (application,
+  `admin/ports/account_name_directory.dart`) finds the other accounts that
+  share it. `AccountNameDirectory` / `PostgresAccountNameDirectory` reads
+  every account's name.
+- **The hint**: `NotifyNewUserRegistered(names:)` adds "يشبه: «X»، «Y»" to
+  the new-player push (at most two; a failed read leaves it out, never the
+  push); `AdminListNewPlayers(names:)` gives each new player `similarTo`
+  (`similar_to` in `GET /admin/new-players`, absent from an older server).
+  A hint for the owner, never a verdict.
+- **The link** (owner only, `OwnerPersonLinks`, `admin.owner_only` for any
+  other admin): `GET /admin/person-links`, `PUT /admin/person-links/{mainId}`
+  `{"second_id", "other_ids"}`, `DELETE /admin/person-links/{mainId}`;
+  `AdminApi.personLinks`, `setPerson`, `unlinkPerson`. The main and the
+  second account count; the others are hidden (`identity.users.hidden_at`,
+  0207: every board, the head-to-head draw, the crowning). Setting the person
+  again or unlinking shows again what the link hid; an account the owner had
+  hidden himself stays hidden. The owner's own account is never an "other".
+- **Migration 0209**: `identity.person_links` (one row per linked account:
+  its person, `counted`, `hidden_by_link`) and `identity.set_person(main,
+  second, others, by)` / `identity.unlink_person(main)`, server only, one
+  transaction each; `set_person` answers `ok`, `too_few`, `duplicate`,
+  `unknown` or `taken` (an account linked to another person).
+- **Terms**: the rules page says a person counts with two accounts at most.
+- The app side (the owner's «الأشخاص» tab, the hint in «الجدد») is script
+  264.
+- Tests: domain `person_key_test.dart`; application `person_links_test.dart`;
+  contracts `person_links_dto_test.dart`; infrastructure
+  `postgres_person_link_store_test.dart`; api_client
+  `person_links_api_test.dart`; server `admin_person_links_route_test.dart`,
+  `admin_new_players_route_test.dart`; SQL `0209_person_links_test.sql`.
+- **Apply 0209 in the SQL Editor before pushing.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

@@ -18,6 +18,9 @@ import 'competition_route_harness.dart';
 const _conversation = '99999999-9999-4999-8999-999999999999';
 
 final class _Reader implements NewPlayerReader {
+  _Reader({this.name = 'Human'});
+
+  final String name;
   int? days;
 
   @override
@@ -28,7 +31,7 @@ final class _Reader implements NewPlayerReader {
     this.days = days;
     return Result.ok(<NewPlayer>[
       NewPlayer(
-        user: storedUser(),
+        user: storedUser().copyWith(displayName: name),
         joinedAt: DateTime.utc(2026, 11, 2, 12),
         phoneAccounts: 11,
         predictions: 10,
@@ -79,6 +82,28 @@ final class _Chats implements SupportChatRepository {
       throw StateError('unexpected ${invocation.memberName}');
 }
 
+/// Every account's name: the new player himself and one like him.
+final class _Names implements AccountNameDirectory {
+  const _Names();
+
+  @override
+  Future<Result<List<AccountName>>> all() async =>
+      const Result.ok(<AccountName>[
+        AccountName(
+          id: UserId(kTargetUserId),
+          displayName: 'عبدالرحمن المغربي',
+        ),
+        AccountName(
+          id: UserId('d1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1'),
+          displayName: 'عبد الرحمن محمد المغربي',
+        ),
+        AccountName(
+          id: UserId('d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2'),
+          displayName: 'عبدالله المغربي',
+        ),
+      ]);
+}
+
 /// Script 202: the admin's new-players list and his first message, through
 /// the real wiring.
 void main() {
@@ -88,11 +113,12 @@ void main() {
       _Reader? reader,
       Map<String, String> query = const {},
       bool wired = true,
+      AccountNameDirectory? names,
     }) => new_players.onRequest(
       wireContext(
         root: CompositionRoot.forTesting(
           adminListNewPlayers: wired
-              ? AdminListNewPlayers(players: reader ?? _Reader())
+              ? AdminListNewPlayers(players: reader ?? _Reader(), names: names)
               : null,
         ),
         principal: principal,
@@ -121,6 +147,19 @@ void main() {
       expect(player['joined_at'], '2026-11-02T12:00:00.000Z');
       expect((player['user']! as Map)['id'], kTargetUserId);
       expect(reader.days, 3);
+    });
+
+    test('each player carries the names like his (script 263)', () async {
+      final response = await list(
+        adminPrincipal(),
+        reader: _Reader(name: 'عبدالرحمن المغربي'),
+        names: const _Names(),
+      );
+
+      final player =
+          ((await decodeBody(response))['players']! as List<Object?>).single!
+              as Map;
+      expect(player['similar_to'], <Object?>['عبد الرحمن محمد المغربي']);
     });
 
     test('no window asked is 7 days', () async {

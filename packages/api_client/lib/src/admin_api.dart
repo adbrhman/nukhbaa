@@ -229,6 +229,42 @@ final class AdminApi {
         : _transport.deleteObject<bool>(path, parse: parse);
   }
 
+  /// `GET /admin/person-links` -- every person the owner admin linked,
+  /// each with its accounts, the main one first (script 263). The owner
+  /// admin alone; another admin is `admin.owner_only`.
+  Future<Result<PersonLinksDto>> personLinks() {
+    return _transport.getObject<PersonLinksDto>(
+      '/admin/person-links',
+      parse: PersonLinksDto.fromJson,
+    );
+  }
+
+  /// `PUT /admin/person-links/{mainId}` -- [mainId] and [secondId] (none
+  /// when null) count, [otherIds] are hidden from every board (script 263).
+  Future<Result<bool>> setPerson(
+    String mainId, {
+    String? secondId,
+    required List<String> otherIds,
+  }) {
+    return _transport.putObject<bool>(
+      '/admin/person-links/${Uri.encodeComponent(mainId)}',
+      body: SetPersonRequestDto(
+        secondId: secondId,
+        otherIds: otherIds,
+      ).toJson(),
+      parse: (json) => json['set'] == true,
+    );
+  }
+
+  /// `DELETE /admin/person-links/{mainId}` -- unlinks the person, showing
+  /// again what the link hid; answers how many accounts were linked.
+  Future<Result<int>> unlinkPerson(String mainId) {
+    return _transport.deleteObject<int>(
+      '/admin/person-links/${Uri.encodeComponent(mainId)}',
+      parse: (json) => (json['unlinked'] as int?) ?? 0,
+    );
+  }
+
   /// `POST /admin/support/players/{id}/messages` -- support writes first
   /// to the player [playerId], opening his conversation when he never
   /// wrote (script 202).

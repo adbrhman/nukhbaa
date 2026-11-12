@@ -12,7 +12,8 @@ import 'package:shared/shared.dart';
 /// `GET /admin/new-players?days=` -- the players who joined in the last
 /// `days` days (default 7, at most 30), newest first
 /// (`AdminListNewPlayers`, script 202): the screen the new-player push
-/// opens. Admin-only; `405` on any non-GET method.
+/// opens. Each player carries the names like his (`similar_to`, script
+/// 263). Admin-only; `405` on any non-GET method.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -57,6 +58,7 @@ Future<Response> onRequest(RequestContext context) async {
                 NewPlayerNameHint.latin => 'latin',
                 null => null,
               },
+              similarTo: player.similarTo,
             ),
         ],
       ).toJson(),

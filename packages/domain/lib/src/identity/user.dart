@@ -253,6 +253,40 @@ final class User {
     return parts >= 2;
   }
 
+  /// The key two accounts of one person share (script 263): the first and
+  /// the last part of [name], each through [_nameKey], so that diacritics,
+  /// tatweel, hamza forms and spacing do not count ("عبد الرحمن المغربي",
+  /// "عبدالرحمن محمد المغربي" and "عبدالرحمن  المغربى" share one key).
+  /// "عبد", "أبو" and "أم" join the next word, and "بن", "ابن", "بنت" and
+  /// "آل" are not a part, as in [isTwoPartName]. Null for a name of fewer
+  /// than two parts. A hint for the owner, never a verdict.
+  static String? personKey(String name) {
+    final List<String> parts = <String>[];
+    String? prefix;
+    for (final String key in _wordKeys(name)) {
+      if (key.length < 2 || _particles.contains(key)) {
+        continue;
+      }
+      if (prefix != null) {
+        parts.add('$prefix$key');
+        prefix = null;
+        continue;
+      }
+      if (_compoundPrefixes.contains(key)) {
+        prefix = key;
+        continue;
+      }
+      parts.add(key);
+    }
+    if (prefix != null) {
+      parts.add(prefix);
+    }
+    if (parts.length < 2) {
+      return null;
+    }
+    return '${parts.first} ${parts.last}';
+  }
+
   /// Each word of [name] through [_nameKey], letters only.
   static List<String> _wordKeys(String name) => name
       .trim()

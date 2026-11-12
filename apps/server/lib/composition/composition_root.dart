@@ -198,6 +198,7 @@ final class CompositionRoot {
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
     this.supportPeekPredictions,
+    this.ownerPersonLinks,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -428,6 +429,7 @@ final class CompositionRoot {
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
     this.supportPeekPredictions,
+    this.ownerPersonLinks,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2655,6 +2657,11 @@ final class CompositionRoot {
   /// migration 0208). Admin only. Null in tests that do not provide one.
   final SupportPeekPredictions? supportPeekPredictions;
 
+  /// One person's accounts, linked by the owner admin alone: the main and
+  /// the second count, the others are hidden (`/admin/person-links`,
+  /// script 263, migration 0209). Null in tests that do not provide one.
+  final OwnerPersonLinks? ownerPersonLinks;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -3106,9 +3113,13 @@ final class CompositionRoot {
       PostgresDeviceTokenRepository(connection),
     );
     final announcementRepository = PostgresAnnouncementRepository(connection);
+    // The close-name hint (script 263): the push and the new players
+    // name the accounts that share a new one's first and last name.
+    final accountNames = PostgresAccountNameDirectory(connection);
     final notifyNewUserRegistered = NotifyNewUserRegistered(
       targets: PostgresAdminPushTargetReader(connection),
       sender: pushSender,
+      names: accountNames,
     );
     // The support chat (script 165, migration 0187). With the secret
     // key its pictures go to Storage (script 199, migration 0196).
@@ -3548,6 +3559,24 @@ final class CompositionRoot {
       // (script 202).
       adminListNewPlayers: AdminListNewPlayers(
         players: PostgresNewPlayerReader(connection),
+        names: accountNames,
+      ),
+      // One person's accounts, linked by the owner admin alone (script
+      // 263, migration 0209).
+      ownerPersonLinks: OwnerPersonLinks(
+        store: PostgresPersonLinkStore(connection),
+        owner: OwnerInbox(
+          email: dailyShortfallRecipient,
+          users: userAdminRepository,
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
       ),
       // The owner admin alone hides an account from every board -- first
       // the account Google Play's reviewers sign in with (script 258,

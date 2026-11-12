@@ -29,6 +29,7 @@ final class NewPlayer {
     required this.phoneAccounts,
     required this.predictions,
     required this.nameHint,
+    this.similarTo = const <String>[],
   });
 
   /// The account.
@@ -46,6 +47,11 @@ final class NewPlayer {
 
   /// Why the name may not be a real one; null when nothing points that way.
   final NewPlayerNameHint? nameHint;
+
+  /// The names of the other accounts whose name shares this one's first and
+  /// last part ([User.personKey], script 263): maybe one person behind
+  /// several accounts. A hint for the owner, never a verdict.
+  final List<String> similarTo;
 }
 
 /// Port for the admin's list of the players who joined recently.
