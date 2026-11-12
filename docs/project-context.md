@@ -8257,6 +8257,30 @@ players do.
   `0208_support_predictions_viewed_audit_test.sql` (the enum value and the
   off-board statement).
 
+### Prediction privacy in the app (script 262, 2026-11-12)
+
+The app side of script 261, no server change, no migration.
+
+- **Support** (`admin_support_conversation_screen.dart`): an eye in the
+  conversation's bar («توقعاته القادمة», `admin.support.thread.peek`) asks
+  for the reason (`askSupportPeekReason`, `widgets/support_predictions_peek.dart`),
+  saying first that the player will be told and the reading kept; then
+  `AdminApi.peekSupportPredictions`, the notice joins the thread at once,
+  and a sheet lists the player's predictions of the matches not yet
+  started (`showSupportPeekedPredictions`). A refusal (no message from the
+  player yet) shows the server's own Arabic words.
+- **A player's history** (`user_sanction_section.dart`): with
+  `sealed_count` above 0, a line says how many of his predictions are for
+  matches not yet started and stay sealed
+  (`admin.users.predictionSearch.sealed`).
+- **Audit**: `support_predictions_viewed` reads «اطّلاع الدعم على توقعات لاعب
+  قادمة» (`audit_action_labels.dart`).
+- **Rules** («كيف تلعب؟»): `rulesSealedUntilKickoff` under the lock row
+  (`rules.sealed`), Arabic and English.
+- Tests: `admin_support_test.dart` (the reading, cancelling, the refusal),
+  `user_sanction_by_name_test.dart` (the sealed line),
+  `audit_action_labels_test.dart`, `rules_screen_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

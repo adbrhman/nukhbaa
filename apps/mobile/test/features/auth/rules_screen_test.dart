@@ -20,6 +20,33 @@ void main() {
     expect(find.textContaining('ركلات الترجيح'), findsWidgets);
   });
 
+  testWidgets('the rules page says nobody, an admin included, sees a '
+      'prediction before kick-off (script 262)', (tester) async {
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const RulesScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('rules.sealed')),
+        matching: find.text(
+          'لا يرى أحد توقعك قبل انطلاق المباراة، ولا المشرفون: فهم يلعبون '
+          'مثلك بالقواعد نفسها',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
   // Audit M-07: only the exact score earns points, and the page must say
   // it in those words -- "التوقع الصحيح" read as "I called the winner".
   testWidgets('the rules page says only the exact score scores', (

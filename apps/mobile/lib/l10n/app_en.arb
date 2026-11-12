@@ -56,6 +56,8 @@
   "rulesSoloExact": "From 1 November 2026: the only player of all to call a match's exact score gets 6 points, or 9 on his double",
   "rulesOneDoublePerDay": "One double per day, picked from that day's matches",
   "rulesLockAtKickoff": "You can change your prediction until kick-off; then it locks",
+  "rulesSealedUntilKickoff": "Nobody sees your prediction before kick-off, not even the admins: they play by the same rules as you",
+  "@rulesSealedUntilKickoff": {"description": "The rules page: predictions stay private until kick-off, for the admins too (script 262)."},
   "rulesMonthStartsAtZero": "Each month is a new contest that starts from zero; the season (September to August) adds its months up",
   "notifications": "Notifications",
   "signedIn": "Signed in",

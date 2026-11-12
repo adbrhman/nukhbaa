@@ -70,6 +70,9 @@ final class _FakeAdminSupport {
       };
   final List<String> calls = <String>[];
   final Map<int, List<int>> images = <int, List<int>>{};
+
+  /// The reasons support gave to read a player's open predictions.
+  final List<String> peekReasons = <String>[];
   int _nextId = 3;
 
   http.Response _json(Object body, [int code = 200]) => http.Response(
@@ -165,6 +168,44 @@ final class _FakeAdminSupport {
         return bytes == null
             ? http.Response('', 404)
             : http.Response.bytes(bytes, 200);
+      }
+      // Script 261: support reads the player's open predictions; the
+      // player is told by a support answer.
+      if (parts.length == 5 && parts[4] == 'predictions') {
+        if (!thread.any((m) => m['sender'] == 'player')) {
+          return _json(<String, Object?>{
+            'code': 'support.peek_needs_player_message',
+            'message':
+                'يُتاح الاطلاع بعد أن يراسل اللاعب الدعم في هذه المحادثة.',
+          }, 409);
+        }
+        peekReasons.add(
+          (jsonDecode(request.body) as Map<String, Object?>)['reason']!
+              as String,
+        );
+        final Map<String, Object?> notice = <String, Object?>{
+          'id': _nextId++,
+          'sender': 'support',
+          'body': 'اطّلع فريق الدعم على توقعاتك للمباريات التي لم تبدأ بعد.',
+          'created_at': '2026-10-28T11:00:00.000Z',
+        };
+        thread.add(notice);
+        return _json(<String, Object?>{
+          'schema_version': 1,
+          'predictions': <Object?>[
+            <String, Object?>{
+              'fixture_id': 'ffffffff-0000-4000-8000-000000000001',
+              'home_team': 'الهلال',
+              'away_team': 'النصر',
+              'kickoff_at': '2026-10-28T18:00:00.000Z',
+              'home_goals': 2,
+              'away_goals': 1,
+              'is_double': true,
+              'league_name': 'دوري روشن',
+            },
+          ],
+          'notice': notice,
+        });
       }
       if (parts.length == 5 && parts[4] == 'messages') {
         final String body =
@@ -303,6 +344,84 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('admin.support.unread.$_c1')), findsNothing);
+  });
+
+  testWidgets('support reads the open predictions, for a reason, and the '
+      'player is told (script 262)', (tester) async {
+    final _FakeAdminSupport server = _FakeAdminSupport();
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('admin.support.peek.notice')), findsOneWidget);
+    // No reason, no reading.
+    await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
+    await tester.pumpAndSettle();
+    expect(server.peekReasons, isEmpty);
+    await tester.enterText(
+      find.byKey(const Key('admin.support.peek.reason')),
+      'يقول إن توقعه لم يُحفظ',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
+    await tester.pumpAndSettle();
+
+    expect(server.peekReasons, <String>['يقول إن توقعه لم يُحفظ']);
+    expect(
+      find.byKey(
+        const Key(
+          'admin.support.peek.line.ffffffff-0000-4000-8000-000000000001',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('الهلال - النصر'), findsOneWidget);
+    expect(find.text('توقعه: 2-1 · دبل'), findsOneWidget);
+    expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsOneWidget);
+  });
+
+  testWidgets('cancelling reads nothing', (tester) async {
+    final _FakeAdminSupport server = _FakeAdminSupport();
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('admin.support.peek.cancel')));
+    await tester.pumpAndSettle();
+
+    expect(server.peekReasons, isEmpty);
+    expect(server.calls.where((c) => c.endsWith('/predictions')), isEmpty);
+  });
+
+  testWidgets('before the player writes, the server refusal is shown', (
+    tester,
+  ) async {
+    final _FakeAdminSupport server = _FakeAdminSupport();
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.filter.0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c2')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('admin.support.peek.reason')),
+      'سبب',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('يُتاح الاطلاع بعد أن يراسل اللاعب الدعم في هذه المحادثة.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('admin.support.peek.list')), findsNothing);
   });
 
   testWidgets('closing asks first; a closed one can be reopened', (

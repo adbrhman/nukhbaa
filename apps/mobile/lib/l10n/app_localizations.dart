@@ -410,6 +410,12 @@ abstract class AppLocalizations {
   /// **'You can change your prediction until kick-off; then it locks'**
   String get rulesLockAtKickoff;
 
+  /// The rules page: predictions stay private until kick-off, for the admins too (script 262).
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody sees your prediction before kick-off, not even the admins: they play by the same rules as you'**
+  String get rulesSealedUntilKickoff;
+
   /// No description provided for @rulesMonthStartsAtZero.
   ///
   /// In en, this message translates to:

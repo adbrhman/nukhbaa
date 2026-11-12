@@ -95,6 +95,13 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                       color: tokens.textSecondary,
                       label: l10n.rulesLockAtKickoff,
                     ),
+                    // Script 262: the admins play by the same rules.
+                    _RuleRow(
+                      key: const Key('rules.sealed'),
+                      icon: Icons.visibility_off_outlined,
+                      color: tokens.textSecondary,
+                      label: l10n.rulesSealedUntilKickoff,
+                    ),
                     _RuleRow(
                       icon: Icons.timer_outlined,
                       color: tokens.textSecondary,

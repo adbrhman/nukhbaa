@@ -30,6 +30,7 @@ const List<String> _domainTokens = <String>[
   'team_added',
   'league_added',
   'fixtures_merged',
+  'support_predictions_viewed',
 ];
 
 void main() {

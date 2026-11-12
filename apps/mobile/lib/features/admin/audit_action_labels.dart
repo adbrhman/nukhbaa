@@ -6,7 +6,7 @@ library;
 
 /// The words of every `admin.audit_action` wire token this build knows
 /// (`AuditAction.wireValue` in the domain, migrations 0010, 0015, 0023,
-/// 0098, 0173, 0176, 0183). The keys are the tokens, so a test can check none is missing.
+/// 0098, 0173, 0176, 0183, 0208). The keys are the tokens, so a test can check none is missing.
 const Map<String, String> auditActionLabels = <String, String>{
   'user_suspended': 'تعليق لاعب',
   'user_reinstated': 'إعادة تفعيل لاعب',
@@ -30,6 +30,7 @@ const Map<String, String> auditActionLabels = <String, String>{
   'team_added': 'إضافة نادٍ إلى القائمة',
   'league_added': 'إضافة دوري إلى القائمة',
   'fixtures_merged': 'دمج نسختين من مباراة',
+  'support_predictions_viewed': 'اطّلاع الدعم على توقعات لاعب قادمة',
 };
 
 /// The words of [action]; one this build predates reads as a plain admin

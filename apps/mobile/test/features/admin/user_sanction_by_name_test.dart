@@ -31,6 +31,10 @@ Map<String, Object?> _user(String name, String status) => {
 };
 
 final class _Server {
+  _Server({this.sealed = 0});
+
+  /// The matches not yet started the history only counts (script 261).
+  final int sealed;
   final List<http.Request> requests = <http.Request>[];
 
   Future<http.Response> handle(http.Request request) async {
@@ -51,6 +55,7 @@ final class _Server {
         'correct_double_count': 0,
         'total_points': 0,
         'predictions': <Object?>[],
+        'sealed_count': sealed,
       });
     }
     if (path == '/admin/users/$_id/display-name') {
@@ -76,8 +81,12 @@ final class _Server {
   ];
 }
 
-Future<void> _openAndPick(WidgetTester tester, _Server server) async {
-  tester.view.physicalSize = const Size(1080, 2340);
+Future<void> _openAndPick(
+  WidgetTester tester,
+  _Server server, {
+  double height = 2340,
+}) async {
+  tester.view.physicalSize = Size(1080, height);
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -119,6 +128,33 @@ Future<void> _tap(WidgetTester tester, Key key) async {
 }
 
 void main() {
+  testWidgets('the matches not yet started are only counted (script 262)', (
+    tester,
+  ) async {
+    // Tall enough that the lazy list builds the history below the cards.
+    await _openAndPick(tester, _Server(sealed: 3), height: 12000);
+
+    final Finder sealed = find.byKey(
+      const Key('admin.users.predictionSearch.sealed'),
+    );
+    expect(sealed, findsOneWidget);
+    expect(
+      tester.widget<Text>(sealed).data,
+      startsWith('3 من توقعاته لمباريات لم تبدأ'),
+    );
+  });
+
+  testWidgets('nothing sealed, no line', (tester) async {
+    await _openAndPick(tester, _Server(), height: 12000);
+
+    // The history is built (its empty card), so findsNothing means it.
+    expect(find.text('لا توجد توقعات ضمن الفلتر المحدد.'), findsOneWidget);
+    expect(
+      find.byKey(const Key('admin.users.predictionSearch.sealed')),
+      findsNothing,
+    );
+  });
+
   testWidgets('the picked account is shown by its name, never its id', (
     tester,
   ) async {

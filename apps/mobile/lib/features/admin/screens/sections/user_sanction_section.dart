@@ -729,6 +729,30 @@ class _HistoryData extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
+        // Script 261: the matches not yet started are sealed, for the
+        // admins too; only their number comes.
+        if (history.sealedCount > 0) ...<Widget>[
+          AdminCard(
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.lock_clock_rounded, color: tokens.textSecondary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    '${history.sealedCount} من توقعاته لمباريات لم تبدأ: '
+                    'مخفية حتى انطلاقها، كما عن كل اللاعبين. يطّلع عليها '
+                    'الدعم من محادثته فقط، ويُبلَّغ بذلك.',
+                    key: const Key('admin.users.predictionSearch.sealed'),
+                    style: context.text.bodyMedium?.copyWith(
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
         if (history.predictions.isEmpty)
           const AdminCard(
             child: AdminEmptyState(

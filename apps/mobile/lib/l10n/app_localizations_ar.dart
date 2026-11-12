@@ -176,6 +176,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تستطيع تعديل توقعك حتى انطلاق المباراة، ثم يُغلق';
 
   @override
+  String get rulesSealedUntilKickoff =>
+      'لا يرى أحد توقعك قبل انطلاق المباراة، ولا المشرفون: فهم يلعبون مثلك بالقواعد نفسها';
+
+  @override
   String get rulesMonthStartsAtZero =>
       'كل شهر مسابقة جديدة تبدأ فيها النقاط من الصفر، ونقاط الموسم (من سبتمبر إلى أغسطس) مجموع شهوره';
 

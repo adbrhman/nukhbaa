@@ -178,6 +178,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can change your prediction until kick-off; then it locks';
 
   @override
+  String get rulesSealedUntilKickoff =>
+      'Nobody sees your prediction before kick-off, not even the admins: they play by the same rules as you';
+
+  @override
   String get rulesMonthStartsAtZero =>
       'Each month is a new contest that starts from zero; the season (September to August) adds its months up';
 

@@ -1,6 +1,11 @@
 /// One player's support conversation as an admin answers it (migration
 /// 0187, script 167): the same chat the player sees, mirrored -- the
 /// admin's answers are "mine" and go out as «دعم نُخبة».
+///
+/// The bar's eye reads the player's predictions of the matches not yet
+/// started (script 262, over script 261's route): with a reason, audited,
+/// and the player told in this conversation -- the one reading of a
+/// prediction before its kickoff.
 library;
 
 import 'dart:async';
@@ -20,6 +25,7 @@ import '../../../core/ui/app_skeleton.dart';
 import '../../support/support_chat_widgets.dart';
 import '../../support/support_images.dart';
 import '../admin_support_providers.dart';
+import '../widgets/support_predictions_peek.dart';
 
 /// The conversation: the player's messages, the answers, a box to answer,
 /// and the status (open, closed, archived) in the bar's menu. The
@@ -66,6 +72,7 @@ class _AdminSupportConversationScreenState
   bool _loadingOlder = false;
   bool _offline = false;
   bool _refreshing = false;
+  bool _peeking = false;
   int _nextLocalId = 1;
   Timer? _poll;
 
@@ -235,6 +242,28 @@ class _AdminSupportConversationScreenState
     }
   }
 
+  /// Reads the player's open predictions, for a reason, telling him.
+  Future<void> _peek() async {
+    final String? reason = await askSupportPeekReason(context);
+    if (reason == null || !mounted) return;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() => _peeking = true);
+    final Result<SupportPredictionsPeekDto> result = await ref
+        .read(adminApiProvider)
+        .peekSupportPredictions(widget.conversationId, reason: reason);
+    if (!mounted) return;
+    setState(() => _peeking = false);
+    switch (result) {
+      case Ok<SupportPredictionsPeekDto>(:final value):
+        setState(() => _merge(<SupportMessageDto>[value.notice]));
+        await showSupportPeekedPredictions(context, value);
+      case Err<SupportPredictionsPeekDto>(:final error):
+        messenger.showSnackBar(
+          SnackBar(content: Text(ErrorPresenter.message(error))),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
@@ -248,6 +277,13 @@ class _AdminSupportConversationScreenState
       appBar: AppBar(
         title: Text(name, key: const Key('admin.support.thread.title')),
         actions: <Widget>[
+          if (c != null)
+            IconButton(
+              key: const Key('admin.support.thread.peek'),
+              tooltip: 'توقعاته القادمة',
+              icon: const Icon(Icons.visibility_outlined),
+              onPressed: _peeking ? null : () => unawaited(_peek()),
+            ),
           if (c != null)
             PopupMenuButton<String>(
               key: const Key('admin.support.thread.menu'),
