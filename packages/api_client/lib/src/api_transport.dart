@@ -370,6 +370,37 @@ final class ApiTransport {
     return Result.err(decodeError(status, response.body));
   }
 
+  /// `GET` of a public file at an absolute `https` [url], outside this API:
+  /// the club crests in the storage bucket (script 266). No credential is
+  /// sent -- the bearer token never leaves for another host -- and a `401`
+  /// there ends no session. `Ok` with the bytes on `200`; any other status
+  /// is a transient `file.unavailable`. Never throws.
+  Future<Result<Uint8List>> getPublicBytes(Uri url) async {
+    if (url.scheme != 'https' || url.host.isEmpty) {
+      return const Result.err(
+        AppError.validation('file.url_invalid', 'Only https files are read'),
+      );
+    }
+    try {
+      final Future<http.Response> pending = _httpClient.get(url);
+      final Duration? timeout = _requestTimeout;
+      final http.Response response = timeout == null
+          ? await pending
+          : await pending.timeout(timeout);
+      if (response.statusCode == 200) return Result.ok(response.bodyBytes);
+      return Result.err(
+        AppError.transient(
+          'file.unavailable',
+          'The file answered HTTP ${response.statusCode}',
+        ),
+      );
+    } on TimeoutException catch (cause) {
+      return Result.err(timeoutError(cause));
+    } on Object catch (cause) {
+      return Result.err(networkError(cause));
+    }
+  }
+
   Future<Result<T>> _send<T>({
     required String method,
     required String path,

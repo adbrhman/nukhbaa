@@ -4,51 +4,45 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../branding/team_branding.dart';
+import '../crests/club_crests.dart';
 import '../design/app_stroke.dart';
 import '../design/app_tokens.dart';
 
-/// شعار فريق موحّد يستبدل النمط المكرر ثلاث مرات (في
-/// current_month_fixtures_screen.dart، شاشة المباراة التي حُذفت لاحقًا،
-/// وprediction_history_screen.dart): صورة شبكة (crestUrl) عند توفرها، وإلا
-/// دائرة مموّهة بأول حرفين من اسم الفريق — لا دائرة فارغة بلا نص إطلاقًا،
-/// سواء لفريق غير معروف أو لفشل تحميل شعار فريق معروف.
+/// A team's mark: the club's crest when the owner's list has it (script
+/// 266, read through [ClubCrestScope]), the country's flag shipped with the
+/// app ([assetPath]), or else a disc in the team's colour with the first two
+/// letters of its name -- never an empty circle.
 ///
-/// هذا المكوّن لا يستورد أي شيء من `features/` (لا `team_registry.dart`
-/// ولا أي حزمة feature أخرى): الطرف المستدعي (شاشة feature تعرف بالفعل
-/// `lookupTeam`/`teamDisplayName`) يحلّل هوية الفريق بنفسه ويمرّر
-/// [displayName]/[crestUrl]/[brandColor] كبيانات جاهزة، فيبقى `core/ui`
-/// بلا أي اعتماد على حزمة feature.
+/// The club crests are their owners' marks: none ships inside the app, none
+/// is read from a provider's or a third party's address, and a crest the
+/// owner hid is gone from the next frame. The caller resolves the team
+/// (`resolveTeamIdentity`) and passes [crestSlug], [assetPath] and
+/// [brandColor] as data, so `core/ui` imports no feature.
 class TeamLogo extends StatelessWidget {
-  /// ينشئ شعار فريق.
+  /// Creates a team mark.
   const TeamLogo({
     required this.displayName,
     required this.size,
     this.assetPath,
-    this.crestUrl,
+    this.crestSlug,
     this.brandColor,
     super.key,
   });
 
-  /// مسار شعار مرفق داخل التطبيق (مثلاً `assets/team_logos/arsenal.png`).
-  /// يسبق [crestUrl] لأنه لا يحتاج شبكة إطلاقًا؛ عند فشله ينتقل العرض
-  /// إلى [crestUrl] ثم إلى الحروف الاحتياطية.
+  /// A country's flag shipped with the app (`assets/flags/<slug>.png`).
   final String? assetPath;
 
-  /// أفضل اسم عرض متاح (مُحلَّل مسبقًا من الطرف المستدعي عبر
-  /// `teamDisplayName`) — يُستخدم فقط لاشتقاق حروف fallback عبر
-  /// `teamInitials`.
+  /// The club's slug in the owner's crest list (`GET /crests`), drawn when
+  /// this device holds its file.
+  final String? crestSlug;
+
+  /// The best display name (`teamDisplayName`), for the disc's letters.
   final String displayName;
 
-  /// رابط شعار مُحلَّل (مثلاً `TeamBrand.logoUrl`)، أو `null` للانتقال
-  /// مباشرة إلى حالة الحروف الاحتياطية.
-  final String? crestUrl;
-
-  /// لون العلامة التجارية المُحلَّل (مثلاً `TeamBrand.c1`) لتلوين الدائرة
-  /// الاحتياطية؛ يُستخدم لون محايد من التوكنز عند غيابه.
+  /// The team's colour (`TeamBrand.c1`) for the disc, or the neutral token.
   final Color? brandColor;
 
-  /// قطر الدائرة بالبكسل — يحدَّد من الطرف المستدعي حسب موضع الاستخدام
-  /// (بطاقة مباراة مصغّرة، رأس شاشة توقع، إلخ) بدل حجم ثابت مفروض هنا.
+  /// The diameter, chosen by the caller for where it is drawn.
   final double size;
 
   /// The least contrast (WCAG) a crest's own colour may have with the card
@@ -63,97 +57,74 @@ class TeamLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final Color? brand = brandColor;
-    // A team whose colour is lost on the dark card (Juventus black, navy
-    // clubs) sits on a plate; the other crests are drawn as before.
-    final bool plated =
-        tokens.isDark &&
-        brand != null &&
-        _contrastOf(brand, tokens.surface) < minCrestContrast;
-    // Downscale the decode on native only. On web, cacheWidth/cacheHeight
-    // send the image through a resizing createImageBitmap path that loses
-    // the alpha channel for some PNGs, which turns a transparent crest into
-    // the opaque plate hidden in its fully-transparent pixels.
-    //
-    // PERF: decode at the device's own density instead of a blanket 4x. On a
-    // 3x phone that is a quarter less image memory for every crest on the
-    // screen, and 4x was already above any shipping density anyway.
-    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
-    final int? decodeSize = kIsWeb ? null : (size * density).ceil();
-    final String url = crestUrl?.trim() ?? '';
     final Widget fallback = _InitialsCircle(
       diameter: size,
       tint: brandColor ?? tokens.surfaceHigh,
       initials: teamInitials(displayName),
     );
-    final Widget networkOrFallback = url.isEmpty
-        ? fallback
-        : ClipOval(
-            child: Image.network(
-              url,
-              key: ValueKey<String>('teamLogo.$url'),
-              width: size,
-              height: size,
-              cacheWidth: decodeSize,
-              cacheHeight: decodeSize,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => fallback,
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : fallback,
-            ),
+    final ImageProvider? crest = ClubCrestScope.imageOf(context, crestSlug);
+    final String asset = assetPath?.trim() ?? '';
+    if (crest == null && asset.isEmpty) return fallback;
+
+    // Downscale the decode on native only. On web, a resized decode goes
+    // through a createImageBitmap path that loses the alpha channel for
+    // some PNGs, which turns a transparent crest into the opaque plate
+    // hidden in its fully-transparent pixels. At the device's own density:
+    // 4x was above any shipping density.
+    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
+    final int? decodeSize = kIsWeb ? null : (size * density).ceil();
+    final Widget image = crest != null
+        ? Image(
+            key: ValueKey<String>('teamLogo.crest.$crestSlug'),
+            image: decodeSize == null
+                ? crest
+                : ResizeImage(
+                    crest,
+                    width: decodeSize,
+                    height: decodeSize,
+                    policy: ResizeImagePolicy.fit,
+                  ),
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => fallback,
+          )
+        : Image.asset(
+            asset,
+            key: ValueKey<String>('teamLogo.asset.$asset'),
+            width: size,
+            height: size,
+            cacheWidth: decodeSize,
+            cacheHeight: decodeSize,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => fallback,
           );
 
-    final String asset = assetPath?.trim() ?? '';
-    if (asset.isNotEmpty) {
-      final Widget image = Image.asset(
-        asset,
-        key: ValueKey<String>('teamLogo.asset.$asset'),
-        width: size,
-        height: size,
-        cacheWidth: decodeSize,
-        cacheHeight: decodeSize,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => networkOrFallback,
-      );
-      if (tokens.isDark) {
-        return plated
-            ? _CrestPlate(size: size, child: image)
-            : SizedBox(width: size, height: size, child: image);
-      }
-      // On a white card a flag's white field had no edge (Finland showed a
-      // floating cross, England a bare red one): in the light theme every
-      // crest sits on one soft plate with a hairline rim (UI-10).
-      return Container(
-        width: size,
-        height: size,
-        padding: EdgeInsets.all(size * 0.12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: tokens.surfaceHigh,
-          border: Border.all(color: tokens.border, width: AppStroke.hairline),
-        ),
-        child: image,
-      );
+    final Color? brand = brandColor;
+    if (tokens.isDark) {
+      // A team whose colour is lost on the dark card (Juventus black, navy
+      // clubs) sits on a plate; the other crests are drawn as they are.
+      final bool plated =
+          brand != null &&
+          _contrastOf(brand, tokens.surface) < minCrestContrast;
+      return plated
+          ? _CrestPlate(size: size, child: image)
+          : SizedBox(width: size, height: size, child: image);
     }
-    if (url.isEmpty) return fallback;
-    final Widget network = ClipOval(
-      child: Image.network(
-        url,
-        key: ValueKey<String>('teamLogo.$url'),
-        width: size,
-        height: size,
-        // Script 256: a crest with no bundled copy (every national side) was
-        // decoded at the full size of its file, twice per card, while the
-        // two branches above already decode at the size drawn. Width only,
-        // so a picture that is not square keeps its shape.
-        cacheWidth: decodeSize,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => fallback,
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : fallback,
+    // On a white card a flag's white field had no edge (Finland showed a
+    // floating cross, England a bare red one): in the light theme every
+    // mark sits on one soft plate with a hairline rim (UI-10).
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.12),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: tokens.surfaceHigh,
+        border: Border.all(color: tokens.border, width: AppStroke.hairline),
       ),
+      child: image,
     );
-    return plated ? _CrestPlate(size: size, child: network) : network;
   }
 }
 

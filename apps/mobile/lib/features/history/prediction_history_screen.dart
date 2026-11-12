@@ -551,7 +551,7 @@ class _TeamMini extends StatelessWidget {
     final String display = identity.displayName;
     final Widget crest = TeamLogo(
       displayName: display,
-      crestUrl: identity.crestUrl,
+      crestSlug: identity.crestSlug,
       assetPath: identity.assetPath,
       brandColor: identity.brandColor,
       size: _crestSize,

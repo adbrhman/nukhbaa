@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/competition/team_identity.dart';
 
 /// The names the Highlightly seed stores for the clubs it creates with no
-/// crest. The match card draws them through [resolveTeamIdentity]; a name the
-/// bundled-crest alias map does not know falls back to the initials circle.
+/// crest. The match card draws them through [resolveTeamIdentity], with the
+/// crest of the owner's list (script 266); a name the alias map does not
+/// know falls back to the initials circle.
 const Map<String, String> _seededNames = <String, String>{
   '\u0623\u064a\u0643 \u0623\u062b\u064a\u0646\u0627': 'aek-athens',
   '\u0628\u0648\u062f\u0648 \u063a\u0644\u064a\u0645\u062a': 'bodo-glimt',
@@ -37,7 +38,7 @@ const Map<String, String> _seededNames = <String, String>{
 void main() {
   group('crest for the clubs the Highlightly seed creates', () {
     for (final MapEntry<String, String> e in _seededNames.entries) {
-      test('${e.key} resolves to its bundled crest', () {
+      test('${e.key} resolves to its crest', () {
         final ResolvedTeamIdentity identity = resolveTeamIdentity(
           catalog: <TeamDto>[
             TeamDto(id: 't-1', name: e.key, shortName: null, crestUrl: null),
@@ -46,8 +47,8 @@ void main() {
           teamName: e.key,
         );
 
-        expect(identity.crestUrl, isNull);
-        expect(identity.assetPath, 'assets/team_logos/${e.value}.png');
+        expect(identity.crestSlug, e.value);
+        expect(identity.assetPath, isNull);
       });
     }
   });

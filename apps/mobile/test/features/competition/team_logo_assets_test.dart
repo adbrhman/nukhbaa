@@ -1,7 +1,8 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/competition/team_identity.dart';
 import 'package:mobile/features/competition/team_logo_assets.dart';
+
+import '../../support/team_marks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,46 +106,38 @@ void main() {
     'Real Madrid': 'real-madrid',
   };
 
-  test('resolves supplied Club World Cup team names to local assets', () {
+  test('resolves supplied Club World Cup team names to their marks', () {
     for (final MapEntry<String, String> entry in expectedAssets.entries) {
-      expect(
-        teamLogoAssetPath(entry.key),
-        'assets/team_logos/${entry.value}.png',
-        reason: entry.key,
-      );
+      expect(teamMarkSlug(entry.key), entry.value, reason: entry.key);
     }
   });
 
-  test(
-    'every supplied new crest and the competition logo load from assets',
-    () async {
-      for (final String slug in <String>[
-        'auckland-fc',
-        'al-ain',
-        'mamelodi-sundowns',
-        'seattle-sounders-fc',
-        'inter-miami-cf',
-        'esperance',
-        'pachuca',
-        'palmeiras',
-        'wydad-ac',
-        'boca-juniors',
-        'urawa-reds',
-        'los-angeles-fc',
-        'botafogo',
-        'ulsan-hd-fc',
-        'fluminense',
-        'flamengo',
-        'auckland-city-fc',
-        'monterrey',
-        'river-plate',
-        'atletico-atlanta',
-      ]) {
-        await rootBundle.load('assets/team_logos/$slug.png');
-      }
-      await rootBundle.load('assets/league_logos/fifa-club-world-cup.png');
-    },
-  );
+  test('every supplied new crest is on the owner list', () async {
+    for (final String slug in <String>[
+      'auckland-fc',
+      'al-ain',
+      'mamelodi-sundowns',
+      'seattle-sounders-fc',
+      'inter-miami-cf',
+      'esperance',
+      'pachuca',
+      'palmeiras',
+      'wydad-ac',
+      'boca-juniors',
+      'urawa-reds',
+      'los-angeles-fc',
+      'botafogo',
+      'ulsan-hd-fc',
+      'fluminense',
+      'flamengo',
+      'auckland-city-fc',
+      'monterrey',
+      'river-plate',
+      'atletico-atlanta',
+    ]) {
+      await expectMarkAvailable(slug);
+    }
+  });
 
   test('resolves the added Arabic team names to their crests', () {
     const Map<String, String> expected = <String, String>{
@@ -216,15 +209,11 @@ void main() {
       'ويلز': 'wales',
     };
     for (final MapEntry<String, String> entry in expected.entries) {
-      expect(
-        teamLogoAssetPath(entry.key),
-        'assets/team_logos/${entry.value}.png',
-        reason: entry.key,
-      );
+      expect(teamMarkSlug(entry.key), entry.value, reason: entry.key);
     }
   });
 
-  test('every added Ligue 1 club crest loads from assets', () async {
+  test('every added Ligue 1 club crest is on the owner list', () async {
     for (final String slug in <String>[
       'angers',
       'monaco',
@@ -239,7 +228,7 @@ void main() {
       'toulouse',
       'troyes',
     ]) {
-      await rootBundle.load('assets/team_logos/$slug.png');
+      await expectMarkAvailable(slug);
     }
   });
 
@@ -252,7 +241,7 @@ void main() {
       );
       expect(
         identity.assetPath,
-        'assets/team_logos/${entry.value}.png',
+        'assets/flags/${entry.value}.png',
         reason: entry.key,
       );
     }
@@ -260,7 +249,7 @@ void main() {
 
   test('every CAF national-team flag loads from bundled assets', () async {
     for (final String slug in expectedCafAssets.values) {
-      await rootBundle.load('assets/team_logos/$slug.png');
+      await expectMarkAvailable(slug);
     }
   });
 
@@ -321,7 +310,7 @@ void main() {
       'ukraine',
       'wales',
     ]) {
-      await rootBundle.load('assets/team_logos/$slug.png');
+      await expectMarkAvailable(slug);
     }
   });
 }

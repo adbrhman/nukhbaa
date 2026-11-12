@@ -47,6 +47,44 @@ void main() {
     );
   });
 
+  testWidgets('the rules page says the crests are their owners (script 266)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 9000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const RulesScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder row = find.byKey(const Key('rules.crests'));
+    await tester.scrollUntilVisible(
+      row,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.textContaining('شعارات الأندية ملك لأصحابها'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.textContaining('nukhbaa.app@gmail.com'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   // Audit M-07: only the exact score earns points, and the page must say
   // it in those words -- "التوقع الصحيح" read as "I called the winner".
   testWidgets('the rules page says only the exact score scores', (

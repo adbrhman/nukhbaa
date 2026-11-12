@@ -111,7 +111,7 @@ void main() {
             child: TeamLogo(
               displayName: 'Test',
               size: 34,
-              assetPath: 'assets/team_logos/finland.png',
+              assetPath: 'assets/flags/finland.png',
               brandColor: brand,
             ),
           ),

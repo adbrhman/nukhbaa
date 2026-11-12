@@ -172,14 +172,19 @@ async function main() {
   const served = decode(await get('/nukhbaa/flutter_bootstrap.js', 'gzip')).toString('utf8');
   expect(served === boot, 'the served flutter_bootstrap.js is not the one on disk');
 
-  const logos = path.join(app, 'assets/assets/team_logos');
-  const crest = fs.existsSync(logos) ? fs.readdirSync(logos).find((f) => f.endsWith('.png')) : undefined;
-  expect(Boolean(crest), 'no team crest under assets/assets/team_logos');
-  if (crest) {
-    const res = await get(`/nukhbaa/assets/assets/team_logos/${crest}`, 'gzip, deflate, br');
-    expect(res.status === 200, `team_logos/${crest}: status ${res.status}`);
-    expect(res.headers['cache-control'] === WEEK, `team_logos/${crest}: cache-control ${res.headers['cache-control']}, expected ${WEEK}`);
-    expectSecure(res, `team_logos/${crest}`);
+  // Script 266: the clubs' crests and the leagues' logos never ship; the
+  // countries' flags do.
+  for (const gone of ['team_logos', 'league_logos']) {
+    expect(!fs.existsSync(path.join(app, 'assets/assets', gone)), `assets/assets/${gone} ships in the build`);
+  }
+  const flags = path.join(app, 'assets/assets/flags');
+  const flag = fs.existsSync(flags) ? fs.readdirSync(flags).find((f) => f.endsWith('.png')) : undefined;
+  expect(Boolean(flag), 'no flag under assets/assets/flags');
+  if (flag) {
+    const res = await get(`/nukhbaa/assets/assets/flags/${flag}`, 'gzip, deflate, br');
+    expect(res.status === 200, `flags/${flag}: status ${res.status}`);
+    expect(res.headers['cache-control'] === WEEK, `flags/${flag}: cache-control ${res.headers['cache-control']}, expected ${WEEK}`);
+    expectSecure(res, `flags/${flag}`);
   }
 
   const old = await get('/nukhbaa/main.dart.000000000000.js', 'gzip, deflate, br');

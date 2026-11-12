@@ -571,7 +571,7 @@ class _Side extends StatelessWidget {
           TeamLogo(
             displayName: team.displayName,
             assetPath: team.assetPath,
-            crestUrl: team.crestUrl,
+            crestSlug: team.crestSlug,
             brandColor: team.brandColor,
             size: 24,
           ),

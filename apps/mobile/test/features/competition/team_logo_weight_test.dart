@@ -1,10 +1,10 @@
-/// The bundled crests are drawn at most 34 logical pixels, 102 on a 3x
-/// screen, so a crest above 160 pixels or 40 KB is weight no player sees
-/// (audit M-34: 339 crests weighed 8.9 MB, most at 500 to 800 pixels). A
-/// new crest is resized before it is added; this test is the rule.
+/// The flags are drawn at most 34 logical pixels, 102 on a 3x screen, so a
+/// flag above 160 pixels or 40 KB is weight no player sees (audit M-34). A
+/// new flag is resized before it is added; this test is the rule. The
+/// clubs' crests no longer ship (script 266).
 ///
-/// Every bundled crest is also reachable (audit L-09): Al Ahly of Egypt and
-/// the Asian national flags were shipped and never shown.
+/// Every mark is also reachable (audit L-09): Al Ahly of Egypt and the
+/// Asian national flags were shipped and never shown.
 library;
 
 import 'dart:io';
@@ -23,11 +23,11 @@ import 'package:mobile/features/competition/team_logo_assets.dart';
 }
 
 void main() {
-  test('every crest is at most 160 pixels and 40 KB', () {
+  test('every flag is at most 160 pixels and 40 KB', () {
     final List<String> heavy = <String>[];
     var count = 0;
     for (final FileSystemEntity entity in Directory(
-      'assets/team_logos',
+      'assets/flags',
     ).listSync()) {
       if (entity is! File || !entity.path.endsWith('.png')) continue;
       count++;
@@ -40,18 +40,15 @@ void main() {
         );
       }
     }
-    expect(count, greaterThan(300));
+    expect(count, kFlagSlugs.length);
     expect(heavy, isEmpty);
   });
 
   test('Al Ahly of Egypt and the Asian flags are shown', () {
-    expect(teamLogoAssetPath('الأهلي المصري'), 'assets/team_logos/al-ahly.png');
-    expect(teamLogoAssetPath('الزمالك'), 'assets/team_logos/zamalek.png');
-    expect(teamLogoAssetPath('Japan'), 'assets/team_logos/japan.png');
-    expect(teamLogoAssetPath('Palestine'), 'assets/team_logos/palestine.png');
-    expect(
-      teamLogoAssetPath('South Korea'),
-      'assets/team_logos/south-korea.png',
-    );
+    expect(teamCrestSlug('الأهلي المصري'), 'al-ahly');
+    expect(teamCrestSlug('الزمالك'), 'zamalek');
+    expect(teamFlagAssetPath('Japan'), 'assets/flags/japan.png');
+    expect(teamFlagAssetPath('Palestine'), 'assets/flags/palestine.png');
+    expect(teamFlagAssetPath('South Korea'), 'assets/flags/south-korea.png');
   });
 }

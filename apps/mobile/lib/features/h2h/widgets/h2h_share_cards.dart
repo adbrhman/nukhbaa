@@ -867,7 +867,7 @@ class _FixtureRow extends StatelessWidget {
       displayName: team.displayName,
       size: 24,
       assetPath: team.assetPath,
-      crestUrl: team.crestUrl,
+      crestSlug: team.crestSlug,
       brandColor: team.brandColor,
     );
     return Row(

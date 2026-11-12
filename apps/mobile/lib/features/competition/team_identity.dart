@@ -1,4 +1,4 @@
-/// Resolves one side of a fixture's team identity (display name + crest) —
+/// Resolves one side of a fixture's team identity (display name + mark) —
 /// the single place every screen goes through instead of choosing between
 /// the model-backed [TeamDto] catalog and the legacy `team_registry.dart`
 /// lookup table itself.
@@ -10,6 +10,11 @@
 /// seeded catalog) falls back to `team_registry.dart`'s name-based lookup,
 /// then to the raw server-supplied name, then to a clean "unknown"
 /// placeholder — never a blank space (item 6).
+///
+/// The mark (script 266) is the club's crest slug in the owner's list or
+/// the country's flag shipped with the app, both by name: the catalog's
+/// `crest_url` and the legacy registry's ESPN address are third parties'
+/// copies of the clubs' marks and are no longer drawn.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -24,7 +29,7 @@ import 'team_registry.dart';
 class ResolvedTeamIdentity {
   const ResolvedTeamIdentity({
     required this.displayName,
-    this.crestUrl,
+    this.crestSlug,
     this.assetPath,
     this.brandColor,
   });
@@ -32,11 +37,11 @@ class ResolvedTeamIdentity {
   /// The best available display name — never blank.
   final String displayName;
 
-  /// A crest image URL, or `null` to fall back to the initials circle.
-  final String? crestUrl;
+  /// The club's slug in the owner's crest list, or `null`: a country, or a
+  /// team with no crest (the initials circle).
+  final String? crestSlug;
 
-  /// A bundled crest asset path, when one ships with the app. Preferred
-  /// over [crestUrl] because it needs no network at all.
+  /// The country's flag shipped with the app, or `null`.
   final String? assetPath;
 
   /// A brand color for the initials-circle fallback, or `null` for the
@@ -64,8 +69,8 @@ ResolvedTeamIdentity resolveTeamIdentity({
   if (matched != null) {
     return ResolvedTeamIdentity(
       displayName: matched.name,
-      crestUrl: matched.crestUrl,
-      assetPath: teamLogoAssetPath(matched.name) ?? teamLogoAssetPath(teamName),
+      crestSlug: teamCrestSlug(matched.name) ?? teamCrestSlug(teamName),
+      assetPath: teamFlagAssetPath(matched.name) ?? teamFlagAssetPath(teamName),
       brandColor: brandingForTeam(matched.name).primary,
     );
   }
@@ -75,8 +80,8 @@ ResolvedTeamIdentity resolveTeamIdentity({
       : teamDisplayName(teamName);
   return ResolvedTeamIdentity(
     displayName: teamDisplayName(teamName),
-    crestUrl: brand?.logoUrl,
-    assetPath: teamLogoAssetPath(teamName),
+    crestSlug: teamCrestSlug(teamName),
+    assetPath: teamFlagAssetPath(teamName),
     brandColor: brand?.c1 ?? brandingForTeam(fallbackName).primary,
   );
 }

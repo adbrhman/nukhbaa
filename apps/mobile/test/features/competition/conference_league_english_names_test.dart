@@ -1,9 +1,8 @@
 /// The English names the providers write for the Conference League clubs
-/// (accents, ampersands, club prefixes) resolve to the bundled crest of the
-/// club, through the fixture card's own lookup (`teamLogoAssetPath`).
+/// (accents, ampersands, club prefixes) resolve to the club's crest in the
+/// owner's list, through the fixture card's own lookup (`teamCrestSlug`).
 library;
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/competition/team_logo_assets.dart';
 
@@ -35,27 +34,19 @@ const Map<String, String> _names = <String, String>{
 void main() {
   test('each English spelling resolves to its club\'s crest', () {
     for (final MapEntry<String, String> name in _names.entries) {
-      expect(
-        teamLogoAssetPath(name.key),
-        'assets/team_logos/${name.value}.png',
-        reason: name.key,
-      );
+      expect(teamCrestSlug(name.key), name.value, reason: name.key);
     }
   });
 
-  test('and that crest is bundled', () async {
-    TestWidgetsFlutterBinding.ensureInitialized();
+  test('and that crest is on the owner list', () {
     for (final String slug in _names.values.toSet()) {
-      final ByteData data = await rootBundle.load(
-        'assets/team_logos/$slug.png',
-      );
-      expect(data.lengthInBytes, greaterThan(0), reason: slug);
+      expect(kTeamMarkSlugs, contains(slug), reason: slug);
     }
   });
 
   test('a club with no crest on file still has none', () {
-    expect(teamLogoAssetPath('Oxford City'), isNull);
-    expect(teamLogoAssetPath('  '), isNull);
-    expect(teamLogoAssetPath(null), isNull);
+    expect(teamCrestSlug('Oxford City'), isNull);
+    expect(teamCrestSlug('  '), isNull);
+    expect(teamCrestSlug(null), isNull);
   });
 }

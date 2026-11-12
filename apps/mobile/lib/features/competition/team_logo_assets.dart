@@ -1,231 +1,19 @@
+/// A team's name to its mark (script 266): the slug of the club's crest in
+/// the owner's list (`GET /crests`; the file is never shipped), or the
+/// country's flag shipped with the app (`assets/flags`).
+///
+/// [kTeamMarkSlugs] are every mark the app knows: the 235 club crests the
+/// server holds (migration 0210) and the 132 flags ([kFlagSlugs]). A name
+/// with no mark draws the team's disc.
 library;
 
-/// Local crest catalog for the monthly competitions supplied with the app.
-class MonthlyCompetitionLogoGroup {
-  const MonthlyCompetitionLogoGroup({
-    required this.name,
-    required this.season,
-    required this.slugs,
-  });
-
-  final String name;
-  final String season;
-  final List<String> slugs;
-}
-
-const List<MonthlyCompetitionLogoGroup> kMonthlyCompetitionLogoGroups =
-    <MonthlyCompetitionLogoGroup>[
-      MonthlyCompetitionLogoGroup(
-        name: 'الدوري الإنجليزي الممتاز',
-        season: '2026-27',
-        slugs: <String>[
-          'arsenal',
-          'aston-villa',
-          'bournemouth',
-          'brentford',
-          'brighton',
-          'chelsea',
-          'coventry-city',
-          'crystal-palace',
-          'everton',
-          'fulham',
-          'hull-city',
-          'ipswich',
-          'leeds-united',
-          'liverpool',
-          'manchester-city',
-          'manchester-united',
-          'newcastle',
-          'nottingham-forest',
-          'sunderland',
-          'tottenham',
-        ],
-      ),
-      MonthlyCompetitionLogoGroup(
-        name: 'الدوري الألماني',
-        season: '2026-27',
-        slugs: <String>[
-          'augsburg',
-          'bayer-leverkusen',
-          'bayern-munchen',
-          'borussia-dortmund',
-          'borussia-monchengladbach',
-          'eintracht-frankfurt',
-          'freiburg',
-          'hamburger-sv',
-          'hoffenheim',
-          'koln',
-          'mainz-05',
-          'paderborn',
-          'rb-leipzig',
-          'schalke-04',
-          'sv-elversberg',
-          'union-berlin',
-          'vfb-stuttgart',
-          'werder-bremen',
-        ],
-      ),
-      MonthlyCompetitionLogoGroup(
-        name: 'الدوري الإسباني',
-        season: '2026-27',
-        slugs: <String>[
-          'athletic-club',
-          'atletico-madrid',
-          'barcelona',
-          'celta',
-          'deportivo',
-          'deportivo-la-coruna',
-          'elche',
-          'espanyol',
-          'getafe',
-          'levante',
-          'malaga',
-          'osasuna',
-          'racing',
-          'rayo-vallecano',
-          'real-betis',
-          'real-madrid',
-          'real-sociedad',
-          'sevilla',
-          'valencia',
-          'villarreal',
-        ],
-      ),
-      MonthlyCompetitionLogoGroup(
-        name: 'دوري أبطال أوروبا',
-        season: '2025-26',
-        slugs: <String>[
-          'paris-saint-germain',
-          'bayern-munchen',
-          'real-madrid',
-          'liverpool',
-          'inter',
-          'manchester-city',
-          'arsenal',
-          'barcelona',
-          'atletico-madrid',
-          'borussia-dortmund',
-          'roma',
-          'sporting-cp',
-          'aston-villa',
-          'fc-porto',
-          'manchester-united',
-          'club-brugge',
-          'real-betis',
-          'psv',
-          'feyenoord',
-          'lille',
-          'bodo-glimt',
-          'napoli',
-          'rb-leipzig',
-          'villarreal',
-          'fenerbahce',
-          'shakhtar',
-          'galatasaray',
-          'slavia-praha',
-          's-bratislava',
-          'vfb-stuttgart',
-          'aek-athens',
-          'lask',
-          'como-1907',
-          'rc-lens',
-          'viking',
-          'sabah',
-        ],
-      ),
-      MonthlyCompetitionLogoGroup(
-        name: 'الدوري الأوروبي',
-        season: '2025-26',
-        slugs: <String>[
-          'milan',
-          'juventus',
-          'bayer-leverkusen',
-          'hoffenheim',
-          'real-sociedad',
-          'celta',
-          'marseille',
-          'rennes',
-          'bournemouth',
-          'sunderland',
-          'crystal-palace',
-          'az-alkmaar',
-          'torreense',
-          'union-saint-gilloise',
-          'sparta-praha',
-          'olympiacos',
-          'sturm-graz',
-          'celtic',
-          'nec-nijmegen',
-          'levski',
-          'dinamo-zagreb',
-          'celje',
-          'lyon',
-          'ararat-armenia',
-          'jagiellonia',
-          'omonoia',
-          'viktoria-plzen',
-          'lillestrom',
-          'salzburg',
-          'besiktas',
-          'lech-poznan',
-          'benfica',
-          'ofi',
-          'ferencvaros',
-          'anderlecht',
-        ],
-      ),
-      MonthlyCompetitionLogoGroup(
-        name: 'دوري المؤتمر الأوروبي',
-        season: '2025-26',
-        slugs: <String>[
-          'agf',
-          'ajax',
-          'monaco',
-          'atalanta',
-          'borac',
-          'brann',
-          'brighton',
-          'copenhagen',
-          'crvena-zvezda',
-          'cska-sofia',
-          'egnatia',
-          'freiburg',
-          'gent',
-          'getafe',
-          'hajduk-split',
-          'hearts',
-          'iberia',
-          'inter-escaldes',
-          'jablonec',
-          'kairat',
-          'kauno-zalgiris',
-          'kups',
-          'lincoln-red-imps',
-          'lugano',
-          'midtjylland',
-          'mjallby',
-          'nordsjaelland',
-          'pafos',
-          'panathinaikos',
-          'riga',
-          'sc-braga',
-          'sint-truidense',
-          'thun',
-          'trabzonspor',
-          'twente',
-          'u-craiova',
-        ],
-      ),
-    ];
-
 /// أسماء الفرق كما تخزّنها `football_data.teams` (بالعربية) مقابل شريحة
-/// الشعار المرفق في `assets/team_logos/`. البحث يجري أولًا بالنص كما ورد
+/// شعاره أو علمه في [kTeamMarkSlugs]. البحث يجري أولًا بالنص كما ورد
 /// ثم بصيغة مُطبَّعة عبر [_normalizeArabic]، فتُطابق فروق الهمزة والتاء
 /// المربوطة والألف المقصورة دون سطر لكل صيغة.
 ///
-/// كل قيمة هنا موجودة في [_monthlyLogoSlugs] وفي مجلد الأصول. الفرق التي
-/// لا شعار مرفق لها (أغلب الدوري الإيطالي والسعودي) عمدًا خارج الخريطة:
-/// تبقى على دائرة الحروف حتى تُضاف ملفاتها.
+/// كل قيمة هنا موجودة في [kTeamMarkSlugs]. الفرق التي لا شعار لها (أغلب
+/// الدوري الإيطالي والسعودي) عمدًا خارج الخريطة: تبقى على دائرة الحروف.
 final Map<String, String> _arabicTeamLogoAliases = <String, String>{
   // CAF national teams / AFCON 2027 qualifiers
   'الجزائر': 'algeria',
@@ -691,7 +479,8 @@ const Map<String, String> _clubWorldCupEnglishAliases = <String, String>{
   'atl-tico-atlanta': 'atletico-atlanta',
 };
 
-String? teamLogoAssetPath(String? teamName) {
+/// The slug of [teamName]'s mark, crest or flag, or null.
+String? _markSlug(String? teamName) {
   if (teamName == null || teamName.trim().isEmpty) return null;
   final String trimmed = teamName.trim();
   final String? aliased =
@@ -700,16 +489,28 @@ String? teamLogoAssetPath(String? teamName) {
   final String slugified = _slugifyTeamName(trimmed);
   final String slug =
       aliased ?? _clubWorldCupEnglishAliases[slugified] ?? slugified;
-  if (slug.isEmpty || !_monthlyLogoSlugs.contains(slug)) return null;
-  return 'assets/team_logos/$slug.png';
+  if (slug.isEmpty || !kTeamMarkSlugs.contains(slug)) return null;
+  return slug;
 }
 
-String teamLogoLabel(String slug) => slug
-    .split('-')
-    .map(
-      (word) => word.isEmpty ? word : word[0].toUpperCase() + word.substring(1),
-    )
-    .join(' ');
+/// The slug of [teamName]'s mark, crest or flag, or null: what the name
+/// resolves to, whichever kind it is.
+String? teamMarkSlug(String? teamName) => _markSlug(teamName);
+
+/// The slug of [teamName]'s club crest in the owner's list, or null for a
+/// country or an unknown team.
+String? teamCrestSlug(String? teamName) {
+  final String? slug = _markSlug(teamName);
+  return slug == null || kFlagSlugs.contains(slug) ? null : slug;
+}
+
+/// The flag shipped with the app for [teamName], a country, or null.
+String? teamFlagAssetPath(String? teamName) {
+  final String? slug = _markSlug(teamName);
+  return slug != null && kFlagSlugs.contains(slug)
+      ? 'assets/flags/$slug.png'
+      : null;
+}
 
 /// Accented Latin letters the providers write (Kauno Žalgiris,
 /// Mjällby, Nordsjælland) and the ASCII letters they fold to, so a
@@ -823,7 +624,146 @@ String _slugifyTeamName(String name) {
   return aliases[slug] ?? slug;
 }
 
-const Set<String> _monthlyLogoSlugs = <String>{
+/// The countries' flags shipped with the app (`assets/flags`): not marks,
+/// so they stay inside it (script 266).
+const Set<String> kFlagSlugs = <String>{
+  'albania',
+  'algeria',
+  'andorra',
+  'angola',
+  'armenia',
+  'australia',
+  'austria',
+  'azerbaijan',
+  'bahrain',
+  'belarus',
+  'belgium',
+  'benin',
+  'bosnia-herzegovina',
+  'botswana',
+  'bulgaria',
+  'burkina-faso',
+  'burundi',
+  'cameroon',
+  'cape-verde',
+  'central-african-republic',
+  'chad',
+  'china',
+  'comoros',
+  'congo',
+  'croatia',
+  'cyprus',
+  'czech-republic',
+  'democratic-republic-of-congo',
+  'denmark',
+  'djibouti',
+  'egypt',
+  'england',
+  'equatorial-guinea',
+  'eritrea',
+  'estonia',
+  'eswatini',
+  'ethiopia',
+  'faroe-islands',
+  'finland',
+  'france',
+  'gabon',
+  'gambia',
+  'georgia',
+  'germany',
+  'ghana',
+  'gibraltar',
+  'greece',
+  'guinea',
+  'guinea-bissau',
+  'hungary',
+  'iceland',
+  'indonesia',
+  'iran',
+  'iraq',
+  'ireland',
+  'israel',
+  'italy',
+  'ivory-coast',
+  'japan',
+  'jordan',
+  'kazakhstan',
+  'kenya',
+  'kosovo',
+  'kuwait',
+  'latvia',
+  'lebanon',
+  'lesotho',
+  'liberia',
+  'libya',
+  'liechtenstein',
+  'lithuania',
+  'luxembourg',
+  'madagascar',
+  'malawi',
+  'mali',
+  'malta',
+  'mauritania',
+  'mauritius',
+  'moldova',
+  'montenegro',
+  'morocco',
+  'mozambique',
+  'namibia',
+  'netherlands',
+  'niger',
+  'nigeria',
+  'north-korea',
+  'north-macedonia',
+  'northern-ireland',
+  'norway',
+  'oman',
+  'palestine',
+  'poland',
+  'portugal',
+  'qatar',
+  'romania',
+  'rwanda',
+  'san-marino',
+  'sao-tome-and-principe',
+  'saudi-arabia',
+  'scotland',
+  'senegal',
+  'serbia',
+  'seychelles',
+  'sierra-leone',
+  'singapore',
+  'slovakia',
+  'slovenia',
+  'somalia',
+  'south-africa',
+  'south-korea',
+  'south-sudan',
+  'spain',
+  'sudan',
+  'sweden',
+  'switzerland',
+  'syria',
+  'tajikistan',
+  'tanzania',
+  'thailand',
+  'togo',
+  'tunisia',
+  'turkey',
+  'uganda',
+  'ukraine',
+  'united-arab-emirates',
+  'uzbekistan',
+  'vietnam',
+  'wales',
+  'yemen',
+  'zambia',
+  'zimbabwe',
+};
+
+/// Every mark the app knows: the club crests of the owner's list (migration
+/// 0210, never shipped) and the flags of [kFlagSlugs].
+const Set<String> kTeamMarkSlugs = <String>{
   // CAF national-team flag assets
   'algeria',
   'angola',

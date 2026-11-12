@@ -9,7 +9,6 @@ import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../competition/competition_providers.dart';
-import '../../../competition/team_logo_assets.dart';
 import '../../admin_providers.dart';
 import '../../widgets/admin_ui_kit.dart';
 
@@ -62,8 +61,6 @@ class AdminMonthlyCompetitionsSection extends ConsumerWidget {
           },
           const SizedBox(height: AppSpacing.lg),
           const _CreateCompetitionForm(),
-          const SizedBox(height: AppSpacing.lg),
-          const _MonthlyCompetitionLogoCatalog(),
         ],
       ),
     );
@@ -310,94 +307,6 @@ class _CompetitionCurrentSeasonRow extends ConsumerWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _MonthlyCompetitionLogoCatalog extends StatelessWidget {
-  const _MonthlyCompetitionLogoCatalog();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppTokens t = context.tokens;
-    return AdminCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AdminSectionHeader(title: 'شعارات فرق المسابقات الشهرية'),
-          Text(
-            'الشعارات المحلية المرفقة للمواسم الحالية والقادمة.',
-            style: context.text.bodySmall?.copyWith(color: t.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          for (final MonthlyCompetitionLogoGroup group
-              in kMonthlyCompetitionLogoGroups) ...[
-            Text(
-              '${group.name}  •  ${group.season}',
-              style: context.text.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final String slug in group.slugs)
-                  _MonthlyTeamLogoTile(slug: slug),
-              ],
-            ),
-            if (group != kMonthlyCompetitionLogoGroups.last)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Divider(height: 1),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MonthlyTeamLogoTile extends StatelessWidget {
-  const _MonthlyTeamLogoTile({required this.slug});
-
-  final String slug;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 78,
-      child: Column(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            // The plate the app's crests sit on (team_logo.dart), not a
-            // hand-written white (UI-23).
-            decoration: BoxDecoration(
-              color: context.tokens.surfaceHigh,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: context.tokens.border),
-            ),
-            child: Image.asset(
-              'assets/team_logos/$slug.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  Icon(Icons.shield_outlined, color: context.tokens.textMuted),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            teamLogoLabel(slug),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: context.text.labelSmall,
-          ),
-        ],
-      ),
     );
   }
 }

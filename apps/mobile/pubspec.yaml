@@ -149,8 +149,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/team_logos/
-    - assets/league_logos/
+    # The countries' flags only (script 266): the clubs' crests and the
+    # leagues' logos are their owners' marks and never ship in the app.
+    - assets/flags/
     - assets/branding/nukhbaa_logo.png
   generate: true
   fonts:

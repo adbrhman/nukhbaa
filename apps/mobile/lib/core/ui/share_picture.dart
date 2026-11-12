@@ -10,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../crests/club_crests.dart';
 import '../design/app_typography.dart';
 
 /// What a share dialog says when [sharePicture] returned false.
@@ -72,7 +73,8 @@ Future<ui.Image> _appendCaption(ui.Image captured, String caption) async {
   );
 }
 
-/// Draws the picture under [boundaryKey] (a [RepaintBoundary]) and shares
+/// Draws the picture under [boundaryKey] (a [RepaintBoundary]), with the
+/// teams' discs in place of the club crests, and shares
 /// it as [fileName] with [text]. True when the share sheet opened; false
 /// when the picture could not be drawn or the sheet refused, never a throw.
 /// [share] replaces the phone's sheet in a test. [pixelRatio] is the
@@ -86,17 +88,25 @@ Future<bool> sharePicture({
   ShareSheet? share,
   double pixelRatio = 3,
 }) async {
+  // A club crest never leaves the app in a picture (script 266): the card
+  // is captured with the teams' discs, then drawn with its crests again.
+  // Nothing changes, and no frame is waited for, when no crest is drawn.
+  final BuildContext? card = boundaryKey.currentContext;
+  final ClubCrests? crests = card == null ? null : ClubCrestScope.read(card);
+  final bool hid = crests?.hideForSharing() ?? false;
   try {
     // A frame already scheduled is the card's own repaint (the tap that
-    // opened the share, a pressed button inside the card): wait for it, so
-    // the picture is the card as painted and `!debugNeedsPaint` holds. With
-    // none scheduled the card is painted already, and waiting would hang a
-    // caller inside tester.runAsync, where no frame is ever pumped (173).
+    // opened the share, a pressed button inside the card, the crests just
+    // hidden): wait for it, so the picture is the card as painted and
+    // `!debugNeedsPaint` holds. With none scheduled the card is painted
+    // already, and waiting would hang a caller inside tester.runAsync,
+    // where no frame is ever pumped (173).
     final WidgetsBinding binding = WidgetsBinding.instance;
     if (binding.hasScheduledFrame) await binding.endOfFrame;
     final RenderObject? object = boundaryKey.currentContext?.findRenderObject();
     if (object is! RenderRepaintBoundary) return false;
     final ui.Image captured = await object.toImage(pixelRatio: pixelRatio);
+    if (hid) crests?.showAfterSharing();
     final ui.Image image = captionOnImage == null
         ? captured
         : await _appendCaption(captured, captionOnImage);
@@ -121,5 +131,7 @@ Future<bool> sharePicture({
   } on Object catch (error) {
     debugPrint('sharePicture: $error');
     return false;
+  } finally {
+    if (hid) crests?.showAfterSharing();
   }
 }

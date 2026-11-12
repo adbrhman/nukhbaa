@@ -1,9 +1,9 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/competition/team_logo_assets.dart';
 
 /// دوري أبطال آسيا للنخبة (migration 0103): the clubs whose crests the
-/// owner supplied resolve by their catalog name to a bundled crest.
+/// owner supplied resolve by their catalog name to their crest in the
+/// owner's list (script 266: no crest ships in the app).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -24,24 +24,18 @@ void main() {
 
   test('each club resolves by its catalog name', () {
     for (final MapEntry<String, String> club in crests.entries) {
-      expect(
-        teamLogoAssetPath(club.key),
-        'assets/team_logos/${club.value}.png',
-        reason: club.key,
-      );
+      expect(teamCrestSlug(club.key), club.value, reason: club.key);
     }
   });
 
-  test('every crest loads from the bundle', () async {
+  test('every crest is on the owner list, never in the bundle', () {
     for (final String slug in crests.values) {
-      final ByteData data = await rootBundle.load(
-        'assets/team_logos/$slug.png',
-      );
-      expect(data.lengthInBytes, greaterThan(0), reason: slug);
+      expect(kTeamMarkSlugs, contains(slug), reason: slug);
+      expect(kFlagSlugs, isNot(contains(slug)), reason: slug);
     }
   });
 
   test('a club without a crest yet keeps its initials', () {
-    expect(teamLogoAssetPath('غامبا أوساكا'), isNull);
+    expect(teamCrestSlug('غامبا أوساكا'), isNull);
   });
 }

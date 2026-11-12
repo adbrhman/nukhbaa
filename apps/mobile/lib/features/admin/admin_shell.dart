@@ -22,6 +22,7 @@ import 'screens/sections/error_log_section.dart';
 import 'screens/sections/admin_monthly_competitions_section.dart';
 import 'screens/sections/admin_support_section.dart';
 import 'screens/sections/fixtures_admin_section.dart';
+import 'screens/sections/club_crests_section.dart';
 import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
@@ -234,8 +235,8 @@ class AdminShell extends StatelessWidget {
   Widget _bodyFor(AdminSection section) {
     return switch (section) {
       AdminSection.dashboard => AdminHomeSection(onNavigate: onSelect),
-      AdminSection.monthlyCompetitions =>
-        const AdminMonthlyCompetitionsSection(),
+      // script 266: the club crests, a tab for the owner admin alone.
+      AdminSection.monthlyCompetitions => const AdminCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.errorLog => const ErrorLogSection(),
       AdminSection.analytics => const AdminAnalyticsSection(),
@@ -299,6 +300,30 @@ class AdminShell extends StatelessWidget {
         ),
         VerticalDivider(width: 1, color: t.border),
         Expanded(child: body),
+      ],
+    );
+  }
+}
+
+/// The competitions section; for the owner admin alone, with a second tab:
+/// the club crests the app may show (script 266). Any other admin sees the
+/// competitions as before, and the server refuses him the crests anyway
+/// (`admin.owner_only`).
+class AdminCompetitionsSection extends ConsumerWidget {
+  /// Creates the section.
+  const AdminCompetitionsSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool owner = isOwnerAdminSession(
+      ref.watch(sessionControllerProvider).value,
+    );
+    if (!owner) return const AdminMonthlyCompetitionsSection();
+    return const AdminTabbedSection(
+      name: 'competitions',
+      tabs: <(String, Widget)>[
+        ('المسابقات', AdminMonthlyCompetitionsSection()),
+        ('الشعارات', ClubCrestsSection()),
       ],
     );
   }

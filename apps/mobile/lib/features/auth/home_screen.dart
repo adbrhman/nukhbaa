@@ -447,7 +447,7 @@ class _HighlightRow extends ConsumerWidget {
 
     Widget crest(ResolvedTeamIdentity team) => TeamLogo(
       displayName: team.displayName,
-      crestUrl: team.crestUrl,
+      crestSlug: team.crestSlug,
       assetPath: team.assetPath,
       brandColor: team.brandColor,
       size: _crestSize,

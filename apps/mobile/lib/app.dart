@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/analytics/screen_views.dart';
+import 'core/crests/club_crests.dart';
+import 'core/crests/club_crests_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/password_reset_screen.dart';
@@ -17,6 +19,7 @@ class NukhbaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeMode themeMode = ref.watch(themeControllerProvider);
+    final ClubCrests crests = ref.watch(clubCrestsProvider);
     return MaterialApp(
       title: 'Nukhba',
       debugShowCheckedModeBanner: false,
@@ -40,9 +43,14 @@ class NukhbaApp extends ConsumerWidget {
           minScaleFactor: 1,
           maxScaleFactor: 2,
         );
-        return MediaQuery(
-          data: mq.copyWith(textScaler: capped),
-          child: child ?? const SizedBox.shrink(),
+        // Every TeamLogo below draws the club crests of the owner's list
+        // (script 266), and redraws when one arrives or leaves.
+        return ClubCrestScope(
+          crests: crests,
+          child: MediaQuery(
+            data: mq.copyWith(textScaler: capped),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       // Counts which screens are opened (migration 0093).

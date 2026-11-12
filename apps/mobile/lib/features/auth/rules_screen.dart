@@ -192,6 +192,17 @@ class RulesScreen extends StatelessWidget implements NamedScreen {
                           'يمكنك الإبلاغ عن أي لاعب أو حظره من القائمة '
                           '⋮ بجانب اسمه، ويراجع الفريق كل بلاغ.',
                     ),
+                    // Script 266: the crests are their owners' marks.
+                    _RuleRow(
+                      key: const Key('rules.crests'),
+                      icon: Icons.shield_outlined,
+                      color: tokens.textSecondary,
+                      label:
+                          'شعارات الأندية ملك لأصحابها، تُعرض للتعريف بالفرق '
+                          'فقط، ونُخبة لا تتبع أي نادٍ أو اتحاد أو دوري. '
+                          'ولصاحب أي شعار أن يطلب إزالته عبر '
+                          'nukhbaa.app@gmail.com.',
+                    ),
                   ],
                 ),
               ],

@@ -58,7 +58,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:contracts/contracts.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +79,6 @@ import '../../../core/ui/score_pill.dart';
 import '../../../core/ui/share_picture.dart';
 import '../../../core/ui/team_logo.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../competition/competition_logo_assets.dart';
 import '../../competition/team_catalog_index.dart';
 import '../../competition/team_registry.dart';
 import '../../competition/team_identity.dart';
@@ -688,7 +686,6 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                         competitionId: widget.item.competitionId,
                         competitionName:
                             _fixture.leagueName ?? widget.item.competitionName,
-                        leagueLogoUrl: _fixture.leagueLogoUrl,
                         kickoffAt: _fixture.kickoffAt,
                         matchSpoken: matchSpoken,
                         onOpenLeaderboard: () => Navigator.of(context).push(
@@ -708,7 +705,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           Expanded(
                             child: _TeamColumn(
                               displayName: home.displayName,
-                              crestUrl: home.crestUrl,
+                              crestSlug: home.crestSlug,
                               assetPath: home.assetPath,
                               brandColor: home.brandColor,
                             ),
@@ -742,7 +739,7 @@ class _FotmobMatchCardState extends ConsumerState<FotmobMatchCard> {
                           Expanded(
                             child: _TeamColumn(
                               displayName: away.displayName,
-                              crestUrl: away.crestUrl,
+                              crestSlug: away.crestSlug,
                               assetPath: away.assetPath,
                               brandColor: away.brandColor,
                             ),
@@ -894,7 +891,6 @@ class _CardHeader extends StatelessWidget {
   const _CardHeader({
     required this.competitionId,
     required this.competitionName,
-    required this.leagueLogoUrl,
     required this.kickoffAt,
     required this.matchSpoken,
     required this.onOpenLeaderboard,
@@ -908,9 +904,6 @@ class _CardHeader extends StatelessWidget {
   final String competitionId;
   final String competitionName;
 
-  /// The league's own logo when the fixture carries one — preferred over the
-  /// bundled per-competition asset, which ships empty.
-  final String? leagueLogoUrl;
   final String? kickoffAt;
   final VoidCallback onOpenLeaderboard;
 
@@ -918,10 +911,6 @@ class _CardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final String? assetPath = competitionLogoAsset(
-      competitionId,
-      competitionName,
-    );
     final DateTime? kickoffLocal = kickoffAt == null
         ? null
         : DateTime.tryParse(kickoffAt!)?.toLocal();
@@ -946,7 +935,7 @@ class _CardHeader extends StatelessWidget {
             builder: (BuildContext context, BoxConstraints constraints) => Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                _CompetitionLogo(assetPath: assetPath, logoUrl: leagueLogoUrl),
+                const _CompetitionMark(),
                 const SizedBox(width: AppSpacing.xs),
                 Flexible(
                   fit: FlexFit.loose,
@@ -1006,84 +995,21 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-/// The 16×16 league logo, or a generic trophy-glyph fallback when no asset
-/// is on file (`competition_logo_assets.dart` ships empty today — see its
-/// doc). A two-letter initials fallback would repeat the same two Arabic
-/// letters ("ال", the definite article) for nearly every league name here,
-/// which reads as a bug rather than an identity mark — the trophy glyph
-/// reads clearly as "no logo yet" instead.
-class _CompetitionLogo extends StatelessWidget {
-  const _CompetitionLogo({required this.assetPath, this.logoUrl});
-
-  final String? assetPath;
-
-  /// A remote league logo (`football_data.leagues.logo_url`, migration
-  /// 0027). Preferred over [assetPath] because the bundled asset map ships
-  /// empty; falls through to the trophy glyph on a network/decode failure,
-  /// exactly as the asset path does.
-  final String? logoUrl;
-
-  static const double _size = 16;
-
-  /// A logo is drawn whole, a little smaller, on a light disc: logos are
-  /// made for light backgrounds (Ligue 1's black mark vanished on the navy
-  /// card) and the round clip cut the tall ones (2026-10-07).
-  static const double _logoSize = 14;
-  static const double _plateSize = 22;
-
-  Widget _plate(Widget logo) => Container(
-    key: const Key('competitionLogo.plate'),
-    width: _plateSize,
-    height: _plateSize,
-    alignment: Alignment.center,
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      shape: BoxShape.circle,
-    ),
-    child: logo,
-  );
+/// The league's mark beside its name: a trophy, the same for every league
+/// (script 266). The leagues' logos are their owners' marks and are no
+/// longer drawn, from a file or from the provider's address; the name
+/// beside it says which league. Initials would repeat "ال", the article,
+/// for nearly every league here.
+class _CompetitionMark extends StatelessWidget {
+  const _CompetitionMark();
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final String? url = logoUrl;
-    // Decoded at the size it is drawn (script 256): the league's picture was
-    // decoded whole for a 14 px mark, on every card. Width only, so a
-    // picture that is not square keeps its shape; native only, as TeamLogo.
-    final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
-    final int? decodeSize = kIsWeb ? null : (_logoSize * density).ceil();
-    if (url != null && url.isNotEmpty) {
-      return _plate(
-        Image.network(
-          url,
-          width: _logoSize,
-          height: _logoSize,
-          cacheWidth: decodeSize,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _fallback(tokens),
-        ),
-      );
-    }
-    if (assetPath != null) {
-      return _plate(
-        Image.asset(
-          assetPath!,
-          width: _logoSize,
-          height: _logoSize,
-          cacheWidth: decodeSize,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _fallback(tokens),
-        ),
-      );
-    }
-    return _fallback(tokens);
-  }
-
-  Widget _fallback(AppTokens tokens) {
     return Icon(
       Icons.emoji_events_outlined,
-      size: _size,
-      color: tokens.textMuted,
+      key: const Key('competitionMark'),
+      size: 16,
+      color: context.tokens.textMuted,
     );
   }
 }
@@ -1092,13 +1018,13 @@ class _CompetitionLogo extends StatelessWidget {
 class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.displayName,
-    required this.crestUrl,
+    required this.crestSlug,
     required this.assetPath,
     required this.brandColor,
   });
 
   final String displayName;
-  final String? crestUrl;
+  final String? crestSlug;
   final String? assetPath;
   final Color? brandColor;
 
@@ -1124,7 +1050,7 @@ class _TeamColumn extends StatelessWidget {
           child: Center(
             child: TeamLogo(
               displayName: displayName,
-              crestUrl: crestUrl,
+              crestSlug: crestSlug,
               assetPath: assetPath,
               brandColor: brandColor,
               size: _crestSize,
@@ -1852,7 +1778,6 @@ class _StartedBody extends StatelessWidget {
         _StartedHeader(
           competitionId: item.competitionId,
           competitionName: _fixture.leagueName ?? item.competitionName,
-          leagueLogoUrl: _fixture.leagueLogoUrl,
           phase: phase,
           minute: phase == _MatchPhase.live ? item.liveMinute : null,
           fixtureId: fixtureId,
@@ -1954,7 +1879,6 @@ class _StartedHeader extends StatelessWidget {
   const _StartedHeader({
     required this.competitionId,
     required this.competitionName,
-    required this.leagueLogoUrl,
     required this.phase,
     required this.minute,
     required this.fixtureId,
@@ -1962,7 +1886,6 @@ class _StartedHeader extends StatelessWidget {
 
   final String competitionId;
   final String competitionName;
-  final String? leagueLogoUrl;
   final _MatchPhase phase;
   final int? minute;
   final String fixtureId;
@@ -1998,10 +1921,7 @@ class _StartedHeader extends StatelessWidget {
     final tokens = context.tokens;
     return Row(
       children: <Widget>[
-        _CompetitionLogo(
-          assetPath: competitionLogoAsset(competitionId, competitionName),
-          logoUrl: leagueLogoUrl,
-        ),
+        const _CompetitionMark(),
         const SizedBox(width: AppSpacing.xs),
         Expanded(
           child: Text(
@@ -2110,7 +2030,7 @@ class _StartedSide extends StatelessWidget {
     final tokens = context.tokens;
     final Widget crest = TeamLogo(
       displayName: team.displayName,
-      crestUrl: team.crestUrl,
+      crestSlug: team.crestSlug,
       assetPath: team.assetPath,
       brandColor: team.brandColor,
       size: _crestSize,

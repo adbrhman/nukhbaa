@@ -8382,6 +8382,52 @@ flags (77 wide ones, 55 round African ones), 235 are club crests.
   `0210_club_crests_test.sql`.
 - **Apply 0210 in the SQL Editor before pushing.**
 
+### The app draws the club crests from the owner's list (script 266, 2026-11-12)
+
+The app side of script 265. No club crest and no league logo ships with
+the app any more; the countries' flags do.
+
+- **`ClubCrests`** (`core/crests/club_crests.dart`): on every start of the
+  signed-in shell and every return to the foreground
+  (`NukhbaaShell._refreshCrests`), `GET /crests` again; each file it lacks
+  is downloaded once (`TeamsApi.crestFile`, the bucket's public URL, with no
+  credential, `ApiTransport.getPublicBytes`) and kept on the phone
+  (`FileCrestShelf`, the cache folder, `<slug>.<sha8>.png` and `list.json`).
+  A crest that left the list -- hidden, deleted, replaced, or every club
+  crest switched off -- is dropped at once, file and all. Before the list is
+  read (offline, signed out) the copy kept from the last start is drawn. A
+  file is kept only if it is a PNG of at most 256 KB from an `https` URL
+  named like a crest. The web keeps nothing (`UrlCrestShelf`): each crest is
+  drawn from its URL. Inert under `flutter test`.
+- **`ClubCrestScope`** (above every route, `app.dart`) hands the crests to
+  **`TeamLogo`**, which now takes `crestSlug` (no URL): the crest when the
+  phone holds it, else the flag (`assetPath`, `assets/flags/`), else the
+  disc in the team's colour with its initials. `resolveTeamIdentity` gives
+  `crestSlug` (`teamCrestSlug`) and the flag (`teamFlagAssetPath`) by name;
+  the catalog's `crest_url` and the registry's ESPN addresses (removed) are
+  never drawn.
+- **Shared pictures**: `sharePicture` draws the discs for the capture
+  (`ClubCrests.hideForSharing`), then the crests again: a crest never leaves
+  the app in a picture.
+- **League logos**: gone (`competition_logo_assets.dart`, `league_logos/`,
+  the provider's `league_logo_url`); a trophy sits beside the league's name.
+- **Assets**: `assets/flags/` (132 flags: 77 wide, 55 round African ones);
+  `assets/team_logos/` and `assets/league_logos/` deleted. The rule, in CI:
+  `no_bundled_crests_test.dart` (the flags exactly `kFlagSlugs`, no crest
+  folder, nothing in `lib` reading one, every club slug of the app a row of
+  0210 and back); `check_mirror.mjs` fails a web build that ships either
+  folder.
+- **The owner's page**: «المسابقات» › «الشعارات», the owner admin alone
+  (`ClubCrestsSection`): the switch for every club crest, each crest with
+  its status, hide (a reason, the complainant), show, delete (its name
+  typed), the latest 50 changes. The bundled-crest gallery is gone.
+- **Rules page in the app**: «شعارات الأندية ملك لأصحابها ...» with the
+  address for removal requests (`rules.crests`).
+- Tests: `club_crests_test.dart`, `team_logo_crest_test.dart`,
+  `club_crests_section_test.dart`, `no_bundled_crests_test.dart`, the name
+  tests moved from bundled paths to slugs (`test/support/team_marks.dart`),
+  api_client `crests_api_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

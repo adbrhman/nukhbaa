@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_client/src/api_transport.dart';
 import 'package:contracts/contracts.dart';
 import 'package:shared/shared.dart';
@@ -38,5 +40,19 @@ final class TeamsApi {
       '/crests',
       parse: CrestManifestDto.fromJson,
     );
+  }
+
+  /// One crest's file, from the URL [crestManifest] gave (script 266): the
+  /// public storage bucket, read without the player's credential.
+  Future<Result<Uint8List>> crestFile(String url) {
+    final Uri? uri = Uri.tryParse(url);
+    if (uri == null) {
+      return Future<Result<Uint8List>>.value(
+        const Result.err(
+          AppError.validation('file.url_invalid', 'Not a crest URL'),
+        ),
+      );
+    }
+    return _transport.getPublicBytes(uri);
   }
 }

@@ -22,10 +22,12 @@ void main() {
       );
 
       expect(identity.displayName, 'Real Madrid');
-      expect(identity.crestUrl, 'https://example.com/rma.svg');
+      // The catalog's crest_url is a third party's copy, never drawn: the
+      // crest is the owner's, by name (script 266).
+      expect(identity.crestSlug, 'real-madrid');
     });
 
-    test('a catalog team with no crest_url yields a null crest, not blank', () {
+    test('a catalog team with no crest of its own falls back by name', () {
       final identity = resolveTeamIdentity(
         catalog: catalog,
         teamId: 't-2',
@@ -33,7 +35,7 @@ void main() {
       );
 
       expect(identity.displayName, 'Barcelona');
-      expect(identity.crestUrl, isNull);
+      expect(identity.crestSlug, 'barcelona');
     });
 
     test('an unresolved id falls back to the legacy name-based lookup', () {
@@ -44,7 +46,7 @@ void main() {
       );
 
       expect(identity.displayName, 'ليفربول');
-      expect(identity.crestUrl, isNotNull);
+      expect(identity.crestSlug, 'liverpool');
     });
 
     test('a null id falls back to the legacy name-based lookup', () {
@@ -65,7 +67,8 @@ void main() {
       );
 
       expect(identity.displayName, 'Some Unknown FC');
-      expect(identity.crestUrl, isNull);
+      expect(identity.crestSlug, isNull);
+      expect(identity.assetPath, isNull);
     });
 
     test('a null name with no id degrades to the "unknown" placeholder', () {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analytics/screen_views.dart';
+import '../../core/crests/club_crests_provider.dart';
 import '../../core/design/app_typography.dart';
 import '../../core/design/app_sizes.dart';
 import '../../core/design/app_spacing.dart';
@@ -181,7 +182,18 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshBell();
+    if (state == AppLifecycleState.resumed) {
+      _refreshBell();
+      _refreshCrests();
+    }
+  }
+
+  /// Reads the owner's crest list again (script 266): on every start of the
+  /// signed-in app and every return to the foreground, so a crest he hid
+  /// leaves this phone then. Never awaited, never in the way.
+  void _refreshCrests() {
+    if (!mounted) return;
+    unawaited(ref.read(clubCrestsProvider).refresh());
   }
 
   @override
@@ -189,6 +201,7 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
     super.initState();
     _turnover.start();
     WidgetsBinding.instance.addObserver(this);
+    _refreshCrests();
     // Every session opens on the home tab.
     ref.read(screenViewLogProvider).record(ScreenNames.home);
     // Fire-and-forget, and only once the user is signed in: the token is

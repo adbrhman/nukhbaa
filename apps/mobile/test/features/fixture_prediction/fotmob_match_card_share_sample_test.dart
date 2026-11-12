@@ -2,8 +2,8 @@
 /// real card and a fake server: under five decisive calls no figure shows,
 /// only a line that says when they will (one call read as "100%", and
 /// zeros as real figures), five or more show the shares; a feed
-/// from an older server, with no count, shows the shares as before; and a
-/// league logo sits whole on a light disc, readable on the dark card.
+/// from an older server, with no count, shows the shares as before; and the
+/// league shows a trophy beside its name, never its logo (script 266).
 library;
 
 import 'package:contracts/contracts.dart';
@@ -110,17 +110,18 @@ void main() {
     expect(find.text('100%'), findsOneWidget);
   });
 
-  testWidgets('the league logo sits whole on a light disc', (tester) async {
+  testWidgets('the league shows a trophy and its name, never a logo', (
+    tester,
+  ) async {
     await _pump(tester, _item(decisive: 5));
 
-    final Finder plate = find.byKey(const Key('competitionLogo.plate'));
-    expect(plate, findsOneWidget);
-    final BoxDecoration disc =
-        tester.widget<Container>(plate).decoration! as BoxDecoration;
-    expect(disc.shape, BoxShape.circle);
-    expect(disc.color, Colors.white);
+    // Script 266: the leagues' logos are their owners' marks.
+    expect(find.byKey(const Key('competitionMark')), findsOneWidget);
+    expect(find.text('Ligue 1'), findsWidgets);
     expect(
-      find.ancestor(of: plate, matching: find.byType(ClipOval)),
+      find.byWidgetPredicate(
+        (Widget w) => w is Image && w.image is NetworkImage,
+      ),
       findsNothing,
     );
   });

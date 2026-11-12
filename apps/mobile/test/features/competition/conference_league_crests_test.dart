@@ -1,25 +1,27 @@
 /// دوري المؤتمر الأوروبي (migration 0181): each of its 36 clubs, by the
 /// name the catalog stores, resolves through the fixture card's own entry
-/// point (`resolveTeamIdentity`) to a bundled crest that loads; the other
-/// spellings 0181 reuses a club by resolve too; and on the real matches
-/// screen, fed by a fake server, a Conference League fixture draws both
-/// crests.
+/// point (`resolveTeamIdentity`) to its crest in the owner's list (script
+/// 266); the other spellings 0181 reuses a club by resolve too; and on the
+/// real matches screen, fed by a fake server, a Conference League fixture
+/// draws both crests once the phone holds their files.
 library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/crests/club_crests.dart';
 import 'package:mobile/features/competition/team_identity.dart';
+import 'package:mobile/features/competition/team_logo_assets.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/current_month_fixtures_harness.dart';
+import '../../support/team_marks.dart';
 
 /// `football_data.teams.name` as 0181 writes it (or finds it) -> the slug of
-/// the bundled crest under assets/team_logos/.
+/// its crest in the owner's list.
 const Map<String, String> _clubs = <String, String>{
   'آرهوس': 'agf',
   'أياكس': 'ajax',
@@ -115,7 +117,7 @@ Map<String, Object?> _item() => CurrentMonthFixtureItemDto(
   awayWinPercentage: 50,
 ).toJson();
 
-Future<void> _pump(WidgetTester tester) async {
+Future<void> _pump(WidgetTester tester, ClubCrests crests) async {
   final harness = buildCurrentMonthFixturesHarness((request) async {
     switch (request.url.path) {
       case '/feed/current-month-fixtures':
@@ -135,6 +137,8 @@ Future<void> _pump(WidgetTester tester) async {
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         locale: const Locale('ar'),
+        builder: (context, child) =>
+            ClubCrestScope(crests: crests, child: child!),
         home: const CurrentMonthFixturesScreen(),
       ),
     ),
@@ -145,8 +149,7 @@ Future<void> _pump(WidgetTester tester) async {
 }
 
 void main() {
-  test('each club resolves through its catalog row to a crest', () async {
-    TestWidgetsFlutterBinding.ensureInitialized();
+  test('each club resolves through its catalog row to a crest', () {
     final List<TeamDto> catalog = <TeamDto>[
       for (final MapEntry<String, String> club in _clubs.entries)
         TeamDto(
@@ -158,15 +161,13 @@ void main() {
     ];
     expect(_clubs.length, 36);
     for (final MapEntry<String, String> club in _clubs.entries) {
-      final String path = 'assets/team_logos/${club.value}.png';
       final ResolvedTeamIdentity identity = resolveTeamIdentity(
         catalog: catalog,
         teamId: 'id-${club.value}',
         teamName: null,
       );
-      expect(identity.assetPath, path, reason: club.key);
-      final ByteData data = await rootBundle.load(path);
-      expect(data.lengthInBytes, greaterThan(0), reason: club.key);
+      expect(identity.crestSlug, club.value, reason: club.key);
+      expect(kTeamMarkSlugs, contains(club.value), reason: club.key);
     }
   });
 
@@ -177,25 +178,36 @@ void main() {
         teamId: null,
         teamName: name.key,
       );
-      expect(
-        identity.assetPath,
-        'assets/team_logos/${name.value}.png',
-        reason: name.key,
-      );
+      expect(identity.crestSlug, name.value, reason: name.key);
     }
   });
 
   testWidgets('a Conference League fixture draws both crests', (tester) async {
-    await _pump(tester);
+    final ClubCrests crests = await crestsHolding(<String>[
+      'crvena-zvezda',
+      'copenhagen',
+    ]);
+    addTearDown(crests.dispose);
+    await _pump(tester, crests);
 
     for (final String slug in <String>['crvena-zvezda', 'copenhagen']) {
       expect(
-        find.byKey(
-          ValueKey<String>('teamLogo.asset.assets/team_logos/$slug.png'),
-        ),
+        find.byKey(ValueKey<String>('teamLogo.crest.$slug')),
         findsWidgets,
         reason: slug,
       );
     }
+  });
+
+  testWidgets('without their files the cards draw the discs', (tester) async {
+    final ClubCrests crests = ClubCrests.inert();
+    addTearDown(crests.dispose);
+    await _pump(tester, crests);
+
+    expect(
+      find.byKey(const ValueKey<String>('teamLogo.crest.crvena-zvezda')),
+      findsNothing,
+    );
+    expect(find.text('النجم الأحمر'), findsWidgets);
   });
 }
