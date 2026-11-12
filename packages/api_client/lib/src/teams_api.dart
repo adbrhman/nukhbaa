@@ -29,4 +29,14 @@ final class TeamsApi {
       parseElement: TeamDto.fromJson,
     );
   }
+
+  /// `GET /crests` -- the URL of every club crest the app may show, by
+  /// slug (script 265). Read on every start; a crest absent from it is not
+  /// shown, and a copy kept on the phone is dropped.
+  Future<Result<CrestManifestDto>> crestManifest() {
+    return _transport.getObject<CrestManifestDto>(
+      '/crests',
+      parse: CrestManifestDto.fromJson,
+    );
+  }
 }

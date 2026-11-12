@@ -8340,6 +8340,48 @@ The app side of script 263, no server change, no migration.
 - Tests: mobile `person_links_section_test.dart` (new),
   `new_players_section_test.dart`, `hidden_accounts_section_test.dart`.
 
+### The club crests leave the app for the owner's list (script 265, migration 0210, 2026-11-12)
+
+Decided by the owner on 2026-11-11, before the Google Play release: the
+clubs' crests are their owners' marks; they leave the app's files (script
+266) and are read, on every start, from a list the owner controls. The
+countries' flags stay inside the app (not marks): 132 of the 367 files are
+flags (77 wide ones, 55 round African ones), 235 are club crests.
+
+- **Migration 0210**: schema `media` -- `club_crests` (slug, Storage path
+  `clubs/<slug>.<sha8>.png`, so a new file is a new URL, status
+  `active`/`hidden`/`deleted`, reason, complainant), `crest_settings` (one
+  row: `clubs_enabled`), `crest_events` (every change with its reason and
+  complainant); the public bucket `crests` (PNG, 256 KB; no listing, no
+  policy on `storage.objects`); the 235 crests seeded active. Server only.
+- **The files**: script 265 uploads them itself from the repository, with
+  the project's ref and secret key typed on the phone and never saved; it
+  checks each file's hash against its path and every public URL before
+  changing any code.
+- **`GET /crests`** (any signed-in user, `GetCrestManifest`,
+  `TeamsApi.crestManifest`): the URL of every active crest by slug, nothing
+  while `clubs_enabled` is off; `version` (FNV-1a of the list) is the
+  `ETag`, an `If-None-Match` with it is `304`. The list is held 5 minutes
+  (`PostgresCrestCatalog`) and dropped by every change made through it.
+- **`/admin/crests`** (the owner admin alone, `OwnerCrests`): `GET` every
+  crest with its URL, the switch and the latest 50 changes; `PUT`
+  `{"clubs_enabled", "reason"}`; `POST /admin/crests/{slug}` `{"action":
+  "hide"|"show"|"delete", "reason", "complainant", "confirm"}` -- a delete
+  needs the slug typed, erases the file first (`SupabaseCrestFiles`, the
+  support pictures' REST client on the bucket) and is final. A reason is
+  required for hide, delete and the switch. `AdminApi.adminCrests`,
+  `actOnCrest`, `setClubCrestsEnabled`.
+- **Terms**: «الشعارات والأعلام» on the rules page: shown to identify the
+  teams, their owners' property, never used outside the app or on its
+  store page, removed within 48 hours of a request to nukhbaa.app@gmail.com.
+- The app still shows its own files until script 266 (the list, its disk
+  cache, the owner's page, the files removed from the app).
+- Tests: application `club_crests_test.dart`; contracts
+  `crest_dto_test.dart`; infrastructure `postgres_crest_catalog_test.dart`;
+  api_client `crests_api_test.dart`; server `crests_routes_test.dart`; SQL
+  `0210_club_crests_test.sql`.
+- **Apply 0210 in the SQL Editor before pushing.**
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

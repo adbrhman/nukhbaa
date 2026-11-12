@@ -229,6 +229,50 @@ final class AdminApi {
         : _transport.deleteObject<bool>(path, parse: parse);
   }
 
+  /// `GET /admin/crests` -- every club crest, the switch and the latest
+  /// changes (script 265). The owner admin alone.
+  Future<Result<AdminCrestsDto>> adminCrests() {
+    return _transport.getObject<AdminCrestsDto>(
+      '/admin/crests',
+      parse: AdminCrestsDto.fromJson,
+    );
+  }
+
+  /// `POST /admin/crests/{slug}` -- [action] `hide`, `show` or `delete`
+  /// on club crest [slug], for [reason]; a delete needs [confirm], the slug
+  /// typed. Answers the crest's new status.
+  Future<Result<String>> actOnCrest(
+    String slug,
+    String action, {
+    String? reason,
+    String? complainant,
+    String? confirm,
+  }) {
+    return _transport.postObject<String>(
+      '/admin/crests/${Uri.encodeComponent(slug)}',
+      body: <String, Object?>{
+        'action': action,
+        'reason': ?reason,
+        'complainant': ?complainant,
+        'confirm': ?confirm,
+      },
+      parse: (json) => (json['status'] as String?) ?? '',
+    );
+  }
+
+  /// `PUT /admin/crests` -- turns every club crest on or off, for
+  /// [reason] (script 265).
+  Future<Result<bool>> setClubCrestsEnabled(
+    bool enabled, {
+    required String reason,
+  }) {
+    return _transport.putObject<bool>(
+      '/admin/crests',
+      body: <String, Object?>{'clubs_enabled': enabled, 'reason': reason},
+      parse: (json) => json['clubs_enabled'] == true,
+    );
+  }
+
   /// `GET /admin/person-links` -- every person the owner admin linked,
   /// each with its accounts, the main one first (script 263). The owner
   /// admin alone; another admin is `admin.owner_only`.

@@ -199,6 +199,8 @@ final class CompositionRoot {
     this.ownerHiddenAccounts,
     this.supportPeekPredictions,
     this.ownerPersonLinks,
+    this.getCrestManifest,
+    this.ownerCrests,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -430,6 +432,8 @@ final class CompositionRoot {
     this.ownerHiddenAccounts,
     this.supportPeekPredictions,
     this.ownerPersonLinks,
+    this.getCrestManifest,
+    this.ownerCrests,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2662,6 +2666,15 @@ final class CompositionRoot {
   /// script 263, migration 0209). Null in tests that do not provide one.
   final OwnerPersonLinks? ownerPersonLinks;
 
+  /// The club crests the app may show (`GET /crests`, script 265,
+  /// migration 0210), any signed-in user. Null in tests that do not
+  /// provide one.
+  final GetCrestManifest? getCrestManifest;
+
+  /// The club crests, managed by the owner admin alone (`/admin/crests`,
+  /// script 265). Null in tests that do not provide one.
+  final OwnerCrests? ownerCrests;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -3116,6 +3129,11 @@ final class CompositionRoot {
     // The close-name hint (script 263): the push and the new players
     // name the accounts that share a new one's first and last name.
     final accountNames = PostgresAccountNameDirectory(connection);
+    final crestCatalog = PostgresCrestCatalog(connection);
+    final String crestRef = (env['NUKHBA_SUPABASE_PROJECT_REF'] ?? '').trim();
+    final String? crestBase = crestRef.isEmpty
+        ? null
+        : crestsPublicBase(crestRef);
     final notifyNewUserRegistered = NotifyNewUserRegistered(
       targets: PostgresAdminPushTargetReader(connection),
       sender: pushSender,
@@ -3560,6 +3578,32 @@ final class CompositionRoot {
       adminListNewPlayers: AdminListNewPlayers(
         players: PostgresNewPlayerReader(connection),
         names: accountNames,
+      ),
+      // The club crests (script 265, migration 0210): one list for the app
+      // and the owner, held five minutes and dropped by his changes; the
+      // files are erased with the project's secret key.
+      getCrestManifest: GetCrestManifest(
+        catalog: crestCatalog,
+        baseUrl: crestBase,
+      ),
+      ownerCrests: OwnerCrests(
+        catalog: crestCatalog,
+        files:
+            SupabaseCrestFiles.fromEnv(env, http.Client()) ??
+            const _UnwiredCrestFiles(),
+        baseUrl: crestBase,
+        owner: OwnerInbox(
+          email: dailyShortfallRecipient,
+          users: userAdminRepository,
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
       ),
       // One person's accounts, linked by the owner admin alone (script
       // 263, migration 0209).
@@ -6331,4 +6375,18 @@ final class _UnwiredH2hControls
 
   @override
   Future<Result<H2hMonthReport>> reportOf(DateTime monthStart) => _unwired();
+}
+
+/// Without the project's secret key no crest file can be erased: a delete
+/// is refused and nothing changes (script 265).
+final class _UnwiredCrestFiles implements CrestFileEraser {
+  const _UnwiredCrestFiles();
+
+  @override
+  Future<Result<void>> erase(String objectPath) async => const Result.err(
+    AppError.transient(
+      'storage.unavailable',
+      'Crest files cannot be erased on this server',
+    ),
+  );
 }

@@ -222,6 +222,8 @@ export 'src/ledger/ports/ledger_repository.dart';
 export 'src/ledger/ports/participant_reader.dart';
 export 'src/ledger/post_fixture_to_ledger.dart';
 export 'src/ledger/read_participant_ledger.dart';
+export 'src/media/club_crests.dart';
+export 'src/media/ports/crest_catalog.dart';
 export 'src/notification/create_notification.dart';
 export 'src/notification/flush_notification_queue.dart';
 export 'src/notification/get_my_notification_preferences.dart';
