@@ -8451,6 +8451,43 @@ that APK uploaded on «Android developer verification» › «Package names».
   uploaded on the package name's page. Then Play Console's Create app
   accepts `app.nukhbaa`.
 
+### Google Play: the closed test is live (script 269, 2026-11-13)
+
+The app is on Google Play as a closed test. Production waits for Google's
+rule for new personal accounts: 12 or more testers opted in for 14
+continuous days.
+
+- **Store**: `app.nukhbaa`, «نُخبة: توقّع نتائج المباريات» (ar, default) and
+  «Nukhba: Football Predictions» (en-US); category Sports; tags
+  Entertainment, Social, Sports; target audience 18 and over; content
+  rating IARC 3+; ads No; Advertising ID No; Data safety as submitted
+  (Device or other IDs also for Developer communications, because of the
+  admin push announcements). All went with the first release and Google
+  approved them on 2026-11-13.
+- **App signing**: Play App Signing holds the owner's own key (SHA-256
+  `3C:4C:0C:54:...:2B:DF:6C`, the same as `ANDROID_CERT_SHA256`), uploaded
+  with PEPK by "Signing key export" (mode `pepk`, run #3, after script
+  268). The upload key is that key too. So the site's APK and the Play
+  build are one app: an APK player moves to Play without reinstalling or
+  losing the account. The key Google had generated (`B8:D7:E6:...`) was
+  replaced before any release; never choose "Use Google-generated key".
+- **First release**: versionCode 855 (0.1.0), the AAB of Build Verification
+  run #855 (started by hand, AAB box ticked), track "Closed testing -
+  Alpha", 178 countries, released 2026-11-13. Managed publishing is off:
+  an approved change goes live at once.
+- **Testers**: the email list «مختبرو نُخبة» (19 Gmail addresses, kept in
+  Play Console only, never in this repository), feedback to
+  nukhbaa.app@gmail.com, join link
+  `https://play.google.com/apps/testing/app.nukhbaa`. 12 testers had opted
+  in on 2026-11-13; «Apply for production» opens after 14 continuous
+  days with 12 or more (about 2026-11-27).
+- **Rules from here**: every AAB for Play comes from a new «Run workflow»
+  (never Re-run), so its versionCode (the run number) is above the latest
+  APK the site published; no tester list change during the 14 days; the
+  reviewer account keeps the password written in App access.
+- **Open**: Play's Edge-to-edge note (apps targeting SDK 35 must handle
+  insets) for the next release.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
