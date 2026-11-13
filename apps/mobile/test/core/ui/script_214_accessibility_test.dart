@@ -7,11 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/crests/club_crests.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/ui/accessible_date_picker.dart';
 import 'package:mobile/core/ui/team_logo.dart';
 import 'package:mobile/features/auth/nukhbaa_shell.dart';
 import 'package:mobile/l10n/app_localizations.dart';
+
+import '../../support/team_marks.dart';
 
 Widget _app(Widget home, {ThemeData? theme}) => MaterialApp(
   theme: theme ?? AppTheme.dark,
@@ -101,31 +104,42 @@ void main() {
     expect(seenLarge, 1.5);
   });
 
-  testWidgets('a crest lost on the dark card sits on a plate; others do not', (
-    tester,
-  ) async {
-    Future<void> pumpLogo(Color? brand) => tester.pumpWidget(
-      _app(
-        Scaffold(
-          body: Center(
-            child: TeamLogo(
-              displayName: 'Test',
-              size: 34,
-              assetPath: 'assets/flags/finland.png',
-              brandColor: brand,
+  testWidgets('a crest lost on the dark card sits on a plate; a flag never '
+      'does', (tester) async {
+    final ClubCrests crests = await crestsHolding(<String>['juventus']);
+    addTearDown(crests.dispose);
+    Future<void> pumpLogo({String? crestSlug, String? asset, Color? brand}) =>
+        tester.pumpWidget(
+          ClubCrestScope(
+            crests: crests,
+            child: _app(
+              Scaffold(
+                body: Center(
+                  child: TeamLogo(
+                    displayName: 'Test',
+                    size: 34,
+                    crestSlug: crestSlug,
+                    assetPath: asset,
+                    brandColor: brand,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
 
-    await pumpLogo(Colors.black);
+    await pumpLogo(crestSlug: 'juventus', brand: Colors.black);
     expect(find.byKey(const Key('teamLogo.plate')), findsOneWidget);
 
-    await pumpLogo(Colors.white);
+    await pumpLogo(crestSlug: 'juventus', brand: Colors.white);
     expect(find.byKey(const Key('teamLogo.plate')), findsNothing);
 
-    await pumpLogo(null);
+    await pumpLogo(crestSlug: 'juventus');
     expect(find.byKey(const Key('teamLogo.plate')), findsNothing);
+
+    // Script 271: a flag is never plated, whatever the team's colour.
+    await pumpLogo(asset: 'assets/flags/finland.png', brand: Colors.black);
+    expect(find.byKey(const Key('teamLogo.plate')), findsNothing);
+    expect(find.byKey(const Key('teamLogo.flag')), findsOneWidget);
   });
 }

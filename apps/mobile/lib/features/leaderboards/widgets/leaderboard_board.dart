@@ -491,36 +491,46 @@ class _PodiumTile extends ConsumerWidget {
                 color: t.goldAccent,
                 size: top ? AppSizes.iconLg + 4 : AppSizes.iconMd,
               ),
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.bottomCenter,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: _diamond / 2),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: top
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: medal.withValues(alpha: 0.35),
-                                blurRadius: 18,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: UserAvatar(
-                      displayName: shownName,
-                      avatarUrl: blocked ? null : entry.avatarUrl,
-                      size: avatar,
-                      gradient: false,
-                      borderColor: isMe ? t.primaryText : medal,
-                      borderWidth: 3,
+            _PodiumMenu(
+              entry: entry,
+              enabled: !isMe,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.bottomCenter,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: _diamond / 2),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: top
+                            ? <BoxShadow>[
+                                BoxShadow(
+                                  color: medal.withValues(alpha: 0.35),
+                                  blurRadius: 18,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: UserAvatar(
+                        displayName: shownName,
+                        avatarUrl: blocked ? null : entry.avatarUrl,
+                        size: avatar,
+                        gradient: false,
+                        borderColor: isMe ? t.primaryText : medal,
+                        borderWidth: 3,
+                      ),
                     ),
                   ),
-                ),
-                _RankDiamond(rank: entry.rank, color: medal),
-              ],
+                  _RankDiamond(rank: entry.rank, color: medal),
+                  if (!isMe)
+                    const PositionedDirectional(
+                      top: 0,
+                      end: 0,
+                      child: _MenuBadge(),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
@@ -528,9 +538,9 @@ class _PodiumTile extends ConsumerWidget {
               children: <Widget>[
                 Flexible(
                   child: Text(
-                    shownName,
+                    blocked ? shownName : _podiumName(shownName),
                     key: Key('$keyPrefix.participant.${entry.participantId}'),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: context.text.labelLarge?.copyWith(
@@ -539,12 +549,7 @@ class _PodiumTile extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (!isMe)
-                  PlayerMenuButton(
-                    displayName: entry.displayName,
-                    participantId: entry.participantId,
-                    size: 18,
-                  ),
+                // The menu opens from the picture (_PodiumMenu, script 271).
                 if (entry.champion) ...<Widget>[
                   const SizedBox(width: 3),
                   ChampionCrown(
@@ -607,6 +612,106 @@ const List<double> _stepLifts = <double>[28, 10, 0];
 
 /// The diamond the place is written on.
 const double _diamond = 26;
+
+/// The words that open a two-word part of a name: «عبد الرحمن», «أبو بكر»,
+/// «بن سلمان», «Al Nasser». Compared in lower case.
+const Set<String> _nameJoiners = <String>{
+  'عبد',
+  'ابو',
+  'أبو',
+  'بن',
+  'ابن',
+  'بنت',
+  'آل',
+  'abd',
+  'abu',
+  'bin',
+  'ibn',
+  'bint',
+  'al',
+  'el',
+};
+
+/// The name on the podium (script 271): its first two parts, the name and
+/// the second or family name, so it reads whole in the narrow place:
+/// «حمزه علي محمد» is «حمزه علي», and «عبد الرحمن المغربي» stays whole
+/// («عبد» opens a two-word part). The ranked lines keep the full name.
+String _podiumName(String name) {
+  final List<String> words = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((String word) => word.isNotEmpty)
+      .toList();
+  final List<String> parts = <String>[];
+  int i = 0;
+  while (i < words.length && parts.length < 2) {
+    final String word = words[i];
+    if (i + 1 < words.length && _nameJoiners.contains(word.toLowerCase())) {
+      parts.add('$word ${words[i + 1]}');
+      i += 2;
+    } else {
+      parts.add(word);
+      i += 1;
+    }
+  }
+  return parts.join(' ');
+}
+
+/// A podium picture opens the report / block menu (script 271): the whole
+/// picture is the target, so the name below keeps the place's full width
+/// (the menu button beside it took 48 of about 104). The viewer's own
+/// picture opens nothing.
+class _PodiumMenu extends StatelessWidget {
+  const _PodiumMenu({
+    required this.entry,
+    required this.enabled,
+    required this.child,
+  });
+
+  final BoardEntry entry;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Tooltip(
+      message: 'الإبلاغ أو الحظر',
+      child: InkWell(
+        key: Key('player.menu.${entry.participantId}'),
+        customBorder: const CircleBorder(),
+        onTap: () => unawaited(
+          showPlayerActions(
+            context,
+            displayName: entry.displayName,
+            participantId: entry.participantId,
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// The small mark on a podium picture that says it opens the menu.
+class _MenuBadge extends StatelessWidget {
+  const _MenuBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: t.surfaceElevated,
+        border: Border.all(color: t.border),
+      ),
+      child: Icon(Icons.more_vert_rounded, size: 14, color: t.textSecondary),
+    );
+  }
+}
 
 /// The step for the place at [position] (0 first, 2 third). Players tied
 /// on a rank stand together at the lowest step they share: three tied on 1

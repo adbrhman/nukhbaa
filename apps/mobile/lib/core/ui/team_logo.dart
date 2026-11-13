@@ -54,6 +54,10 @@ class TeamLogo extends StatelessWidget {
   /// The soft light disc behind a dark crest in the dark theme.
   static const Color crestPlate = Color(0xFFEAF0F8);
 
+  /// A flag's height to its width: every file under `assets/flags/` is
+  /// 4:3 (script 271), drawn as one rounded card.
+  static const double flagAspect = 0.75;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
@@ -73,36 +77,35 @@ class TeamLogo extends StatelessWidget {
     // 4x was above any shipping density.
     final double density = MediaQuery.maybeDevicePixelRatioOf(context) ?? 3;
     final int? decodeSize = kIsWeb ? null : (size * density).ceil();
-    final Widget image = crest != null
-        ? Image(
-            key: ValueKey<String>('teamLogo.crest.$crestSlug'),
-            image: decodeSize == null
-                ? crest
-                : ResizeImage(
-                    crest,
-                    width: decodeSize,
-                    height: decodeSize,
-                    policy: ResizeImagePolicy.fit,
-                  ),
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => fallback,
-          )
-        : Image.asset(
-            asset,
-            key: ValueKey<String>('teamLogo.asset.$asset'),
-            width: size,
-            height: size,
-            cacheWidth: decodeSize,
-            cacheHeight: decodeSize,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => fallback,
-          );
+    // A country's flag: one rounded 4:3 card for every flag, in both
+    // themes, never on the crests' plate (script 271).
+    if (crest == null) {
+      return _FlagMark(
+        asset: asset,
+        size: size,
+        decodeWidth: decodeSize,
+        fallback: fallback,
+      );
+    }
+    final Widget image = Image(
+      key: ValueKey<String>('teamLogo.crest.$crestSlug'),
+      image: decodeSize == null
+          ? crest
+          : ResizeImage(
+              crest,
+              width: decodeSize,
+              height: decodeSize,
+              policy: ResizeImagePolicy.fit,
+            ),
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => fallback,
+    );
 
     final Color? brand = brandColor;
     if (tokens.isDark) {
-      // A team whose colour is lost on the dark card (Juventus black, navy
+      // A crest whose colour is lost on the dark card (Juventus black, navy
       // clubs) sits on a plate; the other crests are drawn as they are.
       final bool plated =
           brand != null &&
@@ -111,9 +114,8 @@ class TeamLogo extends StatelessWidget {
           ? _CrestPlate(size: size, child: image)
           : SizedBox(width: size, height: size, child: image);
     }
-    // On a white card a flag's white field had no edge (Finland showed a
-    // floating cross, England a bare red one): in the light theme every
-    // mark sits on one soft plate with a hairline rim (UI-10).
+    // In the light theme every crest sits on one soft plate with a hairline
+    // rim (UI-10); a flag draws its own rim (_FlagMark).
     return Container(
       width: size,
       height: size,
@@ -124,6 +126,61 @@ class TeamLogo extends StatelessWidget {
         border: Border.all(color: tokens.border, width: AppStroke.hairline),
       ),
       child: image,
+    );
+  }
+}
+
+/// A country's flag (script 271): one rounded 4:3 card for every flag, in
+/// both themes, with a hairline rim so a white field still has an edge
+/// (UI-10: Finland's cross floated on a white card). The files are 4:3
+/// (flag-icons, MIT, `docs/licenses/flag-icons.txt`). A flag never sits on
+/// the crests' plate: the plate is for a club crest lost on the dark card.
+class _FlagMark extends StatelessWidget {
+  const _FlagMark({
+    required this.asset,
+    required this.size,
+    required this.decodeWidth,
+    required this.fallback,
+  });
+
+  final String asset;
+  final double size;
+  final int? decodeWidth;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final double height = size * TeamLogo.flagAspect;
+    final BorderRadius radius = BorderRadius.circular(size * 0.12);
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Center(
+        child: Container(
+          key: const Key('teamLogo.flag'),
+          width: size,
+          height: height,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: tokens.surfaceHigh,
+            borderRadius: radius,
+          ),
+          foregroundDecoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: tokens.border, width: AppStroke.hairline),
+          ),
+          child: Image.asset(
+            asset,
+            key: ValueKey<String>('teamLogo.asset.$asset'),
+            width: size,
+            height: height,
+            cacheWidth: decodeWidth,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => fallback,
+          ),
+        ),
+      ),
     );
   }
 }

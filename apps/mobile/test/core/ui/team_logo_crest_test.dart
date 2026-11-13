@@ -4,11 +4,15 @@
 /// or while a card is captured to be shared.
 library;
 
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/crests/club_crests.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/ui/team_logo.dart';
+import 'package:mobile/features/competition/team_logo_assets.dart';
 
 import '../../support/team_marks.dart';
 
@@ -91,5 +95,44 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  // Script 271: a flag was round, wide, or round on a white plate by turns.
+  testWidgets('a flag is one rounded 4:3 card in both themes, never plated', (
+    tester,
+  ) async {
+    for (final ThemeData theme in <ThemeData>[AppTheme.dark, AppTheme.light]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: const Scaffold(
+            body: Center(
+              child: TeamLogo(
+                displayName: 'ألمانيا',
+                size: 40,
+                assetPath: 'assets/flags/germany.png',
+                brandColor: Colors.black,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('teamLogo.plate')), findsNothing);
+      expect(
+        tester.getSize(find.byKey(const Key('teamLogo.flag'))),
+        const Size(40, 30),
+      );
+      expect(tester.getSize(find.byType(TeamLogo)), const Size(40, 40));
+    }
+  });
+
+  test('every bundled flag is a 4:3 file', () {
+    for (final String slug in kFlagSlugs) {
+      final Uint8List bytes = File('assets/flags/$slug.png').readAsBytesSync();
+      // A PNG's IHDR: the width at bytes 16-19, the height at 20-23.
+      final ByteData head = ByteData.sublistView(bytes, 16, 24);
+      expect(head.getUint32(0) * 3, head.getUint32(4) * 4, reason: slug);
+    }
   });
 }

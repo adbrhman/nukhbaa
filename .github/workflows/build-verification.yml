@@ -656,6 +656,48 @@ jobs:
           print(path + ": minSdk >= 24")
           PYEOF
 
+      # Google Play (2026-11-13, "For your next release"): an app targeting
+      # SDK 35 draws edge-to-edge, and Play looks for enableEdgeToEdge() in
+      # the activity. Flutter already lays every screen out under the system
+      # bars (SafeArea), so the call moves nothing: both bars stay
+      # transparent with light icons, as the app has drawn them. Script 271.
+      - name: Edge-to-edge in MainActivity (idempotent)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import glob, sys
+
+          acts = glob.glob("android/app/src/main/kotlin/**/MainActivity.kt", recursive=True)
+          if len(acts) != 1:
+              sys.exit("::error::expected one MainActivity.kt, found %d" % len(acts))
+          a = open(acts[0], encoding="utf-8").read()
+          if "enableEdgeToEdge(" not in a:
+              head = "import io.flutter.embedding.android.FlutterFragmentActivity"
+              decl = "class MainActivity : FlutterFragmentActivity()"
+              if a.count(head) != 1 or a.count(decl) != 1:
+                  sys.exit("::error::MainActivity is not the FlutterFragmentActivity this step expects")
+              if a.split(decl, 1)[1].strip():
+                  sys.exit("::error::MainActivity already has a body")
+              a = a.replace(head, "import android.graphics.Color\n"
+                  "import android.os.Bundle\n"
+                  "import androidx.activity.SystemBarStyle\n"
+                  "import androidx.activity.enableEdgeToEdge\n" + head)
+              a = a.replace(decl, decl + " {\n"
+                  "    override fun onCreate(savedInstanceState: Bundle?) {\n"
+                  "        enableEdgeToEdge(\n"
+                  "            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),\n"
+                  "            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),\n"
+                  "        )\n"
+                  "        super.onCreate(savedInstanceState)\n"
+                  "    }\n"
+                  "}")
+              open(acts[0], "w", encoding="utf-8").write(a)
+          if "enableEdgeToEdge(" not in open(acts[0], encoding="utf-8").read():
+              sys.exit("::error::enableEdgeToEdge() is not in MainActivity")
+          print("MainActivity: enableEdgeToEdge() before super.onCreate")
+          PYEOF
+
       # Firebase needs two things the generated android/ tree does not have:
       # the google-services.json for this app, and the Google Services Gradle
       # plugin that turns it into Android resources. Without BOTH, the APK

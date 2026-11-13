@@ -8486,7 +8486,43 @@ continuous days.
   APK the site published; no tester list change during the 14 days; the
   reviewer account keeps the password written in App access.
 - **Open**: Play's Edge-to-edge note (apps targeting SDK 35 must handle
-  insets) for the next release.
+  insets) for the next release. Done by script 271.
+
+### Flags as one shape, podium names, edge-to-edge (script 271, 2026-11-13)
+
+For the second Play release, from the owner's screenshots of 2026-11-13.
+
+- **Flags**: the 132 files of `assets/flags/` were three shapes (77 wide
+  at their own ratios, 54 round African ones, Switzerland square), and in
+  the dark theme a team whose colour is dark (Germany, Luxembourg,
+  Andorra) sat on the crests' white plate. The owner chose one rounded
+  rectangle for every flag. The files are now all 128x96 (4:3), rendered
+  from flag-icons (MIT, commit `ac7e0eb`, licence in
+  `docs/licenses/flag-icons.txt`), so no flag is cut. `TeamLogo` draws a
+  flag as `_FlagMark` (key `teamLogo.flag`): a 4:3 card with rounded
+  corners and a hairline rim, centred in the same square as before, in
+  both themes; the plate (`teamLogo.plate`) is for a club crest lost on the
+  dark card only.
+- **Podium names** («المتصدرون»): the menu button beside the name took 48
+  of the place's about 104 dp, so names were cut («...Moham»). The podium
+  shows the first two parts of a name (`_podiumName`: «حمزه علي محمد» ->
+  «حمزه علي»; «عبد», «أبو», «بن», «آل», Abd, Abu, Bin, Al... open a
+  two-word part, so «عبد الرحمن المغربي» stays whole), on up to two lines,
+  over the place's full width. The report / block menu opens from the
+  picture (`_PodiumMenu`, key `player.menu.<id>`, a small ⋮ mark on it);
+  the viewer's own picture opens nothing. The ranked lines are unchanged.
+- **Edge-to-edge**: Play's note on release 855 («Edge-to-edge may not
+  display for all users»). Build Verification's step "Edge-to-edge in
+  MainActivity" adds `enableEdgeToEdge()` before `super.onCreate`, both
+  bars `SystemBarStyle.dark(TRANSPARENT)` (light icons, as before), after
+  the local_auth step made it a `FlutterFragmentActivity`.
+- **Not changed**: the «▯▯» on the home screen did not show again (owner's
+  screenshots, 2026-11-13). The error log's timeouts (NFRL, 96WW) spread
+  over 40 days, 20 builds and every route: slow networks, not one faulty
+  call; an automatic retry of reads is left for after production.
+- Tests: `team_logo_crest_test.dart` (one card in both themes, every flag
+  4:3), `script_214_accessibility_test.dart` (the plate test on a crest),
+  `podium_names_test.dart` (new).
 
 ## 3. Version-Verification Log
 
