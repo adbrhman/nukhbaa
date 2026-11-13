@@ -182,6 +182,10 @@ jobs:
           python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); m = z.read("META-INF/MANIFEST.MF").decode(); assert "Main-Class" in m, "not a runnable jar"' pepk.jar
           echo "pepk.jar sha256: $(sha256sum pepk.jar | cut -d' ' -f1)"
           OUT="nukhbaa-play-signing-key-$STAMP.zip"
+          # PEPK takes --keystore-pass and --key-pass as the passwords
+          # themselves: a "pass:" prefix (apksigner's form) becomes part of
+          # the password, and PKCS12 then fails with BadPaddingException
+          # (run #2, 2026-11-13).
           # The key Play gives: a PEM public key (pasted, so its line breaks
           # may be gone) or, with the older command, a hex string.
           RAW=$(printf '%s' "$PLAY_KEY" | tr -d '\r')
@@ -192,14 +196,14 @@ jobs:
             java -jar pepk.jar --keystore="$W/keystore.jks" --alias="$KEY_ALIAS" \
               --output="$GITHUB_WORKSPACE/$OUT" --include-cert --rsa-aes-encryption \
               --encryption-key-path=play_encryption_key.pem \
-              --keystore-pass="pass:$STORE_PASS" --key-pass="pass:$KEY_PASS" >/dev/null
+              --keystore-pass="$STORE_PASS" --key-pass="$KEY_PASS" >/dev/null
           else
             HEX=$(printf '%s' "$RAW" | tr -d ' \n\t')
             printf '%s' "$HEX" | grep -qE '^[0-9a-fA-F]{64,}$' || { echo "::error::play_encryption_key is neither a PEM public key nor a hex key"; exit 1; }
             java -jar pepk.jar --keystore="$W/keystore.jks" --alias="$KEY_ALIAS" \
               --output="$GITHUB_WORKSPACE/$OUT" --include-cert \
               --encryptionkey="$HEX" \
-              --keystore-pass="pass:$STORE_PASS" --key-pass="pass:$KEY_PASS" >/dev/null
+              --keystore-pass="$STORE_PASS" --key-pass="$KEY_PASS" >/dev/null
           fi
           test -s "$GITHUB_WORKSPACE/$OUT" || { echo "::error::PEPK wrote nothing"; exit 1; }
           echo "OUT=$OUT" >> "$GITHUB_ENV"
