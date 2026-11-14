@@ -78,6 +78,7 @@ String h2hStateWireName(H2hLeagueState state) => switch (state) {
   H2hLeagueState.drawPending => 'draw_pending',
   H2hLeagueState.notInDraw => 'not_in_draw',
   H2hLeagueState.open => 'open',
+  H2hLeagueState.waitingList => 'waiting_list',
 };
 
 /// Parses a `YYYY-MM-DD` day sent by a client into its UTC midnight, or

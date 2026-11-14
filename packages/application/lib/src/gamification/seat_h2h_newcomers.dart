@@ -41,6 +41,11 @@ final class H2hNewcomersRun {
 ///   ([H2hLeaguePolicy.countsForMovement] then says whether it takes part
 ///   in the month's promotion and relegation). The groups already playing
 ///   are never touched.
+/// * **Back from absence (NK278, migration 0214).** A player who left his
+///   seat in the last group for absence is on the waiting list with no
+///   seat; his first real prediction after that seats him in the waiting
+///   group like a new player, on its lowest free seat, a seat a filler left
+///   included.
 /// * **When not.** November 2026 and every earlier month (their rules stay
 ///   as they were), a month not drawn, a pilot, a month judged, and once
 ///   the month's last round has started: nobody joins a month that has no
@@ -166,7 +171,7 @@ final class SeatH2hNewcomers {
         monthStart: month,
         leagueId: waiting.leagueId,
         userId: player,
-        slot: waiting.seated,
+        slot: waiting.nextSlot,
         startFrom: fills ? lastStarted + 1 : null,
       );
       if (seatResult is Err<void>) {

@@ -13,8 +13,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/features/admin/screens/sections/h2h_admin_tabs.dart';
 import 'package:mobile/features/h2h/h2h_screen.dart';
 import 'package:mobile/features/h2h/h2h_texts.dart';
+import 'package:mobile/features/h2h/widgets/h2h_parts.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
 import '../../support/auth_harness.dart';
@@ -155,6 +157,28 @@ void main() {
     expect(h2hPlayersWords(2), 'لاعبان');
     expect(h2hPlayersWords(7), '7 لاعبين');
     expect(h2hPlayersWords(19), '19 لاعبًا');
+  });
+
+  // NK278: absence in every group, the waiting list, the vacant seat.
+  test('December\'s rules tell absence in every group and the vacant seat', () {
+    final String all = h2hDecemberRules.join('\n');
+    expect(all, contains('الغياب في كل المجموعات'));
+    expect(all, contains('إلى المجموعة التي تلي مجموعتك'));
+    expect(all, contains('يترك مقعده إلى قائمة الانتظار'));
+    expect(all, contains('لا يُحسب في مجموعة الانتظار حتى يتوقّع'));
+    expect(all, isNot(contains('الغياب في المجموعات 1 إلى 4')));
+    expect(
+      h2hRulesForMonth('2026-11-01').join('\n'),
+      isNot(contains('الغياب في كل المجموعات')),
+    );
+  });
+
+  test('an empty seat is a vacant seat from December, the average before', () {
+    H2hRoundViewDto round(String day) =>
+        H2hRoundViewDto(round: 4, day: day, status: 'settled', fixtureCount: 6);
+    expect(h2hOpponentOf(round('2026-12-04')), h2hVacantSeat);
+    expect(h2hOpponentOf(round('2026-11-04')), h2hAverageOpponent);
+    expect(h2hAdminStateLabel('waiting_list'), 'في قائمة الانتظار بعد غيابه');
   });
 
   test('December\'s rules tell the waiting group and the late group', () {

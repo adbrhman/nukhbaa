@@ -30,12 +30,12 @@ String h2hNameOf(String? name) =>
     (name ?? '').trim().isEmpty ? h2hUnnamed : name!.trim();
 
 /// The opponent of [round] in words: a member, the group average, or
-/// secret while the server names nobody.
+/// secret while the server names nobody. NK278: from December 2026 an
+/// empty seat is a vacant seat, not the group average.
 String h2hOpponentOf(H2hRoundViewDto round) {
   if (round.opponentHidden) return h2hSecretOpponent;
-  return round.opponentUserId == null
-      ? h2hAverageOpponent
-      : h2hNameOf(round.opponentName);
+  if (round.opponentUserId != null) return h2hNameOf(round.opponentName);
+  return h2hUsesDecemberRules(round.day) ? h2hVacantSeat : h2hAverageOpponent;
 }
 
 /// The round that matters now: the one being played, else the next one

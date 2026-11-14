@@ -346,8 +346,11 @@ final class GetMyH2hGroupRound {
         // NK172_018
         H2hMatchResult.win => H2hPairWinner.home,
         H2hMatchResult.loss => H2hPairWinner.away,
+        // NK278: from December 2026 a vacant seat is an absent opponent.
         H2hMatchResult.draw =>
-          awayAbsent ? H2hPairWinner.homePoint : H2hPairWinner.draw,
+          awayAbsent || (away == null && !homeMatch.opponentPresent)
+              ? H2hPairWinner.homePoint
+              : H2hPairWinner.draw,
       };
     } else if (homeAbsent) {
       winner = switch (awayMatch.result) {

@@ -3838,6 +3838,7 @@ final class CompositionRoot {
         sheets: PostgresH2hSheetReader(connection),
         profiles: PostgresWeeklyLeagueProfileReader(connection),
         clock: clock,
+        vacancies: PostgresH2hVacancyStore(connection),
       ),
       listH2hRounds: ListH2hRounds(
         rounds: PostgresH2hRoundStore(connection),
@@ -3945,6 +3946,7 @@ final class CompositionRoot {
             sender: pushSender,
             idGenerator: idGenerator,
             relegate: env['NUKHBA_H2H_ABSENCE_RELEGATION'] != 'off',
+            vacancies: PostgresH2hVacancyStore(connection),
           ),
           runCup: RunH2hCup(
             cups: PostgresH2hCupStore(connection),
@@ -3982,6 +3984,8 @@ final class CompositionRoot {
         sender: pushSender,
         idGenerator: idGenerator,
         relegate: env['NUKHBA_H2H_ABSENCE_RELEGATION'] != 'off',
+        // NK278: from December 2026 absence counts in every group.
+        vacancies: PostgresH2hVacancyStore(connection),
       ),
       runH2hCup: RunH2hCup(
         cups: PostgresH2hCupStore(connection),

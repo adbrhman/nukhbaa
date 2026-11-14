@@ -141,6 +141,7 @@ String h2hAdminStateLabel(String state) => switch (state) {
   'draw_pending' => 'بانتظار قرعة الشهر',
   'not_in_draw' => 'ليس في قرعة هذا الشهر',
   'open' => 'يلعب هذا الشهر',
+  'waiting_list' => 'في قائمة الانتظار بعد غيابه',
   _ => state,
 };
 

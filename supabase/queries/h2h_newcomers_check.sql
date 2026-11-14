@@ -1,15 +1,16 @@
--- New players and waiting groups, month by month (script 277, 0213) --
--- READ ONLY.
+-- New players and waiting groups, month by month (scripts 277 and 278,
+-- 0213 and 0214) -- READ ONLY.
 --
 -- One SELECT, nothing written. One line a waiting group: its month, its
--- group number, players seated, how many joined as new players, the round
+-- group number, players holding its seats now (0214: one who left it for
+-- a vacant seat is not counted), how many joined as new players, the round
 -- it started from (empty: still waiting) and whether new seats are frozen
 -- (supabase/queries/h2h_newcomers_freeze.sql). Run it before and after a
--- freeze or an unfreeze: the numbers never go down.
+-- freeze or an unfreeze: a freeze never lowers a number.
 select to_char(w.month_start, 'YYYY-MM')                          as month,
        4 + l.group_index + 1                                      as group_no,
-       (select count(*) from gamification.h2h_league_members m
-         where m.league_id = w.league_id)                         as seated,
+       (select count(*)
+          from gamification.h2h_waiting_holders(w.league_id))     as seated,
        (select count(*) from gamification.h2h_newcomer_seatings n
          where n.league_id = w.league_id)                         as newcomers,
        s.from_round                                               as started_from,

@@ -74,8 +74,20 @@ WHERE mo.month_start = $1::date
   AND fs.hidden_at IS NULL
   AND NOT fs.is_test
   AND NOT EXISTS (
-    SELECT 1 FROM gamification.h2h_league_members m
-    WHERE m.month_start = mo.month_start AND m.user_id = p.user_id
+    SELECT 1 FROM gamification.h2h_waiting_seats ws
+    WHERE ws.month_start = mo.month_start AND ws.user_id = p.user_id
+  )
+  AND (
+    NOT EXISTS (
+      SELECT 1 FROM gamification.h2h_league_members m
+      WHERE m.month_start = mo.month_start AND m.user_id = p.user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM gamification.h2h_seat_vacancies v
+      WHERE v.month_start = mo.month_start
+        AND v.out_user = p.user_id
+        AND fp.submitted_at > v.created_at
+    )
   )
 GROUP BY p.user_id
 ORDER BY min(fp.submitted_at), p.user_id;
@@ -84,8 +96,15 @@ ORDER BY min(fp.submitted_at), p.user_id;
 PREPARE nc_waiting(date) AS
 SELECT w.league_id::text AS league_id,
        l.group_index     AS group_index,
-       (SELECT count(*) FROM gamification.h2h_league_members m
-         WHERE m.league_id = w.league_id)::integer AS seated
+       (SELECT count(*)
+          FROM gamification.h2h_waiting_holders(w.league_id))::integer
+                         AS seated,
+       (SELECT min(g.n)
+          FROM generate_series(0, l.capacity - 1) AS g(n)
+         WHERE NOT EXISTS (
+           SELECT 1 FROM gamification.h2h_waiting_holders(w.league_id) h
+           WHERE h.slot = g.n
+         ))::integer     AS free_slot
 FROM gamification.h2h_waiting_groups w
 JOIN gamification.h2h_leagues l ON l.id = w.league_id
 WHERE w.month_start = $1::date
@@ -120,6 +139,15 @@ WITH seats AS (
   SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
   FROM gamification.h2h_league_members m
   WHERE m.league_id = $1::uuid
+    AND NOT EXISTS (
+      SELECT 1 FROM gamification.h2h_waiting_groups w0
+      WHERE w0.league_id = m.league_id
+    )
+  UNION ALL
+  SELECT h.user_id, h.slot, h.held_at, 1
+  FROM gamification.h2h_waiting_groups w1
+  CROSS JOIN LATERAL gamification.h2h_waiting_holders(w1.league_id) h
+  WHERE w1.league_id = $1::uuid
   UNION ALL
   SELECT mv.in_user, mv.elite_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
@@ -128,11 +156,21 @@ WITH seats AS (
   SELECT mv.out_user, mv.extra_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
   WHERE mv.extra_league_id = $1::uuid
+  UNION ALL
+  SELECT NULL::uuid, v.slot, v.created_at, v.from_round
+  FROM gamification.h2h_seat_vacancies v
+  WHERE v.league_id = $1::uuid
+  UNION ALL
+  SELECT f.in_user, v.slot, f.created_at, f.from_round
+  FROM gamification.h2h_vacancy_fills f
+  JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+  WHERE v.league_id = $1::uuid
 ),
 held AS (
   SELECT s.user_id, s.slot, s.joined_at, s.from_round,
-         lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
-           - 1 AS until_round
+         lead(s.from_round) OVER (
+           PARTITION BY s.slot ORDER BY s.from_round, s.joined_at
+         ) - 1 AS until_round
   FROM seats s
 ),
 gate AS (

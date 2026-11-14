@@ -8,6 +8,7 @@ import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
+import 'package:application/src/gamification/ports/h2h_vacancy_store.dart';
 import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
@@ -28,6 +29,11 @@ enum H2hLeagueState {
 
   /// The caller holds a seat.
   open,
+
+  /// NK278 (migration 0214): the caller left his seat in the last group for
+  /// absence this month and holds none: he is on the waiting list, not
+  /// counted, until his next real prediction seats him again.
+  waitingList,
 }
 
 /// Where a round stands for the caller.
@@ -201,17 +207,22 @@ final class GetMyH2hLeague {
     required H2hSheetReader sheets,
     required WeeklyLeagueProfileReader profiles,
     required Clock clock,
+    H2hVacancyStore? vacancies,
   }) : _leagues = leagues,
        _rounds = rounds,
        _sheets = sheets,
        _profiles = profiles,
-       _clock = clock;
+       _clock = clock,
+       _vacancies = vacancies;
 
   final H2hLeagueStore _leagues;
   final H2hRoundStore _rounds;
   final H2hSheetReader _sheets;
   final WeeklyLeagueProfileReader _profiles;
   final Clock _clock;
+
+  /// NK278: tells a caller on the waiting list from one not drawn.
+  final H2hVacancyStore? _vacancies;
 
   /// Reads [principal]'s month. With [revealSecrets] the secret opponents of
   /// the rounds not started or still live are named too: only the owner
@@ -239,6 +250,24 @@ final class GetMyH2hLeague {
     final seat = (seatResult as Ok<H2hSeat?>).value;
 
     if (seat == null) {
+      final vacancies = _vacancies;
+      if (vacancies != null && H2hLeaguePolicy.usesDecemberRules(month)) {
+        final left = await vacancies.vacanciesOf(month);
+        if (left is Err<List<H2hSeatVacancy>>) {
+          return Result.err(left.error);
+        }
+        if ((left as Ok<List<H2hSeatVacancy>>).value.any(
+          (v) => v.outUser == reader,
+        )) {
+          return Result.ok(
+            MyH2hLeague(
+              state: H2hLeagueState.waitingList,
+              monthStart: month,
+              readerId: reader,
+            ),
+          );
+        }
+      }
       final infoResult = await _leagues.monthOf(month);
       if (infoResult is Err<H2hMonthInfo?>) {
         return Result.err(infoResult.error);

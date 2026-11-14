@@ -54,11 +54,26 @@ final class PostgresH2hSheetReader implements H2hSheetReader, H2hOutcomeReader {
   /// started from, and none before it starts (round 20, after the month's
   /// last: `H2hLeaguePolicy.waitingFromRound`). Any other group is read as
   /// before.
+  ///
+  /// NK278 (migration 0214): a waiting group's seats are read at their
+  /// holders now (`h2h_waiting_holders`: a filler who left is gone, a new or
+  /// returning player on a seat he left is in). A seat left for absence is
+  /// vacant from its round (no holder: the null row ends the last holder's
+  /// rounds) until a fill puts a player of the waiting list in it.
   static const String membersSql = '''
 WITH seats AS (
   SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
   FROM gamification.h2h_league_members m
   WHERE m.league_id = @league_id::uuid
+    AND NOT EXISTS (
+      SELECT 1 FROM gamification.h2h_waiting_groups w0
+      WHERE w0.league_id = m.league_id
+    )
+  UNION ALL
+  SELECT h.user_id, h.slot, h.held_at, 1
+  FROM gamification.h2h_waiting_groups w1
+  CROSS JOIN LATERAL gamification.h2h_waiting_holders(w1.league_id) h
+  WHERE w1.league_id = @league_id::uuid
   UNION ALL
   SELECT mv.in_user, mv.elite_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
@@ -67,11 +82,21 @@ WITH seats AS (
   SELECT mv.out_user, mv.extra_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
   WHERE mv.extra_league_id = @league_id::uuid
+  UNION ALL
+  SELECT NULL::uuid, v.slot, v.created_at, v.from_round
+  FROM gamification.h2h_seat_vacancies v
+  WHERE v.league_id = @league_id::uuid
+  UNION ALL
+  SELECT f.in_user, v.slot, f.created_at, f.from_round
+  FROM gamification.h2h_vacancy_fills f
+  JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+  WHERE v.league_id = @league_id::uuid
 ),
 held AS (
   SELECT s.user_id, s.slot, s.joined_at, s.from_round,
-         lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
-           - 1 AS until_round
+         lead(s.from_round) OVER (
+           PARTITION BY s.slot ORDER BY s.from_round, s.joined_at
+         ) - 1 AS until_round
   FROM seats s
 ),
 gate AS (
@@ -108,6 +133,15 @@ WITH members AS (
     SELECT mv.out_user
     FROM gamification.h2h_seat_moves mv
     WHERE mv.extra_league_id = @league_id::uuid
+    UNION
+    SELECT ws.user_id
+    FROM gamification.h2h_waiting_seats ws
+    WHERE ws.league_id = @league_id::uuid
+    UNION
+    SELECT f.in_user
+    FROM gamification.h2h_vacancy_fills f
+    JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+    WHERE v.league_id = @league_id::uuid
   ) x
   JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ),

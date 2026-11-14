@@ -31,6 +31,11 @@ final class PostgresH2hNewcomerStore implements H2hNewcomerStore {
   final PostgresConnection _connection;
 
   /// The players who should join a month now, first prediction first.
+  ///
+  /// NK278 (migration 0214): and the players back from absence: one who
+  /// left his seat for the waiting list this month joins again at his first
+  /// real prediction made after he left; until then he holds no seat and
+  /// is not counted. Nobody who took a waiting seat again is read twice.
   static const String newcomersSql = '''
 SELECT p.user_id::text AS user_id, min(fp.submitted_at) AS first_at
 FROM gamification.h2h_months mo
@@ -46,19 +51,41 @@ WHERE mo.month_start = @month::date
   AND fs.hidden_at IS NULL
   AND NOT fs.is_test
   AND NOT EXISTS (
-    SELECT 1 FROM gamification.h2h_league_members m
-    WHERE m.month_start = mo.month_start AND m.user_id = p.user_id
+    SELECT 1 FROM gamification.h2h_waiting_seats ws
+    WHERE ws.month_start = mo.month_start AND ws.user_id = p.user_id
+  )
+  AND (
+    NOT EXISTS (
+      SELECT 1 FROM gamification.h2h_league_members m
+      WHERE m.month_start = mo.month_start AND m.user_id = p.user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM gamification.h2h_seat_vacancies v
+      WHERE v.month_start = mo.month_start
+        AND v.out_user = p.user_id
+        AND fp.submitted_at > v.created_at
+    )
   )
 GROUP BY p.user_id
 ORDER BY min(fp.submitted_at), p.user_id
 ''';
 
   /// The month's waiting group that has not started, with its seats taken.
+  ///
+  /// NK278 (migration 0214): the seats held now (a filler who left frees
+  /// his), and the lowest free seat, which the next player takes.
   static const String waitingSql = '''
 SELECT w.league_id::text AS league_id,
        l.group_index     AS group_index,
-       (SELECT count(*) FROM gamification.h2h_league_members m
-         WHERE m.league_id = w.league_id)::integer AS seated
+       (SELECT count(*)
+          FROM gamification.h2h_waiting_holders(w.league_id))::integer
+                         AS seated,
+       (SELECT min(g.n)
+          FROM generate_series(0, l.capacity - 1) AS g(n)
+         WHERE NOT EXISTS (
+           SELECT 1 FROM gamification.h2h_waiting_holders(w.league_id) h
+           WHERE h.slot = g.n
+         ))::integer     AS free_slot
 FROM gamification.h2h_waiting_groups w
 JOIN gamification.h2h_leagues l ON l.id = w.league_id
 WHERE w.month_start = @month::date
@@ -83,6 +110,28 @@ WHERE l.month_start = @month::date
 INSERT INTO gamification.h2h_newcomer_seatings
   (month_start, user_id, league_id)
 VALUES (@month::date, @user_id::uuid, @league_id::uuid)
+''';
+
+  /// NK278: how a player takes seat `@slot` of a waiting group: back from
+  /// absence (`returning`: he has his month's seat row already), or on a
+  /// seat a filler left (`slot_used`); else as a new player, as in 0213.
+  static const String seatKindSql = '''
+SELECT EXISTS (
+         SELECT 1 FROM gamification.h2h_seat_vacancies v
+         WHERE v.month_start = @month::date AND v.out_user = @user_id::uuid
+       ) AS is_return,
+       EXISTS (
+         SELECT 1 FROM gamification.h2h_league_members m
+         WHERE m.league_id = @league_id::uuid AND m.slot = @slot::smallint
+       ) AS slot_used
+''';
+
+  /// NK278: a waiting seat taken again (migration 0214).
+  static const String waitingSeatSql = '''
+INSERT INTO gamification.h2h_waiting_seats
+  (month_start, user_id, league_id, slot, reason)
+VALUES (@month::date, @user_id::uuid, @league_id::uuid, @slot::smallint,
+        @reason)
 ''';
 
   /// A waiting group's start, once it holds twenty players.
@@ -127,7 +176,12 @@ VALUES (@league_id::uuid, @from_round::smallint)
     final id = H2hLeagueId.tryParse(rows.first['league_id']?.toString());
     final index = _int(rows.first['group_index']);
     final seated = _int(rows.first['seated']);
-    if (id is Err<H2hLeagueId> || index == null || seated == null) {
+    final freeRaw = rows.first['free_slot'];
+    final free = freeRaw == null ? null : _int(freeRaw);
+    if (id is Err<H2hLeagueId> ||
+        index == null ||
+        seated == null ||
+        (freeRaw != null && free == null)) {
       return Result.err(_corrupt('waiting group'));
     }
     return Result.ok(
@@ -135,6 +189,7 @@ VALUES (@league_id::uuid, @from_round::smallint)
         leagueId: (id as Ok<H2hLeagueId>).value,
         groupIndex: index,
         seated: seated,
+        freeSlot: free ?? H2hLeaguePolicy.groupCapacity,
       ),
     );
   }
@@ -202,28 +257,63 @@ VALUES (@league_id::uuid, @from_round::smallint)
   }) async {
     final month = _isoDay(monthStart);
     final result = await _connection.runInTransaction<void>((tx) async {
-      final member = await tx.query(
-        PostgresH2hLeagueStore.insertSeatSql,
+      // NK278: a player back from absence, or a seat a filler left, is a
+      // waiting seat taken again (0214); else a new seat as in 0213.
+      final kind = await tx.query(
+        seatKindSql,
         parameters: {
-          'league_id': leagueId.value,
           'month': month,
           'user_id': userId.value,
+          'league_id': leagueId.value,
           'slot': slot,
         },
       );
-      if (member is Err<List<Map<String, dynamic>>>) {
-        return Result.err(member.error);
+      if (kind is Err<List<Map<String, dynamic>>>) {
+        return Result.err(kind.error);
       }
-      final record = await tx.query(
-        newcomerSql,
-        parameters: {
-          'month': month,
-          'user_id': userId.value,
-          'league_id': leagueId.value,
-        },
-      );
-      if (record is Err<List<Map<String, dynamic>>>) {
-        return Result.err(record.error);
+      final kindRows = (kind as Ok<List<Map<String, dynamic>>>).value;
+      final returning =
+          kindRows.isNotEmpty && kindRows.first['is_return'] == true;
+      final slotUsed =
+          kindRows.isNotEmpty && kindRows.first['slot_used'] == true;
+      if (returning || slotUsed) {
+        final again = await tx.query(
+          waitingSeatSql,
+          parameters: {
+            'month': month,
+            'user_id': userId.value,
+            'league_id': leagueId.value,
+            'slot': slot,
+            'reason': returning ? 'return' : 'newcomer',
+          },
+        );
+        if (again is Err<List<Map<String, dynamic>>>) {
+          return Result.err(again.error);
+        }
+      } else {
+        final member = await tx.query(
+          PostgresH2hLeagueStore.insertSeatSql,
+          parameters: {
+            'league_id': leagueId.value,
+            'month': month,
+            'user_id': userId.value,
+            'slot': slot,
+          },
+        );
+        if (member is Err<List<Map<String, dynamic>>>) {
+          return Result.err(member.error);
+        }
+        final record = await tx.query(
+          newcomerSql,
+          parameters: {
+            'month': month,
+            'user_id': userId.value,
+            'league_id': leagueId.value,
+          },
+        );
+        if (record is Err<List<Map<String, dynamic>>>) {
+          return Result.err(record.error);
+        }
       }
       if (startFrom != null) {
         final start = await tx.query(

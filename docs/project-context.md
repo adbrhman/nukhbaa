@@ -8786,6 +8786,67 @@ approved by the owner on its own.
   start, the freeze and the owner's files).
 - **Apply 0213 in the SQL Editor before pushing** (migration-drift).
 
+### Absence in every group and the vacant seat (script 278, migration 0214, 2026-11-14)
+
+Decided by the owner on 2026-11-14, December 2026 on (gated on
+`H2hLeaguePolicy.usesDecemberRules` in Dart and `month_start >=
+2026-12-01` in SQL; November and earlier read and run exactly as before:
+the 0189 swap rule, the elite-only job, the group average for an empty
+seat). Marker `NK278`. The second of three batches; 279 is not approved.
+
+- **Every group** (`H2hAbsencePolicy.planDecemberMoves`, run by
+  `RunH2hAbsence` with `PostgresH2hVacancyStore` wired): two consecutive
+  counted absences warn any player of a group that plays; three send him one
+  group down before the next round (`groupBelow`: 1 to 4 go to 5, k to
+  k + 1), swapping seats with the most committed eligible holder there. The
+  database allows a swap only between neighbouring groups that play
+  (`h2h_seat_moves_neighbours`, `_started`, `_holders`). With no eligible
+  substitute he stays and is tried again before the next round.
+- **The commitment** (`rankCommitted`, the month's end order of NK275):
+  fewer counted absences of the month, more predictions, exact scorelines,
+  right outcomes, points (`candidateFactsSql` reads `predicted` and
+  `outcomes`), with the filters kept: five active days in thirty, present
+  in the last three counted rounds.
+- **The last group that plays** (no group below, or the group below has
+  not started): the absent player leaves his seat
+  (`gamification.h2h_seat_vacancies`) for the waiting list and holds no
+  seat (`seatSql` reads none: state `waiting_list`); when a holder of the
+  waiting group qualifies he takes the seat in the SAME transaction
+  (`h2h_vacancy_fills`, `PostgresH2hVacancyStore.vacate`): both rows or
+  neither, so a refused fill leaves the player in his seat. Otherwise the
+  seat stays vacant (its opponent plays an absent opponent: a walkover, no
+  average) and is filled, the oldest first, before a later round. A seat's
+  record passes on to whoever fills it, across the vacant rounds.
+- **Back from absence**: he is not counted in the waiting group until a
+  real prediction made after he left; then `SeatH2hNewcomers` seats him on
+  its lowest free seat (`h2h_waiting_seats`, reason `return`); a new
+  player on a seat a filler left takes it the same way (`newcomer`). Who
+  holds a waiting group's seats is `gamification.h2h_waiting_holders()`,
+  and a waiting group starts only with twenty holders (nobody counted
+  twice).
+- **No double moves**: one move a player before a round
+  (`h2h_one_move_per_round`), one relegation a month
+  (`h2h_one_relegation_a_month`), never back up in the month
+  (`h2h_no_return_in_month`), across swaps, vacancies and fills, under an
+  advisory lock; a refusal is `h2h.move_refused` and the job skips it, so a
+  second run moves nobody again.
+- **The admin's hand relegation** from December takes its substitute from
+  المجموعة 5 only.
+- **The record**: three append-only tables, RLS on, nothing for anon or
+  authenticated; `h2h_movements` gains `seat_vacated`, `vacancy_filled`,
+  `waiting_seat`. Owner files: `supabase/queries/h2h_absence_check.sql`
+  (read), `h2h_absence_freeze.sql` / `h2h_absence_unfreeze.sql` (refuse
+  or allow vacancies, fills and waiting seats; nothing deleted; the swaps
+  stop only with `NUKHBA_H2H_ABSENCE_RELEGATION=off`).
+- Tests: domain `h2h_absence_all_groups_test.dart`; application
+  `h2h_absence_all_groups_test.dart` (every group, the last group with and
+  without a fill, a later fill, a refused fill, two more runs, the waiting
+  list, November); infrastructure `postgres_h2h_vacancy_store_test.dart`;
+  SQL `0214_h2h_absence_all_groups_test.sql`; the 0189 and 0213 SQL tests
+  run the adapters' new statements and read as before.
+- **Apply 0214 in the SQL Editor before pushing** (migration-drift), and
+  before 2026-12-01.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

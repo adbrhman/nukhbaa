@@ -62,6 +62,12 @@ VALUES (@league_id::uuid, @month::date)
 
   /// The seat a player holds now (NK183, migration 0189): his draw seat,
   /// or the seat of the latest swap that moved him.
+  ///
+  /// NK278 (migration 0214, December 2026 on): or the vacant seat a fill
+  /// gave him, or the waiting seat he took again; none (no row) when his
+  /// latest move left his seat for absence: he is on the waiting list. From
+  /// December the latest move is the latest written; earlier months are
+  /// read by the round, as before.
   static const String seatSql = '''
 WITH held AS (
   SELECT m.league_id, m.slot, m.joined_at, 1 AS from_round
@@ -78,9 +84,30 @@ WITH held AS (
   FROM gamification.h2h_seat_moves mv
   WHERE mv.out_user = @user_id::uuid
     AND mv.month_start = @month::date
+  UNION ALL
+  SELECT NULL::uuid, NULL::smallint, v.created_at, v.from_round
+  FROM gamification.h2h_seat_vacancies v
+  WHERE v.out_user = @user_id::uuid
+    AND v.month_start = @month::date
+  UNION ALL
+  SELECT v.league_id, v.slot, f.created_at, f.from_round
+  FROM gamification.h2h_vacancy_fills f
+  JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+  WHERE f.in_user = @user_id::uuid
+    AND f.month_start = @month::date
+  UNION ALL
+  SELECT ws.league_id, ws.slot, ws.created_at, 1
+  FROM gamification.h2h_waiting_seats ws
+  WHERE ws.user_id = @user_id::uuid
+    AND ws.month_start = @month::date
 ),
 seat AS (
-  SELECT * FROM held ORDER BY from_round DESC LIMIT 1
+  SELECT * FROM held
+  ORDER BY CASE WHEN @month::date < DATE '2026-12-01' THEN from_round
+                ELSE 0 END DESC,
+           joined_at DESC,
+           from_round DESC
+  LIMIT 1
 )
 SELECT s.league_id::text AS league_id,
        l.division        AS division,

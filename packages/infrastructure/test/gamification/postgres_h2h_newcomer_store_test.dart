@@ -158,20 +158,23 @@ void main() {
     );
 
     expect(connection.transactions, 2);
+    // NK278: each seat first asks how it is taken (a new seat here).
     expect(connection.sqls, [
+      PostgresH2hNewcomerStore.seatKindSql,
       PostgresH2hLeagueStore.insertSeatSql,
       PostgresH2hNewcomerStore.newcomerSql,
       PostgresH2hNewcomerStore.startSql,
+      PostgresH2hNewcomerStore.seatKindSql,
       PostgresH2hLeagueStore.insertSeatSql,
       PostgresH2hNewcomerStore.newcomerSql,
     ]);
-    expect(connection.parameters[0], {
+    expect(connection.parameters[1], {
       'league_id': _league,
       'month': '2026-12-01',
       'user_id': _userA,
       'slot': 19,
     });
-    expect(connection.parameters[2], {'league_id': _league, 'from_round': 8});
+    expect(connection.parameters[3], {'league_id': _league, 'from_round': 8});
   });
 
   test('a failure is returned, not thrown', () async {

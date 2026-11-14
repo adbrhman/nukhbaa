@@ -1,5 +1,5 @@
--- A head-to-head player's moves and their reasons (script 277, 0213) --
--- READ ONLY.
+-- A head-to-head player's moves and their reasons (scripts 277 and 278,
+-- 0213 and 0214) -- READ ONLY.
 --
 -- One SELECT, nothing written. Paste it into the Supabase SQL Editor and put
 -- part of the player's name in `params` (Arabic or English, any part). One
@@ -13,6 +13,12 @@
 --   month_end       the month's end: the reason ('commitment', 'table',
 --                   'not_counted', 'active_days') or, before December
 --                   2026, the outcome
+--   seat_vacated    left his seat in the last group for absence: on the
+--                   waiting list from the round shown ('absence')
+--   vacancy_filled  took a vacant seat from the waiting list
+--   waiting_seat    took a waiting seat again: back after a prediction
+--                   ('return') or a new player on a seat a filler left
+--                   ('newcomer')
 with params as (
   select '%علوش%' as player
 ),
@@ -41,7 +47,10 @@ join gamification.h2h_movements mv
   on mv.user_id = w.id
   or (mv.kind = 'group_start' and mv.to_league_id in (
         select m.league_id from gamification.h2h_league_members m
-        where m.user_id = w.id))
+        where m.user_id = w.id
+        union
+        select ws.league_id from gamification.h2h_waiting_seats ws
+        where ws.user_id = w.id))
 left join groups gf on gf.id = mv.from_league_id
 left join groups gt on gt.id = mv.to_league_id
 order by w.display_name, mv.month_start, mv.at;

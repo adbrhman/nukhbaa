@@ -119,7 +119,11 @@ SELECT w.user_id::text                                            AS user_id,
        count(s.fixture_id) FILTER (
          WHERE s.grade = 'exact_scoreline')::integer              AS exact,
        count(DISTINCT fx.d) FILTER (WHERE fp.id IS NOT NULL)::integer
-                                                                  AS active_days
+                                                                  AS active_days,
+       count(DISTINCT fx.fixture_id) FILTER (
+         WHERE fp.id IS NOT NULL)::integer                        AS predicted,
+       count(s.fixture_id) FILTER (
+         WHERE s.grade = 'correct_outcome')::integer              AS outcomes
 FROM who w
 LEFT JOIN competition.participants p ON p.user_id = w.user_id
 LEFT JOIN fx ON fx.season_id = p.season_id
@@ -307,6 +311,9 @@ ORDER BY dt.token
           points: points,
           exact: exact,
           activeDays: days,
+          // NK278: the December measure of commitment reads these too.
+          predicted: _int(row['predicted']) ?? 0,
+          outcomes: _int(row['outcomes']) ?? 0,
         ),
       );
     }
@@ -625,7 +632,11 @@ ORDER BY dt.token
       return error;
     }
     final name = cause.constraintName ?? '';
-    if (name.startsWith('h2h_seat_moves_')) {
+    // NK278 (migration 0214): one move a round, one relegation a month.
+    if (name.startsWith('h2h_seat_moves_') ||
+        name == 'h2h_one_move_per_round' ||
+        name == 'h2h_one_relegation_a_month' ||
+        name == 'h2h_no_return_in_month') {
       return AppError.invariant(
         'h2h.move_refused',
         'The swap was refused: $name',

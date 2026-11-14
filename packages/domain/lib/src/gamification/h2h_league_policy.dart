@@ -588,10 +588,13 @@ final class H2hLeaguePolicy {
         }
         final next = i + 1 < holders.length ? holders[i + 1] : null;
         final until = holder.untilRound;
+        // NK278: from December 2026 a seat left vacant passes its record
+        // on to whoever fills it, after the vacant rounds.
         final passes =
             next != null &&
             until != null &&
-            next.fromRound == until + 1 &&
+            (next.fromRound == until + 1 ||
+                (usesDecemberRules(day) && next.fromRound > until)) &&
             next.userId != holder.userId &&
             seatKeepsRecord(day: day, fromRound: next.fromRound);
         if (passes) {
@@ -966,6 +969,26 @@ final class H2hLeaguePolicy {
             ),
           );
           // NK172_001
+        } else if (usesDecemberRules(day)) {
+          // NK278: from December 2026 an empty seat (left for absence until
+          // it is filled) is an absent opponent: a walkover, never the
+          // group average.
+          match = H2hMatch(
+            round: round.number,
+            day: day,
+            opponentId: null,
+            points: points,
+            opponentPoints: 0,
+            present: present,
+            opponentPresent: false,
+            result: _versus(
+              points: points,
+              present: present,
+              opponentPoints: 0,
+              opponentPresent: false,
+              walkover: true,
+            ),
+          );
         } else {
           match = H2hMatch(
             round: round.number,

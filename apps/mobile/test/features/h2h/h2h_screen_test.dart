@@ -279,6 +279,14 @@ void main() {
       expect(find.byKey(const Key('h2h.state.not_in_draw')), findsOneWidget);
       expect(find.text('لست في قرعة هذا الشهر'), findsOneWidget);
     });
+
+    // NK278: from December 2026, a player who left his seat for absence.
+    testWidgets('on the waiting list: says how to come back', (tester) async {
+      await _pump(tester, _waiting('waiting_list'));
+
+      expect(find.byKey(const Key('h2h.state.waiting_list')), findsOneWidget);
+      expect(find.text('أنت في قائمة الانتظار'), findsOneWidget);
+    });
   });
 
   group('the division card', () {

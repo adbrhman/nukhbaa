@@ -124,7 +124,11 @@ SELECT w.user_id::text                                            AS user_id,
        count(s.fixture_id) FILTER (
          WHERE s.grade = 'exact_scoreline')::integer              AS exact,
        count(DISTINCT fx.d) FILTER (WHERE fp.id IS NOT NULL)::integer
-                                                                  AS active_days
+                                                                  AS active_days,
+       count(DISTINCT fx.fixture_id) FILTER (
+         WHERE fp.id IS NOT NULL)::integer                        AS predicted,
+       count(s.fixture_id) FILTER (
+         WHERE s.grade = 'correct_outcome')::integer              AS outcomes
 FROM who w
 LEFT JOIN competition.participants p ON p.user_id = w.user_id
 LEFT JOIN fx ON fx.season_id = p.season_id
@@ -197,6 +201,15 @@ WITH seats AS (
   SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
   FROM gamification.h2h_league_members m
   WHERE m.league_id = $1::uuid
+    AND NOT EXISTS (
+      SELECT 1 FROM gamification.h2h_waiting_groups w0
+      WHERE w0.league_id = m.league_id
+    )
+  UNION ALL
+  SELECT h.user_id, h.slot, h.held_at, 1
+  FROM gamification.h2h_waiting_groups w1
+  CROSS JOIN LATERAL gamification.h2h_waiting_holders(w1.league_id) h
+  WHERE w1.league_id = $1::uuid
   UNION ALL
   SELECT mv.in_user, mv.elite_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
@@ -205,20 +218,39 @@ WITH seats AS (
   SELECT mv.out_user, mv.extra_slot, mv.created_at, mv.from_round
   FROM gamification.h2h_seat_moves mv
   WHERE mv.extra_league_id = $1::uuid
+  UNION ALL
+  SELECT NULL::uuid, v.slot, v.created_at, v.from_round
+  FROM gamification.h2h_seat_vacancies v
+  WHERE v.league_id = $1::uuid
+  UNION ALL
+  SELECT f.in_user, v.slot, f.created_at, f.from_round
+  FROM gamification.h2h_vacancy_fills f
+  JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+  WHERE v.league_id = $1::uuid
 ),
 held AS (
   SELECT s.user_id, s.slot, s.joined_at, s.from_round,
-         lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
-           - 1 AS until_round
+         lead(s.from_round) OVER (
+           PARTITION BY s.slot ORDER BY s.from_round, s.joined_at
+         ) - 1 AS until_round
   FROM seats s
+),
+gate AS (
+  SELECT CASE WHEN w.league_id IS NULL THEN 1
+              ELSE COALESCE(gs.from_round, 20)
+         END AS first_round
+  FROM (SELECT $1::uuid AS league_id) g
+  LEFT JOIN gamification.h2h_waiting_groups w ON w.league_id = g.league_id
+  LEFT JOIN gamification.h2h_group_starts gs ON gs.league_id = g.league_id
 )
 SELECT h.user_id::text AS user_id,
        h.slot          AS slot,
        h.joined_at     AS joined_at,
-       h.from_round    AS from_round,
+       GREATEST(h.from_round, gate.first_round) AS from_round,
        h.until_round   AS until_round
 FROM held h
-JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended'
+CROSS JOIN gate
+JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ORDER BY h.slot, h.from_round;
 
 -- scoresSql
@@ -238,8 +270,17 @@ WITH members AS (
     SELECT mv.out_user
     FROM gamification.h2h_seat_moves mv
     WHERE mv.extra_league_id = $1::uuid
+    UNION
+    SELECT ws.user_id
+    FROM gamification.h2h_waiting_seats ws
+    WHERE ws.league_id = $1::uuid
+    UNION
+    SELECT f.in_user
+    FROM gamification.h2h_vacancy_fills f
+    JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+    WHERE v.league_id = $1::uuid
   ) x
-  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = x.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ),
 rounds AS (
   SELECT r.id, r.round_no, r.day
@@ -296,9 +337,30 @@ WITH held AS (
   FROM gamification.h2h_seat_moves mv
   WHERE mv.out_user = $1::uuid
     AND mv.month_start = $2::date
+  UNION ALL
+  SELECT NULL::uuid, NULL::smallint, v.created_at, v.from_round
+  FROM gamification.h2h_seat_vacancies v
+  WHERE v.out_user = $1::uuid
+    AND v.month_start = $2::date
+  UNION ALL
+  SELECT v.league_id, v.slot, f.created_at, f.from_round
+  FROM gamification.h2h_vacancy_fills f
+  JOIN gamification.h2h_seat_vacancies v ON v.id = f.vacancy_id
+  WHERE f.in_user = $1::uuid
+    AND f.month_start = $2::date
+  UNION ALL
+  SELECT ws.league_id, ws.slot, ws.created_at, 1
+  FROM gamification.h2h_waiting_seats ws
+  WHERE ws.user_id = $1::uuid
+    AND ws.month_start = $2::date
 ),
 seat AS (
-  SELECT * FROM held ORDER BY from_round DESC LIMIT 1
+  SELECT * FROM held
+  ORDER BY CASE WHEN $2::date < DATE '2026-12-01' THEN from_round
+                ELSE 0 END DESC,
+           joined_at DESC,
+           from_round DESC
+  LIMIT 1
 )
 SELECT s.league_id::text AS league_id,
        l.division        AS division,

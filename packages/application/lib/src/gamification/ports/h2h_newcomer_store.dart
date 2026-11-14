@@ -56,6 +56,7 @@ final class H2hWaitingGroup {
     required this.leagueId,
     required this.groupIndex,
     required this.seated,
+    this.freeSlot,
   });
 
   /// The group.
@@ -64,6 +65,14 @@ final class H2hWaitingGroup {
   /// Its index in the extra division.
   final int groupIndex;
 
-  /// Players seated in it so far; the next player takes this slot.
+  /// Players who hold its seats now.
   final int seated;
+
+  /// NK278: the lowest seat nobody holds now (a filler who left frees his
+  /// seat), or null when read without it.
+  final int? freeSlot;
+
+  /// The seat the next player takes: [freeSlot], else the one after the
+  /// seats taken (0213, where no seat was ever freed).
+  int get nextSlot => freeSlot ?? seated;
 }

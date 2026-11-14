@@ -1,4 +1,6 @@
+import 'package:domain/src/gamification/h2h_elite_carry.dart';
 import 'package:domain/src/gamification/h2h_league_id.dart';
+import 'package:domain/src/gamification/h2h_league_policy.dart';
 import 'package:domain/src/gamification/h2h_round_id.dart';
 import 'package:domain/src/identity/user_id.dart';
 
@@ -65,10 +67,18 @@ final class H2hCandidateFacts {
     required this.points,
     required this.exact,
     required this.activeDays,
+    this.predicted = 0,
+    this.outcomes = 0,
   });
 
   /// The player.
   final UserId userId;
+
+  /// NK278: matches of the window he predicted.
+  final int predicted;
+
+  /// NK278: right outcomes with the wrong score among them.
+  final int outcomes;
 
   /// Matches of the window he did not predict: fewer is more committed.
   final int missed;
@@ -91,10 +101,14 @@ final class H2hHeldSeat {
     required this.leagueId,
     required this.groupIndex,
     required this.slot,
+    this.fromRound = 1,
   });
 
   /// The holder.
   final UserId userId;
+
+  /// NK278: the first round he plays in the seat (1 for the draw's seat).
+  final int fromRound;
 
   /// The group.
   final H2hLeagueId leagueId;
@@ -149,6 +163,120 @@ final class H2hUnfilledRelegation {
 
   /// His seat.
   final H2hHeldSeat eliteSeat;
+}
+
+// NK278 absence in every group (owner, 2026-11-14; migration 0214)
+/// A group that plays, as the December absence rules see it: its number
+/// (المجموعة 1 .. 4 the elite, 5 and up the extra groups) and the seats
+/// held in it now.
+final class H2hAbsenceGroup {
+  /// Creates a group.
+  const H2hAbsenceGroup({
+    required this.leagueId,
+    required this.number,
+    required this.seats,
+  });
+
+  /// The group.
+  final H2hLeagueId leagueId;
+
+  /// Its number, as players see it.
+  final int number;
+
+  /// Its seats held now.
+  final List<H2hHeldSeat> seats;
+}
+
+/// A seat left vacant for absence and not filled yet (migration 0214).
+final class H2hOpenVacancy {
+  /// Creates an open vacancy.
+  const H2hOpenVacancy({
+    required this.id,
+    required this.leagueId,
+    required this.slot,
+    required this.outUser,
+  });
+
+  /// The vacancy's id (`h2h_seat_vacancies.id`).
+  final String id;
+
+  /// The group of the seat.
+  final H2hLeagueId leagueId;
+
+  /// The seat's slot.
+  final int slot;
+
+  /// The player who left it.
+  final UserId outUser;
+}
+
+/// A player of the waiting list who takes a vacant seat: [user] leaves
+/// [waitingSeat], chosen on [facts].
+final class H2hPlannedFill {
+  /// Creates a planned fill.
+  const H2hPlannedFill({
+    required this.user,
+    required this.waitingSeat,
+    required this.facts,
+  });
+
+  /// The player.
+  final UserId user;
+
+  /// The waiting seat he leaves.
+  final H2hHeldSeat waitingSeat;
+
+  /// What he was chosen on.
+  final H2hCandidateFacts facts;
+}
+
+/// A player of the last group that plays who leaves [seat] for the waiting
+/// list; [fill], when a player of the waiting list qualifies, takes the
+/// seat in the same transaction.
+final class H2hPlannedVacancy {
+  /// Creates a planned vacancy.
+  const H2hPlannedVacancy({
+    required this.out,
+    required this.seat,
+    required this.absentRounds,
+    this.fill,
+  });
+
+  /// The player who leaves.
+  final UserId out;
+
+  /// The seat he leaves.
+  final H2hHeldSeat seat;
+
+  /// The rounds he missed in a row.
+  final List<H2hCountedRound> absentRounds;
+
+  /// Who takes the seat at once, or null: it stays vacant for now.
+  final H2hPlannedFill? fill;
+}
+
+/// What the December absence rules do before one round.
+final class H2hDecemberPlan {
+  /// Creates a plan.
+  const H2hDecemberPlan({
+    required this.moves,
+    required this.vacancies,
+    required this.fills,
+    required this.unfilled,
+  });
+
+  /// Swaps between a group and the one below it.
+  final List<H2hPlannedMove> moves;
+
+  /// Seats of the last group that plays left for the waiting list.
+  final List<H2hPlannedVacancy> vacancies;
+
+  /// Seats left vacant before, filled now: each vacancy with its fill.
+  final List<(H2hOpenVacancy, H2hPlannedFill)> fills;
+
+  /// Players due to go down with nobody qualifying below: they stay, and
+  /// are tried again before the next round.
+  final List<H2hUnfilledRelegation> unfilled;
 }
 
 /// The rules of relegation for absence (decided by the owner on
@@ -355,4 +483,236 @@ final class H2hAbsencePolicy {
     }
     return null;
   }
+
+  // NK278 absence in every group (owner, 2026-11-14; migration 0214)
+  /// The group a player of group [number] goes down to from December 2026:
+  /// المجموعة 5 from the elite groups (1 to 4), the next group from an
+  /// extra group.
+  static int groupBelow(int number) => number <= H2hLeaguePolicy.eliteGroups
+      ? H2hLeaguePolicy.eliteGroups + 1
+      : number + 1;
+
+  /// The run of absences of [seat]'s holder from December 2026: the
+  /// counted rounds of [monthStart] from the round he took the seat, when he
+  /// took it after round 1 (a group that started late, a seat he came up
+  /// to or filled), so no round he held no seat in counts against him; else
+  /// the whole run, across months ([absenceRun]).
+  static List<H2hCountedRound> absenceRunIn(
+    H2hHeldSeat seat,
+    List<H2hCountedRound> counted,
+    DateTime monthStart,
+  ) => absenceRun(
+    seat.userId,
+    seat.fromRound <= 1
+        ? counted
+        : [
+            for (final round in counted)
+              if (round.monthStart.year == monthStart.year &&
+                  round.monthStart.month == monthStart.month &&
+                  round.number >= seat.fromRound)
+                round,
+          ],
+  );
+
+  /// The December measure of commitment of [facts]' player (owner,
+  /// 2026-11-14, the same order as the month's end): the counted rounds of
+  /// [monthStart] he predicted nothing in, then predictions, exact
+  /// scorelines, right outcomes and points of the window.
+  static H2hCommitment commitmentOf(
+    H2hCandidateFacts facts,
+    List<H2hCountedRound> counted,
+    DateTime monthStart,
+  ) {
+    var absent = 0;
+    for (final round in counted) {
+      if (round.monthStart.year == monthStart.year &&
+          round.monthStart.month == monthStart.month &&
+          !round.present.contains(facts.userId)) {
+        absent++;
+      }
+    }
+    return H2hCommitment(
+      absentRounds: absent,
+      predicted: facts.predicted,
+      exact: facts.exact,
+      outcomes: facts.outcomes,
+      points: facts.points,
+    );
+  }
+
+  /// [facts] of the eligible players, the most committed first
+  /// ([commitmentOf], [H2hEliteCarry.compareCommitment]). The conditions are
+  /// those of a substitute: [minActiveDays] days in the window and each of
+  /// the last [presentRounds] counted rounds played; [excluded] may not
+  /// move.
+  static List<H2hCandidateFacts> rankCommitted({
+    required List<H2hCandidateFacts> facts,
+    required List<H2hCountedRound> counted,
+    required DateTime monthStart,
+    required Set<UserId> excluded,
+  }) {
+    final eligible = <H2hCandidateFacts>[
+      for (final f in facts)
+        if (!excluded.contains(f.userId) &&
+            f.activeDays >= minActiveDays &&
+            playedLatest(f.userId, counted))
+          f,
+    ];
+    final commitment = <UserId, H2hCommitment>{
+      for (final f in eligible) f.userId: commitmentOf(f, counted, monthStart),
+    };
+    eligible.sort(
+      (a, b) => H2hEliteCarry.compareCommitment(a.userId, b.userId, commitment),
+    );
+    return List<H2hCandidateFacts>.unmodifiable(eligible);
+  }
+
+  /// What to do before a round of December 2026 or later.
+  ///
+  /// Every holder of a seat of [groups] (the groups that play) whose run of
+  /// absences in [counted] reached [relegationStreak] goes down one group
+  /// ([groupBelow]), in the order of the groups and seats:
+  ///
+  /// * the group below plays: he swaps seats with its most committed
+  ///   eligible holder ([rankCommitted]); with none, he stays and is tried
+  ///   again before the next round ([H2hDecemberPlan.unfilled]);
+  /// * it does not (his group is the last that plays): he leaves his seat
+  ///   for the waiting list, and the most committed eligible holder of a
+  ///   seat of [waiting] takes it at once; with none, it stays vacant.
+  ///
+  /// [open] are the seats left vacant before and not filled: each is filled
+  /// first, the oldest first, by the most committed eligible player of the
+  /// waiting list. [alreadyOut] went down or left a seat this month: never
+  /// again, and never up. [alreadyIn] came up or took a seat: not twice.
+  /// [wouldRepeat] passes over a substitute whose seat would give the
+  /// player going down an opponent he met already.
+  static H2hDecemberPlan planDecemberMoves({
+    required List<H2hAbsenceGroup> groups,
+    required List<H2hHeldSeat> waiting,
+    required List<H2hOpenVacancy> open,
+    required List<H2hCountedRound> counted,
+    required List<H2hCandidateFacts> facts,
+    required DateTime monthStart,
+    required Set<UserId> alreadyOut,
+    required Set<UserId> alreadyIn,
+    required bool Function(UserId relegated, H2hHeldSeat seat) wouldRepeat,
+  }) {
+    final byNumber = <int, H2hAbsenceGroup>{
+      for (final group in groups) group.number: group,
+    };
+    final numbers = byNumber.keys.toList()..sort();
+    final taken = <UserId>{...alreadyOut, ...alreadyIn};
+    final waitingOf = <UserId, H2hHeldSeat>{
+      for (final seat in waiting) seat.userId: seat,
+    };
+
+    H2hPlannedFill? nextFill() {
+      final ranked = rankCommitted(
+        facts: [
+          for (final f in facts)
+            if (waitingOf.containsKey(f.userId)) f,
+        ],
+        counted: counted,
+        monthStart: monthStart,
+        excluded: taken,
+      );
+      if (ranked.isEmpty) {
+        return null;
+      }
+      final best = ranked.first;
+      taken.add(best.userId);
+      return H2hPlannedFill(
+        user: best.userId,
+        waitingSeat: waitingOf[best.userId]!,
+        facts: best,
+      );
+    }
+
+    final fills = <(H2hOpenVacancy, H2hPlannedFill)>[];
+    for (final vacancy in open) {
+      final fill = nextFill();
+      if (fill == null) {
+        break;
+      }
+      fills.add((vacancy, fill));
+    }
+
+    final moves = <H2hPlannedMove>[];
+    final vacancies = <H2hPlannedVacancy>[];
+    final unfilled = <H2hUnfilledRelegation>[];
+    for (final number in numbers) {
+      final group = byNumber[number]!;
+      final seats = List<H2hHeldSeat>.of(group.seats)
+        ..sort((a, b) => a.slot.compareTo(b.slot));
+      for (final seat in seats) {
+        if (taken.contains(seat.userId)) {
+          continue;
+        }
+        final run = absenceRunIn(seat, counted, monthStart);
+        if (run.length < relegationStreak) {
+          continue;
+        }
+        final below = byNumber[groupBelow(number)];
+        if (below == null) {
+          taken.add(seat.userId);
+          vacancies.add(
+            H2hPlannedVacancy(
+              out: seat.userId,
+              seat: seat,
+              absentRounds: run,
+              fill: nextFill(),
+            ),
+          );
+          continue;
+        }
+        final seatOf = <UserId, H2hHeldSeat>{
+          for (final s in below.seats) s.userId: s,
+        };
+        final ranked = rankCommitted(
+          facts: [
+            for (final f in facts)
+              if (seatOf.containsKey(f.userId)) f,
+          ],
+          counted: counted,
+          monthStart: monthStart,
+          excluded: {...taken, seat.userId},
+        );
+        (H2hCandidateFacts, H2hHeldSeat)? chosen;
+        for (final candidate in ranked) {
+          final lower = seatOf[candidate.userId]!;
+          if (!wouldRepeat(seat.userId, lower)) {
+            chosen = (candidate, lower);
+            break;
+          }
+        }
+        if (chosen == null) {
+          unfilled.add(
+            H2hUnfilledRelegation(out: seat.userId, eliteSeat: seat),
+          );
+          continue;
+        }
+        taken
+          ..add(seat.userId)
+          ..add(chosen.$1.userId);
+        moves.add(
+          H2hPlannedMove(
+            out: seat.userId,
+            eliteSeat: seat,
+            substitute: chosen.$1.userId,
+            extraSeat: chosen.$2,
+            facts: chosen.$1,
+            absentRounds: run,
+          ),
+        );
+      }
+    }
+    return H2hDecemberPlan(
+      moves: List<H2hPlannedMove>.unmodifiable(moves),
+      vacancies: List<H2hPlannedVacancy>.unmodifiable(vacancies),
+      fills: List<(H2hOpenVacancy, H2hPlannedFill)>.unmodifiable(fills),
+      unfilled: List<H2hUnfilledRelegation>.unmodifiable(unfilled),
+    );
+  }
+
+  // NK278_000
 }

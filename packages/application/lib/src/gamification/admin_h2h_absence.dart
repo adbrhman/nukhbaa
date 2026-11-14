@@ -299,7 +299,12 @@ final class AdminH2hAbsence {
       counted: state.counted,
       excluded: {...state.relegated, ...state.promoted},
     );
-    final seatOf = {for (final s in state.extra) s.userId: s};
+    // NK278: from December 2026 the substitutes are of المجموعة 5 only.
+    final december = H2hLeaguePolicy.usesDecemberRules(state.monthStart);
+    final seatOf = {
+      for (final s in state.extra)
+        if (!december || s.groupIndex == 0) s.userId: s,
+    };
     final candidates = <H2hAbsenceCandidate>[
       for (final f in ranked.take(shownCandidates))
         if (seatOf[f.userId] != null)
@@ -432,9 +437,15 @@ final class AdminH2hAbsence {
     if (factsResult is Err<List<H2hCandidateFacts>>) {
       return Result.err(factsResult.error);
     }
+    // NK278 (migration 0214): from December 2026 an elite player goes down
+    // to المجموعة 5 only, the group below his.
+    final december = H2hLeaguePolicy.usesDecemberRules(state.monthStart);
     final chosen = H2hAbsencePolicy.chooseSubstitute(
       out: userId,
-      extra: state.extra,
+      extra: [
+        for (final s in state.extra)
+          if (!december || s.groupIndex == 0) s,
+      ],
       counted: state.counted,
       facts: (factsResult as Ok<List<H2hCandidateFacts>>).value,
       excluded: {...state.relegated, ...state.promoted},
