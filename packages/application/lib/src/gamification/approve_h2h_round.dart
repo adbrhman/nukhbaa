@@ -1,6 +1,8 @@
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
+import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/identity/authorization.dart';
 import 'package:domain/domain.dart';
@@ -18,6 +20,10 @@ import 'package:shared/shared.dart';
 /// The database refuses the same things again (Axiom 6), so a race between
 /// two admins ends in one round, not two.
 ///
+/// **Past the month's end (NK279)**, when [leagues] is given: a day after
+/// the month's end goes to the league still playing its 19 rounds
+/// (`h2hCycleOf`), as the scheduler does.
+///
 /// Never throws; returns a typed [Result] with the new round.
 final class ApproveH2hRound {
   /// Creates the use-case over its collaborators.
@@ -26,15 +32,20 @@ final class ApproveH2hRound {
     required IdGenerator idGenerator,
     required Clock clock,
     H2hControlStore? controls,
+    H2hLeagueStore? leagues,
   }) : _rounds = rounds,
        _ids = idGenerator,
        _clock = clock,
-       _controls = controls;
+       _controls = controls,
+       _leagues = leagues;
 
   final H2hRoundStore _rounds;
   final IdGenerator _ids;
   final Clock _clock;
   final H2hControlStore? _controls;
+
+  /// NK279: reads the league a day belongs to; null: the day's own month.
+  final H2hLeagueStore? _leagues;
 
   /// Approves the Riyadh [day] (any instant on that date) for [principal].
   Future<Result<H2hRound>> call({
@@ -46,12 +57,28 @@ final class ApproveH2hRound {
       return Result.err(auth.error);
     }
     final theDay = DateTime.utc(day.year, day.month, day.day);
+    final DateTime? monthStart;
+    final leagues = _leagues;
+    if (leagues != null) {
+      final cycle = await h2hCycleOf(
+        leagues: leagues,
+        rounds: _rounds,
+        day: theDay,
+      );
+      if (cycle is Err<DateTime>) {
+        return Result.err(cycle.error);
+      }
+      monthStart = (cycle as Ok<DateTime>).value;
+    } else {
+      monthStart = null;
+    }
     final approved = await approveDay(
       rounds: _rounds,
       ids: _ids,
       now: _clock.nowUtc(),
       day: theDay,
       approvedBy: principal.userId,
+      monthStart: monthStart,
     );
     final controls = _controls;
     if (approved is Ok<H2hRound> && controls != null) {
@@ -70,12 +97,15 @@ final class ApproveH2hRound {
 
   /// Approves [day] as the next round of its month for [approvedBy], an
   /// admin, or for the system when null. Shared with `RunH2hRounds`.
+  /// [monthStart] is the league the day joins (NK279: one still playing
+  /// past its month's end); null: the day's own month.
   static Future<Result<H2hRound>> approveDay({
     required H2hRoundStore rounds,
     required IdGenerator ids,
     required DateTime now,
     required DateTime day,
     required UserId? approvedBy,
+    DateTime? monthStart,
   }) async {
     final fixturesResult = await rounds.dayFixtures(day);
     if (fixturesResult is Err<H2hDayFixtures>) {
@@ -92,7 +122,7 @@ final class ApproveH2hRound {
       );
     }
 
-    final month = H2hLeaguePolicy.monthStartOf(day);
+    final month = monthStart ?? H2hLeaguePolicy.monthStartOf(day);
     final listResult = await rounds.roundsOf(month);
     if (listResult is Err<List<H2hRound>>) {
       return Result.err(listResult.error);

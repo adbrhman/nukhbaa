@@ -4,6 +4,7 @@ library;
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_newcomer_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
@@ -84,7 +85,17 @@ final class SeatH2hNewcomers {
     if (!_enabled) {
       return const Result.ok(H2hNewcomersRun());
     }
-    final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(now.toUtc()));
+    // NK279: a league still playing past its month's end seats its new
+    // players as before its end.
+    final cycleResult = await h2hCycleOf(
+      leagues: _leagues,
+      rounds: _rounds,
+      day: riyadhDayOf(now.toUtc()),
+    );
+    if (cycleResult is Err<DateTime>) {
+      return Result.err(cycleResult.error);
+    }
+    final month = (cycleResult as Ok<DateTime>).value;
     if (!H2hLeaguePolicy.usesDecemberRules(month)) {
       return const Result.ok(H2hNewcomersRun());
     }

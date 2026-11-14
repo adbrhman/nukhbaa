@@ -15,6 +15,7 @@ import 'package:application/src/football_data/provider_sync_rules.dart'
 import 'package:application/src/gamification/admin_h2h_groups.dart';
 import 'package:application/src/gamification/close_h2h_month.dart';
 import 'package:application/src/gamification/draw_h2h_month.dart';
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_month_report_reader.dart';
@@ -143,6 +144,15 @@ final class AdminH2hControls {
   /// How many lines of the admin log [view] reads.
   static const int actionsShown = 30;
 
+  /// NK279: the month of [day], or when null the league playing [today]
+  /// (one still playing past its month's end included).
+  Future<Result<DateTime>> _viewedMonth(DateTime? day, DateTime today) async {
+    if (day != null) {
+      return Result.ok(H2hLeaguePolicy.monthStartOf(day));
+    }
+    return h2hCycleOf(leagues: _leagues, rounds: _rounds, day: today);
+  }
+
   /// The settings, the days of the month containing [day] (today's month
   /// when null) from today on, and the latest lines of the admin log.
   Future<Result<H2hControlsView>> view({
@@ -155,10 +165,22 @@ final class AdminH2hControls {
     }
     final now = _clock.nowUtc();
     final today = riyadhDayOf(now);
-    final month = H2hLeaguePolicy.monthStartOf(day ?? today);
-    final last = H2hLeaguePolicy.monthEndOf(
-      month,
-    ).subtract(const Duration(days: 1));
+    // NK279: with no day, the league playing today, one still playing past
+    // its month's end included, and its days past the end.
+    final monthResult = await _viewedMonth(day, today);
+    if (monthResult is Err<DateTime>) {
+      return Result.err(monthResult.error);
+    }
+    final month = (monthResult as Ok<DateTime>).value;
+    final monthRounds = await _rounds.roundsOf(month);
+    if (monthRounds is Err<List<H2hRound>>) {
+      return Result.err(monthRounds.error);
+    }
+    final last = H2hLeaguePolicy.cycleLastDayOf(
+      monthStart: month,
+      today: today,
+      rounds: (monthRounds as Ok<List<H2hRound>>).value.length,
+    );
     final from = month.isAfter(today) ? month : today;
 
     final settingsResult = await _controls.settings();
@@ -361,9 +383,11 @@ final class AdminH2hControls {
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
-    final month = H2hLeaguePolicy.monthStartOf(
-      day ?? riyadhDayOf(_clock.nowUtc()),
-    );
+    final seatMonth = await _viewedMonth(day, riyadhDayOf(_clock.nowUtc()));
+    if (seatMonth is Err<DateTime>) {
+      return Result.err(seatMonth.error);
+    }
+    final month = (seatMonth as Ok<DateTime>).value;
 
     final infoResult = await _leagues.monthOf(month);
     if (infoResult is Err<H2hMonthInfo?>) {
@@ -458,9 +482,11 @@ final class AdminH2hControls {
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
-    return _reports.reportOf(
-      H2hLeaguePolicy.monthStartOf(day ?? riyadhDayOf(_clock.nowUtc())),
-    );
+    final reportMonth = await _viewedMonth(day, riyadhDayOf(_clock.nowUtc()));
+    if (reportMonth is Err<DateTime>) {
+      return Result.err(reportMonth.error);
+    }
+    return _reports.reportOf((reportMonth as Ok<DateTime>).value);
   }
 
   /// Runs the league's jobs now, as the scheduler runs them every five

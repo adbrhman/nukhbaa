@@ -62,6 +62,12 @@ class H2hDivisionCard extends StatelessWidget {
         !promoted &&
         league.relegationZone > 0 &&
         league.myRank > count - league.relegationZone;
+    // NK279: a league of the December rules goes on past its month's end
+    // until round 19; the server counts no day left after the month.
+    final bool roundsGoOn =
+        league.daysLeft <= 0 &&
+        h2hUsesDecemberRules(league.monthStart) &&
+        league.rounds.length < 19;
     // NK277: what the server says of a waiting group or a late start.
     final int? missing = league.waitingFor;
     final String? waitingNote = missing != null
@@ -218,9 +224,11 @@ class H2hDivisionCard extends StatelessWidget {
               Expanded(
                 child: _Stat(
                   label: 'الوقت المتبقي',
-                  value: h2hDaysLeftLabel(league.daysLeft),
+                  value: roundsGoOn
+                      ? h2hRoundsGoOnLabel
+                      : h2hDaysLeftLabel(league.daysLeft),
                   valueKey: const Key('h2h.daysLeft'),
-                  note: 'حتى نهاية الشهر',
+                  note: roundsGoOn ? h2hRoundsGoOnNote : 'حتى نهاية الشهر',
                   noteKey: const Key('h2h.daysLeft.note'),
                 ),
               ),

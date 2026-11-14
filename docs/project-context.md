@@ -8847,6 +8847,80 @@ seat). Marker `NK278`. The second of three batches; 279 is not approved.
 - **Apply 0214 in the SQL Editor before pushing** (migration-drift), and
   before 2026-12-01.
 
+### The league plays its 19 rounds past the month's end (script 279, migration 0215, 2026-11-14)
+
+Decided by the owner on 2026-11-14 and approved the same day (no limit on
+how long a league runs on; a new player who predicts while it runs on joins
+its waiting group). December 2026 on: gated on
+`H2hLeaguePolicy.usesDecemberRules` in Dart and `month_start >= 2026-12-01`
+in SQL; November and earlier run exactly as before. Marker `NK279`. The
+third of the three batches (277, 278, 279).
+
+- **Why**: before 279 a month was judged at its end with the rounds it had,
+  and the Elite Cup starts only after 19 rounds: a December with 17 rounds
+  by the 31st would have had no cup at all.
+- **The cycle** (`H2hLeaguePolicy.cycleOf`, `h2hCycleOf` in
+  `application/src/gamification/h2h_cycle.dart`): a day belongs to the
+  month before its own while that month is of the December rules, drawn,
+  public, not judged and has fewer than 19 rounds; otherwise to its own
+  month. Only the month before is looked at, and only from January 2027
+  (before that the answer is the day's own month with no read at all): a
+  league is never more than a month late, since the next draw waits for it
+  to be judged (`DrawH2hMonth` already waited for the month before).
+- **Who reads it**: `RunH2hRounds` (approval, the order of the secret
+  turns, locking), `ApproveH2hRound` by hand (with `leagues` wired),
+  `WithdrawH2hRound` (looks in last month's rounds too), `GetMyH2hLeague`
+  (and through it the month, round and group reads), `SeatH2hNewcomers`,
+  `loadH2hAbsenceState` (the absence job and desk), `ListH2hRounds`,
+  `AdminGetH2hGroups` / `AdminGetH2hGroupRound` and `AdminH2hControls`
+  (view, late seats, report) when no day is given. The admin's views list
+  candidate days a week ahead while the league has rounds left
+  (`H2hLeaguePolicy.cycleLastDayOf`).
+- **The judging** (`CloseH2hMonth._endOf`): a December-rules month with
+  fewer than 19 rounds is not judged (later months wait behind it); with 19
+  it is due 3 hours after the later of its month's end and its 19th round's
+  day, the 3 days of `settleWait` counted from there; the events carry that
+  instant. A league that finished inside its month is judged at the month's
+  end as before.
+- **The next month** waits as before: its rounds wait for the Elite Cup of
+  the month before (`_cupHoldsBack`), and from December that wait also
+  covers the hours between the 19th round and the cup's entries (a month
+  with elite groups and 19 rounds holds the next one back until its three
+  titles). A month's rounds never start before its first day.
+- **Migration 0215** (no row written): `h2h_rounds_day_in_month` is replaced
+  by `h2h_rounds_day_in_cycle` (before December 2026 a round lies in its
+  month; from it, on or after its first day), and the BEFORE INSERT guard
+  `check_h2h_round_cycle` refuses a round after its month's end once the
+  month is judged (`h2h_rounds_cycle_judged`), a round of a month while an
+  earlier public December-rules month not judged has fewer than 19
+  (`h2h_rounds_cycle_open`), and a round on or after a later month's round
+  (`h2h_rounds_cycle_open`). `PostgresH2hRoundStore` maps the three to
+  `h2h.round_out_of_cycle` (an invariant: the job skips the day).
+- **The player** (`H2hDivisionCard`): a December-rules league with no day
+  left and fewer than 19 rounds shows «الجولات مستمرة» «حتى الجولة 19»
+  instead of «آخر يوم في الشهر». December's rules say the 19 rounds are all
+  played, past the month's end if need be, the next month's rounds never
+  before its first day, the month's champion by the calendar alone, and the
+  corrections window counted from the 19th round's day when later.
+- **Rollback**: `NUKHBA_H2H_CYCLE_OVERRUN=off` on Northflank (RunH2hRounds
+  and CloseH2hMonth, both the scheduler's and the admin's run): every day is
+  a round of its own month and every month is judged at its end, as
+  before; the guard of 0215 then refuses nothing. No database freeze file:
+  refusing the rounds in the database alone would leave the month waiting
+  for rounds it cannot get. `supabase/queries/h2h_cycle_check.sql` reads,
+  month by month, the rounds, the last round's day, the rounds after the
+  month's end, judged or not, the cup titles and the next month's first
+  round.
+- Tests: application `h2h_cycle_overrun_test.dart` (the cycle; rounds 18
+  and 19 on 2 and 3 January through `RunH2hRounds`, locked; not judged with
+  18, judged after the 19th; January not drawn meanwhile; the player reads
+  December; the switch off; November; the policy); mobile
+  `h2h_screen_test.dart` and `h2h_rules_by_month_test.dart`; SQL
+  `0215_h2h_cycle_overrun_test.sql` and `0100_h2h_leagues_test.sql`
+  (updated for the new constraint name).
+- **Apply 0215 in the SQL Editor before pushing** (migration-drift), and
+  before 2026-12-01.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

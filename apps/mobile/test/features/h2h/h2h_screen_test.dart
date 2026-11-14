@@ -186,6 +186,26 @@ MyH2hLeagueDto _openAs(String id, int rank) {
   );
 }
 
+/// NK279: [_open] in a December-rules month, with [daysLeft] left: from
+/// December 2026 a league goes on past its month's end until round 19.
+MyH2hLeagueDto _openInDecember({required int daysLeft}) {
+  final MyH2hLeagueDto base = _open();
+  return MyH2hLeagueDto(
+    state: base.state,
+    monthStart: '2026-12-01',
+    startsOn: '2026-12-01',
+    isPilot: base.isPilot,
+    division: base.division,
+    groupIndex: base.groupIndex,
+    myRank: base.myRank,
+    promotionZone: base.promotionZone,
+    relegationZone: base.relegationZone,
+    daysLeft: daysLeft,
+    standings: base.standings,
+    rounds: base.rounds,
+  );
+}
+
 /// Round 2 is the next one: open, its first kickoff at 15:00 UTC on the
 /// 4th; nothing is being played.
 MyH2hLeagueDto _openNext() => _open(
@@ -367,6 +387,26 @@ void main() {
       await _pump(tester, _open(daysLeft: 0));
 
       expect(_text(tester, 'h2h.daysLeft'), 'آخر يوم في الشهر');
+      expect(_text(tester, 'h2h.daysLeft.note'), 'حتى نهاية الشهر');
+    });
+
+    // NK279: from December 2026 a league with rounds left goes on past its
+    // month's end; November above keeps its last day.
+    testWidgets('December at or past its end says the rounds go on', (
+      tester,
+    ) async {
+      await _pump(tester, _openInDecember(daysLeft: 0));
+
+      expect(_text(tester, 'h2h.daysLeft'), h2hRoundsGoOnLabel);
+      expect(_text(tester, 'h2h.daysLeft'), 'الجولات مستمرة');
+      expect(_text(tester, 'h2h.daysLeft.note'), 'حتى الجولة 19');
+    });
+
+    testWidgets('December with days left still counts them', (tester) async {
+      await _pump(tester, _openInDecember(daysLeft: 3));
+
+      expect(_text(tester, 'h2h.daysLeft'), 'باقي 3 أيام');
+      expect(_text(tester, 'h2h.daysLeft.note'), 'حتى نهاية الشهر');
     });
   });
 

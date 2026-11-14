@@ -4,6 +4,7 @@ library;
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
@@ -238,7 +239,16 @@ final class GetMyH2hLeague {
     }
     final reader = principal.userId;
     final now = _clock.nowUtc().toUtc();
-    final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(now));
+    // NK279: a league still playing past its month's end is the one read.
+    final cycleResult = await h2hCycleOf(
+      leagues: _leagues,
+      rounds: _rounds,
+      day: riyadhDayOf(now),
+    );
+    if (cycleResult is Err<DateTime>) {
+      return Result.err(cycleResult.error);
+    }
+    final month = (cycleResult as Ok<DateTime>).value;
 
     final seatResult = await _leagues.seatFor(
       userId: reader,

@@ -5,6 +5,7 @@ library;
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
@@ -426,7 +427,17 @@ Future<Result<H2hAbsenceState?>> loadH2hAbsenceState({
   required DateTime now,
   H2hVacancyStore? vacancies,
 }) async {
-  final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(now));
+  // NK279: a league still playing past its month's end keeps its absence
+  // rules until its 19th round.
+  final cycleResult = await h2hCycleOf(
+    leagues: leagues,
+    rounds: rounds,
+    day: riyadhDayOf(now),
+  );
+  if (cycleResult is Err<DateTime>) {
+    return Result.err(cycleResult.error);
+  }
+  final month = (cycleResult as Ok<DateTime>).value;
   if (!H2hLeaguePolicy.usesEliteDraw(month)) {
     return const Result.ok(null);
   }

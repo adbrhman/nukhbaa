@@ -2591,6 +2591,11 @@ final class CompositionRoot {
   /// rounds are judged, the stages on the next qualifying days, the
   /// decisions and the titles. Driven by the scheduler, never by a request.
   /// Off when the host sets `NUKHBA_H2H_CUP=off`.
+  ///
+  /// From December 2026 a league that has not played its 19 rounds by its
+  /// month's end goes on into the next month before its cup (NK279,
+  /// migration 0215); `NUKHBA_H2H_CYCLE_OVERRUN=off` makes every day a round
+  /// of its own month and judges every month at its end again.
   final RunH2hCup runH2hCup;
 
   /// New players and the waiting group (NK277, migration 0213): a player
@@ -3850,6 +3855,8 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         clock: clock,
         controls: PostgresH2hControlStore(connection),
+        // NK279: a day past the month's end joins a league still playing.
+        leagues: PostgresH2hLeagueStore(connection),
       ),
       withdrawH2hRound: WithdrawH2hRound(
         rounds: PostgresH2hRoundStore(connection),
@@ -3872,6 +3879,8 @@ final class CompositionRoot {
         cups: env['NUKHBA_H2H_CUP'] != 'off'
             ? PostgresH2hCupStore(connection)
             : null,
+        // NK279: off returns every day to its own month.
+        cycleOverrun: env['NUKHBA_H2H_CYCLE_OVERRUN'] != 'off',
       ),
       closeH2hMonth: CloseH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),
@@ -3881,6 +3890,7 @@ final class CompositionRoot {
         events: PostgresGamificationEventSink(connection),
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
+        cycleOverrun: env['NUKHBA_H2H_CYCLE_OVERRUN'] != 'off',
       ),
       drawH2hMonth: DrawH2hMonth(
         leagues: PostgresH2hLeagueStore(connection),
@@ -3935,6 +3945,7 @@ final class CompositionRoot {
             cups: env['NUKHBA_H2H_CUP'] != 'off'
                 ? PostgresH2hCupStore(connection)
                 : null,
+            cycleOverrun: env['NUKHBA_H2H_CYCLE_OVERRUN'] != 'off',
           ),
           // The same switches as runH2hAbsence and runH2hCup below: the
           // admin's manual run does what the scheduler does (audit 38).
@@ -3965,6 +3976,7 @@ final class CompositionRoot {
             events: PostgresGamificationEventSink(connection),
             idGenerator: idGenerator,
             controls: PostgresH2hControlStore(connection),
+            cycleOverrun: env['NUKHBA_H2H_CYCLE_OVERRUN'] != 'off',
           ),
           drawMonth: DrawH2hMonth(
             leagues: PostgresH2hLeagueStore(connection),

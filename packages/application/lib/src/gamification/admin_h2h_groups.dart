@@ -10,6 +10,7 @@ import 'package:application/src/football_data/provider_sync_rules.dart'
 import 'package:application/src/gamification/get_my_h2h_group_round.dart';
 import 'package:application/src/gamification/get_my_h2h_league.dart';
 import 'package:application/src/gamification/get_my_h2h_month.dart';
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/h2h_group_pairs.dart';
 import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/h2h_round_phase.dart';
@@ -116,9 +117,23 @@ final class H2hAdminGroupRound {
   final Map<UserId, WeeklyLeagueMemberProfile> profiles;
 }
 
-/// The month and group behind an admin read.
-DateTime _monthOf(DateTime? day, Clock clock) =>
-    H2hLeaguePolicy.monthStartOf(day ?? riyadhDayOf(clock.nowUtc()));
+/// The month behind an admin read: the month of [day], or when null the
+/// league playing today (NK279: one still playing past its month's end).
+Future<Result<DateTime>> _monthOf(
+  DateTime? day,
+  Clock clock,
+  H2hLeagueStore leagues,
+  H2hRoundStore rounds,
+) async {
+  if (day != null) {
+    return Result.ok(H2hLeaguePolicy.monthStartOf(day));
+  }
+  return h2hCycleOf(
+    leagues: leagues,
+    rounds: rounds,
+    day: riyadhDayOf(clock.nowUtc()),
+  );
+}
 
 /// Where a locked or unlocked round stands, from a group's sheet.
 H2hRoundStatus _statusOf(H2hRound round, H2hGroupSheet sheet) {
@@ -193,7 +208,11 @@ final class AdminGetH2hGroups {
   /// with no role check: the caller decides who may see it
   /// (`GetH2hEliteTables` lets every player read the elite groups).
   Future<Result<H2hAdminMonth>> readMonth({DateTime? day}) async {
-    final month = _monthOf(day, _clock);
+    final monthResult = await _monthOf(day, _clock, _leagues, _rounds);
+    if (monthResult is Err<DateTime>) {
+      return Result.err(monthResult.error);
+    }
+    final month = (monthResult as Ok<DateTime>).value;
 
     final infoResult = await _leagues.monthOf(month);
     if (infoResult is Err<H2hMonthInfo?>) {
@@ -346,7 +365,11 @@ final class AdminGetH2hGroupRound {
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
     }
-    final month = _monthOf(day, _clock);
+    final roundMonth = await _monthOf(day, _clock, _leagues, _rounds);
+    if (roundMonth is Err<DateTime>) {
+      return Result.err(roundMonth.error);
+    }
+    final month = (roundMonth as Ok<DateTime>).value;
 
     final refsResult = await _leagues.groupsOf(month);
     if (refsResult is Err<List<H2hGroupRef>>) {

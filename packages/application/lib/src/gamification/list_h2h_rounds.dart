@@ -1,6 +1,7 @@
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -61,8 +62,10 @@ final class ListH2hRounds {
   final H2hLeagueStore _leagues;
   final Clock _clock;
 
-  /// Reads the month containing [day] (today when null) for [principal], an
-  /// admin.
+  /// Reads the month containing [day] for [principal], an admin; when
+  /// [day] is null, the league playing today (NK279: one still playing past
+  /// its month's end), whose candidate days then reach past the month's end
+  /// too.
   Future<Result<H2hRoundsOverview>> call({
     required AuthenticatedUser principal,
     DateTime? day,
@@ -73,7 +76,20 @@ final class ListH2hRounds {
     }
     final now = _clock.nowUtc();
     final today = riyadhDayOf(now);
-    final month = H2hLeaguePolicy.monthStartOf(day ?? today);
+    final DateTime month;
+    if (day != null) {
+      month = H2hLeaguePolicy.monthStartOf(day);
+    } else {
+      final cycle = await h2hCycleOf(
+        leagues: _leagues,
+        rounds: _rounds,
+        day: today,
+      );
+      if (cycle is Err<DateTime>) {
+        return Result.err(cycle.error);
+      }
+      month = (cycle as Ok<DateTime>).value;
+    }
 
     final infoResult = await _leagues.monthOf(month);
     if (infoResult is Err<H2hMonthInfo?>) {
@@ -87,9 +103,11 @@ final class ListH2hRounds {
 
     final candidates = <H2hCandidateDay>[];
     if (rounds.length < H2hLeaguePolicy.maxRounds) {
-      final last = H2hLeaguePolicy.monthEndOf(
-        month,
-      ).subtract(const Duration(days: 1));
+      final last = H2hLeaguePolicy.cycleLastDayOf(
+        monthStart: month,
+        today: today,
+        rounds: rounds.length,
+      );
       final afterRounds = rounds.isEmpty
           ? month
           : rounds.last.day.add(const Duration(days: 1));

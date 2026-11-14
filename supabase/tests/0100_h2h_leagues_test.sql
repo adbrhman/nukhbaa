@@ -152,9 +152,19 @@ begin
     pg_temp.refusal(format(
       'insert into gamification.h2h_rounds '
       '(id, month_start, round_no, day, fixture_count) '
-      'values (%L, %L, 2, %L, 6)', r2, '2099-11-01', '2099-12-01'))
-      = '23514/h2h_rounds_day_in_month',
-    'a round day lies inside its month');
+      'values (%L, %L, 1, %L, 6)', r2, '2026-10-01', '2026-11-01'))
+      = '23514/h2h_rounds_day_in_cycle',
+    'before December 2026 a round day lies inside its month');
+
+  -- NK279 (0215): from December 2026 a round may follow its month's end,
+  -- never come before its first day.
+  perform pg_temp.check(
+    pg_temp.refusal(format(
+      'insert into gamification.h2h_rounds '
+      '(id, month_start, round_no, day, fixture_count) '
+      'values (%L, %L, 1, %L, 6)', r2, '2099-09-01', '2099-08-31'))
+      = '23514/h2h_rounds_day_in_cycle',
+    'a round day is never before its month');
 
   insert into gamification.h2h_rounds
     (id, month_start, round_no, day, fixture_count)

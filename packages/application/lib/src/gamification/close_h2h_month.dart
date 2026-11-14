@@ -39,6 +39,13 @@ import 'package:shared/shared.dart';
 /// between the extra groups, and each event carries `next_order`, the
 /// place in the next month's drawing order.
 ///
+/// **Past the month's end (NK279, owner 2026-11-14).** From December 2026 a
+/// league plays its 19 rounds even after its month's end: until it has them
+/// it is not judged (later months wait behind it), and it is due [grace]
+/// after the later of the month's end and its 19th round's day. With
+/// [cycleOverrun] false (the host's `NUKHBA_H2H_CYCLE_OVERRUN=off`) every
+/// month is due at its end, as before.
+///
 /// **Idempotent.** Each event is keyed on the user and the month; the month
 /// is marked closed only after every event was recorded, so a failure half
 /// way leaves it open and the next run repeats it harmlessly.
@@ -57,6 +64,7 @@ final class CloseH2hMonth {
     this.grace = const Duration(hours: 3),
     this.settleWait = const Duration(days: 3),
     this.maxMonthsPerRun = 3,
+    this.cycleOverrun = true,
   }) : _leagues = leagues,
        _rounds = rounds,
        _sheets = sheets,
@@ -84,6 +92,10 @@ final class CloseH2hMonth {
   /// The most months a single run closes.
   final int maxMonthsPerRun;
 
+  /// NK279: false when the host turned it off
+  /// (`NUKHBA_H2H_CYCLE_OVERRUN=off`): a month is due at its end, as before.
+  final bool cycleOverrun;
+
   /// Riyadh is UTC+3 all year, with no daylight saving.
   static const Duration _riyadhOffset = Duration(hours: 3);
 
@@ -100,8 +112,14 @@ final class CloseH2hMonth {
       if (month == null) {
         break;
       }
-      final endsAt = H2hLeaguePolicy.monthEndOf(month).subtract(_riyadhOffset);
-      if (instant.isBefore(endsAt.add(grace))) {
+      final endResult = await _endOf(month);
+      if (endResult is Err<DateTime?>) {
+        return Result.err(endResult.error);
+      }
+      final endsAt = (endResult as Ok<DateTime?>).value;
+      if (endsAt == null || instant.isBefore(endsAt.add(grace))) {
+        // Not over yet (null: its league still plays its 19 rounds, NK279);
+        // later months wait behind it.
         break;
       }
       final monthResult = await _closeMonth(
@@ -119,6 +137,43 @@ final class CloseH2hMonth {
       closed++;
     }
     return Result.ok(closed);
+  }
+
+  /// When [month]'s league ended, as a UTC instant: its month's end, or
+  /// from December 2026 the end of its 19th round's day when that is later
+  /// (NK279); null while it has fewer than 19 rounds. A pilot, a month not
+  /// drawn, and every month with [cycleOverrun] off end with their month.
+  Future<Result<DateTime?>> _endOf(DateTime month) async {
+    final monthEnd = H2hLeaguePolicy.monthEndOf(month).subtract(_riyadhOffset);
+    if (!cycleOverrun || !H2hLeaguePolicy.usesDecemberRules(month)) {
+      return Result.ok(monthEnd);
+    }
+    final infoResult = await _leagues.monthOf(month);
+    if (infoResult is Err<H2hMonthInfo?>) {
+      return Result.err(infoResult.error);
+    }
+    final info = (infoResult as Ok<H2hMonthInfo?>).value;
+    if (info == null || info.isPilot) {
+      return Result.ok(monthEnd);
+    }
+    final roundsResult = await _rounds.roundsOf(month);
+    if (roundsResult is Err<List<H2hRound>>) {
+      return Result.err(roundsResult.error);
+    }
+    final rounds = (roundsResult as Ok<List<H2hRound>>).value;
+    if (rounds.length < H2hLeaguePolicy.maxRounds) {
+      return const Result.ok(null);
+    }
+    var lastDay = rounds.first.day;
+    for (final round in rounds) {
+      if (round.day.isAfter(lastDay)) {
+        lastDay = round.day;
+      }
+    }
+    final leagueEnd = lastDay
+        .add(const Duration(days: 1))
+        .subtract(_riyadhOffset);
+    return Result.ok(leagueEnd.isAfter(monthEnd) ? leagueEnd : monthEnd);
   }
 
   /// Judges [month]; Ok(false) when it must wait for results.

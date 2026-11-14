@@ -93,10 +93,15 @@ final class WithdrawH2hRound {
     return const Result.ok(null);
   }
 
-  /// The round [roundId] among this month's and the next month's, or null.
+  /// The round [roundId] among last month's (NK279: a league still playing
+  /// past its month's end), this month's and the next month's, or null.
   Future<Result<H2hRound?>> _dayOf(H2hRoundId roundId, DateTime now) async {
     final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(now));
-    for (final start in [month, DateTime.utc(month.year, month.month + 1)]) {
+    for (final start in [
+      H2hLeaguePolicy.previousMonthOf(month),
+      month,
+      DateTime.utc(month.year, month.month + 1),
+    ]) {
       final list = await _rounds.roundsOf(start);
       if (list is Err<List<H2hRound>>) {
         return Result.err(list.error);

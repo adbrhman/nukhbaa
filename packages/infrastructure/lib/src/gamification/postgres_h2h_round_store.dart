@@ -292,6 +292,13 @@ WHERE round_id = @round_id::uuid
         'h2h.round_day_taken',
         'This day is a round already',
       ),
+      // NK279 (0215): a league still plays its 19 rounds, or is judged.
+      'h2h_rounds_day_in_cycle' ||
+      'h2h_rounds_cycle_open' ||
+      'h2h_rounds_cycle_judged' => const AppError.invariant(
+        'h2h.round_out_of_cycle',
+        'This day belongs to the league of another month',
+      ),
       'h2h_rounds_withdraw_last' => const AppError.invariant(
         'h2h.round_not_last',
         'Only the last round of a month can be withdrawn',

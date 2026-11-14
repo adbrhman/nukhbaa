@@ -791,6 +791,55 @@ final class H2hLeaguePolicy {
   static DateTime previousMonthOf(DateTime riyadhDay) =>
       DateTime.utc(riyadhDay.year, riyadhDay.month - 1);
 
+  // NK279 cycle
+  /// The month whose league [day] belongs to (NK279, owner 2026-11-14).
+  ///
+  /// From December 2026 a month's league plays all its [maxRounds] rounds,
+  /// then the Elite Cup and the crowning, even past the month's end: while
+  /// the month before [day]'s, a month of the December rules, is drawn and
+  /// public ([previousDrawn]), not judged ([previousJudged]) and has fewer
+  /// than [maxRounds] rounds ([previousRounds]), the day is its. Otherwise,
+  /// and always before January 2027, the day belongs to its own month.
+  static DateTime cycleOf({
+    required DateTime day,
+    required bool previousDrawn,
+    required int previousRounds,
+    required bool previousJudged,
+  }) {
+    final own = monthStartOf(day);
+    if (!usesDecemberRules(previousMonthOf(own)) ||
+        !previousDrawn ||
+        previousJudged ||
+        previousRounds >= maxRounds) {
+      return own;
+    }
+    return previousMonthOf(own);
+  }
+
+  /// Whether the league of [monthStart] goes on past its month's end
+  /// (NK279): a month of the December rules with fewer than [maxRounds]
+  /// [rounds].
+  static bool runsPastMonthEnd({
+    required DateTime monthStart,
+    required int rounds,
+  }) => usesDecemberRules(monthStart) && rounds < maxRounds;
+
+  /// The last day an admin's view of [monthStart]'s league lists from
+  /// [today] (NK279): the month's last day, or, while the league still has
+  /// rounds to play ([runsPastMonthEnd]), at least a week after [today].
+  static DateTime cycleLastDayOf({
+    required DateTime monthStart,
+    required DateTime today,
+    required int rounds,
+  }) {
+    final last = monthEndOf(monthStart).subtract(const Duration(days: 1));
+    if (!runsPastMonthEnd(monthStart: monthStart, rounds: rounds)) {
+      return last;
+    }
+    final ahead = today.add(const Duration(days: 7));
+    return ahead.isAfter(last) ? ahead : last;
+  }
+
   /// The kind of round a day of [fixtureCount] fixtures may be, or null when
   /// it may be none.
   static H2hRoundKind? roundKindOf(int fixtureCount) {

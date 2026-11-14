@@ -109,6 +109,7 @@ export 'src/gamification/get_my_h2h_month.dart';
 export 'src/gamification/get_my_h2h_round.dart';
 export 'src/gamification/get_my_insights.dart';
 export 'src/gamification/get_my_streak.dart';
+export 'src/gamification/h2h_cycle.dart';
 export 'src/gamification/h2h_group_pairs.dart';
 export 'src/gamification/h2h_month_book.dart';
 export 'src/gamification/h2h_round_phase.dart';

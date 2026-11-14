@@ -2,6 +2,7 @@ import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
 import 'package:application/src/gamification/approve_h2h_round.dart';
+import 'package:application/src/gamification/h2h_cycle.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_cup_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
@@ -55,6 +56,14 @@ final class H2hRoundsRun {
 /// approved or locked in this run: a round locked first would keep a group
 /// in the order of the slots for good.
 ///
+/// **Past the month's end (NK279, owner 2026-11-14)**: from December 2026 a
+/// league that has not played its 19 rounds by its month's end takes the
+/// next days as its own rounds until the 19th (`h2hCycleOf`), and they are
+/// locked here like the others. The next month's rounds then wait for its
+/// Elite Cup as above. With [cycleOverrun] false (the host's
+/// `NUKHBA_H2H_CYCLE_OVERRUN=off`) every day is a round of its own month,
+/// as before.
+///
 /// Never throws; a failure is returned and the next run repeats the work
 /// harmlessly (approval refuses a day already taken; locking is idempotent).
 final class RunH2hRounds {
@@ -66,12 +75,14 @@ final class RunH2hRounds {
     H2hControlStore? controls,
     H2hTurnKeeper? turns,
     H2hCupStore? cups,
+    bool cycleOverrun = true,
   }) : _rounds = rounds,
        _leagues = leagues,
        _ids = idGenerator,
        _controls = controls,
        _turns = turns,
-       _cups = cups;
+       _cups = cups,
+       _overrun = cycleOverrun;
 
   final H2hRoundStore _rounds;
   final H2hLeagueStore _leagues;
@@ -79,6 +90,11 @@ final class RunH2hRounds {
   final H2hControlStore? _controls;
   final H2hTurnKeeper? _turns;
   final H2hCupStore? _cups;
+
+  /// NK279: false when the host turned it off
+  /// (`NUKHBA_H2H_CYCLE_OVERRUN=off`): every day is a round of its own
+  /// month, as before script 279.
+  final bool _overrun;
 
   /// Approves and locks what is due as of [now].
   Future<Result<H2hRoundsRun>> call({required DateTime now}) async {
@@ -91,6 +107,17 @@ final class RunH2hRounds {
       H2hLeaguePolicy.monthStartOf(today.subtract(const Duration(days: 1))),
       H2hLeaguePolicy.monthStartOf(today),
     };
+    // NK279: a league still playing past its month's end keeps its rounds
+    // ordered and locked here too.
+    final cycleResult = await h2hCycleOf(
+      leagues: _leagues,
+      rounds: _rounds,
+      day: today,
+    );
+    if (cycleResult is Err<DateTime>) {
+      return Result.err(cycleResult.error);
+    }
+    months.add((cycleResult as Ok<DateTime>).value);
 
     final turns = _turns;
     if (turns != null) {
@@ -133,21 +160,37 @@ final class RunH2hRounds {
       if (!approving || excluded.contains(day)) {
         continue;
       }
-      final open = await _monthIsOpen(H2hLeaguePolicy.monthStartOf(day));
+      // NK279: the day goes to a league still playing past its month's
+      // end, else to its own month.
+      final DateTime month;
+      if (_overrun) {
+        final cycle = await h2hCycleOf(
+          leagues: _leagues,
+          rounds: _rounds,
+          day: day,
+        );
+        if (cycle is Err<DateTime>) {
+          return Result.err(cycle.error);
+        }
+        month = (cycle as Ok<DateTime>).value;
+      } else {
+        month = H2hLeaguePolicy.monthStartOf(day);
+      }
+      final open = await _monthIsOpen(month);
       if (open is Err<bool>) {
         return Result.err(open.error);
       }
       if (!(open as Ok<bool>).value) {
         continue;
       }
-      final held = await _cupHoldsBack(H2hLeaguePolicy.monthStartOf(day));
+      final held = await _cupHoldsBack(month);
       if (held is Err<bool>) {
         return Result.err(held.error);
       }
       if ((held as Ok<bool>).value) {
         continue;
       }
-      final due = await _dueForApproval(day, instant, lead);
+      final due = await _dueForApproval(day, instant, lead, month);
       if (due is Err<bool>) {
         return Result.err(due.error);
       }
@@ -160,6 +203,7 @@ final class RunH2hRounds {
         now: instant,
         day: day,
         approvedBy: null,
+        monthStart: month,
       );
       if (result is Ok<H2hRound>) {
         approved++;
@@ -241,8 +285,26 @@ final class RunH2hRounds {
       return Result.err(state.error);
     }
     final H2hCupState cup = (state as Ok<H2hCupState>).value;
+    if (cup.titles.length >= H2hCupPolicy.places.length) {
+      return const Result.ok(false);
+    }
+    if (cup.entries.isNotEmpty) {
+      return const Result.ok(true);
+    }
+    // NK279: from December 2026 the cup enters only once the 19th round is
+    // settled, which may be after the next day is approved: a month with
+    // elite groups holds the next one back until then.
+    if (!H2hLeaguePolicy.usesDecemberRules(before)) {
+      return const Result.ok(false);
+    }
+    final groups = await _leagues.groupsOf(before);
+    if (groups is Err<List<H2hGroupRef>>) {
+      return Result.err(groups.error);
+    }
     return Result.ok(
-      cup.entries.isNotEmpty && cup.titles.length < H2hCupPolicy.places.length,
+      (groups as Ok<List<H2hGroupRef>>).value.any(
+        (g) => g.division == H2hLeaguePolicy.eliteDivision,
+      ),
     );
   }
 
@@ -260,11 +322,13 @@ final class RunH2hRounds {
   }
 
   /// Whether [day] is a regular day, not approved yet, whose first kickoff
-  /// is ahead of [now] but within [lead].
+  /// is ahead of [now] but within [lead], after the last round of [month]
+  /// (NK279: the league it would join).
   Future<Result<bool>> _dueForApproval(
     DateTime day,
     DateTime now,
     Duration lead,
+    DateTime month,
   ) async {
     final fixturesResult = await _rounds.dayFixtures(day);
     if (fixturesResult is Err<H2hDayFixtures>) {
@@ -282,9 +346,7 @@ final class RunH2hRounds {
         H2hRoundKind.regular) {
       return const Result.ok(false);
     }
-    final listResult = await _rounds.roundsOf(
-      H2hLeaguePolicy.monthStartOf(day),
-    );
+    final listResult = await _rounds.roundsOf(month);
     if (listResult is Err<List<H2hRound>>) {
       return Result.err(listResult.error);
     }

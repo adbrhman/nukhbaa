@@ -60,6 +60,20 @@ void main() {
       expect(h2hRulesForMonth('2028-06-01'), same(h2hDecemberRules));
     });
 
+    // NK279: December tells the league going on past the month's end.
+    test('December says the 19 rounds are all played, past the month\'s '
+        'end if need be, and the month\'s champion stays the calendar\'s', () {
+      final String all = h2hDecemberRules.join('\n');
+      expect(all, contains('في الدوري 19 جولة تُلعب كلها'));
+      expect(all, contains('تستمر الجولات في الشهر التالي حتى الجولة 19'));
+      expect(all, contains('ولا تبدأ قبل أول أيامه'));
+      expect(all, contains('بطل الشهر يُحسب على أيام الشهر وحدها'));
+      expect(all, contains('من نهاية يوم الجولة 19 إن جاء بعده'));
+      expect(all, isNot(contains('وفي الشهر 19 جولة على الأكثر')));
+      final String november = h2hNovemberRules.join('\n');
+      expect(november, isNot(contains('تستمر الجولات في الشهر التالي')));
+    });
+
     test('a month that cannot be read keeps the rules it had', () {
       expect(h2hRulesForMonth(''), same(h2hRules));
       expect(h2hRulesForMonth('soon'), same(h2hRules));
