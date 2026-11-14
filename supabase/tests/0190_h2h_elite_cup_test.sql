@@ -48,7 +48,7 @@ SELECT s.id::text AS id, s.place, s.stage, s.attempt,
 FROM gamification.h2h_cup_stages s
 LEFT JOIN gamification.h2h_cup_stage_locks k ON k.stage_id = s.id
 WHERE s.month_start = $1::date
-ORDER BY s.day;
+ORDER BY s.day, s.place, s.attempt;
 
 -- pairsSql
 PREPARE cup_pairs(date) AS

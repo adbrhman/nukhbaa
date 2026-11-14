@@ -1,6 +1,7 @@
 /// The Elite Cup's rules (NK185, decided 2026-10-31): three separate paths,
-/// each a semi-final drawn at random and a final, played one after the
-/// other; a pair is judged on the stage's fixtures only.
+/// each a semi-final drawn at random and a final, played on four days, paths
+/// 2 and 3 side by side (NK276); a pair is judged on the stage's fixtures
+/// only.
 library;
 
 import 'dart:math';
@@ -32,15 +33,42 @@ H2hCupSide _side(int points, {int exact = 0, int predicted = 6}) =>
 
 void main() {
   group('the order', () {
-    test('path 1 semi and final, then path 2, then path 3: days 20 to 25', () {
+    // NK276: four days, paths 2 and 3 side by side (owner, 2026-11-14).
+    test('path 1 semi and final, then paths 2 and 3 together: days 20 to '
+        '23', () {
       expect(
         [for (final s in H2hCupPolicy.order) '${s.place}${s.round.wire}'],
-        ['1semi', '1final', '2semi', '2final', '3semi', '3final'],
+        ['1semi', '1final', '2semi', '3semi', '2final', '3final'],
       );
       expect(
         [for (final s in H2hCupPolicy.order) s.expectedDay],
-        [20, 21, 22, 23, 24, 25],
+        [20, 21, 22, 22, 23, 23],
       );
+      expect(
+        [
+          for (final day in H2hCupPolicy.days)
+            [for (final s in day) '${s.place}${s.round.wire}'],
+        ],
+        [
+          ['1semi'],
+          ['1final'],
+          ['2semi', '3semi'],
+          ['2final', '3final'],
+        ],
+      );
+    });
+
+    test('every step sits on its own cup day, and the order follows the '
+        'days', () {
+      for (var i = 0; i < H2hCupPolicy.days.length; i++) {
+        for (final s in H2hCupPolicy.days[i]) {
+          expect(s.cupDay, i + 1, reason: '$s');
+        }
+      }
+      expect(H2hCupPolicy.order, [for (final day in H2hCupPolicy.days) ...day]);
+      expect({
+        for (final s in H2hCupPolicy.order) s.place,
+      }, H2hCupPolicy.places.toSet());
     });
 
     test('the league is finished only with 19 rounds judged', () {

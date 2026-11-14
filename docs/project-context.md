@@ -8673,6 +8673,57 @@ for since NK182 with `h2h.elite_carry_pending`). Marker `NK275`.
   (November judged and December dealt through the real use-cases) and
   `h2h_draw_test` (a month judged without the order waits).
 
+### The Elite Cup in four days (script 276, migration 0212, 2026-11-14)
+
+Decided by the owner on 2026-11-14. Marker `NK276`. The draw and the
+tie-break of a pair stay as script 185 built them.
+
+- **The four cup days** (`H2hCupPolicy.days`, `H2hCupStep.cupDay`): day 1
+  the first places' semi-finals; day 2 their final (the Elite Cup's
+  champion); day 3 the second places' semi-finals among themselves AND the
+  third places' semi-finals among themselves, the same day, two separate
+  cups on the same fixtures; day 4 their two finals together (the cup's
+  second and third). Expected on days 20 to 23 (`expectedDay`); days
+  without six fixtures push them back, into the next month if they must.
+  `H2hCupPolicy.order` lists the steps day by day.
+- **The job** (`RunH2hCup._keep`): the cup days one at a time; a cup day
+  starts only once every stage of the day before it is decided, after the
+  month's last round and every day the earlier cup days used (a carried
+  attempt, a path crowned on an earlier run). The paths of one day are
+  scheduled in the same run, so they get the same day; a day left with
+  nothing to play carries both, each with its own pairs. A path with two
+  qualifiers has no semi-final but still plays its final on day 4; with
+  one or none it is crowned (walkover, vacant) when its day comes.
+- **Migration 0212** (no row written): `h2h_cup_stages_day_uniq` (one
+  stage a day) is replaced by the unique index
+  `h2h_cup_stages_day_place_uniq` (one stage a day for each path);
+  `gamification.h2h_cup_day(place, stage)` gives the cup day; the trigger
+  `check_h2h_cup_stage` keeps the 19 rounds and the last round's day, and
+  refuses another month's cup on a day (`h2h_cup_stages_day_taken`), a day
+  before a stage of its month, the same day for a different cup day, and
+  an earlier cup day after a later one (`h2h_cup_stages_in_order`). The
+  adapter maps every `h2h_cup_...` refusal to `h2h.cup_refused` as before;
+  `stagesSql` orders by day, path, attempt.
+- **December's rules text** (`h2hDecemberRules`, every month from December
+  2026): the 80 in groups 1 to 4 and the extra groups, the round, the
+  walkover, the void match, the group tie-break, the absence rule of
+  groups 1 to 4, the cup in four days and how a cup pair is decided, the
+  carry of NK275 (3 down from each of groups 1 to 4, the 80 completed from
+  groups 5 and 6 by commitment and re-ranked by the month, 5 down and 5 up
+  between the extra groups), the commitment order, the group leader's
+  badge, the corrections window and the five days to stay. The old ladder's
+  lines (divisions, up to 3 across a boundary, the first division's
+  champion) are gone.
+- Tests: domain `h2h_cup_policy_test.dart` (the days and the order);
+  application `h2h_cup_test.dart` (the four days through the real job, the
+  finals waiting for both semi-finals, a cup day carried for both paths);
+  SQL `0212_h2h_cup_four_days_test.sql` (and `0190`'s, its `stagesSql`
+  copy updated); mobile `h2h_rules_by_month_test.dart`.
+- **Apply 0212 in the SQL Editor before pushing** (migration-drift).
+- Not in this batch: league rounds running into the next month, the
+  absence rule in every group, a new player's immediate seat in a last
+  group filling during the month.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

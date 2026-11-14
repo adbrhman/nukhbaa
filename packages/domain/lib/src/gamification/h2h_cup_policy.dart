@@ -7,12 +7,16 @@
 /// random and a final; the paths never mix and a loser never moves to
 /// another path.
 ///
-/// The stages are played one after the other on the next qualifying days
-/// (six fixtures or more): path 1's semi-finals, path 1's final, path 2's
-/// semi-finals, ... A stage is never scheduled before the one before it is
-/// settled, so the day number is an expectation, never a deadline. A stage
-/// whose day leaves no fixture to play is carried to the next qualifying
-/// day with the same pairs; nothing is lost and nothing is shortened.
+/// The cup is played on four days, one after the other on the next
+/// qualifying days (six fixtures or more; NK276, decided 2026-11-14): path
+/// 1's semi-finals, then path 1's final; then the semi-finals of paths 2
+/// and 3 side by side on one day, then their two finals side by side
+/// ([H2hCupPolicy.days]). Two paths on one day are still two separate cups
+/// on the same fixtures. A cup day is never scheduled before every stage of
+/// the day before it is settled, so the day number is an expectation, never
+/// a deadline. A stage whose day leaves no fixture to play is carried to
+/// the next qualifying day with the same pairs; nothing is lost and nothing
+/// is shortened.
 ///
 /// A tie is judged on the stage's fixtures only (the monthly points never
 /// decide it): the side that predicted wins over the side that did not;
@@ -80,11 +84,15 @@ final class H2hCupStep {
   /// The round of the path.
   final H2hCupRound round;
 
-  /// The expected league day of the step when nothing was late: 20 to 25.
-  int get expectedDay =>
-      H2hCupPolicy.firstCupDay +
-      (place - 1) * 2 +
-      (round == H2hCupRound.semi ? 0 : 1);
+  /// The cup day the step is played on, 1 to 4 ([H2hCupPolicy.days]): path
+  /// 1's semi-finals, path 1's final, the semi-finals of paths 2 and 3, the
+  /// finals of paths 2 and 3.
+  int get cupDay => place == 1
+      ? (round == H2hCupRound.semi ? 1 : 2)
+      : (round == H2hCupRound.semi ? 3 : 4);
+
+  /// The expected league day of the step when nothing was late: 20 to 23.
+  int get expectedDay => H2hCupPolicy.firstCupDay + cupDay - 1;
 
   @override
   bool operator ==(Object other) =>
@@ -220,13 +228,31 @@ abstract final class H2hCupPolicy {
   /// day 19.
   static const int firstCupDay = 20;
 
-  /// The steps of a cup, in the order they are played.
+  /// The days of a cup, first to last, with the steps each day holds
+  /// (NK276, decided 2026-11-14): the first places' semi-finals, their
+  /// final, then the second and third places' semi-finals together, then
+  /// their two finals together. A day starts only once every stage of the
+  /// day before it is decided.
+  static const List<List<H2hCupStep>> days = <List<H2hCupStep>>[
+    <H2hCupStep>[H2hCupStep(1, H2hCupRound.semi)],
+    <H2hCupStep>[H2hCupStep(1, H2hCupRound.finale)],
+    <H2hCupStep>[
+      H2hCupStep(2, H2hCupRound.semi),
+      H2hCupStep(3, H2hCupRound.semi),
+    ],
+    <H2hCupStep>[
+      H2hCupStep(2, H2hCupRound.finale),
+      H2hCupStep(3, H2hCupRound.finale),
+    ],
+  ];
+
+  /// The steps of a cup, in the order they are played: [days], day by day.
   static const List<H2hCupStep> order = <H2hCupStep>[
     H2hCupStep(1, H2hCupRound.semi),
     H2hCupStep(1, H2hCupRound.finale),
     H2hCupStep(2, H2hCupRound.semi),
-    H2hCupStep(2, H2hCupRound.finale),
     H2hCupStep(3, H2hCupRound.semi),
+    H2hCupStep(2, H2hCupRound.finale),
     H2hCupStep(3, H2hCupRound.finale),
   ];
 

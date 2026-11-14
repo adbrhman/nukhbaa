@@ -16,8 +16,9 @@ import 'package:shared/shared.dart';
 /// Every write is append-only; entries, results and titles are inserted
 /// with `ON CONFLICT DO NOTHING`, so a repeated run changes nothing. The
 /// database's refusals of a stage (before the 19 rounds, out of order, a
-/// day already taken) arrive as constraint violations named `h2h_cup_...`
-/// and are returned as the invariant `h2h.cup_refused`.
+/// day already taken by the path or by another month's cup: 0190, 0212)
+/// arrive as constraint violations named `h2h_cup_...` and are returned as
+/// the invariant `h2h.cup_refused`.
 ///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
@@ -36,7 +37,8 @@ WHERE e.month_start = @month::date
 ORDER BY e.place, e.group_number
 ''';
 
-  /// The stages of a month, in day order, with their freeze.
+  /// The stages of a month, in day order, with their freeze. Two paths may
+  /// share a day (0212): then path 2 first.
   static const String stagesSql = '''
 SELECT s.id::text AS id, s.place, s.stage, s.attempt,
        to_char(s.day, 'YYYY-MM-DD') AS day,
@@ -45,7 +47,7 @@ SELECT s.id::text AS id, s.place, s.stage, s.attempt,
 FROM gamification.h2h_cup_stages s
 LEFT JOIN gamification.h2h_cup_stage_locks k ON k.stage_id = s.id
 WHERE s.month_start = @month::date
-ORDER BY s.day
+ORDER BY s.day, s.place, s.attempt
 ''';
 
   /// The pairs of a month's stages, with their results once decided.

@@ -4,7 +4,8 @@
 /// Backed by `PostgresH2hCupStore`. Every write is append-only and
 /// idempotent where it can be (an entry, a result or a title already
 /// stored is left as it is); the database keeps the stages in order after
-/// the 19 rounds and one stage a day.
+/// the 19 rounds, one stage a day for each path, and a day for one cup day
+/// of one month only (0212: paths 2 and 3 share their days).
 ///
 /// General contract (Application ADR, Section 2): MUST NOT throw -- every
 /// outcome is a typed [Result]; MUST map infrastructure failures to

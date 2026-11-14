@@ -1,7 +1,8 @@
 /// The Elite Cup through the real job (NK185, migration 0190): the
-/// qualifiers once the 19 rounds are judged, the stages one after the other
-/// on the next qualifying days, the decisions, the titles, a stage carried
-/// to another day, and nothing before the league is finished.
+/// qualifiers once the 19 rounds are judged, the four cup days one after the
+/// other on the next qualifying days with paths 2 and 3 side by side (NK276,
+/// migration 0212), the decisions, the titles, a stage carried to another
+/// day, and nothing before the league is finished.
 library;
 
 import 'dart:math';
@@ -39,7 +40,15 @@ final class _Cups implements H2hCupStore {
   Future<Result<H2hCupState>> stateOf(DateTime monthStart) async => Result.ok(
     H2hCupState(
       entries: List.of(entries),
-      stages: List.of(stages)..sort((a, b) => a.day.compareTo(b.day)),
+      // As stagesSql reads them: day, then path, then attempt.
+      stages: List.of(stages)
+        ..sort((a, b) {
+          final byDay = a.day.compareTo(b.day);
+          if (byDay != 0) return byDay;
+          final byPlace = a.step.place.compareTo(b.step.place);
+          if (byPlace != 0) return byPlace;
+          return a.attempt.compareTo(b.attempt);
+        }),
       titles: List.of(titles),
     ),
   );
@@ -67,8 +76,16 @@ final class _Cups implements H2hCupStore {
     required int fixtureCount,
     required List<H2hCupPair> pairs,
   }) async {
-    // The database's backstop: a later day than every stage.
-    if (stages.any((s) => !s.day.isBefore(day))) {
+    // The database's backstop (0190, 0212): a later day than every stage,
+    // or the same day for the other path of the same cup day; never an
+    // earlier cup day after a later one.
+    if (stages.any(
+      (s) =>
+          s.day.isAfter(day) ||
+          s.step.cupDay > step.cupDay ||
+          (s.day == day &&
+              (s.step.cupDay != step.cupDay || s.step.place == step.place)),
+    )) {
       return const Result.err(
         AppError.invariant('h2h.cup_refused', 'out of order'),
       );
@@ -273,6 +290,31 @@ final class _World {
   }
 }
 
+/// The stages of November [day], path 2 first.
+List<H2hCupStage> _onDay(_World w, int day) => [
+  for (final s in w.cups.stages)
+    if (s.day == DateTime.utc(2026, 11, day)) s,
+]..sort((a, b) => a.step.place.compareTo(b.step.place));
+
+/// Every pair of [stage] won by its home side.
+Map<UserId, int> _homeWins(H2hCupStage stage) => {
+  for (final p in stage.pairs) ...{p.home: 9, p.away: 3},
+};
+
+/// A world whose path 1 is played and crowned on the 20th and 21st: paths
+/// 2 and 3 drawn for the 22nd.
+Future<_World> _throughPath1() async {
+  final w = _World();
+  await w.run(DateTime.utc(2026, 11, 19, 21, 30));
+  await w.run(DateTime.utc(2026, 11, 20, 15, 30));
+  w.cups.settle(w.cups.stages.single, _homeWins(w.cups.stages.single));
+  await w.run(DateTime.utc(2026, 11, 20, 21));
+  await w.run(DateTime.utc(2026, 11, 21, 15, 30));
+  w.cups.settle(w.cups.stages.last, _homeWins(w.cups.stages.last));
+  await w.run(DateTime.utc(2026, 11, 21, 21));
+  return w;
+}
+
 void main() {
   /// The evening of round 19: Riyadh's November 20 has begun.
   final night19 = DateTime.utc(2026, 11, 19, 21, 30);
@@ -333,7 +375,7 @@ void main() {
   );
 
   test('the whole of path 1: semi-finals, then the final the next day, then '
-      'the title and path 2 drawn', () async {
+      'the title and paths 2 and 3 drawn together', () async {
     final w = _World();
     await w.run(night19);
     final semi = w.cups.stages.single;
@@ -378,14 +420,27 @@ void main() {
     expect(title.champion, finale.pairs.single.away);
     expect(title.runnerUp, finale.pairs.single.home);
     expect(title.how, 'final');
-    final path2 = w.cups.stages.last;
-    expect(path2.step, const H2hCupStep(2, H2hCupRound.semi));
+    // NK276: the second and the third places, each among themselves, on
+    // the same day.
+    final path2 = w.cups.stages.singleWhere(
+      (s) => s.step == const H2hCupStep(2, H2hCupRound.semi),
+    );
+    final path3 = w.cups.stages.singleWhere(
+      (s) => s.step == const H2hCupStep(3, H2hCupRound.semi),
+    );
     expect(path2.day, DateTime.utc(2026, 11, 22));
+    expect(path3.day, DateTime.utc(2026, 11, 22));
     expect(
       {
         for (final p in path2.pairs) ...[p.home, p.away],
       },
       {_p(1, 1), _p(2, 1), _p(3, 1), _p(4, 1)},
+    );
+    expect(
+      {
+        for (final p in path3.pairs) ...[p.home, p.away],
+      },
+      {_p(1, 2), _p(2, 2), _p(3, 2), _p(4, 2)},
     );
   });
 
@@ -434,8 +489,97 @@ void main() {
     final title = w.cups.titles.single;
     expect(title.champion, p2.home);
     expect(title.how, 'walkover');
-    // Path 1 needs no final: path 2 is drawn next.
-    expect(w.cups.stages.last.step, const H2hCupStep(2, H2hCupRound.semi));
+    // Path 1 needs no final: paths 2 and 3 are drawn next, the day after.
+    expect(
+      [
+        for (final s in w.cups.stages.skip(1))
+          '${s.step.place}${s.step.round.wire}@${s.day.day}',
+      ],
+      ['2semi@21', '3semi@21'],
+    );
+  });
+
+  // NK276: the cup in four days (owner, 2026-11-14).
+  test('the cup in four days: path 1 on days 20 and 21, paths 2 and 3 '
+      'together on days 22 and 23, each its own cup', () async {
+    final w = await _throughPath1();
+    expect(w.cups.titles.single.place, 1);
+
+    // Day 22: both semi-finals frozen at the same kickoff.
+    await w.run(DateTime.utc(2026, 11, 22, 15, 30));
+    final semis = _onDay(w, 22);
+    expect(semis, hasLength(2));
+    expect(semis.every((s) => s.locked), isTrue);
+
+    // Path 2's semi-finals settled, path 3's not yet: no final may start.
+    w.cups.settle(semis[0], _homeWins(semis[0]));
+    await w.run(DateTime.utc(2026, 11, 22, 21));
+    expect(w.cups.stages, hasLength(4), reason: 'the finals wait for both');
+
+    w.cups.settle(semis[1], _homeWins(semis[1]));
+    final day22 = await w.run(DateTime.utc(2026, 11, 22, 21, 30));
+    expect(day22.scheduled, 2);
+    final finals = _onDay(w, 23);
+    expect(
+      [for (final s in finals) '${s.step.place}${s.step.round.wire}'],
+      ['2final', '3final'],
+    );
+    for (final f in finals) {
+      final semi = semis.singleWhere((s) => s.step.place == f.step.place);
+      expect(
+        {f.pairs.single.home, f.pairs.single.away},
+        {for (final p in semi.pairs) p.home},
+        reason: 'a final is played by its own path\'s winners',
+      );
+    }
+
+    // Day 23: both finals, then the cup's second and third are crowned.
+    await w.run(DateTime.utc(2026, 11, 23, 15, 30));
+    for (final f in _onDay(w, 23)) {
+      w.cups.settle(f, {f.pairs.single.away: 4, f.pairs.single.home: 2});
+    }
+    final day23 = await w.run(DateTime.utc(2026, 11, 23, 21));
+
+    expect(day23.crowned, 2);
+    expect([for (final t in w.cups.titles) t.place], [1, 2, 3]);
+    for (final f in finals) {
+      final title = w.cups.titles.singleWhere((t) => t.place == f.step.place);
+      expect(title.champion, f.pairs.single.away);
+      expect(title.runnerUp, f.pairs.single.home);
+      expect(title.how, 'final');
+    }
+    expect(w.cups.stages, hasLength(6));
+    expect((await w.run(DateTime.utc(2026, 11, 24, 21))).scheduled, 0);
+  });
+
+  test('a cup day with nothing to play carries both paths to the same next '
+      'day, same pairs', () async {
+    final w = await _throughPath1();
+    await w.run(DateTime.utc(2026, 11, 22, 15, 30));
+    final semis = _onDay(w, 22);
+    for (final s in semis) {
+      w.cups.figures[s.id.value] = const H2hCupStageFigures(
+        fixtures: 0,
+        settled: 0,
+        sides: {},
+      );
+    }
+
+    await w.run(DateTime.utc(2026, 11, 22, 21));
+
+    final carried = _onDay(w, 23);
+    expect(
+      [for (final s in carried) '${s.step.place}${s.step.round.wire}'],
+      ['2semi', '3semi'],
+    );
+    for (final c in carried) {
+      final before = semis.singleWhere((s) => s.step == c.step);
+      expect(c.attempt, 2);
+      expect(
+        [for (final p in c.pairs) (p.home, p.away)],
+        [for (final p in before.pairs) (p.home, p.away)],
+      );
+    }
   });
 
   test('a run repeated changes nothing', () async {

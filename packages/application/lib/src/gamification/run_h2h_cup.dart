@@ -66,13 +66,17 @@ final class H2hCupRun {
 ///   (settled or void), the first three places of each elite group are
 ///   stored as the qualifiers of paths 1, 2 and 3 (the month book's tables,
 ///   so a seat swap is read as the league reads it).
-/// * **Stages, one at a time, in [H2hCupPolicy.order].** A stage is given
-///   the first qualifying day (six fixtures or more, today or tomorrow, not
-///   started, within the lead, not excluded, after every earlier stage and
-///   round) once the stage before it is decided. Its fixtures are frozen at
-///   its first kickoff; once every one is settled its pairs are decided by
-///   [H2hCupPolicy.decide]. A stage left with no fixture to play is carried
-///   to the next qualifying day with the same pairs.
+/// * **Four cup days, one at a time, in [H2hCupPolicy.days]** (NK276):
+///   path 1's semi-finals, its final, then paths 2 and 3 side by side --
+///   their semi-finals on one day, their finals on the next. A stage is
+///   given the first qualifying day (six fixtures or more, today or
+///   tomorrow, not started, within the lead, not excluded, after every
+///   round and every stage of the cup days before it) once every stage of
+///   the cup day before it is decided, so the two paths of a day are given
+///   the same day. Its fixtures are frozen at its first kickoff; once every
+///   one is settled its pairs are decided by [H2hCupPolicy.decide]. A stage
+///   left with no fixture to play is carried to the next qualifying day
+///   with the same pairs.
 /// * **Titles.** A final decides its path; a path whose semi-finals leave
 ///   one finalist crowns him without a final; none, the title is vacant.
 ///
@@ -207,140 +211,162 @@ final class RunH2hCup {
       state = (stateResult as Ok<H2hCupState>).value;
     }
 
-    // The last day already used by this month: its last round, then its
-    // stages. A new stage comes after it.
+    // NK276: the cup's four days (H2hCupPolicy.days), one after the other.
+    // The paths of one day play side by side on its fixtures; a day starts
+    // only once every stage of the day before it is decided, on a day after
+    // the month's last round and every stage before it.
     var lastDay = rounds.isEmpty ? null : rounds.last.day;
-    for (final s in state.stages) {
-      if (lastDay == null || s.day.isAfter(lastDay)) {
-        lastDay = s.day;
-      }
-    }
-
-    for (final place in H2hCupPolicy.places) {
-      if (state.titleOf(place) != null) {
-        continue;
-      }
-      final entries = state.entriesOf(place);
-      if (entries.length <= 1) {
-        final crowned = await _cups.crown(
-          monthStart: month,
-          place: place,
-          champion: entries.isEmpty ? null : entries.single.userId,
-          runnerUp: null,
-          how: entries.isEmpty ? 'vacant' : 'walkover',
-        );
-        if (crowned is Err<void>) {
-          return Result.err(crowned.error);
+    final titled = <int>{for (final t in state.titles) t.place};
+    final finalists = <int, List<UserId>>{};
+    for (final cupDay in H2hCupPolicy.days) {
+      // Every day this cup day already used, a carried attempt and a path
+      // crowned on an earlier run included: the next cup day comes after.
+      var played = lastDay;
+      for (final s in state.stages) {
+        if (cupDay.contains(s.step)) {
+          played = _later(played, s.day);
         }
-        run = run._plus(crowned: 1);
-        continue;
       }
+      var waiting = false;
+      for (final step in cupDay) {
+        final place = step.place;
+        if (titled.contains(place)) {
+          continue;
+        }
+        final entries = state.entriesOf(place);
+        if (step.round == H2hCupRound.semi) {
+          if (entries.length <= 1) {
+            final alone = await _crownAlone(month, place, [
+              for (final e in entries) e.userId,
+            ]);
+            if (alone is Err<void>) {
+              return Result.err(alone.error);
+            }
+            titled.add(place);
+            run = run._plus(crowned: 1);
+            continue;
+          }
+          if (entries.length == 2) {
+            // Two qualifiers go straight to the final.
+            finalists[place] = [entries[0].userId, entries[1].userId];
+            continue;
+          }
+          final semi = await _advance(
+            month: month,
+            step: step,
+            stage: state.stageOf(step),
+            entries: entries,
+            pairs: () => H2hCupPolicy.drawSemis(entries, _random),
+            now: now,
+            today: today,
+            lastDay: lastDay,
+            days: days,
+          );
+          if (semi is Err<_Advance>) {
+            return Result.err(semi.error);
+          }
+          final advance = (semi as Ok<_Advance>).value;
+          run = run._plus(
+            scheduled: advance.scheduled,
+            locked: advance.locked,
+            decided: advance.decided,
+          );
+          final decidedSemi = advance.decidedStage;
+          if (decidedSemi == null) {
+            waiting = true;
+            continue;
+          }
+          played = _later(played, decidedSemi.day);
+          final through = [
+            for (final r in decidedSemi.results)
+              if (r.winner != null) r.winner!,
+          ];
+          final bye = H2hCupPolicy.byeOf(entries, decidedSemi.pairs);
+          if (bye != null) {
+            through.add(bye);
+          }
+          if (through.length <= 1) {
+            final alone = await _crownAlone(month, place, through);
+            if (alone is Err<void>) {
+              return Result.err(alone.error);
+            }
+            titled.add(place);
+            run = run._plus(crowned: 1);
+            continue;
+          }
+          finalists[place] = through;
+          continue;
+        }
 
-      // The semi-finals; two qualifiers go straight to the final.
-      final semiStep = H2hCupStep(place, H2hCupRound.semi);
-      List<UserId> finalists;
-      if (entries.length == 2) {
-        finalists = [entries[0].userId, entries[1].userId];
-      } else {
-        final semi = state.stageOf(semiStep);
-        final step = await _advance(
+        // The final, between the two the semi-finals' day sent through.
+        final pairOf = finalists[place];
+        if (pairOf == null) {
+          continue;
+        }
+        final finale = await _advance(
           month: month,
-          step: semiStep,
-          stage: semi,
+          step: step,
+          stage: state.stageOf(step),
           entries: entries,
-          pairs: () => H2hCupPolicy.drawSemis(entries, _random),
+          pairs: () => [H2hCupPair(slot: 1, home: pairOf[0], away: pairOf[1])],
           now: now,
           today: today,
           lastDay: lastDay,
           days: days,
         );
-        if (step is Err<_Advance>) {
-          return Result.err(step.error);
+        if (finale is Err<_Advance>) {
+          return Result.err(finale.error);
         }
-        final advance = (step as Ok<_Advance>).value;
+        final advance = (finale as Ok<_Advance>).value;
         run = run._plus(
           scheduled: advance.scheduled,
           locked: advance.locked,
           decided: advance.decided,
         );
-        if (advance.decidedStage == null) {
-          // Waiting on the semi-finals: nothing after them may start.
-          return Result.ok(run);
+        final decidedFinal = advance.decidedStage;
+        if (decidedFinal == null) {
+          waiting = true;
+          continue;
         }
-        final decidedSemi = advance.decidedStage!;
-        finalists = [
-          for (final r in decidedSemi.results)
-            if (r.winner != null) r.winner!,
-        ];
-        final bye = H2hCupPolicy.byeOf(entries, decidedSemi.pairs);
-        if (bye != null) {
-          finalists.add(bye);
-        }
-        lastDay = _later(lastDay, decidedSemi.day);
-      }
-
-      if (finalists.length <= 1) {
+        played = _later(played, decidedFinal.day);
+        final pair = decidedFinal.pairs.first;
+        final winner = decidedFinal.results.first.winner;
         final crowned = await _cups.crown(
           monthStart: month,
           place: place,
-          champion: finalists.isEmpty ? null : finalists.single,
-          runnerUp: null,
-          how: finalists.isEmpty ? 'vacant' : 'walkover',
+          champion: winner,
+          runnerUp: winner == null
+              ? null
+              : (winner == pair.home ? pair.away : pair.home),
+          how: winner == null ? 'vacant' : 'final',
         );
         if (crowned is Err<void>) {
           return Result.err(crowned.error);
         }
+        titled.add(place);
         run = run._plus(crowned: 1);
-        continue;
       }
-
-      final finalStep = H2hCupStep(place, H2hCupRound.finale);
-      final pair = [
-        H2hCupPair(slot: 1, home: finalists[0], away: finalists[1]),
-      ];
-      final step = await _advance(
-        month: month,
-        step: finalStep,
-        stage: state.stageOf(finalStep),
-        entries: entries,
-        pairs: () => pair,
-        now: now,
-        today: today,
-        lastDay: lastDay,
-        days: days,
-      );
-      if (step is Err<_Advance>) {
-        return Result.err(step.error);
-      }
-      final advance = (step as Ok<_Advance>).value;
-      run = run._plus(
-        scheduled: advance.scheduled,
-        locked: advance.locked,
-        decided: advance.decided,
-      );
-      final decidedFinal = advance.decidedStage;
-      if (decidedFinal == null) {
+      if (waiting) {
+        // Waiting on this cup day: nothing after it may start.
         return Result.ok(run);
       }
-      lastDay = _later(lastDay, decidedFinal.day);
-      final played = decidedFinal.pairs.first;
-      final winner = decidedFinal.results.first.winner;
-      final crowned = await _cups.crown(
-        monthStart: month,
-        place: place,
-        champion: winner,
-        runnerUp: winner == null
-            ? null
-            : (winner == played.home ? played.away : played.home),
-        how: winner == null ? 'vacant' : 'final',
-      );
-      if (crowned is Err<void>) {
-        return Result.err(crowned.error);
-      }
-      run = run._plus(crowned: 1);
+      lastDay = played;
     }
     return Result.ok(run);
   }
+
+  /// Crowns [place] without a final: the one player [left], or nobody.
+  Future<Result<void>> _crownAlone(
+    DateTime month,
+    int place,
+    List<UserId> left,
+  ) => _cups.crown(
+    monthStart: month,
+    place: place,
+    champion: left.isEmpty ? null : left.first,
+    runnerUp: null,
+    how: left.isEmpty ? 'vacant' : 'walkover',
+  );
 
   static DateTime? _later(DateTime? a, DateTime b) =>
       a == null || b.isAfter(a) ? b : a;
