@@ -420,6 +420,7 @@ class _CrestRow extends StatelessWidget {
                           AdminSecondaryButton(
                             key: Key('admin.crests.hide.${crest.slug}'),
                             label: 'إخفاء',
+                            semanticsLabel: 'إخفاء: ${crest.slug}',
                             icon: Icons.visibility_off_rounded,
                             onPressed: busy ? null : onHide,
                           ),
@@ -427,12 +428,14 @@ class _CrestRow extends StatelessWidget {
                           AdminSecondaryButton(
                             key: Key('admin.crests.show.${crest.slug}'),
                             label: 'إظهار',
+                            semanticsLabel: 'إظهار: ${crest.slug}',
                             icon: Icons.visibility_rounded,
                             onPressed: busy ? null : onShow,
                           ),
                         AdminSecondaryButton(
                           key: Key('admin.crests.delete.${crest.slug}'),
                           label: 'حذف',
+                          semanticsLabel: 'حذف: ${crest.slug}',
                           icon: Icons.delete_forever_rounded,
                           onPressed: busy ? null : onDelete,
                         ),

@@ -373,6 +373,9 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
               AdminSecondaryButton(
                 key: Key('admin.h2h.group.${group.leagueId}.matches'),
                 label: open ? 'إخفاء المواجهات' : 'مواجهات الجولات',
+                semanticsLabel:
+                    '${open ? 'إخفاء المواجهات' : 'مواجهات الجولات'}: '
+                    '${h2hGroupTitle(data.monthStart, group.division, group.groupIndex)}',
                 icon: Icons.sports_kabaddi_rounded,
                 onPressed: data.rounds.isEmpty
                     ? null
@@ -384,6 +387,9 @@ class _H2hAdminGroupsTabState extends ConsumerState<H2hAdminGroupsTab> {
               AdminSecondaryButton(
                 key: Key('admin.h2h.group.${group.leagueId}.shareStandings'),
                 label: 'صورة الترتيب',
+                semanticsLabel:
+                    'صورة الترتيب: '
+                    '${h2hGroupTitle(data.monthStart, group.division, group.groupIndex)}',
                 icon: Icons.ios_share_rounded,
                 onPressed: group.standings.isEmpty
                     ? null

@@ -262,6 +262,7 @@ class _PredictionReactionSheetState
                   PlayerMenuButton(
                     displayName: widget.reportName ?? widget.playerName,
                     participantId: widget.participantId,
+                    shownName: widget.playerName,
                   ),
               ],
             ),

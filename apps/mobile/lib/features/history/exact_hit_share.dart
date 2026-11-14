@@ -383,29 +383,36 @@ class _ScoreBox extends StatelessWidget {
       fontWeight: FontWeight.w800,
       fontSize: AppFontSize.s18,
     );
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: _navyRaised,
-        borderRadius: AppRadius.brMd,
-        border: Border.all(color: accent),
-      ),
-      child: Column(
-        children: <Widget>[
-          Text(
-            label,
-            style: const TextStyle(color: _muted, fontSize: AppFontSize.s11),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text('${home ?? '-'}', style: digits),
-              const Text(' - ', style: TextStyle(color: _muted)),
-              Text('${away ?? '-'}', style: digits),
-            ],
-          ),
-        ],
+    // One node, «توقعي: 2 - 1»: the label and the three parts of the
+    // score were read apart (Accessibility Scanner, script 272).
+    return Semantics(
+      container: true,
+      label: '$label: ${home ?? '-'} - ${away ?? '-'}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: _navyRaised,
+          borderRadius: AppRadius.brMd,
+          border: Border.all(color: accent),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(
+              label,
+              style: const TextStyle(color: _muted, fontSize: AppFontSize.s11),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text('${home ?? '-'}', style: digits),
+                const Text(' - ', style: TextStyle(color: _muted)),
+                Text('${away ?? '-'}', style: digits),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

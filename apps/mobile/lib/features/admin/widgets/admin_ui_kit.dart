@@ -162,9 +162,15 @@ class AdminSecondaryButton extends StatelessWidget {
     this.icon,
     this.loading = false,
     required this.onPressed,
+    this.semanticsLabel,
   });
 
   final String label;
+
+  /// What a screen reader hears instead of [label], when the same
+  /// button repeats down a list: the label and what it acts on
+  /// (Accessibility Scanner, script 272). Null reads [label].
+  final String? semanticsLabel;
   final IconData? icon;
   final bool loading;
   final VoidCallback? onPressed;
@@ -198,7 +204,13 @@ class AdminSecondaryButton extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                 ],
                 // A long label wraps at large text (script 200, secondary).
-                Flexible(child: Text(label, textAlign: TextAlign.center)),
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    semanticsLabel: semanticsLabel,
+                  ),
+                ),
               ],
             ),
     );

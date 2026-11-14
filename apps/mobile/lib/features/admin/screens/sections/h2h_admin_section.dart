@@ -653,6 +653,7 @@ class _RoundCard extends StatelessWidget {
               AdminSecondaryButton(
                 key: Key('admin.h2h.round.${round.round}.shareResults'),
                 label: 'صورة نتائج المباريات',
+                semanticsLabel: 'صورة نتائج المباريات: الجولة ${round.round}',
                 icon: Icons.ios_share_rounded,
                 onPressed: busy ? null : onShareResults,
               ),
@@ -660,6 +661,8 @@ class _RoundCard extends StatelessWidget {
                 AdminSecondaryButton(
                   key: Key('admin.h2h.round.${round.round}.shareMatchups'),
                   label: 'صورة مواجهات اللاعبين',
+                  semanticsLabel:
+                      'صورة مواجهات اللاعبين: الجولة ${round.round}',
                   icon: Icons.groups_rounded,
                   onPressed: busy ? null : onShareMatchups,
                 ),

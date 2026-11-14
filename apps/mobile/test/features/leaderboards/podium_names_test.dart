@@ -97,6 +97,31 @@ void main() {
     }
   });
 
+  testWidgets('each menu reads its own player (script 272)', (tester) async {
+    await _pump(tester, me: 'b');
+
+    String tip(String id) =>
+        tester
+            .widget<Tooltip>(
+              find
+                  .ancestor(
+                    of: find.byKey(Key('player.menu.$id')),
+                    matching: find.byType(Tooltip),
+                  )
+                  .first,
+            )
+            .message ??
+        '';
+    // The podium pictures: each names the player under it.
+    expect(tip('a'), 'الإبلاغ أو الحظر: حمزه علي محمد السقاف');
+    expect(tip('c'), 'الإبلاغ أو الحظر: Mohammed Nasser Ali');
+    // A ranked line's button too.
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('player.menu.d'))).tooltip,
+      'الإبلاغ أو الحظر: سليمان أحمد الرفاعي',
+    );
+  });
+
   testWidgets('the picture opens the menu, except the viewer\'s own', (
     tester,
   ) async {

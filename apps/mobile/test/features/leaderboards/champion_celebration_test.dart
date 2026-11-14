@@ -337,6 +337,29 @@ void main() {
     );
   });
 
+  testWidgets('the fold, the record and the share are 48 dp targets '
+      '(Accessibility Scanner, script 272)', (tester) async {
+    final harness = _harness(<Map<String, Object?>>[
+      _champion(
+        userId: 'u-1',
+        name: 'Ahmad',
+        until: DateTime.now().toUtc().add(const Duration(hours: 30)),
+      ),
+    ]);
+    addTearDown(harness.dispose);
+    await _open(tester, harness, viewer: 'u-1');
+
+    for (final String key in <String>[
+      'leaderboards.champion.toggle',
+      'leaderboards.champion.record',
+      'leaderboards.champion.share.u-1',
+    ]) {
+      final Size size = tester.getSize(find.byKey(Key(key)));
+      expect(size.height, greaterThanOrEqualTo(48), reason: key);
+      expect(size.width, greaterThanOrEqualTo(48), reason: key);
+    }
+  });
+
   testWidgets('it folds to one line and opens again', (tester) async {
     final harness = _harness(<Map<String, Object?>>[
       _champion(

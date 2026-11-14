@@ -544,6 +544,9 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             child: AdminSecondaryButton(
               key: Key('admin.champions.replacePhoto.${c.userId}'),
               label: c.photoUrl == null ? 'إضافة صورة البطل' : 'تغيير الصورة',
+              semanticsLabel:
+                  '${c.photoUrl == null ? 'إضافة صورة البطل' : 'تغيير الصورة'}: '
+                  '${c.displayName}',
               icon: Icons.add_photo_alternate_outlined,
               onPressed: _busy
                   ? null
@@ -576,6 +579,9 @@ class _ChampionAdminSectionState extends ConsumerState<ChampionAdminSection> {
             child: AdminSecondaryButton(
               key: Key('admin.champions.podium.${p.place}.photo'),
               label: p.photoUrl == null ? 'إضافة صورة' : 'تغيير الصورة',
+              semanticsLabel:
+                  '${p.photoUrl == null ? 'إضافة صورة' : 'تغيير الصورة'}: '
+                  '${p.displayName}',
               icon: Icons.add_photo_alternate_outlined,
               onPressed: _busy
                   ? null

@@ -316,7 +316,7 @@ class _ChampionSpotlightState extends ConsumerState<ChampionSpotlight>
             onPressed: widget.onOpenRecord,
             style: TextButton.styleFrom(
               foregroundColor: _muted,
-              visualDensity: VisualDensity.compact,
+              // Standard density: compact drew 40 dp (script 272).
             ),
             child: Text(l10n.championsRecordTitle),
           ),
@@ -325,7 +325,8 @@ class _ChampionSpotlightState extends ConsumerState<ChampionSpotlight>
           tooltip: expanded
               ? l10n.championSpotlightCollapse
               : l10n.championSpotlightExpand,
-          visualDensity: VisualDensity.compact,
+          // 48 dp, not compact's 40 x 40 (Accessibility Scanner, script
+          // 272: the fold button on the admin preview).
           color: _muted,
           icon: Icon(
             expanded
@@ -586,7 +587,7 @@ class ChampionHeroBody extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: _gold,
               foregroundColor: _navy,
-              visualDensity: VisualDensity.compact,
+              // Standard density: a 48 dp target (script 272).
             ),
             icon: const Icon(Icons.ios_share_rounded),
             label: Text(l10n.championShareButton),

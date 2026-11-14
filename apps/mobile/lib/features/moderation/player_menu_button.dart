@@ -17,6 +17,7 @@ class PlayerMenuButton extends StatelessWidget {
     required this.displayName,
     required this.participantId,
     this.size = 20,
+    this.shownName,
   });
 
   /// The player's own name, not the label shown for a blocked one.
@@ -28,11 +29,16 @@ class PlayerMenuButton extends StatelessWidget {
   /// The icon's size.
   final double size;
 
+  /// The name on screen (a blocked player's label): read after the
+  /// button's name, so each menu of a list reads its own player
+  /// (Accessibility Scanner, script 272). Null reads [displayName].
+  final String? shownName;
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       key: Key('player.menu.$participantId'),
-      tooltip: 'الإبلاغ أو الحظر',
+      tooltip: 'الإبلاغ أو الحظر: ${shownName ?? displayName}',
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(
         minWidth: AppSizes.minTouchTarget,

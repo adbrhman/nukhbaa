@@ -8524,6 +8524,44 @@ For the second Play release, from the owner's screenshots of 2026-11-13.
   4:3), `script_214_accessibility_test.dart` (the plate test on a crest),
   `podium_names_test.dart` (new).
 
+### Third Accessibility Scanner pass (script 272, 2026-11-14)
+
+The owner ran the scanner over 278 screens of the build before script 271
+(164 touch targets, 52 descriptions, 11 image contrasts, 1 text
+contrast). Measured against its own screenshots (1080 x 2316 px, 135 px
+a 48 dp):
+
+- **Touch targets, one real.** The champion spotlight's fold button
+  was 40 x 40 dp on every screenshot (`VisualDensity.compact`); its record
+  link and the champion's share button had the same density. All three
+  are standard density now, 48 dp. Every other target is a control cut
+  by a scroll edge: the date strip (y 432), the tab bar (y 1945), the
+  keyboard, the app bar (y 94) or the board's left edge in a sideways
+  scroll; whole, they measure 48 dp (the ranking icon 44 and the score
+  halves 46 were cut at y 432). The podium's menu button (35 dp) is the
+  pre-271 build: the menu opens from the picture since 271.
+- **Contrast, nothing changed.** Images: flags (Botswana, Congo), a
+  player's photo, the default picture and a card edge cut by a scroll.
+  Text: the scanner took the field's red border (#FF3B4D) for the
+  error text, which is `errorText` (#FFB3B9) on the field.
+- **The same name on a list, fixed where the target differs.** The
+  podium pictures and `PlayerMenuButton` read «الإبلاغ أو الحظر:
+  name», the name on screen (a blocked player's label stays). On the
+  admin panel `AdminSecondaryButton` takes a `semanticsLabel`: the
+  champion and podium picture buttons, the crests' hide / show / delete,
+  the round's two pictures and the group's two buttons read what they act
+  on; the drawn text is unchanged. The hit card's two score boxes read
+  as one each («توقعي: 2 - 1»).
+- **Left as they are.** A screen title equal to its tab or section, a
+  dialog's button equal to the button behind it, a search text equal to
+  a name, and figures («0», «—», «52%») repeated in tables: not
+  controls, or the same target.
+- Tests: `champion_celebration_test.dart` (the three spotlight buttons
+  48 dp), `podium_names_test.dart` (each menu names its player),
+  `champion_admin_section_test.dart`, `club_crests_section_test.dart`,
+  `share_hit_test.dart` (one node per box). All fail on the code before
+  this batch.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

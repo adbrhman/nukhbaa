@@ -146,6 +146,30 @@ void main() {
     expect(find.textContaining('أُخفي «milan»'), findsOneWidget);
   });
 
+  testWidgets('each crest\'s buttons read the crest (script 272)', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await _open(tester, _Server());
+
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('admin.crests.hide.arsenal')))
+            .label,
+        'إخفاء: arsenal',
+      );
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('admin.crests.show.milan')))
+            .label,
+        'إظهار: milan',
+      );
+    } finally {
+      handle.dispose();
+    }
+  });
+
   testWidgets('hides a crest for a complaint, with its complainant', (
     tester,
   ) async {

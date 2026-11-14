@@ -230,6 +230,10 @@ class _GroupMembersScreenState extends ConsumerState<GroupMembersScreen> {
                         PlayerMenuButton(
                           displayName: memberName,
                           participantId: member.userId,
+                          shownName:
+                              blockedPlayers.containsKey(blockKeyOf(memberName))
+                              ? blockedPlayerLabel
+                              : memberName,
                         ),
                       if (widget.isOwner && !owner)
                         IconButton(

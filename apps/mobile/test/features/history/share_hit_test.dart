@@ -138,6 +138,30 @@ void main() {
     expect(find.byType(ExactHitCard), findsNothing);
   });
 
+  testWidgets('each score box on the card reads as one (script 272)', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await _pump(tester, prediction: _call(isDouble: false), points: 3);
+      final l10n = await AppLocalizations.delegate.load(const Locale('ar'));
+      await tester.ensureVisible(find.byKey(_share));
+      await tester.tap(find.byKey(_share));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel('${l10n.shareHitMyCall}: 2 - 1'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('${l10n.shareHitFinal}: 2 - 1'),
+        findsOneWidget,
+      );
+    } finally {
+      handle.dispose();
+    }
+  });
+
   testWidgets('a prediction that earned nothing offers no share', (
     tester,
   ) async {

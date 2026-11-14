@@ -493,6 +493,7 @@ class _PodiumTile extends ConsumerWidget {
               ),
             _PodiumMenu(
               entry: entry,
+              shownName: shownName,
               enabled: !isMe,
               child: Stack(
                 clipBehavior: Clip.none,
@@ -664,11 +665,16 @@ String _podiumName(String name) {
 class _PodiumMenu extends StatelessWidget {
   const _PodiumMenu({
     required this.entry,
+    required this.shownName,
     required this.enabled,
     required this.child,
   });
 
   final BoardEntry entry;
+
+  /// The name under the picture, read after the menu's name: three
+  /// pictures read the same name (Accessibility Scanner, script 272).
+  final String shownName;
   final bool enabled;
   final Widget child;
 
@@ -676,7 +682,7 @@ class _PodiumMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!enabled) return child;
     return Tooltip(
-      message: 'الإبلاغ أو الحظر',
+      message: 'الإبلاغ أو الحظر: $shownName',
       child: InkWell(
         key: Key('player.menu.${entry.participantId}'),
         customBorder: const CircleBorder(),
@@ -961,6 +967,7 @@ class _BoardRow extends ConsumerWidget {
                 PlayerMenuButton(
                   displayName: entry.displayName,
                   participantId: entry.participantId,
+                  shownName: shownName,
                 ),
             ],
           ),

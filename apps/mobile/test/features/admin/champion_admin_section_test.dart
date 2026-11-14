@@ -448,6 +448,23 @@ void main() {
     expect(size.width, lessThanOrEqualTo(360));
   });
 
+  testWidgets('a crowned month: the picture button reads its champion '
+      '(script 272)', (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      final server = _Server()..crowned = true;
+      await _open(tester, server);
+
+      final Finder button = find.byKey(
+        const Key('admin.champions.replacePhoto.u-1'),
+      );
+      await _scrollTo(tester, button);
+      expect(tester.getSemantics(button).label, endsWith(': Ahmad'));
+    } finally {
+      handle.dispose();
+    }
+  });
+
   testWidgets('a crowned month: the podium is fixed by the server, then '
       'its picture is added, and the preview shows it', (tester) async {
     final server = _Server()..crowned = true;
