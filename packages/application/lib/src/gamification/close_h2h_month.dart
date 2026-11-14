@@ -3,6 +3,7 @@ import 'package:application/src/gamification/h2h_month_book.dart';
 import 'package:application/src/gamification/ports/gamification_event_sink.dart';
 import 'package:application/src/gamification/ports/h2h_control_store.dart';
 import 'package:application/src/gamification/ports/h2h_league_store.dart';
+import 'package:application/src/gamification/ports/h2h_outcome_reader.dart';
 import 'package:application/src/gamification/ports/h2h_round_store.dart';
 import 'package:application/src/gamification/ports/h2h_sheet_reader.dart';
 import 'package:domain/domain.dart';
@@ -30,6 +31,14 @@ import 'package:shared/shared.dart';
 /// `min_active_days` (five by default); unreadable settings leave the
 /// month open for the next run.
 ///
+/// **A month of the elite draw** (NK275, owner 2026-11-14) is not
+/// judged by the divisions' ladder: `H2hEliteCarry` sends the last
+/// three of each elite group down, fills the elite from groups 5 and 6
+/// by commitment (absences, predictions, exact scorelines, right
+/// outcomes from [outcomes], points), moves five down and five up
+/// between the extra groups, and each event carries `next_order`, the
+/// place in the next month's drawing order.
+///
 /// **Idempotent.** Each event is keyed on the user and the month; the month
 /// is marked closed only after every event was recorded, so a failure half
 /// way leaves it open and the next run repeats it harmlessly.
@@ -44,6 +53,7 @@ final class CloseH2hMonth {
     required GamificationEventSink events,
     required IdGenerator idGenerator,
     H2hControlStore? controls,
+    H2hOutcomeReader? outcomes,
     this.grace = const Duration(hours: 3),
     this.settleWait = const Duration(days: 3),
     this.maxMonthsPerRun = 3,
@@ -52,7 +62,8 @@ final class CloseH2hMonth {
        _sheets = sheets,
        _events = events,
        _ids = idGenerator,
-       _controls = controls;
+       _controls = controls,
+       _outcomes = outcomes;
 
   final H2hLeagueStore _leagues;
   final H2hRoundStore _rounds;
@@ -60,6 +71,9 @@ final class CloseH2hMonth {
   final GamificationEventSink _events;
   final IdGenerator _ids;
   final H2hControlStore? _controls;
+
+  /// The right outcomes of a month (NK275); null counts none.
+  final H2hOutcomeReader? _outcomes;
 
   /// How long a month must have been over before it is judged.
   final Duration grace;
@@ -132,6 +146,7 @@ final class CloseH2hMonth {
     final groups = (groupsResult as Ok<List<H2hGroupRef>>).value;
 
     final results = <H2hGroupResult>[];
+    final eliteGroups = <H2hEliteGroup>[];
     final leagueOf = <UserId, H2hLeagueId>{};
     var members = 0;
     final sheets = <H2hLeagueId, H2hGroupSheet>{};
@@ -178,6 +193,13 @@ final class CloseH2hMonth {
               ),
             );
       results.add(H2hGroupResult(division: group.division, placings: placings));
+      eliteGroups.add(
+        H2hEliteGroup(
+          division: group.division,
+          groupIndex: group.groupIndex,
+          placings: placings,
+        ),
+      );
       final current = book != null ? h2hCurrentMembers(sheet) : sheet.members;
       for (final member in current) {
         leagueOf[member.userId] = group.leagueId;
@@ -215,11 +237,53 @@ final class CloseH2hMonth {
         if (entry.value >= minActiveDays) entry.key,
     };
 
-    final finishes = H2hLeaguePolicy.monthEnd(
-      groups: results,
-      eligible: eligible,
-      monthStart: month,
-    );
+    // NK275: a month of the elite draw carries by the owner's rules of
+    // 2026-11-14 (H2hEliteCarry); an older month by the ladder.
+    final List<
+      ({
+        H2hPlacing placing,
+        H2hDivision division,
+        H2hDivision? nextDivision,
+        H2hLeagueOutcome outcome,
+        int? nextOrder,
+      })
+    >
+    finishes;
+    if (H2hLeaguePolicy.usesEliteDraw(month)) {
+      final measured = await _commitmentOf(month, groups, sheets, playedOf);
+      if (measured is Err<Map<UserId, H2hCommitment>>) {
+        return Result.err(measured.error);
+      }
+      finishes = [
+        for (final f in H2hEliteCarry.next(
+          groups: eliteGroups,
+          eligible: eligible,
+          commitment: (measured as Ok<Map<UserId, H2hCommitment>>).value,
+        ))
+          (
+            placing: f.placing,
+            division: f.division,
+            nextDivision: f.nextDivision,
+            outcome: f.outcome,
+            nextOrder: f.nextOrder,
+          ),
+      ];
+    } else {
+      finishes = [
+        for (final f in H2hLeaguePolicy.monthEnd(
+          groups: results,
+          eligible: eligible,
+          monthStart: month,
+        ))
+          (
+            placing: f.placing,
+            division: f.division,
+            nextDivision: f.nextDivision,
+            outcome: f.outcome,
+            nextOrder: null,
+          ),
+      ];
+    }
     // NK172_005
     for (final finish in finishes) {
       final standing = finish.placing.standing;
@@ -239,6 +303,7 @@ final class CloseH2hMonth {
         nextDivision: finish.nextDivision,
         outcome: finish.outcome,
         occurredAt: endsAt,
+        nextOrder: finish.nextOrder,
       );
       if (built is Err<GamificationEvent>) {
         return Result.err(built.error);
@@ -260,5 +325,66 @@ final class CloseH2hMonth {
       return Result.err(marked.error);
     }
     return const Result.ok(true);
+  }
+
+  /// What each player did in his own rounds of [month] (NK275): the
+  /// played rounds of every seat he held, those he predicted nothing in,
+  /// his predictions, exact scorelines and points on them, and the right
+  /// outcomes read by [_outcomes] (none when it is not wired).
+  Future<Result<Map<UserId, H2hCommitment>>> _commitmentOf(
+    DateTime month,
+    List<H2hGroupRef> groups,
+    Map<H2hLeagueId, H2hGroupSheet> sheets,
+    Map<H2hLeagueId, List<H2hRoundRef>> playedOf,
+  ) async {
+    var outcomes = const <UserId, int>{};
+    final reader = _outcomes;
+    if (reader != null) {
+      final read = await reader.outcomesOf(month);
+      if (read is Err<Map<UserId, int>>) {
+        return Result.err(read.error);
+      }
+      outcomes = (read as Ok<Map<UserId, int>>).value;
+    }
+    final absent = <UserId, int>{};
+    final predicted = <UserId, int>{};
+    final exact = <UserId, int>{};
+    final points = <UserId, int>{};
+    for (final group in groups) {
+      final sheet = sheets[group.leagueId];
+      final played = playedOf[group.leagueId];
+      if (sheet == null || played == null) {
+        continue;
+      }
+      final scoreOf = <(UserId, int), H2hRoundScore>{
+        for (final s in sheet.scores) (s.userId, s.round): s,
+      };
+      for (final member in sheet.members) {
+        final u = member.userId;
+        for (final round in played) {
+          if (!member.activeIn(round.number)) {
+            continue;
+          }
+          final score = scoreOf[(u, round.number)];
+          absent[u] =
+              (absent[u] ?? 0) + (score == null || !score.present ? 1 : 0);
+          if (score != null) {
+            predicted[u] = (predicted[u] ?? 0) + score.predictedCount;
+            exact[u] = (exact[u] ?? 0) + score.exactCount;
+            points[u] = (points[u] ?? 0) + score.points;
+          }
+        }
+      }
+    }
+    return Result.ok(<UserId, H2hCommitment>{
+      for (final u in absent.keys)
+        u: H2hCommitment(
+          absentRounds: absent[u] ?? 0,
+          predicted: predicted[u] ?? 0,
+          exact: exact[u] ?? 0,
+          outcomes: outcomes[u] ?? 0,
+          points: points[u] ?? 0,
+        ),
+    });
   }
 }

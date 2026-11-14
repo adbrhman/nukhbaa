@@ -39,7 +39,7 @@ import 'package:shared/shared.dart';
 ///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
-final class PostgresH2hSheetReader implements H2hSheetReader {
+final class PostgresH2hSheetReader implements H2hSheetReader, H2hOutcomeReader {
   /// Creates the reader over [_connection].
   const PostgresH2hSheetReader(this._connection);
 
@@ -178,6 +178,22 @@ ORDER BY rd.round_no
 SELECT array_to_string(t.turns, ',') AS turns
 FROM gamification.h2h_league_turns t
 WHERE t.league_id = @league_id::uuid
+''';
+
+  /// NK275: the right outcomes (the wrong score) a player called on the
+  /// fixtures of the month's locked rounds, each fixture once.
+  static const String outcomesSql = '''
+SELECT p.user_id::text                        AS user_id,
+       count(DISTINCT rf.fixture_id)::integer AS outcomes
+FROM gamification.h2h_rounds r
+JOIN gamification.h2h_round_locks k ON k.round_id = r.id
+JOIN gamification.h2h_round_fixtures rf ON rf.round_id = r.id
+JOIN scoring.fixture_scores s
+  ON s.fixture_id = rf.fixture_id AND s.grade = 'correct_outcome'
+JOIN competition.participants p ON p.id = s.participant_id
+WHERE r.month_start = @month::date
+GROUP BY p.user_id
+ORDER BY p.user_id
 ''';
 
   static const String activeDaysSql = '''
@@ -337,6 +353,27 @@ GROUP BY p.user_id
         lastKickoffs: Map<int, DateTime>.unmodifiable(lastKickoffs),
       ),
     );
+  }
+
+  @override
+  Future<Result<Map<UserId, int>>> outcomesOf(DateTime monthStart) async {
+    final result = await _connection.query(
+      outcomesSql,
+      parameters: {'month': _isoDay(monthStart)},
+    );
+    if (result is Err<List<Map<String, dynamic>>>) {
+      return Result.err(result.error);
+    }
+    final counts = <UserId, int>{};
+    for (final row in (result as Ok<List<Map<String, dynamic>>>).value) {
+      final user = UserId.tryParse(row['user_id']?.toString());
+      final count = _int(row['outcomes']);
+      if (user is Err<UserId> || count == null) {
+        return Result.err(_corrupt('outcomes'));
+      }
+      counts[(user as Ok<UserId>).value] = count;
+    }
+    return Result.ok(Map<UserId, int>.unmodifiable(counts));
   }
 
   @override

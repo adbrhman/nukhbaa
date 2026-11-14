@@ -3,9 +3,8 @@
 /// month is drawn from the players of the month before by the elite draw,
 /// its round is approved by the system and frozen when it kicks off, the
 /// month is judged by `CloseH2hMonth`, and only then does the next month's
-/// draw run -- the crossing of November into December 2026. How the elite
-/// groups carry into December is the next batch, so December waits undrawn
-/// with the reason.
+/// draw run -- the crossing of November into December 2026, dealt in the
+/// order November wrote (the carry of the elite groups, NK275).
 library;
 
 import 'package:application/application.dart';
@@ -143,6 +142,7 @@ List<H2hCarry> _carriedBy(List<GamificationEvent> events) {
         nextDivision: next,
         division: division,
         rank: event.payload['rank'] as int,
+        order: event.payload['next_order'] as int?,
       ),
     );
   }
@@ -151,8 +151,8 @@ List<H2hCarry> _carriedBy(List<GamificationEvent> events) {
 
 void main() {
   group('H2H full cycle', () {
-    test('November is drawn, played and judged; December waits for the carry '
-        'of the elite groups', () async {
+    test('November is drawn, played and judged; December is dealt by the '
+        'elite carry (NK275)', () async {
       final cycle = _Cycle();
       await cycle.playNovember();
 
@@ -174,18 +174,28 @@ void main() {
       // Two days with a prediction: out of the next draw.
       expect(byUser[userNo(3)]!['outcome'], 'out');
       expect(byUser[userNo(3)]!['next_division'], isNull);
+      // NK275: a group of three sends nobody down when nobody can take
+      // the seats; the two carried keep the elite in the month's order.
+      expect(byUser[userNo(1)]!['outcome'], 'held');
+      expect(byUser[userNo(1)]!['next_order'], 0);
+      expect(byUser[userNo(2)]!['next_order'], 1);
+      expect(byUser[userNo(3)]!.containsKey('next_order'), isFalse);
 
-      // November is judged, but the carry of the elite groups (NK182,
-      // next batch) is not built: December is not drawn by the old
-      // ladder -- a draw is never repeated -- and the run says why.
+      // November is judged: December is dealt in the order November
+      // wrote, the new player (5) last.
       cycle.source
         ..carried[_november] = _carriedBy(cycle.events.recorded)
         ..active[_november] = <UserId>[userNo(1), userNo(2), userNo(5)];
       final seated = await cycle.draw.call(now: _afterGrace);
 
-      expect((seated as Err<int>).error.code, 'h2h.elite_carry_pending');
-      expect(cycle.source.carriedAsked, isEmpty);
-      expect(cycle.leagues.months.containsKey(_december), isFalse);
+      expect((seated as Ok<int>).value, 3);
+      expect(cycle.source.carriedAsked, <DateTime>[_november]);
+      final december = cycle.leagues.drawn[_december]!.single;
+      expect(december.group.division, H2hLeaguePolicy.eliteDivision);
+      expect(
+        [for (final seat in december.group.seats) seat.userId],
+        <UserId>[userNo(1), userNo(2), userNo(5)],
+      );
     });
 
     test('a lost event leaves November open and December undrawn', () async {

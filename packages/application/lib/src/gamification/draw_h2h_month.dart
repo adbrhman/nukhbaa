@@ -22,8 +22,10 @@ import 'package:shared/shared.dart';
 /// From November 2026 the first 80 are dealt into four even elite groups
 /// and the rest into extra groups of twenty (`H2hLeaguePolicy.eliteDraw`);
 /// before it they were cut twenty to a division. A month of the elite draw
-/// that would carry waits undrawn (`h2h.elite_carry_pending`) until the
-/// carry of the elite groups is built. Every other month CARRIES: the members
+/// that carries is dealt by `eliteDraw` in the order its judged month
+/// wrote (`next_order`, NK275), the new players last; a month judged
+/// before that order existed waits undrawn (`h2h.elite_carry_pending`).
+/// Every other month CARRIES: the members
 /// last month's events sent on, in their next division, then the new
 /// players who predicted on five days, at the end. A carrying month waits
 /// until last month is judged; until then the run draws nothing.
@@ -112,26 +114,26 @@ final class DrawH2hMonth {
         // Last month is not judged yet: its standings decide this draw.
         return const Result.ok(0);
       }
-      if (H2hLeaguePolicy.usesEliteDraw(month)) {
-        // NK182: how the elite groups carry from one month to the next
-        // (the absence relegation decided 2026-10-31) is the next batch.
-        // Until it is built the month waits undrawn -- a draw is never
-        // repeated, so a wrong one could not be taken back -- and the
-        // scheduler reports why on every run.
-        return const Result.err(
-          AppError.invariant(
-            'h2h.elite_carry_pending',
-            'The carry of the elite groups into this month is not built yet',
-          ),
-        );
-      }
       final carriedResult = await _source.carriedFrom(previous);
       if (carriedResult is Err<List<H2hCarry>>) {
         return Result.err(carriedResult.error);
       }
-      final carried = List<H2hCarry>.of(
-        (carriedResult as Ok<List<H2hCarry>>).value,
-      )..sort(_compareCarry);
+      final stored = (carriedResult as Ok<List<H2hCarry>>).value;
+      final elite = H2hLeaguePolicy.usesEliteDraw(month);
+      if (elite && stored.any((c) => c.order == null)) {
+        // NK275: an elite month is dealt in the order its judged month
+        // wrote (H2hEliteCarry). A month judged before that order
+        // existed has none: it waits undrawn -- a draw is never
+        // repeated -- and the scheduler reports why on every run.
+        return const Result.err(
+          AppError.invariant(
+            'h2h.elite_carry_pending',
+            'The judged month carries no drawing order for the elite',
+          ),
+        );
+      }
+      final carried = List<H2hCarry>.of(stored)
+        ..sort(elite ? _compareOrder : _compareCarry);
       final carriedIds = <UserId>{for (final c in carried) c.userId};
       order = <UserId>[
         for (final c in carried) c.userId,
@@ -183,6 +185,10 @@ final class DrawH2hMonth {
       capacity: H2hLeaguePolicy.groupCapacity,
     );
   }
+
+  /// NK275: the elite month's drawing order, as its judged month wrote.
+  static int _compareOrder(H2hCarry a, H2hCarry b) =>
+      (a.order ?? 0).compareTo(b.order ?? 0);
 
   static int _compareCarry(H2hCarry a, H2hCarry b) {
     final byNext = a.nextDivision.level.compareTo(b.nextDivision.level);

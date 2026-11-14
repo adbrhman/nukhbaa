@@ -186,13 +186,14 @@ void main() {
 
       final result = await _draw(store, source).call(now: _decemberNight);
 
-      // NK182: the carry of the elite groups is the next batch. A judged
-      // November leaves December undrawn, with the reason, rather than
-      // drawing it by the old ladder: a draw is never repeated.
+      // NK275: an elite month is dealt in the order its judged month
+      // wrote. A November whose events carry no order (judged before
+      // NK275) leaves December undrawn, with the reason: a draw is never
+      // repeated.
       expect((result as Err<int>).error.code, 'h2h.elite_carry_pending');
       expect(store.months.containsKey(_december), isFalse);
       expect(store.drawCalls, 0);
-      expect(source.carriedAsked, isEmpty);
+      expect(source.carriedAsked, <DateTime>[_november]);
     });
   });
 

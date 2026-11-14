@@ -211,6 +211,7 @@ final class GamificationEvent {
     required H2hDivision? nextDivision,
     required H2hLeagueOutcome outcome,
     required DateTime occurredAt,
+    int? nextOrder,
   }) {
     final idResult = GamificationEventId.tryParse(id);
     if (idResult is Err<GamificationEventId>) {
@@ -252,6 +253,8 @@ final class GamificationEvent {
           'points': points,
           'next_division': nextDivision?.level,
           'outcome': outcome.wireName,
+          // NK275: the place in the next month's drawing order.
+          if (nextOrder != null) 'next_order': nextOrder,
         },
         ruleVersion: currentRuleVersion,
       ),

@@ -123,6 +123,7 @@ export 'src/gamification/ports/h2h_draw_source.dart';
 export 'src/gamification/ports/h2h_group_extension.dart';
 export 'src/gamification/ports/h2h_league_store.dart';
 export 'src/gamification/ports/h2h_month_report_reader.dart';
+export 'src/gamification/ports/h2h_outcome_reader.dart';
 export 'src/gamification/ports/h2h_round_fixture_reader.dart';
 export 'src/gamification/ports/h2h_round_store.dart';
 export 'src/gamification/ports/h2h_seat_move_store.dart';

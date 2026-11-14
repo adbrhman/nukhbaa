@@ -8633,6 +8633,46 @@ with the double, 161 minutes before kickoff, but not what the first held.
   read back). The whole SQL suite (90 files) passes with it.
 - **Apply 0211 in the SQL Editor before pushing** (migration-drift).
 
+### The elite groups carry into the next month (script 275, 2026-11-14)
+
+Decided by the owner on 2026-11-14 (the carry `DrawH2hMonth` had waited
+for since NK182 with `h2h.elite_carry_pending`). Marker `NK275`.
+
+- **The rule** (`H2hEliteCarry.next`, domain, pure): from a month of the
+  elite draw, the last 3 of each elite group by its table go down to group
+  5; the elite's free seats (12 when all are carried) go to the most
+  committed of groups 5 and 6 together, further groups only when those
+  run short; between extra groups the last 5 by the table go down one
+  group and the 5 most committed of the group below come up (the last
+  group sends nobody down). The 80 are ranked by the month (place in the
+  group, prediction points, exact scorelines, league points) and dealt
+  again by `eliteDraw`'s snake; the extra groups are listed group by group,
+  each the most committed first, and the draw cuts them twenty at a time,
+  so a group that came out over twenty sends its least committed down.
+  Players who predicted on fewer than `min_active_days` are not carried
+  (`out`); new players come last, in the last groups.
+- **Commitment** (`H2hEliteCarry.compareCommitment`): fewer absent rounds
+  (the played rounds of the player's seats with no prediction), then more
+  predictions, more exact scorelines, more right outcomes, more points.
+  `CloseH2hMonth._commitmentOf` reads them from the month's sheets; the
+  right outcomes from the new port `H2hOutcomeReader`
+  (`PostgresH2hSheetReader.outcomesSql`, each fixture of the locked rounds
+  once), wired in both closing jobs.
+- **The record**: each `h2h_league_finished` event of an elite month
+  carries `next_order`, the place in the next month's drawing order;
+  `PostgresH2hDrawSource.carriedSql` reads it into `H2hCarry.order`, and
+  `DrawH2hMonth` deals carried players in that order, the new active
+  players last. A month judged without it still waits
+  (`h2h.elite_carry_pending`): a draw is never repeated.
+- **Not in this batch**: the Elite Cup in four days (paths 2 and 3 on
+  the same days) and the player's December rules text (276); rounds that
+  run into the next month; the absence rule in every group and a new
+  player's immediate seat in a last group filling during the month.
+- Tests: `h2h_elite_carry_test.dart` (domain: 130 players, the 12 up
+  and down, the extra ladder, the out, the order), `h2h_full_cycle_test`
+  (November judged and December dealt through the real use-cases) and
+  `h2h_draw_test` (a month judged without the order waits).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

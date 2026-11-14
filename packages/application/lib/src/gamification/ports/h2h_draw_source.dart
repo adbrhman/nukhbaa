@@ -39,6 +39,7 @@ final class H2hCarry {
     required this.nextDivision,
     required this.division,
     required this.rank,
+    this.order,
   });
 
   /// The player.
@@ -52,4 +53,8 @@ final class H2hCarry {
 
   /// The player's rank in their group.
   final int rank;
+
+  /// The player's place in the next month's drawing order (NK275), or
+  /// null when the judged month wrote none.
+  final int? order;
 }

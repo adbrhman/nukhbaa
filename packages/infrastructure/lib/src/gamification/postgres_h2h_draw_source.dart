@@ -63,7 +63,8 @@ ORDER BY missed ASC, points DESC, exact DESC, user_id
 SELECT e.user_id::text                           AS user_id,
        (e.payload ->> 'next_division')::integer   AS next_division,
        (e.payload ->> 'division')::integer        AS division,
-       (e.payload ->> 'rank')::integer            AS rank
+       (e.payload ->> 'rank')::integer            AS rank,
+       (e.payload ->> 'next_order')::integer      AS next_order
 FROM gamification.events e
 JOIN identity.users u ON u.id = e.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 WHERE e.event_type = 'h2h_league_finished'
@@ -151,6 +152,7 @@ ORDER BY COALESCE(per.points, 0) DESC, COALESCE(per.exact, 0) DESC, pl.user_id
           nextDivision: next,
           division: division,
           rank: rank,
+          order: _int(row['next_order']),
         ),
       );
     }
